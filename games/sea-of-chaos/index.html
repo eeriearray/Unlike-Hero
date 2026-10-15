@@ -619,7 +619,17 @@ const LOOKS = {
 const COAT_COLORS = ['#b8322a', '#2b5fb8', '#2e8b57', '#6b3fa0', '#d98a1c', '#2b2b2b', '#e0d6c0', '#c2406f'];
 const LOOK_KEYS = ['leg', 'eye', 'hat', 'body'];
 
+// Hull half-width outlines measured from the imported models (deck height and down to the waterline, 1 m steps).
+// Collisions, cannonball hits, boarding and swimmers all use these so the physics matches the hull you see.
+const HULL_TAB = { galleon: { z0: -25, w: [0.0, 0.0, 0.0, 4.28, 4.84, 5.28, 5.28, 5.28, 6.06, 6.06, 6.27, 5.89, 5.89, 5.91, 6.06, 7.2, 7.26, 7.35, 7.42, 7.5, 7.54, 7.54, 7.53, 6.45, 6.45, 6.39, 6.27, 6.27, 6.23, 6.16, 6.16, 6.55, 6.99, 6.99, 7.16, 7.17, 6.3, 6.08, 4.58, 4.58, 3.3, 2.9, 2.63, 2.01, 1.34, 1.03, 0.64, 0.4, 0.25, 0.0, 0.0] }, sloop: { z0: -12, w: [0.0, 2.03, 2.77, 3.12, 3.41, 3.41, 3.47, 3.48, 3.44, 3.44, 3.28, 3.28, 3.32, 3.26, 3.26, 3.26, 3.26, 3.32, 3.32, 2.74, 2.74, 1.83, 1.76, 1.09, 0.0] } };
+function modelHullHW(type, z) {
+  const src = type === 'brig' ? 'galleon' : type, T = HULL_TAB[src]; if (!T) return null;
+  const sc = type === 'brig' ? GAL_SCALE.brig.s : 1, f = clamp(z / sc - T.z0, 0, T.w.length - 1), i = Math.floor(f), j = Math.min(T.w.length - 1, i + 1);
+  return lerp(T.w[i], T.w[j], f - i) * sc;
+}
+const MODEL_HULL = type => (type === 'sloop' && SLOOP_MODEL) || ((type === 'galleon' || type === 'brig') && GAL_MODEL);
 function hwAt(sp, z) { // deck half-width at local z (bow at +z)
+  if (MODEL_HULL(sp.key)) return Math.max(0.15, modelHullHW(sp.key, z));
   const zf = z / (sp.L / 2); let w = sp.W / 2;
   if (zf > 0.3) w *= 1 - Math.pow(Math.min(1, (zf - 0.3) / 0.7), 1.6) * 0.9;
   if (zf < -0.8) w *= 1 - Math.min(1, (-0.8 - zf) / 0.2) * 0.12;
@@ -3577,15 +3587,17 @@ class Sim {
     if (s.water >= 1) this.sink(s);
   }
   circles(s) { // overlapping circles along the keel, each as wide as the hull there, so there are no gaps to slip through
-    const sp = SHIPS[s.type], n = Math.max(4, Math.ceil(sp.L / (sp.W * 0.55))), out = [];
-    for (let i = 0; i < n; i++) { const lz = lerp(-0.44, 0.42, i / (n - 1)) * sp.L, [x, z] = toWorldXZ(s, 0, lz); out.push({ x, z, r: hwAt(sp, lz) * 0.98 + 0.2 }); }
+    const sp = SHIPS[s.type], out = [], ends = this.hullEnds || (this.hullEnds = {});
+    if (!ends[s.type]) { let a = -sp.L / 2, b = sp.L / 2; while (hwAt(sp, a) < 0.6 && a < 0) a += 0.25; while (hwAt(sp, b) < 0.6 && b > 0) b -= 0.25; ends[s.type] = [a, b]; }
+    const [z0, z1] = ends[s.type], n = Math.max(5, Math.ceil((z1 - z0) / 1.4) + 1);
+    for (let i = 0; i < n; i++) { const lz = lerp(z0, z1, i / (n - 1)), [x, z] = toWorldXZ(s, 0, lz); out.push({ x, z, r: hwAt(sp, lz) * 0.97 + 0.15, lz }); }
     return out;
   }
   collide(dt) {
     const live = this.ships.filter(s => s.sinkT < 0);
     for (const s of live) {
       let hit = false;
-      for (const c of this.circles(s)) { const p = { x: c.x, z: c.z }; if (pushOutOfIsles(this.islands, p, c.r)) { s.x += p.x - c.x; s.z += p.z - c.z; hit = true; } }
+      for (const c of this.circles(s)) { const p = { x: c.x, z: c.z }; if (pushOutOfIsles(this.islands, p, c.r + 1.2)) { const dx = p.x - c.x, dz = p.z - c.z, d = Math.hypot(dx, dz) || 1; s.x += dx; s.z += dz; hit = true; const vn = (Math.sin(s.yaw) * s.spd + s.pvx) * dx / d + (Math.cos(s.yaw) * s.spd + s.pvz) * dz / d; if (vn < 0) { s.pvx -= dx / d * vn * 1.2; s.pvz -= dz / d * vn * 1.2; } } }
       for (const w of this.islands.wrecks || []) { if (dist2(w.x, w.z, s.x, s.z) > SHIPS[s.type].L) continue; // wrecks are solid too
         for (const c of this.circles(s)) { const dx = c.x - w.x, dz = c.z - w.z, d = Math.hypot(dx, dz) || 0.01, m = c.r + 4.5 * w.s; if (d < m) { s.x += dx / d * (m - d); s.z += dz / d * (m - d); hit = true; } } }
       if (hit) { if (s.spd > 4 && s.ramCd <= 0) { s.ramCd = 1.5; this.addBreach(s, Math.floor(this.rnd() * s.br.length), 1); this.ev({ k: 'crash', s: s.id, p: [r2(s.x), 0, r2(s.z)] }); if (!s.lastHit || this.t - s.lastHit.t > 30) s.lastHit = { crew: -2, t: this.t, kind: 'rocks' }; } s.spd *= 0.5; }
@@ -3602,13 +3614,20 @@ class Sim {
           a.yawRate = (a.yawRate || 0) + (nx * Math.cos(a.yaw) - nz * Math.sin(a.yaw)) * 0.002 * p; b.yawRate = (b.yawRate || 0) - (nx * Math.cos(b.yaw) - nz * Math.sin(b.yaw)) * 0.002 * p; }
       }
       if (pushed) {
+        let nx = a.x - b.x, nz = a.z - b.z; { const cn = CA.reduce((m, ca) => CB.reduce((mm, cb) => { const d = dist2(ca.x, ca.z, cb.x, cb.z); return d < mm.d ? { d, nx: ca.x - cb.x, nz: ca.z - cb.z } : mm; }, m), { d: 1e9, nx, nz }); nx = cn.nx; nz = cn.nz; }
+        const nl = Math.hypot(nx, nz) || 1; nx /= nl; nz /= nl;
+        const vax = Math.sin(a.yaw) * a.spd + a.pvx, vaz = Math.cos(a.yaw) * a.spd + a.pvz, vbx = Math.sin(b.yaw) * b.spd + b.pvx, vbz = Math.cos(b.yaw) * b.spd + b.pvz, vn = (vax - vbx) * nx + (vaz - vbz) * nz;
+        if (vn < 0) { // closing: an impulse along the contact normal (a little bounce), and the hulls lose the way they were driving into each other
+          const j = -(1 + 0.35) * vn / (1 / ma + 1 / mb); a.pvx += j / ma * nx; a.pvz += j / ma * nz; b.pvx -= j / mb * nx; b.pvz -= j / mb * nz;
+          const fa = Math.max(0, -(Math.sin(a.yaw) * nx + Math.cos(a.yaw) * nz)), fb = Math.max(0, Math.sin(b.yaw) * nx + Math.cos(b.yaw) * nz);
+          a.spd *= 1 - 0.7 * fa; b.spd *= 1 - 0.7 * fb;
+        }
         const rel = Math.hypot(Math.sin(a.yaw) * a.spd - Math.sin(b.yaw) * b.spd, Math.cos(a.yaw) * a.spd - Math.cos(b.yaw) * b.spd);
         if (rel > 6 && a.ramCd <= 0 && b.ramCd <= 0) {
           a.ramCd = b.ramCd = 2; this.addBreach(a, Math.floor(this.rnd() * a.br.length), 1); this.addBreach(b, Math.floor(this.rnd() * b.br.length), 1);
           a.lastHit = { crew: b.crew, t: this.t, kind: 'ram' }; b.lastHit = { crew: a.crew, t: this.t, kind: 'ram' };
           this.ev({ k: 'crash', s: a.id, p: [r2((a.x + b.x) / 2), 1, r2((a.z + b.z) / 2)] });
         }
-        a.spd *= 0.92; b.spd *= 0.92;
       }
     }
   }
