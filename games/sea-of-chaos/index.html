@@ -262,7 +262,67 @@ kbd{display:inline-block;min-width:22px;padding:0 6px;border-radius:3px;font:700
 #toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);padding:9px 16px;z-index:30;font-weight:700;font-family:var(--body);color:var(--ink);
   background:linear-gradient(#e4cf9f,#c9ab74);border:2px solid #4a2e14;border-radius:3px;box-shadow:0 8px 20px rgba(0,0,0,.45)}
 #loading{position:fixed;inset:0;display:grid;place-items:center;z-index:40;background:#0b1620;font-family:var(--title);font-size:42px;color:var(--gold)}
-@media (max-width:1150px){ #feed{top:330px;max-width:300px} }
+/* ===== premium minimal HUD ===== */
+#hud{--glass:linear-gradient(180deg,rgba(14,18,22,.58),rgba(10,13,16,.42));--hair:rgba(233,196,90,.32);--hair2:rgba(233,196,90,.16)}
+#hud .plate{background:var(--glass);border:1px solid var(--hair);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.28);-webkit-backdrop-filter:blur(8px) saturate(1.1);backdrop-filter:blur(8px) saturate(1.1);text-shadow:none}
+#radar-wrap{left:18px;top:18px;width:150px;gap:6px}
+#radar{width:150px;height:150px;filter:drop-shadow(0 6px 14px rgba(0,0,0,.45))}
+#storm-plaque{width:auto;background:none;border:none;box-shadow:none;padding:0;text-align:center;color:#f3e2b4}
+#storm-t{font:700 11px var(--serif);letter-spacing:.14em;text-transform:uppercase;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+#storm-sub{font:600 11px var(--body);color:rgba(243,226,180,.7);text-shadow:0 1px 3px rgba(0,0,0,.8)}
+#heading{left:50%;top:14px;width:520px;height:48px;transform:translateX(-50%);max-width:70vw}
+#objective{top:72px;font-size:10px;letter-spacing:.2em;padding:5px 14px}
+#objective:not(.big){display:none}
+#objective.big{top:30vh}
+#scores{top:66px;gap:10px}
+.chip{background:none!important;border:none!important;box-shadow:none!important;padding:0;font:700 10.5px var(--serif);letter-spacing:.12em;text-transform:uppercase;color:rgba(243,226,180,.82);text-shadow:0 1px 3px rgba(0,0,0,.9)}
+.chip .dot{width:7px;height:7px;box-shadow:0 0 6px currentColor}
+.chip.me{color:#fff3cf}.chip.me .dot{outline:1px solid #fff3cf;outline-offset:2px}
+.chip.dead{opacity:.35}
+#orders{left:50%;right:auto;top:88px;width:auto;max-width:60vw;transform:translateX(-50%);text-align:center;padding:0;background:none;border:none;transition:opacity .6s;font-family:var(--body)}
+#orders.fade{opacity:0}
+#ord-step{font:600 15px var(--body);color:#fff3cf;text-shadow:0 1px 4px rgba(0,0,0,.95),0 0 18px rgba(0,0,0,.5)}
+#ord-step.urgent{color:#ffb098}
+#ord-sub{font:500 12.5px var(--body);color:rgba(243,226,180,.78);text-shadow:0 1px 4px rgba(0,0,0,.95);margin-top:2px}
+#feed{top:18px;right:18px;gap:4px}
+.feed{background:linear-gradient(90deg,rgba(10,13,16,0),rgba(10,13,16,.55))!important;color:#f3e2b4!important;font:600 12.5px var(--body)!important;border:none!important;border-right:2px solid var(--brass)!important;border-radius:0!important;box-shadow:none!important;padding:3px 10px 3px 24px!important;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+#status{left:18px;bottom:18px;width:230px;padding:10px 12px 9px;display:grid;gap:6px;background:var(--glass);border:1px solid var(--hair);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.28);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.st-name{display:flex;justify-content:space-between;align-items:baseline;font:700 11px var(--serif);letter-spacing:.14em;text-transform:uppercase;border-bottom:1px solid var(--hair2);padding-bottom:5px}
+.st-name small{font:600 10px var(--body);letter-spacing:.06em;color:rgba(243,226,180,.6);text-transform:none}
+.st-row{display:grid;grid-template-columns:16px 1fr 38px;gap:8px;align-items:center}
+.st-row svg{width:15px;height:15px;fill:none;stroke:rgba(243,226,180,.85);stroke-width:1.8}
+.st-row b{font:700 12px var(--serif);color:#f3e2b4;text-align:right}
+.st-bar{height:5px;border-radius:3px;background:rgba(255,255,255,.08);overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+.st-bar i{display:block;height:100%;border-radius:3px;transition:width .25s}
+.st-bar.hp i{background:linear-gradient(90deg,#b8322a,#f06a4a)}
+.st-bar.water i{background:linear-gradient(90deg,#1f6f9a,#57c3e8)}
+#water-fill.danger{background:linear-gradient(90deg,#b8322a,#ff7a4a)!important}
+.st-mini{display:flex;gap:10px;align-items:center;font:600 11px var(--body);color:rgba(243,226,180,.75);min-height:14px}
+.st-mini #k-speed{margin-left:auto;color:#f3e2b4;font-family:var(--serif);font-weight:700}
+.st-mini em{font-style:normal;letter-spacing:.08em}
+#k-anchor:empty{display:none}#k-anchor{color:#ffb098;letter-spacing:.08em}
+.pips{display:flex;gap:3px}.pip{width:8px!important;height:8px!important;border-radius:50%!important}
+#right-hud{right:18px;bottom:18px;gap:8px}
+#weapons{padding:6px 8px;gap:2px;border-radius:10px}
+#weapons .wslot{width:auto;min-width:60px;padding:4px 8px 6px;font:700 9.5px var(--serif);letter-spacing:.1em;text-transform:uppercase;color:rgba(243,226,180,.7);border:none;background:none}
+#weapons .wslot.on{color:#fff3cf;background:rgba(233,196,90,.1);box-shadow:inset 0 -2px 0 var(--gold)}
+#weapons .wslot b{left:5px;top:3px;font-size:8.5px;opacity:.55}
+#weapons.compact .wslot:not(.on){display:none}
+#weapons.compact .wslot.on{background:none;box-shadow:none;min-width:110px}
+#ammo{border-radius:10px;padding:6px 8px}
+.ammo{color:rgba(243,226,180,.75);font-family:var(--serif);letter-spacing:.06em}
+#helpbar{background:none!important;border:none!important;box-shadow:none!important;color:rgba(243,226,180,.8)!important;text-shadow:0 1px 3px rgba(0,0,0,.9);bottom:16px;font:600 11px var(--body)}
+#helpbar kbd,#action kbd,#ord-step kbd{background:rgba(233,196,90,.14);border:1px solid var(--hair);color:#fff3cf;border-radius:4px;box-shadow:none}
+#legend-tab{display:none!important}
+#lock-hint{bottom:56px;font-size:11px}
+#action{bottom:96px;font-size:12px}
+#cross{width:4px;height:4px;margin:-2px 0 0 -2px;border-radius:50%;background:rgba(255,243,207,.9);box-shadow:0 0 0 1px rgba(0,0,0,.45)}
+#cross::before,#cross::after{display:none}
+#water-pct{position:static!important;transform:none!important;font:700 12px var(--serif)!important;color:#f3e2b4!important;text-shadow:none!important;width:auto!important}
+#scores{flex-wrap:nowrap;max-width:94vw;white-space:nowrap}
+#lock-hint{bottom:auto!important;top:62%}
+#helpbar{max-width:min(760px,80vw)}
+@media (max-width:1150px){ #feed{top:200px;max-width:300px} }
 @media (max-width:900px){
   .maker-wrap{grid-template-columns:1fr;grid-template-rows:auto 1fr}
   #helpbar{max-width:calc(100vw - 32px);bottom:auto;top:250px}
@@ -365,31 +425,25 @@ kbd{display:inline-block;min-width:22px;padding:0 6px;border-radius:3px;font:700
   <div class="p" id="frozen"></div>
   <div class="p" id="radar-wrap">
     <canvas id="radar" width="392" height="392" aria-label="Chart of the arena"></canvas>
-    <div class="plaque" id="storm-plaque"><div id="storm-t">Storm closes in 8:00</div><div id="storm-sub">Storm ring</div></div>
+    <div id="storm-plaque"><div id="storm-t">Storm closes in 10:00</div><div id="storm-sub"></div></div>
   </div>
+  <canvas class="p" id="heading" width="1040" height="96" aria-label="Heading"></canvas>
   <div class="p plate" id="objective"><b>OBJECTIVE:</b> SINK ALL OPPOSING SHIPS &amp; SURVIVE THE STORM RING<span id="countdown" hidden>3</span></div>
   <div class="p" id="scores"></div>
   <div class="p" id="feed"></div>
-  <div class="p plate" id="orders"><div class="ord-h">Captain's Orders</div><div class="ord-goal">Sink every rival ship. Last ship afloat wins.</div><div id="ord-step"></div><div id="ord-sub"></div></div>
+  <div class="p" id="orders"><div id="ord-step"></div><div id="ord-sub"></div></div>
   <div class="p mk enemy" id="mk-enemy" hidden><i class="mk-arrow"></i><b></b></div>
   <div class="p mk chest" id="mk-chest" hidden><i class="mk-arrow"></i><b></b></div>
-  <div class="p plate" id="status">
-    <div class="plate-head"><span id="ship-name">Ship</span><span id="ship-crew"></span></div>
-    <div class="status-body">
-      <div class="barrel"><div id="water-tank" title="Water in the hold"><div id="water-fill"></div><div class="hoop" style="top:16%"></div><div class="hoop" style="bottom:16%"></div><div id="water-pct">0%</div></div>HOLD</div>
-      <div class="gauges">
-        <div class="g-row" title="Hull breaches"><svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/><path d="M9 8l2 3-3 2 3 3" stroke="#ff8a5a"/></svg><div class="pips" id="k-breach"></div><span></span></div>
-        <div class="g-row" title="Sails"><svg viewBox="0 0 24 24"><path d="M12 2v20M12 4c5 2 7 7 6 13H12M12 6c-4 2-6 6-5 10h5"/></svg><div class="meter"><i id="b-sail"></i></div><b id="k-sail">0%</b></div>
-        <div class="g-row" title="Anchor"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><path d="M12 7v14M8 10h8M5 15c1 4 4 6 7 6s6-2 7-6"/></svg><span class="state up" id="k-anchor">RAISED</span><span></span></div>
-        <div class="g-row" title="Rudder and speed"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="1.5"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3"/></svg><div class="rudder"><i id="k-rudder"></i></div><b id="k-speed">0 kn</b></div>
-      </div>
-    </div>
-    <div class="g-row" id="hp-wrap" title="Your health"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z" stroke="#ff8a7a"/></svg><div class="meter hp"><i id="b-hp" style="width:100%"></i></div><b id="k-hp">100</b></div>
+  <div class="p" id="status">
+    <div class="st-name"><span id="ship-name">Ship</span><small id="ship-crew"></small></div>
+    <div class="st-row" title="Your health"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/></svg><div class="st-bar hp"><i id="b-hp" style="width:100%"></i></div><b id="k-hp">100</b></div>
+    <div class="st-row" title="Water in the hold"><svg viewBox="0 0 24 24"><path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z"/></svg><div class="st-bar water"><i id="water-fill"></i></div><b id="water-pct">0%</b></div>
+    <div class="st-mini"><span id="k-breach"></span><span id="k-anchor"></span><span id="k-speed">0 kn</span></div>
   </div>
   <div class="p" id="right-hud">
     <div class="plate" id="weapons"></div>
     <div class="plate" id="ammo"></div>
-    <div id="compass-wrap"><canvas id="compass" width="340" height="340" aria-label="Wind compass"></canvas><div class="plaque" id="wind-eff">Wind</div></div>
+    <div hidden><canvas id="compass" width="8" height="8"></canvas><i id="wind-eff"></i><i id="k-sail"></i><i id="b-sail"></i><i id="k-rudder"></i><i id="water-tank"></i></div>
   </div>
   <div class="p" id="scope" hidden></div>
   <div class="p" id="cross"></div>
@@ -1207,6 +1261,20 @@ const sky = new THREE.Mesh(new THREE.SphereGeometry(1800, 48, 24), new THREE.Sha
     }`
 }));
 sky.renderOrder = -10; scene.add(sky);
+// Cumulus: soft billboard clouds far out on the horizon, lit from the sun's side and tinted by the weather.
+const clouds = (() => {
+  const tex = canvasTex(256, 192, (c, w, h) => {
+    const puff = (x, y, r, a) => { const g = c.createRadialGradient(x, y - r * 0.25, r * 0.1, x, y, r); g.addColorStop(0, `rgba(255,255,255,${a})`); g.addColorStop(0.6, `rgba(235,240,248,${a * 0.75})`); g.addColorStop(1, 'rgba(220,228,240,0)'); c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill(); };
+    const r0 = rng(42); for (let i = 0; i < 26; i++) { const t = i / 25, x = 30 + t * 196 + (r0() - 0.5) * 30, y = 120 - Math.sin(t * Math.PI) * 48 + (r0() - 0.5) * 22; puff(x, y, 26 + Math.sin(t * Math.PI) * 30 + r0() * 14, 0.55); }
+    const sh = c.createLinearGradient(0, 60, 0, 170); sh.addColorStop(0, 'rgba(0,0,0,0)'); sh.addColorStop(1, 'rgba(70,80,100,.55)'); c.globalCompositeOperation = 'source-atop'; c.fillStyle = sh; c.fillRect(0, 0, w, h); // shaded bellies
+  });
+  const g = new THREE.Group(), mats = [], r = rng(7);
+  for (let i = 0; i < 22; i++) {
+    const m = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, fog: false, opacity: 0.9 }); mats.push(m);
+    const sp = new THREE.Sprite(m), a = i / 22 * TAU + r() * 0.2, d = 1150 + r() * 450, sc = 380 + r() * 420; sp.position.set(Math.cos(a) * d, 120 + r() * 160, Math.sin(a) * d); sp.scale.set(sc, sc * 0.6, 1); sp.renderOrder = -1; g.add(sp);
+  }
+  scene.add(g); return { g, mats };
+})();
 const stars = (() => {
   const n = 700, p = new Float32Array(n * 3);
   for (let i = 0; i < n; i++) { const u = R() * TAU, v = rr(0.08, 1); const r = 1700; p[i * 3] = Math.cos(u) * Math.sqrt(1 - v * v) * r; p[i * 3 + 1] = v * r; p[i * 3 + 2] = Math.sin(u) * Math.sqrt(1 - v * v) * r; }
@@ -1828,11 +1896,16 @@ function buildShip(s) {
     const h = sp.mastH * (i === 0 && sp.masts > 1 ? 0.9 : 1) * (i === 2 ? 0.8 : 1), z = zf * sp.L;
     const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.12 * mS, 0.26 * mS, h + DECK_Y - HOLD_Y, 12), mastM); mast.position.set(0, (DECK_Y + h + HOLD_Y) / 2, z); g.add(mast); (v.mastTops = v.mastTops || []).push([z, DECK_Y + h, h]);
     const rigs = tall ? [[0.62, 0.4, 1.32, true], [0.95, 0.26, 1.0, false]] : [[0.9, 0.6, 1.34, true]]; // [yard height, sail drop, width, course?]
+    const bandM = matte(skel ? 0x1c201c : 0x26221e, METAL);
+    for (let k = 0; k < 6; k++) { const by = DECK_Y + 0.8 + k * h * 0.11, rr0 = lerp(0.26, 0.12, (by - HOLD_Y) / (h + DECK_Y - HOLD_Y)) * mS + 0.025; const band = new THREE.Mesh(new THREE.CylinderGeometry(rr0, rr0, 0.12, 14, 1, true), bandM); band.position.set(0, by, z); g.add(band); }
+    if (tall && i !== mainIdx) { const ty = DECK_Y + h * 0.66; const top = new THREE.Mesh(new THREE.CylinderGeometry(0.75 * mS, 0.75 * mS, 0.14, 12), woodM(skel ? 0x605c55 : 0xc8ac8e)); top.scale.z = 0.7; top.position.set(0, ty, z); g.add(top); }
     for (const [ph, shF, wF, course] of rigs) {
       const pivot = new THREE.Group(); pivot.position.set(0, DECK_Y + h * ph, z); g.add(pivot);
       const sw = sp.W * wF * (1 - i * 0.04), sh = h * shF;
-      const yard = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, sw + 0.7, 8), mastM); yard.rotation.z = Math.PI / 2; pivot.add(yard);
-      const sgeo = new THREE.PlaneGeometry(sw, sh, 8, 6); sgeo.translate(0, -sh / 2, 0);
+      const yg = new THREE.CylinderGeometry(0.12, 0.12, sw + 0.9, 10, 6); { const p = yg.attributes.position; for (let k = 0; k < p.count; k++) { const t = Math.abs(p.getY(k)) / ((sw + 0.9) / 2), f = 1 - 0.55 * t * t; p.setX(k, p.getX(k) * f); p.setZ(k, p.getZ(k) * f); } yg.computeVertexNormals(); }
+      const yard = new THREE.Mesh(yg, mastM); yard.rotation.z = Math.PI / 2; pivot.add(yard); // tapers to the yardarms
+      for (const sd of [1, -1]) { const cl = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.1, 8), bandM); cl.rotation.z = Math.PI / 2; cl.position.x = sd * sw * 0.28; pivot.add(cl); }
+      const sgeo = new THREE.PlaneGeometry(sw, sh, 14, 10); sgeo.translate(0, -sh / 2, 0);
       const sail = new THREE.Mesh(sgeo, course && i === mainIdx ? mainSailMat : sailMat); pivot.add(sail);
       const furl = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, sw, 8), matte(skel ? 0x3d4a3c : 0xe8d8b0)); furl.rotation.z = Math.PI / 2; furl.position.y = -0.2; pivot.add(furl);
       v.sails.push({ pivot, sail, geo: sgeo, base: Float32Array.from(sgeo.attributes.position.array), sw, sh, furl });
@@ -1964,8 +2037,15 @@ function buildShip(s) {
   const lmat = new THREE.MeshBasicMaterial({ color: skel ? new THREE.Color(0.7, 2.4, 1.0) : new THREE.Color(2.6, 1.7, 0.6) }); // HDR: blooms
   for (const sd of [1, -1]) { const l = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 6), lmat); l.position.set(sd * (outline[0][0] - 0.1), DECK_Y + qdHeight(s.type, -sp.L / 2) + 1.1, -sp.L / 2 + 0.3); g.add(l); }
   v.glowMat = lmat;
+  { // coiled rope at the foot of each mast and pin racks along the rail
+    const ropeM = matte(skel ? 0x3a3e36 : 0x9a7a52, { roughness: 1 }), pinM = woodM(skel ? 0x605c55 : 0xd8b890);
+    (v.mastTops || []).forEach(([z], i) => { for (const sd of [1, -1]) { const cz = z - 1.0, cx = sd * 0.8; if (PL.stairs.some(S => inStair(S, cx, cz, 0.5) || inStair(S, cx, cz + 0.5, 0.5) || inStair(S, cx, cz - 0.5, 0.5))) continue;
+      for (let k = 0; k < 3; k++) { const coil = new THREE.Mesh(new THREE.TorusGeometry(0.34 - k * 0.07, 0.045, 5, 18), ropeM); coil.rotation.x = Math.PI / 2; coil.position.set(cx, DECK_Y + qdHeight(s.type, cz) + 0.05 + k * 0.07, cz); g.add(coil); } } });
+    for (const [z] of v.mastTops || []) for (const sd of [1, -1]) { const x = sd * (hwAt(sp, z + 1.6) - 0.3), rail = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.12, 1.6), pinM); rail.position.set(x, DECK_Y + 0.9, z + 1.6); g.add(rail);
+      for (let k = 0; k < 5; k++) { const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 0.42, 6), pinM); pin.position.set(x, DECK_Y + 0.92, z + 1.0 + k * 0.3); g.add(pin); } }
+  }
   // rigging: stays and shrouds
-  const rp = [], tops = v.mastTops || [];
+  const rp = [], dead = [], tops = v.mastTops || [];
   tops.forEach(([z, top], i) => {
     rp.push(0, top, z, 0, DECK_Y + 0.6, i === 0 ? sp.L / 2 - 0.4 : tops[i - 1][0]);
     rp.push(0, top, z, 0, DECK_Y + 0.6, i === tops.length - 1 ? -sp.L / 2 + 0.7 : tops[i + 1][0]);
@@ -1973,10 +2053,23 @@ function buildShip(s) {
       const A = [sd * (hwAt(sp, z - 0.7) - 0.08), DECK_Y + 0.72, z - 0.7], B = [sd * (hwAt(sp, z + 0.5) - 0.08), DECK_Y + 0.72, z + 0.5], T = [0, top - 0.6, z];
       rp.push(...T, ...A, ...T, ...B);
       for (let f = 0.07; f < 0.85; f += 0.065) rp.push(lerp(A[0], T[0], f), lerp(A[1], T[1], f), lerp(A[2], T[2], f), lerp(B[0], T[0], f), lerp(B[1], T[1], f), lerp(B[2], T[2], f));
+      for (const P of [A, B]) dead.push(P); // deadeyes where the shrouds meet the rail
     }
   });
-  const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.Float32BufferAttribute(rp, 3));
-  g.add(new THREE.LineSegments(rg, new THREE.LineBasicMaterial({ color: skel ? 0x1a1f1a : 0x3a2716 })));
+  { // every rope is a thin tube (stays and shrouds thicker than the ratlines), merged into one mesh
+    const parts = [], up = new THREE.Vector3(0, 1, 0), a = new THREE.Vector3(), b = new THREE.Vector3(), q = new THREE.Quaternion();
+    for (let i = 0; i < rp.length; i += 6) {
+      a.set(rp[i], rp[i + 1], rp[i + 2]); b.set(rp[i + 3], rp[i + 4], rp[i + 5]); const len = a.distanceTo(b); if (len < 0.05) continue;
+      const rat = Math.abs(a.y - b.y) < 0.35 * len && len < sp.W, r = rat ? 0.018 : 0.04;
+      const cyl = new THREE.CylinderGeometry(r, r, len, rat ? 3 : 5, 1, true); q.setFromUnitVectors(up, b.clone().sub(a).normalize());
+      cyl.applyQuaternion(q); cyl.translate((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2); parts.push(cyl.toNonIndexed());
+    }
+    for (const P of dead) { const d = new THREE.CylinderGeometry(0.11, 0.11, 0.07, 10).rotateZ(Math.PI / 2); d.translate(P[0], P[1] + 0.05, P[2]); parts.push(d.toNonIndexed()); }
+    parts.forEach(p => p.deleteAttribute('uv'));
+    const ropes = new THREE.Mesh(THREE.BufferGeometryUtils.mergeBufferGeometries(parts), matte(skel ? 0x2a302a : 0x4a3520, { roughness: 1 })); g.add(ropes);
+    // channels: the planks outboard of the hull that spread the shrouds
+    for (const [z] of tops) for (const sd of [1, -1]) { const ch = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.1, 1.9), woodM(skel ? 0x6b665c : 0xb8946e)); ch.position.set(sd * (hwAt(sp, z) + 0.1), DECK_Y + 0.66, z); g.add(ch); }
+  }
   // galley chimney (smokes while sailing)
   const chim = new THREE.Group(), cy = DECK_Y + qdHeight(s.type, -sp.L / 2 + 1.0), cz = -sp.L / 2 + 1.0, cx = s.type === 'sloop' ? -hwAt(sp, cz) + 0.55 : 0.55;
   const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 1.0, 8), matte(0x2b2b2e, METAL)); pipe.position.y = 0.5; chim.add(pipe);
@@ -2070,6 +2163,18 @@ function limb(r, len, mat, r2) { // capsule hanging down from a joint at y=0
   return new THREE.Mesh(geo, mat);
 }
 function joint(parent, x, y, z) { const j = new THREE.Group(); j.position.set(x, y, z); parent.add(j); return j; }
+// Within each animated joint, rigid meshes sharing a material become one: same look, far fewer draw calls.
+function mergeJointChildren(root, keep) {
+  const parents = []; root.traverse(o => { if (o.children.length) parents.push(o); });
+  for (const par of parents) {
+    const groups = new Map();
+    for (const o of par.children) { if (!o.isMesh || o.children.length || keep.has(o) || Array.isArray(o.material) || o.material.transparent) continue; const att = Object.keys(o.geometry.attributes).sort().join(','); if (!/normal/.test(att)) continue; const k = o.material.uuid + '|' + att; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(o); }
+    for (const list of groups.values()) { if (list.length < 2) continue;
+      const geos = list.map(o => { o.updateMatrix(); const ge = (o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone()).applyMatrix4(o.matrix); for (const k in ge.attributes) if (!['position', 'normal', 'uv'].includes(k)) ge.deleteAttribute(k); if (!ge.attributes.uv) ge.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(ge.attributes.position.count * 2), 2)); return ge; });
+      const merged = THREE.BufferGeometryUtils.mergeBufferGeometries(geos); geos.forEach(g => g.dispose()); if (!merged) continue;
+      for (const o of list) par.remove(o); par.add(new THREE.Mesh(merged, list[0].material)); }
+  }
+}
 function buildPirate(look, crewColor, opts = {}) {
   const lk = look || [0, 0, 0, 0, 0], body = lk[3], skel = body === 2, B = BODY[body] || BODY[0];
   const coatCol = COAT_COLORS[lk[4] || 0];
@@ -2086,6 +2191,7 @@ function buildPirate(look, crewColor, opts = {}) {
   thighL.add(limb(B.limb * 1.15, thigh, pants)); kneeL.add(limb(B.limb, shin * 0.9, skel ? pants : pants));
   const bootL = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.14, 0.3).translate(0, -0.03, 0.06), boot); ankleL.add(bootL);
   const cuff = new THREE.Mesh(new THREE.CylinderGeometry(B.limb * 1.35, B.limb * 1.2, 0.12, 8), boot); cuff.position.y = 0.06; ankleL.add(cuff);
+  const bk = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.05, 0.02), gold); bk.position.set(0, 0.01, 0.2); ankleL.add(bk);
   const thighR = joint(hips, -legX, -0.06, 0), kneeR = joint(thighR, 0, -thigh, 0);
   thighR.add(limb(B.limb * 1.15, thigh, pants));
   if (lk[0] === 0) { kneeR.add(limb(0.065, shin + 0.1, matte(0x9a6a3a), 0.045)); const ring = new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.02, 5, 10), gold); ring.rotation.x = Math.PI / 2; ring.position.y = -0.05; kneeR.add(ring); }
@@ -2102,6 +2208,15 @@ function buildPirate(look, crewColor, opts = {}) {
   const belt = new THREE.Mesh(new THREE.TorusGeometry(B.waist * 1.02, 0.045, 5, 16), matte(0x2a1a10)); belt.rotation.x = Math.PI / 2; belt.scale.y = B.depth; belt.position.y = 0.04; spine.add(belt);
   const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.1, 0.03), gold); buckle.position.set(0, 0.04, B.waist * B.depth + 0.03); spine.add(buckle);
   for (const sd of [1, -1]) { const lapel = new THREE.Mesh(new THREE.BoxGeometry(0.05, T * 0.55, 0.03), gold); lapel.position.set(sd * B.chest * 0.42, T * 0.5, B.chest * B.depth * 0.92); lapel.rotation.z = sd * 0.12; spine.add(lapel); }
+  if (!skel) { // finer tailoring: collar, buttons, a crew sash, pouch and powder horn
+    const collar = new THREE.Mesh(new THREE.TorusGeometry(B.shoulder * 0.55, 0.05, 6, 16, Math.PI * 1.4), coatM); collar.rotation.set(Math.PI / 2 - 0.35, 0, Math.PI * 0.8); collar.scale.y = B.depth; collar.position.y = T * 0.94; spine.add(collar);
+    for (const sd of [1, -1]) for (let k = 0; k < 3; k++) { const bt = new THREE.Mesh(new THREE.SphereGeometry(0.022, 6, 5), gold); bt.position.set(sd * B.chest * 0.52, T * (0.3 + k * 0.15), B.chest * B.depth * 0.98 + 0.01); spine.add(bt); }
+    const sash = new THREE.Mesh(new THREE.TorusGeometry(B.waist * 1.06, 0.06, 6, 18), band); sash.rotation.set(Math.PI / 2 - 0.12, 0.1, 0); sash.scale.y = B.depth; sash.position.y = 0.0; spine.add(sash);
+    const knotS = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 5), band); knotS.position.set(B.waist * 0.8, -0.02, B.waist * B.depth * 0.6); spine.add(knotS);
+    const tailS = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.26, 0.02).translate(0, -0.13, 0), band); tailS.position.set(B.waist * 0.82, -0.04, B.waist * B.depth * 0.62); tailS.rotation.z = 0.15; spine.add(tailS);
+    const pouch = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.12, 0.07), matte(0x5a3a1e)); pouch.position.set(-B.waist * 0.75, -0.06, B.waist * B.depth * 0.55); spine.add(pouch);
+    const horn = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.24, 8), matte(0xe8d8b0)); horn.rotation.z = 1.2; horn.position.set(-B.waist * 0.95, 0.02, -B.waist * B.depth * 0.2); spine.add(horn);
+  }
   // arms
   const chest = joint(spine, 0, T * 0.82, 0), upper = B.leg * 0.42 + 0.06, fore = B.leg * 0.38 + 0.06;
   const mkArm = sd => {
@@ -2109,6 +2224,7 @@ function buildPirate(look, crewColor, opts = {}) {
     sh.add(limb(B.limb * 1.05, upper, skel ? shirt : coatM));
     const el = joint(sh, 0, -upper, 0); el.add(limb(B.limb * 0.92, fore, skel ? shirt : coatM));
     const cf = new THREE.Mesh(new THREE.CylinderGeometry(B.limb * 1.25, B.limb * 1.1, 0.08, 8), shirt); cf.position.y = -fore * 0.82; el.add(cf);
+    if (!skel) { const gc = new THREE.Mesh(new THREE.CylinderGeometry(B.limb * 1.32, B.limb * 1.28, 0.1, 10, 1, true), gold); gc.position.y = -fore * 0.68; el.add(gc); } // braided cuff
     const hand = joint(el, 0, -fore, 0); const hm = new THREE.Mesh(new THREE.SphereGeometry(B.limb * 0.95 + 0.02, 8, 6), skin); hm.scale.set(0.9, 1.1, 0.8); hand.add(hm);
     return { sh, el, hand };
   };
@@ -2132,6 +2248,10 @@ function buildPirate(look, crewColor, opts = {}) {
     const nose = new THREE.Mesh(new THREE.SphereGeometry(H * 0.24, 8, 6), matte(0xd08a6a)); nose.scale.set(0.9, 1, 1.2); nose.position.set(0, -0.02, H * 0.98); head.add(nose);
     const beard = new THREE.Mesh(new THREE.ConeGeometry(H * 0.72, H * 1.25, 9, 1, true), matte(body === 0 ? 0x3a2412 : 0x9a4a22, { side: THREE.DoubleSide })); beard.rotation.x = Math.PI + 0.25; beard.position.set(0, -H * 0.85, H * 0.42); head.add(beard);
     for (const sd of [1, -1]) { const ear = new THREE.Mesh(new THREE.SphereGeometry(H * 0.2, 6, 5), skin); ear.scale.z = 0.5; ear.position.set(sd * H * 0.95, 0, 0); head.add(ear); }
+    const hairM = matte(body === 0 ? 0x2a1a0e : 0x7a3a1a);
+    for (const sd of [1, -1]) { const brow = new THREE.Mesh(new THREE.BoxGeometry(H * 0.42, H * 0.09, H * 0.1), hairM); brow.position.set(sd * H * 0.38, H * 0.42, H * 0.86); brow.rotation.z = sd * -0.18; head.add(brow);
+      const mo = new THREE.Mesh(new THREE.CapsuleGeometry(H * 0.07, H * 0.32, 2, 6), hairM); mo.rotation.z = sd * 1.25; mo.position.set(sd * H * 0.22, -H * 0.3, H * 0.95); head.add(mo); }
+    const earring = new THREE.Mesh(new THREE.TorusGeometry(H * 0.11, 0.008, 5, 12), gold); earring.position.set(H * 0.97, -H * 0.25, 0.02); earring.rotation.y = Math.PI / 2; head.add(earring);
   }
   // bandana in crew colour (with a knot behind)
   const bnd = new THREE.Mesh(new THREE.CylinderGeometry(H * 0.99, H * 1.0, H * 0.32, 14, 1, true), band); bnd.position.y = H * 0.38; head.add(bnd);
@@ -2174,6 +2294,7 @@ function buildPirate(look, crewColor, opts = {}) {
     const spr = nameTag(name, crewColor, bot ? 'deckhand' : opts.sub || '', 0.7);
     spr.position.y = (hipY + T + 0.55 + H * 2) * B.sc; root.add(spr); P.tag = spr;
   }
+  { const keep = new Set(); for (const k in P) { const v = P[k]; for (const o of Array.isArray(v) ? v : [v]) if (o && o.isObject3D) keep.add(o); } mergeJointChildren(root, keep); }
   root.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   Object.assign(P, { hips, spine, chest, neck, head, thighL, thighR, kneeL, kneeR, ankleL, armL, armR, hipY, headY: (hipY + T + 0.3) * B.sc });
   return P;
@@ -2504,6 +2625,8 @@ class Sim {
     this.crewTimer -= dt; if (this.crewTimer <= 0) { this.crewTimer = 1; this.manageCrews(false); }
     this.applyHumanInputs();
     for (const av of this.avatars) if (av.bot && !av.dead) this.botStep(av, dt);
+    for (let i = 0; i < this.avatars.length; i++) { const a = this.avatars[i]; if (a.dead || a.out || !a.bot || a.ship < 0 || a.stair >= 0) continue; const s = this.ship(a.ship); if (!s) continue;
+      for (const o of this.avatars) { if (o === a || o.dead || o.out || o.ship !== a.ship || o.lv !== a.lv || o.stair >= 0) continue; const dx = a.x - o.x, dz = a.z - o.z, d = Math.hypot(dx, dz); if (d < 0.62 && d > 1e-4) { const p = { x: a.x + dx / d * (0.62 - d) * (o.bot ? 0.5 : 1), z: a.z + dz / d * (0.62 - d) * (o.bot ? 0.5 : 1) }; clampLevel(s.type, a.lv, p); a.x = p.x; a.z = p.z; a.y = floorY(s.type, a.lv, a.z); } } }
     this.applyStations(dt);
     for (const s of this.ships) this.stepShip(s, dt);
     for (const s of this.ships) this.updatePose(s);
@@ -2776,19 +2899,19 @@ class Sim {
 
   // ---------- AI crews ----------
   pickTarget(s) {
-    let best = null, bd = 900;
+    let best = null, bd = 1e9;
     for (const o of this.ships) {
       if (o === s || o.sinkT >= 0) continue;
       if (s.skel ? o.skel : (o.crew === s.crew)) continue;
-      const d = dist2(o.x, o.z, s.x, s.z) * (o.skel ? 1.8 : 1);
+      const d = dist2(o.x, o.z, s.x, s.z) * (o.skel ? 1.8 : 1) * (o.ai ? 1 : 0.7); // players draw attention
       if (d < bd) { bd = d; best = { kind: 'ship', id: o.id }; }
     }
-    if (!best && !s.skel) { let cd = 600; for (const c of this.chests) { const d = dist2(c.x, c.z, s.x, s.z); if (d < cd) { cd = d; best = { kind: 'chest', id: c.id }; } } }
+    if (!best && !s.skel) { let cd = 1e9; for (const c of this.chests) { const d = dist2(c.x, c.z, s.x, s.z); if (d < cd) { cd = d; best = { kind: 'chest', id: c.id }; } } }
     return best;
   }
   aiSteer(s, dt) {
     const b = s.brain, sp = SHIPS[s.type]; b.retarget -= dt;
-    if (b.retarget <= 0) { b.retarget = 1.6; b.target = this.pickTarget(s); if (!b.wp || dist2(b.wp.x, b.wp.z, s.x, s.z) < 30) b.wp = this.randomPointInStorm(0.6); }
+    if (b.retarget <= 0) { b.retarget = 1.6; const nt = this.pickTarget(s); if (!b.target || !nt || nt.id !== b.target.id) b.target = nt; if (!b.wp || dist2(b.wp.x, b.wp.z, s.x, s.z) < 30) b.wp = this.randomPointInStorm(0.6); }
     const st = this.storm, dc = dist2(s.x, s.z, st.cx, st.cz);
     let desired, tgt = null;
     if (b.target) tgt = b.target.kind === 'ship' ? this.ship(b.target.id) : this.chests.find(c => c.id === b.target.id);
@@ -2907,9 +3030,10 @@ class Sim {
       const s = this.ship(av.home); if (!s || s.sinkT >= 0) return;
       const dx = s.x - av.x, dz = s.z - av.z, d = Math.hypot(dx, dz);
       if (d < SHIPS[s.type].W + 2) { this.board(av, s); return; }
+      av.swimT = (av.swimT || 0) + dt; if (d > 90 || av.swimT > 25) { av.swimT = 0; av.dead = true; av.hp = 0; av.rt = 3; return; }
       av.x += dx / d * 3 * dt; av.z += dz / d * 3 * dt; { const p = { x: av.x, z: av.z }; pushOutOfIsles(this.islands, p, 0.6); av.x = p.x; av.z = p.z; } av.y = waveH(av.x, av.z, this.t, this.amp) - 0.3; av.mv = 1; return;
     }
-    const s = this.ship(av.ship); if (!s || s.sinkT >= 0) return;
+    const s = this.ship(av.ship); if (!s || s.sinkT >= 0) return; av.swimT = 0;
     if (av.ship !== av.home) { this.toWater(av, s, 1, 1.5); return; }
     const b = av.brain; b.think -= dt;
     if (b.think <= 0 || !b.task) { b.think = rr(0.35, 0.75); const nt = this.chooseTask(av, s); if (!b.task || nt.k !== b.task.k || nt.i !== b.task.i || nt.key !== b.task.key) { b.task = nt; if (av.st && nt.k !== 'helm' && nt.k !== 'sail' && nt.k !== 'cannon') av.st = ''; } else b.task.tg = nt.tg; }
@@ -2983,21 +3107,30 @@ class Sim {
     s.water = Math.min(1, s.water + holes * 0.013 * sp.inflow * dt);
     if (s.water >= 1) this.sink(s);
   }
-  circles(s) { const sp = SHIPS[s.type], out = []; for (const f of [-0.33, 0, 0.3]) { const [x, z] = toWorldXZ(s, 0, f * sp.L); out.push({ x, z, r: f > 0.2 ? sp.W * 0.38 : sp.W * 0.5 }); } return out; }
+  circles(s) { // overlapping circles along the keel, each as wide as the hull there, so there are no gaps to slip through
+    const sp = SHIPS[s.type], n = Math.max(4, Math.ceil(sp.L / (sp.W * 0.55))), out = [];
+    for (let i = 0; i < n; i++) { const lz = lerp(-0.44, 0.42, i / (n - 1)) * sp.L, [x, z] = toWorldXZ(s, 0, lz); out.push({ x, z, r: hwAt(sp, lz) * 0.98 + 0.2 }); }
+    return out;
+  }
   collide(dt) {
     const live = this.ships.filter(s => s.sinkT < 0);
     for (const s of live) {
       let hit = false;
       for (const c of this.circles(s)) { const p = { x: c.x, z: c.z }; if (pushOutOfIsles(this.islands, p, c.r)) { s.x += p.x - c.x; s.z += p.z - c.z; hit = true; } }
+      for (const w of this.islands.wrecks || []) { if (dist2(w.x, w.z, s.x, s.z) > SHIPS[s.type].L) continue; // wrecks are solid too
+        for (const c of this.circles(s)) { const dx = c.x - w.x, dz = c.z - w.z, d = Math.hypot(dx, dz) || 0.01, m = c.r + 4.5 * w.s; if (d < m) { s.x += dx / d * (m - d); s.z += dz / d * (m - d); hit = true; } } }
       if (hit) { if (s.spd > 4 && s.ramCd <= 0) { s.ramCd = 1.5; this.addBreach(s, Math.floor(this.rnd() * s.br.length), 1); this.ev({ k: 'crash', s: s.id, p: [r2(s.x), 0, r2(s.z)] }); if (!s.lastHit || this.t - s.lastHit.t > 30) s.lastHit = { crew: -2, t: this.t, kind: 'rocks' }; } s.spd *= 0.5; }
-      const dc = Math.hypot(s.x, s.z); if (dc > 620) { s.x *= 620 / dc; s.z *= 620 / dc; }
+      const dc = Math.hypot(s.x, s.z), lim = ARENA + 120; if (dc > lim) { s.x *= lim / dc; s.z *= lim / dc; } // the edge of the world, well outside the storm
     }
     for (let i = 0; i < live.length; i++) for (let j = i + 1; j < live.length; j++) {
-      const a = live[i], b = live[j]; if (dist2(a.x, a.z, b.x, b.z) > 30) continue;
-      let pushed = false;
-      for (const ca of this.circles(a)) for (const cb of this.circles(b)) {
+      const a = live[i], b = live[j], sa = SHIPS[a.type], sb = SHIPS[b.type]; if (dist2(a.x, a.z, b.x, b.z) > (sa.L + sb.L) / 2 + 4) continue;
+      let pushed = false; const ma = sa.L * sa.W, mb = sb.L * sb.W, wa = mb / (ma + mb), wb = ma / (ma + mb); // the heavier hull barely moves
+      const CA = this.circles(a), CB = this.circles(b);
+      for (let it = 0; it < 2; it++) for (const ca of CA) for (const cb of CB) {
         const d = dist2(ca.x, ca.z, cb.x, cb.z) || 0.01, m = ca.r + cb.r;
-        if (d < m) { const nx = (ca.x - cb.x) / d, nz = (ca.z - cb.z) / d, p = (m - d) / 2; a.x += nx * p; a.z += nz * p; b.x -= nx * p; b.z -= nz * p; pushed = true; }
+        if (d < m) { const nx = (ca.x - cb.x) / d, nz = (ca.z - cb.z) / d, p = m - d; a.x += nx * p * wa; a.z += nz * p * wa; b.x -= nx * p * wb; b.z -= nz * p * wb; ca.x += nx * p * wa; ca.z += nz * p * wa; cb.x -= nx * p * wb; cb.z -= nz * p * wb; pushed = true;
+          // glancing blows also twist the hulls
+          a.yawRate = (a.yawRate || 0) + (nx * Math.cos(a.yaw) - nz * Math.sin(a.yaw)) * 0.002 * p; b.yawRate = (b.yawRate || 0) - (nx * Math.cos(b.yaw) - nz * Math.sin(b.yaw)) * 0.002 * p; }
       }
       if (pushed) {
         const rel = Math.hypot(Math.sin(a.yaw) * a.spd - Math.sin(b.yaw) * b.spd, Math.cos(a.yaw) * a.spd - Math.cos(b.yaw) * b.spd);
@@ -3648,6 +3781,7 @@ function renderWorld(W, dt, T) {
   scene.fog.density = wx.density; renderer.setClearColor(scene.fog.color);
   const su = sky.material.uniforms; su.top.value.copy(wx.skyTop); su.horAway.value.copy(wx.horAway); su.horSun.value.copy(wx.horSun); su.night.value = wx.night; su.flash.value = skyFlash * 0.6; su.clouds.value = wx.clouds; su.uTime.value = T;
   stars.material.opacity = Math.max(0, wx.night - 0.3) * 1.2;
+  clouds.g.position.set(camera.position.x, 0, camera.position.z); { const lit = 0.55 + 0.5 * wx.light, col = _cloudCol.setRGB(lit, lit * 0.97, lit * 0.95).lerp(wx.horSun, 0.25 + 0.35 * (wx.ember || 0)).lerp(_nightSky, wx.night * 0.6); for (const m of clouds.mats) { m.color.copy(col); m.opacity = 0.55 + 0.4 * Math.min(1, wx.clouds + 0.3); } }
   hemi.intensity = 0.35 + 0.55 * wx.light + skyFlash * 1.6; hemi.color.setHex(0x87ceeb).lerp(_nightSky, wx.night); hemi.groundColor.setHex(0x112244);
   sun.intensity = 1.8 * wx.light * (1 + 0.25 * (wx.ember || 0)); sun.color.setHex(0xffcc77).lerp(_emberSun, (wx.ember || 0) * 0.8).lerp(_moonCol, wx.night * (1 - (wx.ember || 0) * 0.7));
   const ou = oceanUniforms; ou.uTime.value = T; ou.uAmp.value = wx.amp; ou.uDeep.value.copy(wx.deep); ou.uShallow.value.copy(wx.shallow); ou.uSSS.value.copy(wx.sss); ou.uLight.value = 0.55 + 0.45 * wx.light + skyFlash * 0.5; ou.uNight.value = wx.night;
@@ -3736,7 +3870,8 @@ function renderWorld(W, dt, T) {
     if (!pv || pv.key !== key) { if (pv) disposeObj(pv.root); const ci = crewInfo(a.crew); pv = buildPirate(a.look, ci ? ci.color : (a.crew < 0 ? '#7be35a' : null), { name: isMe ? null : a.name }); pv.key = key; pv.lastX = a.x; pv.lastZ = a.z; V.avs.set(a.id, pv); }
     aseen.add(a.id);
     const fp = isMe && isFP();
-    pv.root.visible = !a.dead && !a.out && !fp;
+    { const svp = a.ship >= 0 ? V.ships.get(a.ship) : null, px = svp ? svp.data.x : a.x, pz = svp ? svp.data.z : a.z, dc2 = (px - camP.x) ** 2 + (pz - camP.z) ** 2; // far crews are specks: skip them, and only nearby pirates cast shadows
+      pv.root.visible = !a.dead && !a.out && !fp && dc2 < 170 * 170; const sh = dc2 < 45 * 45; if (pv.shadowOn !== sh) { pv.shadowOn = sh; pv.root.traverse(o => { if (o.isMesh) o.castShadow = sh; }); } }
     if (!pv.root.visible) { if (pv.root.parent && pv.root.parent !== scene) { pv.root.parent.remove(pv.root); } continue; }
     const sv = a.ship >= 0 ? V.ships.get(a.ship) : null;
     const parent = sv ? sv.group : scene;
@@ -3845,7 +3980,7 @@ function renderWorld(W, dt, T) {
   { const cp = camera.position, embers = wx.night > 0.6 || (myShip(W) && myShip(W).fires.length > 0), wxd = Math.sin(W.wind), wzd = Math.cos(W.wind);
     for (let i = 0; i < (embers ? 2 : 1); i++) if (R() < 0.6) { const a = R() * TAU, d = rr(2, 14); FX.mote(cp.x + Math.cos(a) * d, Math.max(cp.y - rr(0, 3), waveH(cp.x, cp.z, T, wx.amp) + 0.6), cp.z + Math.sin(a) * d, embers, wxd, wzd); } }
 }
-const _mt = new THREE.Matrix4(), _e3 = new THREE.Vector3(), _nightSky = new THREE.Color(0x2a3c66), _moonCol = new THREE.Color(0x8fa8ff), _emberSun = new THREE.Color(0xff6a2a);
+const _mt = new THREE.Matrix4(), _e3 = new THREE.Vector3(), _nightSky = new THREE.Color(0x2a3c66), _moonCol = new THREE.Color(0x8fa8ff), _emberSun = new THREE.Color(0xff6a2a), _cloudCol = new THREE.Color();
 function stationFacing(st, fallback) {
   if (st.startsWith('cannon')) return (st[6] === 'L' ? Math.PI / 2 : -Math.PI / 2) + ME.aimY;
   if (st === 'harpoon') return ME.aimY;
@@ -4118,7 +4253,7 @@ function onKeyDown(e) {
 }
 const curW = () => Math.max(0, WEAPONS.findIndex(w => w.key === ME.weapon));
 function selectWeapon(i) {
-  if (i === curW() || ME.dead || ME.out) return; ME.weapon = WEAPONS[i].key; ME.charging = 0; ME.swapT = 0.35; sendAct({ t: 'weapon', w: i });
+  G.wShowAt = performance.now(); if (i === curW() || ME.dead || ME.out) return; ME.weapon = WEAPONS[i].key; ME.charging = 0; ME.swapT = 0.35; sendAct({ t: 'weapon', w: i });
   tone(null, { vol: 0.12, dur: 0.12, type: 'triangle', f0: 900, f1: 700 }); noiseHit(null, { vol: 0.12, dur: 0.08, type: 'bandpass', f0: 2600, f1: 1800, q: 2 });
 }
 addEventListener('wheel', e => { if (G.mode !== 'game' || ME.st || ME.dead || !(locked || G.noLock)) return; selectWeapon((curW() + (e.deltaY > 0 ? 1 : WEAPONS.length - 1)) % WEAPONS.length); }, { passive: true });
@@ -4209,6 +4344,11 @@ function updateController(W, dt) {
     const surf = waveH(ME.x, ME.z, W.t, V.wx ? V.wx.amp : 1) - 0.3; ME.diveY = lerp(ME.diveY || 0, KEYS.KeyC ? 2.8 : 0, Math.min(1, dt * 3)); ME.y = surf - ME.diveY;
   }
   else { ME.vy -= 14 * dt; ME.jumpY = Math.max(0, ME.jumpY + ME.vy * dt); if (ME.jumpY === 0) ME.vy = 0; ME.y = (s ? localFloor(s.type, ME.lv, ME.stair, ME.z) : DECK_Y) + ME.jumpY; }
+  if (ME.stair < 0 && !ME.st) for (const o of W.avatars) { // other pirates are solid: slide around them
+    if (o.uid === G.uid || o.dead || o.out || o.ship !== ME.ship || (ME.ship >= 0 && o.lv !== ME.lv)) continue;
+    const dx = ME.x - o.x, dz = ME.z - o.z, d = Math.hypot(dx, dz); if (d >= 0.62 || d < 1e-4) continue;
+    if (s) walkMe(s, ME.x + dx / d * (0.62 - d), ME.z + dz / d * (0.62 - d)); else { ME.x += dx / d * (0.62 - d); ME.z += dz / d * (0.62 - d); }
+  }
   if (s && ME.st) { const st = layout(s.type).st[ME.st]; if (!st || st.lv !== ME.lv || dist2(st.x, st.z, ME.x, ME.z) > 2.6) ME.st = ''; }
   if (!s && ME.st) ME.st = '';
 }
@@ -4490,21 +4630,21 @@ function parchmentFace(c, S, R0) {
   c.fillStyle = g; c.beginPath(); c.arc(S / 2, S / 2, R0, 0, TAU); c.fill();
 }
 function drawRadar(W) {
-  const c = radarCtx, S = 392, R1 = S / 2 - 4, R0 = R1 - 26, st = W.storm, me = homeShip(W), meS = myShip(W);
+  const c = radarCtx, S = 392, R1 = S / 2 - 4, R0 = R1 - 16, st = W.storm, me = homeShip(W), meS = myShip(W);
   const full = Math.max(150, (st.r || 0) * 1.22), span = Math.min(full, 560), local = full > 560 && (me || meS), fx0 = me || meS, cx = local ? fx0.x : st.r > 30 ? st.cx : (me ? me.x : 0), cz = local ? fx0.z : st.r > 30 ? st.cz : (me ? me.z : 0), k = (R0 - 6) / span;
   const P = (x, z) => [S / 2 + (x - cx) * k, S / 2 + (z - cz) * k];
   c.clearRect(0, 0, S, S);
   c.save(); c.beginPath(); c.arc(S / 2, S / 2, R0, 0, TAU); c.clip();
-  parchmentFace(c, S, R0);
+  { const g = c.createRadialGradient(S / 2, S / 2, R0 * 0.1, S / 2, S / 2, R0); g.addColorStop(0, 'rgba(18,40,52,.82)'); g.addColorStop(1, 'rgba(8,16,22,.86)'); c.fillStyle = g; c.beginPath(); c.arc(S / 2, S / 2, R0, 0, TAU); c.fill(); }
   // storm outside: ink wash; inside: faded sea
-  c.fillStyle = 'rgba(70,40,30,.35)'; c.fillRect(0, 0, S, S);
+  c.fillStyle = 'rgba(120,30,24,.28)'; c.fillRect(0, 0, S, S);
   const [sx, sz] = P(st.cx, st.cz), sr = Math.max(0, st.r * k);
-  c.fillStyle = 'rgba(120,170,175,.55)'; c.beginPath(); c.arc(sx, sz, sr, 0, TAU); c.fill();
-  c.strokeStyle = 'rgba(140,25,15,.9)'; c.lineWidth = 3; c.setLineDash([10, 6]); c.beginPath(); c.arc(sx, sz, sr, 0, TAU); c.stroke(); c.setLineDash([]);
+  c.fillStyle = 'rgba(40,120,130,.32)'; c.beginPath(); c.arc(sx, sz, sr, 0, TAU); c.fill();
+  c.strokeStyle = 'rgba(255,110,80,.85)'; c.lineWidth = 2.5; c.setLineDash([10, 6]); c.beginPath(); c.arc(sx, sz, sr, 0, TAU); c.stroke(); c.setLineDash([]);
   // chart grid
-  c.strokeStyle = 'rgba(80,50,20,.18)'; c.lineWidth = 1; for (let i = -6; i <= 6; i++) { c.beginPath(); c.moveTo(S / 2 + i * 34, 0); c.lineTo(S / 2 + i * 34, S); c.stroke(); c.beginPath(); c.moveTo(0, S / 2 + i * 34); c.lineTo(S, S / 2 + i * 34); c.stroke(); }
+  c.strokeStyle = 'rgba(233,196,90,.07)'; c.lineWidth = 1; for (let i = -6; i <= 6; i++) { c.beginPath(); c.moveTo(S / 2 + i * 34, 0); c.lineTo(S / 2 + i * 34, S); c.stroke(); c.beginPath(); c.moveTo(0, S / 2 + i * 34); c.lineTo(S, S / 2 + i * 34); c.stroke(); }
   for (const i of V.islandData || []) {
-    const [x, z] = P(i.x, i.z); c.fillStyle = i.rock ? '#7d6a52' : '#b48a4c'; c.strokeStyle = '#4a2e14'; c.lineWidth = 1.5; c.beginPath();
+    const [x, z] = P(i.x, i.z); c.fillStyle = i.rock ? 'rgba(150,140,120,.75)' : 'rgba(205,184,130,.82)'; c.strokeStyle = 'rgba(255,240,200,.35)'; c.lineWidth = 1; c.beginPath();
     for (let a = 0; a <= 32; a++) { const ang = a / 32 * TAU, r = isleRadius(i, ang) * k; const px = x + Math.cos(ang) * Math.max(2, r), pz = z + Math.sin(ang) * Math.max(2, r); a ? c.lineTo(px, pz) : c.moveTo(px, pz); }
     c.fill(); c.stroke();
   }
@@ -4522,9 +4662,34 @@ function drawRadar(W) {
   if (!meS && !ME.dead && !ME.out && myAvatar(W)) { const [x, z] = P(ME.x, ME.z); c.fillStyle = '#fff6d0'; c.strokeStyle = '#2b1a0c'; c.lineWidth = 2; c.beginPath(); c.arc(x, z, 5, 0, TAU); c.fill(); c.stroke(); }
   c.restore();
   // bezel with N marker and degree ticks
-  brassBezel(c, S, R0, R1);
-  c.strokeStyle = '#3a2804'; c.lineWidth = 2; for (let i = 0; i < 36; i++) { const a = i / 36 * TAU, r0 = R0 + 3, r1 = R0 + (i % 9 ? 7 : 12); c.beginPath(); c.moveTo(S / 2 + Math.sin(a) * r0, S / 2 - Math.cos(a) * r0); c.lineTo(S / 2 + Math.sin(a) * r1, S / 2 - Math.cos(a) * r1); c.stroke(); }
-  c.fillStyle = '#7a1f12'; c.font = '900 22px Cinzel, Georgia'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('N', S / 2, S / 2 - R1 + 14);
+  c.strokeStyle = 'rgba(233,196,90,.55)'; c.lineWidth = 2; c.beginPath(); c.arc(S / 2, S / 2, R0 + 1, 0, TAU); c.stroke(); c.strokeStyle = 'rgba(233,196,90,.18)'; c.lineWidth = 1; c.beginPath(); c.arc(S / 2, S / 2, R0 + 9, 0, TAU); c.stroke();
+  c.strokeStyle = 'rgba(233,196,90,.45)'; c.lineWidth = 1.5; for (let i = 0; i < 36; i += 3) { const a = i / 36 * TAU, r0 = R0 + 3, r1 = R0 + (i % 9 ? 7 : 12); c.beginPath(); c.moveTo(S / 2 + Math.sin(a) * r0, S / 2 - Math.cos(a) * r0); c.lineTo(S / 2 + Math.sin(a) * r1, S / 2 - Math.cos(a) * r1); c.stroke(); }
+  c.fillStyle = '#f3d27a'; c.font = '700 20px Cinzel, Georgia'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('N', S / 2, S / 2 - R1 + 14);
+}
+const headCtx = document.getElementById('heading').getContext('2d');
+function drawHeading(W) { // a slim compass tape: cardinal points, your ship's bow, the wind and the storm's eye
+  const c = headCtx, Wd = 1040, H = 96, C = Wd / 2, K = Wd / 2.4; c.clearRect(0, 0, Wd, H);
+  camera.getWorldDirection(_cd); const hc = Math.atan2(_cd.x, _cd.z), X = h => C + angDiff(h, hc) * K;
+  const fade = c.createLinearGradient(0, 0, Wd, 0); fade.addColorStop(0, 'rgba(233,196,90,0)'); fade.addColorStop(0.2, 'rgba(233,196,90,.5)'); fade.addColorStop(0.8, 'rgba(233,196,90,.5)'); fade.addColorStop(1, 'rgba(233,196,90,0)');
+  c.fillStyle = fade; c.fillRect(0, 62, Wd, 2);
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  for (let d = 0; d < 360; d += 5) {
+    const h = Math.PI - d * Math.PI / 180, x = X(h); if (x < 0 || x > Wd) continue; const a = 1 - Math.abs(x - C) / C;
+    const card = d % 90 === 0, inter = d % 45 === 0;
+    c.globalAlpha = Math.pow(a, 0.8); c.fillStyle = card ? '#fff3cf' : 'rgba(243,226,180,.85)';
+    if (card || inter) { c.font = card ? '700 26px Cinzel, Georgia' : '700 17px Cinzel, Georgia'; c.fillText(['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][d / 45], x, 36); c.fillRect(x - 1, 54, 2, 10); }
+    else if (d % 15 === 0) { c.font = '600 13px Alegreya, Georgia'; c.fillStyle = 'rgba(243,226,180,.55)'; c.fillText(String(d), x, 38); c.fillRect(x - 0.75, 57, 1.5, 7); }
+    else { c.fillStyle = 'rgba(243,226,180,.4)'; c.fillRect(x - 0.5, 59, 1, 5); }
+  }
+  c.globalAlpha = 1;
+  const mark = (h, col, shape, label) => { const x = X(h); if (x < 20 || x > Wd - 20) return; c.fillStyle = col; c.beginPath();
+    if (shape === 'tri') { c.moveTo(x, 70); c.lineTo(x + 8, 84); c.lineTo(x - 8, 84); } else if (shape === 'dia') { c.moveTo(x, 66); c.lineTo(x + 7, 75); c.lineTo(x, 84); c.lineTo(x - 7, 75); } else { c.arc(x, 76, 6, 0, TAU); }
+    c.fill(); if (label) { c.font = '700 12px Cinzel, Georgia'; c.fillText(label, x, 93); } };
+  mark(W.wind, '#7cc4ff', 'tri', 'WIND');
+  const s = homeShip(W); if (s && s.sinkT < 0) mark(s.yaw, s.color, 'dia', '');
+  const st = W.storm, ref = s || (ME.ship < 0 ? ME : null); if (ref && st.r > 1 && dist2(ref.x, ref.z, st.cx, st.cz) > st.r * 0.7) mark(Math.atan2(st.cx - ref.x, st.cz - ref.z), '#ff8a6a', 'dot', 'EYE');
+  c.fillStyle = '#f3d27a'; c.beginPath(); c.moveTo(C, 66); c.lineTo(C + 6, 58); c.lineTo(C - 6, 58); c.fill(); // lubber mark
+  const bear = ((Math.round((Math.PI - hc) * 180 / Math.PI) % 360) + 360) % 360; c.font = '700 14px Cinzel, Georgia'; c.fillStyle = 'rgba(255,243,207,.9)'; c.fillText(String(bear).padStart(3, '0') + '°', C, 10);
 }
 function drawCompass(W) {
   const c = compassCtx, S = 340, R1 = S / 2 - 4, R0 = R1 - 24, s = homeShip(W), C = S / 2;
@@ -4662,14 +4827,15 @@ function updateHud(W, dt) {
   $('emblem-ring').hidden = !(prog > 0); $('emblem-arc').setAttribute('stroke-dashoffset', 50.3 * (1 - clamp(prog, 0, 1)));
   const ah = W.over ? '' : actionHint(W), AE = $('action'); if (ah) { if (AE.innerHTML !== ah) AE.innerHTML = ah; AE.hidden = false; } else AE.hidden = true;
   // collapsible legend: open for the first 10 s of a match, then tucks into a small tab (L toggles)
-  if (G.legendOpen && !G.legendPinned && performance.now() - G.legendAt > 10000) G.legendOpen = false;
+  if (G.legendOpen && !G.legendPinned && performance.now() - G.legendAt > 8000) G.legendOpen = false;
   $('helpbar').hidden = !G.legendOpen; $('legend-tab').hidden = G.legendOpen;
   $('lock-hint').hidden = locked || G.noLock || ME.dead || ME.out || !!W.over;
   $('cross').hidden = !(locked || G.noLock) || camMode() === 'chase' || !!W.over;
   if (hudT > 0) return; hudT = 0.1;
-  drawRadar(W); drawCompass(W);
-  { const o = W.over ? { step: '', sub: '' } : captainsOrders(W), os = $('ord-step'); $('orders').hidden = !!W.over || !$('death').hidden;
-    if (os.innerHTML !== o.step) os.innerHTML = o.step; os.classList.toggle('urgent', !!o.urgent); if ($('ord-sub').innerHTML !== o.sub) $('ord-sub').innerHTML = o.sub; }
+  drawRadar(W); drawHeading(W);
+  { const o = W.over ? { step: '', sub: '' } : captainsOrders(W), os = $('ord-step'), now = performance.now(); $('orders').hidden = !!W.over || !$('death').hidden;
+    if (os.innerHTML !== o.step) { os.innerHTML = o.step; G.ordAt = now; } os.classList.toggle('urgent', !!o.urgent); if ($('ord-sub').innerHTML !== o.sub) $('ord-sub').innerHTML = o.sub;
+    $('orders').classList.toggle('fade', !o.urgent && now - (G.ordAt || 0) > 7000); }
   const st = W.storm, outside = hs && dist2(hs.x, hs.z, st.cx, st.cz) > st.r || (!hs && ME.ship < 0 && dist2(ME.x, ME.z, st.cx, st.cz) > st.r);
   $('storm-t').textContent = starting ? 'Storm ring forming…' : st.left > 0 ? 'Storm closes in ' + fmtTime(st.left) : 'The storm has closed!';
   $('storm-sub').innerHTML = outside ? '<span style="color:#7a1206">⚠ Outside the ring!</span>' : st.shrinking ? 'The ring is shrinking!' : st.next > 0 && st.r > 0 ? 'Ring shrinks in ' + fmtTime(st.next) : '';
@@ -4681,11 +4847,11 @@ function updateHud(W, dt) {
   $('status').style.opacity = s ? 1 : 0.55;
   if (s) {
     $('ship-name').textContent = s.name; $('ship-name').style.color = s.color; $('ship-crew').textContent = SHIPS[s.type].name;
-    const wp = Math.round(s.water * 100); $('water-fill').style.height = wp + '%'; $('water-pct').textContent = wp + '%'; $('water-fill').classList.toggle('danger', wp > 65);
+    const wp = Math.round(s.water * 100); $('water-fill').style.width = wp + '%'; $('water-pct').textContent = wp + '%'; $('water-fill').classList.toggle('danger', wp > 65);
     const lv = s.br.filter(l => l > 0);
-    $('k-breach').innerHTML = lv.length ? lv.map(l => `<i class="pip l${l}"></i>`).join('') : '<em>HULL SOUND</em>';
+    $('k-breach').innerHTML = lv.length ? `<span class="pips">${lv.map(l => `<i class="pip l${l}"></i>`).join('')}</span> <em>${lv.length} breach${lv.length > 1 ? 'es' : ''}</em>` : '<em>Hull sound</em>';
     $('k-sail').textContent = Math.round(s.sail * 100) + '%'; $('b-sail').style.width = Math.round(s.sail * 100) + '%';
-    const an = $('k-anchor'); an.textContent = s.anc ? (s.hoist > 0 ? `HOISTING ${Math.round(s.hoist * 100)}%` : 'DROPPED') : 'RAISED'; an.className = 'state ' + (s.anc ? 'down' : 'up');
+    const an = $('k-anchor'); an.textContent = s.anc ? (s.hoist > 0 ? `ANCHOR ${Math.round(s.hoist * 100)}%` : 'ANCHOR DOWN') : ''; an.className = 'state ' + (s.anc ? 'down' : 'up');
     $('k-rudder').style.left = (50 + s.rudder * 45) + '%';
     $('k-speed').textContent = Math.round(s.spd * 1.94) + ' kn';
     const eff = sailEfficiency(s, W.wind), best = bestSailAng(s, W.wind);
@@ -4694,7 +4860,7 @@ function updateHud(W, dt) {
     $('ammo').innerHTML = AMMO.map((a, i) => `<div class="ammo ${i === ME.ammoSel ? 'on' : ''} ${s.ammo[i] > 0 ? '' : 'empty'}"><i style="background:${a.color}"></i><em>${s.skel ? '∞' : s.ammo[i]}</em>${i + 1} · ${a.name.replace(' Ball', '').replace('Cannonball', 'Shot')}</div>`).join('') + (key ? `<div class="ammo reload">${rl > 0.05 ? 'RELOAD<em>' + rl.toFixed(1) + 's</em>' : '<em style="color:#9ad37a">READY</em>'}</div>` : '');
   }
   $('k-hp').textContent = Math.max(0, Math.ceil(ME.hp)); $('b-hp').style.width = clamp(ME.hp, 0, 100) + '%';
-  { const me = myAvatar(W), now = performance.now() / 1000, cw = curW(), show = me && !ME.dead && !ME.out && !(ME.st && ME.st.startsWith('cannon')); $('weapons').hidden = !show;
+  { const me = myAvatar(W), now = performance.now() / 1000, cw = curW(), show = me && !ME.dead && !ME.out && !(ME.st && ME.st.startsWith('cannon')); $('weapons').hidden = !show; $('weapons').classList.toggle('compact', performance.now() - (G.wShowAt || 0) > 1800); $('ammo').hidden = !(ME.st && ME.st.startsWith('cannon'));
     if (show) $('weapons').innerHTML = WEAPONS.map((w0, i) => { const cnt = w0.jar ? (w0.key === 'firebomb' ? me.fb : me.bm) : null, cd = w0.gun && i === cw ? clamp(((ME.gunT || 0) - now) / w0.cd, 0, 1) : 0;
       return `<div class="wslot ${i === cw ? 'on' : ''} ${cnt === 0 ? 'empty' : ''}"><b>${i + 1}</b>${WICON[w0.key]}${w0.short}${cnt != null ? ` <em>×${cnt}</em>` : ''}${cd > 0 ? `<i><u style="width:${(1 - cd) * 100}%"></u></i>` : ''}</div>`; }).join(''); }
   // single legend bar
@@ -4706,7 +4872,7 @@ function updateHud(W, dt) {
   else if (ME.st === 'wheel' || ME.st === 'sail' || ME.st === 'harpoon') help = legend(ME.st);
   else if (ME.st && ME.st.startsWith('cannon')) help = legend('cannon');
   else help = legend('deck');
-  help += '<span style="opacity:.7"><kbd>L</kbd>hide</span>';
+
   if ($('helpbar').innerHTML !== help) $('helpbar').innerHTML = help;
   const sp = $('spectate');
   if (ME.out && !W.over) { sp.hidden = false; sp.innerHTML = `Spectating <b>${esc(G.spectateName || '')}</b> · your crew's score still counts`; }
