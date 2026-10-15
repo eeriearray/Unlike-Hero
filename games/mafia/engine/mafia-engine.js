@@ -139,6 +139,26 @@
     return String(s == null ? '' : s).replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
   }
 
+  /** The narrator's spoken form of a line: no emoji, no "(bot)" tags, dashes become pauses.
+   *  Shared by the browser and the server so they agree on exactly which lines may be spoken. */
+  function speechText(text) {
+    return String(text == null ? '' : text)
+      .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\uFE0F\u200D]/gu, '')
+      .replace(/\s*\(bot\)/gi, '')
+      .replace(/\s*[\u2014\u2013]\s*/g, ', ')
+      .replace(/\s+/g, ' ').replace(/\s+([.,!?])/g, '$1').trim().slice(0, 320);
+  }
+
+  /** Every line the storyteller may read aloud right now (announcement, morning paper, verdict, ending). */
+  function narrationLines(game) {
+    var out = [];
+    if (game.announcement) out.push(game.announcement);
+    if (game.phase === 'dawn' && game.dawn) out = out.concat(game.dawn.lines);
+    if (game.phase === 'verdict' && game.verdict) out.push(game.verdict.text);
+    if (game.phase === 'gameover' && game.winner) out.push(game.winner.title + '.', game.winner.text);
+    return out.map(speechText).filter(Boolean);
+  }
+
   function sanitizeSettings(input, base) {
     var s = JSON.parse(JSON.stringify(base || DEFAULT_SETTINGS));
     if (!input || typeof input !== 'object') return s;
@@ -1320,6 +1340,7 @@
     TEAMS: TEAMS, ROLES: ROLES, ROLE_GROUPS: ROLE_GROUPS, DEFAULT_SETTINGS: DEFAULT_SETTINGS,
     TIMER_LIMITS: TIMER_LIMITS, MIN_PLAYERS: MIN_PLAYERS, MAX_PLAYERS: MAX_PLAYERS, REACTIONS: REACTIONS, AVATARS: AVATARS,
     PHASES: PHASES, describeRole: describeRole, buildRoleList: buildRoleList, sanitizeSettings: sanitizeSettings,
+    speechText: speechText, narrationLines: narrationLines, NARRATOR_PREVIEW: 'Night falls over the town... Lock your doors.',
     MafiaGame: MafiaGame
   };
 });

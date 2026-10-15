@@ -877,13 +877,13 @@
     var s2 = useState({ music: A.settings.music, sfx: A.settings.sfx, voice: V.enabled }), st = s2[0], setSt = s2[1];
     var s3 = useState(0), setVoicesTick = s3[1];
     useEffect(function () { V.onVoices(function () { setVoicesTick(function (x) { return x + 1; }); }); }, []);
-    var voices = V.voices().slice(0, 14);
+    var voices = V.voices().slice(0, 18);
     var allOff = !st.music && !st.sfx && !st.voice;
     function set(k, on) {
       A.unlock();
       if (k === 'music') A.setMusic(on);
       if (k === 'sfx') A.setSfx(on);
-      if (k === 'voice') { V.setEnabled(on); if (on) V.say('The narrator is with you.'); }
+      if (k === 'voice') { V.setEnabled(on); if (on) V.say(E.NARRATOR_PREVIEW); }
       var nx = Object.assign({}, st); nx[k] = on; setSt(nx);
     }
     useEffect(function () {
@@ -899,10 +899,12 @@
         <label className="switch"><span>Sound effects</span><input type="checkbox" checked=${st.sfx} onChange=${function (e) { set('sfx', e.target.checked); }} /></label>
         <label className="switch"><span>Narrator voice</span><input type="checkbox" disabled=${!V.available} checked=${st.voice} onChange=${function (e) { set('voice', e.target.checked); }} /></label>
         ${V.available && st.voice && voices.length ? html`<label className="field">Narrator
-          <select className="select" value=${V.voiceName} onChange=${function (e) { V.setVoice(e.target.value); V.say('Night falls over the town... Lock your doors.'); setVoicesTick(function (x) { return x + 1; }); }}>
-            ${voices.map(function (name) { return html`<option key=${name} value=${name}>${name}</option>`; })}
+          <select className="select" value=${V.voiceId} onChange=${function (e) { V.setVoice(e.target.value); V.say(E.NARRATOR_PREVIEW); setVoicesTick(function (x) { return x + 1; }); }}>
+            ${voices.map(function (v) { return html`<option key=${v.id} value=${v.id}>${v.label}</option>`; })}
           </select></label>` : null}
-        <div className="hint">${V.available ? 'Best-sounding voices are listed first. Voices with “Natural” or “Enhanced” in the name sound most human.' : 'This browser cannot read aloud.'}</div>
+        <div className="hint">${!V.available ? 'This browser cannot read aloud.'
+          : V.studioReady ? '★ Studio voices are rendered by the game server and sound the most human.'
+          : 'Best voices first. Start the hub with npm start to unlock the studio voices.'}</div>
       </div>` : null}
     </div>`;
   }
@@ -992,6 +994,7 @@
       setError(''); setBusy(true);
       var c = Net.createOnline(handlers);
       var p = cleanProfile();
+      V.useStudio(true);
       (kind === 'create' ? c.create(p) : c.join(code, p)).then(function (res) {
         setBusy(false);
         if (res.error) { setError(res.error); c.leave(); return; }
@@ -1000,6 +1003,7 @@
     }
     function goOffline(bots) {
       A.unlock(); A.play('click'); setError('');
+      V.useStudio(false);
       setConn(Net.createOffline(handlers, cleanProfile(), bots));
     }
     var send = useCallback(function (cmd) {

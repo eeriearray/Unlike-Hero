@@ -7,17 +7,40 @@
 import { Server } from 'socket.io';
 import { createRequire } from 'node:module';
 import { randomBytes, randomInt } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+import { createNarrator } from './narrator.mjs';
 
 const require = createRequire(import.meta.url);
-const { MafiaGame } = require('../engine/mafia-engine.js');
+const { MafiaGame, narrationLines, speechText, NARRATOR_PREVIEW } = require('../engine/mafia-engine.js');
+const REPO_ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 
 const LOBBY_GRACE_MS = 20_000;          // a lobby seat survives a refresh / brief drop
 const IDLE_ROOM_MS = 10 * 60_000;       // rooms with no connected humans are closed after this
 const MAX_ROOMS = 500;
 const RATE = { burst: 20, perSecond: 6 }; // per-socket command budget
 
-export default function attach({ httpServer, basePath, log = console.log }) {
+export default function attach({ httpServer, basePath, log = console.log, ttsEngine = null }) {
   const path = `${basePath}socket.io`;
+
+  // Studio narrator over plain HTTP: <basePath>tts and <basePath>tts/status.
+  const narrator = createNarrator({ root: REPO_ROOT, log, engine: ttsEngine });
+  narrator.allow([speechText(NARRATOR_PREVIEW)]);
+  narrator.load();
+  const ttsPath = `${basePath}tts`;
+  const ttsHits = new Map(); // ip -> [windowStart, count]
+  const previous = httpServer.listeners('request').slice();
+  httpServer.removeAllListeners('request');
+  httpServer.on('request', (req, res) => {
+    const url = new URL(req.url, 'http://x');
+    if (url.pathname !== ttsPath && url.pathname !== `${ttsPath}/status`) { for (const l of previous) l.call(httpServer, req, res); return; }
+    const ip = req.socket.remoteAddress || '';
+    const now = Date.now(), hit = ttsHits.get(ip) || [now, 0];
+    if (now - hit[0] > 60_000) { hit[0] = now; hit[1] = 0; }
+    if (++hit[1] > 240) { res.writeHead(429).end(); return; }
+    ttsHits.set(ip, hit);
+    if (ttsHits.size > 5000) ttsHits.clear();
+    narrator.handle(req, res, url).catch(() => { if (!res.headersSent) res.writeHead(500).end(); });
+  });
   const io = new Server(httpServer, {
     path,
     serveClient: true,           // /games/mafia/socket.io/socket.io.min.js
@@ -64,6 +87,7 @@ export default function attach({ httpServer, basePath, log = console.log }) {
     room.syncQueued = true;
     setImmediate(() => {
       room.syncQueued = false;
+      narrator.allow(narrationLines(room.game)); // pre-render this phase's story before anyone asks
       for (const [id, s] of room.sockets) s.emit('state', room.game.viewFor(id));
     });
   }
