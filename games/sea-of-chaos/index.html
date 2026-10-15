@@ -497,7 +497,7 @@ kbd{display:inline-block;min-width:22px;padding:0 6px;border-radius:3px;font:700
         <div><kbd>F</kbd> use a station / leave · hold to repair, bail, hoist anchor · <kbd>G</kbd> powder keg · <kbd>Click</kbd> attack, fire, throw</div>
         <div><kbd>Tab</kbd> score · <kbd>M</kbd> music · <kbd>H</kbd> this help · <kbd>L</kbd> controls bar · <kbd>Esc</kbd> free the mouse</div>
       </div>
-      <div class="credits" style="grid-column:1/-1;font-size:12px;color:var(--ink-soft);margin-top:6px">3D models (CC-BY-4.0): "Sea Of Thieves Sloop" by KarmaDiya, "Pirate Rifle – Stylized Rifle" by KinanArts and "Stylized Ice Shark" by Kieran3D, all from Sketchfab.</div>
+      <div class="credits" style="grid-column:1/-1;font-size:12px;color:var(--ink-soft);margin-top:6px">3D models (CC-BY-4.0, from Sketchfab): "Sea Of Thieves Sloop" by KarmaDiya, "galleon model" by nedds (also the basis of the brigantine), "Pirate Rifle – Stylized Rifle" by KinanArts, "Flintlock Pistol" by Arnaud Bellour and "Stylized Ice Shark" by Kieran3D.</div>
       <div><h3>Stations</h3><ul><li><b>Wheel</b>: <kbd>A</kbd>/<kbd>D</kbd> steer.</li><li><b>Sails</b>: <kbd>W</kbd>/<kbd>S</kbd> raise or lower, <kbd>A</kbd>/<kbd>D</kbd> angle them to the wind.</li><li><b>Anchor</b>: <kbd>F</kbd> drops it for a handbrake turn; hold <kbd>F</kbd> to hoist it back.</li><li><b>Cannon / Harpoon</b>: aim with the mouse, <kbd>Click</kbd> to fire. Hold <kbd>Click</kbd> on the harpoon to reel in.</li></ul></div>
       <div><h3>Cursed arsenal</h3><ul><li><b style="color:#7be35a">Grog ball</b>: enemy crew goes dizzy.</li><li><b style="color:#c48cff">Rigging ball</b>: drops their sails.</li><li><b style="color:#6fb6ff">Anchor ball</b>: drops their anchor.</li><li><b>Powder kegs</b>: grab one from the hold crate, carry it aboard an enemy, click to light. Floating kegs are mines.</li><li><b>Harpoon</b>: snag ships to board, reel in treasure, or yank pirates off their deck.</li></ul></div>
     </div>
@@ -568,6 +568,17 @@ const SLOOP_MODEL = !!(window.SOC_MODELS && window.SOC_MODELS.sloop);
 const SLOOP_FIT = { xc: -0.285, zc: 2.58, k: 22 / 16.16, yoff: -0.9 }; // model (scaled to 22 m overall) -> game
 const SLOOP_W = {"main": [2.87, 2.87, 2.87, 2.87, 2.87, 2.87, 2.87, 2.88, 2.88, 2.88, 2.93, 2.93, 2.93, 2.92, 2.91, 2.89, 2.89, 2.89, 2.78, 2.73, 2.7, 2.78, 2.78, 2.78, 2.71, 2.71, 2.71, 2.71, 2.71, 2.71, 2.71, 2.71, 2.77, 2.77, 2.77, 2.58, 2.39, 2.2, 2.2, 2.2, 1.29, 1.29, 1.29, 0.59, 0.59], "qd": [2.9, 2.9, 2.9, 2.9, 2.9, 2.9, 2.9, 2.9, 2.9, 2.87, 2.88, 2.88, 2.88, 2.87, 2.86, 2.85, 2.85, 2.85, 2.84, 2.82, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77], "cabin": [1.49, 2.25, 2.25, 2.59, 2.59, 2.72, 2.87, 2.88, 2.88, 2.88, 2.82, 2.82, 2.82, 2.81, 2.8, 2.79, 2.79, 2.79, 2.78, 2.72, 2.69, 2.66, 2.66, 2.63, 2.6, 2.6, 2.6, 2.59, 2.66, 2.66, 2.66, 2.22, 2.64, 2.64, 2.64, 2.46, 2.28, 2.1, 2.1, 2.1, 1.21, 1.21, 1.21, 0.52, 0.52], "hold": [0.79, 0.79, 1.51, 1.86, 1.86, 2.33, 2.41, 2.43, 2.43, 2.43, 2.42, 2.42, 2.41, 0.69, 1.29, 2.38, 2.38, 2.38, 2.33, 2.33, 2.28, 2.24, 2.24, 2.17, 2.19, 2.19, 2.19, 2.12, 2.12, 2.08, 1.97, 1.97, 1.96, 1.96, 1.96, 1.46, 1.46, 1.46, 0.85, 0.85, 0.85, 0.39, 0.39, 0.2, 0.2]};
 if (SLOOP_MODEL) Object.assign(SHIPS.sloop, { levels: [2.12, 3.73, 1.26, -0.53], keel: -1.66, mastH: 21.6, blurb: 'Fast and nimble. A raised quarterdeck with the wheel and capstan, a stern cabin and a hold below. Two cannons per side.' });
+// The galleon is the imported model (measured decks follow its sheer). The brigantine is the same hull scaled to
+// 34 m with the mizzen struck: a two-master that shares the galleon's look, sized between it and the sloop.
+const GAL_MODEL = !!(window.SOC_MODELS && window.SOC_MODELS.galleon);
+const GAL_FIT = { k: 46 / 274, xc: -5, yoff: 0.52 }; // model units -> galleon metres (bow +z)
+const GAL_TAB = {"main": {"y": [5.674, 5.674, 5.674, 5.674, 5.674, 5.674, 5.674, 5.674, 5.674, 5.674, 5.674, 5.674, 5.624, 5.573, 5.456, 5.489, 5.439, 5.389, 5.338, 5.305, 5.254, 5.229, 5.179, 5.061, 4.986, 4.91, 4.885, 4.851, 4.801, 4.767, 4.717, 4.616, 4.432, 4.365, 4.281, 4.213, 4.163, 4.096, 3.97, 4.012, 3.962, 3.928, 3.894, 3.878, 3.844, 3.827, 3.743, 3.894, 4.012, 3.962, 3.894, 3.894, 3.894, 3.894, 3.894, 3.962, 3.894, 3.844, 3.861, 3.894, 3.928, 4.062, 4.096, 4.129, 4.163, 4.197, 4.213, 4.171, 4.281, 4.23, 4.365, 4.398, 4.398, 4.398, 4.398, 4.398, 4.398, 4.398, 4.398, 4.398, 4.398, 4.398, 4.398, 4.398, 4.398, 4.398, 4.398, 4.398, 4.398, 4.398, 4.398, 4.398, 4.398], "w": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5.09, 5.59, 5.59, 5.59, 5.59, 5.09, 4.59, 5.09, 5.09, 5.09, 5.09, 5.59, 5.59, 5.59, 5.59, 5.09, 6.6, 6.6, 6.6, 6.6, 6.6, 6.6, 6.6, 6.6, 6.6, 6.6, 6.6, 6.6, 6.6, 6.1, 6.1, 6.1, 6.1, 6.1, 6.1, 6.1, 6.1, 6.1, 6.1, 5.59, 5.59, 5.59, 5.59, 5.59, 5.59, 5.59, 5.59, 5.59, 5.59, 6.1, 6.1, 6.1, 6.1, 5.59, 6.1, 5.59, 5.59, 5.59, 5.59, 4.59, 4.08, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, "qd": {"y": [8.394, 8.394, 8.394, 8.394, 8.394, 8.394, 8.394, 8.394, 8.394, 8.394, 8.394, 8.394, 8.394, 8.394, 8.394, 8.394, 8.327, 8.243, 8.175, 8.175, 8.05, 7.966, 7.882, 7.773, 7.689, 7.689, 7.605, 7.521, 7.437, 7.37, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286, 7.286], "w": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4.08, 4.08, 4.08, 4.59, 4.59, 4.59, 4.59, 4.59, 4.59, 4.59, 4.59, 4.59, 4.59, 4.59, 4.59, 4.59, 5.09, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, "fc": {"y": [6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.497, 6.681, 6.715, 6.748, 6.79, 6.799, 6.832, 6.866, 6.9, 6.933, 6.967, 7.0, 7.034, 7.067, 7.017, 7.017, 7.017, 7.017, 7.017, 7.017, 7.017, 7.017, 7.017, 7.017, 7.017, 7.017, 7.017, 7.017, 7.017, 7.017, 7.017, 7.017, 7.017], "w": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5.09, 5.09, 5.09, 4.59, 4.59, 4.59, 4.59, 4.59, 4.08, 4.08, 4.08, 4.08, 3.58, 3.58, 4.59, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, "hold": {"y": [2.753, 2.753, 2.753, 2.753, 2.753, 2.753, 2.753, 2.753, 2.753, 2.753, 2.753, 2.753, 2.753, 2.753, 2.753, 2.753, 2.753, 2.753, 2.753, 2.711, 2.635, 2.56, 2.484, 2.417, 2.35, 2.283, 2.249, 2.182, 2.132, 2.065, 2.014, 1.88, 1.897, 1.863, 1.813, 1.762, 1.712, 1.678, 1.645, 1.594, 1.561, 1.527, 1.511, 1.477, 1.46, 1.443, 1.343, 1.41, 1.393, 1.393, 1.376, 1.376, 1.376, 1.376, 1.393, 1.393, 1.393, 1.427, 1.443, 1.46, 1.401, 1.494, 1.527, 1.561, 1.594, 1.628, 1.662, 1.712, 1.762, 1.796, 1.846, 1.88, 1.813, 1.981, 2.031, 2.031, 2.031, 2.031, 2.031, 2.031, 2.031, 2.031, 2.031, 2.031, 2.031, 2.031, 2.031, 2.031, 2.031, 2.031, 2.031, 2.031, 2.031], "w": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5.09, 5.09, 4.59, 4.59, 4.59, 5.09, 5.59, 5.59, 5.59, 5.59, 5.09, 5.09, 5.09, 5.09, 5.09, 5.09, 5.09, 5.09, 5.09, 5.09, 5.09, 5.09, 5.09, 5.09, 5.09, 5.09, 5.09, 5.09, 5.09, 5.09, 5.59, 5.59, 5.59, 5.59, 5.59, 5.09, 5.09, 5.09, 5.09, 5.09, 4.59, 5.09, 5.09, 4.59, 4.59, 4.59, 4.08, 4.59, 4.08, 3.58, 4.08, 3.58, 3.08, 3.08, 3.08, 2.57, 1.56, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}}; // per-deck floor height and walkable half-width, every 0.5 m from z = -23
+const GAL_SCALE = { galleon: { s: 1, yoff: 0.52 }, brig: { s: 34 / 46, yoff: 0.8 } };
+const galY = (type, y) => (y - GAL_FIT.yoff) * GAL_SCALE[type].s + GAL_SCALE[type].yoff; // galleon metres -> this ship
+if (GAL_MODEL) {
+  Object.assign(SHIPS.galleon, { W: 13.0, levels: [4.0, 7.3, 6.5, 1.6], keel: -3.34, mastH: 42, blurb: 'A floating fortress. Four cannons per side along the waist, a stern castle with the captain\'s cabin, a forecastle and a deep lower deck.' });
+  Object.assign(SHIPS.brig, { W: 9.7, levels: [4.0, 7.3, 6.5, 1.6].map(y => +galY('brig', y).toFixed(2)), keel: +galY('brig', -3.34).toFixed(2), mastH: 31, blurb: 'The all-rounder. A two-masted ship with a raised stern castle and forecastle, three cannons per side and a roomy lower deck.' });
+}
 const holdLv = type => SHIPS[type].levels.length - 1;
 const gunLv = type => SHIPS[type].levels.length === 3 ? 1 : 0;
 const AMMO = [
@@ -621,7 +632,7 @@ function qdHeight(type, z) {
   if (type === 'sloop') return 0; const zq = qdStart(type);
   return z <= zq ? QD : z < zq + QD_STAIRS ? QD * (1 - (z - zq) / QD_STAIRS) : 0;
 }
-function floorY(type, lv, z) { return SHIPS[type].levels[lv] + (lv === 0 ? qdHeight(type, z) : 0); }
+function floorY(type, lv, z) { const P = PLANS[type] || plan(type); if (P.lvy) return P.lvy(lv, z); return SHIPS[type].levels[lv] + (lv === 0 ? qdHeight(type, z) : 0); }
 // ---------- deck plan: levels joined by physical stairs (no teleporting hatches) ----------
 const MAST_Z = { 1: [0.06], 2: [0.2, -0.12], 3: [0.28, 0.04, -0.22] };
 const mainMastZ = sp => plan(sp.key).mastZ ?? MAST_Z[sp.masts][sp.masts === 1 ? 0 : 1] * sp.L;
@@ -634,9 +645,22 @@ const PLANS = {};
 function plan(type) {
   if (PLANS[type]) return PLANS[type];
   const sp = SHIPS[type];
+  if ((type === 'galleon' || type === 'brig') && GAL_MODEL) {
+    const g = GAL_SCALE[type], sc = g.s, T = GAL_TAB, names = ['main', 'qd', 'fc', 'hold'];
+    const tab = (arr, z) => { const f = clamp((z / sc + 23) / 0.5, 0, arr.length - 1), i = Math.floor(f), j = Math.min(arr.length - 1, i + 1); return lerp(arr[i], arr[j], f - i); };
+    const lvz = [[-17.3, 12.5], [-15.6, -7.3], [6.9, 14.2], [-13.6, 13.4]].map(([a, b]) => [a * sc, b * sc]);
+    const cannonZ = (type === 'brig' ? [7.79, 2.67, -4.58] : [7.79, 2.67, -0.4, -4.58]).map(z => z * sc);
+    const sw = Math.max(0.95, 0.95 * sc);
+    return (PLANS[type] = { levels: sp.levels, model: 'gal', sc, outdoor: [0, 1, 2], lvz, zmin: lvz[3][0], zmax: lvz[0][1], mastZ: -4.03 * sc, cannonZ,
+      spawn: { x: 0, z: 1.6 * sc }, spawnOffs: [[2.7, -0.6], [-2.7, -0.6], [2.7, 1.4], [-2.7, 1.4], [2.7, 3.2], [-2.7, 3.2], [3.6, -2.4], [-3.6, -2.4]].map(([x, z]) => [x * sc, z * sc]),
+      lvw: (lv, z) => tab(T[names[lv]].w, z) * sc, lvy: (lv, z) => galY(type, tab(T[names[lv]].y, z)),
+      stairs: [{ x: 4.4 * sc, w: sw, z0: -7.64 * sc, z1: -6.1 * sc, top: 1, bot: 0 }, { x: -4.4 * sc, w: sw, z0: -7.64 * sc, z1: -6.1 * sc, top: 1, bot: 0 },
+        { x: 4.6 * sc, w: sw, z0: 6.9 * sc, z1: 5.35 * sc, top: 2, bot: 0 }, { x: -4.6 * sc, w: sw, z0: 6.9 * sc, z1: 5.35 * sc, top: 2, bot: 0 },
+        { x: -2.7 * sc, w: Math.max(1.15, 1.3 * sc), z0: -3.3 * sc, z1: 0.6 * sc, top: 0, bot: 3 }] });
+  }
   if (type === 'sloop' && SLOOP_MODEL) {
     const tab = [SLOOP_W.main, SLOOP_W.qd, SLOOP_W.cabin, SLOOP_W.hold], lvz = [[-1.0, 10.4], [-6.8, -1.3], [-10.0, -1.52], [-1.2, 8.4]];
-    return (PLANS[type] = { levels: sp.levels, model: true, outdoor: [0, 1], lvz, zmin: -10.0, zmax: 10.4, mastZ: 2.6, spawn: { x: 0, z: 5.75 }, spawnOffs: [[0.8, 0], [-0.8, 0], [0.8, 1.7], [-0.8, 1.7], [0.8, -1.5], [-0.8, -1.5], [0, 3.1], [1.2, -2.4]],
+    return (PLANS[type] = { levels: sp.levels, model: 'sloop', outdoor: [0, 1], lvz, zmin: -10.0, zmax: 10.4, mastZ: 2.6, spawn: { x: 0, z: 5.75 }, spawnOffs: [[0.8, 0], [-0.8, 0], [0.8, 1.7], [-0.8, 1.7], [0.8, -1.5], [-0.8, -1.5], [0, 3.1], [1.2, -2.4]],
       lvw: (lv, z) => { const t = tab[lv], f = clamp((z + 11) / 0.5, 0, t.length - 1), i = Math.floor(f), j = Math.min(t.length - 1, i + 1); return lerp(t[i], t[j], f - i); },
       stairs: [{ x: -2.2, w: 1.3, z0: -1.32, z1: 1.03, top: 1, bot: 0 }, { x: -0.57, w: 1.2, z0: -0.21, z1: -2.38, top: 0, bot: 2 }, { x: -1.98, w: 1.2, z0: -1.51, z1: 0.67, top: 2, bot: 3 }] });
   }
@@ -648,6 +672,19 @@ const LAYOUTS = {};
 function layout(type) {
   if (LAYOUTS[type]) return LAYOUTS[type];
   const sp = SHIPS[type], L = sp.L, D = dims(type), p = plan(type), hl = D.HOLD_LV, gl = D.GUN_LV;
+  if (p.model === 'gal') {
+    const sc = p.sc, st = {
+      wheel: { x: 0, z: -12.2 * sc, lv: 1, kind: 'wheel', occupy: true, label: 'Grab Wheel' },
+      sail: { x: -1.5, z: p.mastZ + 0.2, lv: 0, kind: 'sail', occupy: true, label: 'Work Sails' },
+      anchor: { x: 0, z: -1.75 * sc, lv: 0, kind: 'anchor', occupy: false, label: 'Anchor' },
+      harpoon: { x: 0, z: 13.4 * sc, lv: 2, kind: 'harpoon', occupy: true, label: 'Man Harpoon' },
+      crate: { x: 2.2 * sc, z: 7.5 * sc, lv: hl, kind: 'crate', occupy: false, label: 'Take a powder keg' }
+    };
+    p.cannonZ.forEach((z, i) => { for (const side of [1, -1]) st['cannon' + (side > 0 ? 'L' : 'R') + i] = { x: side * (p.lvw(0, z) - 0.65), z, lv: 0, kind: 'cannon', occupy: true, side, idx: i, label: 'Load Cannon' }; });
+    const slots = [], [h0, h1] = p.lvz[hl];
+    for (let i = 0; i < sp.slots; i++) { const side = i % 2 ? -1 : 1, z = lerp(h0 + 1.2, h1 - 1.6, i / (sp.slots - 1)), y = p.lvy(hl, z) + 0.55 + (i % 3) * 0.3; slots.push({ x: side * (p.lvw(hl, z) + 0.4), z, y, side }); }
+    return (LAYOUTS[type] = { st, slots, hold: { hw: p.lvw(hl, 0), z0: h0, z1: h1 } });
+  }
   if (p.model) { // stations placed where the model has them
     const st = {
       wheel: { x: 0, z: -2.07, lv: 1, kind: 'wheel', occupy: true, label: 'Grab Wheel' },
@@ -684,7 +721,19 @@ const OBSTACLES = {};
 function shipObstacles(type) {
   if (OBSTACLES[type]) return OBSTACLES[type];
   const sp = SHIPS[type], st = layout(type).st, L = sp.L, levels = sp.levels.map(() => []), hl = holdLv(type), mr = sp.masts > 1 ? 0.5 : 0.36, P0 = plan(type);
+  if (P0.model === 'gal') {
+    const sc = P0.sc, masts = [-15.61 * sc, -4.03 * sc, 11.92 * sc];
+    for (const z of masts) for (const lv of [0, 3]) levels[lv].push({ c: [0, z, 0.5 * Math.max(0.8, sc)] });
+    levels[1].push({ c: [0, masts[0], 0.45] }, { c: [st.wheel.x, st.wheel.z + 0.15, 0.5] }); levels[2].push({ c: [0, masts[2], 0.45] }, { c: [st.harpoon.x, st.harpoon.z + 0.25, 0.32] });
+    levels[0].push({ b: [-1.3 * sc, 0.2 * sc, 1.3 * sc, 5.45 * sc] }, { c: [st.anchor.x, st.anchor.z, 0.85] }); // the ship's boat and the capstan
+    for (const x of [-4.03, -2.35, 0, 2.35, 4.03]) levels[0].push({ c: [x * sc, -7.55 * sc, 0.22] }); // posts of the stern-castle arcade
+    for (const k in st) if (st[k].kind === 'cannon') levels[0].push({ c: [st[k].x - st[k].side * 0.25, st[k].z, 0.66] });
+    levels[hl].push({ b: [st.crate.x - 0.75, st.crate.z - 0.55, st.crate.x + 0.75, st.crate.z + 0.55] });
+    for (const it of furnitureFor(type)) if (it.ob) levels[it.lv].push(it.ob);
+    return (OBSTACLES[type] = levels);
+  }
   if (P0.model) {
+    for (const it of furnitureFor(type)) if (it.ob) levels[it.lv].push(it.ob);
     levels[0].push({ c: [-0.09, 2.6, 0.62] }, { c: [-0.12, 3.46, 0.3] }, { c: [st.harpoon.x, st.harpoon.z + 0.25, 0.32] });
     for (const k in st) if (st[k].kind === 'cannon') levels[0].push({ c: [st[k].x - st[k].side * 0.25, st[k].z, 0.62] });
     levels[1].push({ c: [st.wheel.x, st.wheel.z + 0.1, 0.42] }, { c: [st.anchor.x, st.anchor.z, 0.95] }, { b: [-1.44, -1.75, 3.2, -1.36] }); // the quarterdeck rail, open only at the stairs
@@ -726,15 +775,15 @@ function walk(type, P, nx, nz) {
   if (P.stair >= 0 && pl.stairs[P.stair]) {
     const S = pl.stairs[P.stair], t = stairT(S, nz), x = clamp(nx, S.x - S.w / 2 + 0.3, S.x + S.w / 2 - 0.3);
     if (t < -0.02 || t > 1.02) { P.stair = -1; P.lv = t < 0 ? S.top : S.bot; P.x = x; P.z = nz; clampLevel(type, P.lv, P); P.y = floorY(type, P.lv, P.z); }
-    else { P.x = x; P.z = nz; P.y = lerp(floorY(type, S.top, S.z0), L[S.bot], clamp(t, 0, 1)); }
+    else { P.x = x; P.z = nz; P.y = lerp(floorY(type, S.top, S.z0), floorY(type, S.bot, S.z1), clamp(t, 0, 1)); }
     return P;
   }
   for (let i = 0; i < pl.stairs.length; i++) {
     const S = pl.stairs[i]; if (S.top !== P.lv && S.bot !== P.lv) continue;
     if (!inStair(S, nx, nz, 0.3)) continue;
     const t = stairT(S, nz), t0 = stairT(S, P.z), inX = Math.abs(nx - S.x) < S.w / 2 - 0.2;
-    if (inX && S.top === P.lv && t0 <= 0.02 && t < 0.35 && t >= -0.1) { P.stair = i; P.x = clamp(nx, S.x - S.w / 2 + 0.3, S.x + S.w / 2 - 0.3); P.z = nz; P.y = lerp(floorY(type, S.top, S.z0), L[S.bot], clamp(t, 0, 1)); return P; }
-    if (inX && S.bot === P.lv && t0 >= 0.98 && t > 0.65 && t <= 1.1) { P.stair = i; P.x = clamp(nx, S.x - S.w / 2 + 0.3, S.x + S.w / 2 - 0.3); P.z = nz; P.y = lerp(floorY(type, S.top, S.z0), L[S.bot], clamp(t, 0, 1)); return P; }
+    if (inX && S.top === P.lv && t0 <= 0.02 && t < 0.35 && t >= -0.1) { P.stair = i; P.x = clamp(nx, S.x - S.w / 2 + 0.3, S.x + S.w / 2 - 0.3); P.z = nz; P.y = lerp(floorY(type, S.top, S.z0), floorY(type, S.bot, S.z1), clamp(t, 0, 1)); return P; }
+    if (inX && S.bot === P.lv && t0 >= 0.98 && t > 0.65 && t <= 1.1) { P.stair = i; P.x = clamp(nx, S.x - S.w / 2 + 0.3, S.x + S.w / 2 - 0.3); P.z = nz; P.y = lerp(floorY(type, S.top, S.z0), floorY(type, S.bot, S.z1), clamp(t, 0, 1)); return P; }
     // the hatch opening (upper deck) or the stair's underside (lower deck) is solid: slide along it
     if (!inStair(S, nx, P.z, 0.3)) { P.x = nx; } else if (!inStair(S, P.x, nz, 0.3)) { P.z = nz; }
     clampLevel(type, P.lv, P); P.y = floorY(type, P.lv, P.z); return P;
@@ -749,8 +798,45 @@ function spawnSpot(type, i) {
   for (const S of P.stairs) if ((S.top === 0 || S.bot === 0) && inStair(S, p.x, p.z, 0.6)) p.x = S.x > 0 ? S.x - S.w / 2 - 0.9 : S.x + S.w / 2 + 0.9;
   return p;
 }
+// Furniture and clutter for the model ships. Each item: kind, level, position, facing, and the footprint it blocks.
+const FURN = {};
+function furnitureFor(type) {
+  if (FURN[type]) return FURN[type];
+  const P = plan(type), out = [], add = (kind, lv, x, z, rot = 0, ob = null, extra = {}) => out.push(Object.assign({ kind, lv, x, z, rot, ob }, extra));
+  const box = (x, z, hx, hz) => ({ b: [x - hx, z - hz, x + hx, z + hz] }), cir = (x, z, r) => ({ c: [x, z, r] });
+  if (P.model === 'sloop') {
+    // the stern cabin (level 2): bunk, sea chest, bookcase, chairs at the map table, a barrel, a rug
+    add('bunk', 2, -2.15, -6.2, Math.PI / 2, box(-2.15, -6.2, 0.5, 1.05)); add('chest', 2, 2.1, -4.7, -Math.PI / 2, box(2.1, -4.7, 0.32, 0.5));
+    add('shelf', 2, 2.45, -6.9, -Math.PI / 2, box(2.45, -6.9, 0.25, 0.75)); add('chair', 2, -0.45, -7.65, Math.PI, cir(-0.45, -7.65, 0.28)); add('chair', 2, 0.55, -7.65, Math.PI, cir(0.55, -7.65, 0.28));
+    add('barrel', 2, -2.2, -3.4, 0, cir(-2.2, -3.4, 0.42)); add('rug', 2, 0.1, -5.6, 0); add('map', 2, -0.08, -8.77, 0); add('candle', 2, 0.6, -8.6, 0);
+    // the hold (level 3): hammocks, stacked crates, barrels and sacks
+    add('hammock', 3, 1.2, 2.6, 0); add('hammock', 3, -1.2, 5.4, 0);
+    add('crates', 3, -1.5, 7.4, 0.2, box(-1.5, 7.4, 0.55, 0.55)); add('barrel', 3, 1.4, 7.3, 0, cir(1.4, 7.3, 0.42)); add('sacks', 3, 0.9, 8.1, 0, cir(0.9, 8.1, 0.35));
+    // main deck: shot racks by the guns, a water butt, rope
+    for (const k of ['cannonL0', 'cannonR0', 'cannonL1', 'cannonR1']) { const st = layout(type).st[k]; add('shot', 0, st.x - st.side * 0.15, st.z - 1.05, 0, cir(st.x - st.side * 0.15, st.z - 1.05, 0.28)); }
+    add('barrel', 0, 1.9, 1.4, 0, cir(1.9, 1.4, 0.42)); add('bucket', 0, -2.4, 6.0, 0);
+  } else if (P.model === 'gal') {
+    const c = P.sc, L = (lv, x, z) => [x * c, z * c];
+    // the captain's cabin under the quarterdeck (level 0, astern of the arcade)
+    { const [x, z] = L(0, 0, -12.6); add('desk', 0, x, z, 0, box(x, z, 0.85, 0.5)); add('chair', 0, x, z - 0.95, 0, cir(x, z - 0.95, 0.28)); add('map', 0, x, z, 0); add('candle', 0, x + 0.5, z + 0.15, 0); }
+    { const [x, z] = L(0, -3.9, -14.4); add('bed', 0, x, z, Math.PI / 2, box(x, z, 0.65, 1.1)); }
+    { const [x, z] = L(0, 3.9, -14.6); add('chest', 0, x, z, -Math.PI / 2, box(x, z, 0.35, 0.55)); }
+    { const [x, z] = L(0, 4.4, -11.2); add('shelf', 0, x, z, -Math.PI / 2, box(x, z, 0.28, 0.8)); }
+    { const [x, z] = L(0, -4.2, -10.6); add('shelf', 0, x, z, Math.PI / 2, box(x, z, 0.28, 0.8)); }
+    { const [x, z] = L(0, 0, -10.2); add('rug', 0, x, z, 0); }
+    // under the forecastle: stores
+    for (const [x0, z0, k] of [[-3.6, 9.4, 'barrel'], [-3.4, 10.6, 'barrel'], [3.6, 9.6, 'crates'], [3.4, 11.0, 'sacks']]) { const [x, z] = L(0, x0, z0); add(k, 0, x, z, 0, k === 'crates' ? box(x, z, 0.55, 0.55) : cir(x, z, 0.42)); }
+    // the lower deck (level 3): hammocks, a mess table, stores
+    for (const z0 of [-10.5, -7.8, -5.1]) { const [x, z] = L(3, 3.0, z0); add('hammock', 3, x, z, 0); }
+    { const [x, z] = L(3, -0.4, -8.6); add('table', 3, x, z, 0, box(x, z, 0.55, 1.2)); add('bench', 3, x - 0.85, z, 0, box(x - 0.85, z, 0.2, 1.1)); add('bench', 3, x + 0.85, z, 0, box(x + 0.85, z, 0.2, 1.1)); add('candle', 3, x, z, 0); }
+    for (const [x0, z0, k] of [[-3.6, 5.2, 'crates'], [-3.6, 7.0, 'barrel'], [-3.4, 8.4, 'barrel'], [3.4, 10.4, 'barrel'], [-3.2, 10.6, 'sacks'], [-3.8, -11.6, 'barrel'], [-3.6, -12.8, 'barrel']]) { const [x, z] = L(3, x0, z0); add(k, 3, x, z, 0, k === 'crates' ? box(x, z, 0.55, 0.55) : cir(x, z, 0.42)); }
+    // the waist: shot racks by the guns
+    for (const k in layout(type).st) { const st = layout(type).st[k]; if (st.kind !== 'cannon') continue; add('shot', 0, st.x - st.side * 0.2, st.z - 1.15, 0, cir(st.x - st.side * 0.2, st.z - 1.15, 0.28)); }
+  }
+  return (FURN[type] = out);
+}
 function localFloor(type, lv, stair, z) {
-  if (stair >= 0) { const S = plan(type).stairs[stair]; if (S) return lerp(floorY(type, S.top, S.z0), SHIPS[type].levels[S.bot], clamp(stairT(S, z), 0, 1)); }
+  if (stair >= 0) { const S = plan(type).stairs[stair]; if (S) return lerp(floorY(type, S.top, S.z0), floorY(type, S.bot, S.z1), clamp(stairT(S, z), 0, 1)); }
   return floorY(type, lv, z);
 }
 // AI navigation: a walkability grid per deck (same rules as walk(): hull walls, obstacles, stair footprints),
@@ -814,7 +900,8 @@ function routeStep(type, P, tx, tz, tlv) {
   if (!S) return { x: tx, z: tz }; const down = S.top === P.lv;
   const dir = Math.sign(S.z1 - S.z0), entry = down ? { x: S.x, z: S.z0 - dir * 0.75 } : { x: S.x, z: S.z1 + dir * 0.75 };
   const t0 = stairT(S, P.z), lane = Math.abs(P.x - S.x) < S.w / 2 - 0.25; // lined up at the right end: commit and take the stairs
-  if (lane && (down ? t0 <= 0.02 && t0 > -0.4 : t0 >= 0.98 && t0 < 1.4)) return down ? { x: S.x, z: S.z1 + dir * 0.9 } : { x: S.x, z: S.z0 - dir * 0.9 };
+  const lenS = Math.abs(S.z1 - S.z0), win = 1.1 / lenS; // commit within about a metre of the right end, however long the stair
+  if (lane && (down ? t0 <= 0.02 && t0 > -win : t0 >= 0.98 && t0 < 1 + win)) return down ? { x: S.x, z: S.z1 + dir * 0.9 } : { x: S.x, z: S.z0 - dir * 0.9 };
   return navStep(type, P, entry.x, entry.z);
 }
 // swimmers can't pass through hulls
@@ -1997,6 +2084,7 @@ function buildShipModel(s) {
   { const anchorM = new THREE.Group(), am = matte(0x2e3236, METAL); anchorM.add(new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 1.4, 6), am)); const arms = new THREE.Mesh(new THREE.TorusGeometry(0.45, 0.07, 5, 10, Math.PI), am); arms.rotation.z = Math.PI; arms.position.y = -0.3; anchorM.add(arms);
     anchorM.position.set(3.0, DECK_Y - 0.4, 7.4); g.add(anchorM); v.anchor = anchorM;
     const chain = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(0, -10, 0)]), new THREE.LineBasicMaterial({ color: 0x222222 })); chain.position.set(3.0, DECK_Y, 7.4); chain.visible = false; g.add(chain); v.chain = chain; }
+  g.add(furnitureMeshes(s.type, skel));
   // the hold: a plank floor (the model leaves it open), the keg crate, stores
   { const hl = HOLD_LV, [z0, z1] = PL.lvz[hl], pts = []; for (let k = 0; k <= 16; k++) { const z = lerp(z0 - 0.3, z1 + 0.3, k / 16); pts.push([PL.lvw(hl, z) + 0.35, z]); }
     const shp = new THREE.Shape(); shp.moveTo(pts[0][0], -pts[0][1]); for (const [x, z] of pts) shp.lineTo(x, -z); for (let i = pts.length - 1; i >= 0; i--) shp.lineTo(-pts[i][0], -pts[i][1]);
@@ -2018,7 +2106,154 @@ function buildShipModel(s) {
   for (const m of hullG.children) { m.geometry.computeBoundingSphere(); v.occ.push(m); }
   return v;
 }
+// Furniture meshes (merged per material) for whatever furnitureFor() lays out.
+function furnitureMeshes(type, skel) {
+  const parts = new Map(), put = (mat, geo, x, y, z, rot) => { const g = geo.clone(); g.rotateY(rot); g.translate(x, y, z); const k = g.index ? g.toNonIndexed() : g; if (!k.attributes.uv) k.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(k.attributes.position.count * 2), 2)); if (!parts.has(mat)) parts.set(mat, []); parts.get(mat).push(k); };
+  const dark = woodM(skel ? 0x5a5e56 : 0x6a4528), mid = woodM(skel ? 0x7d8274 : 0xa8703f), light = woodM(skel ? 0x8a9488 : 0xd8b07a), iron = matte(0x2a2622, METAL), gold = matte(0xd4a83a, { roughness: 0.4, metalness: 0.8 });
+  const cloth = matte(skel ? 0x6a7468 : 0xd8c8a0, { side: THREE.DoubleSide }), red = matte(skel ? 0x3a4a3a : 0x8a2a24, { side: THREE.DoubleSide }), parch = matte(0xe8d4a0);
+  const books = [0x6a1e1e, 0x1e3a6a, 0x2a5a2a, 0x6a4a1e, 0x4a2a5a].map(c => matte(c));
+  const B = (w, h, d) => new THREE.BoxGeometry(w, h, d), Cy = (r1, r2, h, n = 10) => new THREE.CylinderGeometry(r1, r2, h, n);
+  const barrelG = (() => { const g = Cy(0.4, 0.4, 0.95, 14, 4); const p = g.attributes.position; for (let i = 0; i < p.count; i++) { const k = 1 + 0.13 * Math.cos(p.getY(i) / 0.95 * Math.PI); p.setX(i, p.getX(i) * k); p.setZ(i, p.getZ(i) * k); } g.computeVertexNormals(); return g; })();
+  for (const it of furnitureFor(type)) {
+    const y = floorY(type, it.lv, it.z), { x, z, rot: r } = it, at = (mat, geo, dx, dy, dz) => { const c = Math.cos(r), s0 = Math.sin(r); put(mat, geo, x + dx * c + dz * s0, y + dy, z - dx * s0 + dz * c, r); };
+    switch (it.kind) {
+      case 'table': at(mid, B(1.0, 0.08, 2.3), 0, 0.78, 0); for (const [a, b] of [[0.42, 1.05], [-0.42, 1.05], [0.42, -1.05], [-0.42, -1.05]]) at(dark, Cy(0.05, 0.06, 0.76, 8), a, 0.38, b); break;
+      case 'desk': at(mid, B(1.7, 0.1, 1.0), 0, 0.8, 0); at(dark, B(0.5, 0.75, 0.9), -0.55, 0.38, 0); at(dark, B(0.5, 0.75, 0.9), 0.55, 0.38, 0); at(gold, B(0.08, 0.06, 0.04), -0.55, 0.55, 0.47); at(gold, B(0.08, 0.06, 0.04), 0.55, 0.55, 0.47); break;
+      case 'bench': at(mid, B(0.36, 0.07, 2.1), 0, 0.46, 0); at(dark, B(0.3, 0.44, 0.08), 0, 0.22, 0.9); at(dark, B(0.3, 0.44, 0.08), 0, 0.22, -0.9); break;
+      case 'chair': at(mid, B(0.5, 0.06, 0.5), 0, 0.48, 0); at(mid, B(0.5, 0.62, 0.06), 0, 0.82, -0.24); for (const [a, b] of [[0.2, 0.2], [-0.2, 0.2], [0.2, -0.2], [-0.2, -0.2]]) at(dark, Cy(0.03, 0.03, 0.48, 6), a, 0.24, b); break;
+      case 'bunk': case 'bed': { const w = it.kind === 'bed' ? 1.2 : 0.95; at(dark, B(w, 0.35, 2.05), 0, 0.2, 0); at(cloth, B(w - 0.12, 0.16, 1.9), 0, 0.45, 0); at(red, B(w - 0.1, 0.06, 1.2), 0, 0.55, 0.3); at(cloth, B(w * 0.6, 0.14, 0.35), 0, 0.6, -0.75); at(dark, B(w, 0.7, 0.08), 0, 0.5, -1.02); break; }
+      case 'chest': at(mid, B(0.95, 0.5, 0.6), 0, 0.25, 0); at(mid, new THREE.CylinderGeometry(0.3, 0.3, 0.95, 12, 1, false, 0, Math.PI).rotateZ(Math.PI / 2), 0, 0.5, 0); for (const a of [-0.32, 0.32]) at(iron, B(0.06, 0.58, 0.64), a, 0.3, 0); at(gold, B(0.12, 0.14, 0.04), 0, 0.5, 0.31); break;
+      case 'shelf': { at(dark, B(0.4, 2.0, 1.6), 0, 1.0, -0.02); for (let k = 0; k < 4; k++) { at(light, B(0.38, 0.04, 1.5), 0.02, 0.25 + k * 0.48, 0); for (let n = 0; n < 9; n++) { const h = 0.26 + ((n * 7 + k * 3) % 5) * 0.03; at(books[(n + k) % books.length], B(0.26, h, 0.1), 0.05, 0.27 + k * 0.48 + h / 2, -0.65 + n * 0.15); } } break; }
+      case 'barrel': at(mid, barrelG, 0, 0.48, 0); at(iron, Cy(0.47, 0.47, 0.05, 14), 0, 0.2, 0); at(iron, Cy(0.47, 0.47, 0.05, 14), 0, 0.76, 0); at(dark, Cy(0.38, 0.38, 0.02, 14), 0, 0.955, 0); break;
+      case 'crates': at(light, B(0.95, 0.75, 0.95), 0, 0.375, 0); at(light, B(0.75, 0.6, 0.75), 0.05, 1.05, 0.04); at(dark, B(0.98, 0.08, 0.98), 0, 0.72, 0); break;
+      case 'sacks': for (const [a, b, h] of [[0, 0, 0.3], [0.32, 0.15, 0.26], [0.1, 0.1, 0.62]]) at(cloth, new THREE.SphereGeometry(0.3, 10, 8).scale(1, 0.75, 0.85), a, h, b); break;
+      case 'hammock': { const hg = new THREE.CylinderGeometry(0.42, 0.42, 2.0, 12, 1, true, Math.PI * 0.6, Math.PI * 0.8).rotateX(Math.PI / 2); at(cloth, hg, 0, 2.15, 0); at(dark, Cy(0.025, 0.025, 0.4, 5), 0, 2.4, 1.05); at(dark, Cy(0.025, 0.025, 0.4, 5), 0, 2.4, -1.05); break; } // hammocks are slung overhead
+      case 'rug': at(red, B(1.6, 0.012, 2.4), 0, 0.006, 0); at(gold, B(1.3, 0.014, 2.1), 0, 0.004, 0); break;
+      case 'map': at(parch, B(0.7, 0.01, 0.5), 0, it.lv === 0 && type !== 'sloop' ? 0.86 : 0.82, 0); break;
+      case 'candle': at(light, Cy(0.03, 0.035, 0.16, 8), 0, 0.92, 0); break;
+      case 'shot': for (const [a, b, h] of [[-0.12, -0.12, 0.12], [0.12, -0.12, 0.12], [-0.12, 0.12, 0.12], [0.12, 0.12, 0.12], [0, 0, 0.3]]) at(iron, new THREE.SphereGeometry(0.12, 10, 8), a, h, b); at(dark, B(0.5, 0.06, 0.5), 0, 0.03, 0); break;
+      case 'bucket': at(mid, Cy(0.18, 0.14, 0.3, 12), 0, 0.15, 0); break;
+    }
+  }
+  const g = new THREE.Group(); for (const [mat, geos] of parts) g.add(new THREE.Mesh(THREE.BufferGeometryUtils.mergeBufferGeometries(geos), mat)); return g;
+}
+// ----- the galleon / brigantine model -----
+function galPartMat(name, skel, color) {
+  const W0 = (c, cs) => woodM(skel ? cs || 0x7d8274 : c, { side: THREE.DoubleSide });
+  if (/deck_123/.test(name)) return skel ? W0(0x7d8274) : deckMat;
+  if (/rope|shroud|ratline|lanyard|galleon_187/.test(name)) return matte(skel ? 0x3a3e36 : 0x7a5a38, { roughness: 1 });
+  if (/deadeye|chains|anchor|falconet/.test(name)) return matte(skel ? 0x1c201c : 0x2a2622, METAL);
+  if (/glass/.test(name)) return new THREE.MeshBasicMaterial({ color: skel ? new THREE.Color(0.6, 2.4, 1.1) : new THREE.Color(2.4, 1.5, 0.55) });
+  if (/figurehead/.test(name)) return matte(skel ? 0x8fb89a : 0xd4a83a, { roughness: 0.45, metalness: 0.6 });
+  if (/shutter/.test(name)) return W0(new THREE.Color(color).multiplyScalar(0.85).getHex(), 0x2e4a34);
+  if (/comp_12|comp_10/.test(name)) return W0(0xd8b48a, 0x7a7e72);
+  if (/keel|rudder|doors|comp_1_|comp_2_|comp_5_/.test(name)) return W0(0x6a4024, 0x4e564c);
+  if (/boat/.test(name)) return W0(0xc89060, 0x7d8274);
+  if (/comp_11_|comp_13_/.test(name)) return W0(0x9a6236, 0x6f766a);
+  return W0(0xc08a52, 0x7d8274);
+}
+const GAL_STATIC = {};
+function galModelGroup(type, skel, color) {
+  const M = loadModel('galleon'), F = GAL_FIT, sc = GAL_SCALE[type].s, K = F.k * sc, yo = GAL_SCALE[type].yoff, P = plan(type), g = new THREE.Group();
+  g.scale.setScalar(K); g.rotation.y = -Math.PI / 2; g.position.set(0, yo, -F.xc * K);
+  const key = type + (skel ? 's' : 'p');
+  if (!GAL_STATIC[key]) {
+    const S = P.stairs[P.stairs.length - 1], hx0 = S.x - S.w / 2 - 0.15, hx1 = S.x + S.w / 2 + 0.15, hz0 = Math.min(S.z0, S.z1) - 0.15, hz1 = Math.max(S.z0, S.z1) + 0.15;
+    const toG = (x, y, z) => [-z * K, y * K + yo, (x - F.xc) * K];
+    const by = new Map();
+    for (const m of M.meshList) {
+      const yardsOnly = /comp_10/.test(m.name), rig = /comp_10|comp_12|rope|shroud|ratline|lanyard|deadeye|galleon_187/.test(m.name);
+      const pos = m.geo.attributes.position, idx = m.geo.index.array, keep = [];
+      for (let t = 0; t < idx.length; t += 3) {
+        const a = idx[t], b = idx[t + 1], c = idx[t + 2], cx = (pos.getX(a) + pos.getX(b) + pos.getX(c)) / 3, cy = (pos.getY(a) + pos.getY(b) + pos.getY(c)) / 3, cz = (pos.getZ(a) + pos.getZ(b) + pos.getZ(c)) / 3;
+        if (yardsOnly && Math.abs(cz) > 9) continue; // the yards: ours turn with the sails
+        if (type === 'brig' && rig && cx < -76 && cy > 41) continue; // strike the mizzen for the brigantine
+        if (!rig) { const [gx, gy, gz] = toG(cx, cy, cz); if (gx > hx0 && gx < hx1 && gz > hz0 && gz < hz1 && Math.abs(gy - P.lvy(0, gz)) < 0.7) continue; } // the hatch to the lower deck
+        keep.push(a, b, c);
+      }
+      if (!keep.length) continue;
+      const geo = new THREE.BufferGeometry(); for (const k in m.geo.attributes) geo.setAttribute(k, m.geo.attributes[k]); geo.setIndex(keep);
+      const mat = galPartMat(m.name, skel, '#888'); if (!by.has(mat)) by.set(mat, []); by.get(mat).push(geo);
+    }
+    GAL_STATIC[key] = [...by].map(([mat, geos]) => ({ mat, geo: THREE.BufferGeometryUtils.mergeBufferGeometries(geos) }));
+  }
+  for (const p of GAL_STATIC[key]) { const mat = /shutter/.test(p.mat.name) ? p.mat : p.mat; g.add(new THREE.Mesh(p.geo, mat)); }
+  return g;
+}
+function shipWheel(skel) { // spoked wheel with turned handles, brass hub and a pedestal
+  const g = new THREE.Group(), wood = woodM(skel ? 0x7d8274 : 0xb07a46), brass = matte(skel ? 0x6a8a6a : 0xd4a83a, { roughness: 0.4, metalness: 0.8 });
+  g.add(new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.05, 8, 28), wood), new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.03, 6, 24), wood), new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.2, 14).rotateX(Math.PI / 2), brass));
+  for (let k = 0; k < 8; k++) { const sp = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.035, 1.6, 6), wood); sp.rotation.z = k / 8 * Math.PI; g.add(sp); }
+  return g;
+}
+function buildShipGal(s) {
+  const sp = SHIPS[s.type], lay = layout(s.type), skel = s.skel, color = s.color, PL = plan(s.type), sc = PL.sc, { HOLD_LV } = dims(s.type);
+  const g = new THREE.Group(), v = { group: g, sails: [], cannons: {}, breaches: [], kegs: [], fireT: 0, model: true };
+  g.add(galModelGroup(s.type, skel, color));
+  g.add(furnitureMeshes(s.type, skel));
+  // sails on our own yards so they can trim and furl: courses and topsails on the main and fore masts
+  const sailMat = stdMat({ map: sailTexture(skel ? '#3d4a3c' : '#e8d8b0', false, skel), normalMap: clothNormal, normalScale: new THREE.Vector2(0.22, 0.22), side: THREE.DoubleSide, alphaTest: 0.5, roughness: 0.9, metalness: 0.02 });
+  const mainMat = stdMat({ map: sailTexture(skel ? '#33402f' : color, true, skel), normalMap: clothNormal, normalScale: new THREE.Vector2(0.22, 0.22), side: THREE.DoubleSide, alphaTest: 0.5, roughness: 0.9, metalness: 0.02 });
+  const yardM = woodM(skel ? 0x7a7e72 : 0xd8b48a), rigs = [[-4.03, 21.26, 12.05, 12.0, true], [-4.03, 35.63, 5.93, 12.6, false], [11.99, 20.18, 11.2, 10.8, false], [12.55, 33.5, 5.79, 11.6, false]];
+  v.mastTops = [[-4.03 * sc, galY(s.type, 46.97), galY(s.type, 46.97) - sp.levels[0]], [11.92 * sc, galY(s.type, 44.3), 40]];
+  for (const [mz, yy, half, drop, main] of rigs) {
+    const pivot = new THREE.Group(); pivot.position.set(0, galY(s.type, yy), mz * sc + 0.5 * sc); g.add(pivot);
+    const sw = half * 2 * sc * (main ? 0.9 : 1.25), sh = drop * sc;
+    const yg = new THREE.CylinderGeometry(0.16 * sc + 0.04, 0.16 * sc + 0.04, half * 2 * sc + 0.6, 10, 6); { const p = yg.attributes.position; for (let k = 0; k < p.count; k++) { const t = Math.abs(p.getY(k)) / (half * sc + 0.3), f = 1 - 0.55 * t * t; p.setX(k, p.getX(k) * f); p.setZ(k, p.getZ(k) * f); } yg.computeVertexNormals(); }
+    const yard = new THREE.Mesh(yg, yardM); yard.rotation.z = Math.PI / 2; pivot.add(yard);
+    const sgeo = new THREE.PlaneGeometry(sw, sh, 14, 10); sgeo.translate(0, -sh / 2, 0); const sail = new THREE.Mesh(sgeo, main ? mainMat : sailMat); pivot.add(sail);
+    const furl = new THREE.Mesh(new THREE.CylinderGeometry(0.24 * sc + 0.05, 0.24 * sc + 0.05, sw, 8), matte(skel ? 0x3d4a3c : 0xe8d8b0)); furl.rotation.z = Math.PI / 2; furl.position.y = -0.25; pivot.add(furl);
+    v.sails.push({ pivot, sail, geo: sgeo, base: Float32Array.from(sgeo.attributes.position.array), sw, sh, furl });
+  }
+  { const fl = new THREE.Mesh(new THREE.PlaneGeometry(3.2 * sc + 0.6, 1.8 * sc + 0.4, 6, 2).translate((3.2 * sc + 0.6) / 2, 0, 0), matte(skel ? 0x111111 : new THREE.Color(color).getHex(), { side: THREE.DoubleSide })); const h = new THREE.Group(); h.position.set(0, galY(s.type, 46.97) + 1.2, -4.03 * sc); h.add(fl); g.add(h); v.flag = h; }
+  // wheel on the quarterdeck, capstan in the waist, harpoon on the forecastle, cannons along the waist
+  { const ws = lay.st.wheel, w = shipWheel(skel); w.position.set(ws.x, floorY(s.type, 1, ws.z) + 1.05, ws.z + 0.4); g.add(w); v.wheel = w;
+    const ped = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), woodM(skel ? 0x6f7a6c : 0x8a5a34)); ped.position.set(ws.x, floorY(s.type, 1, ws.z) + 0.5, ws.z + 0.55); g.add(ped); }
+  { const an = lay.st.anchor, cap = new THREE.Group(), wood = woodM(skel ? 0x6f7a6c : 0xa06a3e); cap.position.set(an.x, floorY(s.type, 0, an.z), an.z);
+    const drum = new THREE.Mesh(new THREE.LatheGeometry([[0.001, 0], [0.55, 0], [0.48, 0.12], [0.36, 0.3], [0.36, 0.75], [0.46, 0.85], [0.5, 1.0], [0.001, 1.02]].map(([r, y]) => new THREE.Vector2(r, y)), 16), wood); cap.add(drum);
+    for (let k = 0; k < 4; k++) { const bar = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.07, 0.07), woodM(skel ? 0x8a9488 : 0xd8b07a)); bar.position.y = 0.92; bar.rotation.y = k * Math.PI / 4; cap.add(bar); }
+    g.add(cap); v.capstan = cap; }
+  for (const key in lay.st) { const st = lay.st[key]; if (st.kind !== 'cannon') continue; const cg = new THREE.Group(); cg.position.set(st.x, floorY(s.type, st.lv, st.z), st.z); cg.rotation.y = st.side > 0 ? Math.PI / 2 : -Math.PI / 2; if (sc > 0.9) cg.scale.setScalar(1.15); const { yawG, pitchG } = buildCannon(skel); cg.add(yawG); g.add(cg); v.cannons[key] = { yawG, pitchG, side: st.side }; }
+  { const hs = lay.st.harpoon, hy = floorY(s.type, hs.lv, hs.z), hg = new THREE.Group(); hg.position.set(hs.x, hy + 1.0, hs.z + 0.2);
+    const hpost = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 1.0, 6), woodM(skel ? 0x6f7a6c : 0xd0a070)); hpost.position.set(hs.x, hy + 0.5, hs.z + 0.2); g.add(hpost);
+    const hYaw = new THREE.Group(); hg.add(hYaw); const hPitch = new THREE.Group(); hYaw.add(hPitch);
+    const hb = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 1.5), woodM(0xb8a08a)); hb.position.z = 0.4; hPitch.add(hb);
+    const bow = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.05, 4, 12, Math.PI), woodM(0xd8c0a0)); bow.position.z = 0.7; bow.rotation.x = Math.PI / 2; hPitch.add(bow);
+    const tip = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.4, 5).rotateX(Math.PI / 2), matte(0xb0b8c0, METAL)); tip.position.z = 1.3; hPitch.add(tip); v.hTip = tip;
+    g.add(hg); v.harpoon = { yawG: hYaw, pitchG: hPitch }; v.rope = new THREE.Mesh(ROPE_GEO, ROPE_MAT); v.rope.frustumCulled = false; v.rope.visible = false; v.rope.castShadow = true; scene.add(v.rope); }
+  v.anchor = new THREE.Group(); g.add(v.anchor); // the model carries its anchors; we only show the cable when it's down
+  { const chain = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(0, -12, 0)]), new THREE.LineBasicMaterial({ color: 0x222222 })); chain.position.set(sp.W / 2 + 0.3, sp.levels[0], sp.L * 0.36); chain.visible = false; g.add(chain); v.chain = chain; }
+  // the stairs we added: down through the new hatch, and up the forecastle ladders
+  { const stepM = woodM(skel ? 0x7d8274 : 0xd8b07a), sideM = woodM(skel ? 0x5a5e56 : 0x6a4528);
+    for (const S of PL.stairs.slice(2)) { const top = floorY(s.type, S.top, S.z0), bot = floorY(s.type, S.bot, S.z1), n = Math.max(4, Math.round((top - bot) / 0.24)), dir = Math.sign(S.z1 - S.z0), run = Math.abs(S.z1 - S.z0);
+      for (let k = 0; k < n; k++) { const f = (k + 0.5) / n, st = new THREE.Mesh(new THREE.BoxGeometry(S.w - 0.1, 0.06, run / n + 0.06), stepM); st.position.set(S.x, lerp(top, bot, f) - 0.03, S.z0 + dir * run * f); g.add(st); }
+      const len = Math.hypot(run, top - bot), ang = Math.atan2(top - bot, run);
+      for (const sd of [1, -1]) { const str = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.24, len), sideM); str.position.set(S.x + sd * (S.w / 2 - 0.03), (top + bot) / 2 - 0.08, (S.z0 + S.z1) / 2); str.rotation.x = dir * ang; g.add(str);
+        const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, len, 6).rotateX(Math.PI / 2), sideM); rail.position.set(S.x + sd * (S.w / 2 - 0.03), (top + bot) / 2 + 0.85, (S.z0 + S.z1) / 2); rail.rotation.x = dir * ang; g.add(rail); } }
+    const H = PL.stairs[PL.stairs.length - 1], cy = floorY(s.type, 0, H.z0), za = Math.min(H.z0, H.z1), zb = Math.max(H.z0, H.z1);
+    for (const [w, d, x, z] of [[H.w + 0.3, 0.12, H.x, za - 0.08], [H.w + 0.3, 0.12, H.x, zb + 0.08], [0.12, zb - za, H.x - H.w / 2 - 0.08, (za + zb) / 2], [0.12, zb - za, H.x + H.w / 2 + 0.08, (za + zb) / 2]]) { const c = new THREE.Mesh(new THREE.BoxGeometry(w, 0.16, d), sideM); c.position.set(x, cy + 0.08, z); g.add(c); } }
+  // hold: keg crate, kegs, the breaches and the water
+  const HY = floorY(s.type, HOLD_LV, lay.st.crate.z);
+  { const crate = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.9, 1.0), woodM(0xffe6c8)); crate.position.set(lay.st.crate.x, HY + 0.45, lay.st.crate.z); g.add(crate);
+    for (let k = 0; k < 2; k++) { const kg = makeKeg(); kg.position.set(lay.st.crate.x - 0.4 + k * 0.8, HY + 1.25, lay.st.crate.z); g.add(kg); v.kegs.push(kg); } }
+  const hw = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ color: 0x0f4566, transparent: true, opacity: 0.86, side: THREE.DoubleSide })); hw.visible = false; g.add(hw); v.holdWater = hw; v.waterY = null; hw.userData.hold = true;
+  const bm = new THREE.MeshBasicMaterial({ color: 0x07131d });
+  lay.slots.forEach(sl => { const b = new THREE.Group(); const hole = new THREE.Mesh(new THREE.CircleGeometry(0.42, 7), bm); hole.rotation.y = sl.side > 0 ? -Math.PI / 2 : Math.PI / 2; b.add(hole);
+    for (let k = 0; k < 4; k++) { const sp2 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.12, 0.55), matte(0xd7a46a)); sp2.position.set(-sl.side * 0.05, Math.sin(k * 1.6) * 0.4, Math.cos(k * 1.6) * 0.4); sp2.rotation.x = k * 0.8; b.add(sp2); }
+    const patch = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.95, 0.95), woodM(0xffe0c0)); patch.position.x = -sl.side * 0.05; patch.visible = false; b.add(patch);
+    b.position.set(sl.x, sl.y, sl.z); b.visible = false; b.userData.hold = true; g.add(b); v.breaches.push({ g: b, hole, patch }); });
+  // lanterns at the quarterdeck and forecastle rails, and a hanging one below
+  { const glass = new THREE.MeshBasicMaterial({ color: skel ? new THREE.Color(0.5, 2.4, 1.1) : new THREE.Color(2.6, 1.7, 0.5) }), capM = matte(0x2a2420, METAL); v.lanterns = [];
+    const spots = [[1, 3.9, -8.0], [1, -3.9, -8.0], [2, 3.4, 7.3], [2, -3.4, 7.3], [3, 0, -3.0], [3, 0, 6.5], [0, 0, -9.4]];
+    for (const [lv, x0, z0] of spots) { const x = x0 * sc, z = z0 * sc, y = floorY(s.type, lv, z) + (lv === 3 || lv === 0 ? 2.0 : 1.25), lg = new THREE.Group(); lg.position.set(x, y, z);
+      lg.add(new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.32, 0.24), glass)); const cap = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.15, 4), capM); cap.position.y = 0.24; cap.rotation.y = Math.PI / 4; lg.add(cap); g.add(lg); v.lanterns.push(new THREE.Vector3(x, y, z)); } }
+  v.glowMat = new THREE.MeshBasicMaterial(); v.chimneyTop = null; v.smokeT = 0; v.occ = [];
+  g.traverse(o => { if (o.isMesh) { const hold = o.userData.hold || (o.parent && o.parent.userData.hold); o.castShadow = !hold; o.receiveShadow = !hold; } });
+  for (const m of g.children[0].children) { m.geometry.computeBoundingSphere(); v.occ.push(m); }
+  return v;
+}
 function buildShip(s) {
+  if ((s.type === 'galleon' || s.type === 'brig') && GAL_MODEL) return buildShipGal(s);
   if (s.type === 'sloop' && SLOOP_MODEL) return buildShipModel(s);
   const sp = SHIPS[s.type], lay = layout(s.type), g = new THREE.Group(), skel = s.skel, color = s.color;
   const { DECK_Y, HOLD_Y, HULL_TOP, KEEL_Y, HOLD_LV, GUN_LV } = dims(s.type), PL = plan(s.type), big = sp.masts > 1, mS = big ? 1.9 : 1.35;
@@ -2450,14 +2685,13 @@ function buildPirate(look, crewColor, opts = {}) {
     return { sh, el, hand };
   };
   const armL = mkArm(1), armR = mkArm(-1);
-  const gun = new THREE.Group(); { const wood = matte(0x6a3e1e), brass = matte(0xc9962e, METAL);
-    const stock = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.11, 0.38).translate(0, -0.02, -0.12), wood); gun.add(stock);
-    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.03, 0.6, 8).rotateX(Math.PI / 2).translate(0, 0.03, 0.3), brass); gun.add(barrel);
-    const bell = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.035, 0.14, 10, 1, true).rotateX(Math.PI / 2).translate(0, 0.03, 0.62), matte(0xc9962e, Object.assign({ side: THREE.DoubleSide }, METAL))); gun.add(bell); }
+  const gun = new THREE.Group(); { const M3 = { wood: matte(0x6b3e22), brass: matte(0xd4a648, { roughness: 0.35, metalness: 0.8 }), dark: matte(0x2a2522, METAL) }, mk3 = (geo, mat, x = 0, y = 0, z = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); return m; };
+    const bb = blunderbussGroup(M3, mk3); bb.scale.setScalar(1.25); bb.rotation.y = Math.PI; bb.position.z = 0.15; gun.add(bb); }
   gun.visible = false; P.gun = gun;
+  { const P0 = loadModel('pistol'); if (P0) { const k = 0.5 / 784, r = modelInstance('pistol'); r.scale.setScalar(k); r.rotation.y = -Math.PI / 2; r.position.set(0, 120 * k * 0.3, 326 * k * 0.3); const pg = new THREE.Group(); pg.add(r); pg.visible = false; P.pistol = pg; } }
   { const R0 = loadModel('rifle'); if (R0) { const b = R0.box, k = 1.15 / (b.max.z - b.min.z), r = modelInstance('rifle'); r.scale.setScalar(k); r.position.set(-(b.min.x + b.max.x) / 2 * k, -(b.min.y + b.max.y) / 2 * k, -b.min.z * k - 0.42); const rg = new THREE.Group(); rg.add(r); rg.visible = false; P.rifle = rg; } }
   const cut = new THREE.Group(); const bl = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.07, 0.72).translate(0, 0, 0.38), matte(0xdfe4e8, METAL)); cut.add(bl);
-  const gd = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.018, 4, 8, Math.PI), gold); gd.rotation.y = Math.PI / 2; cut.add(gd); armR.hand.add(cut); P.cutlass = cut; armR.hand.add(gun); gun.rotation.x = Math.PI / 2; if (P.rifle) { armR.hand.add(P.rifle); P.rifle.rotation.x = Math.PI / 2; }
+  const gd = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.018, 4, 8, Math.PI), gold); gd.rotation.y = Math.PI / 2; cut.add(gd); armR.hand.add(cut); P.cutlass = cut; armR.hand.add(gun); gun.rotation.x = Math.PI / 2; if (P.rifle) { armR.hand.add(P.rifle); P.rifle.rotation.x = Math.PI / 2; } if (P.pistol) { armR.hand.add(P.pistol); P.pistol.rotation.x = Math.PI / 2; }
   // neck & head
   const neck = joint(chest, 0, T * 0.2, 0); neck.add(limb(B.limb * 0.9, 0.12, skin)); neck.children[0].position.y = 0.12;
   const head = joint(neck, 0, 0.12 + B.head * 0.85, 0.01), H = B.head;
@@ -2567,7 +2801,7 @@ function animatePirate(P, dt, moving, t, s = {}) {
   if (P.parrot) { P.parrot.rotation.y = Math.sin(t * 1.3) * 0.6; const f = Math.sin(t * 30) * (Math.sin(t * 0.8) > 0.7 ? 0.9 : 0.1); P.wings[0].rotation.z = 0.2 + f; P.wings[1].rotation.z = -0.2 - f; }
   P.keg.visible = s.item === 'keg';
   P.bucket.visible = s.item !== 'keg' && !st; P.bucketWater.visible = s.item === 'full';
-  P.cutlass.visible = s.item !== 'keg' && !s.work && !st && !s.wpn; P.gun.visible = s.wpn >= 1 && s.wpn <= (P.rifle ? 2 : 3) && s.item !== 'keg' && !s.work && !st; if (P.rifle) P.rifle.visible = s.wpn === 3 && s.item !== 'keg' && !s.work && !st;
+  P.cutlass.visible = s.item !== 'keg' && !s.work && !st && !s.wpn; const armed = s.item !== 'keg' && !s.work && !st; P.gun.visible = armed && (s.wpn === 1 || (s.wpn === 2 && !P.pistol) || (s.wpn === 3 && !P.rifle)); if (P.rifle) P.rifle.visible = armed && s.wpn === 3; if (P.pistol) P.pistol.visible = armed && s.wpn === 2;
   P.cutlass.rotation.x = s.swing > 0 ? -0.6 : 0.3;
 }
 // --- megalodon: four lathe segments chained along the spine so the body bends as it swims ---
@@ -2671,11 +2905,12 @@ function shipBlock(sp, lx, ly, lz) {
   if (!hullHit(sp, lx, ly, lz)) return false;
   const yt = clamp(ly, sp.keel, sp.levels[0]), inner = hullHalfWidth(sp, clamp(lz, -sp.L / 2, sp.L / 2), yt) - 0.35;
   if (Math.abs(lx) > inner || Math.abs(lz) > sp.L / 2 - 0.6) return true;
-  return sp.levels.some((L, i) => Math.abs(ly - (L + (i ? 0 : qdHeight(sp.key, lz))) + 0.08) < 0.16);
+  return sp.levels.some((L, i) => Math.abs(ly - floorY(sp.key, i, lz) + 0.08) < 0.16);
 }
 function hullHit(sp, lx, ly, lz, pad = 0) {
   const { DECK_Y, KEEL_Y, HULL_TOP } = dims(sp.key);
-  if (Math.abs(lz) > sp.L / 2 + pad || ly < KEEL_Y - pad || ly > DECK_Y + 0.9 + qdHeight(sp.key, lz) + pad) return false;
+  const P0 = PLANS[sp.key], topY = P0 && P0.lvy ? Math.max(...P0.levels.map((_, i) => P0.lvy(i, lz))) + 1.2 : DECK_Y + 0.9 + qdHeight(sp.key, lz); // model hulls: up to the highest deck here
+  if (Math.abs(lz) > sp.L / 2 + pad || ly < KEEL_Y - pad || ly > topY + pad) return false;
   const yf = clamp((ly - KEEL_Y) / (HULL_TOP - KEEL_Y), 0, 1);
   return Math.abs(lx) < hwAt(sp, lz) * (0.32 + 0.68 * Math.sqrt(yf)) + 0.15 + pad;
 }
@@ -3286,7 +3521,7 @@ class Sim {
       }
       case 'bail':
         { const hl = holdLv(s.type), S = plan(s.type).stairs.find(S => S.bot === hl), dir = Math.sign(S.z1 - S.z0);
-          if (av.item === 'full') { const up = hl - 1, x = -Math.sign(S.x) * (interiorHW(s.type, up, S.z0) * 0.7 || 1); if (this.moveBot(av, s, up ? x : S.x, S.z0 - dir * 1.6, up, dt)) { this.throwBucket(av, s); b.think = 0; } }
+          if (av.item === 'full') { const up = S.top, x = -Math.sign(S.x) * (interiorHW(s.type, up, S.z0) * 0.7 || 1); if (this.moveBot(av, s, up ? x : S.x, S.z0 - dir * 1.6, up, dt)) { this.throwBucket(av, s); b.think = 0; } }
           else if (this.moveBot(av, s, S.x, S.z1 + dir * 1.8, hl, dt)) av.ctl.wk = 1; }
         break;
       case 'sail': {
@@ -4614,47 +4849,98 @@ function sendInput() {
 
 // ---------- first-person view models ----------
 // Hands and tools parented to the camera. They draw last with a fresh depth buffer so they never sink into walls.
+// ---------- weapon models shared by the view models and third-person pirates ----------
+// Blunderbuss: walnut stock cut from a side profile, brass bell-mouthed barrel with bands, lock and trigger guard.
+function blunderbussGroup(M, mk) {
+  const g = new THREE.Group(), prof = new THREE.Shape();
+  prof.moveTo(0.21, -0.05); prof.lineTo(0.2, 0.02); prof.quadraticCurveTo(0.12, 0.035, 0.06, 0.02); prof.lineTo(-0.02, 0.025); prof.lineTo(-0.42, 0.03); prof.lineTo(-0.42, 0.0); prof.lineTo(-0.02, -0.01); prof.quadraticCurveTo(0.03, -0.015, 0.07, -0.06); prof.quadraticCurveTo(0.14, -0.1, 0.21, -0.12); prof.closePath();
+  const stock = new THREE.ExtrudeGeometry(prof, { depth: 0.04, bevelEnabled: true, bevelThickness: 0.008, bevelSize: 0.008, bevelSegments: 2, curveSegments: 10 }); stock.translate(0, 0, -0.02); stock.rotateY(-Math.PI / 2); // profile x -> +z (butt toward you, muzzle forward)
+  g.add(mk(stock, M.wood));
+  const lath = [[0.001, 0.0], [0.024, 0.0], [0.026, 0.02], [0.024, 0.05], [0.022, 0.3], [0.026, 0.42], [0.034, 0.5], [0.05, 0.57], [0.062, 0.6], [0.058, 0.61], [0.048, 0.6], [0.03, 0.55], [0.015, 0.4], [0.001, 0.4]].map(([r, y]) => new THREE.Vector2(r, y));
+  const bar = new THREE.LatheGeometry(lath, 18).rotateX(-Math.PI / 2); bar.translate(0, 0.045, -0.02); g.add(mk(bar, M.brass));
+  for (const z of [-0.12, -0.26, -0.38]) g.add(mk(new THREE.TorusGeometry(0.027, 0.006, 6, 16), M.brass, 0, 0.045, z));
+  g.add(mk(new THREE.CylinderGeometry(0.005, 0.005, 0.36, 6).rotateX(Math.PI / 2), M.dark, 0, 0.012, -0.22)); // ramrod
+  g.add(mk(new THREE.BoxGeometry(0.012, 0.035, 0.08), M.brass, 0.022, 0.03, 0.02)); // lock plate
+  const hammer = mk(new THREE.BoxGeometry(0.01, 0.04, 0.012), M.dark, 0.026, 0.06, 0.04); hammer.rotation.x = 0.5; g.add(hammer);
+  g.add(mk(new THREE.TorusGeometry(0.022, 0.004, 5, 12, Math.PI * 1.2).rotateY(Math.PI / 2), M.brass, 0, -0.01, 0.06)); // trigger guard
+  g.add(mk(new THREE.BoxGeometry(0.044, 0.1, 0.012), M.brass, 0, -0.07, 0.205)); // butt plate
+  return g;
+}
+// Cutlass: a curved, bevelled steel blade, a brass basket guard and a wrapped grip with a pommel. Grip axis along +y.
+function cutlassGroup(M, mk) {
+  const g = new THREE.Group(), sh = new THREE.Shape();
+  sh.moveTo(-0.022, 0); sh.lineTo(0.022, 0); sh.quadraticCurveTo(0.03, 0.35, 0.0, 0.66); sh.quadraticCurveTo(-0.01, 0.7, -0.03, 0.72); sh.quadraticCurveTo(-0.03, 0.4, -0.022, 0); // blade with a clipped point
+  const blade = new THREE.ExtrudeGeometry(sh, { depth: 0.004, bevelEnabled: true, bevelThickness: 0.003, bevelSize: 0.006, bevelSegments: 1, curveSegments: 12 }); blade.translate(0, 0.07, -0.002); blade.rotateY(Math.PI / 2);
+  g.add(mk(blade, M.steel));
+  g.add(mk(new THREE.CylinderGeometry(0.016, 0.018, 0.12, 10), M.leather, 0, 0.0, 0)); // grip
+  for (let k = 0; k < 5; k++) g.add(mk(new THREE.TorusGeometry(0.018, 0.003, 4, 10).rotateX(Math.PI / 2), M.brass, 0, -0.05 + k * 0.025, 0)); // wire wrap
+  g.add(mk(new THREE.SphereGeometry(0.022, 10, 8), M.brass, 0, -0.07, 0)); // pommel
+  g.add(mk(new THREE.BoxGeometry(0.11, 0.014, 0.03), M.brass, 0, 0.065, 0)); // cross guard
+  const basket = mk(new THREE.TorusGeometry(0.06, 0.006, 5, 14, Math.PI * 1.05), M.brass, 0, 0.005, -0.012); basket.rotation.set(0, Math.PI / 2, Math.PI / 2 + 0.05); g.add(basket);
+  const basket2 = mk(new THREE.TorusGeometry(0.052, 0.005, 5, 14, Math.PI), M.brass, 0, 0.0, -0.03); basket2.rotation.set(0.35, Math.PI / 2, Math.PI / 2); g.add(basket2);
+  return g;
+}
+
+// ---------- first-person view models ----------
+// Gloved hands and coat sleeves, and the weapons in them, parented to the camera. They draw last with a fresh depth
+// buffer so they never sink into walls.
 const VM = (() => {
   scene.add(camera);
   const root = new THREE.Group(); camera.add(root);
   const vmMat = (c, o = {}) => new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: 0.75, metalness: 0, transparent: true, opacity: 1, fog: false }, o));
-  const skin = vmMat(0xc98b62), sleeve = vmMat(0x5a3a26), steel = vmMat(0xd5dce2, { roughness: 0.3, metalness: 0.75 }), brass = vmMat(0xc8a040, { roughness: 0.35, metalness: 0.8 }), wood = vmMat(0x6b4126), dark = vmMat(0x2a2522, { roughness: 0.5, metalness: 0.6 }), water = vmMat(0x3a8fbe, { roughness: 0.15, opacity: 0.85 });
+  const glove = vmMat(0x4a3022, { roughness: 0.6 }), sleeve = vmMat(0x3a2a40, { roughness: 0.85 }), cuffM = vmMat(0xe8dcc0), skin = vmMat(0xc98b62);
+  const M = { wood: vmMat(0x6b3e22, { roughness: 0.55 }), brass: vmMat(0xd4a648, { roughness: 0.3, metalness: 0.85 }), dark: vmMat(0x2a2522, { roughness: 0.45, metalness: 0.6 }), steel: vmMat(0xdfe5ea, { roughness: 0.22, metalness: 0.85 }), leather: vmMat(0x3a2418, { roughness: 0.7 }) };
+  const water = vmMat(0x3a8fbe, { roughness: 0.15, opacity: 0.85 });
   const mk = (geo, mat, x = 0, y = 0, z = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.renderOrder = 999; m.frustumCulled = false; return m; };
   const clear = mk(new THREE.PlaneGeometry(0.001, 0.001), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })); clear.renderOrder = 998; clear.position.z = -0.2;
   clear.onBeforeRender = r => r.clearDepth(); root.add(clear);
-  const arm = () => { const g = new THREE.Group(); g.add(mk(new THREE.CylinderGeometry(0.045, 0.055, 0.36, 8).rotateX(Math.PI / 2), sleeve, 0, 0, 0.2)); g.add(mk(new THREE.SphereGeometry(0.05, 8, 6), skin)); return g; };
-  // cutlass
-  const cut = new THREE.Group(); { const hand = arm(); cut.add(hand); const blade = new THREE.Group(); blade.position.set(0, 0.02, -0.02); cut.add(blade);
-    blade.add(mk(new THREE.CylinderGeometry(0.018, 0.02, 0.13, 6), wood, 0, -0.01, 0)); blade.add(mk(new THREE.TorusGeometry(0.06, 0.009, 5, 10, Math.PI), brass, 0, 0.05, 0.03));
-    const bl = mk(new THREE.BoxGeometry(0.012, 0.62, 0.05), steel, 0, 0.38, 0); bl.rotation.x = -0.1; blade.add(bl); const tip = mk(new THREE.ConeGeometry(0.03, 0.12, 4), steel, 0, 0.74, -0.03); tip.scale.z = 0.4; blade.add(tip); cut.userData.blade = blade; }
-  // blunderbuss
-  const gun = new THREE.Group(); { const hand = arm(); hand.position.set(0, -0.03, 0.08); gun.add(hand); const off = arm(); off.position.set(-0.13, -0.02, -0.3); off.rotation.y = 0.5; gun.add(off);
-    gun.add(mk(new THREE.BoxGeometry(0.06, 0.1, 0.36), wood, 0, -0.02, 0.06)); const bar = mk(new THREE.CylinderGeometry(0.03, 0.026, 0.55, 10).rotateX(Math.PI / 2), brass, 0, 0.03, -0.36); gun.add(bar);
-    gun.add(mk(new THREE.CylinderGeometry(0.055, 0.03, 0.1, 12, 1, true).rotateX(-Math.PI / 2), brass, 0, 0.03, -0.66)); gun.add(mk(new THREE.BoxGeometry(0.02, 0.04, 0.05), dark, 0, 0.06, -0.03)); }
-  // bucket
-  const bucket = new THREE.Group(); { const hand = arm(); hand.position.set(0, 0.13, 0.05); bucket.add(hand); bucket.add(mk(new THREE.CylinderGeometry(0.15, 0.12, 0.22, 12, 1, true), wood, 0, 0, 0)); bucket.add(mk(new THREE.CircleGeometry(0.12, 12).rotateX(-Math.PI / 2), wood, 0, -0.1, 0));
-    const hoop = mk(new THREE.TorusGeometry(0.15, 0.008, 4, 16).rotateX(Math.PI / 2), dark, 0, 0.08, 0); bucket.add(hoop); const bail = mk(new THREE.TorusGeometry(0.15, 0.006, 4, 12, Math.PI), dark, 0, 0.1, 0); bucket.add(bail);
-    const wat = mk(new THREE.CircleGeometry(0.135, 12).rotateX(-Math.PI / 2), water, 0, 0.06, 0); bucket.add(wat); bucket.userData.water = wat; }
+  // A gloved hand closed around a rod along its local Y axis (knuckles toward -z), with the forearm leaving along `dir`.
+  // side: 1 right hand, -1 left hand. open: a flat hand (swimming).
+  const hand = (side = 1, dir = [0.3, -0.7, 0.65], open = false) => {
+    const g = new THREE.Group(), sx = side;
+    if (open) { g.add(mk(new THREE.BoxGeometry(0.085, 0.022, 0.09), glove, 0, 0, 0.0)); for (let k = 0; k < 4; k++) g.add(mk(new THREE.CapsuleGeometry(0.011, 0.055, 3, 6).rotateX(Math.PI / 2), glove, (k - 1.5) * 0.021, 0, -0.075)); g.add(mk(new THREE.CapsuleGeometry(0.012, 0.04, 3, 6).rotateZ(1.1 * sx), glove, 0.05 * sx, 0, -0.01)); }
+    else {
+      g.add(mk(new THREE.BoxGeometry(0.03, 0.095, 0.075), glove, 0.03 * sx, -0.005, 0.012)); // palm on the outside of the grip
+      for (let k = 0; k < 4; k++) { const y = 0.033 - k * 0.022, ring = mk(new THREE.TorusGeometry(0.03, 0.0115, 6, 10, Math.PI * 1.3), glove, 0, y, 0); ring.rotation.set(Math.PI / 2, 0, sx > 0 ? -0.35 : Math.PI + 0.35); g.add(ring); }
+      const th = mk(new THREE.CapsuleGeometry(0.012, 0.04, 3, 6), glove, -0.012 * sx, 0.052, 0.02); th.rotation.set(0.9, 0, -0.9 * sx); g.add(th);
+    }
+    // wrist, gauntlet and the coat sleeve running off toward the bottom of the screen
+    const d = new THREE.Vector3(...dir).normalize(), q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d), w0 = new THREE.Vector3(0.028 * sx, -0.06, 0.03);
+    const gaunt = mk(new THREE.CylinderGeometry(0.036, 0.046, 0.08, 10), glove); gaunt.quaternion.copy(q); gaunt.position.copy(w0).addScaledVector(d, 0.03); g.add(gaunt);
+    const cuff = mk(new THREE.CylinderGeometry(0.05, 0.05, 0.035, 12), cuffM); cuff.quaternion.copy(q); cuff.position.copy(w0).addScaledVector(d, 0.085); g.add(cuff);
+    const slv = mk(new THREE.CylinderGeometry(0.048, 0.06, 0.55, 12), sleeve); slv.quaternion.copy(q); slv.position.copy(w0).addScaledVector(d, 0.37); g.add(slv);
+    return g;
+  };
+  const place = (o, x, y, z, rx = 0, ry = 0, rz = 0) => { o.position.set(x, y, z); o.rotation.set(rx, ry, rz); return o; };
+  // cutlass: grip in a right fist
+  const cut = new THREE.Group(); { const h = hand(1, [0.25, -0.9, 0.35]); cut.add(h); const blade = cutlassGroup(M, mk); cut.add(blade); cut.userData.blade = blade; }
+  // blunderbuss: right hand on the wrist of the stock, left hand under the barrel
+  const gun = new THREE.Group(); { gun.add(blunderbussGroup(M, mk)); gun.add(place(hand(1, [0.3, -0.75, 0.6]), 0, -0.03, 0.08, -0.9, 0, 0)); gun.add(place(hand(-1, [-0.45, -0.7, 0.55]), 0, 0.015, -0.27, Math.PI / 2, 0, Math.PI)); }
+  // flintlock pistol (the imported model when present)
+  const pistol = new THREE.Group(); { const P0 = loadModel('pistol');
+    if (P0) { const k = 0.42 / 784, inst = modelInstance('pistol', p => { const m = p.mat.clone(); m.transparent = true; m.fog = false; m.side = THREE.DoubleSide; return m; }); inst.traverse(o => { if (o.isMesh) { o.renderOrder = 999; o.frustumCulled = false; o.castShadow = false; } });
+      inst.scale.setScalar(k); inst.rotation.y = Math.PI / 2; inst.position.set(0, 120 * k, -326 * k); pistol.add(inst); }
+    else { pistol.add(mk(new THREE.BoxGeometry(0.045, 0.12, 0.08).rotateX(0.35), M.wood, 0, -0.06, 0.02)); pistol.add(mk(new THREE.CylinderGeometry(0.02, 0.024, 0.34, 10).rotateX(Math.PI / 2), M.steel, 0, 0.01, -0.17)); }
+    pistol.add(place(hand(1, [0.3, -0.85, 0.4]), 0, -0.005, 0.005, 0.35, 0, 0)); }
+  // Eye of Reach: the rifle model with both hands on it
+  const eye = new THREE.Group(); { const R0 = loadModel('rifle');
+    if (R0) { const k = 1.22 / (R0.box.max.z - R0.box.min.z), inst = modelInstance('rifle', p => { const m = p.mat.clone(); m.transparent = true; m.opacity = 1; m.fog = false; return m; });
+      inst.traverse(o => { if (o.isMesh) { o.renderOrder = 999; o.frustumCulled = false; o.castShadow = false; } }); inst.scale.setScalar(k); inst.rotation.y = Math.PI; inst.position.set(-4 * k, 2 * k, -25 * k); eye.add(inst); }
+    else { eye.add(mk(new THREE.BoxGeometry(0.06, 0.1, 0.42), M.wood, 0, -0.03, 0.08)); eye.add(mk(new THREE.CylinderGeometry(0.018, 0.022, 0.95, 10).rotateX(Math.PI / 2), M.steel, 0, 0.02, -0.55)); }
+    eye.add(place(hand(1, [0.3, -0.75, 0.6]), 0, -0.035, 0.0, -0.95, 0, 0)); eye.add(place(hand(-1, [-0.5, -0.7, 0.5]), 0, -0.05, -0.42, Math.PI / 2, 0, Math.PI)); }
+  // bucket by its bail
+  const bucket = new THREE.Group(); { bucket.add(place(hand(1, [0.2, -0.3, 0.95]), 0, 0.12, 0.0, 0, 0, Math.PI / 2)); bucket.add(mk(new THREE.CylinderGeometry(0.15, 0.12, 0.22, 14, 1, true), M.wood, 0, 0, 0)); bucket.add(mk(new THREE.CircleGeometry(0.12, 14).rotateX(-Math.PI / 2), M.wood, 0, -0.1, 0));
+    bucket.add(mk(new THREE.TorusGeometry(0.15, 0.008, 4, 18).rotateX(Math.PI / 2), M.dark, 0, 0.08, 0)); bucket.add(mk(new THREE.TorusGeometry(0.15, 0.006, 4, 12, Math.PI), M.dark, 0, 0.1, 0));
+    const wat = mk(new THREE.CircleGeometry(0.135, 14).rotateX(-Math.PI / 2), water, 0, 0.06, 0); bucket.add(wat); bucket.userData.water = wat; }
   // powder keg, carried in both arms
-  const keg = new THREE.Group(); { const k = makeKeg(); k.traverse(o => { if (o.isMesh) { o.material = o.material.clone(); o.material.transparent = true; o.material.fog = false; o.renderOrder = 999; o.frustumCulled = false; } }); k.scale.setScalar(0.55); keg.add(k); const a1 = arm(), a2 = arm(); a1.position.set(0.22, 0.1, 0.1); a2.position.set(-0.22, 0.1, 0.1); keg.add(a1, a2); }
-  const pistol = new THREE.Group(); { const hand = arm(); hand.position.set(0, -0.05, 0.06); pistol.add(hand);
-    pistol.add(mk(new THREE.BoxGeometry(0.045, 0.12, 0.08).rotateX(0.35), wood, 0, -0.06, 0.02)); pistol.add(mk(new THREE.CylinderGeometry(0.02, 0.024, 0.34, 10).rotateX(Math.PI / 2), steel, 0, 0.01, -0.17));
-    pistol.add(mk(new THREE.BoxGeometry(0.03, 0.035, 0.22), wood, 0, -0.012, -0.1)); pistol.add(mk(new THREE.BoxGeometry(0.016, 0.03, 0.04), brass, 0, 0.035, 0.0)); pistol.add(mk(new THREE.TorusGeometry(0.022, 0.005, 4, 10), brass, 0, -0.045, -0.02)); }
-  const eye = new THREE.Group(); { const hand = arm(); hand.position.set(0, -0.04, 0.12); eye.add(hand); const off = arm(); off.position.set(-0.1, -0.03, -0.32); off.rotation.y = 0.45; eye.add(off);
-    eye.add(mk(new THREE.BoxGeometry(0.06, 0.1, 0.42), wood, 0, -0.03, 0.08)); eye.add(mk(new THREE.CylinderGeometry(0.018, 0.022, 0.95, 10).rotateX(Math.PI / 2), steel, 0, 0.02, -0.55));
-    eye.add(mk(new THREE.CylinderGeometry(0.03, 0.03, 0.3, 12).rotateX(Math.PI / 2), brass, 0, 0.085, -0.12)); eye.add(mk(new THREE.CylinderGeometry(0.038, 0.03, 0.05, 12).rotateX(Math.PI / 2), brass, 0, 0.085, -0.29));
-    eye.add(mk(new THREE.BoxGeometry(0.02, 0.05, 0.03), brass, 0, 0.05, -0.12)); }
-  { const R0 = loadModel('rifle'); if (R0) { // swap the stand-in for the real rifle model
-      const b = R0.box, k = 1.22 / (b.max.z - b.min.z), inst = modelInstance('rifle', p => { const m = p.mat.clone(); m.transparent = true; m.opacity = 1; m.fog = false; return m; });
-      inst.traverse(o => { if (o.isMesh) { o.renderOrder = 999; o.frustumCulled = false; o.castShadow = false; } });
-      inst.scale.setScalar(k); inst.rotation.y = Math.PI; inst.position.set((b.min.x + b.max.x) / 2 * k, -0.02 - (b.min.y + b.max.y) / 2 * k + 0.02, -0.18 + 0.22 * 1.22 / 1.22 * 0);
-      for (const c of eye.children.slice()) if (!c.children.length) eye.remove(c); eye.add(inst); eye.userData.model = true; } }
-  const jarG = (glow, body) => { const g = new THREE.Group(), hand = arm(); hand.position.set(0, -0.08, 0.06); g.add(hand);
-    g.add(mk(new THREE.SphereGeometry(0.085, 12, 10).scale(1, 1.1, 1), vmMat(body, { roughness: 0.6 }), 0, 0.04, 0)); g.add(mk(new THREE.CylinderGeometry(0.03, 0.04, 0.06, 10), vmMat(body), 0, 0.14, 0));
-    g.add(mk(new THREE.TorusGeometry(0.087, 0.012, 5, 16).rotateX(Math.PI / 2), vmMat(glow, { emissive: new THREE.Color(glow), emissiveIntensity: 1.6 }), 0, 0.03, 0));
+  const keg = new THREE.Group(); { const k = makeKeg(); k.traverse(o => { if (o.isMesh) { o.material = o.material.clone(); o.material.transparent = true; o.material.fog = false; o.renderOrder = 999; o.frustumCulled = false; } }); k.scale.setScalar(0.55); keg.add(k);
+    keg.add(place(hand(1, [0.5, -0.6, 0.6]), 0.2, 0.05, 0.08, 0, 0, 0.3)); keg.add(place(hand(-1, [-0.5, -0.6, 0.6]), -0.2, 0.05, 0.08, 0, 0, -0.3)); }
+  const jarG = (glow, body) => { const g = new THREE.Group(); g.add(place(hand(1, [0.3, -0.8, 0.5]), 0, -0.07, 0.02, 0, 0, 0));
+    g.add(mk(new THREE.SphereGeometry(0.085, 14, 12).scale(1, 1.1, 1), vmMat(body, { roughness: 0.6 }), 0, 0.04, 0)); g.add(mk(new THREE.CylinderGeometry(0.03, 0.04, 0.06, 12), vmMat(body), 0, 0.14, 0));
+    g.add(mk(new THREE.TorusGeometry(0.087, 0.012, 5, 18).rotateX(Math.PI / 2), vmMat(glow, { emissive: new THREE.Color(glow), emissiveIntensity: 1.6 }), 0, 0.03, 0));
     const wick = mk(new THREE.SphereGeometry(0.02, 6, 5), vmMat(glow, { emissive: new THREE.Color(glow), emissiveIntensity: 3 }), 0, 0.19, 0); g.add(wick); g.userData.wick = wick; return g; };
   const jarF = jarG(0xff7a1a, 0x8a4a22), jarB = jarG(0x4fb8ff, 0x22303e);
-  const swim = new THREE.Group(); { const l = arm(), r = arm(); l.userData.side = -1; r.userData.side = 1; swim.add(l, r); swim.userData.arms = [l, r]; }
+  const swim = new THREE.Group(); { const l = hand(-1, [-0.3, -0.5, 0.8], true), r = hand(1, [0.3, -0.5, 0.8], true); l.userData.side = -1; r.userData.side = 1; swim.add(l, r); swim.userData.arms = [l, r]; }
   root.add(cut, gun, bucket, keg, swim, pistol, eye, jarF, jarB); [cut, gun, bucket, keg, swim, pistol, eye, jarF, jarB].forEach(o => o.visible = false);
   return { root, cut, gun, bucket, keg, swim, pistol, eye, jarF, jarB, sway: new THREE.Vector2(), lastYaw: 0, lastPitch: 0, block: 0, aim: 0, show: 0 };
 })();
@@ -4686,11 +4972,11 @@ function updateViewModel(W, dt, t) {
     c.position.set(px, py, pz); c.rotation.set(rx, ry, rz);
   } else if (item === 'gun') {
     const g = VM.gun, rc = ME.recoil || 0, a = VM.aim;
-    g.position.set(lerp(0.24, 0.0, a), lerp(-0.25, -0.12, a) + rc * 0.04, lerp(-0.42, -0.38, a) + rc * 0.12); g.rotation.set(rc * 0.5, lerp(0.06, 0, a), 0);
+    g.position.set(lerp(0.2, 0.0, a), lerp(-0.22, -0.13, a) + rc * 0.04, lerp(-0.3, -0.24, a) + rc * 0.12); g.rotation.set(rc * 0.5, lerp(0.08, 0, a), 0);
   } else if (item === 'pistol' || item === 'eye') { // hip to sights; recoil kicks the muzzle up
     const g = VM[item], rc = ME.recoil || 0, a = VM.aim, sw = (ME.swapT || 0) / 0.35;
-    if (item === 'pistol') { g.position.set(lerp(0.22, 0, a), lerp(-0.22, -0.105, a) + rc * 0.03 - sw * 0.2, lerp(-0.42, -0.36, a) + rc * 0.08); g.rotation.set(rc * 0.6, lerp(0.05, 0, a), 0); }
-    else { g.position.set(lerp(0.2, 0, a), lerp(-0.24, -0.17, a) + rc * 0.04 - sw * 0.2, lerp(-0.4, -0.3, a) + rc * 0.14); g.rotation.set(rc * 0.35, lerp(0.05, 0, a), 0); }
+    if (item === 'pistol') { g.position.set(lerp(0.2, 0, a), lerp(-0.2, -0.1, a) + rc * 0.03 - sw * 0.2, lerp(-0.36, -0.3, a) + rc * 0.06); g.rotation.set(rc * 0.6, lerp(0.08, 0, a), 0); }
+    else { g.position.set(lerp(0.17, 0, a), lerp(-0.2, -0.155, a) + rc * 0.04 - sw * 0.2, lerp(-0.2, -0.12, a) + rc * 0.12); g.rotation.set(rc * 0.3, lerp(0.07, 0, a), 0); }
   } else if (item === 'jarF' || item === 'jarB') {
     const g = VM[item], th = ME.throwT > 0 ? 1 - ME.throwT / 0.45 : 0, e = Math.sin(th * Math.PI), sw = (ME.swapT || 0) / 0.35;
     g.position.set(0.26 - e * 0.1, -0.3 + e * 0.32 - sw * 0.2 - (th > 0.45 && th < 1 ? 1 : 0), -0.5 - e * 0.25); g.rotation.set(-e * 1.6, 0, 0.1);
