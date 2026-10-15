@@ -125,9 +125,10 @@
     if (!t) return null;
     var r = E.ROLES[t.id], d = E.describeRole(t.id);
     var w = 270, left = Math.max(8, Math.min(innerWidth - w - 8, t.x - w / 2));
-    var below = t.top < 240;
-    var style = below ? { left: left + 'px', top: (t.bottom + 10) + 'px' } : { left: left + 'px', top: (t.top - 10) + 'px', transform: 'translateY(-100%)' };
-    return html`<div className="tip" style=${style} role="tooltip">
+    var below = t.top < 250;
+    var style = { left: left + 'px', '--ax': Math.max(18, Math.min(w - 18, t.x - left)) + 'px' };
+    if (below) style.top = (t.bottom + 12) + 'px'; else style.bottom = (innerHeight - t.top + 12) + 'px';
+    return html`<div className=${cx('tip', below ? 'below' : 'above')} key=${t.id} style=${style} role="tooltip">
       <div className="t-head"><span className="ic">${r.icon}</span><div><b>${r.name}</b><span className=${'team ' + teamClass(r.team)}>${E.TEAMS[r.team].name}</span></div></div>
       <p>${r.abilityText}</p>
       <p className="goal">Goal: ${d.goal}<br />The Detective sees them as ${r.appearsEvil ? 'Suspicious' : 'Innocent'}.</p>
@@ -136,14 +137,15 @@
 
   function useRoleTip() {
     var s = useState(null), tip = s[0], setTip = s[1];
-    var press = useRef(null), longPressed = useRef(false);
-    function show(id, el) { var r = el.getBoundingClientRect(); setTip({ id: id, x: r.left + r.width / 2, top: r.top, bottom: r.bottom }); }
+    var press = useRef(null), longPressed = useRef(false), hideT = useRef(null);
+    function show(id, el) { clearTimeout(hideT.current); var r = el.getBoundingClientRect(); setTip({ id: id, x: r.left + r.width / 2, top: r.top, bottom: r.bottom }); }
+    function hide() { clearTimeout(hideT.current); hideT.current = setTimeout(function () { setTip(null); }, 90); }
     function bind(id) {
       return {
         onMouseEnter: function (e) { show(id, e.currentTarget); },
-        onMouseLeave: function () { setTip(null); },
+        onMouseLeave: hide,
         onFocus: function (e) { show(id, e.currentTarget); },
-        onBlur: function () { setTip(null); },
+        onBlur: hide,
         onTouchStart: function (e) {
           var el = e.currentTarget; longPressed.current = false;
           press.current = setTimeout(function () { longPressed.current = true; show(id, el); }, 420);
@@ -873,6 +875,9 @@
   function SoundMenu() {
     var s = useState(false), open = s[0], setOpen = s[1];
     var s2 = useState({ music: A.settings.music, sfx: A.settings.sfx, voice: V.enabled }), st = s2[0], setSt = s2[1];
+    var s3 = useState(0), setVoicesTick = s3[1];
+    useEffect(function () { V.onVoices(function () { setVoicesTick(function (x) { return x + 1; }); }); }, []);
+    var voices = V.voices().slice(0, 14);
     var allOff = !st.music && !st.sfx && !st.voice;
     function set(k, on) {
       A.unlock();
@@ -893,7 +898,11 @@
         <label className="switch"><span>Music</span><input type="checkbox" checked=${st.music} onChange=${function (e) { set('music', e.target.checked); }} /></label>
         <label className="switch"><span>Sound effects</span><input type="checkbox" checked=${st.sfx} onChange=${function (e) { set('sfx', e.target.checked); }} /></label>
         <label className="switch"><span>Narrator voice</span><input type="checkbox" disabled=${!V.available} checked=${st.voice} onChange=${function (e) { set('voice', e.target.checked); }} /></label>
-        <div className="hint">${V.available ? 'The narrator reads the story out loud.' : 'This browser cannot read aloud.'}</div>
+        ${V.available && st.voice && voices.length ? html`<label className="field">Narrator
+          <select className="select" value=${V.voiceName} onChange=${function (e) { V.setVoice(e.target.value); V.say('Night falls over the town... Lock your doors.'); setVoicesTick(function (x) { return x + 1; }); }}>
+            ${voices.map(function (name) { return html`<option key=${name} value=${name}>${name}</option>`; })}
+          </select></label>` : null}
+        <div className="hint">${V.available ? 'Best-sounding voices are listed first. Voices with “Natural” or “Enhanced” in the name sound most human.' : 'This browser cannot read aloud.'}</div>
       </div>` : null}
     </div>`;
   }
@@ -1010,9 +1019,13 @@
     var ghost = !!(view && view.me && view.phase !== 'lobby' && view.phase !== 'gameover' && !view.me.alive);
     useEffect(function () {
       document.body.className = 'phase-' + scene + (ghost ? ' ghost' : '');
-      A.music(SCENE_MUSIC[scene]);
       FX.ambient(SCENE_FX[scene]);
     }, [scene, ghost]);
+    // After a killing (or while you haunt the table, or during the vote) the day turns suspenseful.
+    var nightDeaths = !!(view && view.players.some(function (p) { return !p.alive && p.deathCause === 'night' && p.deathDay === view.day; }));
+    var mood = SCENE_MUSIC[scene];
+    if ((scene === 'day' || scene === 'dawn') && (nightDeaths || ghost || view.phase === 'voting')) mood = 'suspense';
+    useEffect(function () { A.music(mood); }, [mood]);
 
     // Phase transitions: stingers, narration, hub reporting.
     var prev = useRef('');

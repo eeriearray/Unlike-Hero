@@ -4,6 +4,7 @@
      night  — music box over a soft pad in A minor
      day    — warm broken piano chords
      trial  — tense staccato strings and timpani
+     suspense — after a death: heartbeat bass pulse, a ticking semitone figure, uneasy strings
    window.MafiaAudio: unlock(), play(name), music(mood), heartbeat(level), duck(on),
                       settings {music, sfx}, setMusic(bool), setSfx(bool). */
 (function (global) {
@@ -176,6 +177,25 @@
         if (s === 0) { INST.timpani(ch.root, t, 1.1, 1); INST.bass(ch.root, t, sd * 6, 0.7); }
         if (bar === 3 && s >= 4) INST.timpani(ch.root, t, 0.5, 0.5);
       }
+    }
+  };
+  // Played on the day after a killing (and while you haunt the table): a pulse under a clock that won't stop ticking.
+  SONGS.suspense = {
+    bpm: 70,
+    chords: [
+      { pad: n('D3 F3 A3'), hi: n('A4 A#4') },
+      { pad: n('D3 F3 A#3'), hi: n('A4 A#4') },
+      { pad: n('D3 G3 A#3'), hi: n('A#4 B4') },
+      { pad: n('C#3 E3 G3 A#3'), hi: n('A4 G#4') }
+    ],
+    play: function (s, t, ch, bar, sd) {
+      if (s === 0) INST.pad(ch.pad, t, sd * 8, 1.1);
+      // heartbeat bass: lub-dub on beats one and three
+      if (s === 0 || s === 4) { INST.bass(NOTE.D2, t, sd * 0.8, 0.75); INST.bass(NOTE.D2, t + sd * 0.45, sd * 0.7, 0.45); }
+      // a ticking clock that refuses to resolve
+      INST.musicbox(ch.hi[s % 2], t, 0.45, s % 4 === 0 ? 0.55 : 0.32);
+      if (s === 6 && bar === 3) INST.strings(NOTE['A#3'], t, sd * 2.5, 0.8);
+      if (s === 0 && bar === 2) INST.piano(NOTE.D2, t, sd * 6, 0.6), INST.piano(NOTE['D#2'], t, sd * 6, 0.5);
     }
   };
   SONGS.end = SONGS.lobby;

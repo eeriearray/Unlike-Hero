@@ -215,9 +215,12 @@ label.field, .field { display: grid; gap: 6px; font: 500 12px var(--f-label); le
 .select { padding: 7px 10px; border-radius: 4px; border: 1px solid var(--line-strong); background: #140d0a; }
 
 /* role tooltip */
-.tip { position: fixed; z-index: 80; width: 270px; padding: 14px; border-radius: 4px; pointer-events: none; color: var(--paper-ink);
+.tip { position: fixed; z-index: 80; width: 270px; padding: 14px; border-radius: 4px; pointer-events: none; color: var(--paper-ink); transform-origin: var(--ax) 100%;
   background: var(--paper); background-image: radial-gradient(ellipse at 20% 0%, rgba(255, 255, 255, .45), transparent 60%), radial-gradient(ellipse at 90% 100%, rgba(120, 90, 40, .18), transparent 60%);
-  box-shadow: 0 14px 40px rgba(0, 0, 0, .6); animation: tipIn .15s ease-out; }
+  box-shadow: 0 14px 40px rgba(0, 0, 0, .6), 0 0 0 1px rgba(120, 90, 40, .25); animation: tipIn .2s cubic-bezier(.2, .8, .2, 1) both; }
+.tip.below { transform-origin: var(--ax) 0; }
+.tip::after { content: ''; position: absolute; left: var(--ax); width: 12px; height: 12px; background: var(--paper); transform: translateX(-50%) rotate(45deg); }
+.tip.above::after { bottom: -6px; box-shadow: 3px 3px 6px rgba(0, 0, 0, .25); } .tip.below::after { top: -6px; }
 .tip .t-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
 .tip .t-head .ic { font-size: 30px; }
 .tip b { font: 900 19px var(--f-head); display: block; }
@@ -225,7 +228,7 @@ label.field, .field { display: grid; gap: 6px; font: 500 12px var(--f-label); le
 .tip p { margin: 6px 0 0; font: 14px/1.4 var(--f-news); }
 .tip .goal { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0, 0, 0, .2); font: italic 13px var(--f-news); }
 .tip .team-town { color: #2c6a94; } .tip .team-mafia { color: #9a1b2a; } .tip .team-neutral { color: #6a3a94; }
-@keyframes tipIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes tipIn { from { opacity: 0; scale: .94; } to { opacity: 1; scale: 1; } }
 
 /* ───────────── Game layout ───────────── */
 .game { flex: 1; width: min(1360px, 100%); margin: 0 auto; padding: 12px 16px 20px; display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start; }
@@ -481,7 +484,7 @@ body.phase-night .announce .phase-title { color: #c9d4ff; }
 .table-wrap { width: 100%; overflow-x: auto; }
 
 /* sound menu */
-.menu { position: absolute; top: 48px; right: 0; z-index: 25; width: 240px; padding: 12px 14px; display: grid; gap: 12px; text-align: left; animation: tipIn .15s ease-out; }
+.menu { position: absolute; top: 48px; right: 0; z-index: 25; width: 270px; padding: 12px 14px; display: grid; gap: 12px; text-align: left; animation: tipIn .15s ease-out; }
 .menu .switch { justify-content: space-between; width: 100%; font: 500 13px var(--f-label); letter-spacing: .12em; text-transform: uppercase; color: var(--ink); }
 .menu .hint { font: 12px var(--f-type); color: var(--muted); }
 
