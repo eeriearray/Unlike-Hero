@@ -777,7 +777,8 @@
     this.announcement = lines[lines.length - 1];
     lines.forEach(function (l) { self.systemChat('day', l, 'story'); });
     this.pendingWinner = this.checkWinner();
-    this.setPhase('dawn', Math.min(30, 4 + lines.length * 2.6));
+    // Long enough for the narrator to read every line aloud (~2.4 words a second).
+    this.setPhase('dawn', Math.min(55, 5 + lines.reduce(function (t, l) { return t + l.split(' ').length / 2.4 + 0.8; }, 0)));
     this.chatReset();
   };
 
@@ -839,7 +840,7 @@
       this.announcement = this.verdict.text;
       this.systemChat('day', this.verdict.text, 'story');
       this.pendingWinner = null;
-      this.setPhase('verdict', 5);
+      this.setPhase('verdict', 7);
       return;
     }
     this.accusedId = top[0];
@@ -907,7 +908,7 @@
     this.announcement = text;
     this.systemChat('day', (executed ? '⚰️ ' : '🕊️ ') + text, 'story');
     this.pendingWinner = executed ? this.checkWinner() : null;
-    this.setPhase('verdict', executed ? 9 : 6);
+    this.setPhase('verdict', executed ? 12 : 8);
     if (executed) this.chatReset();
   };
 

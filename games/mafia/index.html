@@ -7,15 +7,13 @@
 <title>Mafia</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800;900&family=Special+Elite&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700;1,900&family=Oswald:wght@500;600&family=Special+Elite&family=Old+Standard+TT:ital,wght@0,400;0,700;1,400&family=UnifrakturMaguntia&family=Libre+Franklin:wght@400;600&display=swap">
 <link rel="stylesheet" href="css/mafia.css">
 </head>
 <body class="phase-lobby">
-<!-- Atmosphere layers; body.phase-* classes cross-fade them. -->
-<div class="scene" aria-hidden="true">
-  <div class="sky-lobby"></div><div class="sky-night"></div><div class="sky-dawn"></div><div class="sky-day"></div><div class="sky-trial"></div><div class="sky-end"></div>
-  <div class="moon"></div><div class="fog"></div><div class="vignette"></div><div class="grain"></div>
-</div>
+<!-- The town hall backdrop, drawn by js/scene.js; body.phase-* classes relight it. -->
+<div class="scene" aria-hidden="true"></div>
+<script src="js/scene.js"></script>
 <canvas id="fx-bg" aria-hidden="true"></canvas>
 <canvas id="fx" aria-hidden="true"></canvas>
 <div id="root"><noscript>Mafia needs JavaScript.</noscript></div>
@@ -32,6 +30,7 @@
 <!-- Shared rules engine (same file the server runs) -->
 <script src="engine/mafia-engine.js"></script>
 <script src="js/audio.js"></script>
+<script src="js/voice.js"></script>
 <script src="js/fx.js"></script>
 <script src="js/net.js"></script>
 <script src="js/app.js"></script>

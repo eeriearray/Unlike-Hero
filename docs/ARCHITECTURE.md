@@ -91,6 +91,24 @@ Any server that implements this forwarding (Node, Cloudflare Durable Objects, Su
 Games post to the parent window: `{ source: 'hub-game', sdk, type: 'ready' | 'event' | 'exit', gameId, meta?, event?, data? }`.
 A platform hosting games in iframes only needs to listen for these.
 
+## Game servers (optional)
+
+Most games only need the relay. A game that must keep secrets from its own players (hidden roles, private actions)
+can ship an authoritative server inside its folder and name it in `game.json`:
+
+```json
+{ "server": "server/index.mjs" }
+```
+
+`server/relay.mjs` imports that module at startup and calls its default export with
+`{ httpServer, basePath: '/games/<id>/', gameId }`. The module attaches to the shared HTTP server and returns
+`{ paths: [...] }` — URL prefixes whose WebSocket upgrades the relay must leave alone. Folders named `server/`
+are never served over HTTP, so the game's server code stays private.
+
+Mafia uses this: `games/mafia/server/index.mjs` runs Socket.io at `/games/mafia/socket.io` and sends each player only
+their own view of the game. The rules live in `games/mafia/engine/mafia-engine.js`, which the browser also loads
+for offline games against bots. Static hosts without Node still serve the game; only its online mode needs the server.
+
 ## Path to a hosted platform
 
 The folder already works as a static site. When you build the platform:
