@@ -1,6 +1,52 @@
 {
-  "generated": "2026-10-15T11:42:46.110Z",
+  "generated": "2026-10-15T12:57:25.137Z",
   "games": [
+    {
+      "id": "sea-of-chaos",
+      "title": "Sea of Chaos: Arena",
+      "tagline": "A pirate battle royale for 2-person crews. Sink rivals, grab treasure, outrun the storm, dodge the Megalodon.",
+      "version": "1.0.0",
+      "sdk": "1.x",
+      "entry": "index.html",
+      "thumbnail": "thumbnail.svg",
+      "accent": "#ffc94a",
+      "players": {
+        "min": 1,
+        "max": 5
+      },
+      "roles": [
+        {
+          "id": "pirate",
+          "name": "Pirate",
+          "entry": "index.html",
+          "description": "Host an arena or join with its 4-letter code. Crews of two share a ship: one sails, one fights and repairs."
+        }
+      ],
+      "multiplayer": {
+        "style": "PvPvE battle royale, 2-person crews, host-authoritative",
+        "sameDevice": false,
+        "transports": [
+          "local",
+          "relay"
+        ],
+        "notes": "4 players make two crews of 2; a 5th gets a ship with an AI Deckhand. Fewer than 4 players and AI pirate ships fill the arena. Solo play works offline."
+      },
+      "tags": [
+        "pvp",
+        "co-op",
+        "pirates",
+        "battle royale",
+        "3D",
+        "voice"
+      ],
+      "requires": [
+        "webgl",
+        "keyboard and mouse",
+        "internet (three.js and fonts load from CDNs)"
+      ],
+      "status": "playable",
+      "path": "games/sea-of-chaos/"
+    },
     {
       "id": "short-fuse",
       "title": "Short Fuse",
