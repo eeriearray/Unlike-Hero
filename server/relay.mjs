@@ -59,6 +59,10 @@ server.on('upgrade', (req, socket, head) => {
   });
 });
 
+server.on('error', e => {
+  if (e.code === 'EADDRINUSE') { console.error(`Port ${PORT} is already in use (is the hub already running?). Stop the other process or run: PORT=8081 npm start`); process.exit(1); }
+  throw e;
+});
 server.listen(PORT, () => {
   console.log(`Game hub on http://localhost:${PORT}  (relay at ws://localhost:${PORT}/relay)`);
   console.log('Other devices on your network: use this computer\'s IP address instead of localhost.');
