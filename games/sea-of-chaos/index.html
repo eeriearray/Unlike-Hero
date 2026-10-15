@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Sea of Chaos: Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Nunito:wght@500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Alegreya:ital,wght@0,500;0,700;1,500&family=Pirata+One&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
 <!-- post-processing (r147 is the last release that ships these as classic scripts) -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/shaders/CopyShader.js"></script>
@@ -19,145 +19,207 @@
 <script src="../../shared/sdk/hub-config.js"></script>
 <script src="../../shared/sdk/hub-sdk.js"></script>
 <style>
-:root{--ink:#fdf3dc;--muted:#c9b98f;--panel:rgba(18,24,34,.82);--panel2:rgba(10,14,22,.9);--line:rgba(255,226,160,.22);--gold:#ffc94a;--red:#ff5a46;--green:#4be08a;--blue:#4aa8ff;--shadow:0 6px 24px rgba(0,0,0,.45);color-scheme:dark}
+/* Nautical theme: aged parchment for menus and charts, weathered brass and dark oak for the HUD. */
+:root{
+  --parch:#d4b886;--parch-hi:#e6d2a4;--parch-lo:#b89a62;--ink:#2b1a0c;--ink-soft:#5a3e22;
+  --brass:#b8860b;--brass-hi:#e9c45a;--brass-lo:#6e4f08;--gold:#ffd36b;--oak:rgba(36,24,13,.86);
+  --red:#c0392b;--red-hi:#ff6a4a;--green:#4f9a3a;--green-hi:#7fd35a;--sea:#2a6f8a;
+  --serif:'Cinzel',Georgia,serif;--muted:#5a3e22;--body:'Alegreya',Georgia,serif;--title:'Pirata One',Georgia,serif;color-scheme:dark}
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;overflow:hidden;background:#06121c;color:var(--ink);font:15px/1.4 Nunito,system-ui,sans-serif;user-select:none;-webkit-user-select:none}
-canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block;transition:filter .4s}
+html,body{margin:0;height:100%;overflow:hidden;background:#06121c;color:var(--ink);font:16px/1.4 var(--body);user-select:none;-webkit-user-select:none}
+canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 button,input,select{font:inherit;color:inherit}
 button{cursor:pointer}
 [hidden]{display:none!important}
 .screen{position:fixed;inset:0;display:grid;place-items:center;padding:16px;z-index:10;overflow:auto}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:22px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-.title{font-family:'Pirata One',serif;font-size:clamp(46px,8vw,92px);line-height:.95;margin:0;color:var(--gold);text-shadow:0 4px 0 #6b3a10,0 10px 30px rgba(0,0,0,.6);letter-spacing:.02em;text-align:center}
-.title small{display:block;font-size:.42em;color:var(--ink);text-shadow:0 3px 0 #3a2208}
-.tag{color:var(--muted);text-align:center;margin:10px auto 18px;max-width:560px}
-.btn{border:1px solid var(--line);background:#223042;border-radius:12px;padding:11px 18px;font-weight:800;letter-spacing:.02em;transition:transform .08s,background .15s}
-.btn:hover{background:#2c3e55}.btn:active{transform:translateY(1px)}
-.btn.gold{background:linear-gradient(#ffd46a,#e9a526);color:#3a1f05;border-color:#ffe39a;text-shadow:0 1px 0 rgba(255,255,255,.4)}
-.btn.gold:hover{background:linear-gradient(#ffe08a,#f0b23a)}
-.btn.small{padding:7px 12px;font-size:13px;border-radius:10px}
-.btn.ghost{background:transparent}
+
+/* parchment */
+.card{position:relative;color:var(--ink);padding:26px 28px;border-radius:4px;border:2px solid #4a2e14;
+  background:
+    radial-gradient(circle at 18% 12%,rgba(255,244,210,.55),transparent 38%),
+    radial-gradient(circle at 88% 85%,rgba(110,70,25,.28),transparent 42%),
+    radial-gradient(circle at 70% 20%,rgba(140,95,40,.14),transparent 30%),
+    radial-gradient(circle at 10% 90%,rgba(120,80,30,.2),transparent 35%),
+    linear-gradient(170deg,#e4cf9f,#cdb07b 60%,#c3a26a);
+  box-shadow:inset 0 0 0 4px rgba(255,240,205,.25),inset 0 0 50px rgba(95,58,20,.5),0 14px 40px rgba(0,0,0,.55)}
+.card::before{content:'';position:absolute;inset:7px;border:1px solid rgba(74,46,20,.45);border-radius:2px;pointer-events:none}
+.title{font-family:var(--title);font-weight:400;font-size:clamp(46px,8vw,90px);line-height:.92;margin:0;color:#7a1f12;text-shadow:0 2px 0 rgba(255,240,200,.6),0 4px 0 rgba(60,25,8,.35);text-align:center;letter-spacing:.02em}
+.title small{display:block;font-family:var(--serif);font-weight:900;font-size:.3em;letter-spacing:.5em;color:var(--ink);text-shadow:none;margin-top:6px}
+.tag{color:var(--ink-soft);text-align:center;margin:10px auto 18px;max-width:560px;font-size:17px}
+.label{font-family:var(--serif);font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)}
+.btn{font-family:var(--serif);font-weight:700;letter-spacing:.06em;border:1px solid #1a0f06;border-radius:4px;padding:11px 18px;color:#f3dca0;
+  background:linear-gradient(#5a3c22,#34220f);box-shadow:inset 0 1px 0 rgba(255,220,160,.25),0 2px 0 rgba(0,0,0,.35);transition:transform .08s,filter .15s}
+.btn:hover{filter:brightness(1.15)}.btn:active{transform:translateY(1px)}
+.btn.gold{color:#2b1a0c;border-color:var(--brass-lo);background:linear-gradient(#f6da7a,#c9971c 55%,#a87a10);box-shadow:inset 0 1px 0 rgba(255,250,220,.7),0 2px 0 rgba(60,40,0,.45)}
+.btn.small{padding:6px 11px;font-size:12px}
+.btn.ghost{background:transparent;color:var(--ink);border-color:rgba(74,46,20,.5);box-shadow:none}
 .btn[disabled]{opacity:.45;cursor:not-allowed}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.col{display:grid;gap:12px}
-input[type=text]{background:#0c1420;border:1px solid var(--line);border-radius:10px;padding:10px 12px;outline:none}
-input[type=text]:focus{border-color:var(--gold)}
-.menu-card{width:min(520px,100%)}
+.col{display:grid;gap:8px}
+input[type=text]{background:rgba(255,248,228,.55);border:1px solid #6b4a24;border-radius:3px;padding:10px 12px;outline:none;color:var(--ink);font-family:var(--body);font-size:17px}
+input[type=text]::placeholder{color:rgba(60,40,20,.5)}
+input[type=text]:focus{border-color:#7a1f12;box-shadow:0 0 0 2px rgba(122,31,18,.2)}
+select{background:rgba(255,248,228,.55);border:1px solid #6b4a24;border-radius:3px;padding:7px;color:var(--ink);font-family:var(--serif);font-weight:700}
+.menu-card{width:min(540px,100%)}
 .menu-grid{display:grid;gap:10px;margin-top:14px}
 .menu-grid .btn{width:100%;padding:13px}
 .join-row{display:grid;grid-template-columns:1fr auto;gap:10px}
-.code-in{text-transform:uppercase;letter-spacing:.3em;text-align:center;font-weight:900}
-.label{font-size:12px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.code-in{text-transform:uppercase;letter-spacing:.35em;text-align:center;font-family:var(--serif)!important;font-weight:900}
 .foot{display:flex;justify-content:space-between;gap:10px;margin-top:16px;flex-wrap:wrap}
-.err{color:var(--red);font-weight:700;min-height:1.2em;font-size:13px}
+.err{color:#8a1a0e;font-weight:700;min-height:1.2em;font-size:14px}
+kbd{display:inline-block;min-width:22px;padding:0 6px;border-radius:3px;font:700 12px/20px var(--serif);text-align:center;color:#2b1a0c;
+  background:linear-gradient(#f3d88a,#c39324);border:1px solid #6e4f08;box-shadow:inset 0 1px 0 rgba(255,255,230,.6),0 1px 0 rgba(0,0,0,.4);margin-right:3px}
 
 /* character maker */
 #maker{place-items:stretch;padding:0}
-.maker-wrap{display:grid;grid-template-columns:minmax(300px,420px) 1fr;height:100%}
-.maker-panel{margin:16px;align-self:center;display:grid;gap:12px;max-height:calc(100% - 32px);overflow:auto}
-.opt{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;background:rgba(0,0,0,.25);border-radius:12px;padding:8px}
-.opt b{display:block;text-align:center;font-size:16px}
-.opt span{display:block;text-align:center;font-size:12px;color:var(--muted)}
-.opt .btn{padding:6px 12px;font-size:18px;line-height:1}
-#preview-box{margin:16px;border-radius:18px;min-height:300px}
+.maker-wrap{display:grid;grid-template-columns:minmax(300px,430px) 1fr;height:100%}
+.maker-panel{margin:16px;align-self:center;display:grid;gap:10px;max-height:calc(100% - 32px);overflow:auto}
+.opt{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;background:rgba(90,55,20,.1);border:1px solid rgba(74,46,20,.3);border-radius:3px;padding:7px}
+.opt b{display:block;text-align:center;font-family:var(--serif);font-size:15px}
+.opt span{display:block;text-align:center;font-size:14px;color:var(--ink-soft);font-style:italic}
+.opt .btn{padding:4px 12px;font-size:18px;line-height:1.2}
+#preview-box{margin:16px;border-radius:4px;min-height:300px;border:2px solid var(--brass);box-shadow:inset 0 0 0 3px rgba(0,0,0,.4)}
 .swatches{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
-.swatches button{width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,.25)}
-.swatches button.on{border-color:#fff;box-shadow:0 0 0 2px var(--gold)}
+.swatches button{width:28px;height:28px;border-radius:50%;border:2px solid #4a2e14}
+.swatches button.on{box-shadow:0 0 0 3px var(--brass)}
 
 /* lobby */
-.lobby-card{width:min(860px,100%)}
-.code-big{font-family:'Pirata One',serif;font-size:56px;letter-spacing:.12em;color:var(--gold);line-height:1}
+.lobby-card{width:min(880px,100%)}
+.code-big{font-family:var(--title);font-size:58px;letter-spacing:.12em;color:#7a1f12;line-height:1}
 .crews{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:14px 0}
-.crew{border:1px solid var(--line);border-radius:14px;padding:12px;background:rgba(0,0,0,.25)}
-.crew h4{margin:0 0 8px;display:flex;align-items:center;gap:8px}
-.dot{width:12px;height:12px;border-radius:50%;display:inline-block;flex:none}
-.crew li{list-style:none;padding:3px 0}
-.crew ul{margin:0;padding:0}
+.crew{border:1px dashed rgba(74,46,20,.6);border-radius:3px;padding:10px 12px;background:rgba(255,245,215,.25)}
+.crew h4{margin:0 0 6px;display:flex;align-items:center;gap:8px;font-family:var(--serif);font-size:15px}
+.dot{width:12px;height:12px;border-radius:50%;display:inline-block;flex:none;border:1px solid rgba(0,0,0,.45)}
+.crew ul{margin:0;padding:0}.crew li{list-style:none;padding:2px 0}
 .ships{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.ship-opt{border:2px solid var(--line);border-radius:14px;padding:10px;background:rgba(0,0,0,.25);text-align:left}
-.ship-opt.on{border-color:var(--gold);background:rgba(255,201,74,.1)}
-.ship-opt b{font-size:17px}
-.stat{display:grid;grid-template-columns:62px 1fr;gap:6px;align-items:center;font-size:11px;color:var(--muted);margin-top:4px}
-.bar{height:6px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden}
-.bar i{display:block;height:100%;background:var(--gold)}
-select{background:#0c1420;border:1px solid var(--line);border-radius:10px;padding:8px}
+.ship-opt{border:2px solid rgba(74,46,20,.45);border-radius:3px;padding:10px;background:rgba(255,245,215,.3);text-align:left;color:var(--ink)}
+.ship-opt.on{border-color:var(--brass);background:rgba(255,228,150,.45);box-shadow:inset 0 0 0 1px var(--brass-hi)}
+.ship-opt b{font-family:var(--serif);font-size:16px}
+.stat{display:grid;grid-template-columns:62px 1fr;gap:6px;align-items:center;font-size:12px;color:var(--ink-soft);margin-top:3px;font-family:var(--serif)}
+.bar{height:7px;border-radius:1px;background:rgba(60,35,10,.25);overflow:hidden;border:1px solid rgba(60,35,10,.35)}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#8a5a12,#d9a531)}
 
-/* HUD */
-#hud{position:fixed;inset:0;pointer-events:none;z-index:5}
+/* ---------- HUD: brass and oak ---------- */
+#hud{position:fixed;inset:0;pointer-events:none;z-index:5;color:#f3dca0;font-family:var(--serif)}
 #hud .p{position:absolute}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
-#radar-wrap{left:14px;top:14px;padding:8px;width:188px}
-#radar{width:170px;height:170px;display:block}
-#storm-t{font-weight:900;text-align:center;margin-top:6px;font-size:14px}
-#storm-sub{text-align:center;font-size:12px;color:var(--muted)}
-#scores{left:50%;top:12px;transform:translateX(-50%);display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:60vw}
-.chip{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px 12px 4px 8px;font-weight:800;font-size:13px;display:flex;gap:6px;align-items:center}
-.chip.me{border-color:var(--gold)}
-.chip.dead{opacity:.45;text-decoration:line-through}
-#feed{right:14px;top:14px;display:grid;gap:6px;justify-items:end;max-width:min(380px,44vw)}
-.feed{background:var(--panel2);border-radius:10px;padding:6px 12px;font-weight:700;font-size:13px;border-left:4px solid var(--gold);animation:fin .25s ease-out}
-@keyframes fin{from{transform:translateX(20px);opacity:0}}
-#status{left:14px;bottom:14px;padding:12px;width:250px;display:grid;gap:8px}
-.gauge{display:grid;grid-template-columns:44px 1fr;gap:10px;align-items:stretch}
-#water-tank{height:96px;border-radius:10px;border:2px solid rgba(255,255,255,.3);position:relative;overflow:hidden;background:rgba(0,0,0,.35)}
-#water-fill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(#56c8ff,#1667b8);transition:height .25s}
-#water-pct{position:absolute;inset:0;display:grid;place-items:center;font-weight:900;font-size:13px;text-shadow:0 1px 2px #000}
-.kv{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
-.kv b{color:var(--ink)}
-.mini-bar{height:7px;border-radius:4px;background:rgba(255,255,255,.12);overflow:hidden}
-.mini-bar i{display:block;height:100%;transition:width .2s}
-#ship-name{font-weight:900;font-size:14px}
-#right-hud{right:14px;bottom:14px;display:grid;gap:10px;justify-items:end}
-#compass-wrap{padding:8px}
-#compass{width:150px;height:150px;display:block}
-#wind-eff{text-align:center;font-size:12px;color:var(--muted);font-weight:700}
-#ammo{display:flex;gap:6px;padding:8px}
-.ammo{width:62px;border-radius:10px;border:2px solid transparent;padding:5px 4px;text-align:center;background:rgba(0,0,0,.3);font-size:11px;font-weight:800;line-height:1.15}
-.ammo.on{border-color:var(--gold);background:rgba(255,201,74,.14)}
-.ammo i{display:block;width:16px;height:16px;border-radius:50%;margin:0 auto 3px;box-shadow:inset -3px -3px 0 rgba(0,0,0,.35)}
-.ammo em{font-style:normal;font-size:15px;display:block}
-.ammo.empty{opacity:.4}
-#cross{left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px rgba(0,0,0,.5)}
-#prompt{left:50%;top:calc(50% + 34px);transform:translateX(-50%);background:var(--panel2);border-radius:10px;padding:6px 14px;font-weight:800;white-space:nowrap}
-#prompt kbd,#helpbar kbd,.keys kbd{display:inline-block;min-width:22px;padding:1px 6px;border-radius:6px;background:var(--gold);color:#2a1604;font:900 12px/18px Nunito,sans-serif;text-align:center;margin-right:4px}
-#ring{left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px}
-#helpbar{left:50%;bottom:16px;transform:translateX(-50%);background:var(--panel2);border-radius:12px;padding:8px 14px;font-size:13px;font-weight:700;display:flex;gap:14px;flex-wrap:wrap;justify-content:center;max-width:min(720px,calc(100vw - 600px))}
-#banner{left:50%;top:26%;transform:translateX(-50%);font-family:'Pirata One',serif;font-size:clamp(34px,6vw,64px);color:var(--gold);text-shadow:0 4px 0 #5a2a08,0 8px 30px #000;text-align:center;white-space:nowrap;transition:opacity .5s}
-#banner small{display:block;font-family:Nunito,sans-serif;font-size:18px;font-weight:800;color:var(--ink);text-shadow:0 2px 6px #000}
-#hp-wrap{display:grid;gap:3px}
+.plate{border-radius:5px;border:2px solid var(--brass);color:#f3dca0;
+  background:
+    radial-gradient(circle at 7px 7px,var(--brass-hi) 2px,transparent 3px),radial-gradient(circle at calc(100% - 7px) 7px,var(--brass-hi) 2px,transparent 3px),
+    radial-gradient(circle at 7px calc(100% - 7px),var(--brass-hi) 2px,transparent 3px),radial-gradient(circle at calc(100% - 7px) calc(100% - 7px),var(--brass-hi) 2px,transparent 3px),
+    linear-gradient(rgba(52,34,18,.9),rgba(26,17,9,.9));
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.6),inset 0 0 0 3px rgba(233,196,90,.18),0 6px 18px rgba(0,0,0,.45)}
+.plaque{background:linear-gradient(#f0d070,#b8860b 60%,#8a640a);color:#2b1a0c;border:1px solid #4a3404;border-radius:3px;text-align:center;padding:3px 10px;box-shadow:inset 0 1px 0 rgba(255,250,210,.7),0 3px 8px rgba(0,0,0,.45);font-weight:700}
+#objective{left:50%;top:10px;transform:translateX(-50%);text-align:center;padding:6px 18px 7px;font-weight:700;font-size:12px;letter-spacing:.14em;white-space:nowrap;transition:all .5s}
+#objective b{color:var(--gold)}
+#objective.big{top:22%;padding:16px 30px;font-size:clamp(14px,2.2vw,22px)}
+#countdown{display:block;font-family:var(--title);font-size:72px;letter-spacing:0;line-height:1;color:var(--gold);text-shadow:0 3px 0 #3a1a04}
+#radar-wrap{left:12px;top:12px;width:196px;display:grid;justify-items:center;gap:4px}
+#radar{width:196px;height:196px;display:block;filter:drop-shadow(0 6px 10px rgba(0,0,0,.5))}
+#storm-plaque{width:180px;padding:4px 8px}
+#storm-t{font-size:13px}
+#storm-sub{font-size:11px;font-family:var(--body);font-weight:700}
+#scores{left:50%;top:48px;transform:translateX(-50%);display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:62vw}
+.chip{border-radius:3px;padding:3px 10px 3px 7px;font-weight:700;font-size:12px;display:flex;gap:6px;align-items:center;letter-spacing:.04em;
+  background:linear-gradient(rgba(52,34,18,.88),rgba(26,17,9,.88));border:1px solid rgba(184,134,11,.7);color:#f3dca0}
+.chip span:last-child{color:var(--gold)}
+.chip.me{border-color:var(--brass-hi);box-shadow:0 0 0 1px var(--brass-hi)}
+.chip.dead{opacity:.5;text-decoration:line-through}
+#feed{right:12px;top:12px;display:grid;gap:5px;justify-items:end;max-width:min(380px,44vw)}
+.feed{font-family:var(--body);font-weight:700;font-size:14px;color:var(--ink);padding:4px 12px 4px 10px;border-radius:2px;border-left:5px solid var(--brass);
+  background:linear-gradient(90deg,#e2cc9c,#cfb27c);box-shadow:0 3px 8px rgba(0,0,0,.4);animation:fin .25s ease-out}
+@keyframes fin{from{transform:translateX(24px);opacity:0}}
+#status{left:12px;bottom:12px;padding:12px 12px 10px;width:262px;display:grid;gap:8px}
+.plate-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;border-bottom:1px solid rgba(233,196,90,.3);padding-bottom:5px}
+#ship-name{font-weight:900;font-size:14px;letter-spacing:.04em}
+#ship-crew{font-size:11px;color:#c9b27a;letter-spacing:.12em;text-transform:uppercase}
+.status-body{display:grid;grid-template-columns:56px 1fr;gap:12px}
+.barrel{display:grid;justify-items:center;gap:3px;font-size:10px;letter-spacing:.14em;color:#c9b27a}
+#water-tank{width:52px;height:104px;border-radius:14px/8px;position:relative;overflow:hidden;border:2px solid #2a1a0c;
+  background:repeating-linear-gradient(90deg,#6a4426 0 8px,#5a3820 8px 9px);box-shadow:inset 0 0 12px rgba(0,0,0,.6)}
+#water-fill{position:absolute;left:0;right:0;bottom:0;height:0;background:linear-gradient(rgba(90,200,240,.9),rgba(20,90,150,.95));transition:height .25s}
+#water-fill.danger{background:linear-gradient(rgba(255,130,100,.9),rgba(150,30,20,.95))}
+.hoop{position:absolute;left:0;right:0;height:5px;background:linear-gradient(#e0b44c,#8a640a);box-shadow:0 1px 0 rgba(0,0,0,.5)}
+#water-pct{position:absolute;inset:0;display:grid;place-items:center;font-weight:900;font-size:14px;color:#fff;text-shadow:0 1px 2px #000,0 0 6px #000}
+.gauges{display:grid;gap:7px;align-content:start}
+.g-row{display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:7px;font-size:12px;font-weight:700}
+.g-row svg{width:22px;height:22px;fill:none;stroke:#e9c45a;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.meter{height:9px;border-radius:2px;background:rgba(0,0,0,.55);border:1px solid rgba(233,196,90,.4);overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:linear-gradient(90deg,#c9a24a,#f6e2a0);transition:width .2s}
+.meter.red i{background:linear-gradient(90deg,#9a2a1c,#ff6a4a)}
+.meter.hp i{background:linear-gradient(90deg,#3d7a2c,#8fe06a)}
+.pips{display:flex;gap:3px;flex-wrap:wrap;min-height:12px;align-items:center}
+.pip{width:10px;height:10px;border-radius:50%;background:#2a1a0c;border:1px solid #e9c45a}
+.pip.l1{background:#e0a33a}.pip.l2{background:#e0612a}.pip.l3{background:#c0261a;box-shadow:0 0 6px #ff4a2a}
+.pips em{font-style:normal;font-size:11px;color:#9ad37a;letter-spacing:.06em}
+.state{font-size:11px;letter-spacing:.1em;padding:1px 6px;border-radius:2px;justify-self:start}
+.state.up{background:rgba(79,154,58,.35);color:#b9f19a}.state.down{background:rgba(192,57,43,.5);color:#ffd2c8}
+.rudder{position:relative;height:16px;border-radius:2px;background:rgba(0,0,0,.45);border:1px solid rgba(233,196,90,.4)}
+.rudder::before{content:'';position:absolute;left:50%;top:2px;bottom:2px;width:1px;background:rgba(233,196,90,.5)}
+#k-rudder{position:absolute;top:1px;bottom:1px;width:6px;margin-left:-3px;left:50%;border-radius:1px;background:var(--gold);box-shadow:0 0 4px rgba(255,210,100,.8);transition:left .15s}
+#k-speed,#k-sail,#k-hp{font-size:12px;min-width:34px;text-align:right;color:var(--gold)}
+#right-hud{right:12px;bottom:12px;display:grid;gap:8px;justify-items:end}
+#ammo{display:flex;gap:6px;padding:8px 10px}
+.ammo{width:58px;text-align:center;font-size:10px;font-weight:700;letter-spacing:.04em;line-height:1.15;color:#d8c08a;padding:4px 2px;border-radius:3px;border:1px solid transparent}
+.ammo.on{border-color:var(--brass-hi);background:rgba(233,196,90,.12);color:#fff2c4}
+.ammo i{display:block;width:22px;height:22px;border-radius:50%;margin:0 auto 3px;border:2px solid #8a640a;box-shadow:inset -4px -4px 0 rgba(0,0,0,.45),inset 3px 3px 0 rgba(255,255,255,.25)}
+.ammo em{font-style:normal;font-size:16px;display:block;color:var(--gold)}
+.ammo.empty{opacity:.35}
+.ammo.reload em{font-size:13px}
+#compass-wrap{display:grid;justify-items:center;gap:4px}
+#compass{width:170px;height:170px;display:block;filter:drop-shadow(0 6px 10px rgba(0,0,0,.5))}
+#wind-eff{font-size:11px;padding:3px 10px}
+#cross{left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px}
+#cross::before,#cross::after{content:'';position:absolute;background:rgba(255,240,200,.85);box-shadow:0 0 2px #000}
+#cross::before{left:6px;top:0;width:2px;height:14px}#cross::after{top:6px;left:0;height:2px;width:14px}
+#prompt{left:50%;top:calc(50% + 36px);transform:translateX(-50%);padding:6px 14px;font-weight:700;font-size:14px;white-space:nowrap;font-family:var(--body)}
+#ring{left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px}
+#helpbar{left:50%;bottom:10px;transform:translateX(-50%);display:flex;gap:4px 16px;flex-wrap:wrap;justify-content:center;align-items:center;padding:5px 16px;font-size:11px;font-weight:700;letter-spacing:.06em;color:rgba(243,220,160,.92);
+  background:linear-gradient(90deg,transparent,rgba(16,10,5,.62) 12%,rgba(16,10,5,.62) 88%,transparent);border-top:1px solid rgba(233,196,90,.25);border-bottom:1px solid rgba(233,196,90,.25);max-width:min(760px,calc(100vw - 600px))}
+#helpbar span{white-space:nowrap}
+#helpbar kbd{font-size:10px;line-height:16px;min-width:18px;padding:0 4px}
+#banner{left:50%;top:30%;transform:translateX(-50%);font-family:var(--title);font-size:clamp(36px,6vw,66px);color:var(--gold);text-shadow:0 3px 0 #3a1a04,0 0 24px rgba(0,0,0,.6);text-align:center;white-space:nowrap;transition:opacity .5s}
+#banner small{display:block;font-family:var(--serif);font-size:16px;font-weight:700;letter-spacing:.08em;color:#f6e6c0;text-shadow:0 2px 6px #000}
 #vignette{inset:0;transition:box-shadow .3s}
 #flash{inset:0;background:#fff;opacity:0;transition:opacity .15s}
 #grog{inset:0;opacity:0;transition:opacity .6s;background:radial-gradient(ellipse at center,transparent 40%,rgba(80,200,60,.35) 100%)}
-#spectate{left:50%;top:90px;transform:translateX(-50%);background:var(--panel2);border-radius:12px;padding:8px 16px;font-weight:800;text-align:center}
-#lock-hint{left:50%;top:60%;transform:translateX(-50%);background:var(--panel2);border-radius:10px;padding:8px 14px;font-weight:700;font-size:13px}
+#spectate{left:50%;top:96px;transform:translateX(-50%);padding:7px 16px;font-weight:700;text-align:center;font-size:13px}
+#lock-hint{left:50%;top:62%;transform:translateX(-50%);padding:6px 14px;font-weight:700;font-size:12px;font-family:var(--body)}
+#frozen{inset:0;background:radial-gradient(ellipse at center,transparent 35%,rgba(0,0,0,.55));transition:opacity 1s;opacity:0}
 
-/* scoreboard & end */
+/* scoreboard, end screen, help */
 #board,#end{z-index:20}
-.table{width:100%;border-collapse:collapse;font-size:14px}
-.table th{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
-.table td{padding:8px;border-bottom:1px solid rgba(255,255,255,.06)}
+.table{width:100%;border-collapse:collapse;font-size:15px}
+.table th{font-family:var(--serif);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);text-align:left;padding:6px 8px;border-bottom:2px solid rgba(74,46,20,.55)}
+.table td{padding:7px 8px;border-bottom:1px solid rgba(74,46,20,.2)}
 .table td.n{text-align:right;font-variant-numeric:tabular-nums}
-.table tr.win td{background:rgba(255,201,74,.12)}
-.end-card{width:min(820px,100%)}
-.end-title{font-family:'Pirata One',serif;font-size:clamp(48px,9vw,88px);text-align:center;margin:0;line-height:1}
-.end-sub{text-align:center;color:var(--muted);font-weight:700;margin:6px 0 16px}
-.mystats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:14px 0}
-.mystats div{background:rgba(0,0,0,.28);border-radius:12px;padding:10px;text-align:center}
-.mystats b{display:block;font-size:24px;color:var(--gold)}
-.mystats span{font-size:12px;color:var(--muted)}
-.help-card{width:min(900px,100%)}
+.table tr.win td{background:rgba(201,151,28,.25);font-weight:700}
+.end-card{width:min(860px,100%)}
+.end-title{font-family:var(--title);font-size:clamp(56px,10vw,104px);text-align:center;margin:0;line-height:.95}
+.end-title.win{color:#9a6a08;text-shadow:0 2px 0 rgba(255,245,200,.7),0 5px 0 rgba(70,40,5,.35)}
+.end-title.lose{color:#7a1f12;text-shadow:0 2px 0 rgba(255,240,200,.6),0 5px 0 rgba(60,20,5,.35)}
+.end-winner{text-align:center;font-family:var(--serif);font-weight:900;font-size:20px;margin:8px 0 0}
+.end-sub{text-align:center;color:var(--ink-soft);font-style:italic;margin:2px 0 14px}
+.mystats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:12px 0}
+.mystats div{background:rgba(90,55,20,.12);border:1px solid rgba(74,46,20,.35);border-radius:3px;padding:8px;text-align:center}
+.mystats b{display:block;font-family:var(--serif);font-size:24px;color:#7a1f12}
+.mystats span{font-family:var(--serif);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft)}
+.end-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+#btn-replay{font-size:18px;padding:14px 30px}
+.help-card{width:min(920px,100%)}
 .help-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
-.help-grid h3{margin:0 0 6px;font-size:15px;color:var(--gold)}
-.help-grid p,.help-grid li{margin:0;font-size:13px;color:#e8dcc0}
+.help-grid h3{margin:0 0 6px;font-family:var(--serif);font-size:15px;color:#7a1f12}
+.help-grid p,.help-grid li{margin:0;font-size:15px}
 .help-grid ul{margin:0;padding-left:18px}
-.keys{display:grid;gap:4px;font-size:13px}
-#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line);padding:10px 16px;border-radius:12px;z-index:30;font-weight:700}
-#loading{position:fixed;inset:0;display:grid;place-items:center;z-index:40;background:#06121c;font-family:'Pirata One',serif;font-size:40px;color:var(--gold)}
+.keys{display:grid;gap:5px;font-size:14px}
+#toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);padding:9px 16px;z-index:30;font-weight:700;font-family:var(--body);color:var(--ink);
+  background:linear-gradient(#e4cf9f,#c9ab74);border:2px solid #4a2e14;border-radius:3px;box-shadow:0 8px 20px rgba(0,0,0,.45)}
+#loading{position:fixed;inset:0;display:grid;place-items:center;z-index:40;background:#0b1620;font-family:var(--title);font-size:42px;color:var(--gold)}
 @media (max-width:900px){
   .maker-wrap{grid-template-columns:1fr;grid-template-rows:auto 1fr}
-  #helpbar{max-width:calc(100vw - 32px);bottom:auto;top:200px}
-  #compass{width:110px;height:110px}
-  #status{width:200px}
+  #helpbar{max-width:calc(100vw - 32px);bottom:auto;top:250px}
+  #compass{width:120px;height:120px}
+  #radar,#radar-wrap{width:150px}#radar{height:150px}#storm-plaque{width:150px}
+  #status{width:220px}
   .ships{grid-template-columns:1fr}
 }
 </style>
@@ -246,55 +308,60 @@ select{background:#0c1420;border:1px solid var(--line);border-radius:10px;paddin
   <div class="p" id="vignette"></div>
   <div class="p" id="grog"></div>
   <div class="p" id="flash"></div>
-  <div class="p panel" id="radar-wrap"><canvas id="radar" width="340" height="340"></canvas><div id="storm-t">8:00</div><div id="storm-sub">Storm ring</div></div>
+  <div class="p" id="frozen"></div>
+  <div class="p" id="radar-wrap">
+    <canvas id="radar" width="392" height="392" aria-label="Chart of the arena"></canvas>
+    <div class="plaque" id="storm-plaque"><div id="storm-t">Storm closes in 8:00</div><div id="storm-sub">Storm ring</div></div>
+  </div>
+  <div class="p plate" id="objective"><b>OBJECTIVE:</b> SINK ALL OPPOSING SHIPS &amp; SURVIVE THE STORM RING<span id="countdown" hidden>3</span></div>
   <div class="p" id="scores"></div>
   <div class="p" id="feed"></div>
-  <div class="p panel" id="status">
-    <div class="row" style="justify-content:space-between"><span id="ship-name">Sloop</span><span id="ship-crew" style="font-size:12px;color:var(--muted)"></span></div>
-    <div class="gauge">
-      <div id="water-tank"><div id="water-fill" style="height:0%"></div><div id="water-pct">0%</div></div>
-      <div style="display:grid;gap:5px;align-content:start">
-        <div class="kv"><span>Hull breaches</span><b id="k-breach">0</b></div>
-        <div class="kv"><span>Sails</span><b id="k-sail">0%</b></div>
-        <div class="mini-bar"><i id="b-sail" style="width:0%;background:#fff"></i></div>
-        <div class="kv"><span>Anchor</span><b id="k-anchor">Up</b></div>
-        <div class="kv"><span>Rudder</span><b id="k-rudder">⟷</b></div>
-        <div class="kv"><span>Speed</span><b id="k-speed">0 kn</b></div>
+  <div class="p plate" id="status">
+    <div class="plate-head"><span id="ship-name">Ship</span><span id="ship-crew"></span></div>
+    <div class="status-body">
+      <div class="barrel"><div id="water-tank" title="Water in the hold"><div id="water-fill"></div><div class="hoop" style="top:16%"></div><div class="hoop" style="bottom:16%"></div><div id="water-pct">0%</div></div>HOLD</div>
+      <div class="gauges">
+        <div class="g-row" title="Hull breaches"><svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/><path d="M9 8l2 3-3 2 3 3" stroke="#ff8a5a"/></svg><div class="pips" id="k-breach"></div><span></span></div>
+        <div class="g-row" title="Sails"><svg viewBox="0 0 24 24"><path d="M12 2v20M12 4c5 2 7 7 6 13H12M12 6c-4 2-6 6-5 10h5"/></svg><div class="meter"><i id="b-sail"></i></div><b id="k-sail">0%</b></div>
+        <div class="g-row" title="Anchor"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><path d="M12 7v14M8 10h8M5 15c1 4 4 6 7 6s6-2 7-6"/></svg><span class="state up" id="k-anchor">RAISED</span><span></span></div>
+        <div class="g-row" title="Rudder and speed"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="1.5"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3"/></svg><div class="rudder"><i id="k-rudder"></i></div><b id="k-speed">0 kn</b></div>
       </div>
     </div>
-    <div id="hp-wrap"><div class="kv"><span>Health</span><b id="k-hp">100</b></div><div class="mini-bar"><i id="b-hp" style="width:100%;background:var(--green)"></i></div></div>
+    <div class="g-row" id="hp-wrap" title="Your health"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z" stroke="#ff8a7a"/></svg><div class="meter hp"><i id="b-hp" style="width:100%"></i></div><b id="k-hp">100</b></div>
   </div>
   <div class="p" id="right-hud">
-    <div class="panel" id="ammo"></div>
-    <div class="panel" id="compass-wrap"><canvas id="compass" width="300" height="300"></canvas><div id="wind-eff">Wind</div></div>
+    <div class="plate" id="ammo"></div>
+    <div id="compass-wrap"><canvas id="compass" width="340" height="340" aria-label="Wind compass"></canvas><div class="plaque" id="wind-eff">Wind</div></div>
   </div>
   <div class="p" id="cross"></div>
-  <svg class="p" id="ring" viewBox="0 0 54 54" hidden><circle cx="27" cy="27" r="22" fill="none" stroke="rgba(0,0,0,.45)" stroke-width="6"/><circle id="ring-arc" cx="27" cy="27" r="22" fill="none" stroke="#ffc94a" stroke-width="6" stroke-linecap="round" stroke-dasharray="138.2" stroke-dashoffset="138.2" transform="rotate(-90 27 27)"/></svg>
-  <div class="p" id="prompt" hidden></div>
+  <svg class="p" id="ring" viewBox="0 0 58 58" hidden><circle cx="29" cy="29" r="23" fill="none" stroke="rgba(20,12,4,.6)" stroke-width="7"/><circle id="ring-arc" cx="29" cy="29" r="23" fill="none" stroke="#e9c45a" stroke-width="5" stroke-linecap="round" stroke-dasharray="144.5" stroke-dashoffset="144.5" transform="rotate(-90 29 29)"/></svg>
+  <div class="p plate" id="prompt" hidden></div>
   <div class="p" id="helpbar"></div>
   <div class="p" id="banner" style="opacity:0"></div>
-  <div class="p" id="spectate" hidden></div>
-  <div class="p" id="lock-hint" hidden>Click to steer with the mouse · <kbd style="background:#ffc94a;color:#2a1604;border-radius:6px;padding:0 6px">H</kbd> for help</div>
+  <div class="p plate" id="spectate" hidden></div>
+  <div class="p plate" id="lock-hint" hidden>Click to steer with the mouse · <kbd>H</kbd> for help</div>
 </div>
 
 <!-- SCOREBOARD (Tab) -->
 <section class="screen" id="board" hidden style="pointer-events:none">
-  <div class="card end-card"><h2 class="title" style="font-size:44px">Match Score</h2><table class="table" id="board-table"></table>
-  <p style="color:var(--muted);font-size:12px;text-align:center;margin:10px 0 0">Sink a ship +500 · Secure a chest +200 · Slay a Megalodon, Kraken or Skeleton Ship +350</p></div>
+  <div class="card end-card"><h2 class="title" style="font-size:46px">Match Score</h2><table class="table" id="board-table"></table>
+  <p style="color:var(--ink-soft);font-size:13px;text-align:center;margin:10px 0 0;font-style:italic">Sink a ship +500 · Secure a chest +200 · Slay a Megalodon, Kraken or Skeleton Ship +350</p></div>
 </section>
 
-<!-- END -->
+<!-- VICTORY / DEFEAT -->
 <section class="screen" id="end" hidden>
   <div class="card end-card">
-    <h2 class="end-title" id="end-title">Victory!</h2>
+    <h2 class="end-title win" id="end-title">Victory!</h2>
+    <p class="end-winner" id="end-winner"></p>
     <p class="end-sub" id="end-sub">Last ship standing</p>
     <div class="mystats" id="end-mine"></div>
     <table class="table" id="end-table"></table>
-    <div class="row" style="justify-content:center;margin-top:18px">
+    <div class="end-actions">
       <button class="btn" id="btn-end-menu">Back to menu</button>
-      <button class="btn gold" id="btn-replay">Replay</button>
+      <button class="btn" id="btn-end-lobby" hidden>Back to lobby</button>
+      <button class="btn gold" id="btn-replay">Play again</button>
     </div>
-    <p style="text-align:center;color:var(--muted);font-size:13px;margin:8px 0 0" id="end-wait"></p>
+    <p style="text-align:center;color:var(--ink-soft);font-size:14px;margin:8px 0 0;font-style:italic" id="end-wait"></p>
   </div>
 </section>
 
@@ -435,12 +502,47 @@ function layout(type) {
   }
   return (LAYOUTS[type] = { st, slots, hold: hd });
 }
+// Solid things on deck and in the hold. Pirates are 0.3 m-radius cylinders pushed out along the contact normal.
+const OBSTACLES = {};
+const MAST_Z = { 1: [0.06], 2: [0.2, -0.12], 3: [0.28, 0.04, -0.22] };
+function shipObstacles(type) {
+  if (OBSTACLES[type]) return OBSTACLES[type];
+  const sp = SHIPS[type], st = layout(type).st, L = sp.L, deck = [], hold = [];
+  for (const zf of MAST_Z[sp.masts]) deck.push({ c: [0, zf * L, 0.32] });
+  deck.push({ c: [st.wheel.x, st.wheel.z + 0.45, 0.3] }, { c: [st.anchor.x, st.anchor.z, 0.5] }, { c: [st.harpoon.x, st.harpoon.z + 0.2, 0.25] });
+  for (const k in st) if (st[k].kind === 'cannon') deck.push({ c: [st[k].x, st[k].z, 0.45] });
+  if (type !== 'sloop') { const cw = hwAt(sp, -L / 2 + 1) * 0.8; deck.push({ b: [-cw, -L / 2, cw, -L / 2 + 1.72] }); }
+  else { const cz = -L / 2 + 1.0; deck.push({ c: [-hwAt(sp, cz) + 0.55, cz, 0.2] }); }
+  hold.push({ b: [st.crate.x + 0.35, st.crate.z - 0.45, st.crate.x + 1.45, st.crate.z + 0.45] });
+  return (OBSTACLES[type] = { deck, hold });
+}
+function resolveObstacles(list, p, rad = 0.3) {
+  for (let pass = 0; pass < 2; pass++) for (const o of list) {
+    if (o.c) { const [x, z, r] = o.c, dx = p.x - x, dz = p.z - z, d = Math.hypot(dx, dz), m = r + rad; if (d < m) { const nx = d > 1e-4 ? dx / d : 1, nz = d > 1e-4 ? dz / d : 0; p.x = x + nx * m; p.z = z + nz * m; } }
+    else { const [x0, z0, x1, z1] = o.b; if (p.x > x0 - rad && p.x < x1 + rad && p.z > z0 - rad && p.z < z1 + rad) { const pl = p.x - (x0 - rad), pr = x1 + rad - p.x, pb = p.z - (z0 - rad), pf = z1 + rad - p.z, m = Math.min(pl, pr, pb, pf); if (m === pl) p.x = x0 - rad; else if (m === pr) p.x = x1 + rad; else if (m === pb) p.z = z0 - rad; else p.z = z1 + rad; } }
+  }
+}
 function clampDeck(sp, p) {
-  p.z = clamp(p.z, -sp.L / 2 + 0.7, sp.L / 2 - 1.1);
-  const w = Math.max(0.2, hwAt(sp, p.z) - 0.45); p.x = clamp(p.x, -w, w);
+  for (let k = 0; k < 2; k++) {
+    p.z = clamp(p.z, -sp.L / 2 + 0.7, sp.L / 2 - 1.1);
+    const w = Math.max(0.2, hwAt(sp, p.z) - 0.45); p.x = clamp(p.x, -w, w);
+    if (!k) resolveObstacles(shipObstacles(sp.key).deck, p);
+  }
 }
 function clampHold(sp, p) {
-  const h = holdDims(sp); p.z = clamp(p.z, h.z0 + 0.35, h.z1 - 0.35); p.x = clamp(p.x, -h.hw + 0.35, h.hw - 0.35);
+  const h = holdDims(sp), b = () => { p.z = clamp(p.z, h.z0 + 0.35, h.z1 - 0.35); p.x = clamp(p.x, -h.hw + 0.35, h.hw - 0.35); };
+  b(); resolveObstacles(shipObstacles(sp.key).hold, p); b();
+}
+// swimmers can't pass through hulls
+function pushOutOfHulls(ships, p, rad = 0.5) {
+  for (const s of ships) {
+    if (s.sinkT >= 0) continue; const sp = SHIPS[s.type];
+    const [lx, lz] = toLocalXZ(s, p.x, p.z); if (Math.abs(lz) > sp.L / 2 + rad) continue;
+    const hw = hwAt(sp, clamp(lz, -sp.L / 2, sp.L / 2)) + rad; if (Math.abs(lx) >= hw) continue;
+    const side = Math.sign(lx) || 1, endGap = sp.L / 2 + rad - Math.abs(lz);
+    const [wx, wz] = endGap < hw - Math.abs(lx) ? toWorldXZ(s, lx, Math.sign(lz) * (sp.L / 2 + rad)) : toWorldXZ(s, side * hw, lz);
+    p.x = wx; p.z = wz;
+  }
 }
 
 // ---------- 2. shared ocean maths ----------
@@ -654,8 +756,8 @@ scene.fog = new THREE.FogExp2(0xbfdbe6, 0.0012);
 const camera = new THREE.PerspectiveCamera(68, innerWidth / innerHeight, 0.1, 2200);
 camera.rotation.order = 'YXZ';
 const SUN_DIR = new THREE.Vector3(0.62, 0.34, 0.42).normalize();   // low, golden-hour sun
-const hemi = new THREE.HemisphereLight(0x87ceeb, 0x0f2a4a, 0.9); scene.add(hemi);
-const sun = new THREE.DirectionalLight(0xffd166, 1.8);
+const hemi = new THREE.HemisphereLight(0x87ceeb, 0x112244, 0.9); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xffcc77, 1.8);
 sun.castShadow = quality.high;
 sun.shadow.mapSize.set(2048, 2048);
 Object.assign(sun.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, near: 1, far: 280 });
@@ -768,9 +870,10 @@ const sky = new THREE.Mesh(new THREE.SphereGeometry(1800, 48, 24), new THREE.Sha
       vec3 d = normalize(vP); float h = d.y;
       float sf = pow(max(dot(normalize(vec3(d.x, 0.0, d.z) + 1e-4), normalize(vec3(sunDir.x, 0.0, sunDir.z))), 0.0), 2.0);
       vec3 hor = mix(horAway, horSun, sf);
-      vec3 c = h > 0.0 ? mix(hor, top, smoothstep(0.0, 0.6, pow(h, 0.8))) : hor * 0.88;
+      vec3 c = h > 0.0 ? mix(hor, top, smoothstep(0.0, 0.6, pow(h, 0.8))) : hor;
       float s = max(dot(d, sunDir), 0.0);
-      c += vec3(1.0, 0.72, 0.38) * (pow(s, 10.0) * 0.45 + pow(s, 200.0) * 0.8) * (1.0 - night);
+      float sh = max(dot(normalize(vec3(d.x, 0.0, d.z) + 1e-4), sunDir), 0.0);
+      c += vec3(1.0, 0.72, 0.38) * (pow(h > 0.0 ? s : sh, 10.0) * 0.45 + pow(s, 200.0) * 0.8) * (1.0 - night);
       c += vec3(5.0, 3.8, 2.2) * smoothstep(0.9978, 0.9992, s) * (1.0 - night);          // HDR sun disc (blooms)
       if (h > 0.0) {
         vec2 uv = d.xz / (h + 0.15) * 1.3 + vec2(uTime * 0.006, uTime * 0.002);
@@ -805,26 +908,39 @@ const oceanUniforms = THREE.UniformsUtils.merge([THREE.UniformsLib.fog, {
   uSkyTop: { value: new THREE.Color() }, uHorAway: { value: new THREE.Color() }, uHorSun: { value: new THREE.Color() }, uFoam: { value: new THREE.Color(0xf4fbff) },
   uLight: { value: 1 }, uNight: { value: 0 }, uInk: { value: new THREE.Vector4(0, 0, 1, 0) }, uStorm: { value: new THREE.Vector3(0, 0, 9999) },
   uNShips: { value: 0 }, uShipA: { value: Array.from({ length: MAX_FOAM_SHIPS }, () => new THREE.Vector4()) }, uShipB: { value: Array.from({ length: MAX_FOAM_SHIPS }, () => new THREE.Vector4()) },
-  uNIsles: { value: 0 }, uIsleA: { value: Array.from({ length: MAX_ISLES }, () => new THREE.Vector4()) }, uIsleB: { value: Array.from({ length: MAX_ISLES }, () => new THREE.Vector4()) }
-}]);
+  uOceanR: { value: 700 }, uNIsles: { value: 0 }, uIsleA: { value: Array.from({ length: MAX_ISLES }, () => new THREE.Vector4()) }, uIsleB: { value: Array.from({ length: MAX_ISLES }, () => new THREE.Vector4()) }
+}, THREE.UniformsLib.lights]);
 const oceanMat = new THREE.ShaderMaterial({
-  uniforms: oceanUniforms, fog: true,
+  uniforms: oceanUniforms, fog: true, lights: true,
   vertexShader: `uniform float uTime, uAmp; varying float vH; varying vec3 vN; varying vec3 vW;
+    #include <common>
+    #include <shadowmap_pars_vertex>
     #include <fog_pars_vertex>
     ${WAVE_GLSL}
     void main(){
       vec4 wp = modelMatrix * vec4(position, 1.0); vec3 n; vec3 d = gerstner(wp.xz, uTime, uAmp, n);
       wp.xyz += d; vH = d.y; vN = n; vW = wp.xyz;
       vec4 mvPosition = viewMatrix * wp; gl_Position = projectionMatrix * mvPosition;
+      vec4 worldPosition = wp; vec3 transformedNormal = normalize(mat3(viewMatrix) * n);
+      #include <shadowmap_vertex>
       #include <fog_vertex>
     }`,
   fragmentShader: `uniform vec3 uSun, uDeep, uShallow, uSSS, uSSS2, uSkyTop, uHorAway, uHorSun, uFoam; uniform float uLight, uNight, uTime, uAmp; uniform vec4 uInk; uniform vec3 uStorm;
     uniform int uNShips, uNIsles; uniform vec4 uShipA[${MAX_FOAM_SHIPS}]; uniform vec4 uShipB[${MAX_FOAM_SHIPS}]; uniform vec4 uIsleA[${MAX_ISLES}]; uniform vec4 uIsleB[${MAX_ISLES}];
+    uniform float uOceanR;
     varying float vH; varying vec3 vN; varying vec3 vW;
+    #include <common>
+    #include <packing>
     #include <fog_pars_fragment>
+    #include <shadowmap_pars_fragment>
     ${NOISE_GLSL}
     void main(){
       vec2 p = vW.xz;
+      float shadow = 1.0;
+      #if defined( USE_SHADOWMAP ) && NUM_DIR_LIGHT_SHADOWS > 0
+        DirectionalLightShadow sunShadow = directionalLightShadows[ 0 ];
+        shadow = getShadow( directionalShadowMap[ 0 ], sunShadow.shadowMapSize, sunShadow.shadowBias, sunShadow.shadowRadius, vDirectionalShadowCoord[ 0 ] );
+      #endif
       float nA = noise(p * 0.32 + vec2(uTime * 0.22, -uTime * 0.17)), nB = noise(p * 0.29 - vec2(uTime * 0.19, uTime * 0.13));
       float nF = noise(p * 0.85 + vec2(uTime * 0.35, -uTime * 0.28)) * 0.6 + noise(p * 2.3 - uTime * 0.5) * 0.4;
       // foam from hulls, wakes and coastlines (signed distance fields)
@@ -860,12 +976,12 @@ const oceanMat = new THREE.ShaderMaterial({
       // depth gradient: deep navy in troughs and straight down, rich cyan on raised water
       vec3 col = mix(uDeep, uShallow, smoothstep(0.1, 1.0, hn) * 0.9);
       col = mix(col, uDeep, pow(max(dot(N, V), 0.0), 2.5) * 0.45);
-      col *= (0.62 + 0.38 * max(dot(N, uSun), 0.0)) * uLight;
+      col *= (0.62 + 0.38 * max(dot(N, uSun), 0.0)) * uLight * mix(0.55, 1.0, shadow);
       // subsurface scattering: crests glow turquoise when you look toward the sun
       vec3 Lh = normalize(vec3(uSun.x, 0.0, uSun.z) + 1e-4); vec3 Vh = normalize(vec3(-V.x, 0.0, -V.z) + 1e-4);
       float toward = pow(max(dot(Vh, Lh), 0.0), 3.0);
       float thin = smoothstep(0.35, 1.0, hn) * (0.45 + 0.55 * clamp((1.0 - N.y) * 5.0, 0.0, 1.0));
-      col += mix(uSSS2, uSSS, hn) * thin * (0.18 + toward * 0.95) * uLight * (1.0 - uNight * 0.7);
+      col += mix(uSSS2, uSSS, hn) * thin * (0.18 + toward * 0.95) * uLight * (1.0 - uNight * 0.7) * (0.4 + 0.6 * shadow);
       // fresnel reflection of the sky
       float F = 0.02 + 0.98 * pow(1.0 - max(dot(N, V), 0.0), 5.0);
       vec3 Rf = reflect(-V, N); float sfa = pow(max(dot(normalize(vec3(Rf.x, 0.0, Rf.z) + 1e-4), Lh), 0.0), 2.0);
@@ -873,7 +989,7 @@ const oceanMat = new THREE.ShaderMaterial({
       col = mix(col, skyC, clamp(F, 0.0, 1.0) * 0.55);
       // sun glints (HDR so they bloom)
       float spec = pow(max(dot(Rf, uSun), 0.0), 260.0);
-      col += vec3(3.2, 2.6, 1.8) * spec * uLight * (1.0 - uNight);
+      col += vec3(3.2, 2.6, 1.8) * spec * uLight * (1.0 - uNight) * shadow;
       // crest whitecaps
       float crest = smoothstep(0.8, 0.98, hn + (nF - 0.5) * 0.3) * (0.35 + 0.2 * uAmp) + smoothstep(0.42, 0.6, 1.0 - vN.y) * 0.3;
       foam = max(foam, crest * smoothstep(0.45, 0.8, nF));
@@ -885,17 +1001,21 @@ const oceanMat = new THREE.ShaderMaterial({
       float di = length(p - uInk.xy); float ink = (1.0 - smoothstep(uInk.z * 0.6, uInk.z, di)) * uInk.w;
       col = mix(col, vec3(0.04, 0.0, 0.07) + 0.08 * vec3(0.4, 0.1, 0.6) * noise(p * 0.4 + uTime * 0.6), clamp(ink, 0.0, 0.95));
       gl_FragColor = vec4(col, 1.0);
+      // horizon: same colour ramp as the sky dome, and fully faded before the square mesh edge
+      vec3 horizon = mix(uHorAway, uHorSun, pow(max(dot(Vh, Lh), 0.0), 2.0)) + vec3(1.0, 0.72, 0.38) * pow(max(dot(Vh, uSun), 0.0), 10.0) * 0.45 * (1.0 - uNight);
+      float fogF = 0.0;
       #ifdef USE_FOG
         float fogDepth = length(vW - cameraPosition);
-        float fogF = 1.0 - exp(-fogDensity * fogDensity * fogDepth * fogDepth);
-        vec3 fogC = mix(uHorAway, uHorSun, pow(max(dot(Vh, Lh), 0.0), 2.0));
-        gl_FragColor.rgb = mix(gl_FragColor.rgb, mix(fogColor, fogC, 0.6), fogF);
+        fogF = 1.0 - exp(-fogDensity * fogDensity * fogDepth * fogDepth);
       #endif
+      float edge = smoothstep(uOceanR * 0.6, uOceanR * 0.92, length(vW.xz - cameraPosition.xz));
+      gl_FragColor.rgb = mix(gl_FragColor.rgb, horizon, max(fogF, edge));
     }`
 });
 const OCEAN_SIZE = 1400, OCEAN_SEG = quality.high ? 260 : 160;
 const ocean = new THREE.Mesh(new THREE.PlaneGeometry(OCEAN_SIZE, OCEAN_SIZE, OCEAN_SEG, OCEAN_SEG).rotateX(-Math.PI / 2), oceanMat);
-ocean.frustumCulled = false; scene.add(ocean);
+ocean.frustumCulled = false; ocean.receiveShadow = true; scene.add(ocean);
+oceanUniforms.uOceanR.value = OCEAN_SIZE / 2;
 
 // ---------- post-processing: render -> bloom -> painterly grade (ACES filmic, saturation, warm/cool split, vignette) ----------
 const GradeShader = {
@@ -1050,9 +1170,27 @@ function genIslands(seed) {
     const a = rnd() * TAU, d = 60 + rnd() * 300, r = list.length < 6 ? 18 + rnd() * 22 : 6 + rnd() * 5;
     const x = Math.cos(a) * d, z = Math.sin(a) * d;
     if (list.some(o => dist2(o.x, o.z, x, z) < o.r + r + 45)) continue;
-    list.push({ x, z, r, h: r < 12 ? r * 0.7 : 5 + rnd() * 8, rock: r < 12, seed: Math.floor(rnd() * 1e9) });
+    const seed2 = Math.floor(rnd() * 1e9), pr = rng(seed2);
+    list.push({ x, z, r, h: r < 12 ? r * 0.7 : 5 + rnd() * 8, rock: r < 12, seed: seed2, ph: [pr() * TAU, pr() * TAU, pr() * TAU] });
   }
   return list;
+}
+// The island mesh is a wobbly dome; these give its exact outline so nothing passes through rocks or beaches.
+function isleWob(isl, a) { const p = isl.ph; return 1 + 0.16 * Math.sin(a * 3 + p[0]) + 0.09 * Math.sin(a * 5 + p[1]) + 0.05 * Math.sin(a * 9 + p[2]); }
+function isleRadius(isl, a, y = 0) { // horizontal radius of the island surface at height y
+  const hh = isl.h * (1 + 0.25 * Math.sin(a * 2 + isl.ph[2]));
+  const Y = Math.pow(clamp((y + 2.2) / hh, 0, 1), isl.rock ? 1 / 0.9 : 1 / 1.6);
+  return isl.r * isleWob(isl, a) * Math.sqrt(Math.max(0, 1 - Y * Y));
+}
+function isleSDF(isl, x, z, y = 0) { return Math.hypot(x - isl.x, z - isl.z) - isleRadius(isl, Math.atan2(z - isl.z, x - isl.x), y); }
+function pushOutOfIsles(islands, p, rad) { // returns true if p was inside and got pushed along the outward normal
+  let hit = false;
+  for (const isl of islands) {
+    const dx = p.x - isl.x, dz = p.z - isl.z, d = Math.hypot(dx, dz) || 0.01; if (d > isl.r * 1.5 + rad) continue;
+    const pen = rad - isleSDF(isl, p.x, p.z);
+    if (pen > 0) { p.x += dx / d * pen; p.z += dz / d * pen; hit = true; }
+  }
+  return hit;
 }
 function buildIsland(isl) {
   const g = new THREE.Group(), rnd = rng(isl.seed);
@@ -1241,7 +1379,8 @@ function buildShip(s) {
   chim.position.set(cx, cy, cz); g.add(chim); v.chimneyTop = new THREE.Vector3(cx, cy + 1.25, cz); v.smokeT = 0;
   // soft shadows everywhere except the hold, which the hull already shades
   v.breaches.forEach(b => b.g.userData.hold = true);
-  g.traverse(o => { if (o.isMesh) { const hold = o.userData.hold || (o.parent && o.parent.userData.hold); o.castShadow = !hold; o.receiveShadow = !hold; } });
+  v.occ = [];
+  g.traverse(o => { if (o.isMesh) { const hold = o.userData.hold || (o.parent && o.parent.userData.hold); o.castShadow = !hold; o.receiveShadow = !hold; if (!hold) { o.geometry.computeBoundingSphere(); if (o.geometry.boundingSphere.radius > 0.6) v.occ.push(o); } } });
   return v;
 }
 function makeKeg() {
@@ -1326,8 +1465,9 @@ function buildPirate(look, crewColor, opts = {}) {
   // crew colour sash + name tag
   if (crewColor) { const sash = new THREE.Mesh(new THREE.TorusGeometry(body === 1 ? 0.44 : body === 0 ? 0.46 : 0.27, 0.04, 4, 14), matte(new THREE.Color(crewColor).getHex())); sash.position.y = hipY + torsoH * 0.55; sash.rotation.set(Math.PI / 2 - 0.5, 0, 0.4); g.add(sash); }
   if (opts.name) {
-    const tex = canvasTex(256, 64, (c, w, h) => { c.font = '900 30px Nunito, sans-serif'; c.textAlign = 'center'; c.lineWidth = 6; c.strokeStyle = 'rgba(0,0,0,.75)'; c.strokeText(opts.name, w / 2, 42); c.fillStyle = crewColor || '#fff'; c.fillText(opts.name, w / 2, 42); });
-    const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true })); spr.scale.set(1.8, 0.45, 1); spr.position.y = (headY + 0.9) * sc; spr.renderOrder = 20; root.add(spr); P.tag = spr;
+    const bot = /^Deckhand /.test(opts.name), name = opts.name.replace(/^Deckhand /, '');
+    const spr = nameTag(name, crewColor, bot ? 'AI deckhand' : opts.sub || '', 1.75);
+    spr.position.y = (headY + 0.95) * sc; root.add(spr); P.tag = spr;
   }
   root.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   Object.assign(P, { legL, legR, armL, armR, head, torso, headY: headY * sc, phase: 0 });
@@ -1411,6 +1551,8 @@ class Sim {
     this.wind = this.rnd() * TAU; this.windTo = this.wind; this.windTimer = 25;
     this.wx = { i: 0, p: this.demo ? this.rnd() * 60 : 0 };
     this.inputs = {}; this.over = null; this.crewTimer = 0;
+    // match state: MATCH_START (countdown, ships hold) -> MATCH_ACTIVE -> MATCH_OVER (controls frozen)
+    this.phase = this.demo ? 'MATCH_ACTIVE' : 'MATCH_START'; this.startT = this.demo ? 0 : 4; this.mt = 0;
     this.nextMeg = this.demo ? 25 : 70 + this.rnd() * 30; this.nextKraken = this.demo ? 60 : 130 + this.rnd() * 40; this.nextSkel = this.demo ? 1e9 : 45; this.nextChest = 12; this.boltT = 4;
     this.buildStorm(); this.storm = this.stormAt(0); this.amp = ampOf(this.wx);
     this.crews = cfg.crews.map(c => Object.assign({ score: 0, sinks: 0, chests: 0, kills: 0, alive: true, sunkAt: 0 }, c));
@@ -1452,13 +1594,13 @@ class Sim {
     const st = this.storm || this.stormAt(this.t);
     for (let k = 0; k < 40; k++) {
       const a = this.rnd() * TAU, d = Math.sqrt(this.rnd()) * st.r * frac, x = st.cx + Math.cos(a) * d, z = st.cz + Math.sin(a) * d;
-      if (this.islands.some(i => dist2(i.x, i.z, x, z) < i.r + 10)) continue;
+      if (this.islands.some(i => isleSDF(i, x, z) < 10)) continue;
       if (avoid && this.ships.some(s => dist2(s.x, s.z, x, z) < avoid)) continue;
       return { x, z };
     }
     return { x: st.cx, z: st.cz };
   }
-  clearSpawn(s) { for (let k = 0; k < 30 && this.islands.some(i => dist2(i.x, i.z, s.x, s.z) < i.r + SHIPS[s.type].L); k++) { s.x *= 0.9; s.z *= 0.9; s.x += 15; } }
+  clearSpawn(s) { for (let k = 0; k < 30 && this.islands.some(i => isleSDF(i, s.x, s.z) < SHIPS[s.type].L); k++) { s.x *= 0.9; s.z *= 0.9; s.x += 15; } }
   mkShip(crew, type, x, z, yaw, skel) {
     const sp = SHIPS[type];
     const s = { id: this.nid++, type, crew: crew ? crew.id : -1, name: crew ? crew.ship : pick(SKEL_NAMES), color: crew ? crew.color : '#3a5a40', skel: !!skel, ai: crew ? !!crew.ai : true,
@@ -1514,7 +1656,7 @@ class Sim {
     inp.seen = this.t; inp.ctl = msg;
   }
   act(uid, a) {
-    const av = this.avatars.find(x => x.uid === uid); if (!av || av.out) return;
+    const av = this.avatars.find(x => x.uid === uid); if (!av || av.out || this.over || this.phase !== 'MATCH_ACTIVE') return;
     if (av.dead) return;
     const s = this.ship(av.ship), lay = s && layout(s.type);
     switch (a.t) {
@@ -1551,12 +1693,23 @@ class Sim {
   // ---------- step ----------
   step(dt) {
     this.t += dt;
-    if (this.over && this.t > this.over.t + 6) return;
+    if (this.phase === 'MATCH_START') { // countdown: pirates can walk to their stations, nothing else moves
+      this.startT -= dt; this.amp = ampOf(this.wx); this.storm = this.stormAt(0);
+      this.applyHumanInputs(); for (const s of this.ships) this.updatePose(s);
+      if (this.startT <= 0) { this.phase = 'MATCH_ACTIVE'; this.ev({ k: 'go' }); }
+      return;
+    }
+    if (this.over) { // frozen: the sea keeps moving, ships drift to a stop, nobody acts
+      this.amp = ampOf(this.wx);
+      for (const s of this.ships) { s.spd *= 1 - dt * 0.5; if (s.sinkT >= 0) s.sinkT += dt; s.x += Math.sin(s.yaw) * s.spd * dt; s.z += Math.cos(s.yaw) * s.spd * dt; this.updatePose(s); }
+      return;
+    }
+    this.mt += dt;
     this.wx.p += dt; if (this.wx.p >= WEATHER[this.wx.i].dur) { this.wx.p = 0; this.wx.i = (this.wx.i + 1) % 3; if (!this.demo) this.ev({ k: 'weather', i: this.wx.i }); }
     this.amp = ampOf(this.wx);
     this.windTimer -= dt; if (this.windTimer <= 0) { this.windTimer = 25 + this.rnd() * 25; this.windTo = this.wind + (this.rnd() - 0.5) * 2.2; }
     this.wind = lerpAng(this.wind, this.windTo, dt * 0.05);
-    this.storm = this.stormAt(this.t);
+    this.storm = this.stormAt(this.mt);
     this.crewTimer -= dt; if (this.crewTimer <= 0) { this.crewTimer = 1; this.manageCrews(false); }
     this.applyHumanInputs();
     for (const av of this.avatars) if (av.bot && !av.dead) this.botStep(av, dt);
@@ -1813,7 +1966,7 @@ class Sim {
       const s = this.ship(av.home); if (!s || s.sinkT >= 0) return;
       const dx = s.x - av.x, dz = s.z - av.z, d = Math.hypot(dx, dz);
       if (d < SHIPS[s.type].W + 2) { this.board(av, s); return; }
-      av.x += dx / d * 3 * dt; av.z += dz / d * 3 * dt; av.y = waveH(av.x, av.z, this.t, this.amp) - 0.3; av.mv = 1; return;
+      av.x += dx / d * 3 * dt; av.z += dz / d * 3 * dt; { const p = { x: av.x, z: av.z }; pushOutOfIsles(this.islands, p, 0.6); av.x = p.x; av.z = p.z; } av.y = waveH(av.x, av.z, this.t, this.amp) - 0.3; av.mv = 1; return;
     }
     const s = this.ship(av.ship); if (!s || s.sinkT >= 0) return;
     if (av.ship !== av.home) { this.toWater(av, s, 1, 1.5); return; }
@@ -1887,10 +2040,7 @@ class Sim {
     const live = this.ships.filter(s => s.sinkT < 0);
     for (const s of live) {
       let hit = false;
-      for (const c of this.circles(s)) for (const isl of this.islands) {
-        const d = dist2(c.x, c.z, isl.x, isl.z), m = isl.r * 0.93 + c.r;
-        if (d < m) { const nx = (c.x - isl.x) / d, nz = (c.z - isl.z) / d; s.x += nx * (m - d); s.z += nz * (m - d); hit = true; }
-      }
+      for (const c of this.circles(s)) { const p = { x: c.x, z: c.z }; if (pushOutOfIsles(this.islands, p, c.r)) { s.x += p.x - c.x; s.z += p.z - c.z; hit = true; } }
       if (hit) { if (s.spd > 4 && s.ramCd <= 0) { s.ramCd = 1.5; this.addBreach(s, Math.floor(this.rnd() * s.br.length), 1); this.ev({ k: 'crash', s: s.id, p: [r2(s.x), 0, r2(s.z)] }); if (!s.lastHit || this.t - s.lastHit.t > 30) s.lastHit = { crew: -2, t: this.t, kind: 'rocks' }; } s.spd *= 0.5; }
       const dc = Math.hypot(s.x, s.z); if (dc > 620) { s.x *= 620 / dc; s.z *= 620 / dc; }
     }
@@ -1929,7 +2079,7 @@ class Sim {
       else this.feed(`${s.name} sank beneath the waves`, '#7be35a');
       this.nextSkel = this.t + 70;
     } else {
-      const c = this.crew(s.crew); if (c) { c.alive = false; c.sunkAt = this.t; }
+      const c = this.crew(s.crew); if (c) { c.alive = false; c.sunkAt = this.t; c.sunkMt = this.mt; }
       if (killer) { killer.score += SCORE.sink; killer.sinks++; this.feed(`☠ ${killer.name} sank ${s.name}! (+${SCORE.sink})`, killer.color); }
       else this.feed(`☠ ${s.name} was claimed by ${cause}`, c ? c.color : '#fff');
       this.chests.push({ id: this.nid++, x: s.x + rr(-4, 4), z: s.z + rr(-4, 4) });
@@ -1987,9 +2137,8 @@ class Sim {
       if (Math.hypot(w.x - b.x, w.y - b.y, w.z - b.z) < 1.6) { k.crew = b.crew; k.by = b.by; this.explodeKeg(k); this.ev({ k: 'hit', id: b.id, p: P3, ty: b.ty }); return true; }
     }
     for (const isl of this.islands) {
-      const d = dist2(isl.x, isl.z, b.x, b.z); if (d > isl.r * 1.1) continue;
-      const top = Math.pow(1 - clamp(d / isl.r, 0, 1), isl.rock ? 0.9 : 1.6) * isl.h - 2.2;
-      if (b.y < top + 0.4) { this.ev({ k: 'hit', id: b.id, p: P3, ty: b.ty, g: 1 }); return true; }
+      if (dist2(isl.x, isl.z, b.x, b.z) > isl.r * 1.4 || b.y > isl.h * 1.3) continue;
+      if (isleSDF(isl, b.x, b.z, b.y) < 0.3) { this.ev({ k: 'hit', id: b.id, p: P3, ty: b.ty, g: 1 }); return true; }
     }
     if (b.y < waveH(b.x, b.z, this.t, this.amp)) { this.ev({ k: 'hit', id: b.id, p: P3, ty: b.ty, w: 1 }); return true; }
     return false;
@@ -2282,11 +2431,11 @@ class Sim {
     if (alive.length <= 1 && this.crews.length > 1) {
       if (alive.length === 1) { winner = alive[0]; reason = 'Last ship standing'; }
       else { winner = this.crews.slice().sort((a, b) => b.score - a.score || b.sunkAt - a.sunkAt)[0]; reason = 'Every ship sank. The richest wreck wins'; }
-    } else if (this.t >= this.dur) {
+    } else if (this.mt >= this.dur) {
       winner = this.crews.slice().sort((a, b) => b.score - a.score || (b.alive - a.alive) || (b.sunkAt - a.sunkAt) || (a.ai - b.ai))[0]; reason = 'The storm closed. Highest Match Score wins';
     }
     if (!winner) return;
-    this.over = { winner: winner.id, reason, t: this.t };
+    this.over = { winner: winner.id, reason, t: this.t, mt: this.mt }; this.phase = 'MATCH_OVER';
     this.ev({ k: 'end', w: winner.id, r: reason });
     if (comp) for (const c of this.crews) c.final = c.score;
   }
@@ -2295,15 +2444,15 @@ class Sim {
   snap(drain) {
     const ev = drain ? this.out.splice(0) : [];
     return {
-      t: r3(this.t), wi: this.wx.i, wp: r2(this.wx.p), wd: r3(this.wind),
-      sm: [r2(this.storm.cx), r2(this.storm.cz), r2(this.storm.r), r2(Math.max(0, this.dur - this.t)), this.storm.shrinking ? 1 : 0, r2(this.storm.next)],
+      t: r3(this.t), ph: ['MATCH_START', 'MATCH_ACTIVE', 'MATCH_OVER'].indexOf(this.phase), cd: r2(Math.max(0, this.startT)), mt: r2(this.mt), wi: this.wx.i, wp: r2(this.wx.p), wd: r3(this.wind),
+      sm: [r2(this.storm.cx), r2(this.storm.cz), r2(this.storm.r), r2(Math.max(0, this.dur - this.mt)), this.storm.shrinking ? 1 : 0, r2(this.storm.next)],
       sh: this.ships.map(s => [s.id, SHIP_KEYS.indexOf(s.type), s.crew, r2(s.x), r2(s.z), r3(s.yaw), r2(s.spd), r2(s.sail), r2(s.sailT), r2(s.sailAng), r2(s.rudder), s.anc, r2(s.hoist), r3(s.water), r2(s.sinkT), s.br.join(''), s.fires.map(f => [r2(f.x), r2(f.z)]), r2(s.grog), s.ammo.slice(), s.supply, [s.harp.st, r2(s.harp.x), r2(s.harp.y), r2(s.harp.z)], s.skel ? 1 : 0, s.name, s.color, Object.keys(s.reload).map(k => [k, r2(Math.max(0, s.reload[k] - this.t))]).filter(x => x[1] > 0)]),
       av: this.avatars.map(a => [a.id, a.uid || '', a.crew, a.ship, a.home, a.lv, r2(a.x), r2(a.y), r2(a.z), r2(a.yaw), a.st, a.item, Math.ceil(a.hp), a.dead ? 1 : 0, r2(a.rt), a.fz, r2(a.prog), a.name, a.look, a.bot ? 1 : 0, r2(a.aimY), r2(a.aimP), a.out ? 1 : 0, r2(a.swing), a.ammo, a.mv ? 1 : 0, a.task || '']),
       ch: this.chests.map(c => [c.id, r2(c.x), r2(c.z)]),
       kg: this.kegs.map(k => [k.id, KEG_ST.indexOf(k.st), k.ship, r2(k.x), r2(k.z), k.lv, k.carrier, r2(k.fuse)]),
       mg: this.meg ? [r2(this.meg.x), r2(this.meg.z), r3(this.meg.yaw), r2(this.meg.y), MEG_ST.indexOf(this.meg.st), Math.max(0, Math.round(this.meg.hp))] : 0,
       kr: this.kraken ? [r2(this.kraken.x), r2(this.kraken.z), this.kraken.sid, r2(this.kraken.ink), this.kraken.tents.map(t => [TENT_ST.indexOf(t.st), r2(t.t), r2(t.tx), r2(t.tz), t.side, r2(t.z), Math.max(0, Math.round(t.hp))])] : 0,
-      cr: this.crews.map(c => [c.id, c.score, c.sinks, c.chests, c.kills, c.alive ? 1 : 0]),
+      cr: this.crews.map(c => [c.id, c.score, c.sinks, c.chests, c.kills, c.alive ? 1 : 0, Math.round(c.alive ? this.mt : c.sunkMt || 0)]),
       ov: this.over ? [this.over.winner, this.over.reason, r2(this.over.t)] : 0,
       ev
     };
@@ -2312,7 +2461,7 @@ class Sim {
 // decode a snapshot into the world-view shape the renderer and HUD read
 function decodeSnap(d) {
   return {
-    t: d.t, wx: { i: d.wi, p: d.wp }, wind: d.wd,
+    t: d.t, phase: ['MATCH_START', 'MATCH_ACTIVE', 'MATCH_OVER'][d.ph] || 'MATCH_ACTIVE', countdown: d.cd || 0, mt: d.mt || 0, wx: { i: d.wi, p: d.wp }, wind: d.wd,
     storm: { cx: d.sm[0], cz: d.sm[1], r: d.sm[2], left: d.sm[3], shrinking: !!d.sm[4], next: d.sm[5] },
     ships: d.sh.map(a => ({ id: a[0], type: SHIP_KEYS[a[1]], crew: a[2], x: a[3], z: a[4], yaw: a[5], spd: a[6], sail: a[7], sailT: a[8], sailAng: a[9], rudder: a[10], anc: a[11], hoist: a[12], water: a[13], sinkT: a[14], br: a[15].split('').map(Number), fires: a[16].map(f => ({ x: f[0], z: f[1] })), grog: a[17], ammo: a[18], supply: a[19], harp: { st: a[20][0], x: a[20][1], y: a[20][2], z: a[20][3] }, skel: !!a[21], name: a[22], color: a[23], reload: Object.fromEntries(a[24] || []) })),
     avatars: d.av.map(a => ({ id: a[0], uid: a[1], crew: a[2], ship: a[3], home: a[4], lv: a[5], x: a[6], y: a[7], z: a[8], yaw: a[9], st: a[10], item: a[11], hp: a[12], dead: !!a[13], rt: a[14], fz: a[15], prog: a[16], name: a[17], look: a[18], bot: !!a[19], aimY: a[20], aimP: a[21], out: !!a[22], swing: a[23], ammo: a[24], mv: !!a[25], task: a[26] })),
@@ -2320,7 +2469,7 @@ function decodeSnap(d) {
     kegs: d.kg.map(k => ({ id: k[0], st: KEG_ST[k[1]], ship: k[2], x: k[3], z: k[4], lv: k[5], carrier: k[6], fuse: k[7] })),
     meg: d.mg ? { x: d.mg[0], z: d.mg[1], yaw: d.mg[2], y: d.mg[3], st: MEG_ST[d.mg[4]], hp: d.mg[5] } : null,
     kraken: d.kr ? { x: d.kr[0], z: d.kr[1], sid: d.kr[2], ink: d.kr[3], tents: d.kr[4].map(t => ({ st: TENT_ST[t[0]], t: t[1], tx: t[2], tz: t[3], side: t[4], z: t[5], hp: t[6] })) } : null,
-    crews: d.cr.map(c => ({ id: c[0], score: c[1], sinks: c[2], chests: c[3], kills: c[4], alive: !!c[5] })),
+    crews: d.cr.map(c => ({ id: c[0], score: c[1], sinks: c[2], chests: c[3], kills: c[4], alive: !!c[5], surv: c[6] || 0 })),
     over: d.ov ? { winner: d.ov[0], reason: d.ov[1], t: d.ov[2] } : null
   };
 }
@@ -2376,7 +2525,7 @@ function enterGame() {
   resetView(); Object.assign(ME, { fz: -1, st: '', ship: -1, dead: false, out: false, ammoSel: 0, firstPerson: false, orbit: 0 });
   G.mode = 'game'; G.endShown = false; G.reported = false; G.snaps = []; G.evq = []; G.clockOff = null; G.lastNet = performance.now();
   show(null); $('hud').hidden = false; $('feed').innerHTML = '';
-  banner('Set sail!', 'Last ship afloat wins. Stay inside the storm ring.', null, 3.5);
+  MATCH.state = 'LOBBY'; G.camInit = false;
   if (HUB) HUB.report('session-start', { mode: G.role, players: G.cfg.crews.reduce((n, c) => n + c.humans.length, 0) });
   auInit();
 }
@@ -2390,7 +2539,7 @@ function openRoom(code) {
   room.on('inprogress', d => { if (G.role === 'client' && d && d.uid === G.uid && G.mode === 'joining') { $('lobby-err').textContent = 'That arena is mid-battle. Stay here and you will join the next round.'; } });
   room.on('start', d => { if (G.role !== 'client' || !d || !d.cfg) return; G.cfg = d.cfg; G.seed = d.cfg.seed; G.sim = null; enterGame(); });
   room.on('snap', d => { if (G.role !== 'client' || G.mode !== 'game' && G.mode !== 'end') return; onSnap(d); });
-  room.on('back', () => { if (G.role === 'client') { $('hud').hidden = true; G.mode = 'joining'; startDemo(); show('lobby'); sendHello(); } });
+  room.on('back', () => { if (G.role === 'client') { MATCH.state = 'LOBBY'; $('hud').hidden = true; G.mode = 'joining'; startDemo(); show('lobby'); sendHello(); } });
   room.on('in', d => { if (G.role === 'host' && G.sim && d && d.u) G.sim.input(d.u, d); });
   room.on('act', d => { if (G.role === 'host' && G.sim && d && d.u && d.a) G.sim.act(d.u, d.a); });
   return room;
@@ -2459,13 +2608,42 @@ function ensureIslands(seed) {
   if (V.islandSeed === seed) return;
   for (const g of V.islands) disposeObj(g);
   V.islandData = genIslands(seed); V.islands = V.islandData.map(i => { const g = buildIsland(i); scene.add(g); return g; }); V.islandSeed = seed;
+  V.islandOcc = []; for (const g of V.islands) g.traverse(o => { if (o.isMesh) V.islandOcc.push(o); });
   // coastline foam: the ocean shader rebuilds each island's waterline from the same shape parameters
   const ou = oceanUniforms; ou.uNIsles.value = Math.min(MAX_ISLES, V.islandData.length);
   V.islandData.slice(0, MAX_ISLES).forEach((isl, k) => { const r = rng(isl.seed); ou.uIsleA.value[k].set(isl.x, isl.z, isl.r, isl.h); ou.uIsleB.value[k].set(r() * TAU, r() * TAU, r() * TAU, isl.rock ? 1 : 0); });
 }
-function makeLabel(text, color, w = 512) {
-  const tex = canvasTex(w, 96, (c, W, H) => { c.font = '900 52px Nunito, sans-serif'; c.textAlign = 'center'; c.lineWidth = 10; c.strokeStyle = 'rgba(0,0,0,.7)'; c.strokeText(text, W / 2, 66); c.fillStyle = color; c.fillText(text, W / 2, 66); });
-  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, fog: true })); s.scale.set(10, 1.9, 1); return s;
+// Parchment name plates. Drawn over everything (no depth test) but hidden by a raycast whenever a
+// sail, mast, hull or island stands between the camera and the tag, so text never clips through rigging.
+function nameTag(text, color, sub, width) {
+  const W = 512, H = 160, tex = canvasTex(W, H, (c) => {
+    c.font = '700 46px Cinzel, Georgia, serif'; const tw = Math.min(W - 40, c.measureText(text).width), pw = tw + 86, x0 = (W - pw) / 2, y0 = 22, h = 70;
+    c.shadowColor = 'rgba(0,0,0,.45)'; c.shadowBlur = 8; c.shadowOffsetY = 3;
+    const g = c.createLinearGradient(0, y0, 0, y0 + h); g.addColorStop(0, '#efdcae'); g.addColorStop(1, '#c9a96f');
+    c.fillStyle = g; c.beginPath(); c.moveTo(x0 + 14, y0); c.lineTo(x0 + pw - 14, y0); c.quadraticCurveTo(x0 + pw, y0, x0 + pw, y0 + 14); c.lineTo(x0 + pw, y0 + h - 14); c.quadraticCurveTo(x0 + pw, y0 + h, x0 + pw - 14, y0 + h); c.lineTo(x0 + 14, y0 + h); c.quadraticCurveTo(x0, y0 + h, x0, y0 + h - 14); c.lineTo(x0, y0 + 14); c.quadraticCurveTo(x0, y0, x0 + 14, y0); c.fill();
+    c.shadowColor = 'transparent'; c.strokeStyle = '#3a2410'; c.lineWidth = 4; c.stroke(); c.strokeStyle = 'rgba(184,134,11,.8)'; c.lineWidth = 2; c.strokeRect(x0 + 7, y0 + 7, pw - 14, h - 14);
+    c.fillStyle = color || '#8a6a3a'; c.strokeStyle = '#2b1a0c'; c.lineWidth = 3; c.beginPath(); c.arc(x0 + 34, y0 + h / 2, 12, 0, TAU); c.fill(); c.stroke();
+    c.fillStyle = '#2b1a0c'; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillText(text, x0 + 56, y0 + h / 2 + 2, tw);
+    if (sub) { c.font = 'italic 500 30px Alegreya, Georgia, serif'; c.textAlign = 'center'; c.lineWidth = 6; c.strokeStyle = 'rgba(20,12,4,.85)'; c.strokeText(sub, W / 2, y0 + h + 28); c.fillStyle = '#f3dca0'; c.fillText(sub, W / 2, y0 + h + 28); }
+  });
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, depthWrite: false, transparent: true, opacity: 0, fog: false }));
+  spr.scale.set(width, width * H / W, 1); spr.renderOrder = 20; spr.userData.tag = true;
+  return spr;
+}
+const tagRay = new THREE.Raycaster(); let tagIdx = 0;
+function fadeTag(t, want, dt) { // wanted & unoccluded -> fade in, otherwise fade out
+  const target = want && !t.userData.occluded ? 1 : 0, m = t.material;
+  m.opacity = clamp(m.opacity + (target - m.opacity) * Math.min(1, dt * 10), 0, 1); t.visible = m.opacity > 0.02;
+}
+function updateTagOcclusion(tags) {
+  if (!tags.length) return;
+  const occ = []; for (const v of V.ships.values()) if (v.group.visible) for (const o of v.occ) occ.push(o); for (const o of V.islandOcc || []) occ.push(o);
+  for (let n = 0; n < Math.min(10, tags.length); n++) {
+    const t = tags[(tagIdx++) % tags.length]; t.getWorldPosition(_v);
+    const d = _v.distanceTo(camera.position); _v2.copy(_v).sub(camera.position).divideScalar(d || 1);
+    tagRay.set(camera.position, _v2); tagRay.far = Math.max(0.1, d - 0.5);
+    t.userData.occluded = tagRay.intersectObjects(occ, false).length > 0;
+  }
 }
 const shipById = (W, id) => W.ships.find(s => s.id === id);
 function myAvatar(W) { return W && W.avatars.find(a => a.uid === G.uid); }
@@ -2477,11 +2655,12 @@ function renderWorld(W, dt, T) {
   const wx = weatherMix(W.wx); V.wx = wx; G.view.wx = wx;
   ensureIslands(G.seed);
   // environment
-  scene.fog.color.copy(wx.fog); scene.fog.density = wx.density; renderer.setClearColor(wx.fog);
+  camera.getWorldDirection(_cd); { const hz = Math.hypot(_cd.x, _cd.z) || 1, sf = Math.pow(Math.max(0, (_cd.x * SUN_DIR.x + _cd.z * SUN_DIR.z) / hz / Math.hypot(SUN_DIR.x, SUN_DIR.z)), 2); scene.fog.color.copy(wx.horAway).lerp(wx.horSun, sf); }
+  scene.fog.density = wx.density; renderer.setClearColor(scene.fog.color);
   const su = sky.material.uniforms; su.top.value.copy(wx.skyTop); su.horAway.value.copy(wx.horAway); su.horSun.value.copy(wx.horSun); su.night.value = wx.night; su.flash.value = skyFlash * 0.6; su.clouds.value = wx.clouds; su.uTime.value = T;
   stars.material.opacity = Math.max(0, wx.night - 0.3) * 1.2;
-  hemi.intensity = 0.35 + 0.55 * wx.light + skyFlash * 1.6; hemi.color.setHex(0x87ceeb).lerp(_nightSky, wx.night); hemi.groundColor.setHex(0x0f2a4a);
-  sun.intensity = 1.8 * wx.light; sun.color.setHex(0xffd166).lerp(_moonCol, wx.night);
+  hemi.intensity = 0.35 + 0.55 * wx.light + skyFlash * 1.6; hemi.color.setHex(0x87ceeb).lerp(_nightSky, wx.night); hemi.groundColor.setHex(0x112244);
+  sun.intensity = 1.8 * wx.light; sun.color.setHex(0xffcc77).lerp(_moonCol, wx.night);
   const ou = oceanUniforms; ou.uTime.value = T; ou.uAmp.value = wx.amp; ou.uDeep.value.copy(wx.deep); ou.uShallow.value.copy(wx.shallow); ou.uSSS.value.copy(wx.sss); ou.uLight.value = 0.55 + 0.45 * wx.light + skyFlash * 0.5; ou.uNight.value = wx.night;
   ou.uSkyTop.value.copy(wx.skyTop); ou.uHorAway.value.copy(wx.horAway); ou.uHorSun.value.copy(wx.horSun);
   { // hull/wake foam for the nearest ships
@@ -2497,12 +2676,12 @@ function renderWorld(W, dt, T) {
   const seen = new Set(), camP = camera.position;
   for (const s of W.ships) {
     let v = V.ships.get(s.id);
-    if (!v) { v = buildShip(s); v.label = makeLabel(s.name, s.color); v.label.position.y = DECK_Y + SHIPS[s.type].mastH + 3.5; v.group.add(v.label); scene.add(v.group); V.ships.set(s.id, v); v.sinkFx = false; }
+    if (!v) { v = buildShip(s); v.label = nameTag(s.name, s.color, s.skel ? 'cursed skeleton ship' : '', 7.5); v.label.position.y = DECK_Y + SHIPS[s.type].mastH + 3.2; v.group.add(v.label); scene.add(v.group); V.ships.set(s.id, v); v.sinkFx = false; }
     seen.add(s.id); v.data = s;
     const pose = shipPose(s, T, wx.amp); v.pose = pose;
     const g = v.group; g.position.set(s.x, pose.y, s.z); g.rotation.set(-pose.pitch, s.yaw, pose.roll, 'YXZ'); g.visible = !(s.sinkT > 11); g.updateMatrixWorld();
     const sp = SHIPS[s.type], dcam = dist2(camP.x, camP.z, s.x, s.z), near = dcam < 70;
-    v.label.visible = s.id !== ME.ship && s.sinkT < 0 && dcam > 25;
+    v.labelWanted = s.id !== ME.ship && s.sinkT < 0 && dcam > 25 && dcam < 420;
     for (const sl of v.sails) {
       const lvl = Math.max(0.04, s.sail); sl.sail.scale.y = lvl; sl.furl.scale.set(1, 1, 1); sl.furl.scale.y = 1; sl.furl.scale.x = 0.5 + (1 - s.sail) * 0.9; sl.furl.scale.z = sl.furl.scale.x;
       sl.pivot.rotation.y = -s.sailAng;
@@ -2568,9 +2747,17 @@ function renderWorld(W, dt, T) {
     pv.root.rotation.y = a.yaw;
     const moving = isMe ? ME.moving : Math.hypot(a.x - pv.lastX, a.z - pv.lastZ) > 0.004 || a.mv; pv.lastX = a.x; pv.lastZ = a.z;
     animatePirate(pv, dt, moving, T, { item: a.item, swing: isMe ? ME.swingT / 0.45 : a.swing / 0.55, work: a.prog > 0 });
-    if (pv.tag) pv.tag.visible = dist2(camP.x, camP.z, (sv ? sv.data.x : a.x), (sv ? sv.data.z : a.z)) < 60;
+    if (pv.tag) pv.tagWanted = !W.over && dist2(camP.x, camP.z, (sv ? sv.data.x : a.x), (sv ? sv.data.z : a.z)) < 55;
   }
   for (const [id, pv] of V.avs) if (!aseen.has(id)) { disposeObj(pv.root); V.avs.delete(id); }
+  { // tags: raycast occlusion, then fade
+    const tags = [];
+    for (const pv of V.avs.values()) if (pv.tag) { if (pv.root.visible && pv.root.parent) tags.push(pv.tag); else pv.tagWanted = false; }
+    for (const v of V.ships.values()) if (v.labelWanted) tags.push(v.label);
+    updateTagOcclusion(tags);
+    for (const pv of V.avs.values()) if (pv.tag) fadeTag(pv.tag, pv.tagWanted && pv.root.visible, dt);
+    for (const v of V.ships.values()) fadeTag(v.label, v.labelWanted, dt);
+  }
   // chests
   const cseen = new Set();
   for (const c of W.chests) {
@@ -2792,7 +2979,7 @@ function onKeyDown(e) {
   if (k === 'Tab') { e.preventDefault(); if (G.mode === 'game') { renderBoard(); $('board').hidden = false; } return; }
   if (k === 'KeyH') { toggleHelp(); return; }
   if (k === 'KeyM') { auSet('music', !AU.musicOn); syncAudioButtons(); toast('Music ' + (AU.musicOn ? 'on' : 'off')); return; }
-  if (G.mode !== 'game' || !G.W) return;
+  if (G.mode !== 'game' || !G.W || G.W.over) return;
   if (k === 'Space') e.preventDefault();
   const W = G.W, s = myShip(W);
   if (ME.dead || ME.out) { if (k === 'Space' || k === 'KeyF') G.spectate++; if (k === 'KeyQ' && ME.out) leaveToMenu(); return; }
@@ -2839,7 +3026,8 @@ addEventListener('mousemove', e => {
   else { ME.yaw -= dx * sens; ME.pitch = clamp(ME.pitch - dy * sens, -1.3, 1.2); }
 });
 function primaryAction() {
-  const W = G.W; if (!W || ME.dead || ME.out) { G.spectate++; return; }
+  const W = G.W; if (!W || W.over) return;
+  if (ME.dead || ME.out) { G.spectate++; return; }
   const s = myShip(W);
   if (ME.st && ME.st.startsWith('cannon')) { if (s && (s.reload[ME.st] || 0) <= 0.05) sendAct({ t: 'fire' }); else SFX.clang(null); return; }
   if (ME.st === 'harpoon') { if (s && s.harp.st === 0) sendAct({ t: 'harpoon' }); return; }
@@ -2856,6 +3044,7 @@ function updateController(W, dt) {
   adoptServer(a, W);
   ME.swingT = Math.max(0, ME.swingT - dt);
   ME.moving = false;
+  if (W.over) return; // MATCH_OVER: controls frozen
   if (ME.dead || ME.out) return;
   const s = myShip(W), grog = s && s.grog > 0 ? 1 : (homeShip(W) && homeShip(W).grog > 0 ? 1 : 0), t = performance.now() / 1000;
   let mx = (KEYS.KeyD ? 1 : 0) - (KEYS.KeyA ? 1 : 0), mz = (KEYS.KeyW ? 1 : 0) - (KEYS.KeyS ? 1 : 0);
@@ -2867,7 +3056,10 @@ function updateController(W, dt) {
     ME.x += vx * speed * dt; ME.z += vz * speed * dt; ME.moving = true;
     if (s) { const p = { x: ME.x, z: ME.z }; (ME.lv ? clampHold : clampDeck)(SHIPS[s.type], p); ME.x = p.x; ME.z = p.z; }
   }
-  if (ME.ship < 0) ME.y = waveH(ME.x, ME.z, W.t, V.wx ? (V.wx ? V.wx.amp : 1) : 1) - 0.3;
+  if (ME.ship < 0) {
+    const p = { x: ME.x, z: ME.z }; if (V.islandData) pushOutOfIsles(V.islandData, p, 0.6); pushOutOfHulls(W.ships, p); ME.x = p.x; ME.z = p.z;
+    ME.y = waveH(ME.x, ME.z, W.t, V.wx ? V.wx.amp : 1) - 0.3;
+  }
   else { ME.vy -= 14 * dt; ME.jumpY = Math.max(0, ME.jumpY + ME.vy * dt); if (ME.jumpY === 0) ME.vy = 0; ME.y = (ME.lv ? HOLD_Y : DECK_Y) + ME.jumpY; }
   if (s && ME.st) { const st = layout(s.type).st[ME.st]; if (!st || dist2(st.x, st.z, ME.x, ME.z) > 2.4) ME.st = ''; }
   if (!s && ME.st) ME.st = '';
@@ -2959,55 +3151,101 @@ function addFeed(m, c) {
 function flashHud(sel) { const e = document.querySelector(sel); if (!e) return; e.style.color = '#ff5a46'; setTimeout(() => e.style.color = '', 400); }
 let hurtT = 0;
 function hurtFlash(n) { hurtT = Math.min(1, hurtT + n / 60 + 0.25); }
+// brass instrument bezel shared by the chart and the compass
+function brassBezel(c, S, R0, R1) {
+  const g = c.createRadialGradient(S / 2 - R1 * 0.3, S / 2 - R1 * 0.35, R1 * 0.1, S / 2, S / 2, R1);
+  g.addColorStop(0, '#fff0b0'); g.addColorStop(0.35, '#e0b44c'); g.addColorStop(0.7, '#a8780c'); g.addColorStop(1, '#5a3e06');
+  c.fillStyle = g; c.beginPath(); c.arc(S / 2, S / 2, R1, 0, TAU); c.arc(S / 2, S / 2, R0, 0, TAU, true); c.fill('evenodd');
+  c.strokeStyle = 'rgba(40,25,2,.85)'; c.lineWidth = 2.5; c.beginPath(); c.arc(S / 2, S / 2, R1 - 1, 0, TAU); c.stroke(); c.beginPath(); c.arc(S / 2, S / 2, R0, 0, TAU); c.stroke();
+  for (let i = 0; i < 8; i++) { const a = i / 8 * TAU + TAU / 16, r = (R0 + R1) / 2; c.fillStyle = '#3a2804'; c.beginPath(); c.arc(S / 2 + Math.cos(a) * r, S / 2 + Math.sin(a) * r, 3.5, 0, TAU); c.fill(); c.fillStyle = '#ffe9a0'; c.beginPath(); c.arc(S / 2 + Math.cos(a) * r - 1, S / 2 + Math.sin(a) * r - 1, 1.5, 0, TAU); c.fill(); }
+}
+function parchmentFace(c, S, R0) {
+  const g = c.createRadialGradient(S / 2, S / 2, R0 * 0.2, S / 2, S / 2, R0);
+  g.addColorStop(0, '#ead7a8'); g.addColorStop(0.75, '#d4b886'); g.addColorStop(1, '#a8874f');
+  c.fillStyle = g; c.beginPath(); c.arc(S / 2, S / 2, R0, 0, TAU); c.fill();
+}
 function drawRadar(W) {
-  const c = radarCtx, S = 340, st = W.storm, me = homeShip(W), meS = myShip(W);
-  const span = Math.max(150, (st.r || 0) * 1.25, 160), cx = st.r > 30 ? st.cx : (me ? me.x : 0), cz = st.r > 30 ? st.cz : (me ? me.z : 0), k = (S / 2 - 8) / span;
+  const c = radarCtx, S = 392, R1 = S / 2 - 4, R0 = R1 - 26, st = W.storm, me = homeShip(W), meS = myShip(W);
+  const span = Math.max(150, (st.r || 0) * 1.22), cx = st.r > 30 ? st.cx : (me ? me.x : 0), cz = st.r > 30 ? st.cz : (me ? me.z : 0), k = (R0 - 6) / span;
   const P = (x, z) => [S / 2 + (x - cx) * k, S / 2 + (z - cz) * k];
   c.clearRect(0, 0, S, S);
-  c.save(); c.beginPath(); c.arc(S / 2, S / 2, S / 2 - 2, 0, TAU); c.clip();
-  c.fillStyle = '#3b2a2a'; c.fillRect(0, 0, S, S);
-  const [sx, sz] = P(st.cx, st.cz); c.fillStyle = '#123a52'; c.beginPath(); c.arc(sx, sz, Math.max(0, st.r * k), 0, TAU); c.fill();
-  c.strokeStyle = 'rgba(255,255,255,.85)'; c.lineWidth = 3; c.stroke();
-  for (const i of V.islandData || []) { const [x, z] = P(i.x, i.z); c.fillStyle = i.rock ? '#8b8478' : '#d9c07a'; c.beginPath(); c.arc(x, z, Math.max(2, i.r * k), 0, TAU); c.fill(); }
-  if (W.kraken) { const [x, z] = P(W.kraken.x, W.kraken.z); c.fillStyle = 'rgba(120,40,160,.55)'; c.beginPath(); c.arc(x, z, 44 * k, 0, TAU); c.fill(); }
-  c.fillStyle = '#ffd34a'; for (const ch of W.chests) { const [x, z] = P(ch.x, ch.z); c.fillRect(x - 3.5, z - 3.5, 7, 7); }
-  for (const s of W.ships) {
-    if (s.sinkT >= 0) continue; const [x, z] = P(s.x, s.z), isMine = me && s.id === me.id;
-    c.save(); c.translate(x, z); c.rotate(-s.yaw + Math.PI); const sz2 = isMine ? 11 : 8;
-    c.fillStyle = s.skel ? '#7be35a' : s.color; c.strokeStyle = isMine ? '#fff' : 'rgba(0,0,0,.7)'; c.lineWidth = isMine ? 3 : 2;
-    c.beginPath(); c.moveTo(0, -sz2 * 1.3); c.lineTo(sz2 * 0.7, sz2); c.lineTo(-sz2 * 0.7, sz2); c.closePath(); c.fill(); c.stroke(); c.restore();
+  c.save(); c.beginPath(); c.arc(S / 2, S / 2, R0, 0, TAU); c.clip();
+  parchmentFace(c, S, R0);
+  // storm outside: ink wash; inside: faded sea
+  c.fillStyle = 'rgba(70,40,30,.35)'; c.fillRect(0, 0, S, S);
+  const [sx, sz] = P(st.cx, st.cz), sr = Math.max(0, st.r * k);
+  c.fillStyle = 'rgba(120,170,175,.55)'; c.beginPath(); c.arc(sx, sz, sr, 0, TAU); c.fill();
+  c.strokeStyle = 'rgba(140,25,15,.9)'; c.lineWidth = 3; c.setLineDash([10, 6]); c.beginPath(); c.arc(sx, sz, sr, 0, TAU); c.stroke(); c.setLineDash([]);
+  // chart grid
+  c.strokeStyle = 'rgba(80,50,20,.18)'; c.lineWidth = 1; for (let i = -6; i <= 6; i++) { c.beginPath(); c.moveTo(S / 2 + i * 34, 0); c.lineTo(S / 2 + i * 34, S); c.stroke(); c.beginPath(); c.moveTo(0, S / 2 + i * 34); c.lineTo(S, S / 2 + i * 34); c.stroke(); }
+  for (const i of V.islandData || []) {
+    const [x, z] = P(i.x, i.z); c.fillStyle = i.rock ? '#7d6a52' : '#b48a4c'; c.strokeStyle = '#4a2e14'; c.lineWidth = 1.5; c.beginPath();
+    for (let a = 0; a <= 24; a++) { const ang = a / 24 * TAU, r = isleRadius(i, ang) * k; const px = x + Math.cos(ang) * Math.max(2, r), pz = z + Math.sin(ang) * Math.max(2, r); a ? c.lineTo(px, pz) : c.moveTo(px, pz); }
+    c.fill(); c.stroke();
   }
-  if (W.meg && W.meg.st !== 'dead') { const [x, z] = P(W.meg.x, W.meg.z); c.fillStyle = '#ff4a3a'; c.font = '900 22px Nunito'; c.textAlign = 'center'; c.fillText('▲', x, z + 8); }
-  if (!meS && !ME.dead && !ME.out && myAvatar(W)) { const [x, z] = P(ME.x, ME.z); c.fillStyle = '#fff'; c.beginPath(); c.arc(x, z, 5, 0, TAU); c.fill(); }
+  if (W.kraken) { const [x, z] = P(W.kraken.x, W.kraken.z); c.fillStyle = 'rgba(60,10,70,.55)'; c.beginPath(); c.arc(x, z, 44 * k, 0, TAU); c.fill(); }
+  for (const ch of W.chests) { const [x, z] = P(ch.x, ch.z); c.fillStyle = '#c8901c'; c.strokeStyle = '#3a2204'; c.lineWidth = 1.5; c.fillRect(x - 4, z - 3, 8, 6); c.strokeRect(x - 4, z - 3, 8, 6); }
+  for (const s of W.ships) {
+    if (s.sinkT >= 0) continue; const [x, z] = P(s.x, s.z), isMine = me && s.id === me.id, sz2 = isMine ? 12 : 9;
+    c.save(); c.translate(x, z); c.rotate(-s.yaw + Math.PI);
+    c.fillStyle = s.skel ? '#3f7a44' : s.color; c.strokeStyle = isMine ? '#fff6d0' : '#2b1a0c'; c.lineWidth = isMine ? 3 : 2;
+    c.beginPath(); c.moveTo(0, -sz2 * 1.3); c.quadraticCurveTo(sz2 * 0.8, 0, sz2 * 0.55, sz2); c.lineTo(-sz2 * 0.55, sz2); c.quadraticCurveTo(-sz2 * 0.8, 0, 0, -sz2 * 1.3); c.fill(); c.stroke(); c.restore();
+  }
+  if (W.meg && W.meg.st !== 'dead') { const [x, z] = P(W.meg.x, W.meg.z); c.fillStyle = '#8a1a0e'; c.beginPath(); c.moveTo(x, z - 9); c.lineTo(x + 6, z + 5); c.lineTo(x - 6, z + 5); c.fill(); }
+  if (!meS && !ME.dead && !ME.out && myAvatar(W)) { const [x, z] = P(ME.x, ME.z); c.fillStyle = '#fff6d0'; c.strokeStyle = '#2b1a0c'; c.lineWidth = 2; c.beginPath(); c.arc(x, z, 5, 0, TAU); c.fill(); c.stroke(); }
   c.restore();
-  c.strokeStyle = 'rgba(255,226,160,.4)'; c.lineWidth = 3; c.beginPath(); c.arc(S / 2, S / 2, S / 2 - 2, 0, TAU); c.stroke();
-  c.fillStyle = 'rgba(255,255,255,.7)'; c.font = '800 20px Nunito'; c.textAlign = 'center'; c.fillText('N', S / 2, 26);
+  // bezel with N marker and degree ticks
+  brassBezel(c, S, R0, R1);
+  c.strokeStyle = '#3a2804'; c.lineWidth = 2; for (let i = 0; i < 36; i++) { const a = i / 36 * TAU, r0 = R0 + 3, r1 = R0 + (i % 9 ? 7 : 12); c.beginPath(); c.moveTo(S / 2 + Math.sin(a) * r0, S / 2 - Math.cos(a) * r0); c.lineTo(S / 2 + Math.sin(a) * r1, S / 2 - Math.cos(a) * r1); c.stroke(); }
+  c.fillStyle = '#7a1f12'; c.font = '900 22px Cinzel, Georgia'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('N', S / 2, S / 2 - R1 + 14);
 }
 function drawCompass(W) {
-  const c = compassCtx, S = 300, R0 = 120, s = homeShip(W);
+  const c = compassCtx, S = 340, R1 = S / 2 - 4, R0 = R1 - 24, s = homeShip(W), C = S / 2;
   camera.getWorldDirection(_cd); const hc = Math.atan2(_cd.x, _cd.z);
-  const scr = h => -angDiff(hc, h); // screen angle (clockwise from up)
+  const scr = h => -angDiff(hc, h); // screen angle, clockwise from up (the card turns with your view)
   c.clearRect(0, 0, S, S);
-  c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.arc(S / 2, S / 2, R0 + 18, 0, TAU); c.fill();
-  c.strokeStyle = 'rgba(255,226,160,.5)'; c.lineWidth = 3; c.beginPath(); c.arc(S / 2, S / 2, R0, 0, TAU); c.stroke();
-  for (let i = 0; i < 16; i++) { const a = scr(i / 16 * TAU), r1 = i % 4 ? R0 - 8 : R0 - 16; c.beginPath(); c.moveTo(S / 2 + Math.sin(a) * r1, S / 2 - Math.cos(a) * r1); c.lineTo(S / 2 + Math.sin(a) * R0, S / 2 - Math.cos(a) * R0); c.stroke(); }
-  c.font = '900 26px Nunito'; c.textAlign = 'center'; c.textBaseline = 'middle';
-  [['N', Math.PI, '#ff6a5a'], ['E', Math.PI / 2, '#fff'], ['S', 0, '#fff'], ['W', -Math.PI / 2, '#fff']].forEach(([l, h, col]) => { const a = scr(h); c.fillStyle = col; c.fillText(l, S / 2 + Math.sin(a) * (R0 - 34), S / 2 - Math.cos(a) * (R0 - 34)); });
-  // wind arrow
-  const wa = scr(W.wind); c.save(); c.translate(S / 2, S / 2); c.rotate(wa);
-  c.fillStyle = '#7fd6ff'; c.strokeStyle = '#0b2a3a'; c.lineWidth = 3;
-  c.beginPath(); c.moveTo(0, -R0 + 6); c.lineTo(14, -R0 + 36); c.lineTo(5, -R0 + 32); c.lineTo(5, 40); c.lineTo(-5, 40); c.lineTo(-5, -R0 + 32); c.lineTo(-14, -R0 + 36); c.closePath(); c.fill(); c.stroke(); c.restore();
-  if (s) { // ship heading + sail line
-    const ha = scr(s.yaw); c.save(); c.translate(S / 2, S / 2); c.rotate(ha); c.fillStyle = s.color; c.strokeStyle = '#fff'; c.lineWidth = 2;
-    c.beginPath(); c.moveTo(0, -34); c.quadraticCurveTo(16, -4, 10, 26); c.lineTo(-10, 26); c.quadraticCurveTo(-16, -4, 0, -34); c.fill(); c.stroke();
-    c.rotate(s.sailAng); c.strokeStyle = '#fff'; c.lineWidth = 5; c.beginPath(); c.moveTo(-22, -4); c.lineTo(22, -4); c.stroke(); c.restore();
+  parchmentFace(c, S, R0);
+  // compass rose
+  c.save(); c.translate(C, C); c.rotate(scr(Math.PI));
+  for (let i = 0; i < 16; i++) { c.save(); c.rotate(i / 16 * TAU); const big = i % 4 === 0, mid = i % 2 === 0, L = big ? R0 - 18 : mid ? R0 * 0.6 : R0 * 0.42, w = big ? 13 : mid ? 9 : 6;
+    c.fillStyle = big ? '#5a2c12' : mid ? '#8a5a2a' : '#b48a4c'; c.beginPath(); c.moveTo(0, -L); c.lineTo(w, 0); c.lineTo(0, 0); c.fill();
+    c.fillStyle = big ? '#c8a060' : mid ? '#d8b880' : '#e8d0a0'; c.beginPath(); c.moveTo(0, -L); c.lineTo(-w, 0); c.lineTo(0, 0); c.fill(); c.restore(); }
+  c.strokeStyle = 'rgba(74,46,20,.6)'; c.lineWidth = 1.5; c.beginPath(); c.arc(0, 0, R0 * 0.3, 0, TAU); c.stroke();
+  c.font = '900 22px Cinzel, Georgia'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  [['N', 0, '#7a1f12'], ['E', Math.PI / 2, '#2b1a0c'], ['S', Math.PI, '#2b1a0c'], ['W', -Math.PI / 2, '#2b1a0c']].forEach(([l, a, col]) => { c.save(); c.rotate(a); c.fillStyle = col; c.fillText(l, 0, -R0 + 11); c.restore(); });
+  c.restore();
+  // ship heading needle (crew colour) and sail line
+  if (s) {
+    c.save(); c.translate(C, C); c.rotate(scr(s.yaw));
+    c.strokeStyle = '#2b1a0c'; c.lineWidth = 2; c.fillStyle = s.color;
+    c.beginPath(); c.moveTo(0, -R0 * 0.55); c.lineTo(9, -R0 * 0.2); c.lineTo(-9, -R0 * 0.2); c.closePath(); c.fill(); c.stroke();
+    c.rotate(s.sailAng); c.strokeStyle = 'rgba(255,248,225,.95)'; c.lineWidth = 6; c.lineCap = 'round'; c.beginPath(); c.moveTo(-26, 0); c.lineTo(26, 0); c.stroke(); c.strokeStyle = '#2b1a0c'; c.lineWidth = 1.5; c.stroke(); c.restore();
   }
-  c.fillStyle = 'rgba(255,255,255,.9)'; c.font = '800 18px Nunito'; c.fillText('WIND', S / 2, S / 2 + 64);
+  // wind needle: blued steel with a brass tail, points where the wind blows
+  c.save(); c.translate(C, C); c.rotate(scr(W.wind));
+  const ng = c.createLinearGradient(-8, 0, 8, 0); ng.addColorStop(0, '#1d3f66'); ng.addColorStop(0.5, '#6aa8e0'); ng.addColorStop(1, '#1d3f66');
+  c.fillStyle = ng; c.strokeStyle = '#0c1a2a'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(0, -R0 + 14); c.lineTo(10, 0); c.lineTo(0, 10); c.lineTo(-10, 0); c.closePath(); c.fill(); c.stroke();
+  c.fillStyle = '#c8961c'; c.beginPath(); c.moveTo(0, R0 - 26); c.lineTo(8, 0); c.lineTo(0, 10); c.lineTo(-8, 0); c.closePath(); c.fill(); c.stroke();
+  c.restore();
+  c.fillStyle = '#e9c45a'; c.strokeStyle = '#3a2804'; c.lineWidth = 2; c.beginPath(); c.arc(C, C, 7, 0, TAU); c.fill(); c.stroke();
+  brassBezel(c, S, R0, R1);
+  // lubber line: the way you're looking
+  c.fillStyle = '#7a1f12'; c.beginPath(); c.moveTo(C, C - R0 + 2); c.lineTo(C + 9, C - R1 + 4); c.lineTo(C - 9, C - R1 + 4); c.closePath(); c.fill();
 }
 let hudT = 0;
+const HELP = {
+  deck: [['WASD', 'walk'], ['Shift', 'run'], ['F', 'use'], ['Click', 'cutlass'], ['G', 'keg'], ['Space', 'jump'], ['Tab', 'score'], ['H', 'help']],
+  water: [['WASD', 'swim'], ['F', 'climb aboard'], ['R', 'respawn'], ['Tab', 'score']],
+  wheel: [['A / D', 'steer'], ['Mouse', 'look around'], ['F', 'leave wheel']],
+  sail: [['W / S', 'raise · lower'], ['A / D', 'angle to wind'], ['F', 'leave']],
+  cannon: [['Mouse', 'aim'], ['Click', 'fire'], ['1–4', 'ammo'], ['F', 'leave']],
+  harpoon: [['Mouse', 'aim'], ['Click', 'fire'], ['Hold Click', 'reel in'], ['F', 'leave']],
+  out: [['Click', 'watch another ship'], ['Q', 'leave the match']]
+};
+const legend = k => HELP[k].map(([key, what]) => `<span><kbd>${key}</kbd>${what}</span>`).join('');
 function updateHud(W, dt) {
   hudT -= dt;
-  // banner / vignette
   if (bannerTimer > 0) { bannerTimer -= dt; if (bannerTimer <= 0) $('banner').style.opacity = 0; }
   hurtT = Math.max(0, hurtT - dt * 1.4);
   const lowHp = !ME.dead && !ME.out && ME.hp < 35 ? 0.35 + Math.sin(performance.now() / 200) * 0.1 : 0;
@@ -3015,55 +3253,57 @@ function updateHud(W, dt) {
   const hs = homeShip(W), grog = hs && hs.grog > 0 && !ME.dead;
   $('grog').style.opacity = grog ? 1 : 0;
   gradePass.uniforms.grog.value = lerp(gradePass.uniforms.grog.value, grog ? 1 : 0, Math.min(1, dt * 3));
+  $('frozen').style.opacity = W.over ? 1 : 0;
+  // objective header + countdown (MATCH_START)
+  const ob = $('objective'), starting = W.phase === 'MATCH_START';
+  ob.classList.toggle('big', starting); $('countdown').hidden = !starting;
+  if (starting) $('countdown').textContent = Math.max(1, Math.ceil(W.countdown));
+  ob.hidden = !!W.over;
   // prompt & progress ring
-  const pr = currentPrompt(W); const pe = $('prompt'); if (pr) { if (pe.innerHTML !== pr) pe.innerHTML = pr; pe.hidden = false; } else pe.hidden = true;
+  const pr = W.over ? '' : currentPrompt(W); const pe = $('prompt'); if (pr) { if (pe.innerHTML !== pr) pe.innerHTML = pr; pe.hidden = false; } else pe.hidden = true;
   const prog = (ME.prog > 0 ? ME.prog : 0) || (hs && hs.anc && KEYS.KeyF && hs.hoist > 0 && ME.ship === hs.id ? hs.hoist : 0);
-  $('ring').hidden = !(prog > 0); $('ring-arc').setAttribute('stroke-dashoffset', 138.2 * (1 - clamp(prog, 0, 1)));
-  $('lock-hint').hidden = locked || G.noLock || ME.dead || ME.out;
-  $('cross').hidden = !(locked || G.noLock) || camMode() === 'chase';
+  $('ring').hidden = !(prog > 0); $('ring-arc').setAttribute('stroke-dashoffset', 144.5 * (1 - clamp(prog, 0, 1)));
+  $('lock-hint').hidden = locked || G.noLock || ME.dead || ME.out || !!W.over;
+  $('cross').hidden = !(locked || G.noLock) || camMode() === 'chase' || !!W.over;
   if (hudT > 0) return; hudT = 0.1;
   drawRadar(W); drawCompass(W);
   const st = W.storm, outside = hs && dist2(hs.x, hs.z, st.cx, st.cz) > st.r || (!hs && ME.ship < 0 && dist2(ME.x, ME.z, st.cx, st.cz) > st.r);
-  $('storm-t').textContent = st.left > 0 ? 'Storm closes in ' + fmtTime(st.left) : 'The storm has closed!';
-  $('storm-sub').innerHTML = outside ? '<b style="color:#ff5a46">You are outside the storm ring!</b>' : st.shrinking ? '<b style="color:#ffc94a">The ring is shrinking!</b>' : st.next > 0 && st.r > 0 ? 'Ring shrinks in ' + fmtTime(st.next) : '';
+  $('storm-t').textContent = starting ? 'Storm ring forming…' : st.left > 0 ? 'Storm closes in ' + fmtTime(st.left) : 'The storm has closed!';
+  $('storm-sub').innerHTML = outside ? '<span style="color:#7a1206">⚠ Outside the ring!</span>' : st.shrinking ? 'The ring is shrinking!' : st.next > 0 && st.r > 0 ? 'Ring shrinks in ' + fmtTime(st.next) : '';
   // scores
-  const crewsSorted = W.crews.slice().sort((a, b) => b.score - a.score);
   const myCrew = myAvatar(W) ? myAvatar(W).crew : -9;
-  $('scores').innerHTML = crewsSorted.map(c => { const ci = crewInfo(c.id) || {}; return `<div class="chip ${c.id === myCrew ? 'me' : ''} ${c.alive ? '' : 'dead'}"><span class="dot" style="background:${ci.color}"></span>${esc(ci.ship || ci.name || '?')}<span style="color:var(--gold)">${c.score}</span></div>`; }).join('');
-  // ship status
+  $('scores').innerHTML = W.crews.slice().sort((a, b) => b.score - a.score).map(c => { const ci = crewInfo(c.id) || {}; return `<div class="chip ${c.id === myCrew ? 'me' : ''} ${c.alive ? '' : 'dead'}"><span class="dot" style="background:${ci.color}"></span><span>${esc(ci.ship || ci.name || '?')}</span><span>${c.score}</span></div>`; }).join('');
+  // ship status gauges
   const s = hs;
-  $('status').style.opacity = s ? 1 : 0.5;
+  $('status').style.opacity = s ? 1 : 0.55;
   if (s) {
-    const ci = crewInfo(s.crew) || {};
     $('ship-name').textContent = s.name; $('ship-name').style.color = s.color; $('ship-crew').textContent = SHIPS[s.type].name;
-    const wp = Math.round(s.water * 100); $('water-fill').style.height = wp + '%'; $('water-pct').textContent = wp + '%';
-    $('water-fill').style.background = wp > 70 ? 'linear-gradient(#ff8a7a,#b8221a)' : '';
-    const holes = s.br.filter(l => l > 0).length; $('k-breach').textContent = holes ? holes + (s.br.some(l => l > 1) ? ' (bad!)' : '') : 'None'; $('k-breach').style.color = holes ? '#ff8a6a' : '';
+    const wp = Math.round(s.water * 100); $('water-fill').style.height = wp + '%'; $('water-pct').textContent = wp + '%'; $('water-fill').classList.toggle('danger', wp > 65);
+    const lv = s.br.filter(l => l > 0);
+    $('k-breach').innerHTML = lv.length ? lv.map(l => `<i class="pip l${l}"></i>`).join('') : '<em>HULL SOUND</em>';
     $('k-sail').textContent = Math.round(s.sail * 100) + '%'; $('b-sail').style.width = Math.round(s.sail * 100) + '%';
-    $('k-anchor').textContent = s.anc ? (s.hoist > 0 ? `Hoisting ${Math.round(s.hoist * 100)}%` : 'DOWN') : 'Up'; $('k-anchor').style.color = s.anc ? '#6fb6ff' : '';
-    const rp = Math.round(s.rudder * 3); $('k-rudder').textContent = rp === 0 ? '⟷ centred' : (rp > 0 ? '→'.repeat(rp) + ' starboard' : '←'.repeat(-rp) + ' port');
+    const an = $('k-anchor'); an.textContent = s.anc ? (s.hoist > 0 ? `HOISTING ${Math.round(s.hoist * 100)}%` : 'DROPPED') : 'RAISED'; an.className = 'state ' + (s.anc ? 'down' : 'up');
+    $('k-rudder').style.left = (50 + s.rudder * 45) + '%';
     $('k-speed').textContent = Math.round(s.spd * 1.94) + ' kn';
     const eff = sailEfficiency(s, W.wind), best = bestSailAng(s, W.wind);
-    $('wind-eff').innerHTML = `Sails catch <b style="color:${eff > 0.75 ? '#4be08a' : eff > 0.5 ? '#ffc94a' : '#ff8a6a'}">${Math.round(eff * 100)}%</b>${Math.abs(best - s.sailAng) > 0.2 ? ` · angle ${best > s.sailAng ? '→' : '←'}` : ''}`;
-    // ammo
+    $('wind-eff').innerHTML = `Sails catch <b style="color:${eff > 0.75 ? '#1f5a0e' : eff > 0.5 ? '#2b1a0c' : '#7a1206'}">${Math.round(eff * 100)}%</b>${Math.abs(best - s.sailAng) > 0.2 ? ` · turn sails ${best > s.sailAng ? '→' : '←'}` : ''}`;
     const key = ME.st && ME.st.startsWith('cannon') ? ME.st : null, rl = key ? s.reload[key] || 0 : 0;
-    $('ammo').innerHTML = AMMO.map((a, i) => `<div class="ammo ${i === ME.ammoSel ? 'on' : ''} ${s.ammo[i] > 0 ? '' : 'empty'}"><i style="background:${a.color}"></i><em>${s.skel ? '∞' : s.ammo[i]}</em>${i + 1} · ${a.name.replace(' Ball', '').replace('Cannonball', 'Ball')}</div>`).join('') + (key ? `<div class="ammo" style="width:auto;min-width:70px;align-self:center">${rl > 0.05 ? 'Reloading<em>' + rl.toFixed(1) + 's</em>' : '<em style="color:#4be08a">READY</em>'}</div>` : '');
+    $('ammo').innerHTML = AMMO.map((a, i) => `<div class="ammo ${i === ME.ammoSel ? 'on' : ''} ${s.ammo[i] > 0 ? '' : 'empty'}"><i style="background:${a.color}"></i><em>${s.skel ? '∞' : s.ammo[i]}</em>${i + 1} · ${a.name.replace(' Ball', '').replace('Cannonball', 'Shot')}</div>`).join('') + (key ? `<div class="ammo reload">${rl > 0.05 ? 'RELOAD<em>' + rl.toFixed(1) + 's</em>' : '<em style="color:#9ad37a">READY</em>'}</div>` : '');
   }
-  $('k-hp').textContent = Math.max(0, Math.ceil(ME.hp)); $('b-hp').style.width = clamp(ME.hp, 0, 100) + '%'; $('b-hp').style.background = ME.hp < 35 ? '#ff5a46' : 'var(--green)';
-  // helpbar
+  $('k-hp').textContent = Math.max(0, Math.ceil(ME.hp)); $('b-hp').style.width = clamp(ME.hp, 0, 100) + '%';
+  // single legend bar
   let help;
-  if (ME.out) help = '<span>Your ship is lost. <kbd>Click</kbd> watch another ship</span><span><kbd>Q</kbd> leave the match</span>';
+  if (W.over) help = '<span>The battle is decided…</span>';
+  else if (ME.out) help = legend('out');
   else if (ME.dead) help = `<span>Respawning on your ship in ${Math.max(0, Math.ceil(ME.rt || 0))}s…</span>`;
-  else if (ME.ship < 0) help = '<span><kbd>WASD</kbd> swim</span><span><kbd>F</kbd> climb aboard</span><span><kbd>R</kbd> respawn on your ship</span>';
-  else if (ME.st === 'wheel') help = '<span><kbd>A</kbd>/<kbd>D</kbd> steer</span><span><kbd>Mouse</kbd> look around</span><span><kbd>F</kbd> leave the wheel</span>';
-  else if (ME.st === 'sail') help = '<span><kbd>W</kbd>/<kbd>S</kbd> raise / lower</span><span><kbd>A</kbd>/<kbd>D</kbd> angle to the wind</span><span><kbd>F</kbd> leave</span>';
-  else if (ME.st && ME.st.startsWith('cannon')) help = '<span><kbd>Mouse</kbd> aim</span><span><kbd>Click</kbd> fire</span><span><kbd>1</kbd>–<kbd>4</kbd> ammo</span><span><kbd>F</kbd> leave</span>';
-  else if (ME.st === 'harpoon') help = '<span><kbd>Mouse</kbd> aim</span><span><kbd>Click</kbd> fire</span><span>Hold <kbd>Click</kbd> reel in</span><span><kbd>F</kbd> leave</span>';
-  else help = '<span><kbd>WASD</kbd> walk</span><span><kbd>F</kbd> use</span><span><kbd>Click</kbd> cutlass</span><span><kbd>G</kbd> keg</span><span><kbd>Tab</kbd> score</span><span><kbd>H</kbd> help</span>';
+  else if (ME.ship < 0) help = legend('water');
+  else if (ME.st === 'wheel' || ME.st === 'sail' || ME.st === 'harpoon') help = legend(ME.st);
+  else if (ME.st && ME.st.startsWith('cannon')) help = legend('cannon');
+  else help = legend('deck');
   if ($('helpbar').innerHTML !== help) $('helpbar').innerHTML = help;
   const sp = $('spectate');
-  if (ME.out) { sp.hidden = false; sp.innerHTML = `Spectating <b>${esc(G.spectateName || '')}</b> · your crew is out, but your score still counts`; }
-  else if (ME.dead) { sp.hidden = false; sp.textContent = 'You were knocked out!'; }
+  if (ME.out && !W.over) { sp.hidden = false; sp.innerHTML = `Spectating <b>${esc(G.spectateName || '')}</b> · your crew's score still counts`; }
+  else if (ME.dead && !W.over) { sp.hidden = false; sp.textContent = 'You were knocked out!'; }
   else sp.hidden = true;
 }
 function renderBoard() {
@@ -3074,34 +3314,67 @@ function renderBoard() {
     rows.map(c => { const ci = crewInfo(c.id) || {}; return `<tr class="${c.id === myCrew ? 'win' : ''}"><td><span class="dot" style="background:${ci.color}"></span> ${esc(ci.name)}${ci.ai ? ' <small style="color:var(--muted)">AI</small>' : ''}</td><td>${esc(ci.ship)} <small style="color:var(--muted)">${SHIPS[ci.type] ? SHIPS[ci.type].name : ''}</small></td><td class="n">${c.sinks}</td><td class="n">${c.chests}</td><td class="n">${c.kills}</td><td class="n"><b>${c.score}</b></td><td>${c.alive ? 'Afloat' : '☠ Sunk'}</td></tr>`; }).join('');
 }
 
-// ---------- end of match ----------
+// ---------- match state machine: LOBBY -> MATCH_START -> MATCH_ACTIVE -> MATCH_OVER -> VICTORY_SCREEN ----------
+// The host's simulation owns the authoritative phase (sent in every snapshot); each client mirrors it here
+// and runs the entry actions: countdown, objective banner, freezing controls, and the end screen.
+const MATCH = { state: 'LOBBY', overAt: 0 };
+function setMatchState(next, W) {
+  if (MATCH.state === next) return;
+  MATCH.state = next;
+  if (next === 'LOBBY') { $('hud').hidden = true; return; }
+  if (next === 'MATCH_START') { banner('', '', null, 0.01); if (AU.ctx) SFX.bell(); return; }
+  if (next === 'MATCH_ACTIVE') { banner('Set sail!', 'Sink every rival ship. Stay inside the storm ring.', null, 3); if (AU.ctx) SFX.cannon(null); return; }
+  if (next === 'MATCH_OVER') {
+    MATCH.overAt = performance.now(); ME.st = ''; mouseDown = false; for (const k in KEYS) KEYS[k] = false;
+    if (document.pointerLockElement) document.exitPointerLock();
+    const me = myAvatar(W), wc = crewInfo(W.over.winner) || {}, win = me && me.crew === W.over.winner;
+    banner(me ? (win ? 'Victory is yours!' : 'Defeat!') : `${wc.name || 'A crew'} wins!`, W.over.reason, win ? null : me ? '#ff8a6a' : null, 4);
+    return;
+  }
+  if (next === 'VICTORY_SCREEN') showEnd(W);
+}
+function updateMatchState(W) {
+  if (!W || (G.mode !== 'game' && G.mode !== 'end')) return;
+  if (W.over) {
+    if (MATCH.state !== 'MATCH_OVER' && MATCH.state !== 'VICTORY_SCREEN') setMatchState('MATCH_OVER', W);
+    else if (MATCH.state === 'MATCH_OVER' && performance.now() - MATCH.overAt > 4000) setMatchState('VICTORY_SCREEN', W);
+  } else setMatchState(W.phase === 'MATCH_START' ? 'MATCH_START' : 'MATCH_ACTIVE', W);
+}
 function showEnd(W) {
   if (G.endShown) return; G.endShown = true; G.mode = 'end';
   if (document.pointerLockElement) document.exitPointerLock();
   const ov = W.over, me = myAvatar(W), myCrew = me ? me.crew : -9, win = ov.winner === myCrew, wc = crewInfo(ov.winner) || {};
-  $('end-title').textContent = me ? (win ? 'Victory!' : 'Defeat') : (wc.name || '') + ' win!';
-  $('end-title').style.color = win ? 'var(--gold)' : me ? '#ff8a7a' : 'var(--gold)';
-  $('end-sub').textContent = `${wc.ship || ''} · ${wc.name || ''} — ${ov.reason}`;
+  const et = $('end-title'); et.textContent = me ? (win ? 'Victory!' : 'Defeat') : 'Battle Over'; et.className = 'end-title ' + (win || !me ? 'win' : 'lose');
+  const members = wc.humans && wc.humans.length ? wc.humans.map(h => h.name).join(' & ') : 'AI pirates';
+  $('end-winner').textContent = `🏆 ${wc.ship || ''} — ${members}`;
+  $('end-sub').textContent = ov.reason + ` · battle lasted ${fmtTime(W.mt || 0)}`;
   const mc = W.crews.find(c => c.id === myCrew);
-  $('end-mine').innerHTML = mc ? [['Match Score', mc.score], ['Ships sunk', mc.sinks], ['Chests secured', mc.chests], ['Beasts slain', mc.kills], ['Your ship', mc.alive ? 'Afloat' : 'Sunk']].map(([l, v]) => `<div><b>${v}</b><span>${l}</span></div>`).join('') : '';
+  $('end-mine').innerHTML = mc ? [['Match Score', mc.score], ['Ships Sunk', mc.sinks], ['Chests Looted', mc.chests], ['Survival Time', fmtTime(mc.surv)], ['Beasts Slain', mc.kills]].map(([l, v]) => `<div><b>${v}</b><span>${l}</span></div>`).join('') : '';
   const rows = W.crews.slice().sort((a, b) => (b.id === ov.winner) - (a.id === ov.winner) || b.score - a.score);
-  $('end-table').innerHTML = '<tr><th>#</th><th>Crew</th><th>Ship</th><th class="n">Sunk</th><th class="n">Chests</th><th class="n">Beasts</th><th class="n">Score</th><th>Status</th></tr>' +
-    rows.map((c, i) => { const ci = crewInfo(c.id) || {}; return `<tr class="${c.id === ov.winner ? 'win' : ''}"><td>${i + 1}</td><td><span class="dot" style="background:${ci.color}"></span> ${esc(ci.name)}</td><td>${esc(ci.ship)} <small style="color:var(--muted)">${SHIPS[ci.type] ? SHIPS[ci.type].name : ''}</small></td><td class="n">${c.sinks}</td><td class="n">${c.chests}</td><td class="n">${c.kills}</td><td class="n"><b>${c.score}</b></td><td>${c.alive ? 'Afloat' : '☠ Sunk'}</td></tr>`; }).join('');
-  $('btn-replay').hidden = G.role === 'client'; $('end-wait').textContent = G.role === 'client' ? 'Waiting for the host to start a rematch…' : '';
-  $('btn-replay').textContent = G.role === 'host' ? 'Back to lobby' : 'Replay';
+  $('end-table').innerHTML = '<tr><th>#</th><th>Crew</th><th>Ship</th><th class="n">Sunk</th><th class="n">Chests</th><th class="n">Survived</th><th class="n">Score</th><th>Status</th></tr>' +
+    rows.map((c, i) => { const ci = crewInfo(c.id) || {}; return `<tr class="${c.id === ov.winner ? 'win' : ''}"><td>${i + 1}</td><td><span class="dot" style="background:${ci.color}"></span> ${esc(ci.name)}${ci.ai ? ' <small style="color:var(--muted)">AI</small>' : ''}</td><td>${esc(ci.ship)} <small style="color:var(--muted)">${SHIPS[ci.type] ? SHIPS[ci.type].name : ''}</small></td><td class="n">${c.sinks}</td><td class="n">${c.chests}</td><td class="n">${fmtTime(c.surv)}</td><td class="n"><b>${c.score}</b></td><td>${c.alive ? 'Afloat' : '☠ Sunk'}</td></tr>`; }).join('');
+  const client = G.role === 'client';
+  $('btn-replay').hidden = client; $('btn-replay').textContent = 'Play again';
+  $('btn-end-lobby').hidden = G.role !== 'host';
+  $('end-wait').textContent = client ? 'Waiting for the captain who hosted to start the next battle…' : G.role === 'host' ? 'Play again keeps the same crews; Back to lobby lets players switch ships.' : '';
   show('end'); $('hud').hidden = true;
   if (AU.ctx) SFX.fanfare(win);
   if (HUB && !G.reported) { G.reported = true; HUB.report('session-end', { result: me ? (win ? 'win' : 'lose') : 'quit', score: mc ? mc.score : 0, reason: ov.reason, ship: me ? (crewInfo(myCrew) || {}).type : null }); }
 }
+// PLAY AGAIN: rebuild the arena in place (new seed, fresh ships) without reloading the page
 $('btn-replay').onclick = () => {
   SFX.ui();
-  if (G.role === 'solo') { const cfg = buildMatchConfig([{ uid: G.uid, name: G.name || 'Pirate', look: G.look, ship: G.shipPref }], G.cfg.duration); startMatch(cfg); return; }
-  if (G.role === 'host') { G.mode = 'lobby'; G.lobby.players.forEach(p => p.seen = performance.now()); G.room.emit('back', {}); startDemo(); show('lobby'); renderLobby(); broadcastLobby(); }
+  if (G.role === 'solo') { startMatch(buildMatchConfig([{ uid: G.uid, name: G.name || 'Pirate', look: G.look, ship: G.shipPref }], G.cfg.duration)); return; }
+  if (G.role === 'host') { const cfg = buildMatchConfig(G.lobby.players, G.lobby.duration || G.cfg.duration); G.room.emit('start', { cfg }); startMatch(cfg); }
+};
+$('btn-end-lobby').onclick = () => {
+  SFX.ui(); if (G.role !== 'host') return;
+  MATCH.state = 'LOBBY'; G.mode = 'lobby'; G.lobby.players.forEach(p => p.seen = performance.now()); G.room.emit('back', {}); startDemo(); show('lobby'); renderLobby(); broadcastLobby();
 };
 $('btn-end-menu').onclick = () => { SFX.ui(); leaveToMenu(); };
 function leaveToMenu() {
   if (G.room) { try { G.room.emit('bye', { uid: G.uid }); G.room.leave(); } catch (e) { /* already gone */ } }
-  G.room = null; G.mode = 'menu'; G.role = 'demo'; G.lobby = null; $('hud').hidden = true; $('lobby-err').textContent = ''; $('board').hidden = true;
+  G.room = null; G.mode = 'menu'; G.role = 'demo'; MATCH.state = 'LOBBY'; G.lobby = null; $('hud').hidden = true; $('lobby-err').textContent = ''; $('board').hidden = true;
   if (document.pointerLockElement) document.exitPointerLock();
   gradePass.uniforms.grog.value = 0;
   startDemo(); show('menu');
@@ -3161,7 +3434,7 @@ function renderLobby() {
   $('match-len').value = String(L.duration || 480);
   const players = L.players.slice(0, 5), groups = crewsFrom(players), ai = players.length < 4 ? Math.max(0, 3 - groups.length) : 0;
   $('lobby-count').textContent = `${L.players.length} / 5`;
-  $('crews').innerHTML = groups.map((g, i) => `<div class="crew"><h4><span class="dot" style="background:${CREW_COLORS[i]}"></span>${esc(PLAYER_SHIP_NAMES[i])}<small style="color:var(--muted);font-weight:700;margin-left:auto">${esc(SHIPS[g[0].ship] ? SHIPS[g[0].ship].name : 'Brigantine')}</small></h4><ul>${g.map((p, k) => `<li>${k === 0 ? '⚓ ' : '🗡 '}${esc(p.name)}${p.uid === G.uid ? ' <b style="color:var(--gold)">(you)</b>' : ''}</li>`).join('')}${g.length === 1 ? '<li style="color:var(--muted)">🤖 AI Deckhand</li>' : ''}</ul></div>`).join('') +
+  $('crews').innerHTML = groups.map((g, i) => `<div class="crew"><h4><span class="dot" style="background:${CREW_COLORS[i]}"></span>${esc(PLAYER_SHIP_NAMES[i])}<small style="color:var(--muted);font-weight:700;margin-left:auto">${esc(SHIPS[g[0].ship] ? SHIPS[g[0].ship].name : 'Brigantine')}</small></h4><ul>${g.map((p, k) => `<li>${k === 0 ? '⚓ ' : '🗡 '}${esc(p.name)}${p.uid === G.uid ? ' <b style="color:#7a1f12">(you)</b>' : ''}</li>`).join('')}${g.length === 1 ? '<li style="color:var(--muted)">🤖 AI Deckhand</li>' : ''}</ul></div>`).join('') +
     Array.from({ length: ai }, (_, k) => `<div class="crew" style="opacity:.75"><h4><span class="dot" style="background:${CREW_COLORS[groups.length + k]}"></span>AI pirate ship</h4><ul><li style="color:var(--muted)">🤖🤖 Two AI pirates</li></ul></div>`).join('') +
     (L.players.length > 5 ? `<div class="crew"><h4>Spectators</h4><ul>${L.players.slice(5).map(p => `<li>${esc(p.name)}</li>`).join('')}</ul></div>` : '');
   renderShipPick();
@@ -3196,7 +3469,7 @@ if (G.look.length < 5) G.look = [0, 2, 2, 1, 0];
 let last = performance.now();
 function frame(now) {
   requestAnimationFrame(frame);
-  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  const dt = clamp((now - last) / 1000, 0, 0.05); last = Math.max(last, now);
   let W = null;
   if (G.mode === 'game' || G.mode === 'end') {
     if (G.role === 'client') {
@@ -3219,7 +3492,7 @@ function frame(now) {
     stepParticles(dt);
     if (G.mode === 'game') {
       updateHud(W, dt);
-      if (W.over && !G.endShown) { G.overAt = G.overAt || now; if (now - G.overAt > 4500) { showEnd(W); G.overAt = 0; } }
+      updateMatchState(W);
       const ms = myShip(W); auAmbient(V.wx, ms ? ms.spd : 0);
       V.creakT -= dt; if (V.creakT <= 0 && ms) { V.creakT = rr(3, 8); SFX.creak([ms.x, 1, ms.z]); }
     } else if (V.wx) auAmbient(V.wx, 0);
