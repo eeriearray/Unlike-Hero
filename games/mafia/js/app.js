@@ -778,7 +778,7 @@
       if (view && view.phase !== 'lobby' && view.phase !== 'gameover' && !confirm('Leave this game? Your seat will be left empty.')) return;
       props.onLeave(true);
     }
-    return html`<header className="topbar">
+    return html`<header className=${cx('topbar', view && view.phase !== 'lobby' && 'in-game')}>
       <button className="icon-btn" onClick=${back} aria-label=${view ? 'Leave room' : 'All games'} title=${view ? 'Leave room' : 'All games'}>←</button>
       <span className="brand">MAFIA</span>
       ${view ? (props.kind === 'offline' ? html`<span className="pill offline">Solo</span>` : html`<span className="pill code" title="Room code">${view.code}</span>`) : null}
