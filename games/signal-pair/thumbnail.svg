@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400">
+  <rect width="640" height="400" fill="#0a0d0f"/>
+  <circle cx="320" cy="170" r="150" fill="#38c6f2" opacity=".08"/>
+  <g transform="translate(176 120)"><rect width="64" height="64" rx="12" fill="#ff4a3d"/><rect x="80" width="64" height="64" rx="12" fill="#4a8dff"/><rect x="160" width="64" height="64" rx="12" fill="#3df07a"/><rect x="240" width="64" height="64" rx="12" fill="#ffd84a"/></g>
+  <path d="M200 230q120 60 240 0" fill="none" stroke="#38c6f2" stroke-width="4" stroke-dasharray="10 10"/>
+  <text x="320" y="330" text-anchor="middle" font-family="system-ui, sans-serif" font-weight="700" font-size="40" fill="#e3e8e1">Signal Pair</text>
+</svg>

@@ -1,0 +1,19 @@
+{
+  "id": "signal-pair",
+  "title": "Signal Pair",
+  "tagline": "A two-player co-op starter: one player calls a colour code, the other enters it.",
+  "version": "0.1.0",
+  "sdk": "1.x",
+  "entry": "index.html",
+  "thumbnail": "thumbnail.svg",
+  "accent": "#38c6f2",
+  "players": { "min": 2, "max": 2 },
+  "roles": [
+    { "id": "caller", "name": "Caller", "entry": "index.html", "description": "Sees the code and reads it out." },
+    { "id": "operator", "name": "Operator", "entry": "index.html", "description": "Has the pads and enters the code." }
+  ],
+  "multiplayer": { "style": "co-op, room code", "sameDevice": false, "transports": ["local", "relay"] },
+  "tags": ["co-op", "starter"],
+  "requires": [],
+  "status": "prototype"
+}

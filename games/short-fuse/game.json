@@ -1,0 +1,24 @@
+{
+  "id": "short-fuse",
+  "title": "Short Fuse",
+  "tagline": "One of you holds a ticking 3D bomb case. The other holds the only manual. Talk fast.",
+  "version": "1.0.0",
+  "sdk": "1.x",
+  "entry": "index.html",
+  "thumbnail": "thumbnail.svg",
+  "accent": "#ff4d3a",
+  "players": { "min": 2, "max": 2 },
+  "roles": [
+    { "id": "defuser", "name": "Defuser", "entry": "index.html", "description": "Turns the case over and works the modules." },
+    { "id": "expert", "name": "Expert", "entry": "index.html#manual", "description": "Reads the defusal manual. Never sees the case." }
+  ],
+  "multiplayer": {
+    "style": "asymmetric co-op, voice",
+    "sameDevice": false,
+    "transports": ["local", "relay"],
+    "notes": "The Expert can link to the Defuser's case ID to see the live timer, strikes and progress."
+  },
+  "tags": ["co-op", "asymmetric", "puzzle", "3D", "voice"],
+  "requires": ["webgl", "internet (three.js and fonts load from CDNs)"],
+  "status": "playable"
+}

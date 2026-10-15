@@ -1,0 +1,18 @@
+{
+  "name": "unlike-hero",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A hub of co-op multiplayer browser games. Each game lives in games/<id>/ with a game.json manifest.",
+  "type": "module",
+  "scripts": {
+    "start": "node server/relay.mjs",
+    "registry": "node tools/build-registry.mjs",
+    "new-game": "node tools/new-game.mjs"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

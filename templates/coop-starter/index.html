@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Signal Pair</title>
+<style>
+/* Co-op starter: two roles share one room. The Caller sees a colour code; the Operator has the buttons. Replace freely. */
+:root{--bg:#0a0d0f;--panel:#141a1d;--line:#2a3338;--ink:#e3e8e1;--muted:#8a958e;--accent:#38c6f2;--ok:#38f27a;--bad:#ff5a36;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{min-height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif;display:grid;place-items:center;padding-inline:16px;padding-block:24px}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+[hidden]{display:none!important}
+.card{width:min(560px,100%);background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px;display:grid;gap:16px}
+h1{margin:0;font-size:32px;letter-spacing:.02em}
+p{margin:0;color:var(--muted)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--line);background:#1b2226;border-radius:10px;padding:10px 16px;font-weight:600}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#04131a}
+input{background:#0d1114;border:1px solid var(--line);border-radius:10px;padding:10px 12px;letter-spacing:.2em;text-transform:uppercase;width:130px}
+.code{display:flex;gap:10px}
+.code i{width:64px;height:64px;border-radius:12px;border:2px solid rgba(255,255,255,.15)}
+.pads{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.pads button{aspect-ratio:1;border-radius:14px;border:0}
+.status{font:600 13px ui-monospace,monospace;color:var(--muted)}
+.ok{color:var(--ok)}.bad{color:var(--bad)}
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="row" style="justify-content:space-between"><h1>Signal Pair</h1><button class="btn" id="back" hidden>← All games</button></div>
+  <section id="lobby">
+    <p>One player is the Caller and sees a four-colour code. The other is the Operator and has the colour pads. Say the code out loud; the Operator enters it.</p>
+    <div class="row" style="margin-top:14px">
+      <button class="btn primary" id="host">Be the Caller</button>
+      <span>or</span>
+      <input id="code-in" maxlength="4" placeholder="CODE" aria-label="Room code">
+      <button class="btn" id="join">Join as Operator</button>
+    </div>
+  </section>
+  <section id="play" hidden>
+    <div class="row" style="justify-content:space-between"><b id="role"></b><span class="status" id="room"></span></div>
+    <div id="caller" hidden><p>Read this code to your Operator:</p><div class="code" id="code" style="margin-top:10px"></div></div>
+    <div id="operator" hidden><p>Press the colours your Caller reads out.</p><div class="pads" id="pads" style="margin-top:10px"></div></div>
+    <p class="status" id="status">Waiting for your partner…</p>
+  </section>
+</main>
+
+<script src="../../shared/sdk/hub-config.js"></script>
+<script src="../../shared/sdk/hub-sdk.js"></script>
+<script>
+'use strict';
+// 1. Register with the hub (optional: the game must also run without it).
+const hub = window.Hub ? Hub.init({ id: 'GAME_ID', version: '1.0.0', title: 'GAME_TITLE' }) : null;
+if (hub) { const b = document.getElementById('back'); b.hidden = false; b.onclick = () => hub.exit(); }
+
+const COLORS = { red: '#ff4a3d', blue: '#4a8dff', green: '#3df07a', yellow: '#ffd84a' };
+const $ = id => document.getElementById(id);
+let room = null, role = null, code = [], entered = [];
+
+function start(asRole, roomCode) {
+  if (!hub) { $('status').textContent = 'Multiplayer needs the hub SDK (open this game from the hub folder).'; return; }
+  role = asRole;
+  room = hub.room('GAME_ID:' + roomCode);                    // 2. Everyone in the same named room hears each other.
+  $('lobby').hidden = true; $('play').hidden = false;
+  $('role').textContent = role === 'caller' ? 'You are the Caller' : 'You are the Operator';
+  $('room').textContent = `${role === 'caller' ? 'Room code' : 'Room'} ${roomCode} · ${room.transport}`;
+  room.on('peers', peers => { $('status').textContent = peers.length ? `Linked with ${peers.map(p => p.name).join(', ')}` : 'Waiting for your partner…'; if (role === 'caller' && peers.length) room.emit('round', { len: code.length }); });
+  room.on('status', s => { if (s === 'disconnected') $('status').textContent = 'Reconnecting to the relay…'; });
+  if (role === 'caller') {
+    newCode();
+    room.on('press', ({ color }) => {                        // 3. Messages carry plain JSON.
+      entered.push(color);
+      const i = entered.length - 1;
+      if (code[i] !== color) { room.emit('result', { ok: false }); finish('lose'); return; }
+      if (entered.length === code.length) { room.emit('result', { ok: true }); finish('win'); }
+    });
+  } else {
+    $('operator').hidden = false;
+    $('pads').innerHTML = Object.entries(COLORS).map(([n, c]) => `<button data-c="${n}" aria-label="${n}" style="background:${c}"></button>`).join('');
+    $('pads').querySelectorAll('button').forEach(b => b.onclick = () => room.emit('press', { color: b.dataset.c }));
+    room.on('result', r => finish(r.ok ? 'win' : 'lose'));
+  }
+  hub.report('session-start', { role });                     // 4. Tell the hub a session started…
+}
+function newCode() {
+  code = Array.from({ length: 4 }, () => Object.keys(COLORS)[Math.floor(Math.random() * 4)]); entered = [];
+  $('caller').hidden = false; $('code').innerHTML = code.map(c => `<i style="background:${COLORS[c]}"></i>`).join('');
+}
+function finish(result) {
+  $('status').innerHTML = result === 'win' ? '<span class="ok">Signal matched. You win.</span>' : '<span class="bad">Wrong colour. Signal lost.</span>';
+  if (hub) hub.report('session-end', { result, role });     // …and how it ended (shows in the hub's recent sessions).
+  if (role === 'caller') setTimeout(() => { newCode(); $('status').textContent = 'New code. Go again.'; }, 2500);
+}
+$('host').onclick = () => start('caller', Math.random().toString(36).slice(2, 6).toUpperCase());
+$('join').onclick = () => { const c = $('code-in').value.trim().toUpperCase(); if (c.length === 4) start('operator', c); };
+</script>
+</body>
+</html>

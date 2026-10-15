@@ -1,0 +1,6 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "hub", "runtimeExecutable": "node", "runtimeArgs": ["server/relay.mjs"], "port": 8080 }
+  ]
+}
