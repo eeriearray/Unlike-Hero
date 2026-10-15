@@ -19,6 +19,7 @@
 <!-- optional game-hub SDK: the game runs the same without it -->
 <script src="../../shared/sdk/hub-config.js"></script>
 <script src="../../shared/sdk/hub-sdk.js"></script>
+<script src="models.js"></script>
 <style>
 /* Nautical theme: aged parchment for menus and charts, weathered brass and dark oak for the HUD. */
 :root{
@@ -340,7 +341,7 @@ kbd{display:inline-block;min-width:22px;padding:0 6px;border-radius:3px;font:700
 <section class="screen" id="menu" hidden>
   <div class="card menu-card">
     <h1 class="title">Sea of Chaos<small>Arena</small></h1>
-    <p class="tag">A pirate battle royale for 2-person crews. Sink rival ships, grab treasure, dodge the Megalodon and stay inside the storm ring.</p>
+    <p class="tag">A first-person pirate battle royale for crews of up to four. Sink rival ships, grab treasure, dodge the Megalodon and stay inside the storm ring.</p>
     <div class="col">
       <label class="label" for="name-in">Pirate name</label>
       <input type="text" id="name-in" maxlength="16" placeholder="Captain Barnacle">
@@ -487,16 +488,16 @@ kbd{display:inline-block;min-width:22px;padding:0 6px;border-radius:3px;font:700
     <h2 class="title" style="font-size:46px">How to Play</h2>
     <div class="help-grid" style="margin-top:12px">
       <div><h3>Win</h3><ul><li>Be the <b>last ship afloat</b>. A crew is only out when its <b>ship sinks</b>; bested pirates come back aboard after 5 s (+100 to you).</li><li>If the storm closes first, the highest <b>Match Score</b> wins: sink a ship +500, secure a chest +200, slay a Megalodon, Kraken or Skeleton Ship +350.</li><li>Stay inside the storm ring. Outside it your hull rots and your crew takes damage.</li></ul></div>
-      <div><h3>Crew of two</h3><ul><li>One sails: <b>wheel</b> at the stern, <b>sails</b> at the mast (catch the wind on the compass).</li><li>One fights and repairs: <b>cannons</b> on each side (below on the gun deck of bigger ships), <b>harpoon</b> at the bow, patching the <b>hold</b> at the bottom of the stairs.</li><li>Alone on a ship? An <b>AI Deckhand</b> joins to patch, bail and trim sails.</li></ul></div>
+      <div><h3>Your crew</h3><ul><li>Everyone who joins sails on <b>one ship</b> (up to four; more than four splits into two rival ships). AI deckhands fill any empty posts, and AI pirate ships fill the arena to five vessels.</li><li>Sail: <b>wheel</b> at the stern, <b>sails</b> at the mast. Fight: <b>cannons</b> on each side (below on the gun deck of bigger ships), the <b>harpoon</b> at the bow, and your own weapons.</li></ul></div>
       <div><h3>Keep her afloat</h3><ul><li>Hits punch <b>breaches</b> in the hold. Water pours in. At 100% you sink.</li><li>Walk down the stairs to the hold and hold <kbd>F</kbd> on a breach to plank it.</li><li>Hold <kbd>F</kbd> in the hold to fill your bucket, carry it up a deck and <kbd>Click</kbd> to throw it out (or onto a fire).</li></ul></div>
       <div class="keys"><h3>Controls</h3>
-        <div><kbd>W A S D</kbd> walk · <kbd>Shift</kbd> run · <kbd>Space</kbd> jump / leap to a ship / dive</div>
-        <div><kbd>Mouse</kbd> look (click the game to lock) · <kbd>V</kbd> first / third person</div>
-        <div><kbd>F</kbd> use station / leave · hold to repair, bail, hoist anchor</div>
-        <div><kbd>Click</kbd> fire / swing cutlass / throw bucket / light keg</div>
-        <div><kbd>1</kbd>–<kbd>4</kbd> cannonball type · <kbd>G</kbd> pick up / drop powder keg</div>
-        <div><kbd>Tab</kbd> score · <kbd>M</kbd> music · <kbd>H</kbd> this help · <kbd>Esc</kbd> free the mouse</div>
+        <div><kbd>W A S D</kbd> walk · <kbd>Shift</kbd> run · <kbd>Space</kbd> jump / leap to a ship / dive · <kbd>C</kbd> dive while swimming</div>
+        <div><kbd>Mouse</kbd> look (click the game to lock) · <kbd>Right-click</kbd> aim down sights / block with the cutlass</div>
+        <div><kbd>1</kbd>–<kbd>6</kbd> or <kbd>Wheel</kbd> cutlass, blunderbuss, flintlock, Eye of Reach, firebomb, blunderbomb · at a cannon <kbd>1</kbd>–<kbd>4</kbd> pick the ball</div>
+        <div><kbd>F</kbd> use a station / leave · hold to repair, bail, hoist anchor · <kbd>G</kbd> powder keg · <kbd>Click</kbd> attack, fire, throw</div>
+        <div><kbd>Tab</kbd> score · <kbd>M</kbd> music · <kbd>H</kbd> this help · <kbd>L</kbd> controls bar · <kbd>Esc</kbd> free the mouse</div>
       </div>
+      <div class="credits" style="grid-column:1/-1;font-size:12px;color:var(--ink-soft);margin-top:6px">3D models (CC-BY-4.0): "Sea Of Thieves Sloop" by KarmaDiya, "Pirate Rifle – Stylized Rifle" by KinanArts and "Stylized Ice Shark" by Kieran3D, all from Sketchfab.</div>
       <div><h3>Stations</h3><ul><li><b>Wheel</b>: <kbd>A</kbd>/<kbd>D</kbd> steer.</li><li><b>Sails</b>: <kbd>W</kbd>/<kbd>S</kbd> raise or lower, <kbd>A</kbd>/<kbd>D</kbd> angle them to the wind.</li><li><b>Anchor</b>: <kbd>F</kbd> drops it for a handbrake turn; hold <kbd>F</kbd> to hoist it back.</li><li><b>Cannon / Harpoon</b>: aim with the mouse, <kbd>Click</kbd> to fire. Hold <kbd>Click</kbd> on the harpoon to reel in.</li></ul></div>
       <div><h3>Cursed arsenal</h3><ul><li><b style="color:#7be35a">Grog ball</b>: enemy crew goes dizzy.</li><li><b style="color:#c48cff">Rigging ball</b>: drops their sails.</li><li><b style="color:#6fb6ff">Anchor ball</b>: drops their anchor.</li><li><b>Powder kegs</b>: grab one from the hold crate, carry it aboard an enemy, click to light. Floating kegs are mines.</li><li><b>Harpoon</b>: snag ships to board, reel in treasure, or yank pirates off their deck.</li></ul></div>
     </div>
@@ -561,6 +562,12 @@ const SHIP_STATS = { sloop: { Speed: .95, Turning: 1, Firepower: .5, Armour: .35
 // Per-ship heights. Functions that build or simulate a ship shadow these names locally via dims(type).
 function dims(type) { const sp = SHIPS[type], lv = sp.levels; return { DECK_Y: lv[0], HULL_TOP: lv[0] - 0.15, KEEL_Y: sp.keel, HOLD_Y: lv[lv.length - 1], HOLD_LV: lv.length - 1, GUN_LV: lv.length === 3 ? 1 : 0 }; }
 const DECK_Y = 2.1, HOLD_Y = -0.4, KEEL_Y = -2.6, HULL_TOP = 1.95; // sloop defaults (only used where no ship is known)
+// The sloop is the imported Sea of Thieves-style model when models.js is present. Its decks were measured from
+// the model: main deck, raised quarterdeck (wheel, capstan), stern cabin beneath it and a hold under the main deck.
+const SLOOP_MODEL = !!(window.SOC_MODELS && window.SOC_MODELS.sloop);
+const SLOOP_FIT = { xc: -0.285, zc: 2.58, k: 22 / 16.16, yoff: -0.9 }; // model (scaled to 22 m overall) -> game
+const SLOOP_W = {"main": [2.87, 2.87, 2.87, 2.87, 2.87, 2.87, 2.87, 2.88, 2.88, 2.88, 2.93, 2.93, 2.93, 2.92, 2.91, 2.89, 2.89, 2.89, 2.78, 2.73, 2.7, 2.78, 2.78, 2.78, 2.71, 2.71, 2.71, 2.71, 2.71, 2.71, 2.71, 2.71, 2.77, 2.77, 2.77, 2.58, 2.39, 2.2, 2.2, 2.2, 1.29, 1.29, 1.29, 0.59, 0.59], "qd": [2.9, 2.9, 2.9, 2.9, 2.9, 2.9, 2.9, 2.9, 2.9, 2.87, 2.88, 2.88, 2.88, 2.87, 2.86, 2.85, 2.85, 2.85, 2.84, 2.82, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77, 2.77], "cabin": [1.49, 2.25, 2.25, 2.59, 2.59, 2.72, 2.87, 2.88, 2.88, 2.88, 2.82, 2.82, 2.82, 2.81, 2.8, 2.79, 2.79, 2.79, 2.78, 2.72, 2.69, 2.66, 2.66, 2.63, 2.6, 2.6, 2.6, 2.59, 2.66, 2.66, 2.66, 2.22, 2.64, 2.64, 2.64, 2.46, 2.28, 2.1, 2.1, 2.1, 1.21, 1.21, 1.21, 0.52, 0.52], "hold": [0.79, 0.79, 1.51, 1.86, 1.86, 2.33, 2.41, 2.43, 2.43, 2.43, 2.42, 2.42, 2.41, 0.69, 1.29, 2.38, 2.38, 2.38, 2.33, 2.33, 2.28, 2.24, 2.24, 2.17, 2.19, 2.19, 2.19, 2.12, 2.12, 2.08, 1.97, 1.97, 1.96, 1.96, 1.96, 1.46, 1.46, 1.46, 0.85, 0.85, 0.85, 0.39, 0.39, 0.2, 0.2]};
+if (SLOOP_MODEL) Object.assign(SHIPS.sloop, { levels: [2.12, 3.73, 1.26, -0.53], keel: -1.66, mastH: 21.6, blurb: 'Fast and nimble. A raised quarterdeck with the wheel and capstan, a stern cabin and a hold below. Two cannons per side.' });
 const holdLv = type => SHIPS[type].levels.length - 1;
 const gunLv = type => SHIPS[type].levels.length === 3 ? 1 : 0;
 const AMMO = [
@@ -617,7 +624,7 @@ function qdHeight(type, z) {
 function floorY(type, lv, z) { return SHIPS[type].levels[lv] + (lv === 0 ? qdHeight(type, z) : 0); }
 // ---------- deck plan: levels joined by physical stairs (no teleporting hatches) ----------
 const MAST_Z = { 1: [0.06], 2: [0.2, -0.12], 3: [0.28, 0.04, -0.22] };
-const mainMastZ = sp => MAST_Z[sp.masts][sp.masts === 1 ? 0 : 1] * sp.L;
+const mainMastZ = sp => plan(sp.key).mastZ ?? MAST_Z[sp.masts][sp.masts === 1 ? 0 : 1] * sp.L;
 const STAIRS = {
   sloop: L => [{ x: 1.3, w: 1.3, z0: -0.12 * L, z1: -0.12 * L + 3.2, top: 0, bot: 1 }],
   brig: L => [{ x: 1.6, w: 1.4, z0: -0.06 * L, z1: -0.06 * L + 3.4, top: 0, bot: 1 }, { x: -1.6, w: 1.4, z0: -0.2 * L, z1: -0.2 * L + 3.4, top: 1, bot: 2 }],
@@ -627,14 +634,33 @@ const PLANS = {};
 function plan(type) {
   if (PLANS[type]) return PLANS[type];
   const sp = SHIPS[type];
+  if (type === 'sloop' && SLOOP_MODEL) {
+    const tab = [SLOOP_W.main, SLOOP_W.qd, SLOOP_W.cabin, SLOOP_W.hold], lvz = [[-1.0, 10.4], [-6.8, -1.3], [-10.0, -1.52], [-1.2, 8.4]];
+    return (PLANS[type] = { levels: sp.levels, model: true, outdoor: [0, 1], lvz, zmin: -10.0, zmax: 10.4, mastZ: 2.6, spawn: { x: 0, z: 5.75 }, spawnOffs: [[0.8, 0], [-0.8, 0], [0.8, 1.7], [-0.8, 1.7], [0.8, -1.5], [-0.8, -1.5], [0, 3.1], [1.2, -2.4]],
+      lvw: (lv, z) => { const t = tab[lv], f = clamp((z + 11) / 0.5, 0, t.length - 1), i = Math.floor(f), j = Math.min(t.length - 1, i + 1); return lerp(t[i], t[j], f - i); },
+      stairs: [{ x: -2.2, w: 1.3, z0: -1.32, z1: 1.03, top: 1, bot: 0 }, { x: -0.57, w: 1.2, z0: -0.21, z1: -2.38, top: 0, bot: 2 }, { x: -1.98, w: 1.2, z0: -1.51, z1: 0.67, top: 2, bot: 3 }] });
+  }
   return (PLANS[type] = { levels: sp.levels, stairs: STAIRS[type](sp.L), zmin: -sp.L / 2 + 1.8, zmax: sp.L / 2 - 4.5 });
 }
-function interiorHW(type, lv, z) { const sp = SHIPS[type]; return Math.max(0.3, hullHalfWidth(sp, z, sp.levels[lv] + 0.4) - 0.5); }
+function interiorHW(type, lv, z) { const sp = SHIPS[type], P0 = plan(type); if (P0.lvw) return P0.lvw(lv, z); return Math.max(0.3, hullHalfWidth(sp, z, sp.levels[lv] + 0.4) - 0.5); }
 function holdDims(sp) { const p = plan(sp.key), hl = holdLv(sp.key); return { hw: interiorHW(sp.key, hl, 0), z0: p.zmin, z1: p.zmax }; }
 const LAYOUTS = {};
 function layout(type) {
   if (LAYOUTS[type]) return LAYOUTS[type];
   const sp = SHIPS[type], L = sp.L, D = dims(type), p = plan(type), hl = D.HOLD_LV, gl = D.GUN_LV;
+  if (p.model) { // stations placed where the model has them
+    const st = {
+      wheel: { x: 0, z: -2.07, lv: 1, kind: 'wheel', occupy: true, label: 'Grab Wheel' },
+      sail: { x: -1.6, z: 3.4, lv: 0, kind: 'sail', occupy: true, label: 'Work Sails' },
+      anchor: { x: -0.07, z: -5.55, lv: 1, kind: 'anchor', occupy: false, label: 'Anchor' },
+      harpoon: { x: 0, z: 9.2, lv: 0, kind: 'harpoon', occupy: true, label: 'Man Harpoon' },
+      crate: { x: 0, z: 6.2, lv: hl, kind: 'crate', occupy: false, label: 'Take a powder keg' }
+    };
+    [4.6, 6.9].forEach((z, i) => { for (const side of [1, -1]) st['cannon' + (side > 0 ? 'L' : 'R') + i] = { x: side * (p.lvw(0, z) - 0.55), z, lv: 0, kind: 'cannon', occupy: true, side, idx: i, label: 'Load Cannon' }; });
+    const slots = [], [h0, h1] = p.lvz[hl];
+    for (let i = 0; i < sp.slots; i++) { const side = i % 2 ? -1 : 1, z = lerp(h0 + 0.8, h1 - 1.6, i / (sp.slots - 1)), y = D.HOLD_Y + 0.55 + (i % 3) * 0.3; slots.push({ x: side * (p.lvw(hl, z) + 0.42), z, y, side }); }
+    return (LAYOUTS[type] = { st, slots, hold: { hw: p.lvw(hl, 3), z0: h0, z1: h1 } });
+  }
   const st = {
     wheel:   { x: 0, z: -L * 0.36, lv: 0, kind: 'wheel', occupy: true, label: 'Grab Wheel' },
     sail:    { x: -1.4, z: mainMastZ(sp) + 0.6, lv: 0, kind: 'sail', occupy: true, label: 'Work Sails' },
@@ -657,7 +683,16 @@ function layout(type) {
 const OBSTACLES = {};
 function shipObstacles(type) {
   if (OBSTACLES[type]) return OBSTACLES[type];
-  const sp = SHIPS[type], st = layout(type).st, L = sp.L, levels = sp.levels.map(() => []), hl = holdLv(type), mr = sp.masts > 1 ? 0.5 : 0.36;
+  const sp = SHIPS[type], st = layout(type).st, L = sp.L, levels = sp.levels.map(() => []), hl = holdLv(type), mr = sp.masts > 1 ? 0.5 : 0.36, P0 = plan(type);
+  if (P0.model) {
+    levels[0].push({ c: [-0.09, 2.6, 0.62] }, { c: [-0.12, 3.46, 0.3] }, { c: [st.harpoon.x, st.harpoon.z + 0.25, 0.32] });
+    for (const k in st) if (st[k].kind === 'cannon') levels[0].push({ c: [st[k].x - st[k].side * 0.25, st[k].z, 0.62] });
+    levels[1].push({ c: [st.wheel.x, st.wheel.z + 0.1, 0.42] }, { c: [st.anchor.x, st.anchor.z, 0.95] }, { b: [-1.44, -1.75, 3.2, -1.36] }); // the quarterdeck rail, open only at the stairs
+    levels[2].push({ b: [0.39, -2.84, 2.9, -1.86] }, { b: [-1.33, -9.26, 1.18, -8.28] });
+    levels[hl].push({ b: [st.crate.x - 0.75, st.crate.z - 0.55, st.crate.x + 0.75, st.crate.z + 0.55] });
+    for (const z of [1.6, 3.9]) for (const sd of [1, -1]) levels[hl].push({ c: [sd * (P0.lvw(hl, z) - 0.5), z, 0.5] });
+    return (OBSTACLES[type] = levels);
+  }
   for (const zf of MAST_Z[sp.masts]) for (const lst of levels) lst.push({ c: [0, zf * L, mr] }); // masts run through every deck
   levels[0].push({ c: [st.wheel.x, st.wheel.z + 0.55, 0.35] }, { c: [st.anchor.x, st.anchor.z, 0.75] }, { c: [st.harpoon.x, st.harpoon.z + 0.25, 0.3] }, { c: [0.6, -L / 2 + 1.4, 0.25] });
   for (const k in st) if (st[k].kind === 'cannon') { levels[st[k].lv].push({ c: [st[k].x, st[k].z, 0.6] }); if (st[k].lv) levels[st[k].lv].push({ c: [st[k].x - st[k].side * 0.2, st[k].z + 1.4, 0.4] }); }
@@ -674,7 +709,8 @@ function resolveObstacles(list, p, rad = 0.3) {
 function clampLevel(type, lv, p) {
   const sp = SHIPS[type], P = plan(type);
   for (let k = 0; k < 2; k++) {
-    if (lv === 0) { p.z = clamp(p.z, -sp.L / 2 + 0.9, sp.L / 2 - 1.4); const w = Math.max(0.2, hwAt(sp, p.z) - 0.5); p.x = clamp(p.x, -w, w); }
+    if (P.lvz) { p.z = clamp(p.z, P.lvz[lv][0], P.lvz[lv][1]); const w = Math.max(0.2, P.lvw(lv, p.z)); p.x = clamp(p.x, -w, w); }
+    else if (lv === 0) { p.z = clamp(p.z, -sp.L / 2 + 0.9, sp.L / 2 - 1.4); const w = Math.max(0.2, hwAt(sp, p.z) - 0.5); p.x = clamp(p.x, -w, w); }
     else { p.z = clamp(p.z, P.zmin, P.zmax); const w = interiorHW(type, lv, p.z); p.x = clamp(p.x, -w, w); }
     if (!k) resolveObstacles(shipObstacles(type)[lv], p);
   }
@@ -705,6 +741,13 @@ function walk(type, P, nx, nz) {
   }
   P.x = nx; P.z = nz; clampLevel(type, P.lv, P); P.y = floorY(type, P.lv, P.z);
   return P;
+}
+// Distinct, clear standing spots on the main deck (spawns, idle posts), so the crew never piles up on one plank.
+function spawnSpot(type, i) {
+  const sp = SHIPS[type], P = plan(type), base = P.spawn || { x: 0, z: sp.masts > 1 ? -0.2 * sp.L : -0.25 * sp.L }, offs = P.spawnOffs || [[1.6, 0], [-1.6, 0], [1.6, -2.2], [-1.6, -2.2], [1.8, 3.2], [-1.8, 3.2], [0, -4.2], [0, 5.2]];
+  const [ox, oz] = offs[i % offs.length], p = { x: base.x + ox, z: base.z + oz }; clampLevel(type, 0, p);
+  for (const S of P.stairs) if ((S.top === 0 || S.bot === 0) && inStair(S, p.x, p.z, 0.6)) p.x = S.x > 0 ? S.x - S.w / 2 - 0.9 : S.x + S.w / 2 + 0.9;
+  return p;
 }
 function localFloor(type, lv, stair, z) {
   if (stair >= 0) { const S = plan(type).stairs[stair]; if (S) return lerp(floorY(type, S.top, S.z0), SHIPS[type].levels[S.bot], clamp(stairT(S, z), 0, 1)); }
@@ -757,12 +800,18 @@ function navStep(type, P, tx, tz) { // cached: replan every few steps or when th
   if (N.key === key && N.n-- > 0 && Math.hypot(N.wp.x - P.x, N.wp.z - P.z) > 0.25) return N.wp;
   N.key = key; N.n = 10; N.wp = navPath(type, P.lv, P.x, P.z, tx, tz); return N.wp;
 }
+function lvHops(pl, a, b) { // stairs to climb or descend between two levels
+  if (a === b) return 0; const seen = new Set([a]); let fr = [a];
+  for (let d = 1; d < 8 && fr.length; d++) { const nx = []; for (const l of fr) for (const S of pl.stairs) { const o = S.top === l ? S.bot : S.bot === l ? S.top : -1; if (o < 0 || seen.has(o)) continue; if (o === b) return d; seen.add(o); nx.push(o); } fr = nx; }
+  return 99;
+}
 // The next point an AI pirate should walk to on the way to (tx, tz) on level tlv.
 function routeStep(type, P, tx, tz, tlv) {
   const pl = plan(type);
-  if (P.stair >= 0) { const S = pl.stairs[P.stair], dir = Math.sign(S.z1 - S.z0); return { x: S.x, z: tlv >= S.bot ? S.z1 + dir * 0.9 : S.z0 - dir * 0.9 }; }
+  if (P.stair >= 0) { const S = pl.stairs[P.stair], dir = Math.sign(S.z1 - S.z0), viaBot = lvHops(pl, S.bot, tlv) <= lvHops(pl, S.top, tlv); return { x: S.x, z: viaBot ? S.z1 + dir * 0.9 : S.z0 - dir * 0.9 }; }
   if (P.lv === tlv) return navStep(type, P, tx, tz);
-  const down = tlv > P.lv, S = pl.stairs.find(S => down ? S.top === P.lv : S.bot === P.lv); if (!S) return { x: tx, z: tz };
+  let S = null, best = 99; for (const C of pl.stairs) { if (C.top !== P.lv && C.bot !== P.lv) continue; const h = lvHops(pl, C.top === P.lv ? C.bot : C.top, tlv); if (h < best) { best = h; S = C; } }
+  if (!S) return { x: tx, z: tz }; const down = S.top === P.lv;
   const dir = Math.sign(S.z1 - S.z0), entry = down ? { x: S.x, z: S.z0 - dir * 0.75 } : { x: S.x, z: S.z1 + dir * 0.75 };
   const t0 = stairT(S, P.z), lane = Math.abs(P.x - S.x) < S.w / 2 - 0.25; // lined up at the right end: commit and take the stairs
   if (lane && (down ? t0 <= 0.02 && t0 > -0.4 : t0 >= 0.98 && t0 < 1.4)) return down ? { x: S.x, z: S.z1 + dir * 0.9 } : { x: S.x, z: S.z0 - dir * 0.9 };
@@ -1783,6 +1832,49 @@ function buildPropInstances(props) {
   return out;
 }
 
+// ---------- imported models (models.js, CC-BY-4.0; see credits there and in How to play) ----------
+// Each model arrives as quantised, indexed geometry plus JPEG textures; meshes sharing a material are merged.
+const MODELS = {};
+function loadModel(key) {
+  if (MODELS[key] !== undefined) return MODELS[key];
+  const D = window.SOC_MODELS && window.SOC_MODELS[key]; if (!D) return (MODELS[key] = null);
+  const raw = atob(D.bin), bin = new ArrayBuffer(raw.length), u8 = new Uint8Array(bin); for (let i = 0; i < raw.length; i++) u8[i] = raw.charCodeAt(i);
+  const texCache = {}, tex = f => { if (!f || !D.tex[f]) return null; if (!texCache[f]) { const t = new THREE.TextureLoader().load(D.tex[f]); t.flipY = false; t.anisotropy = 8; t.wrapS = t.wrapT = THREE.RepeatWrapping; texCache[f] = t; } return texCache[f]; };
+  const byMat = new Map(), meshList = [];
+  for (const m of D.meshes) {
+    const q = new Uint16Array(bin, m.p, m.n * 3), pos = new Float32Array(m.n * 3);
+    for (let i = 0; i < m.n * 3; i++) { const k = i % 3; pos[i] = D.lo[k] + q[i] / 65535 * D.span[k]; }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    if (m.nm != null) { const n8 = new Int8Array(bin, m.nm, m.n * 3), nr = new Float32Array(m.n * 3); for (let i = 0; i < nr.length; i++) nr[i] = n8[i] / 127; g.setAttribute('normal', new THREE.BufferAttribute(nr, 3)); } else g.computeVertexNormals();
+    if (m.uv != null) { const h = new Uint16Array(bin, m.uv, m.n * 2), uv = new Float32Array(m.n * 2); for (let i = 0; i < uv.length; i++) uv[i] = half2f(h[i]); g.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); }
+    else { // box projection, about 10 repeats across the model, so plank textures land on untextured parts
+      const uv = new Float32Array(m.n * 2), nr = g.attributes.normal, S0 = Math.max(...D.span) / 10;
+      for (let i = 0; i < m.n; i++) { const ax = Math.abs(nr.getX(i)), ay = Math.abs(nr.getY(i)), az = Math.abs(nr.getZ(i)), x = pos[i * 3] / S0, y = pos[i * 3 + 1] / S0, z = pos[i * 3 + 2] / S0;
+        if (ax >= ay && ax >= az) { uv[i * 2] = z; uv[i * 2 + 1] = y; } else if (ay >= az) { uv[i * 2] = x; uv[i * 2 + 1] = z; } else { uv[i * 2] = x; uv[i * 2 + 1] = y; } }
+      g.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); }
+    g.setIndex(new THREE.BufferAttribute(m.i32 ? new Uint32Array(bin, m.i, m.ic) : new Uint16Array(bin, m.i, m.ic), 1));
+    meshList.push({ name: m.name, geo: g });
+    const key2 = m.mat; if (!byMat.has(key2)) byMat.set(key2, { geos: [], names: [] }); byMat.get(key2).geos.push(g); byMat.get(key2).names.push(m.name);
+  }
+  const parts = [];
+  for (const [mk, { geos, names }] of byMat) {
+    const M = D.mats[mk] || {}, map = tex(M.map);
+    const mat = new THREE.MeshStandardMaterial({ color: new THREE.Color(...(M.color || [1, 1, 1])), map, normalMap: tex(M.normalMap), roughness: M.roughMap ? 1 : (M.rough ?? 0.8), roughnessMap: tex(M.roughMap), metalness: M.metalMap ? 1 : (M.metal ?? 0), metalnessMap: tex(M.metalMap), side: THREE.DoubleSide });
+    if (M.emissiveMap) { mat.emissiveMap = tex(M.emissiveMap); mat.emissive = new THREE.Color(1, 1, 1); }
+    if (map) mat.color.setRGB(1, 1, 1);
+    const merged = geos.length > 1 ? THREE.BufferGeometryUtils.mergeBufferGeometries(geos) : geos[0]; merged.computeBoundingSphere();
+    parts.push({ geo: merged, mat, name: mk, names });
+  }
+  const box = new THREE.Box3(); for (const p of parts) { p.geo.computeBoundingBox(); box.union(p.geo.boundingBox); }
+  return (MODELS[key] = { parts, box, meshList });
+}
+function half2f(h) { const s = h & 0x8000 ? -1 : 1, e = (h >> 10) & 31, f = h & 1023; return e === 0 ? s * 5.960464477539063e-8 * f : e === 31 ? (f ? NaN : s * Infinity) : s * Math.pow(2, e - 15) * (1 + f / 1024); }
+function modelInstance(key, matOverride) { // a new Group sharing the cached geometry
+  const M = loadModel(key); if (!M) return null; const g = new THREE.Group();
+  for (const p of M.parts) { const mesh = new THREE.Mesh(p.geo, matOverride ? matOverride(p) || p.mat : p.mat); mesh.userData.part = p.name; mesh.castShadow = true; mesh.receiveShadow = true; g.add(mesh); }
+  g.userData.box = M.box; return g;
+}
+
 // ---------- models ----------
 // Lofted hull: stations along the keel, each a curved section from keel to gunwale.
 // Rounded bilge, tumblehome (widest just below the deck), sheer rising at bow and stern, rocker at the ends.
@@ -1838,7 +1930,96 @@ function holdWaterGeo(sp, y) {
   for (let i = 0; i <= N; i++) { const z = lerp(-sp.L / 2 + 0.6, sp.L / 2 - 1.2, i / N), w = Math.max(0.05, hullHalfWidth(sp, z, y) - 0.14); pos.push(-w, y, z, w, y, z); if (i) { const a = (i - 1) * 2; idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); } }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); void pl; return g;
 }
+function sloopPartMat(name, skel, color) { // the model has no textures: dress each part in the game's own wood, iron and cloth
+  const W0 = (c, cs) => woodM(skel ? cs || 0x7d8274 : c);
+  if (/^Hull_Wood/.test(name)) return W0(0xa8703f, 0x6f766a);
+  if (/hull_thingy|Top_Deck_gray|Grate_gray/.test(name)) return W0(0x5a3518, 0x3c443c);
+  if (/Deck_Wood/.test(name)) return skel ? woodM(0x7d8274) : deckMat;
+  if (/Railing/.test(name)) return W0(0xd0a070, 0x8a9488);
+  if (/^Mast_Wood|^Bow_gray/.test(name)) return W0(0xd8b48a, 0x7a7e72);
+  if (/^Mast_gray|ding_ding|Lantern_.*Material_001|Lantern_Material_001/.test(name)) return matte(skel ? 0x1c201c : 0x2a2622, METAL);
+  if (/Rope|Ladder_Steps/.test(name)) return matte(skel ? 0x3a3e36 : 0x8a6a44, { roughness: 1 });
+  if (/Material_002/.test(name)) return new THREE.MeshBasicMaterial({ color: skel ? new THREE.Color(0.6, 2.4, 1.1) : new THREE.Color(2.6, 1.6, 0.55) });
+  if (/^bell/.test(name)) return matte(skel ? 0x6a8a6a : 0xd4a83a, { roughness: 0.4, metalness: 0.8 });
+  if (/Canopy_Fabric|^Flag/.test(name)) return stdMat({ map: sailTexture(skel ? '#33402f' : color, false, skel), color: 0xffffff, side: THREE.DoubleSide, roughness: 0.9 });
+  return W0(0xb47c4a, 0x6f766a);
+}
+const SLOOP_HIDE = /^(Sail__0|Sail_Board|Sail_Ropes|Rope_Adj|Cannon_|Harpoon_)/, SLOOP_DYN = /^(Circle__0|Capstan__0|Flag__0)$/;
+const SLOOP_STATIC = {};
+function sloopModelGroup(skel, color) { // static parts merged per material (cached per variant), plus the crew-coloured cloth
+  const M = loadModel('sloop'), F = SLOOP_FIT, b = M.box, sc = 22 / (b.max.z - b.min.z), g = new THREE.Group();
+  g.scale.setScalar(sc * F.k); g.rotation.y = Math.PI; g.position.set(F.xc * F.k, F.yoff, F.zc * F.k);
+  const key = skel ? 's' : 'p';
+  if (!SLOOP_STATIC[key]) { const by = new Map(); for (const m of M.meshList) { if (SLOOP_HIDE.test(m.name) || SLOOP_DYN.test(m.name) || /Canopy_Fabric/.test(m.name)) continue; const mat = sloopPartMat(m.name, skel, '#fff'); if (!by.has(mat)) by.set(mat, []); by.get(mat).push(m.geo); }
+    SLOOP_STATIC[key] = [...by].map(([mat, geos]) => ({ mat, geo: geos.length > 1 ? THREE.BufferGeometryUtils.mergeBufferGeometries(geos) : geos[0] })); }
+  for (const p of SLOOP_STATIC[key]) g.add(new THREE.Mesh(p.geo, p.mat));
+  const cloth = M.meshList.find(m => /Canopy_Fabric/.test(m.name)); if (cloth) g.add(new THREE.Mesh(cloth.geo, sloopPartMat(cloth.name, skel, color)));
+  return { g, M, sc };
+}
+function sloopPart(M, sc, name, pivot, mat) { // a single model part re-parented around a pivot (game coords) so it can turn
+  const part = M.meshList.find(m => m.name === name); if (!part) return null; const F = SLOOP_FIT;
+  const outer = new THREE.Group(); outer.position.copy(pivot);
+  const inner = new THREE.Group(); inner.scale.setScalar(sc * F.k); inner.rotation.y = Math.PI; inner.position.set(F.xc * F.k - pivot.x, F.yoff - pivot.y, F.zc * F.k - pivot.z);
+  inner.add(new THREE.Mesh(part.geo, mat)); outer.add(inner); return outer;
+}
+function buildShipModel(s) {
+  const sp = SHIPS[s.type], lay = layout(s.type), skel = s.skel, color = s.color, { DECK_Y, HOLD_Y, HOLD_LV } = dims(s.type), PL = plan(s.type);
+  const g = new THREE.Group(), v = { group: g, sails: [], cannons: {}, breaches: [], kegs: [], fireT: 0, model: true };
+  const { g: hullG, M, sc } = sloopModelGroup(skel, color); g.add(hullG);
+  // the parts that move: the wheel turns with the rudder, the capstan with the anchor, the flag with the wind
+  v.wheel = sloopPart(M, sc, 'Circle__0', new THREE.Vector3(-0.015, 4.66, -2.065), woodM(skel ? 0x7d8274 : 0xb07a46)); g.add(v.wheel);
+  v.capstan = sloopPart(M, sc, 'Capstan__0', new THREE.Vector3(-0.065, 4.3, -5.55), woodM(skel ? 0x7d8274 : 0xa06a3e)); g.add(v.capstan);
+  { const fl = sloopPart(M, sc, 'Flag__0', new THREE.Vector3(0.37, 22.75, 2.62), sloopPartMat('Flag__0', skel, color)); const holder = new THREE.Group(); holder.position.copy(fl.position); fl.position.set(0, 0, 0); fl.rotation.y = -Math.PI / 2; holder.add(fl); g.add(holder); v.flag = holder; }
+  // our own sail on the model's mast, so it can trim, furl and billow
+  const mz = PL.mastZ, mastTop = 23.7; v.mastTops = [[mz, mastTop, mastTop - DECK_Y]];
+  { const sailMat = stdMat({ map: sailTexture(skel ? '#33402f' : color, true, skel), normalMap: clothNormal, normalScale: new THREE.Vector2(0.22, 0.22), side: THREE.DoubleSide, alphaTest: 0.5, roughness: 0.9, metalness: 0.02 });
+    const pivot = new THREE.Group(); pivot.position.set(-0.09, 15.2, mz + 0.45); g.add(pivot); const sw = 10.4, sh = 9.0;
+    const yg = new THREE.CylinderGeometry(0.13, 0.13, sw + 0.8, 10, 6); { const p = yg.attributes.position; for (let k = 0; k < p.count; k++) { const t = Math.abs(p.getY(k)) / ((sw + 0.8) / 2), f = 1 - 0.55 * t * t; p.setX(k, p.getX(k) * f); p.setZ(k, p.getZ(k) * f); } yg.computeVertexNormals(); }
+    const yard = new THREE.Mesh(yg, woodM(skel ? 0x7a7e72 : 0xd8b48a)); yard.rotation.z = Math.PI / 2; pivot.add(yard);
+    const sgeo = new THREE.PlaneGeometry(sw, sh, 14, 10); sgeo.translate(0, -sh / 2, 0); const sail = new THREE.Mesh(sgeo, sailMat); pivot.add(sail);
+    const furl = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, sw, 8), matte(skel ? 0x3d4a3c : 0xe8d8b0)); furl.rotation.z = Math.PI / 2; furl.position.y = -0.2; pivot.add(furl);
+    v.sails.push({ pivot, sail, geo: sgeo, base: Float32Array.from(sgeo.attributes.position.array), sw, sh, furl });
+    // shrouds and stays as rope, like the procedural ships
+    const rp = [], up = new THREE.Vector3(0, 1, 0), a = new THREE.Vector3(), bb = new THREE.Vector3(), q = new THREE.Quaternion(), parts = [];
+    rp.push(0, mastTop - 1, mz, 0, DECK_Y + 2.0, 10.6, 0, mastTop - 1, mz, 0, 4.5, -6.9);
+    for (const sd of [1, -1]) { const A = [sd * 3.2, DECK_Y + 1.25, mz - 0.9], B = [sd * 3.2, DECK_Y + 1.25, mz + 0.9], T = [0, 13.2, mz + 0.4]; rp.push(...T, ...A, ...T, ...B); for (let f = 0.09; f < 0.85; f += 0.075) rp.push(lerp(A[0], T[0], f), lerp(A[1], T[1], f), lerp(A[2], T[2], f), lerp(B[0], T[0], f), lerp(B[1], T[1], f), lerp(B[2], T[2], f)); }
+    for (let i = 0; i < rp.length; i += 6) { a.set(rp[i], rp[i + 1], rp[i + 2]); bb.set(rp[i + 3], rp[i + 4], rp[i + 5]); const len = a.distanceTo(bb), rat = Math.abs(a.y - bb.y) < 0.35 * len && len < 7, r = rat ? 0.018 : 0.04, cyl = new THREE.CylinderGeometry(r, r, len, rat ? 3 : 5, 1, true); q.setFromUnitVectors(up, bb.clone().sub(a).normalize()); cyl.applyQuaternion(q); cyl.translate((a.x + bb.x) / 2, (a.y + bb.y) / 2, (a.z + bb.z) / 2); const ng = cyl.toNonIndexed(); ng.deleteAttribute('uv'); parts.push(ng); }
+    g.add(new THREE.Mesh(THREE.BufferGeometryUtils.mergeBufferGeometries(parts), matte(skel ? 0x2a302a : 0x4a3520, { roughness: 1 }))); }
+  // cannons, harpoon, anchor
+  for (const key in lay.st) { const st = lay.st[key]; if (st.kind !== 'cannon') continue; const cg = new THREE.Group(); cg.position.set(st.x, floorY(s.type, st.lv, st.z), st.z); cg.rotation.y = st.side > 0 ? Math.PI / 2 : -Math.PI / 2; const { yawG, pitchG } = buildCannon(skel); cg.add(yawG); g.add(cg); v.cannons[key] = { yawG, pitchG, side: st.side }; }
+  { const hs = lay.st.harpoon, hg = new THREE.Group(); hg.position.set(hs.x, DECK_Y + 1.0, hs.z + 0.2); const railM = woodM(skel ? 0x6f7a6c : 0xd0a070);
+    const hpost = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 1.0, 6), railM); hpost.position.set(hs.x, DECK_Y + 0.5, hs.z + 0.2); g.add(hpost);
+    const hYaw = new THREE.Group(); hg.add(hYaw); const hPitch = new THREE.Group(); hYaw.add(hPitch);
+    const hb = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 1.5), woodM(0xb8a08a)); hb.position.z = 0.4; hPitch.add(hb);
+    const bow = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.05, 4, 12, Math.PI), woodM(0xd8c0a0)); bow.position.z = 0.7; bow.rotation.x = Math.PI / 2; hPitch.add(bow);
+    const tip = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.4, 5).rotateX(Math.PI / 2), matte(0xb0b8c0, METAL)); tip.position.z = 1.3; hPitch.add(tip); v.hTip = tip;
+    g.add(hg); v.harpoon = { yawG: hYaw, pitchG: hPitch }; v.rope = new THREE.Mesh(ROPE_GEO, ROPE_MAT); v.rope.frustumCulled = false; v.rope.visible = false; v.rope.castShadow = true; scene.add(v.rope); }
+  { const anchorM = new THREE.Group(), am = matte(0x2e3236, METAL); anchorM.add(new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 1.4, 6), am)); const arms = new THREE.Mesh(new THREE.TorusGeometry(0.45, 0.07, 5, 10, Math.PI), am); arms.rotation.z = Math.PI; arms.position.y = -0.3; anchorM.add(arms);
+    anchorM.position.set(3.0, DECK_Y - 0.4, 7.4); g.add(anchorM); v.anchor = anchorM;
+    const chain = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(0, -10, 0)]), new THREE.LineBasicMaterial({ color: 0x222222 })); chain.position.set(3.0, DECK_Y, 7.4); chain.visible = false; g.add(chain); v.chain = chain; }
+  // the hold: a plank floor (the model leaves it open), the keg crate, stores
+  { const hl = HOLD_LV, [z0, z1] = PL.lvz[hl], pts = []; for (let k = 0; k <= 16; k++) { const z = lerp(z0 - 0.3, z1 + 0.3, k / 16); pts.push([PL.lvw(hl, z) + 0.35, z]); }
+    const shp = new THREE.Shape(); shp.moveTo(pts[0][0], -pts[0][1]); for (const [x, z] of pts) shp.lineTo(x, -z); for (let i = pts.length - 1; i >= 0; i--) shp.lineTo(-pts[i][0], -pts[i][1]);
+    const fl = new THREE.Mesh(new THREE.ShapeGeometry(shp).rotateX(-Math.PI / 2), deckMat); fl.position.y = HOLD_Y + 0.01; g.add(fl);
+    const crate = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.9, 1.0), woodM(0xffe6c8)); crate.position.set(lay.st.crate.x, HOLD_Y + 0.45, lay.st.crate.z); g.add(crate);
+    for (let k = 0; k < 2; k++) { const kg = makeKeg(); kg.position.set(lay.st.crate.x - 0.4 + k * 0.8, HOLD_Y + 1.25, lay.st.crate.z); g.add(kg); v.kegs.push(kg); }
+    const caskGeo = new THREE.CylinderGeometry(0.45, 0.45, 1.0, 12);
+    for (const z of [1.6, 3.9]) for (const sd of [1, -1]) { const c = new THREE.Mesh(caskGeo, woodM(sd > 0 ? 0xf2d2a8 : 0xd8b890)); c.position.set(sd * (PL.lvw(hl, z) - 0.5), HOLD_Y + 0.5, z); g.add(c); } }
+  // water in the hold and the breaches
+  const hw = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ color: 0x0f4566, transparent: true, opacity: 0.86, side: THREE.DoubleSide })); hw.visible = false; g.add(hw); v.holdWater = hw; v.waterY = null; hw.userData.hold = true;
+  const bm = new THREE.MeshBasicMaterial({ color: 0x07131d });
+  lay.slots.forEach(sl => { const b = new THREE.Group(); const hole = new THREE.Mesh(new THREE.CircleGeometry(0.42, 7), bm); hole.rotation.y = sl.side > 0 ? -Math.PI / 2 : Math.PI / 2; b.add(hole);
+    for (let k = 0; k < 4; k++) { const sp2 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.12, 0.55), matte(0xd7a46a)); sp2.position.set(-sl.side * 0.05, Math.sin(k * 1.6) * 0.4, Math.cos(k * 1.6) * 0.4); sp2.rotation.x = k * 0.8; b.add(sp2); }
+    const patch = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.95, 0.95), woodM(0xffe0c0)); patch.position.x = -sl.side * 0.05; patch.visible = false; b.add(patch);
+    b.position.set(sl.x, sl.y, sl.z); b.visible = false; b.userData.hold = true; g.add(b); v.breaches.push({ g: b, hole, patch }); });
+  v.glowMat = new THREE.MeshBasicMaterial(); v.lanterns = [new THREE.Vector3(2.0, 4.66, -1.54), new THREE.Vector3(1.19, 3.27, 9.95), new THREE.Vector3(-1.22, 3.27, 9.95)];
+  v.chimneyTop = null; v.smokeT = 0; v.occ = [];
+  g.traverse(o => { if (o.isMesh) { const hold = o.userData.hold || (o.parent && o.parent.userData.hold); o.castShadow = !hold; o.receiveShadow = !hold; } });
+  for (const m of hullG.children) { m.geometry.computeBoundingSphere(); v.occ.push(m); }
+  return v;
+}
 function buildShip(s) {
+  if (s.type === 'sloop' && SLOOP_MODEL) return buildShipModel(s);
   const sp = SHIPS[s.type], lay = layout(s.type), g = new THREE.Group(), skel = s.skel, color = s.color;
   const { DECK_Y, HOLD_Y, HULL_TOP, KEEL_Y, HOLD_LV, GUN_LV } = dims(s.type), PL = plan(s.type), big = sp.masts > 1, mS = big ? 1.9 : 1.35;
   const v = { group: g, sails: [], cannons: {}, breaches: [], kegs: [], fireT: 0 };
@@ -1970,11 +2151,7 @@ function buildShip(s) {
   for (const key in lay.st) {
     const st = lay.st[key]; if (st.kind !== 'cannon') continue;
     const cg = new THREE.Group(); cg.position.set(st.x, sp.levels[st.lv] + (st.lv === 0 ? qdHeight(s.type, st.z) : 0), st.z); cg.rotation.y = st.side > 0 ? Math.PI / 2 : -Math.PI / 2; if (big) cg.scale.setScalar(1.3);
-    const car = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.4, 0.9), woodM(skel ? 0x6a6e66 : 0xd2b8a0)); car.position.y = 0.25; cg.add(car);
-    const yawG = new THREE.Group(); yawG.position.y = 0.6; cg.add(yawG);
-    const pitchG = new THREE.Group(); yawG.add(pitchG);
-    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.24, 1.7, 14).rotateX(Math.PI / 2), runeMat(skel)); barrel.position.z = 0.45; pitchG.add(barrel);
-    const lip = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.05, 6, 10), matte(0x1b1e22, METAL)); lip.position.z = 1.3; pitchG.add(lip);
+    const { yawG, pitchG } = buildCannon(skel); cg.add(yawG);
     g.add(cg); v.cannons[key] = { yawG, pitchG, side: st.side };
   }
   // harpoon gun
@@ -2105,6 +2282,50 @@ function runeMat(skel) {
   const m = stdMat({ color: skel ? 0x2a4a33 : 0x2b2f35, roughness: 0.5, metalness: 0.55, normalMap: metalNormal, normalScale: new THREE.Vector2(0.35, 0.35), emissive: new THREE.Color(skel ? 0x52ff9a : 0xff6a1a), emissiveMap: tex, emissiveIntensity: 1.5 });
   return (RUNE_MATS[k] = m);
 }
+// A proper naval gun on its truck carriage: turned barrel with a flared muzzle, reinforcing rings and a cascabel,
+// trunnions under iron cap-squares, stepped oak cheeks, a ring-bolt, a fuse, and four iron-tyred wheels.
+const CANNON_GEO = {};
+function cannonGeos() {
+  if (CANNON_GEO.barrel) return CANNON_GEO;
+  const prof = [[0.001, -0.8], [0.06, -0.79], [0.09, -0.74], [0.085, -0.68], [0.055, -0.64], [0.07, -0.6], [0.2, -0.58], [0.27, -0.54], [0.3, -0.5], [0.3, -0.42], [0.275, -0.4], [0.27, -0.12], [0.295, -0.1], [0.295, 0.0], [0.262, 0.02],
+    [0.235, 0.58], [0.255, 0.6], [0.255, 0.68], [0.228, 0.7], [0.205, 1.04], [0.22, 1.08], [0.3, 1.2], [0.335, 1.28], [0.335, 1.38], [0.31, 1.41], [0.155, 1.41], [0.15, 1.36], [0.15, 1.05], [0.001, 1.05]].map(([r, y]) => new THREE.Vector2(r, y));
+  CANNON_GEO.barrel = new THREE.LatheGeometry(prof, 28).rotateX(Math.PI / 2); // barrel axis along +z, trunnions at the origin
+  CANNON_GEO.bore = new THREE.CircleGeometry(0.15, 20).translate(0, 0, 1.06);
+  const wood = [], iron = [];
+  const box = (w, h, d, x, y, z, list) => list.push(new THREE.BoxGeometry(w, h, d).translate(x, y, z).toNonIndexed());
+  for (const sd of [1, -1]) { // stepped cheeks
+    const x = sd * 0.31; box(0.13, 0.2, 1.08, x, 0.2, -0.02, wood); box(0.13, 0.18, 0.8, x, 0.39, -0.15, wood); box(0.13, 0.16, 0.48, x, 0.56, -0.3, wood);
+    box(0.15, 0.06, 0.2, x, 0.66, 0.0, iron); // cap-square over the trunnion
+    const ring = new THREE.TorusGeometry(0.06, 0.014, 6, 12).rotateY(Math.PI / 2).translate(x + sd * 0.075, 0.34, 0.2); iron.push(ring.toNonIndexed());
+    const bolt = new THREE.CylinderGeometry(0.025, 0.025, 0.03, 8).rotateZ(Math.PI / 2).translate(x + sd * 0.07, 0.42, 0.02); iron.push(bolt.toNonIndexed());
+  }
+  box(0.5, 0.08, 1.0, 0, 0.12, -0.05, wood); box(0.5, 0.14, 0.16, 0, 0.2, 0.42, wood); box(0.5, 0.12, 0.14, 0, 0.18, -0.52, wood); box(0.18, 0.1, 0.34, 0, 0.36, -0.5, wood); // bed, transoms, quoin
+  box(0.76, 0.09, 0.12, 0, 0.12, 0.38, iron); box(0.76, 0.09, 0.12, 0, 0.11, -0.42, iron); // axles
+  for (const sd of [1, -1]) for (const [z, r] of [[0.38, 0.19], [-0.42, 0.16]]) {
+    const wheel = new THREE.CylinderGeometry(r, r, 0.1, 18).rotateZ(Math.PI / 2).translate(sd * 0.43, r, z); wood.push(wheel.toNonIndexed());
+    const tyre = new THREE.TorusGeometry(r - 0.005, 0.022, 6, 22).rotateY(Math.PI / 2).translate(sd * 0.43, r, z); iron.push(tyre.toNonIndexed());
+    const hub = new THREE.CylinderGeometry(0.055, 0.065, 0.16, 10).rotateZ(Math.PI / 2).translate(sd * 0.45, r, z); iron.push(hub.toNonIndexed());
+    const pin = new THREE.BoxGeometry(0.02, 0.1, 0.03).translate(sd * 0.53, r + 0.02, z); iron.push(pin.toNonIndexed());
+  }
+  const strip = g => { g.deleteAttribute('uv'); return g; };
+  CANNON_GEO.wood = THREE.BufferGeometryUtils.mergeBufferGeometries(wood); CANNON_GEO.iron = THREE.BufferGeometryUtils.mergeBufferGeometries(iron.map(strip).map(g => { g.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2)); return g; }));
+  CANNON_GEO.trun = new THREE.CylinderGeometry(0.075, 0.075, 0.74, 12).rotateZ(Math.PI / 2);
+  const fuse = new THREE.CatmullRomCurve3([new THREE.Vector3(0, 0.27, -0.42), new THREE.Vector3(0.05, 0.36, -0.46), new THREE.Vector3(0.12, 0.33, -0.55)]); CANNON_GEO.fuse = new THREE.TubeGeometry(fuse, 8, 0.012, 5);
+  return CANNON_GEO;
+}
+const CANNON_MATS = {};
+function cannonMats(skel) {
+  const k = skel ? 's' : 'p'; if (CANNON_MATS[k]) return CANNON_MATS[k];
+  const barrel = runeMat(skel).clone(); barrel.color.setHex(skel ? 0x3a4a3c : 0x6a5f56); barrel.metalness = 0.8; barrel.roughness = 0.3; barrel.emissiveIntensity = 0.1; barrel.emissive.setHex(skel ? 0x52ff9a : 0xff5a10); // a faint ember in the runes, polished gunmetal
+  return (CANNON_MATS[k] = { barrel, wood: woodM(skel ? 0x7a7e72 : 0xe0a060), iron: matte(skel ? 0x2a302a : 0x3c3d42, { roughness: 0.45, metalness: 0.7 }), bore: new THREE.MeshBasicMaterial({ color: 0x050403 }), fuse: matte(0xd8a860) });
+}
+function buildCannon(skel) {
+  const G0 = cannonGeos(), M = cannonMats(skel), yawG = new THREE.Group(), pitchG = new THREE.Group();
+  yawG.add(new THREE.Mesh(G0.wood, M.wood), new THREE.Mesh(G0.iron, M.iron));
+  pitchG.position.set(0, 0.66, 0); yawG.add(pitchG);
+  pitchG.add(new THREE.Mesh(G0.barrel, M.barrel), new THREE.Mesh(G0.bore, M.bore), new THREE.Mesh(G0.trun, M.iron), new THREE.Mesh(G0.fuse, M.fuse));
+  return { yawG, pitchG };
+}
 function mergeStatic(g, v) {
   const keep = new Set(), mark = (o, d) => { if (!o || d > 3) return; if (o.isObject3D) { keep.add(o); return; } if (Array.isArray(o)) o.forEach(x => mark(x, d + 1)); else if (typeof o === 'object' && !(o instanceof THREE.BufferGeometry) && !(o instanceof THREE.Material)) Object.values(o).forEach(x => mark(x, d + 1)); };
   for (const k in v) if (k !== 'group') mark(v[k], 0);
@@ -2234,8 +2455,9 @@ function buildPirate(look, crewColor, opts = {}) {
     const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.03, 0.6, 8).rotateX(Math.PI / 2).translate(0, 0.03, 0.3), brass); gun.add(barrel);
     const bell = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.035, 0.14, 10, 1, true).rotateX(Math.PI / 2).translate(0, 0.03, 0.62), matte(0xc9962e, Object.assign({ side: THREE.DoubleSide }, METAL))); gun.add(bell); }
   gun.visible = false; P.gun = gun;
+  { const R0 = loadModel('rifle'); if (R0) { const b = R0.box, k = 1.15 / (b.max.z - b.min.z), r = modelInstance('rifle'); r.scale.setScalar(k); r.position.set(-(b.min.x + b.max.x) / 2 * k, -(b.min.y + b.max.y) / 2 * k, -b.min.z * k - 0.42); const rg = new THREE.Group(); rg.add(r); rg.visible = false; P.rifle = rg; } }
   const cut = new THREE.Group(); const bl = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.07, 0.72).translate(0, 0, 0.38), matte(0xdfe4e8, METAL)); cut.add(bl);
-  const gd = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.018, 4, 8, Math.PI), gold); gd.rotation.y = Math.PI / 2; cut.add(gd); armR.hand.add(cut); P.cutlass = cut; armR.hand.add(gun); gun.rotation.x = Math.PI / 2;
+  const gd = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.018, 4, 8, Math.PI), gold); gd.rotation.y = Math.PI / 2; cut.add(gd); armR.hand.add(cut); P.cutlass = cut; armR.hand.add(gun); gun.rotation.x = Math.PI / 2; if (P.rifle) { armR.hand.add(P.rifle); P.rifle.rotation.x = Math.PI / 2; }
   // neck & head
   const neck = joint(chest, 0, T * 0.2, 0); neck.add(limb(B.limb * 0.9, 0.12, skin)); neck.children[0].position.y = 0.12;
   const head = joint(neck, 0, 0.12 + B.head * 0.85, 0.01), H = B.head;
@@ -2345,7 +2567,7 @@ function animatePirate(P, dt, moving, t, s = {}) {
   if (P.parrot) { P.parrot.rotation.y = Math.sin(t * 1.3) * 0.6; const f = Math.sin(t * 30) * (Math.sin(t * 0.8) > 0.7 ? 0.9 : 0.1); P.wings[0].rotation.z = 0.2 + f; P.wings[1].rotation.z = -0.2 - f; }
   P.keg.visible = s.item === 'keg';
   P.bucket.visible = s.item !== 'keg' && !st; P.bucketWater.visible = s.item === 'full';
-  P.cutlass.visible = s.item !== 'keg' && !s.work && !st && !s.wpn; P.gun.visible = s.wpn >= 1 && s.wpn <= 3 && s.item !== 'keg' && !s.work && !st;
+  P.cutlass.visible = s.item !== 'keg' && !s.work && !st && !s.wpn; P.gun.visible = s.wpn >= 1 && s.wpn <= (P.rifle ? 2 : 3) && s.item !== 'keg' && !s.work && !st; if (P.rifle) P.rifle.visible = s.wpn === 3 && s.item !== 'keg' && !s.work && !st;
   P.cutlass.rotation.x = s.swing > 0 ? -0.6 : 0.3;
 }
 // --- megalodon: four lathe segments chained along the spine so the body bends as it swims ---
@@ -2365,6 +2587,18 @@ function megSegment(z0, z1, colors) { // lathe slice between two spine stations,
 }
 function finMesh(pts, depth, mat) { const sh = new THREE.Shape(); pts.forEach(([x, y], i) => i ? sh.lineTo(x, y) : sh.moveTo(x, y)); const geo = new THREE.ExtrudeGeometry(sh, { depth, bevelEnabled: true, bevelSize: depth * 0.4, bevelThickness: depth * 0.4, bevelSegments: 1 }); geo.translate(0, 0, -depth / 2); return new THREE.Mesh(geo, mat); }
 function buildMegalodon() {
+  const M0 = loadModel('shark');
+  if (M0) {
+    const g = new THREE.Group(), box = M0.box, len = box.max.z - box.min.z, k = 17 / len, uPh = { value: 0 }, uAmp = { value: 1 };
+    const inst = modelInstance('shark', p => { const m = p.mat.clone(); m.onBeforeCompile = sh => { sh.uniforms.uPh = uPh; sh.uniforms.uAmp = uAmp;
+      sh.vertexShader = 'uniform float uPh; uniform float uAmp;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+        float tb = clamp((${box.max.z.toFixed(2)} - transformed.z) / ${len.toFixed(2)}, 0.0, 1.0);
+        transformed.x += sin(uPh - tb * 5.5) * pow(tb, 1.7) * ${(len * 0.11).toFixed(2)} * uAmp;`); }; return m; });
+    inst.scale.setScalar(k); inst.position.set(-(box.min.x + box.max.x) / 2 * k, -(box.min.y + box.max.y) / 2 * k + 0.4, -(box.min.z + box.max.z) / 2 * k + 1.5); g.add(inst);
+    const dummy = () => new THREE.Group(), segs = [dummy(), dummy(), dummy(), dummy()]; segs.forEach(s => g.add(s)); segs[1].position.set(0, 0, -1); // the animation code drives these; the shader does the swimming
+    g.userData = { segs, tail: dummy(), jaw: dummy(), uPh, uAmp, model: true };
+    return g;
+  }
   const g = new THREE.Group(), skinM = stdMat({ vertexColors: true, roughness: 0.75, metalness: 0.05, map: paintTex }), finM = stdMat({ color: 0x4f6474, roughness: 0.8, map: paintTex, side: THREE.DoubleSide }), dark = matte(0x0a0a0a), gum = matte(0x7a2228, { side: THREE.DoubleSide }), tooth = matte(0xfaf6ea);
   const st = [5.2, 1.6, -1.6, -4.2, -6.4], segs = [];
   let parent = g;
@@ -2519,8 +2753,8 @@ class Sim {
     this.ships.push(s); this.updatePose(s); return s;
   }
   mkAvatar({ uid = null, bot = null, name, look, crew, ship }) {
-    const sp0 = SHIPS[ship.type], sx = 1.4, sz = sp0.masts > 1 ? -0.2 * sp0.L : -0.25 * sp0.L;
-    const a = { id: this.nid++, uid, bot, crew, ship: ship.id, home: ship.id, lv: 0, stair: -1, x: sx + rr(-0.6, 0.6), y: sp0.levels[0], z: sz + rr(-1, 1), yaw: 0, st: '', item: '', hp: 100, dead: false, rt: 0, fz: 1, prog: 0,
+    const sp0 = SHIPS[ship.type], n = this.avatars.filter(o => o.home === ship.id).length, sp = spawnSpot(ship.type, n);
+    const a = { id: this.nid++, uid, bot, crew, ship: ship.id, home: ship.id, lv: 0, stair: -1, x: sp.x, y: sp0.levels[0], z: sp.z, yaw: 0, st: '', item: '', hp: 100, dead: false, rt: 0, fz: 1, prog: 0,
       name, look, out: false, swing: 0, aimY: 0, aimP: 0.12, ammo: 0, ctl: {}, mv: 0, away: false, wpn: 0, gunT: 0, fb: 2, bm: 2, jarT: 0, jarR: 0, brain: { think: 0, task: null, fireDelay: rr(0.4, 1.2) } };
     a.y = floorY(ship.type, 0, a.z); this.avatars.push(a); return a;
   }
@@ -2571,7 +2805,7 @@ class Sim {
       case 'fire': if (s && av.st && av.st.startsWith('cannon')) this.fireCannon(av, s, av.st); break;
       case 'harpoon': if (s && av.st === 'harpoon') this.fireHarpoon(av, s); break;
       case 'ammo': av.ammo = clamp(a.k | 0, 0, 3); break;
-      case 'anchor': if (s && !s.anc && av.lv === 0 && dist2(av.x, av.z, lay.st.anchor.x, lay.st.anchor.z) < 2.6) this.dropAnchor(s); break;
+      case 'anchor': if (s && !s.anc && av.lv === lay.st.anchor.lv && dist2(av.x, av.z, lay.st.anchor.x, lay.st.anchor.z) < 2.6) this.dropAnchor(s); break;
       case 'throw': this.throwBucket(av, s); break;
       case 'swing': this.swing(av, s, clamp(a.c | 0, 0, 2)); break;
       case 'lunge': this.lunge(av, s); break;
@@ -2647,7 +2881,7 @@ class Sim {
       if (av.st) { const st = lay.st[av.st]; if (!st || !st.occupy || st.lv !== av.lv || dist2(av.x, av.z, st.x, st.z) > 2.6) av.st = ''; }
       if (av.st === 'wheel') steer[s.id] = (steer[s.id] || 0) + clamp(+c.steer || 0, -1, 1);
       if (av.st === 'sail') { s.sailT = clamp(s.sailT + clamp(+c.su || 0, -1, 1) * 0.6 * dt, 0, 1); s.sailAng = clamp(s.sailAng + clamp(+c.sa || 0, -1, 1) * 0.7 * dt, -1, 1); }
-      if (c.ho && s.anc && av.lv === 0 && dist2(av.x, av.z, lay.st.anchor.x, lay.st.anchor.z) < 2.6) { s.hoist += dt / 4.5; av.task = 'hoist'; if (s.hoist >= 1) { s.anc = 0; s.hoist = 0; this.ev({ k: 'hoisted', s: s.id }); } }
+      if (c.ho && s.anc && av.lv === lay.st.anchor.lv && dist2(av.x, av.z, lay.st.anchor.x, lay.st.anchor.z) < 2.6) { s.hoist += dt / 4.5; av.task = 'hoist'; if (s.hoist >= 1) { s.anc = 0; s.hoist = 0; this.ev({ k: 'hoisted', s: s.id }); } }
       if (c.wk) this.work(av, s, dt); else av.prog = 0;
       if (c.re && av.st === 'harpoon' && s.harp.st === 2) s.harp.reel = this.t;
     }
@@ -3041,8 +3275,8 @@ class Sim {
     if (t.k !== 'fight' && av.wpn) av.wpn = 0;
     switch (t.k) {
       case 'fight': { const foe = this.av(t.foe); if (!foe || foe.dead || foe.out) { b.think = 0; break; } this.botFight(av, s, foe, dt); break; }
-      case 'helm': if (this.moveBot(av, s, L.wheel.x, L.wheel.z - 0.6, 0, dt)) { av.st = 'wheel'; av.yaw = 0; this.aiSteer(s, dt); } break;
-      case 'hoist': if (this.moveBot(av, s, L.anchor.x, L.anchor.z - 0.9, 0, dt)) { av.ctl.ho = 1; av.st = ''; } if (!s.anc) b.think = 0; break;
+      case 'helm': if (this.moveBot(av, s, L.wheel.x, L.wheel.z - 0.6, L.wheel.lv, dt)) { av.st = 'wheel'; av.yaw = 0; this.aiSteer(s, dt); } break;
+      case 'hoist': if (this.moveBot(av, s, L.anchor.x, L.anchor.z - 1.1, L.anchor.lv, dt)) { av.ctl.ho = 1; av.st = ''; } if (!s.anc) b.think = 0; break;
       case 'plank': { const sl = lay.slots[t.i]; if (!s.br[t.i]) { b.think = 0; break; } if (this.moveBot(av, s, sl.x - sl.side * 0.7, sl.z, holdLv(s.type), dt)) { av.ctl.wk = 1; av.yaw = sl.side > 0 ? Math.PI / 2 : -Math.PI / 2; } break; }
       case 'fire': {
         const f = s.fires[0]; if (!f) { b.think = 0; break; }
@@ -3082,7 +3316,7 @@ class Sim {
         break;
       }
       case 'dropkeg': this.kegAction(av, s); b.think = 0; break;
-      default: this.moveBot(av, s, L.sail.x - 0.6, L.sail.z - 2.2, 0, dt); av.st = '';
+      default: { const ix = ['helm', 'deck', 'gun', 'guard'].indexOf(av.bot), sp = spawnSpot(s.type, 4 + Math.max(0, ix)); this.moveBot(av, s, sp.x, sp.z, 0, dt); av.st = ''; } // each hand idles at their own post
     }
   }
 
@@ -3505,7 +3739,7 @@ class Sim {
         av.rt -= dt;
         if (av.rt <= 0) {
           const home = this.ship(av.home);
-          if (home && home.sinkT < 0) { const hsp = SHIPS[home.type], hz = hsp.masts > 1 ? -0.2 * hsp.L : -0.25 * hsp.L; Object.assign(av, { dead: false, hp: 100, fb: 2, bm: 2, ship: home.id, lv: 0, stair: -1, x: 1.4 + rr(-0.5, 0.5), z: hz, y: floorY(home.type, 0, hz), st: '', item: '' }); av.fz++; this.ev({ k: 'respawn', a: av.id }); }
+          if (home && home.sinkT < 0) { const hsp = SHIPS[home.type], hz = hsp.masts > 1 ? -0.2 * hsp.L : -0.25 * hsp.L; Object.assign(av, { dead: false, hp: 100, fb: 2, bm: 2, ship: home.id, lv: 0, stair: -1, ...(p => ({ x: p.x, z: p.z, y: floorY(home.type, 0, p.z) }))(spawnSpot(home.type, Math.floor(this.rnd() * 8))), st: '', item: '' }); av.fz++; this.ev({ k: 'respawn', a: av.id }); }
           else { av.out = true; av.fz++; }
         }
         continue;
@@ -3823,7 +4057,7 @@ function renderWorld(W, dt, T) {
       const c = v.cannons[key], man = s.id === ME.ship && ME.st === key ? ME : W.avatars.find(a => a.ship === s.id && a.st === key && !a.dead);
       const ay = man ? man.aimY : 0, ap = man ? man.aimP : 0.05;
       c.yawG.rotation.y = lerp(c.yawG.rotation.y, ay, 0.4); c.pitchG.rotation.x = lerp(c.pitchG.rotation.x, -ap, 0.4);
-      const rk = s.id + key; if (V.recoil[rk] > 0) { V.recoil[rk] = Math.max(0, V.recoil[rk] - dt * 2.5); } c.pitchG.position.z = -(V.recoil[rk] || 0) * 0.5;
+      const rk = s.id + key; if (V.recoil[rk] > 0) { V.recoil[rk] = Math.max(0, V.recoil[rk] - dt * 2.5); } c.yawG.position.z = -(V.recoil[rk] || 0) * 0.45; // the whole carriage rolls back on recoil
     }
     { const man = s.id === ME.ship && ME.st === 'harpoon' ? ME : W.avatars.find(a => a.ship === s.id && a.st === 'harpoon' && !a.dead); v.harpoon.yawG.rotation.y = man ? man.aimY : 0; v.harpoon.pitchG.rotation.x = man ? -man.aimP : 0; }
     // harpoon rope
@@ -3850,7 +4084,7 @@ function renderWorld(W, dt, T) {
       const bowY = pose.y + Math.sin(pose.pitch) * sp.L * 0.42, vy = v.bowY != null ? (bowY - v.bowY) / Math.max(dt, 1e-3) : 0; v.bowY = bowY;
       v.slamCd = (v.slamCd || 0) - dt;
       if (vy < -1.1 && s.spd > 2.5 && v.slamCd <= 0) { v.slamCd = 0.7; const fx = Math.sin(s.yaw), fz = Math.cos(s.yaw); FX.bowSplash(s.x + fx * sp.L * 0.46, waveH(s.x + fx * sp.L * 0.46, s.z + fz * sp.L * 0.46, T, wx.amp) + 0.3, s.z + fz * sp.L * 0.46, fx, fz, clamp(-vy / 2.5, 0.5, 1.6)); if (dcam < 40) SFX.splash([s.x, 0, s.z], 0.6); }
-      v.smokeT -= dt; if (v.smokeT <= 0) { v.smokeT = 0.12; _v.copy(v.chimneyTop).applyMatrix4(g.matrixWorld); FX.chimney(_v.x, _v.y, _v.z, Math.sin(W.wind), Math.cos(W.wind)); }
+      v.smokeT -= dt; if (v.smokeT <= 0 && v.chimneyTop) { v.smokeT = 0.12; _v.copy(v.chimneyTop).applyMatrix4(g.matrixWorld); FX.chimney(_v.x, _v.y, _v.z, Math.sin(W.wind), Math.cos(W.wind)); }
     }
     if (s.sinkT < 0 && s.spd > 1.5 && dcam < 180 && R() < s.spd / 9) {
       const fx = Math.sin(s.yaw), fz = Math.cos(s.yaw), px = Math.cos(s.yaw), pz = -Math.sin(s.yaw), hw = sp.W * 0.5;
@@ -3923,6 +4157,7 @@ function renderWorld(W, dt, T) {
     U.ph = (U.ph || 0) + dt * (charging ? 9 : m.st === 'dead' ? 1.2 : 4.5); const am = charging ? 1.35 : 1;
     U.segs[0].rotation.y = -Math.sin(U.ph) * 0.04 * am; U.segs[1].rotation.y = Math.sin(U.ph) * 0.06 * am; U.segs[2].rotation.y = Math.sin(U.ph - 0.9) * 0.16 * am; U.segs[3].rotation.y = Math.sin(U.ph - 1.8) * 0.28 * am; U.tail.rotation.y = Math.sin(U.ph - 2.6) * 0.38 * am;
     U.jaw.rotation.x = charging ? 0.55 + Math.sin(T * 9) * 0.08 : 0.06 + Math.sin(T * 0.8) * 0.03;
+    if (U.model) { U.uPh.value = U.ph; U.uAmp.value = am * (m.st === 'dead' ? 0.3 : 1); }
     M.updateMatrixWorld(true);
     if (m.y > -2.4 && R() < 0.75) { _v.set(0, 2.6, -1.0).applyMatrix4(U.segs[1].matrixWorld); if (_v.y > sy - 0.3) FX.wake(_v.x, sy, _v.z, -Math.sin(m.yaw) * 2, -Math.cos(m.yaw) * 2, charging ? 1.5 : 0.75); }
     const ahead = charging ? 4 : 1; megShadow.visible = m.st !== 'dead'; megShadow.position.set(m.x + Math.sin(m.yaw) * ahead, sy + 0.25, m.z + Math.cos(m.yaw) * ahead); megShadow.rotation.y = m.yaw;
@@ -4096,7 +4331,7 @@ function camMode() {
   if (ME.ship < 0) return 'swim';
   if (ME.st === 'wheel') return ME.firstPerson ? 'helm' : 'chase';
   if (ME.st && (ME.st.startsWith('cannon') || ME.st === 'harpoon')) return ME.firstPerson ? 'sight' : 'gun';
-  return ME.firstPerson || ME.lv > 0 || ME.stair >= 0 ? 'first' : 'third'; // below decks is always first person
+  return 'first'; // first person only
 }
 const isFP = () => { const m = camMode(); return m === 'first' || m === 'helm' || m === 'sight' || m === 'swim'; };
 function adoptServer(a, W) {
@@ -4169,7 +4404,7 @@ function updateKeyIcon(em, prog) {
     if (prog > 0) { const cx = x + lw + 40, cy = 64; c.lineWidth = 8; c.strokeStyle = 'rgba(0,0,0,.6)'; c.beginPath(); c.arc(cx, cy, 20, 0, TAU); c.stroke(); c.strokeStyle = '#e9c45a'; c.beginPath(); c.arc(cx, cy, 20, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(prog, 0, 1)); c.stroke(); }
     c.globalAlpha = 1; K.tex.needsUpdate = true;
   }
-  K.spr.position.copy(em.pos); const d = em.pos.distanceTo(camera.position), sc = clamp(d * 0.07, 0.16, 1.8); K.spr.scale.set(sc * 4, sc, 1); K.spr.visible = true;
+  K.spr.position.copy(em.pos); const d = em.pos.distanceTo(camera.position), sc = clamp(d * 0.05, 0.05, 1.6); K.spr.scale.set(sc * 4, sc, 1); // constant size on screen K.spr.visible = true;
 }
 function emblemFor(W) {
   if (ME.dead || ME.out || ME.st || ME.item === 'keg') return null;
@@ -4344,7 +4579,8 @@ function updateController(W, dt) {
     const surf = waveH(ME.x, ME.z, W.t, V.wx ? V.wx.amp : 1) - 0.3; ME.diveY = lerp(ME.diveY || 0, KEYS.KeyC ? 2.8 : 0, Math.min(1, dt * 3)); ME.y = surf - ME.diveY;
   }
   else { ME.vy -= 14 * dt; ME.jumpY = Math.max(0, ME.jumpY + ME.vy * dt); if (ME.jumpY === 0) ME.vy = 0; ME.y = (s ? localFloor(s.type, ME.lv, ME.stair, ME.z) : DECK_Y) + ME.jumpY; }
-  if (ME.stair < 0 && !ME.st) for (const o of W.avatars) { // other pirates are solid: slide around them
+  { const tried = ME.moving, moved = Math.hypot(ME.x - (ME.lastX ?? ME.x), ME.z - (ME.lastZ ?? ME.z)); ME.pinT = tried && moved < 0.004 ? (ME.pinT || 0) + dt : 0; if (ME.pinT > 0.35) ME.ghostT = 1.2; ME.ghostT = Math.max(0, (ME.ghostT || 0) - dt); ME.lastX = ME.x; ME.lastZ = ME.z; }
+  if (ME.stair < 0 && !ME.st && !(ME.ghostT > 0)) for (const o of W.avatars) { // other pirates are solid: slide around them (unless you're pinned)
     if (o.uid === G.uid || o.dead || o.out || o.ship !== ME.ship || (ME.ship >= 0 && o.lv !== ME.lv)) continue;
     const dx = ME.x - o.x, dz = ME.z - o.z, d = Math.hypot(dx, dz); if (d >= 0.62 || d < 1e-4) continue;
     if (s) walkMe(s, ME.x + dx / d * (0.62 - d), ME.z + dz / d * (0.62 - d)); else { ME.x += dx / d * (0.62 - d); ME.z += dz / d * (0.62 - d); }
@@ -4367,7 +4603,7 @@ function sendInput() {
   const fHeld = !!KEYS.KeyF;
   if (fHeld && !ME.st && workTarget(W)) c.wk = 1;
   if (G.rmb && ME.weapon === 'cutlass' && !ME.st && !ME.item) c.bk = 1;
-  if (fHeld && !ME.st && s && s.anc && ME.lv === 0 && ME.stair < 0) { const an = layout(s.type).st.anchor; if (dist2(an.x, an.z, ME.x, ME.z) < 2.4) c.ho = 1; }
+  if (fHeld && !ME.st && s && s.anc && ME.lv === layout(s.type).st.anchor.lv && ME.stair < 0) { const an = layout(s.type).st.anchor; if (dist2(an.x, an.z, ME.x, ME.z) < 2.4) c.ho = 1; }
   if (mouseDown && ME.st === 'harpoon') c.re = 1;
   const yawOut = ME.st && ME.ship >= 0 ? stationFacing(ME.st, ME.yaw) : ME.yaw;
   const aimY = ME.aimY + (grog ? Math.sin(t * 2.3) * 0.08 : 0);
@@ -4408,6 +4644,11 @@ const VM = (() => {
     eye.add(mk(new THREE.BoxGeometry(0.06, 0.1, 0.42), wood, 0, -0.03, 0.08)); eye.add(mk(new THREE.CylinderGeometry(0.018, 0.022, 0.95, 10).rotateX(Math.PI / 2), steel, 0, 0.02, -0.55));
     eye.add(mk(new THREE.CylinderGeometry(0.03, 0.03, 0.3, 12).rotateX(Math.PI / 2), brass, 0, 0.085, -0.12)); eye.add(mk(new THREE.CylinderGeometry(0.038, 0.03, 0.05, 12).rotateX(Math.PI / 2), brass, 0, 0.085, -0.29));
     eye.add(mk(new THREE.BoxGeometry(0.02, 0.05, 0.03), brass, 0, 0.05, -0.12)); }
+  { const R0 = loadModel('rifle'); if (R0) { // swap the stand-in for the real rifle model
+      const b = R0.box, k = 1.22 / (b.max.z - b.min.z), inst = modelInstance('rifle', p => { const m = p.mat.clone(); m.transparent = true; m.opacity = 1; m.fog = false; return m; });
+      inst.traverse(o => { if (o.isMesh) { o.renderOrder = 999; o.frustumCulled = false; o.castShadow = false; } });
+      inst.scale.setScalar(k); inst.rotation.y = Math.PI; inst.position.set((b.min.x + b.max.x) / 2 * k, -0.02 - (b.min.y + b.max.y) / 2 * k + 0.02, -0.18 + 0.22 * 1.22 / 1.22 * 0);
+      for (const c of eye.children.slice()) if (!c.children.length) eye.remove(c); eye.add(inst); eye.userData.model = true; } }
   const jarG = (glow, body) => { const g = new THREE.Group(), hand = arm(); hand.position.set(0, -0.08, 0.06); g.add(hand);
     g.add(mk(new THREE.SphereGeometry(0.085, 12, 10).scale(1, 1.1, 1), vmMat(body, { roughness: 0.6 }), 0, 0.04, 0)); g.add(mk(new THREE.CylinderGeometry(0.03, 0.04, 0.06, 10), vmMat(body), 0, 0.14, 0));
     g.add(mk(new THREE.TorusGeometry(0.087, 0.012, 5, 16).rotateX(Math.PI / 2), vmMat(glow, { emissive: new THREE.Color(glow), emissiveIntensity: 1.6 }), 0, 0.03, 0));
@@ -4495,7 +4736,7 @@ const GUN_SFX = {
 const interiorLight = new THREE.PointLight(0xffb066, 0, 9, 1.6); scene.add(interiorLight);
 const deckGlow = new THREE.PointLight(0xffa04a, 0, 12, 1.8); scene.add(deckGlow); // the lantern nearest you lights the deck around it
 function updateInteriorLight(W, s, v) {
-  const below = s && v && (ME.lv > 0 || ME.stair >= 0) && !ME.dead;
+  const below = s && v && ((ME.lv > 0 && !(plan(s.type).outdoor || [0]).includes(ME.lv)) || ME.stair >= 0) && !ME.dead;
   interiorLight.intensity = lerp(interiorLight.intensity, below ? 1.6 : 0, 0.15);
   if (interiorLight.intensity > 0.01) { _v.set(ME.x, ME.y + 2.0, ME.z); if (s && v) _v.applyMatrix4(v.group.matrixWorld); interiorLight.position.copy(_v); }
 }
@@ -4527,7 +4768,7 @@ function updateCamera(W, dt) {
       const M = comfortMatrix(s, v.pose, 0.25), back = 13 + sp.L * 0.9, up = 4 + back * ME.orbitP;
       pos.set(-Math.sin(ME.orbit) * back, up, -Math.cos(ME.orbit) * back).applyMatrix4(M); look.set(0, 3, sp.L * 0.2).applyMatrix4(M);
     } else if (mode === 'helm') { // standing at the wheel, looking out over the bow
-      const M = comfortMatrix(s, swayPose(v, dt), 1), ws = layout(s.type).st.wheel, eye = floorY(s.type, 0, ws.z) + 1.72 + Math.sin(t * 0.9) * 0.015;
+      const M = comfortMatrix(s, swayPose(v, dt), 1), ws = layout(s.type).st.wheel, eye = floorY(s.type, ws.lv, ws.z) + 1.72 + Math.sin(t * 0.9) * 0.015;
       const yaw = ME.orbit, p = ME.helmP, fx = Math.sin(yaw) * Math.cos(p), fy = Math.sin(p), fz = Math.cos(yaw) * Math.cos(p);
       pos.set(ws.x, eye, ws.z - 0.6).applyMatrix4(M); look.set(ws.x + fx * 20, eye + fy * 20, ws.z - 0.6 + fz * 20).applyMatrix4(M);
     } else if (mode === 'sight' || mode === 'gun') { // behind the breech, sighting down the barrel

@@ -23,7 +23,7 @@ The server hosts the folder and relays game messages over WebSocket, so linked p
 | Game | Players | Notes |
 | --- | --- | --- |
 | [Short Fuse](games/short-fuse/) | 2 (Defuser + Expert) | 3D bomb defusal. The Expert opens `games/short-fuse/index.html#manual` and can link to the Defuser's case ID to see the live timer and strikes. |
-| [Sea of Chaos: Arena](games/sea-of-chaos/) | 1–5 (crews of 2) | 3D pirate battle royale. One player hosts an arena and shares the 4-letter code; 4 players make two crews, a 5th gets an AI Deckhand, and AI pirate ships fill in below 4. Solo play works offline. Keyboard and mouse. |
+| [Sea of Chaos: Arena](games/sea-of-chaos/) | 1–8 (shared crews) | First-person 3D pirate battle royale. One player hosts an arena and shares the 4-letter code; up to 4 players crew one ship (5–8 split into two), and AI pirate ships fill the arena to five. Solo play works offline. Keyboard and mouse. Ship, rifle and shark models are CC-BY-4.0 (KarmaDiya, KinanArts, Kieran3D on Sketchfab). |
 | [Signal Pair](games/signal-pair/) | 2 (Caller + Operator) | Small example built from the starter template. Safe to delete. |
 
 ## Add a game

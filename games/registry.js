@@ -3,7 +3,7 @@ window.GAME_REGISTRY = [
   {
     "id": "sea-of-chaos",
     "title": "Sea of Chaos: Arena",
-    "tagline": "A pirate battle royale for 2-person crews. Sink rivals, grab treasure, outrun the storm, dodge the Megalodon.",
+    "tagline": "A first-person pirate battle royale. Crew one ship together, sink rivals, grab treasure, outrun the storm, dodge the Megalodon.",
     "version": "1.0.0",
     "sdk": "1.x",
     "entry": "index.html",
@@ -11,24 +11,24 @@ window.GAME_REGISTRY = [
     "accent": "#ffc94a",
     "players": {
       "min": 1,
-      "max": 5
+      "max": 8
     },
     "roles": [
       {
         "id": "pirate",
         "name": "Pirate",
         "entry": "index.html",
-        "description": "Host an arena or join with its 4-letter code. Crews of two share a ship: one sails, one fights and repairs."
+        "description": "Host an arena or join with its 4-letter code. Everyone crews the same ship (up to four); AI deckhands fill empty posts."
       }
     ],
     "multiplayer": {
-      "style": "PvPvE battle royale, 2-person crews, host-authoritative",
+      "style": "PvPvE battle royale, shared crews of up to 4, host-authoritative",
       "sameDevice": false,
       "transports": [
         "local",
         "relay"
       ],
-      "notes": "4 players make two crews of 2; a 5th gets a ship with an AI Deckhand. Fewer than 4 players and AI pirate ships fill the arena. Solo play works offline."
+      "notes": "Up to 4 players share one ship; 5 to 8 split into two rival ships. AI pirate ships fill the arena to five vessels. Solo play works offline. 3D models: CC-BY-4.0, credited in How to play and models.js."
     },
     "tags": [
       "pvp",
