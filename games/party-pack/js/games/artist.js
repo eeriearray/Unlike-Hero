@@ -7,7 +7,7 @@
   const INKS = [['#1b1b22', '#e8403a'], ['#1b1b22', '#2f6fdf'], ['#1b1b22', '#3bb273'], ['#1b1b22', '#b06ad9'], ['#1b1b22', '#f29d30'], ['#1b1b22', '#e04fa8']];
 
   const game = PP.GAMES.draw = {
-    title: 'The Terrible Artist', icon: '🎨', accent: '#ffc531', min: 3,
+    title: 'The Terrible Artist', icon: '🎨', accent: '#ffc531', font: "'Permanent Marker', 'Lilita One', sans-serif", min: 3,
     blurb: 'Draw weird prompts with no eraser. Write fake titles for everyone else\'s art. Find the real one.',
     rules: ['Draw your secret prompt. No eraser, no undo.', 'Write a fake title for each drawing.', 'Find the real title: +1000 to you and the artist.', 'Fool someone with your fake: +500.', 'Round 2: Blind Contour. Your ink disappears as you draw.'],
     async run(ctx) {

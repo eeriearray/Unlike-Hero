@@ -29,7 +29,7 @@
     let name = String(raw || '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 12) || 'Player';
     if (PP.filter.test(name)) {
       const silly = pick(PP.CONTENT.sillyNames);
-      setTimeout(() => say('lobby', PP.Voice.line(H.game ? H.game.key : 'lobby', 'profaneName', { name: silly })), 600);
+      setTimeout(() => speak(curKey(), 'profaneName'), 600);
       name = silly; if (p) p.renamed = true;
     }
     if (H.players.some(o => o !== p && o.name.toLowerCase() === name.toLowerCase())) name = name.slice(0, 10) + ' ' + (H.players.length + 1);
@@ -38,18 +38,18 @@
 
   function addPlayer(token, name, avatar, bot) {
     const seat = freeSeat(); if (seat < 0) return null;
-    const p = { id: token, seat, name: '', avatar: avatar || PP.CONTENT.avatars[seat], score: 0, connected: true, lastSeen: Date.now(), bot: !!bot, afkMisses: 0, afk: false };
+    const p = { id: token, seat, name: '', avatar: /^\d{1,2}$/.test(String(avatar)) ? String(avatar) : String(seat), score: 0, connected: true, lastSeen: Date.now(), bot: !!bot, afkMisses: 0, afk: false };
     p.name = bot ? name : cleanName(name, p);
     H.players.push(p); H.players.sort((a, b) => a.seat - b.seat);
     if (!bot && !H.vip) H.vip = p.id;
     PP.Audio.sfx('join');
-    if (!bot) say('lobby', PP.Voice.line('lobby', 'join', { name: p.name }));
+    if (!bot && !H.game) speak('lobby', 'join');
     return p;
   }
   H.addBot = () => {
     const used = new Set(H.players.map(p => p.name));
     const name = PP.CONTENT.botNames.find(n => !used.has(n)) || 'Bot ' + (H.players.length + 1);
-    const p = addPlayer('bot_' + uid(6), name, '🤖', true); if (p) refresh(); return p;
+    const p = addPlayer('bot_' + uid(6), name, String(Math.floor(Math.random() * 12)), true); if (p) refresh(); return p;
   };
   H.kick = id => {
     const p = byId(id); if (!p) return;
@@ -61,7 +61,7 @@
   function passVip() {
     const next = humans().find(p => p.connected && p.id !== H.vip);
     H.vip = next ? next.id : null;
-    if (next) say(H.game ? H.game.key : 'lobby', PP.Voice.line(H.game ? H.game.key : 'lobby', 'vipLeft', { name: next.name }));
+    if (next) speak(curKey(), 'vipLeft');
   }
 
   // ---------------------------------------------------------------- network
@@ -77,11 +77,20 @@
     setTimeout(() => H.room.emit('host-up', {}), 50);
     setInterval(housekeeping, 1000);
     setInterval(() => { H.hype = Math.max(0, H.hype - 1.5); renderHype(); }, 400);
-    PP.Voice.onCaption((who, text) => { const c = $('#caption'); if (!who || !H.settings.captions) { c.classList.remove('on'); return; } c.innerHTML = `<b>${esc(who)}</b> ${esc(text)}`; c.classList.add('on'); });
+    // The host character: mouth flaps and the speech bubble (captions) shows while a line plays.
+    PP.Voice.onSpeak((hostKey, text) => {
+      const el = $('#host'), b = el.querySelector('.bubble');
+      const who = hostKey === 'edge' ? curKey() : hostKey;
+      if (text) {
+        if (el.dataset.who !== who) { el.querySelector('.host-art').innerHTML = PP.Art.host(who); el.dataset.who = who; }
+        b.innerHTML = `<b>${esc((PP.HOSTS[who] || PP.HOSTS.lobby).name)}</b>${esc(text)}`;
+        b.classList.toggle('on', !!H.settings.captions); el.classList.add('talking');
+      } else { el.classList.remove('talking'); setTimeout(() => { if (!el.classList.contains('talking')) b.classList.remove('on'); }, 900); }
+    });
     applySettings();
     if (PP.UGC) PP.UGC.applyCode(H.settings.ugc);
     PP.Audio.startMusic('lobby');
-    say('lobby', PP.Voice.line('lobby', 'intro'));
+    speak('lobby', 'intro');
     lobby();
   };
 
@@ -96,7 +105,7 @@
     if (!H.settings.audience) { H.room.emit('bye', { to: token, reason: H.game ? 'A game is in progress and the audience is off.' : 'The room is full.' }); return; }
     const isNew = !H.audience.has(token);
     H.audience.set(token, { name: cleanName(d.name || 'Audience', null), lastSeen: Date.now(), wantSeat: wantsSeat, avatar: d.avatar, note: d.role === 'audience' ? '' : (H.game ? 'A game is in progress, so you\'re in the audience. You\'ll get a seat in the next game.' : 'The room is full (8 players), so you\'re in the audience.') });
-    if (isNew && H.audience.size === 1) say('lobby', PP.Voice.line('lobby', 'audience'));
+    if (isNew && H.audience.size === 1) speak('lobby', 'audience');
     sendAudienceTo(token); renderTop();
   }
   function onHeartbeat(d) {
@@ -115,7 +124,7 @@
 
   // ---------------------------------------------------------------- views
   function me(p) {
-    return { name: p.name, avatar: p.avatar, color: H.colorOf(p), shape: H.shapeOf(p), score: p.score, vip: H.vip === p.id, mod: H.moderator === p.id, code: H.code, game: H.game ? PP.GAMES[H.game.key].title : null, renamed: p.renamed || false };
+    return { theme: H.game ? H.game.key : 'lobby', name: p.name, avatar: p.avatar, color: H.colorOf(p), shape: H.shapeOf(p), score: p.score, vip: H.vip === p.id, mod: H.moderator === p.id, code: H.code, game: H.game ? PP.GAMES[H.game.key].title : null, renamed: p.renamed || false };
   }
   function sendView(p) {
     if (!p || p.bot) return;
@@ -129,7 +138,7 @@
   function sendAudienceTo(token) {
     const a = H.audience.get(token); const v = Object.assign({ type: 'aud-wait' }, H.audView || {});
     if (v.endAt) v.endsIn = Math.max(0, v.endAt - Date.now());
-    v.note = a && a.note; v.game = H.game ? PP.GAMES[H.game.key].title : null; v.code = H.code;
+    v.note = a && a.note; v.game = H.game ? PP.GAMES[H.game.key].title : null; v.code = H.code; v.theme = H.game ? H.game.key : 'lobby';
     H.room.emit('aud', { to: token, v });
   }
   function setAudience(v) { H.audView = v; for (const t of H.audience.keys()) sendAudienceTo(t); }
@@ -138,7 +147,7 @@
     const isVip = H.vip === p.id;
     return {
       type: 'lobby', isVip,
-      games: isVip ? Object.entries(PP.GAMES).map(([k, g]) => ({ key: k, title: g.title, blurb: g.blurb, min: g.min })) : null,
+      games: isVip ? Object.entries(PP.GAMES).map(([k, g]) => ({ key: k, title: g.title, blurb: g.blurb, min: g.min, accent: g.accent, font: g.font })) : null,
       count: H.players.length, players: H.players.map(o => ({ id: o.id, name: o.name, bot: o.bot })),
       moderator: H.moderator, moderation: H.settings.moderation
     };
@@ -243,8 +252,8 @@
     // AFK detection: two missed prompts in a row triggers a call-out
     if (!a.spec.noAfk) a.to.forEach(id => {
       const p = byId(id); if (!p || p.bot) return;
-      if (a.answers.has(id)) { if (p.afk) { p.afk = false; say(curKey(), PP.Voice.line(curKey(), 'back', { name: p.name })); } p.afkMisses = 0; }
-      else if (++p.afkMisses === 2) { p.afk = true; say(curKey(), PP.Voice.line(curKey(), 'afk', { name: p.name })); }
+      if (a.answers.has(id)) { if (p.afk) { p.afk = false; speak(curKey(), 'back'); } p.afkMisses = 0; }
+      else if (++p.afkMisses === 2) { p.afk = true; speak(curKey(), 'afk'); }
     });
     const counts = a.spec.audience ? a.spec.audience.options.map(() => 0) : [];
     for (const v of a.audVotes.values()) counts[v]++;
@@ -282,9 +291,10 @@
   function renderHype() { const m = $('#hype'); if (!m) return; m.style.setProperty('--h', (H.hype / 100).toFixed(3)); m.classList.toggle('hot', H.hype > 70); m.hidden = !H.settings.audience; }
   function floatReact(emoji, p) {
     if (document.documentElement.classList.contains('reduce-motion') && $('#fx').childElementCount > 6) return;
-    const e = document.createElement('div'); e.className = 'react'; e.textContent = emoji;
-    e.style.left = (8 + Math.random() * 84) + 'vw';
-    if (p) { e.dataset.who = p.name; e.style.setProperty('--c', H.colorOf(p)); }
+    const e = document.createElement('div'); e.className = 'react';
+    e.innerHTML = `<span>${esc(emoji)}</span>${p ? `<small>${esc(p.name)}</small>` : ''}`;
+    e.style.left = (8 + Math.random() * 80) + 'vw';
+    if (p) e.style.setProperty('--c', H.colorOf(p));
     $('#fx').appendChild(e); setTimeout(() => e.remove(), 2600);
   }
 
@@ -293,14 +303,14 @@
     const g = H.game ? PP.GAMES[H.game.key] : null;
     const url = joinUrl();
     $('#top').innerHTML = `
-      <div class="brand">${g ? `<span class="g-dot" style="background:${g.accent}"></span>${esc(g.title)}` : 'PARTY PACK'}</div>
+      <div class="brand" style="${g ? `font-family:${g.font}` : ''}">${g ? esc(g.title) : 'Party Pack'}</div>
       <div class="join">
         <span class="muted">Join at <b>${esc(url.replace(/^https?:\/\//, '').replace(/\?.*$/, ''))}</b></span>
         <span class="code" aria-label="Room code">${esc(H.code)}</span>
       </div>
       <div class="meta">
         ${H.relay === 'disconnected' ? '<span class="warn">Reconnecting…</span>' : ''}
-        ${H.settings.audience ? `<span title="Audience">👥 ${H.audience.size}</span>` : ''}
+        ${H.settings.audience && H.audience.size ? `<span class="aud-count" title="Audience">${H.audience.size} watching</span>` : ''}
         ${H.game ? '<button class="chip-btn" data-act="skip" title="Skip the timer">Skip ⏭</button><button class="chip-btn" data-act="end">End game</button>' : ''}
         <button class="chip-btn" data-act="settings" aria-label="Settings">⚙ Settings</button>
       </div>`;
@@ -315,10 +325,10 @@
   function renderStrip() {
     const a = H.ask;
     $('#strip').innerHTML = H.players.map(p => {
-      const state = a && a.to.has(p.id) ? (a.answers.has(p.id) ? 'done' : 'busy') : '';
+      const state = a && a.to.has(p.id) ? (a.answers.has(p.id) ? 'is-done' : 'is-busy') : '';
       return `<div class="pchip ${state} ${p.connected ? '' : 'off'} ${p.ghost ? 'ghost' : ''}" style="--c:${H.colorOf(p)}">
-        <span class="av">${esc(p.avatar)}</span><span class="nm"><span class="shape">${H.shapeOf(p)}</span>${esc(p.name)}${H.vip === p.id ? ' 👑' : ''}${H.moderator === p.id ? ' 🛡' : ''}</span>
-        <span class="sc">${p.score.toLocaleString()}</span>${p.afk ? '<span class="badge">AFK</span>' : ''}${p.bot ? '<span class="badge">BOT</span>' : ''}${state === 'done' ? '<span class="tick">✓</span>' : ''}</div>`;
+        ${H.vip === p.id ? PP.Art.crown : ''}<span class="av">${PP.Art.player(p, H.colorOf(p))}</span><span class="nm"><span class="shape">${H.shapeOf(p)}</span>${esc(p.name)}${H.moderator === p.id ? ' ' + PP.Art.shield : ''}</span>
+        <span class="sc">${p.score.toLocaleString()}</span>${p.afk ? '<span class="badge">AFK</span>' : ''}${p.bot ? '<span class="badge">BOT</span>' : ''}${state === 'is-done' ? '<span class="tick">✓</span>' : ''}</div>`;
     }).join('');
     PP.Audio.setStandings(H.players.map(p => ({ seat: p.seat, score: p.score })));
   }
@@ -339,29 +349,27 @@
   // ---------------------------------------------------------------- lobby
   function lobby() {
     H.phase = 'LOBBY_WAITING';
+    setTheme('lobby');
     const url = joinUrl();
     const slots = Array.from({ length: MAX_PLAYERS }, (_, i) => H.players.find(p => p.seat === i));
     $('#stage').className = 'stage lobby';
     $('#stage').innerHTML = `
       <section class="lobby-hero">
         <div class="howto">
-          <h1 class="logo">PARTY<br>PACK</h1>
-          <p class="big">Grab your phone. Go to <b>${esc(url.replace(/^https?:\/\//, '').split('?')[0])}</b> and enter</p>
-          <div class="bigcode">${esc(H.code)}</div>
-          <div id="qr" class="qr" aria-label="QR code to join"></div>
-          <p class="muted">Up to 8 players. Everyone else joins the audience. The first player in is the VIP 👑 and picks the game.</p>
+          <div class="join-row"><h1 class="logo">PARTY<br>PACK</h1><div class="bigcode" aria-label="Room code">${esc(H.code)}</div></div>
+          <div class="join-card"><div id="qr" class="qr" aria-label="QR code to join"></div><div><small>Grab your phone and go to</small><b class="url">${esc(url.replace(/^https?:\/\//, '').split('?')[0])}</b><small>then enter the room code</small></div></div>
+          <p class="note-line">First phone in is the VIP and picks the game. <button class="chip-btn" id="addbot">+ Add a bot</button></p>
         </div>
         <div class="slots">${slots.map((p, i) => p ? `
-          <div class="slot full" style="--c:${H.colorOf(p)}"><span class="av">${esc(p.avatar)}</span><b>${esc(p.name)}</b><small>${H.vip === p.id ? 'VIP 👑' : p.bot ? 'Bot' : H.moderator === p.id ? 'Moderator 🛡' : p.connected ? 'Ready' : 'Disconnected'}</small><button class="x" data-kick="${esc(p.id)}" aria-label="Remove ${esc(p.name)}">✕</button></div>`
-          : `<div class="slot empty"><span class="av">${PP.SHAPES[i]}</span><small>Waiting…</small></div>`).join('')}
-          <button class="slot add" id="addbot">＋ Add a bot</button>
+          <div class="slot full" style="--c:${H.colorOf(p)}">${H.vip === p.id ? PP.Art.crown : ''}<span class="av">${PP.Art.player(p, H.colorOf(p))}</span><b>${esc(p.name)}</b><small>${H.vip === p.id ? 'VIP' : p.bot ? 'Bot' : H.moderator === p.id ? 'Moderator' : p.connected ? 'Ready!' : 'Disconnected'}</small><button class="x" data-kick="${esc(p.id)}" aria-label="Remove ${esc(p.name)}">✕</button></div>`
+          : `<div class="slot empty"><span class="shape">${PP.SHAPES[i]}</span><small>Join on your phone</small></div>`).join('')}
         </div>
       </section>
       ${H.lastShirt ? '<button class="btn print-last" id="print-last">🖨 Print the champion shirt</button>' : ''}
       <section class="picker">
         ${Object.entries(PP.GAMES).map(([k, g]) => `
-          <button class="game-card" data-game="${k}" style="--a:${g.accent}">
-            <span class="emoji">${g.icon}</span><b>${esc(g.title)}</b><small>${esc(g.blurb)}</small>
+          <button class="game-card" data-game="${k}" style="--a:${g.accent};--gfont:${g.font}" title="${esc(g.blurb)}">
+            <span class="gc-art">${PP.Art.host(k)}</span><b>${esc(g.title)}</b><small class="sr-only">${esc(g.blurb)}</small>
             <span class="req">${g.min}–8 players${H.players.length < g.min ? ` · bots fill ${g.min - H.players.length}` : ''}</span>
           </button>`).join('')}
       </section>`;
@@ -382,7 +390,7 @@
     // a fresh game: reset scores, promote audience members who want a seat
     H.players.forEach(p => { p.score = 0; p.afk = false; p.afkMisses = 0; p.ghost = false; });
     const token = ++H.runToken; H.game = { key, token };
-    PP.Audio.setStyle(key); H.views = {};
+    PP.Voice.stop(); PP.Audio.setStyle(key); H.views = {}; setTheme(key);
     renderTop(); renderStrip();
     const ctx = makeCtx(key, token);
     try { await G.run(ctx); }
@@ -406,7 +414,12 @@
     H.game = null; stopTimer(); H.views = {}; H.players.forEach(p => { p.ghost = false; }); PP.Audio.setStyle('lobby'); promoteAudience(); refresh();
   };
 
-  function say(key, text) { return PP.Voice.say(key, text); }
+  function speak(hostKey, lineKey) { return PP.Voice.speak(hostKey, lineKey); }
+  /** Each game has its own art direction: palette, pattern and display font (css/party.css [data-theme]). */
+  function setTheme(key) {
+    document.documentElement.dataset.theme = key;
+    const el = $('#host'); if (el && el.dataset.who !== key) { el.querySelector('.host-art').innerHTML = PP.Art.host(key); el.dataset.who = key; }
+  }
 
   function makeCtx(key, token) {
     const live = () => { if (H.runToken !== token) throw ABORT; };
@@ -421,9 +434,8 @@
       async wait(ms) { await PP.sleep(ms); live(); },
       stage(html, cls) { live(); const s = $('#stage'); s.className = 'stage ' + (cls || ''); s.innerHTML = html; return s; },
       setPhase(name) { H.phase = name; const d = $('#phase'); if (d) d.textContent = name; },
-      /** Speak a host line. await it to wait until the line finishes (capped so a stuck voice never stalls the game). */
-      async say(lineKey, vars, maxMs) { live(); const t = PP.Voice.line(key, lineKey, vars); if (!t) return; await Promise.race([say(key, t), PP.sleep(maxMs || 9000)]); live(); },
-      sayText(text) { say(key, text); },
+      /** Speak a host line (names and answers stay on screen). await it to wait for the line, capped so a stuck voice never stalls the game. */
+      async say(lineKey, vars, maxMs) { live(); await Promise.race([speak(key, lineKey), PP.sleep(maxMs || 12000)]); live(); },
       async ask(spec) { live(); const r = await H.runAsk(token, spec); live(); return r; },
       waitAll(title, msg) { seated().forEach(p => H.setView(p, waitView(title, msg))); setAudience({ type: 'aud-wait', msg: msg || title }); },
       view: (p, v) => H.setView(p, v),
@@ -458,7 +470,7 @@
         const top = list[0] ? list[0].score : 1;
         ctx.stage(`<div class="board"><h2>${esc(title || 'Scores')}</h2>${list.map((p, i) => `
           <div class="row" style="--c:${H.colorOf(p)};--w:${top ? Math.max(4, p.score / top * 100) : 4}%;--i:${i}">
-            <span class="rk">${i + 1}</span><span class="av">${esc(p.avatar)}</span><b>${H.shapeOf(p)} ${esc(p.name)}</b>
+            <span class="rk">${i + 1}</span><span class="av">${PP.Art.player(p, H.colorOf(p))}</span><b>${H.shapeOf(p)} ${esc(p.name)}</b>
             <span class="bar"><i></i></span><span class="pts">${p.score.toLocaleString()}</span>${deltas && deltas.get(p.id) ? `<span class="delta">+${deltas.get(p.id).toLocaleString()}</span>` : ''}
           </div>`).join('')}</div>`, 'scores');
         ctx.waitAll('Scores', 'Check the big screen.');
@@ -471,11 +483,11 @@
         const best = list.length ? list[0].score : 0;
         const winners = extra && extra.winners ? extra.winners : list.filter(p => p.score === best);
         PP.Audio.sfx('win'); H.hypeBurst(winners.length > 1 ? 'TIE!' : 'WINNER!');
-        ctx.stage(`<div class="finale"><div class="crown">👑</div><h1>${winners.map(w => `<span style="color:${H.colorOf(w)}">${esc(w.name)}</span>`).join(' &amp; ')}</h1>
+        ctx.stage(`<div class="finale"><div class="winners">${winners.slice(0, 4).map(w => `<div><div>${PP.Art.crown}</div><div class="winner-face">${PP.Art.player(w, H.colorOf(w))}</div></div>`).join('')}</div><h1>${winners.map(w => esc(w.name)).join(' &amp; ')}</h1>
           <p class="big">${extra && extra.subtitle ? esc(extra.subtitle) : winners.length > 1 ? 'Shared the win.' : 'wins ' + esc(PP.GAMES[key].title) + '!'}</p>
           ${extra && extra.html ? extra.html : ''}
-          <div class="mini">${list.map((p, i) => `<span style="--c:${H.colorOf(p)}">${i + 1}. ${esc(p.avatar)} ${esc(p.name)} — ${p.score.toLocaleString()}</span>`).join('')}</div></div>`, 'final');
-        seated().forEach(p => H.setView(p, { type: 'wait', title: winners.includes(p) ? 'You won! 👑' : 'Game over', msg: `Final score: ${p.score.toLocaleString()}`, react: true }));
+          <div class="mini">${list.map((p, i) => `<span>${i + 1}. ${esc(p.name)} · ${p.score.toLocaleString()}</span>`).join('')}</div></div>`, 'final');
+        seated().forEach(p => H.setView(p, { type: 'wait', title: winners.includes(p) ? 'You won!' : 'Game over', msg: `Final score: ${p.score.toLocaleString()}`, react: true }));
         if (winners.length > 1) {
           const names = PP.listNames(winners.map(w => w.name));
           await ctx.say(winners.length === 2 ? 'tie2' : winners.length === 3 ? 'tie3' : winners.length === 4 ? 'tie4' : 'tieMany', { names });
@@ -517,6 +529,7 @@
       </fieldset>
       <fieldset><legend>Sound</legend>
         <label><input type="checkbox" name="voice" ${s.voice ? 'checked' : ''}> Host voice</label>
+        <small class="muted">${PP.Voice.clips.size ? `${PP.Voice.clips.size} recorded lines.` : 'No recorded lines yet: the hosts use this computer\'s built-in voice.'} Record them in the <a href="#booth" target="_blank">Voice Booth</a> to make the hosts sound human.</small>
         <label>Music volume <input type="range" name="music" min="0" max="0.8" step="0.02" value="${s.music}"></label>
       </fieldset>
       <fieldset><legend>Content</legend>

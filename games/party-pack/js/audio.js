@@ -128,46 +128,165 @@
   };
 
   // ---------- host voice ----------
-  // Speech synthesis with a per-host pitch and rate, plus on-screen captions (accessibility).
-  const voiceState = { on: true, captions: null, queue: [], speaking: false, voices: [] };
-  function loadVoices() { try { voiceState.voices = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang)); } catch (e) { /* no speech */ } }
-  if ('speechSynthesis' in window) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
-  function pickVoice(hostKey) {
-    const v = voiceState.voices; if (!v.length) return null;
-    const prefer = { quiz: /daniel|fred|alex|male|google uk english male/i, fib: /samantha|karen|google us english/i, draw: /moira|serena|tessa|daniel/i, quip: /karen|fiona|victoria|female/i, tee: /rishi|aaron|tom|google us english/i, pitch: /alex|tom|google us english/i };
-    const re = prefer[hostKey]; return (re && v.find(x => re.test(x.name))) || v[(Object.keys(PP.HOSTS).indexOf(hostKey) + v.length) % v.length];
+  // 1. Recorded clips (made in the Voice Booth, #booth): a real human voice, trimmed and played through
+  //    a small studio chain (rumble filter, warmth, presence, compression, a touch of room). Each host
+  //    gets a "character" (tape speed: deeper and slower, or brighter and quicker).
+  // 2. Otherwise the device's best text-to-speech voice, ranked so neural/enhanced voices win and
+  //    novelty voices never play, spoken phrase by phrase with natural pauses.
+  const V = { on: true, onSpeak: null, queue: [], busy: false, clips: new Map(), buffers: new Map(), fx: null, ttsVoices: [] };
+  const DEFAULT_CHAR = { lobby: 1, quip: 0.97, fib: 1.06, draw: 0.94, quiz: 0.86, tee: 1.08, pitch: 1.0 };
+  V.character = Object.assign({}, DEFAULT_CHAR, PP.prefs.get('voiceChar', {}));
+
+  // --- clip storage: IndexedDB (this browser) + an optional voice/ folder pack ---
+  const DB = {
+    open() { return this.p || (this.p = new Promise((res, rej) => { const r = indexedDB.open('party-pack-voice', 1); r.onupgradeneeded = () => r.result.createObjectStore('clips'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); })); },
+    async tx(mode, fn) { const db = await this.open(); return new Promise((res, rej) => { const t = db.transaction('clips', mode); const st = t.objectStore('clips'); const out = fn(st); t.oncomplete = () => res(out && out.result); t.onerror = () => rej(t.error); }); },
+    put(id, blob) { return this.tx('readwrite', st => st.put(blob, id)); },
+    del(id) { return this.tx('readwrite', st => st.delete(id)); },
+    async all() { const db = await this.open(); return new Promise((res, rej) => { const out = new Map(); const t = db.transaction('clips'); const cur = t.objectStore('clips').openCursor(); cur.onsuccess = () => { const c = cur.result; if (c) { out.set(c.key, c.value); c.continue(); } }; t.oncomplete = () => res(out); t.onerror = () => rej(t.error); }); }
+  };
+  async function loadClips() {
+    try { (await DB.all()).forEach((blob, id) => V.clips.set(id, blob)); } catch (e) { /* storage blocked */ }
+    if (location.protocol !== 'file:') try {
+      const j = await fetch('voice/index.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null);
+      if (j && j.clips) for (const [id, file] of Object.entries(j.clips)) if (!V.clips.has(id)) V.clips.set(id, 'voice/' + file);
+    } catch (e) { /* no folder pack */ }
+    if (V.onChange) V.onChange();
   }
-  function speakNext() {
-    if (voiceState.speaking || !voiceState.queue.length) return;
-    const { text, hostKey, resolve } = voiceState.queue.shift(); const host = PP.HOSTS[hostKey] || PP.HOSTS.lobby;
-    voiceState.speaking = true;
-    if (voiceState.captions) voiceState.captions(host.name, text);
-    const done = () => { voiceState.speaking = false; PP.Audio.duck(false); if (voiceState.captions) setTimeout(() => !voiceState.speaking && voiceState.captions(null), 900); resolve(); speakNext(); };
-    if (!voiceState.on || !('speechSynthesis' in window)) { setTimeout(done, Math.min(5000, 900 + text.length * 45)); return; }
-    try {
-      const u = new SpeechSynthesisUtterance(text); u.rate = host.rate; u.pitch = host.pitch; const v = pickVoice(hostKey); if (v) u.voice = v;
-      let finished = false; const fin = () => { if (!finished) { finished = true; done(); } };
-      u.onend = fin; u.onerror = fin; setTimeout(fin, 2500 + text.length * 90);   // Safari sometimes never fires onend
-      PP.Audio.duck(true); speechSynthesis.speak(u);
-    } catch (e) { done(); }
+  loadClips();
+
+  function chain() {
+    if (V.fx || !ctx()) return V.fx;
+    const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 85;
+    const warm = ac.createBiquadFilter(); warm.type = 'lowshelf'; warm.frequency.value = 220; warm.gain.value = 3;
+    const pres = ac.createBiquadFilter(); pres.type = 'peaking'; pres.frequency.value = 3200; pres.Q.value = 0.9; pres.gain.value = 2.5;
+    const comp = ac.createDynamicsCompressor(); comp.threshold.value = -24; comp.ratio.value = 3.5; comp.attack.value = 0.004; comp.release.value = 0.18;
+    const out = ac.createGain(); out.gain.value = 1.15;
+    const verb = ac.createConvolver(); const len = Math.floor(ac.sampleRate * 0.55); const ir = ac.createBuffer(2, len, ac.sampleRate);
+    for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let k = 0; k < len; k++) d[k] = (Math.random() * 2 - 1) * Math.pow(1 - k / len, 3.2); }
+    verb.buffer = ir; const wet = ac.createGain(); wet.gain.value = 0.11;
+    hp.connect(warm); warm.connect(pres); pres.connect(comp); comp.connect(out); out.connect(master); comp.connect(verb); verb.connect(wet); wet.connect(master);
+    V.fx = { input: hp }; return V.fx;
+  }
+  /** Decode a clip once and trim leading/trailing silence. */
+  async function buffer(id) {
+    if (V.buffers.has(id)) return V.buffers.get(id);
+    const src = V.clips.get(id); if (!src || !ctx()) return null;
+    const ab = typeof src === 'string' ? await fetch(src).then(r => r.arrayBuffer()) : await src.arrayBuffer();
+    const b = await ac.decodeAudioData(ab);
+    const d = b.getChannelData(0), thr = 0.02, pad = Math.floor(b.sampleRate * 0.06);
+    let a = 0, z = d.length - 1; while (a < z && Math.abs(d[a]) < thr) a++; while (z > a && Math.abs(d[z]) < thr) z--;
+    a = Math.max(0, a - pad); z = Math.min(d.length, z + pad * 2);
+    const t = ac.createBuffer(1, Math.max(1, z - a), b.sampleRate); t.copyToChannel(d.subarray(a, z), 0);
+    V.buffers.set(id, t); return t;
+  }
+  function playClip(id, hostKey) {
+    return buffer(id).then(b => new Promise(resolve => {
+      if (!b) { resolve(false); return; }
+      const s = ac.createBufferSource(); s.buffer = b; s.playbackRate.value = V.character[hostKey] || 1;
+      s.connect(chain().input); s.onended = () => resolve(true); s.start();
+      V.stopCurrent = () => { try { s.stop(); } catch (e) { /* already stopped */ } };
+    })).catch(() => false);
+  }
+
+  // --- text-to-speech fallback ---
+  const ROBOTIC = /espeak|zarvox|trinoids|bahh|bells|boing|bubbles|cellos|deranged|hysterical|organ|whisper|good news|bad news|jester|superstar|wobble|albert|junior|ralph|fred|grandpa|grandma|rocko|eddy|flo\b|reed|sandy|shelley|kathy|princess/i;
+  const MALE = /\b(male|Guy|Andrew|Christopher|Brian|Eric|Roger|Davis|Tony|Jason|Ryan|Thomas|George|Daniel|Arthur|Oliver|Evan|Nathan|Aaron|Tom|Alex|Rishi|Lee|James|Gordon)\b/i;
+  const FEMALE = /\b(female|Aria|Jenny|Sonia|Libby|Natasha|Clara|Emma|Ava|Michelle|Samantha|Karen|Moira|Tessa|Victoria|Zira|Hazel|Susan|Serena|Kate|Fiona|Allison|Joanna|Salli|Kimberly|Ivy|Martha|Stephanie|Catherine|Sara|Amy|Emily|Olivia|Zoe|Nicky)\b/i;
+  const HOST_GENDER = { lobby: 'm', quip: 'f', fib: 'm', draw: 'm', quiz: 'm', tee: 'f', pitch: 'm', edge: 'm' };
+  function vscore(v, want) {
+    if (!/^en([-_]|$)/i.test(v.lang)) return -1000;
+    let s = 0; const n = v.name;
+    if (/natural|neural|enhanced|premium|studio|wavenet|journey/i.test(n)) s += 120;
+    if (/online/i.test(n)) s += 30;
+    if (/^Google/i.test(n)) s += 25;
+    if (ROBOTIC.test(n)) s -= 400;
+    if (/compact|desktop/i.test(n)) s -= 30;
+    if (want === 'm' && MALE.test(n)) s += 35; if (want === 'f' && FEMALE.test(n)) s += 35;
+    if (/en[-_](GB|AU|IE)/i.test(v.lang)) s += 6;
+    return s;
+  }
+  function loadVoices() { try { V.ttsVoices = speechSynthesis.getVoices(); } catch (e) { V.ttsVoices = []; } }
+  if ('speechSynthesis' in window) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
+  function ttsVoice(hostKey) {
+    const want = HOST_GENDER[hostKey] || 'm';
+    const list = V.ttsVoices.filter(v => vscore(v, want) > -300).sort((a, b) => vscore(b, want) - vscore(a, want));
+    return list[0] || null;
+  }
+  V.bestVoiceName = () => { const v = ttsVoice('lobby'); return v ? v.name : null; };
+  V.hasNaturalVoice = () => V.ttsVoices.some(v => /^en/i.test(v.lang) && /natural|neural|enhanced|premium|online/i.test(v.name));
+  function phrases(text) { const out = []; const re = /[^.!?…]+(?:\.\.\.|…|[.!?]+)?/g; let m; while ((m = re.exec(text))) { const t = m[0].trim(); if (t) out.push({ t, pause: /(\.\.\.|…)$/.test(t) ? 520 : /[!?]$/.test(t) ? 260 : 220 }); } return out; }
+  function speakTTS(text, hostKey) {
+    return new Promise(resolve => {
+      if (!('speechSynthesis' in window)) { setTimeout(resolve, Math.min(5000, 900 + text.length * 45)); return; }
+      const host = PP.HOSTS[hostKey] || PP.HOSTS.lobby; const voice = ttsVoice(hostKey);
+      const parts = phrases(text); let k = 0, done = false;
+      const fin = () => { if (!done) { done = true; resolve(); } };
+      V.stopCurrent = () => { try { speechSynthesis.cancel(); } catch (e) { /* none */ } fin(); };
+      const next = () => {
+        if (done) return; if (k >= parts.length) { fin(); return; }
+        const p = parts[k++]; const u = new SpeechSynthesisUtterance(p.t);
+        if (voice) u.voice = voice;
+        // keep the voice's natural pitch; small per-phrase variation so it doesn't drone
+        u.pitch = PP.clamp((host.pitch || 1) + (Math.random() - 0.5) * 0.06, 0.8, 1.2);
+        u.rate = PP.clamp((host.rate || 1) * (p.t.length < 24 ? 0.97 : 1.02), 0.8, 1.2);
+        let ended = false; const go = () => { if (ended) return; ended = true; setTimeout(next, p.pause); };
+        u.onend = go; u.onerror = go; setTimeout(go, 1800 + p.t.length * 95);   // Safari sometimes never fires onend
+        try { speechSynthesis.speak(u); } catch (e) { go(); }
+      };
+      next();
+    });
+  }
+
+  // --- the queue ---
+  async function pump() {
+    if (V.busy || !V.queue.length) return;
+    const item = V.queue.shift(); V.busy = true;
+    const { line, hostKey, resolve } = item;
+    if (V.onSpeak) V.onSpeak(hostKey, line.text);
+    PP.Audio.duck(true);
+    let played = false;
+    if (V.on && V.clips.has(line.id)) played = await playClip(line.id, hostKey === 'edge' ? 'lobby' : hostKey);
+    if (!played && V.on) await speakTTS(line.text, hostKey);
+    if (!V.on) await PP.sleep(Math.min(4500, 900 + line.text.length * 42));   // voice off: captions still get read time
+    PP.Audio.duck(false);
+    V.busy = false; V.stopCurrent = null;
+    if (V.onSpeak) V.onSpeak(hostKey, null);
+    resolve(); pump();
+  }
+  /** Pick a line for host/key. Recorded lines win, so a partly recorded script still sounds human where it can. */
+  function pickLine(hostKey, key) {
+    const h = PP.HOSTS[hostKey] || PP.HOSTS.lobby;
+    let list = h.lines && h.lines[key] ? h.lines[key].map((t, i) => ({ id: `${hostKey}.${key}.${i}`, text: t })) : null;
+    if (!list && PP.EDGE[key]) list = PP.EDGE[key].map((t, i) => ({ id: `edge.${key}.${i}`, text: t }));
+    if (!list) return null;
+    const rec = list.filter(l => V.clips.has(l.id));
+    return PP.pick(rec.length ? rec : list);
   }
   PP.Voice = {
-    set on(v) { voiceState.on = v; if (!v) try { speechSynthesis.cancel(); } catch (e) { /* none */ } },
-    get on() { return voiceState.on; },
-    onCaption(fn) { voiceState.captions = fn; },
-    /** Speak a line; returns a promise that resolves when it finishes. Lines drop if the queue is backed up. */
-    say(hostKey, text) {
+    set on(v) { V.on = v; if (!v && V.stopCurrent) V.stopCurrent(); },
+    get on() { return V.on; },
+    /** fn(hostKey, text|null): called when a line starts (text) and ends (null). Drives the host's mouth and bubble. */
+    onSpeak(fn) { V.onSpeak = fn; },
+    onChange(fn) { V.onChange = fn; },
+    /** Speak host/key. Resolves when finished. A backed-up queue drops older lines. */
+    speak(hostKey, key) {
+      const line = pickLine(hostKey, key);
       return new Promise(resolve => {
-        if (!text) { resolve(); return; }
-        if (voiceState.queue.length > 2) voiceState.queue.splice(0, voiceState.queue.length - 2).forEach(q => q.resolve());
-        voiceState.queue.push({ text, hostKey, resolve }); speakNext();
+        if (!line) { resolve(); return; }
+        if (V.queue.length > 1) V.queue.splice(0, V.queue.length - 1).forEach(q => q.resolve());
+        V.queue.push({ line, hostKey, resolve }); pump();
       });
     },
-    line(hostKey, key, vars) {
-      const h = PP.HOSTS[hostKey] || PP.HOSTS.lobby;
-      const set = (h.lines && h.lines[key]) || PP.EDGE[key];
-      return set ? PP.fill(PP.pick(set), vars) : '';
-    },
-    stop() { voiceState.queue.splice(0).forEach(q => q.resolve()); try { speechSynthesis.cancel(); } catch (e) { /* none */ } }
+    stop() { V.queue.splice(0).forEach(q => q.resolve()); if (V.stopCurrent) V.stopCurrent(); },
+    // --- used by the Voice Booth ---
+    clips: V.clips, DB,
+    async saveClip(id, blob) { await DB.put(id, blob); V.clips.set(id, blob); V.buffers.delete(id); },
+    async deleteClip(id) { await DB.del(id); V.clips.delete(id); V.buffers.delete(id); },
+    playClip: (id, hostKey) => { ctx(); unlock(); return playClip(id, hostKey); },
+    preview: (text, hostKey) => { unlock(); return speakTTS(text, hostKey); },
+    get character() { return V.character; },
+    setCharacter(hostKey, rate) { V.character[hostKey] = rate; PP.prefs.set('voiceChar', V.character); },
+    reload: loadClips
   };
 })();

@@ -4,7 +4,7 @@
   const PP = window.PP; const { esc, shuffle, pick } = PP; const G = PP.G;
 
   const game = PP.GAMES.quip = {
-    title: 'The Comedy Writer', icon: '🎤', accent: '#ff4f6d', min: 3,
+    title: 'The Comedy Writer', icon: '🎤', accent: '#ff4f6d', font: "'Luckiest Guy', 'Lilita One', sans-serif", min: 3,
     blurb: 'Write punchlines. Two answers fight; the room votes. Then survive The Gauntlet.',
     rules: ['Everyone answers two prompts on their phone.', 'Each prompt goes head-to-head; everyone else votes.', 'Sweep every vote for a Quip Lash bonus.', 'Final round: The Gauntlet. 10 seconds per joke.'],
     async run(ctx) {

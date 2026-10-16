@@ -165,88 +165,103 @@ PP.CONTENT = {
   botNames: ['Botimus', 'Clanky', 'RoboDave', 'Unit 7', 'Beepa', 'Sprocket', 'Gizmo', 'Toastr'],
   sillyNames: ['Sir Swearsalot', 'Potty Mouth Pete', 'Mx. Soap-In-Mouth', 'Little Miss Bleep', 'Captain Censored', 'Beep McBleep'],
 
-  avatars: ['🦊', '🐙', '🦄', '🐸', '🦖', '🐼', '🦉', '🐝', '🐧', '🦁', '🐢', '🦀'],
+  avatars: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11'],   // character ids for PP.Art.face
   reactions: ['😂', '🔥', '😱', '👏', '💀', '🤡', '❤️', '🍅'],
   sounds: [{ id: 'airhorn', label: '📯 Airhorn' }, { id: 'laugh', label: '🤣 Laugh' }, { id: 'boo', label: '👎 Boo' }, { id: 'rimshot', label: '🥁 Rimshot' }]
 };
 
-/* Host characters. Each game has one; shared edge-case lines live in EDGE. {name}, {names}, {n} are filled in. */
+/* The host script. Every line is written without player names or answers (those stay on screen), so
+   one recording session in the Voice Booth (#booth) covers every game. Line ids are host.key.n
+   and never change meaning; add new lines at the end of a list. Lines are read by a real recorded
+   voice when one exists, otherwise by the device's best text-to-speech voice. */
 PP.HOSTS = {
-  lobby: { name: 'The Announcer', pitch: 1, rate: 1.04, lines: {
-    intro: ['Welcome to the Party Pack. Grab a phone and pretend you have friends.', 'Phones out. Dignity optional.'],
-    join: ['{name} has arrived. Lower your expectations accordingly.', 'Look who it is. {name}. Nobody panic.', '{name} joined. The average IQ in the room has been updated.'],
-    audience: ['An audience member joined. Finally, a witness.'],
+  lobby: { name: 'The Announcer', pitch: 1, rate: 1, lines: {
+    intro: ['Welcome to the Party Pack! Grab your phones. Dignity optional.', 'Phones out, everybody. Let\'s make some bad decisions.'],
+    join: ['Oh good, another one.', 'Welcome! Lower your expectations accordingly.', 'Look who showed up. Nobody panic.', 'A new challenger appears.'],
+    audience: ['We have an audience! Finally, witnesses.'],
     pick: ['Pick a game. Any game. I get paid either way.'] } },
-  quip: { name: 'Margo Quill', pitch: 0.92, rate: 1.06, lines: {
-    intro: ['I\'m Margo. I wrote for late-night television for eleven years, and now I\'m here. With you. Write something funny so I can feel something again.'],
-    write: ['Your prompts are on your phones. Be funny. Or don\'t, I\'m not your mother.', 'Write. The clock is not on your side, and neither am I.'],
-    vote: ['Vote for the funnier one. If neither is funny, vote for the shorter one.', 'Choose wisely. Or quickly. Ideally both.'],
-    sweep: ['A clean sweep! {name} gets the full Quip Lash bonus.', 'Unanimous! {name} has peaked. It\'s all downhill from here.'],
+  quip: { name: 'Margo Quill', pitch: 0.97, rate: 1, lines: {
+    intro: ['Hi. I\'m Margo. I wrote for late-night television for eleven years, and now I\'m here. With you. Write something funny so I can feel something again.'],
+    write: ['Your prompts are on your phones. Be funny. Or don\'t, I\'m not your mother.', 'Write! The clock is not on your side. And neither am I.'],
+    vote: ['Vote for the funnier one. If neither is funny, vote for the shorter one.', 'Choose wisely. Or quickly. Ideally both.', 'Okay. Which one made you exhale through your nose?'],
+    sweep: ['A clean sweep! Everybody voted the same way. It\'s all downhill from here.', 'Unanimous! Somebody frame that joke.'],
     gauntlet: ['Welcome to the Gauntlet. Ten seconds per joke. Your first instinct is your only instinct.'],
     nobody: ['Nobody answered. Inspiring.'],
-    end: ['That\'s the show. {name} wins. Please tip your writers. Please.'] } },
-  fib: { name: 'Dex Fibbington', pitch: 1.18, rate: 1.1, lines: {
-    intro: ['Hi, I\'m Dex Fibbington, and everything I say is true. Including that.'],
-    lie: ['Type a lie so convincing your mother would believe it.', 'Lie to your friends. It\'s healthy. Here.'],
+    end: ['That\'s the show! Please tip your writers. Please.'] } },
+  fib: { name: 'Dex Fibbington', pitch: 1.05, rate: 1.04, lines: {
+    intro: ['Hi there! I\'m Dex Fibbington, and everything I say is true. Including that.'],
+    lie: ['Type a lie so convincing your own mother would believe it.', 'Lie to your friends! It\'s healthy. Trust me.'],
     pick: ['Now find the truth. It\'s in there somewhere. Probably.'],
-    truth: ['The truth was: {answer}.', 'And the actual, real, verified truth: {answer}.'],
-    fooled: ['{name} fooled {n} people. A natural.', 'You fell for {name}\'s lie. I respect it.'],
-    doubleBluff: ['{name} has declared a Double Bluff. They\'re betting everything on fooling three of you.'],
-    dbWin: ['The Double Bluff worked! {name} steals points straight out of their victims\' pockets.'],
-    dbFail: ['The Double Bluff failed. {name} loses everything. Gambling is fun!'],
-    end: ['{name} wins. Honesty is overrated and this proves it.'] } },
-  draw: { name: 'Professor Pallette', pitch: 0.82, rate: 0.96, lines: {
-    intro: ['I am Professor Pallette. I have judged art in Paris, Milan, and one very sad mall. Draw what your phone tells you. No eraser. No mercy.'],
+    truth: ['And the actual, real, verified truth is…', 'The truth! Finally!'],
+    fooled: ['Look at that. People fell for it.', 'Oh, you got them. You got them good.'],
+    doubleBluff: ['Ooh, a Double Bluff! Somebody is betting everything on this lie.'],
+    dbWin: ['The Double Bluff worked! Points stolen straight out of their pockets!'],
+    dbFail: ['The Double Bluff failed. Everything, gone. Gambling is fun!'],
+    end: ['And that\'s our winner. Honesty is overrated, and this proves it.'] } },
+  draw: { name: 'Professor Pallette', pitch: 0.95, rate: 0.95, lines: {
+    intro: ['I am Professor Pallette. I have judged art in Paris, in Milan, and in one very sad shopping mall. Draw what your phone tells you. No eraser. No mercy.'],
     draw: ['Draw. Commit to every line. There is no undo, as in life.'],
-    blind: ['Blind contour round. Your drawing will vanish as you draw it. Like my will to live.'],
+    blind: ['The blind contour round. Your drawing will vanish as you draw it. Like my will to live.'],
     decoy: ['Write a fake title for this… piece. Make it believable.'],
     pick: ['Which title is real? Trust your gut. Your gut has terrible taste, but trust it.'],
-    reveal: ['It was {answer}. Obviously.'],
-    end: ['{name} is our winner. The Louvre has not called, and it will not.'] } },
-  quiz: { name: 'The Proprietor', pitch: 0.7, rate: 0.92, lines: {
-    intro: ['Welcome to my hotel. Answer my questions correctly, and you may check out. Answer wrong, and you check out permanently.'],
+    reveal: ['Obviously. It was obvious.', 'Of course. I saw it immediately.'],
+    end: ['We have our winner. The Louvre has not called. It will not.'] } },
+  quiz: { name: 'The Proprietor', pitch: 0.92, rate: 0.93, lines: {
+    intro: ['Welcome to my hotel. Answer my questions correctly, and you may check out. Answer wrong… and you check out permanently.'],
     question: ['Next question. Choose carefully.', 'Question time. Your life depends on it. Mostly.'],
-    floor: ['Welcome to the Killing Floor.', 'Wrong answers. How delightful. To the Killing Floor.'],
-    allRight: ['Everyone got it right. How disappointing.'],
-    died: ['{names} did not survive. They are ghosts now. Ghosts can haunt the living. Have fun.'],
+    floor: ['Welcome… to the Killing Floor.', 'Wrong answers. How delightful. To the Killing Floor.'],
+    allRight: ['Everyone got it right. How… disappointing.'],
+    died: ['Oh dear. We have new ghosts. Ghosts can haunt the living, you know. Have fun.'],
     survived: ['Everyone survived. I\'ll get you next time.'],
-    haunt: ['A ghost is haunting {name}. Wipe the fog, quickly.'],
-    exit: ['The Exit. Race to the door. The dead may rise again if they\'re fast enough.'],
-    escaped: ['{name} escaped. Good for them. Everyone else, stay. Forever.'],
-    end: ['{name} walks out the front door alive. The rest of you can keep the towels.'] } },
-  tee: { name: 'Ripley Thread', pitch: 1.12, rate: 1.12, lines: {
-    intro: ['What\'s up, it\'s Ripley Thread, and we are about to make some drip. Draw anything. Write anything. We\'ll mash it into shirts.'],
+    haunt: ['Something is haunting a phone. Wipe the fog, quickly!'],
+    allDead: ['Everyone is dead. Wonderful. To the Exit, all of you.'],
+    exit: ['The Exit. Race for the door. The dead may rise again, if they\'re fast enough.'],
+    escaped: ['Someone has escaped. Good for them. Everyone else… stay. Forever.'],
+    end: ['Our winner walks out the front door alive. The rest of you can keep the towels.'] } },
+  tee: { name: 'Ripley Thread', pitch: 1.03, rate: 1.06, lines: {
+    intro: ['What\'s up! It\'s Ripley Thread, and we are about to make some drip. Draw anything, write anything, and we\'ll mash it into shirts.'],
     draw: ['Draw two things. Any two things. This is fashion, there are no rules.'],
     slogan: ['Now write slogans. Bumper stickers. Life advice. Threats. Whatever.'],
     build: ['Build your shirt from your friends\' work. Steal their genius.'],
     battle: ['Shirt battle! Vote for the one you\'d actually wear in public.'],
-    champ: ['This is the champion shirt. You can print it right now. Your mum will love it.'],
-    end: ['{name} is the design legend. Fashion week is shaking.'] } },
-  pitch: { name: 'Chad Venture', pitch: 1.0, rate: 1.08, lines: {
+    champ: ['This is the champion shirt. Your mum is going to love it.'],
+    end: ['And that\'s our design legend! Fashion week is shaking.'] } },
+  pitch: { name: 'Chad Venture', pitch: 1, rate: 1.03, lines: {
     intro: ['I\'m Chad Venture, partner at Venture Venture Capital. I\'ve invested in nine hundred startups and understood none of them. Today, you pitch me.'],
     roles: ['Check your phones. One of you is an Imposter with no idea what this product is.'],
-    slides: ['Write a headline for a slide about the product. Imposter, write something vague. Like a real CEO.'],
-    present: ['{name}, you\'re up. Sell it.', '{name}, the floor is yours. The board is watching. I\'m the board.'],
+    slides: ['Write a headline for a slide. Imposter, keep it vague. Like a real CEO.'],
+    present: ['You\'re up. Sell it.', 'The floor is yours. The board is watching. I\'m the board.', 'Next! Wow me.'],
     vote: ['Who is the Imposter? Vote now. Trust nobody. That\'s my business model.'],
-    caught: ['{name} was the Imposter! But wait: they get one guess at the product.'],
-    free: ['The Imposter was {name}, and they walked away with the funding. Incredible. Fraud wins again.'],
-    guessRight: ['{name} guessed the product! Pivot successful.'],
-    guessWrong: ['{name} guessed wrong. Bankrupt.'],
-    end: ['{name} closes the round with the most equity. I\'m legally required to say: this is not financial advice.'] } }
+    caught: ['Caught! But wait. The Imposter gets one guess at the product.'],
+    free: ['The Imposter walked away with the funding. Incredible. Fraud wins again.'],
+    guessRight: ['They guessed the product! Pivot successful!'],
+    guessWrong: ['Wrong guess. Bankrupt.'],
+    end: ['That\'s the meeting. Our winner leaves with the most equity. This is not financial advice.'] } }
 };
 
-// Edge cases every host can hit. Each host speaks these with its own voice.
+// Edge cases every host can hit. Recorded once (id edge.key.n); the current host's voice character is applied.
 PP.EDGE = {
-  tie2: ['A tie! {names}. Fascinating. Truly, nobody wins.', 'A two-way tie between {names}. Share the glory. Or fight for it.'],
-  tie3: ['A three-way tie. {names}. Statistically impressive, comedically tragic.'],
-  tie4: ['A four-way tie?! {names}. I have hosted for years and I have never been this bored.', 'Four-way tie. I\'m calling it a group project.'],
+  tie2: ['A tie! Fascinating. Truly, nobody wins.', 'A two-way tie. Share the glory. Or fight for it.'],
+  tie3: ['A three-way tie. Statistically impressive. Comedically tragic.'],
+  tie4: ['A four-way tie?! I\'ve been doing this for years, and I have never been this bored.', 'Four-way tie. I\'m calling it a group project.'],
   tieMany: ['Everyone tied. You\'re all equally mediocre. Congratulations, I guess.'],
-  profaneName: ['Someone tried to name themselves something rude. You are now {name}. Live with it.', 'Nice try. Your new name is {name}.'],
-  afk: ['Is {name} still with us? Blink twice if your phone died.', '{name} has gone suspiciously quiet. Probably getting snacks. Unforgivable.'],
-  back: ['{name} is back. We noticed you were gone. We didn\'t miss you.'],
+  profaneName: ['Someone tried to name themselves something rude. You\'ve been renamed. Live with it.', 'Nice try. Enjoy your new name.'],
+  afk: ['Is everybody still with us? Somebody\'s phone has gone very quiet.', 'Someone has gone suspiciously quiet. Probably getting snacks. Unforgivable.'],
+  back: ['Oh, you\'re back. We noticed you were gone. We didn\'t miss you.'],
   hype: ['The audience has spoken, unanimously! Double points!', 'The crowd is going wild! Points doubled!'],
   moderated: ['Our moderator removed an answer. You know who you are.'],
   nobody: ['Nobody answered. Wonderful. I\'ll just stand here.'],
   oneAnswer: ['Only one person answered. Everyone else, I hope it was worth it.'],
-  vipLeft: ['Our VIP left. {name}, you\'re in charge now. Don\'t let it go to your head.']
+  vipLeft: ['Our VIP left. Someone new is in charge now. Don\'t let it go to your head.']
+};
+
+/** Every recordable line: [{ id, host, key, text }], in a stable order (used by the Voice Booth). */
+PP.scriptLines = () => {
+  const out = [];
+  Object.entries(PP.HOSTS).forEach(([host, h]) => {
+    Object.entries(h.lines).forEach(([key, list]) => list.forEach((text, i) => out.push({ id: `${host}.${key}.${i}`, host, key, text })));
+  });
+  // Edge-case lines are recorded once and played in whichever host's voice character is on stage.
+  Object.entries(PP.EDGE).forEach(([key, list]) => list.forEach((text, i) => out.push({ id: `edge.${key}.${i}`, host: 'edge', key, text, edge: true })));
+  return out;
 };

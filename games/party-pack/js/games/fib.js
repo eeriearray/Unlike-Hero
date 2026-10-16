@@ -7,7 +7,7 @@
   const ROUNDS = [1, 1, 2, 3];
 
   const game = PP.GAMES.fib = {
-    title: 'The Bluffing Game', icon: '🃏', accent: '#3fa7ff', min: 2,
+    title: 'The Bluffing Game', icon: '🃏', accent: '#3fa7ff', font: "'Righteous', 'Lilita One', sans-serif", min: 2,
     blurb: 'Obscure true facts. Write lies that fool your friends, then sniff out the truth.',
     rules: ['Fill the blank with a believable lie.', 'Then pick what you think is the truth.', 'Truth: +1000. Each player you fool: +500.', 'Once per game: the DOUBLE BLUFF.'],
     async run(ctx) {

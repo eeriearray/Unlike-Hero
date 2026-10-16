@@ -260,12 +260,27 @@ Pack row: `code, owner_id, kind, title, items jsonb, visibility (private | unlis
   +58 BPM as the timer drains, with extra hats and kicks. **Standings drive harmony**: a tight race is minor and
   tense; a clear leader (25%+ ahead) flips to major and the melody becomes **the leader's own motif**, one per seat.
   Each game has its own key, swing and instrument colour.
-- **Host voices**: six sarcastic hosts with their own pitch, rate and voice, via Web Speech, with captions. Edge-case lines:
-  2-, 3-, **4-way** and all-way ties, a **profane name** (the player is renamed, e.g. "Captain Censored"),
-  **AFK** call-outs and welcome-backs, nobody answered, only one answered, VIP left, moderator removed something,
-  audience hype. The hosted build swaps Web Speech for pre-recorded actor lines keyed by the same ids.
+- **Host voices**: six sarcastic hosts, each an on-screen cartoon whose mouth moves while they talk, with a speech
+  bubble that doubles as captions. The script (`js/content.js`, 88 lines) never says player names or answers, which
+  stay on screen, so **one recording session covers every game**. Edge-case lines: 2-, 3-, **4-way** and all-way ties,
+  a **profane name** (the player is renamed, e.g. "Captain Censored"), **AFK** call-outs and welcome-backs, nobody
+  answered, only one answered, VIP left, moderator removed something, audience hype.
+- **Voice Booth** (`#booth`, built): record each line with a microphone (level meter; Space to record, Enter to play).
+  Clips live in the Main Stage browser's IndexedDB and play through a small studio chain: silence trim, rumble
+  filter, warmth, presence, compression and a touch of room. Each host gets a "voice character" (tape speed) so one
+  person can voice six hosts. Export/Import moves a pack between computers. Unrecorded lines fall back to the best
+  installed text-to-speech voice (neural/enhanced voices ranked first, novelty voices never), spoken phrase by phrase
+  with pauses.
 
-### 4.5 Accessibility and safety
+### 4.5 Art direction
+Every game has its own look, swapped by `[data-theme]` on the page: The Comedy Writer is black with paint
+splats, The Bluffing Game a 70s game-show sunburst, The Terrible Artist a ruled sketchbook, The Cutthroat Quiz
+haunted-hotel wallpaper, The Chaos Mashup diagonal merch stripes, The Imposter's Pitch a corporate grid. Each has
+its own display face. Shared rules: flat colour, 4–5 px ink outlines, hard offset shadows, slightly tilted
+"sticker" cards, and hand-drawn SVG characters (`js/art.js`) instead of emoji. Players pick one of 12 characters,
+tinted with their seat colour.
+
+### 4.6 Accessibility and safety
 - High-contrast theme; colour-blind filters (protanopia, deuteranopia, tritanopia, monochrome) plus a colour-blind safe
   Okabe–Ito player palette and per-player shapes; text scale 100–170%; reduce motion; captions.
 - **Extended timers**: ×1.5, ×2 or ×3 for every prompt (the Gauntlet's 10 s becomes 15–30 s).
@@ -321,11 +336,13 @@ The emoji are what the Main Stage may show on generated slides: enough for a sha
 
 ```
 games/party-pack/
-  index.html            one page, four modes (#host, #play, #audience, #studio)
+  index.html            one page, five modes (#host, #play, #audience, #studio, #booth)
   css/party.css          stage + phone styles, high contrast, colour-blind filters
   js/content.js          every prompt, fact, product and voice line
   js/core.js             helpers, profanity filter, palettes, identity, network wrapper
   js/draw.js             drawing pad (blind mode) + compact stroke format
+  js/art.js              SVG player characters, the six host characters, crowns and shields
+  js/booth.js            Voice Booth: record, trim, export and import the hosts' lines
   js/audio.js            procedural music, sound effects, host voice + captions
   js/host.js             Main Stage: rooms, seats, views, ask/timer cycle, moderation, hype, settings
   js/controller.js       phones + audience: view renderers, haptics, reaction wheel, fog/scramble effects
@@ -347,5 +364,5 @@ The **ctx API** each game uses: `ask({to, view, secs, audience, validate, partia
 | Print-and-ship checkout | Designed (§3.3); the print file is built | Store-side endpoint holding the print-on-demand keys |
 | 10,000-viewer rooms | Designed (§1); the bundled relay caps a room at 16 connections (host + 8 players + 7 audience) | uWebSockets.js gateways + CDN edge fan-out |
 | Hosted pack service, creator revenue share | Designed (§3.2–3.3); packs work locally and via share links | `POST/GET /packs` |
-| ML toxicity classifier | Designed (§4.5); layer 1 + VIP Moderator are built | `POST /moderate` |
-| Recorded voice acting | Designed (§4.4); Web Speech stands in | Audio files keyed by line id |
+| ML toxicity classifier | Designed (§4.6); layer 1 + VIP Moderator are built | `POST /moderate` |
+| Hosted voice packs | The Voice Booth records and plays clips locally (§4.4) | Upload packs to the pack service so every Main Stage can download a cast |

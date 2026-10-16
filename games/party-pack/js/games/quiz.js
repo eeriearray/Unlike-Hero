@@ -9,7 +9,7 @@
   const QUESTIONS = 7, EXIT_GOAL = 9;
 
   const game = PP.GAMES.quiz = {
-    title: 'The Cutthroat Quiz', icon: '🔪', accent: '#b26bff', min: 1,
+    title: 'The Cutthroat Quiz', icon: '🔪', accent: '#b26bff', font: "'Creepster', 'Lilita One', sans-serif", min: 1,
     blurb: 'Trivia hosted by a murderer. Wrong answers face deadly minigames. Ghosts haunt the living.',
     rules: ['Answer correctly to stay alive (+1000).', 'Wrong? Survive the Killing Floor or become a ghost.', 'Ghosts still score and can fog or scramble the living.', 'The Exit: first one out the door wins.'],
     async run(ctx) {
@@ -19,7 +19,7 @@
       const qs = shuffle(C.quiz).slice(0, QUESTIONS);
       for (let k = 0; k < qs.length; k++) {
         await question(ctx, qs[k], k);
-        if (!ctx.players().some(p => !p.ghost)) { ctx.sayText('Everyone is dead. Wonderful. To the Exit, all of you.'); break; }
+        if (!ctx.players().some(p => !p.ghost)) { await ctx.say('allDead'); break; }
       }
       const winners = await exitRace(ctx, C);
       await ctx.finale({ winners, subtitle: winners.length ? 'escaped the hotel!' : 'Nobody escaped.' });
@@ -48,7 +48,7 @@
         if (H.views[t.id]) ctx.view(t, Object.assign({}, H.views[t.id], { effects: e }));
         if (H.views[p.id]) ctx.view(p, Object.assign({}, H.views[p.id], { haunt: { targets: [], used: true } }));
         const n = document.querySelector('#haunts'); if (n) n.insertAdjacentHTML('beforeend', `<p class="haunt-note">👻 ${esc(p.name)} ${d.mode === 'scramble' ? 'scrambled' : 'fogged'} ${esc(t.name)}'s phone</p>`);
-        PP.Audio.sfx('whoosh'); ctx.sayText(PP.fill(PP.pick(PP.HOSTS.quiz.lines.haunt), { name: t.name }));
+        PP.Audio.sfx('whoosh'); PP.Voice.speak('quiz', 'haunt');
       },
       liveFinal: (p, d) => { if (d && d.choice != null && d.choice >= 0 && d.choice < q.o.length) { answeredIds.add(p.id); return true; } return false; },
       keepView: p => p.ghost && !used.has(p.id),
@@ -133,7 +133,7 @@
     await G.banner(ctx, 'THE EXIT', `First to the door (${EXIT_GOAL} steps) escapes. The living start 3 steps ahead.`, 2600);
     await ctx.say('exit');
     const qs = shuffle(C.exit);
-    const track = () => `<div class="track">${ps.map(p => `<div class="lane ${p.ghost ? 'ghost' : ''}" style="--c:${ctx.color(p)}"><span class="lname">${esc(p.name)}</span><div class="road">${Array.from({ length: EXIT_GOAL }, (_, i) => `<i class="${i < pos.get(p.id) ? 'on' : ''}"></i>`).join('')}<span class="runner" style="--x:${Math.min(EXIT_GOAL, pos.get(p.id)) / EXIT_GOAL}">${p.ghost ? '👻' : esc(p.avatar)}</span></div><span class="door">🚪</span></div>`).join('')}</div>`;
+    const track = () => `<div class="track">${ps.map(p => `<div class="lane ${p.ghost ? 'ghost' : ''}" style="--c:${ctx.color(p)}"><span class="lname">${esc(p.name)}</span><div class="road">${Array.from({ length: EXIT_GOAL }, (_, i) => `<i class="${i < pos.get(p.id) ? 'on' : ''}"></i>`).join('')}<span class="runner" style="--x:${Math.min(EXIT_GOAL, pos.get(p.id)) / EXIT_GOAL}">${PP.Art.player(p, ctx.color(p))}</span></div><span class="door">🚪</span></div>`).join('')}</div>`;
     for (let k = 0; k < Math.min(qs.length, 14); k++) {
       const q = qs[k];
       ctx.setPhase('EXIT_RACE');

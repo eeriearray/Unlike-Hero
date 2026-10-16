@@ -8,7 +8,7 @@
   const PP = window.PP; const { esc, shuffle, pick } = PP; const G = PP.G;
 
   const game = PP.GAMES.pitch = {
-    title: 'The Imposter\'s Pitch', icon: '💼', accent: '#ff8a3d', min: 4,
+    title: 'The Imposter\'s Pitch', icon: '💼', accent: '#ff8a3d', font: "'Archivo Black', 'Lilita One', sans-serif", min: 4,
     blurb: 'Pitch a ridiculous product to the board. One of you has no idea what it is.',
     rules: ['Everyone but the Imposter sees the product.', 'Everyone writes a slide headline.', 'Take turns pitching a colleague\'s slide out loud.', 'Vote out the Imposter. Caught? They can still guess the product.', 'Investments from the room score too.'],
     async run(ctx) {
@@ -74,11 +74,11 @@
 
     // ---- VOTING_PHASE: who is the Imposter? (and the audience weighs in)
     ctx.setPhase('VOTING_PHASE');
-    ctx.stage(`<div class="boardroom"><h1>Who is the Imposter?</h1><div class="suspects">${ps.map(p => `<div class="suspect" style="--c:${ctx.color(p)}"><span class="av">${esc(p.avatar)}</span><b>${esc(p.name)}</b><small>💰 ${[...invest.get(p.id).values()].reduce((a, b) => a + b, 0)}</small></div>`).join('')}</div></div>`, 'pitch-stage');
+    ctx.stage(`<div class="boardroom"><h1>Who is the Imposter?</h1><div class="suspects">${ps.map(p => `<div class="suspect" style="--c:${ctx.color(p)}"><span class="av">${PP.Art.player(p, ctx.color(p))}</span><b>${esc(p.name)}</b><small>${[...invest.get(p.id).values()].reduce((a, b) => a + b, 0)} investments</small></div>`).join('')}</div></div>`, 'pitch-stage');
     ctx.say('vote');
     const vote = await ctx.ask({
       to: ps, secs: 30,
-      view: p => ({ type: 'choice', prompt: 'Who is the Imposter?', options: ps.map(o => ({ label: o.name, badge: o.avatar, disabled: o === p, note: o === p ? 'you' : '' })) }),
+      view: p => ({ type: 'choice', prompt: 'Who is the Imposter?', options: ps.map(o => ({ label: o.name, face: { id: o.avatar, color: ctx.color(o) }, disabled: o === p, note: o === p ? 'you' : '' })) }),
       validate: (p, i) => ps[i] === p ? 'You can\'t vote for yourself.' : null,
       audience: { prompt: 'Who is the Imposter?', options: ps.map(o => o.name) },
       bot: p => { const others = ps.map((o, i) => i).filter(i => ps[i] !== p); return Math.random() < 0.45 && p !== imposter ? ps.indexOf(imposter) : pick(others); }

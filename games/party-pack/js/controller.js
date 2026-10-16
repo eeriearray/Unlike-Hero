@@ -14,14 +14,15 @@
     const qs = new URLSearchParams(location.search);
     const code = (qs.get('code') || PP.prefs.get('lastCode', '') || '').toUpperCase();
     const name = PP.prefs.get('name', '');
-    const avatar = PP.prefs.get('avatar', PP.pick(PP.CONTENT.avatars));
+    let avatar = PP.prefs.get('avatar', PP.pick(PP.CONTENT.avatars)); if (!PP.CONTENT.avatars.includes(avatar)) avatar = PP.pick(PP.CONTENT.avatars);
     const wantAud = C.role === 'audience';
     root().innerHTML = `<form class="join-form" autocomplete="off">
       <h1 class="logo small">PARTY PACK</h1>
       ${msg ? `<p class="error">${esc(msg)}</p>` : ''}
       <label>Room code<input name="code" maxlength="4" value="${esc(code)}" placeholder="ABCD" required inputmode="latin" autocapitalize="characters" spellcheck="false"></label>
       <label>Your name<input name="name" maxlength="12" value="${esc(name)}" placeholder="Name" ${wantAud ? '' : 'required'}></label>
-      <div class="avatars" role="radiogroup" aria-label="Pick an avatar">${PP.CONTENT.avatars.map(a => `<button type="button" class="${a === avatar ? 'on' : ''}" data-av="${a}" aria-label="${a}">${a}</button>`).join('')}</div>
+      <label>Pick your character</label>
+      <div class="avatars" role="radiogroup" aria-label="Pick a character">${PP.CONTENT.avatars.map(a => `<button type="button" class="${a === avatar ? 'on' : ''}" data-av="${a}" aria-label="Character ${Number(a) + 1}">${PP.Art.face(a, PP.playerColor(Number(a), 'default'))}</button>`).join('')}</div>
       <button class="btn primary big" name="as" value="${wantAud ? 'audience' : 'player'}">${wantAud ? 'Join the audience' : 'Play'}</button>
       <button class="btn ghost" type="button" id="switch-role">${wantAud ? 'I want to play instead' : 'Just watch (audience)'}</button>
       <p class="muted tiny">Up to 8 players per room; anyone after that joins the audience and votes.</p>
@@ -66,6 +67,7 @@
     const same = C.view && v.req && C.view.req === v.req && C.view.type === v.type;
     C.view = v;
     if (v.me) applyHeader(v.me);
+    applyTheme((v.me && v.me.theme) || v.theme || 'lobby');
     armTimer(v);
     if (same && C.mounted && C.mounted.update) { C.mounted.update(v); return; }
     const R = RENDER[v.type] || RENDER.wait;
@@ -79,13 +81,14 @@
     const h = document.createElement('header'); h.className = 'phone-top';
     const m = v.me || {};
     h.innerHTML = C.role === 'audience'
-      ? `<span class="av">👥</span><b>Audience</b><span class="muted">${esc(v.code || C.code)}</span><span id="net" class="warn"></span><button class="gear" aria-label="Settings">⚙</button>`
-      : `<span class="av" style="background:${esc(m.color || '#444')}">${esc(m.avatar || '')}</span><b>${esc(m.name || '')}${m.vip ? ' 👑' : ''}${m.mod ? ' 🛡' : ''}</b><span class="score">${(m.score || 0).toLocaleString()}</span><span id="net" class="warn"></span><button class="gear" aria-label="Settings">⚙</button>`;
+      ? `<span class="av">${PP.Art.face(C.avatar || '0', '#cfd6ff')}</span><b>Audience · ${esc(v.code || C.code)}</b><span id="net" class="warn"></span><button class="gear" aria-label="Settings">⚙</button>`
+      : `<span class="av">${PP.Art.face(m.avatar || '0', m.color || '#ccc')}</span><b>${esc(m.name || '')}${m.vip ? PP.Art.crown : ''}${m.mod ? PP.Art.shield : ''}</b><span class="score">${(m.score || 0).toLocaleString()}</span><span id="net" class="warn"></span><button class="gear" aria-label="Settings">⚙</button>`;
     h.querySelector('.gear').onclick = openPrefs;
     const bar = document.createElement('div'); bar.className = 'tbar'; bar.innerHTML = '<i></i>'; h.appendChild(bar);
     return h;
   }
   function applyHeader(m) { if (m.color) document.documentElement.style.setProperty('--me', m.color); }
+  function applyTheme(theme) { if (theme && document.documentElement.dataset.theme !== theme) document.documentElement.dataset.theme = theme; }
   function showError(body, err) { let e = body.querySelector('.error'); if (!e) { e = document.createElement('p'); e.className = 'error'; body.prepend(e); } e.textContent = err; if (prefs.haptics && navigator.vibrate) navigator.vibrate(60); }
 
   // ------------------------------------------------------------ timer + haptics
@@ -173,11 +176,11 @@
         <h2>You're in${m.renamed ? `, ${esc(m.name)}` : ''}!</h2>
         ${m.renamed ? '<p class="error">Your name was replaced by the profanity filter.</p>' : ''}
         <p class="muted">${v.count} player${v.count === 1 ? '' : 's'} in room ${esc(m.code || '')}.</p>
-        ${v.isVip ? `<h3>👑 You're the VIP. Pick a game:</h3>
-          <div class="game-list">${v.games.map(g => `<button class="btn game" data-g="${g.key}"><b>${esc(g.title)}</b><small>${esc(g.blurb)} · ${g.min}+ players${v.count < g.min ? ' (bots fill in)' : ''}</small></button>`).join('')}</div>
-          <label class="mod">🛡 VIP Moderator <select id="mod"><option value="">Nobody</option>${v.players.filter(p => !p.bot).map(p => `<option value="${esc(p.id)}" ${v.moderator === p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></label>
+        ${v.isVip ? `<h3>You're the VIP! Pick a game:</h3>
+          <div class="game-list">${v.games.map(g => `<button class="btn game" data-g="${g.key}" style="--a:${g.accent};--gfont:${g.font}"><span class="gl-art">${PP.Art.host(g.key)}</span><span><b>${esc(g.title)}</b><small>${g.min}+ players${v.count < g.min ? ' · bots fill in' : ''}</small></span></button>`).join('')}</div>
+          <label class="mod">VIP Moderator <select id="mod"><option value="">Nobody</option>${v.players.filter(p => !p.bot).map(p => `<option value="${esc(p.id)}" ${v.moderator === p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></label>
           <p class="muted tiny">The moderator approves every typed answer before it hits the big screen.</p>`
-          : '<p>Waiting for the VIP 👑 to pick a game. Spam the big screen while you wait.</p>'}
+          : '<p>Waiting for the VIP to pick a game. Spam the big screen with reactions while you wait.</p>'}
         </div>`;
       body.querySelectorAll('[data-g]').forEach(b => b.onclick = () => sendKind('pick-game', { game: b.dataset.g, bots: true }));
       const mod = body.querySelector('#mod'); if (mod) mod.onchange = () => sendKind('moderator', { id: mod.value });
@@ -218,7 +221,7 @@
       const list = body.querySelector('.choices');
       let order = v.options.map((_, i) => i), chosen = null;
       const paint = () => {
-        list.innerHTML = order.map(i => { const o = v.options[i]; return `<button class="btn choice ${chosen === i ? 'on' : ''}" data-i="${i}" ${o.disabled ? 'disabled' : ''}>${o.badge ? `<span class="badge">${esc(o.badge)}</span>` : ''}${o.asset ? `<span class="asset" data-asset="${esc(o.asset)}" data-px="120"></span>` : ''}<span>${esc(o.label)}</span>${o.note ? `<small>${esc(o.note)}</small>` : ''}</button>`; }).join('');
+        list.innerHTML = order.map(i => { const o = v.options[i]; return `<button class="btn choice ${chosen === i ? 'on' : ''}" data-i="${i}" ${o.disabled ? 'disabled' : ''}>${o.face ? `<span class="av">${PP.Art.face(o.face.id, o.face.color)}</span>` : ''}${o.badge ? `<span class="badge">${esc(o.badge)}</span>` : ''}${o.asset ? `<span class="asset" data-asset="${esc(o.asset)}" data-px="120"></span>` : ''}<span>${esc(o.label)}</span>${o.note ? `<small>${esc(o.note)}</small>` : ''}</button>`; }).join('');
         list.querySelectorAll('[data-i]').forEach(b => b.onclick = () => {
           chosen = Number(b.dataset.i); send('haunt' in v ? { choice: chosen } : chosen);   // quiz views always take { choice }
           if (v.haunt) { list.innerHTML = '<p class="locked-note">✅ Answer locked in</p>'; return; }

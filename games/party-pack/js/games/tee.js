@@ -8,7 +8,7 @@
   const TEE_PATH = 'M60 20 L100 6 Q128 28 156 6 L196 20 L246 62 L214 100 L192 86 L192 246 L64 246 L64 86 L42 100 L10 62 Z';
 
   const game = PP.GAMES.tee = {
-    title: 'The Chaos Mashup', icon: '👕', accent: '#3ee08f', min: 3,
+    title: 'The Chaos Mashup', icon: '👕', accent: '#3ee08f', font: "'Bowlby One SC', 'Lilita One', sans-serif", min: 3,
     blurb: 'Draw anything. Write anything. Mash them into T-shirts that battle. Print the winner.',
     rules: ['Draw two pictures, write three slogans.', 'Build a shirt from your friends\' work.', 'Shirts battle king-of-the-hill. Every vote scores.', 'Print and ship the champion from the end screen.'],
     async run(ctx) {
