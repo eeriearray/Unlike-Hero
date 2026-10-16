@@ -234,7 +234,7 @@ test('every narrated moment maps to a clip in the recording script', () => {
   for (let seed = 1; seed <= 120; seed++) {
     const { game, clock } = makeGame({ seed, players: 4 + (seed % 13), settings: { roles: allRoles, timers: { night: 20, discussion: 20, voting: 15, defense: 10, judgment: 10 } } });
     const check = () => {
-      const clips = [game.announcementClip, ...(game.dawn ? game.dawn.clips : []), ...(game.verdict ? game.verdict.clips : []), game.winner && game.winner.clip];
+      const clips = [...game.narration, ...(game.dawn ? game.dawn.clips : []), ...(game.verdict ? game.verdict.clips : []), game.winner && game.winner.clip];
       for (const c of clips) if (c) { assert.ok(Engine.SCRIPT[c], `missing script line for clip "${c}"`); used.add(c); }
       if (game.dawn) assert.equal(game.dawn.clips.length, game.dawn.lines.length);
     };
@@ -244,5 +244,5 @@ test('every narrated moment maps to a clip in the recording script', () => {
     check();
   }
   for (const c of Object.keys(Engine.SCRIPT)) assert.ok(!/\{|\(bot\)/.test(Engine.SCRIPT[c]), `script line ${c} must not contain names`);
-  assert.ok(used.size > 40, `only ${used.size} clips exercised`);
+  assert.ok(used.size > 60, `only ${used.size} clips exercised`);
 });

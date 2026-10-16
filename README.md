@@ -32,7 +32,7 @@ The server hosts the folder and relays game messages over WebSocket, so linked p
 Mafia's storyteller plays pre-recorded lines from `games/mafia/voice/`. To record them:
 
 1. `npm start`, then open http://localhost:8080/games/mafia/record.html on the same computer.
-2. Press **Record** (or **R**) on each of the 76 short lines, read it, press again to stop. Takes save straight into
+2. Press **Record** (or **R**) on each of the ~100 short lines (about 30 minutes), read it, press again to stop. Takes save straight into
    `games/mafia/voice/`; silence is trimmed and a narrator effect (warmth, compression, room echo, optional
    "deepen") is applied when played. You can also **Upload** mp3/m4a/wav files made elsewhere (e.g. ElevenLabs).
 3. Commit `games/mafia/voice/` so every player hears the recordings.

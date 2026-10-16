@@ -674,7 +674,7 @@
     function tap() { if (shown < lines.length) { V.cancel(); setShown(lines.length); } else props.onClose(); }
     return html`<div className="overlay" onClick=${tap}>
       <article className="paper" aria-live="polite">
-        <header className="masthead"><h1>The Daily Ledger</h1></header>
+        <header className="masthead"><h1>The Ravenport Ledger</h1></header>
         <div className="dateline"><span>Vol. XIII · No. ${dawn.day}</span><span>Morning edition</span><span>Two cents</span></div>
         <h2 className="headline">${headline}</h2>
         <div className="subhead">${sub}</div>
@@ -1037,7 +1037,9 @@
       if (prev.current === key) return;
       var was = prev.current; prev.current = key;
       if (!was) return; // just (re)joined: stay quiet
-      if (NARRATED[view.phase]) V.say({ clip: view.announcementClip, text: view.announcement });
+      if (NARRATED[view.phase] && view.narration && view.narration.length) {
+        V.sequence(view.narration.map(function (c) { return { clip: c, text: E.SCRIPT[c] }; }));
+      }
       switch (view.phase) {
         case 'roles': A.play('whoosh'); if (hub) hub.report('session-start', { mode: conn && conn.kind, players: view.players.length }); break;
         case 'night': A.play('gong'); break;
@@ -1057,6 +1059,12 @@
     useEffect(function () {
       if (!view || sec == null || !TICKING[view.phase] || sec > 10 || sec <= 0) return;
       A.play(sec <= 5 ? 'tock' : 'tick');
+    }, [sec]);
+    // The storyteller warns the table when time is nearly up.
+    useEffect(function () {
+      if (!view || view.phaseDuration < 30) return;
+      if (view.phase === 'discussion' && sec === 16) V.say({ clip: 'discussion.late', text: E.SCRIPT['discussion.late'] });
+      if (view.phase === 'voting' && sec === 11) V.say({ clip: 'voting.late', text: E.SCRIPT['voting.late'] });
     }, [sec]);
     useEffect(function () {
       var level = 0;
