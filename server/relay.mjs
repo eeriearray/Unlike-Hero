@@ -88,11 +88,17 @@ server.on('error', e => {
 await loadGameServers();
 server.listen(PORT, () => {
   console.log(`Game hub on http://localhost:${PORT}  (relay at ws://localhost:${PORT}/relay)`);
-  // Print the exact address friends on the same Wi-Fi or hotspot should open.
-  const lan = Object.values(networkInterfaces()).flat().filter(a => a && a.family === 'IPv4' && !a.internal).map(a => a.address);
+  // Print the exact address friends on the same Wi-Fi or hotspot should open. Skips addresses phones can't
+  // reach: link-local 169.254.x and the 192.0.0.x a Mac gets on a USB/mobile link with no shared network.
+  const lan = Object.values(networkInterfaces()).flat()
+    .filter(a => a && (a.family === 'IPv4' || a.family === 4) && !a.internal && !/^(169\.254\.|192\.0\.0\.)/.test(a.address))
+    .map(a => a.address);
   if (lan.length) {
     console.log('\nFriends on the same Wi-Fi or hotspot open:');
     for (const ip of lan) console.log(`   http://${ip}:${PORT}`);
     console.log('');
-  } else console.log('Other devices on your network: use this computer\'s IP address instead of localhost.');
+  } else {
+    console.log('\nFriends can\'t reach this computer yet: it isn\'t on a Wi-Fi network or hotspot.');
+    console.log('Connect it to the same Wi-Fi or phone hotspot as your friends (over Wi-Fi, not a USB cable), then restart: npm start\n');
+  }
 });
