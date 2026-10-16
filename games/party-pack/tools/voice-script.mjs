@@ -37,7 +37,7 @@ Any line you skip falls back to the computer's built-in voice.
 
 **Starter cast:** the game ships with every line voiced by macOS's built-in voices (Samantha as the Announcer, Karen as
 Margo, Rishi as Dex, Daniel as Pallette and, pitched down, the Proprietor, Moira as Ripley, Aman as Chad), made by
-`node games/party-pack/tools/mac-voices.mjs`. Uploading a file for a line replaces its starter version.
+\`node games/party-pack/tools/mac-voices.mjs\`. Uploading a file for a line replaces its starter version.
 
 A CSV of the same lines (\`script.csv\`) is next to this file for bulk tools.
 `;

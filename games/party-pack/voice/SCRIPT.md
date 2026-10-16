@@ -17,6 +17,10 @@ Lines never contain player names or answers (those stay on screen), so one set o
 Keep each file under 4 MB. Leave a little silence at the start and end; the game trims it.
 Any line you skip falls back to the computer's built-in voice.
 
+**Starter cast:** the game ships with every line voiced by macOS's built-in voices (Samantha as the Announcer, Karen as
+Margo, Rishi as Dex, Daniel as Pallette and, pitched down, the Proprietor, Moira as Ripley, Aman as Chad), made by
+`node games/party-pack/tools/mac-voices.mjs`. Uploading a file for a line replaces its starter version.
+
 A CSV of the same lines (`script.csv`) is next to this file for bulk tools.
 
 ## The Announcer — The lobby, between games
