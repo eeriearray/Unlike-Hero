@@ -273,7 +273,15 @@
   // ───────────── recorded narration ─────────────
   // Each take is trimmed of silence and run through a narrator chain: rumble cut, warm low shelf,
   // presence dip, gentle compression and a little room reverb. `deepen` (<1) lowers pitch and pace together.
-  var voiceChain = null, voiceSrc = null, voiceCache = {};
+  // One narration line at a time: voiceGen goes up whenever a newer line starts or narration is stopped, so a
+  // clip that finishes loading after that never starts playing on top of (or cutting off) the newer line.
+  var voiceChain = null, voiceSrc = null, voiceCache = {}, voiceGen = 0;
+  function stopSource() {
+    var s = voiceSrc; voiceSrc = null;          // read it first: onended clears voiceSrc, and stop() must reach the source
+    if (!s) return;
+    try { s.stop(); } catch (e) { /* already stopped */ }
+    if (s.onended) s.onended();                  // resolve its promise now rather than when the browser gets round to it
+  }
   function ensureVoiceChain() {
     if (voiceChain) return voiceChain;
     var hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 75;
@@ -305,12 +313,14 @@
     playVoice: function (url, deepen) {
       if (!ensure()) return Promise.reject(new Error('no audio'));
       if (ctx.state === 'suspended') ctx.resume();
+      var gen = ++voiceGen;
       var load = voiceCache[url] || (voiceCache[url] = fetch(url).then(function (r) { if (!r.ok) throw new Error('missing'); return r.arrayBuffer(); })
         .then(function (b) { return new Promise(function (ok, bad) { ctx.decodeAudioData(b, ok, bad); }); }));
       load.catch(function () { delete voiceCache[url]; });
       return load.then(function (buf) {
+        if (gen !== voiceGen) return;                // a newer line started, or narration was stopped, while this loaded
         return new Promise(function (resolve) {
-          API.stopVoice();
+          stopSource();
           var src = ctx.createBufferSource(); src.buffer = buf;
           src.playbackRate.value = deepen || 1;
           src.connect(ensureVoiceChain());
@@ -321,7 +331,7 @@
         });
       });
     },
-    stopVoice: function () { if (voiceSrc) { try { voiceSrc.onended && voiceSrc.onended(); voiceSrc.stop(); } catch (e) { /* already stopped */ } voiceSrc = null; } },
+    stopVoice: function () { voiceGen++; stopSource(); },
     /** Warm the decode cache for clips that are about to be played. */
     preloadVoice: function (url) { if (ensure() && !voiceCache[url]) { voiceCache[url] = fetch(url).then(function (r) { if (!r.ok) throw new Error('missing'); return r.arrayBuffer(); }).then(function (b) { return new Promise(function (ok, bad) { ctx.decodeAudioData(b, ok, bad); }); }); voiceCache[url].catch(function () { delete voiceCache[url]; }); } },
     unlock: function () {
