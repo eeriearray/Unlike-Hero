@@ -175,12 +175,12 @@ PP.CONTENT = {
    and never change meaning; add new lines at the end of a list. Lines are read by a real recorded
    voice when one exists, otherwise by the device's best text-to-speech voice. */
 PP.HOSTS = {
-  lobby: { name: 'The Announcer', pitch: 1, rate: 1, lines: {
+  lobby: { name: 'The Announcer', cast: "Big, warm, excitable game-show announcer. Also reads every shared line (ties, AFK, hype), so give it range.", pitch: 1, rate: 1, lines: {
     intro: ['Welcome to the Party Pack! Grab your phones. Dignity optional.', 'Phones out, everybody. Let\'s make some bad decisions.'],
     join: ['Oh good, another one.', 'Welcome! Lower your expectations accordingly.', 'Look who showed up. Nobody panic.', 'A new challenger appears.'],
     audience: ['We have an audience! Finally, witnesses.'],
     pick: ['Pick a game. Any game. I get paid either way.'] } },
-  quip: { name: 'Margo Quill', pitch: 0.97, rate: 1, lines: {
+  quip: { name: 'Margo Quill', cast: "Dry, weary, deadpan woman in her 40s. A burned-out late-night TV comedy writer. Sighs a lot.", pitch: 0.97, rate: 1, lines: {
     intro: ['Hi. I\'m Margo. I wrote for late-night television for eleven years, and now I\'m here. With you. Write something funny so I can feel something again.'],
     write: ['Your prompts are on your phones. Be funny. Or don\'t, I\'m not your mother.', 'Write! The clock is not on your side. And neither am I.'],
     vote: ['Vote for the funnier one. If neither is funny, vote for the shorter one.', 'Choose wisely. Or quickly. Ideally both.', 'Okay. Which one made you exhale through your nose?'],
@@ -188,7 +188,7 @@ PP.HOSTS = {
     gauntlet: ['Welcome to the Gauntlet. Ten seconds per joke. Your first instinct is your only instinct.'],
     nobody: ['Nobody answered. Inspiring.'],
     end: ['That\'s the show! Please tip your writers. Please.'] } },
-  fib: { name: 'Dex Fibbington', pitch: 1.05, rate: 1.04, lines: {
+  fib: { name: 'Dex Fibbington', cast: "Smarmy, upbeat 1970s game-show host. Big grin you can hear. Slightly too fast.", pitch: 1.05, rate: 1.04, lines: {
     intro: ['Hi there! I\'m Dex Fibbington, and everything I say is true. Including that.'],
     lie: ['Type a lie so convincing your own mother would believe it.', 'Lie to your friends! It\'s healthy. Trust me.'],
     pick: ['Now find the truth. It\'s in there somewhere. Probably.'],
@@ -198,7 +198,7 @@ PP.HOSTS = {
     dbWin: ['The Double Bluff worked! Points stolen straight out of their pockets!'],
     dbFail: ['The Double Bluff failed. Everything, gone. Gambling is fun!'],
     end: ['And that\'s our winner. Honesty is overrated, and this proves it.'] } },
-  draw: { name: 'Professor Pallette', pitch: 0.95, rate: 0.95, lines: {
+  draw: { name: 'Professor Pallette', cast: "Snooty, theatrical art critic. Posh, slow, disappointed in everything.", pitch: 0.95, rate: 0.95, lines: {
     intro: ['I am Professor Pallette. I have judged art in Paris, in Milan, and in one very sad shopping mall. Draw what your phone tells you. No eraser. No mercy.'],
     draw: ['Draw. Commit to every line. There is no undo, as in life.'],
     blind: ['The blind contour round. Your drawing will vanish as you draw it. Like my will to live.'],
@@ -206,7 +206,7 @@ PP.HOSTS = {
     pick: ['Which title is real? Trust your gut. Your gut has terrible taste, but trust it.'],
     reveal: ['Obviously. It was obvious.', 'Of course. I saw it immediately.'],
     end: ['We have our winner. The Louvre has not called. It will not.'] } },
-  quiz: { name: 'The Proprietor', pitch: 0.92, rate: 0.93, lines: {
+  quiz: { name: 'The Proprietor', cast: "Deep, slow, creepy-polite hotel owner. Old-horror-movie host energy, not gory.", pitch: 0.92, rate: 0.93, lines: {
     intro: ['Welcome to my hotel. Answer my questions correctly, and you may check out. Answer wrong… and you check out permanently.'],
     question: ['Next question. Choose carefully.', 'Question time. Your life depends on it. Mostly.'],
     floor: ['Welcome… to the Killing Floor.', 'Wrong answers. How delightful. To the Killing Floor.'],
@@ -218,7 +218,7 @@ PP.HOSTS = {
     exit: ['The Exit. Race for the door. The dead may rise again, if they\'re fast enough.'],
     escaped: ['Someone has escaped. Good for them. Everyone else… stay. Forever.'],
     end: ['Our winner walks out the front door alive. The rest of you can keep the towels.'] } },
-  tee: { name: 'Ripley Thread', pitch: 1.03, rate: 1.06, lines: {
+  tee: { name: 'Ripley Thread', cast: "Hyped-up young fashion streamer. Fast, bright, says 'drip' like it matters.", pitch: 1.03, rate: 1.06, lines: {
     intro: ['What\'s up! It\'s Ripley Thread, and we are about to make some drip. Draw anything, write anything, and we\'ll mash it into shirts.'],
     draw: ['Draw two things. Any two things. This is fashion, there are no rules.'],
     slogan: ['Now write slogans. Bumper stickers. Life advice. Threats. Whatever.'],
@@ -226,7 +226,7 @@ PP.HOSTS = {
     battle: ['Shirt battle! Vote for the one you\'d actually wear in public.'],
     champ: ['This is the champion shirt. Your mum is going to love it.'],
     end: ['And that\'s our design legend! Fashion week is shaking.'] } },
-  pitch: { name: 'Chad Venture', pitch: 1, rate: 1.03, lines: {
+  pitch: { name: 'Chad Venture', cast: "Overconfident tech-bro venture capitalist. Loud, smug, talks in buzzwords.", pitch: 1, rate: 1.03, lines: {
     intro: ['I\'m Chad Venture, partner at Venture Venture Capital. I\'ve invested in nine hundred startups and understood none of them. Today, you pitch me.'],
     roles: ['Check your phones. One of you is an Imposter with no idea what this product is.'],
     slides: ['Write a headline for a slide. Imposter, keep it vague. Like a real CEO.'],

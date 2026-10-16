@@ -50,6 +50,7 @@ window.GAME_REGISTRY = [
     "version": "1.0.0",
     "sdk": "1.x",
     "entry": "index.html",
+    "server": "server/index.mjs",
     "thumbnail": "thumbnail.svg",
     "accent": "#ffcf3a",
     "players": {
@@ -80,6 +81,12 @@ window.GAME_REGISTRY = [
         "name": "Prompt Studio",
         "entry": "index.html#studio",
         "description": "Write custom prompt packs and get a 7-digit share code."
+      },
+      {
+        "id": "booth",
+        "name": "Voice Booth",
+        "entry": "index.html#booth",
+        "description": "Upload or record the six hosts' lines. The full script with filenames is in voice/SCRIPT.md."
       }
     ],
     "multiplayer": {
@@ -101,7 +108,7 @@ window.GAME_REGISTRY = [
     ],
     "requires": [
       "a shared screen plus one phone per player",
-      "npm start for play across devices"
+      "npm start for play across devices and for saving voices"
     ],
     "status": "playable",
     "path": "games/party-pack/"

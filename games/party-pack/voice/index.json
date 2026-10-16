@@ -1,4 +1,4 @@
 {
-  "note": "Optional shared voice pack: map line ids (see PP.scriptLines) to audio files in this folder. The Voice Booth stores recordings in the browser instead; this folder is for packs you want to ship with the game.",
+  "note": "Party Pack host voices. Upload or record lines in the Voice Booth (index.html#booth); see SCRIPT.md for every line and its filename.",
   "clips": {}
 }

@@ -145,12 +145,15 @@
     del(id) { return this.tx('readwrite', st => st.delete(id)); },
     async all() { const db = await this.open(); return new Promise((res, rej) => { const out = new Map(); const t = db.transaction('clips'); const cur = t.objectStore('clips').openCursor(); cur.onsuccess = () => { const c = cur.result; if (c) { out.set(c.key, c.value); c.continue(); } }; t.oncomplete = () => res(out); t.onerror = () => rej(t.error); }); }
   };
+  // Folder clips (voice/index.json, uploaded through the Voice Booth and committed with the game) are the
+  // shared cast; clips recorded in this browser's Booth without the hub server override them locally.
   async function loadClips() {
-    try { (await DB.all()).forEach((blob, id) => V.clips.set(id, blob)); } catch (e) { /* storage blocked */ }
+    V.clips.clear(); V.buffers.clear();
     if (location.protocol !== 'file:') try {
-      const j = await fetch('voice/index.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null);
-      if (j && j.clips) for (const [id, file] of Object.entries(j.clips)) if (!V.clips.has(id)) V.clips.set(id, 'voice/' + file);
+      const j = await fetch('voice/index.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : null);
+      if (j && j.clips) for (const [id, file] of Object.entries(j.clips)) V.clips.set(id, 'voice/' + file + '?v=' + encodeURIComponent(file));
     } catch (e) { /* no folder pack */ }
+    try { (await DB.all()).forEach((blob, id) => V.clips.set(id, blob)); } catch (e) { /* storage blocked */ }
     if (V.onChange) V.onChange();
   }
   loadClips();
@@ -183,7 +186,8 @@
   function playClip(id, hostKey) {
     return buffer(id).then(b => new Promise(resolve => {
       if (!b) { resolve(false); return; }
-      const s = ac.createBufferSource(); s.buffer = b; s.playbackRate.value = V.character[hostKey] || 1;
+      // Uploaded voices (folder clips) play as delivered; one-person Booth recordings get the host's voice character.
+      const s = ac.createBufferSource(); s.buffer = b; s.playbackRate.value = typeof V.clips.get(id) === 'string' ? 1 : (V.character[hostKey] || 1);
       s.connect(chain().input); s.onended = () => resolve(true); s.start();
       V.stopCurrent = () => { try { s.stop(); } catch (e) { /* already stopped */ } };
     })).catch(() => false);
@@ -246,7 +250,7 @@
     if (V.onSpeak) V.onSpeak(hostKey, line.text);
     PP.Audio.duck(true);
     let played = false;
-    if (V.on && V.clips.has(line.id)) played = await playClip(line.id, hostKey === 'edge' ? 'lobby' : hostKey);
+    if (V.on && V.clips.has(line.id)) played = await playClip(line.id, hostKey);
     if (!played && V.on) await speakTTS(line.text, hostKey);
     if (!V.on) await PP.sleep(Math.min(4500, 900 + line.text.length * 42));   // voice off: captions still get read time
     PP.Audio.duck(false);
@@ -258,7 +262,8 @@
   function pickLine(hostKey, key) {
     const h = PP.HOSTS[hostKey] || PP.HOSTS.lobby;
     let list = h.lines && h.lines[key] ? h.lines[key].map((t, i) => ({ id: `${hostKey}.${key}.${i}`, text: t })) : null;
-    if (!list && PP.EDGE[key]) list = PP.EDGE[key].map((t, i) => ({ id: `edge.${key}.${i}`, text: t }));
+    // Shared lines (ties, AFK, hype…) are spoken by the Announcer, whichever game is on.
+    if (!list && PP.EDGE[key]) list = PP.EDGE[key].map((t, i) => ({ id: `edge.${key}.${i}`, text: t, speaker: 'edge' }));
     if (!list) return null;
     const rec = list.filter(l => V.clips.has(l.id));
     return PP.pick(rec.length ? rec : list);
@@ -275,7 +280,7 @@
       return new Promise(resolve => {
         if (!line) { resolve(); return; }
         if (V.queue.length > 1) V.queue.splice(0, V.queue.length - 1).forEach(q => q.resolve());
-        V.queue.push({ line, hostKey, resolve }); pump();
+        V.queue.push({ line, hostKey: line.speaker || hostKey, resolve }); pump();
       });
     },
     stop() { V.queue.splice(0).forEach(q => q.resolve()); if (V.stopCurrent) V.stopCurrent(); },

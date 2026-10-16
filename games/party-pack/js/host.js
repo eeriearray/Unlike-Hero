@@ -80,12 +80,16 @@
     // The host character: mouth flaps and the speech bubble (captions) shows while a line plays.
     PP.Voice.onSpeak((hostKey, text) => {
       const el = $('#host'), b = el.querySelector('.bubble');
-      const who = hostKey === 'edge' ? curKey() : hostKey;
+      const who = hostKey === 'edge' ? 'lobby' : hostKey;     // shared lines belong to the Announcer
+      const setArt = k => { if (el.dataset.who !== k) { el.querySelector('.host-art').innerHTML = PP.Art.host(k); el.dataset.who = k; } };
       if (text) {
-        if (el.dataset.who !== who) { el.querySelector('.host-art').innerHTML = PP.Art.host(who); el.dataset.who = who; }
+        setArt(who);
         b.innerHTML = `<b>${esc((PP.HOSTS[who] || PP.HOSTS.lobby).name)}</b>${esc(text)}`;
         b.classList.toggle('on', !!H.settings.captions); el.classList.add('talking');
-      } else { el.classList.remove('talking'); setTimeout(() => { if (!el.classList.contains('talking')) b.classList.remove('on'); }, 900); }
+      } else {
+        el.classList.remove('talking');
+        setTimeout(() => { if (!el.classList.contains('talking')) { b.classList.remove('on'); setArt(curKey()); } }, 900);   // the game's host steps back in
+      }
     });
     applySettings();
     if (PP.UGC) PP.UGC.applyCode(H.settings.ugc);
@@ -435,7 +439,11 @@
       stage(html, cls) { live(); const s = $('#stage'); s.className = 'stage ' + (cls || ''); s.innerHTML = html; return s; },
       setPhase(name) { H.phase = name; const d = $('#phase'); if (d) d.textContent = name; },
       /** Speak a host line (names and answers stay on screen). await it to wait for the line, capped so a stuck voice never stalls the game. */
-      async say(lineKey, vars, maxMs) { live(); await Promise.race([speak(key, lineKey), PP.sleep(maxMs || 12000)]); live(); },
+      say(lineKey, vars, maxMs) {
+        const p = (async () => { live(); await Promise.race([speak(key, lineKey), PP.sleep(maxMs || 12000)]); live(); })();
+        p.catch(() => {});   // games often fire a line without awaiting it; ending the game mustn't leave an unhandled rejection
+        return p;
+      },
       async ask(spec) { live(); const r = await H.runAsk(token, spec); live(); return r; },
       waitAll(title, msg) { seated().forEach(p => H.setView(p, waitView(title, msg))); setAudience({ type: 'aud-wait', msg: msg || title }); },
       view: (p, v) => H.setView(p, v),

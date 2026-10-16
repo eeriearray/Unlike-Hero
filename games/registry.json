@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-16T20:30:41.343Z",
+  "generated": "2026-10-16T20:38:33.553Z",
   "games": [
     {
       "id": "mafia",
@@ -51,6 +51,7 @@
       "version": "1.0.0",
       "sdk": "1.x",
       "entry": "index.html",
+      "server": "server/index.mjs",
       "thumbnail": "thumbnail.svg",
       "accent": "#ffcf3a",
       "players": {
@@ -81,6 +82,12 @@
           "name": "Prompt Studio",
           "entry": "index.html#studio",
           "description": "Write custom prompt packs and get a 7-digit share code."
+        },
+        {
+          "id": "booth",
+          "name": "Voice Booth",
+          "entry": "index.html#booth",
+          "description": "Upload or record the six hosts' lines. The full script with filenames is in voice/SCRIPT.md."
         }
       ],
       "multiplayer": {
@@ -102,7 +109,7 @@
       ],
       "requires": [
         "a shared screen plus one phone per player",
-        "npm start for play across devices"
+        "npm start for play across devices and for saving voices"
       ],
       "status": "playable",
       "path": "games/party-pack/"
