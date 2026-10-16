@@ -157,6 +157,7 @@ html[data-theme=lobby] .strip{display:none}
 .bigcode{font-family:'Lilita One',sans-serif;font-size:clamp(48px,5vw,92px);letter-spacing:.08em;background:var(--accent);color:var(--accent-ink);border:5px solid var(--ol);padding:0 20px;border-radius:18px;line-height:1.1;box-shadow:var(--sh);transform:rotate(1.5deg)}
 .qr svg{width:96px;height:96px;background:#fff;border:4px solid var(--ol);border-radius:12px;padding:4px;display:block}
 .howto .note-line .chip-btn{margin-left:6px}
+.howto .warn-line{background:var(--bad);color:#fff}
 .howto .note-line{background:var(--card);color:var(--card-ink);border:3px solid var(--ol);border-radius:12px;padding:8px 14px;box-shadow:var(--sh-sm);font-size:.92em}
 .slots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(10px,1.4vw,18px)}
 .slot{position:relative;aspect-ratio:1/.86;border-radius:20px;display:grid;place-items:center;align-content:center;gap:4px;text-align:center;padding:10px 8px;border:4px dashed #ffffff70;color:var(--on-bg-muted)}

@@ -76,6 +76,7 @@
     H.room.on('react', onReact);
     setTimeout(() => H.room.emit('host-up', {}), 50);
     setInterval(housekeeping, 1000);
+    findLanAddress(); setInterval(() => { if (!H.game) findLanAddress(); }, 10000);   // picks up Wi-Fi joining later
     setInterval(() => { H.hype = Math.max(0, H.hype - 1.5); renderHype(); }, 400);
     // The host character: mouth flaps and the speech bubble (captions) shows while a line plays.
     PP.Voice.onSpeak((hostKey, text) => {
@@ -325,7 +326,22 @@
       if (act === 'end') H.endGame();
     });
   }
-  function joinUrl() { const u = location.href.split('#')[0].split('?')[0]; return u + '?code=' + H.code + '#play'; }
+  // Phones can't open "localhost", so when the Main Stage runs on localhost the join link and QR code use this
+  // computer's Wi-Fi address from the game server (server/index.mjs net-info). No address = show a warning.
+  function joinUrl() { const u = H.lanBase || location.href.split('#')[0].split('?')[0]; return u + '?code=' + H.code + '#play'; }
+  const onLocalhost = () => /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  async function findLanAddress() {
+    if (!onLocalhost() || location.protocol === 'file:') { H.lanState = 'ok'; return; }
+    const before = H.lanBase;
+    try {
+      const j = await fetch('net-info', { cache: 'no-store' }).then(r => r.ok ? r.json() : null);
+      const ip = j && j.addresses && j.addresses[0];
+      H.lanBase = ip ? `${location.protocol}//${ip}:${j.port || location.port}${location.pathname}` : null;
+      H.lanState = ip ? 'ok' : 'none';
+    } catch (e) { H.lanState = 'unknown'; }
+    if (H.lanBase !== before && !H.game) refresh(); else renderTop();
+  }
+  H.findLanAddress = findLanAddress;
   function renderStrip() {
     const a = H.ask;
     $('#strip').innerHTML = H.players.map(p => {
@@ -362,6 +378,7 @@
         <div class="howto">
           <div class="join-row"><h1 class="logo">PARTY<br>PACK</h1><div class="bigcode" aria-label="Room code">${esc(H.code)}</div></div>
           <div class="join-card"><div id="qr" class="qr" aria-label="QR code to join"></div><div><small>Grab your phone and go to</small><b class="url">${esc(url.replace(/^https?:\/\//, '').split('?')[0])}</b><small>then enter the room code</small></div></div>
+          ${H.lanState === 'none' ? '<p class="note-line warn-line"><b>Phones can\'t reach this computer yet.</b> Connect it to the same Wi-Fi as the phones (not a mobile hotspot from one of them). The join link updates by itself.</p>' : ''}
           <p class="note-line">First phone in is the VIP and picks the game. <button class="chip-btn" id="addbot">+ Add a bot</button></p>
         </div>
         <div class="slots">${slots.map((p, i) => p ? `

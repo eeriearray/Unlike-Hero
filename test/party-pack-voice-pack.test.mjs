@@ -48,3 +48,10 @@ test('voice pack saves, replaces and deletes clips from localhost only', async (
     assert.deepEqual((await readdir(dir)).sort(), ['edge.tie4.0.wav', 'index.json']);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
+
+test('join links use an address phones can reach', async () => {
+  const { lanAddresses } = await import('../games/party-pack/server/index.mjs');
+  const v4 = (address, internal = false) => ({ family: 'IPv4', address, internal });
+  assert.deepEqual(lanAddresses({ lo0: [v4('127.0.0.1', true)], en0: [v4('192.0.0.2')] }), [], 'loopback and the mobile-link 192.0.0.x address are useless to phones');
+  assert.deepEqual(lanAddresses({ utun4: [v4('100.80.1.2')], bridge0: [v4('169.254.9.9')], en0: [v4('192.168.1.23'), { family: 'IPv6', address: 'fe80::1', internal: false }] }), ['192.168.1.23', '100.80.1.2'], 'home Wi-Fi first');
+});
