@@ -646,7 +646,7 @@
     useEffect(function () {
       A.play('paper');
       var start = setTimeout(function () {
-        var speaking = V.sequence(lines, function (i) { setShown(function (v) { return Math.max(v, i + 1); }); }, function () { setShown(lines.length); });
+        var speaking = V.sequence(lines.map(function (t, i) { return { text: t, clip: dawn.clips && dawn.clips[i] }; }), function (i) { setShown(function (v) { return Math.max(v, i + 1); }); }, function () { setShown(lines.length); });
         setNarrated(speaking);
         if (!speaking) setShown(1);
       }, 1100);
@@ -693,7 +693,7 @@
   function VerdictOverlay(props) {
     var v = props.verdict, view = props.view;
     useEffect(function () {
-      var timers = [setTimeout(function () { V.say(v.text); }, v.noTrial ? 200 : 900)];
+      var timers = [setTimeout(function () { V.sequence((v.clips || []).map(function (c) { return { clip: c, text: E.SCRIPT[c] }; })); }, v.noTrial ? 200 : 900)];
       if (v.noTrial) { A.play('bell'); return function () { timers.forEach(clearTimeout); }; }
       timers.push(setTimeout(function () { A.play('gavel'); FX.shake(); }, 550));
       if (v.executed) {
@@ -728,7 +728,7 @@
       var cheers = me.won ? [0, 700, 1500] : [0];
       A.play(me.won ? 'victory' : 'defeat');
       var t = cheers.map(function (d) { return setTimeout(function () { FX.burst(me.won ? 'confetti' : 'gold', innerWidth * (0.25 + Math.random() * 0.5), innerHeight * 0.35, me.won ? 120 : 40); }, d); });
-      t.push(setTimeout(function () { V.sequence([w.title + '.', w.text]); }, 900));
+      t.push(setTimeout(function () { V.say({ clip: w.clip, text: w.title + '. ' + w.text }); }, 900));
       return function () { t.forEach(clearTimeout); };
     }, []);
     var stats = {}; (view.stats || []).forEach(function (s) { stats[s.id] = s; });
@@ -876,14 +876,14 @@
     var s = useState(false), open = s[0], setOpen = s[1];
     var s2 = useState({ music: A.settings.music, sfx: A.settings.sfx, voice: V.enabled }), st = s2[0], setSt = s2[1];
     var s3 = useState(0), setVoicesTick = s3[1];
-    useEffect(function () { V.onVoices(function () { setVoicesTick(function (x) { return x + 1; }); }); }, []);
+    useEffect(function () { V.onChange(function () { setVoicesTick(function (x) { return x + 1; }); }); }, []);
     var voices = V.voices().slice(0, 18);
     var allOff = !st.music && !st.sfx && !st.voice;
     function set(k, on) {
       A.unlock();
       if (k === 'music') A.setMusic(on);
       if (k === 'sfx') A.setSfx(on);
-      if (k === 'voice') { V.setEnabled(on); if (on) V.say(E.NARRATOR_PREVIEW); }
+      if (k === 'voice') { V.setEnabled(on); if (on) V.say({ clip: 'preview', text: E.SCRIPT.preview }); }
       var nx = Object.assign({}, st); nx[k] = on; setSt(nx);
     }
     useEffect(function () {
@@ -898,13 +898,13 @@
         <label className="switch"><span>Music</span><input type="checkbox" checked=${st.music} onChange=${function (e) { set('music', e.target.checked); }} /></label>
         <label className="switch"><span>Sound effects</span><input type="checkbox" checked=${st.sfx} onChange=${function (e) { set('sfx', e.target.checked); }} /></label>
         <label className="switch"><span>Narrator voice</span><input type="checkbox" disabled=${!V.available} checked=${st.voice} onChange=${function (e) { set('voice', e.target.checked); }} /></label>
-        ${V.available && st.voice && voices.length ? html`<label className="field">Narrator
-          <select className="select" value=${V.voiceId} onChange=${function (e) { V.setVoice(e.target.value); V.say(E.NARRATOR_PREVIEW); setVoicesTick(function (x) { return x + 1; }); }}>
+        ${V.pack.count
+          ? html`<div className="hint">Recorded narrator: ${V.pack.count} of ${V.pack.total} lines.</div>`
+          : V.available && st.voice && voices.length ? html`<label className="field">Stand-in voice
+          <select className="select" value=${V.voiceId} onChange=${function (e) { V.setVoice(e.target.value); V.say({ clip: 'preview', text: E.SCRIPT.preview }); setVoicesTick(function (x) { return x + 1; }); }}>
             ${voices.map(function (v) { return html`<option key=${v.id} value=${v.id}>${v.label}</option>`; })}
           </select></label>` : null}
-        <div className="hint">${!V.available ? 'This browser cannot read aloud.'
-          : V.studioReady ? '★ Studio voices are rendered by the game server and sound the most human.'
-          : 'Best voices first. Start the hub with npm start to unlock the studio voices.'}</div>
+        <div className="hint">${V.pack.count ? '' : 'No narration recorded yet, so the browser reads the story. '}<a href="record.html" target="_blank" rel="noopener" style=${{ color: 'var(--brass-hi)' }}>Open the recording studio →</a></div>
       </div>` : null}
     </div>`;
   }
@@ -994,7 +994,6 @@
       setError(''); setBusy(true);
       var c = Net.createOnline(handlers);
       var p = cleanProfile();
-      V.useStudio(true);
       (kind === 'create' ? c.create(p) : c.join(code, p)).then(function (res) {
         setBusy(false);
         if (res.error) { setError(res.error); c.leave(); return; }
@@ -1003,7 +1002,6 @@
     }
     function goOffline(bots) {
       A.unlock(); A.play('click'); setError('');
-      V.useStudio(false);
       setConn(Net.createOffline(handlers, cleanProfile(), bots));
     }
     var send = useCallback(function (cmd) {
@@ -1039,7 +1037,7 @@
       if (prev.current === key) return;
       var was = prev.current; prev.current = key;
       if (!was) return; // just (re)joined: stay quiet
-      if (NARRATED[view.phase]) V.say(view.announcement);
+      if (NARRATED[view.phase]) V.say({ clip: view.announcementClip, text: view.announcement });
       switch (view.phase) {
         case 'roles': A.play('whoosh'); if (hub) hub.report('session-start', { mode: conn && conn.kind, players: view.players.length }); break;
         case 'night': A.play('gong'); break;

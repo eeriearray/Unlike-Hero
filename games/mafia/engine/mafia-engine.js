@@ -149,16 +149,6 @@
       .replace(/\s+/g, ' ').replace(/\s+([.,!?])/g, '$1').trim().slice(0, 320);
   }
 
-  /** Every line the storyteller may read aloud right now (announcement, morning paper, verdict, ending). */
-  function narrationLines(game) {
-    var out = [];
-    if (game.announcement) out.push(game.announcement);
-    if (game.phase === 'dawn' && game.dawn) out = out.concat(game.dawn.lines);
-    if (game.phase === 'verdict' && game.verdict) out.push(game.verdict.text);
-    if (game.phase === 'gameover' && game.winner) out.push(game.winner.title + '.', game.winner.text);
-    return out.map(speechText).filter(Boolean);
-  }
-
   function sanitizeSettings(input, base) {
     var s = JSON.parse(JSON.stringify(base || DEFAULT_SETTINGS));
     if (!input || typeof input !== 'object') return s;
@@ -254,6 +244,54 @@
     noTrial: ['The town could not agree on anyone. Nobody hangs today.', 'Murmurs, accusations, no consensus. The gallows stay empty.']
   };
   function fill(tpl, vars) { return tpl.replace(/\{(\w+)\}/g, function (_, k) { return vars[k]; }); }
+  function pickIndex(arr, rng) { return Math.floor(rng() * arr.length); }
+
+  /**
+   * The narrator's recording script: clip id -> the exact words to record.
+   * Spoken clips never contain player names or numbers, so one set of recordings covers every game;
+   * names stay on screen. Each narrated moment carries the clip ids to play (see clip fields below).
+   */
+  var SCRIPT_GROUPS = [];
+  var SCRIPT = {};
+  function script(group, entries) { SCRIPT_GROUPS.push({ name: group, ids: Object.keys(entries) }); Object.keys(entries).forEach(function (k) { SCRIPT[k] = entries[k]; }); }
+  function numbered(prefix, arr, fmt) { var o = {}; arr.forEach(function (t, i) { o[prefix + '.' + (i + 1)] = fmt ? fmt(t) : t; }); return o; }
+  var NIGHT_SPOKEN = ['Night falls. Lock your doors. Close your eyes.', 'The moon rises over the town. Another night begins.',
+    'Darkness swallows the streets. Those with work to do... begin.'];
+  var TRIAL_SPOKEN = ['The accused is dragged to the gallows. Speak now... and convince them.',
+    'All eyes turn to the accused. They may make their defense.', 'The accused stands trial before the town. Choose your words carefully.'];
+  var SPARED_SPOKEN = ['The town has spoken. The accused is spared... for now.', 'The accused steps down from the gallows. Shaken, but alive.'];
+  var EXECUTED_SPOKEN = ['The trapdoor drops. The accused has been executed.', 'The gavel falls. The accused is led away... and hanged.'];
+  var ENDINGS = {
+    town: { title: 'The Town Wins', text: 'Every threat has been rooted out. The streets are safe again — for now.' },
+    mafia: { title: 'The Mafia Wins', text: 'The family now runs this town. Nobody is left to stop them.' },
+    serial_killer: { title: 'The Serial Killer Wins', text: 'In the end, only the killer remained. The town never stood a chance.' },
+    graveyard: { title: 'Nobody Wins', text: 'Not a soul is left standing. The town is a graveyard.' },
+    empty: { title: 'Nobody Wins', text: 'The killers are gone, but so is the town. Nobody wins.' },
+    exhausted: { title: 'Nobody Wins', text: 'The town has bled for twenty days. Everyone flees. Nobody wins.' }
+  };
+  script('Starting the game', { deal: 'The cards are dealt. Guard your secret with your life.', preview: 'Night falls over the town... Lock your doors.' });
+  script('Nightfall', numbered('night', NIGHT_SPOKEN));
+  script('Morning weather', numbered('weather', STORY.weather, function (t) { return t + '...'; }));
+  script('A body is found', numbered('found', STORY.places, function (t) { return 'A body was found ' + t + '.'; }));
+  script('How they died', Object.assign({}, numbered('mafia', STORY.cause.mafia), numbered('killer', STORY.cause.serial_killer),
+    numbered('vigilante', STORY.cause.vigilante), numbered('guarded', STORY.cause.bodyguard), numbered('struck', STORY.cause.bodyguard_counter),
+    numbered('doctor', STORY.docFailed)));
+  script('Quiet nights and rescues', Object.assign({}, numbered('quiet', STORY.quiet), numbered('saved', STORY.saved),
+    { silenced: 'One of you wakes up... unable to say a single word.' }));
+  script('Role reveals', (function () {
+    var o = {};
+    Object.keys(ROLES).forEach(function (id) { var r = ROLES[id]; o['role.' + id] = 'They were ' + (id === 'villager' || id === 'mafioso' ? article(r.name) : 'the') + ' ' + r.name + '.'; });
+    return o;
+  })());
+  script('The day', { 'gather.first': 'The town gathers in the square. Who among you can be trusted?', 'gather.again': 'The town gathers once more.',
+    discussion: 'Discuss. Accuse. Lie, if you must.', voting: 'Cast your ballots. Who goes on trial?' });
+  script('Trials', Object.assign({}, numbered('trial', TRIAL_SPOKEN), { judgment: 'Guilty... or innocent? Decide their fate.' },
+    numbered('spared', SPARED_SPOKEN), numbered('executed', EXECUTED_SPOKEN), numbered('notrial', STORY.noTrial)));
+  script('Endings', (function () {
+    var o = { 'win.jester': 'The Jester laughs from the gallows. They fooled you all.', 'win.executioner': 'Somewhere, the Executioner smiles. Their target hangs.' };
+    Object.keys(ENDINGS).forEach(function (k) { o['end.' + k] = ENDINGS[k].title + '. ' + ENDINGS[k].text; });
+    return o;
+  })());
 
   // ───────────────────────────────────────────── Bots ─────────────────────────────────────────────
 
@@ -318,6 +356,7 @@
     this.dawn = null;
     this.verdict = null;
     this.announcement = '';
+    this.announcementClip = null;
     this.winner = null;
     this.pendingWinner = null;
     this.neutralWins = [];
@@ -437,6 +476,7 @@
     this.chat.day = []; this.chat.mafia = []; this.chat.dead = [];
     this.setPhase('roles', 20);
     this.announcement = 'The cards are dealt. Guard your secret with your life.';
+    this.announcementClip = 'deal';
     this.systemChat('day', 'A new game begins with ' + this.players.length + ' players.');
     this.chatReset();
     this.sync();
@@ -532,11 +572,13 @@
 
   G.startNight = function () {
     this.day += 1;
-    if (this.day > MAX_DAYS) { this.endGame(this.drawResult('The town has bled for ' + MAX_DAYS + ' days. Everyone flees. Nobody wins.')); return; }
+    if (this.day > MAX_DAYS) { this.endGame(this.drawResult('exhausted')); return; }
     this.night = { actions: {}, framed: {} };
     this.players.forEach(function (p) { p.ready = false; });
     this.votes = {}; this.judgments = {}; this.accusedId = null; this.verdict = null;
-    this.announcement = fill(pick(STORY.nightIntro, this.rng), { n: this.day });
+    var ni = pickIndex(STORY.nightIntro, this.rng);
+    this.announcement = fill(STORY.nightIntro[ni], { n: this.day });
+    this.announcementClip = 'night.' + (ni + 1);
     this.timeline.push({ day: this.day, phase: 'night', text: 'Night ' + this.day + ' fell.' });
     this.systemChat('day', '🌙 Night ' + this.day + ' falls.');
     this.setPhase('night', this.settings.timers.night);
@@ -776,25 +818,33 @@
 
   G.startDawn = function (report) {
     var self = this, rng = this.rng;
-    var lines = [pick(STORY.weather, rng) + '...'];
+    var wi = pickIndex(STORY.weather, rng);
+    var lines = [STORY.weather[wi] + '...'], clips = ['weather.' + (wi + 1)];
+    var say = function (text, clip) { lines.push(text); clips.push(clip); };
+    var choose = function (arr, prefix, fmt) { var i = pickIndex(arr, rng); say(fmt ? fmt(arr[i]) : arr[i], prefix + '.' + (i + 1)); };
+    var CAUSE_CLIP = { mafia: 'mafia', serial_killer: 'killer', vigilante: 'vigilante', bodyguard: 'guarded', bodyguard_counter: 'struck' };
     var deaths = report.deaths.map(function (d) {
       var p = self.get(d.id);
       var role = self.settings.revealRoles ? describeRole(p.role) : null;
       return { id: p.id, name: p.name, avatar: p.avatar, cause: d.cause, role: role };
     });
-    if (!deaths.length) lines.push(pick(STORY.quiet, rng));
+    if (!deaths.length) choose(STORY.quiet, 'quiet');
     deaths.forEach(function (d) {
-      lines.push(d.name + ' was found dead ' + pick(STORY.places, rng) + '.');
-      lines.push(pick(STORY.cause[d.cause] || STORY.cause.mafia, rng));
-      if (report.docFailed.indexOf(d.id) >= 0) lines.push(pick(STORY.docFailed, rng));
-      if (d.role) lines.push('They were ' + article(d.role.name) + ' ' + d.role.name + ' ' + d.role.icon + '.');
+      var pi = pickIndex(STORY.places, rng);
+      say(d.name + ' was found dead ' + STORY.places[pi] + '.', 'found.' + (pi + 1));
+      var cause = STORY.cause[d.cause] ? d.cause : 'mafia';
+      choose(STORY.cause[cause], CAUSE_CLIP[cause]);
+      if (report.docFailed.indexOf(d.id) >= 0) choose(STORY.docFailed, 'doctor');
+      if (d.role) say('They were ' + article(d.role.name) + ' ' + d.role.name + ' ' + d.role.icon + '.', 'role.' + d.role.id);
     });
-    if (report.saves) lines.push(pick(STORY.saved, rng));
-    report.silenced.forEach(function (id) { lines.push(self.get(id).name + ' wakes up unable to say a single word. 🤐'); });
-    lines.push(this.day === 1 ? 'The town gathers in the square. Who among you can be trusted?' : 'Day ' + this.day + '. The town gathers once more.');
+    if (report.saves) choose(STORY.saved, 'saved');
+    report.silenced.forEach(function (id) { say(self.get(id).name + ' wakes up unable to say a single word. 🤐', 'silenced'); });
+    if (this.day === 1) say('The town gathers in the square. Who among you can be trusted?', 'gather.first');
+    else say('Day ' + this.day + '. The town gathers once more.', 'gather.again');
 
-    this.dawn = { day: this.day, lines: lines, deaths: deaths, silenced: report.silenced, saves: report.saves };
+    this.dawn = { day: this.day, lines: lines, clips: clips, deaths: deaths, silenced: report.silenced, saves: report.saves };
     this.announcement = lines[lines.length - 1];
+    this.announcementClip = clips[clips.length - 1];
     lines.forEach(function (l) { self.systemChat('day', l, 'story'); });
     this.pendingWinner = this.checkWinner();
     // Long enough for the narrator to read every line aloud (~2.4 words a second).
@@ -805,12 +855,14 @@
   G.startDiscussion = function () {
     this.players.forEach(function (p) { p.ready = false; });
     this.announcement = 'Discuss. Accuse. Lie, if you must.';
+    this.announcementClip = 'discussion';
     this.setPhase('discussion', this.settings.timers.discussion);
   };
 
   G.startVoting = function () {
     this.votes = {};
     this.announcement = 'Cast your ballots. Who goes on trial?';
+    this.announcementClip = 'voting';
     this.systemChat('day', '🗳️ Voting has begun.');
     this.setPhase('voting', this.settings.timers.voting);
   };
@@ -856,8 +908,10 @@
       if (t && (self.isMafia(t) || t.role === 'serial_killer') && !self.isMafia(self.get(v))) self.get(v).stats.goodVotes += 1;
     });
     if (top.length !== 1 || best <= r.skip) {
-      this.verdict = { noTrial: true, text: pick(STORY.noTrial, this.rng) };
+      var nt = pickIndex(STORY.noTrial, this.rng);
+      this.verdict = { noTrial: true, text: STORY.noTrial[nt], clips: ['notrial.' + (nt + 1)] };
       this.announcement = this.verdict.text;
+      this.announcementClip = null; // the verdict overlay narrates it
       this.systemChat('day', this.verdict.text, 'story');
       this.pendingWinner = null;
       this.setPhase('verdict', 7);
@@ -865,7 +919,9 @@
     }
     this.accusedId = top[0];
     var accused = this.get(this.accusedId);
-    this.announcement = fill(pick(STORY.trial, this.rng), { name: accused.name });
+    var ti = pickIndex(STORY.trial, this.rng);
+    this.announcement = fill(STORY.trial[ti], { name: accused.name });
+    this.announcementClip = 'trial.' + (ti + 1);
     this.systemChat('day', '⚖️ ' + this.announcement, 'story');
     this.timeline.push({ day: this.day, phase: 'trial', text: accused.name + ' was put on trial (' + best + ' votes).' });
     this.setPhase('defense', this.settings.timers.defense);
@@ -875,6 +931,7 @@
     this.judgments = {};
     var accused = this.get(this.accusedId);
     this.announcement = 'Guilty or innocent? Decide the fate of ' + accused.name + '.';
+    this.announcementClip = 'judgment';
     this.setPhase('judgment', this.settings.timers.judgment);
   };
 
@@ -905,10 +962,14 @@
     var evil = this.isMafia(accused) || accused.role === 'serial_killer';
     guilty.forEach(function (v) { var p = self.get(v); if (evil && !self.isMafia(p)) { p.stats.goodVotes += 1; } });
     var role = executed && this.settings.revealRoles ? describeRole(accused.role) : null;
-    var text;
+    var text, clips = [];
     if (executed) {
-      text = fill(pick(STORY.executed, this.rng), { name: accused.name });
-      if (role) text += ' They were ' + article(role.name) + ' ' + role.name + ' ' + role.icon + '.';
+      var ei = pickIndex(STORY.executed, this.rng);
+      text = fill(STORY.executed[ei], { name: accused.name });
+      clips.push('executed.' + (ei + 1));
+      if (role) { text += ' They were ' + article(role.name) + ' ' + role.name + ' ' + role.icon + '.'; clips.push('role.' + role.id); }
+      if (accused.role === 'jester') clips.push('win.jester');
+      if (this.players.some(function (p) { return p.alive && p.role === 'executioner' && p.exeTargetId === accused.id; })) clips.push('win.executioner');
       accused.alive = false; accused.deathDay = this.day; accused.deathCause = 'lynch';
       this.timeline.push({ day: this.day, phase: 'verdict', text: accused.name + ' was executed (' + guilty.length + '–' + innocent.length + ').' });
       this.systemChat('dead', accused.name + ' has joined the graveyard. 👻');
@@ -917,15 +978,18 @@
         if (p.alive && p.role === 'executioner' && p.exeTargetId === accused.id) self.neutralWin(p, 'got their target lynched! ⚖️');
       });
     } else {
-      text = fill(pick(STORY.spared, this.rng), { name: accused.name });
+      var si = pickIndex(STORY.spared, this.rng);
+      text = fill(STORY.spared[si], { name: accused.name });
+      clips.push('spared.' + (si + 1));
       this.timeline.push({ day: this.day, phase: 'verdict', text: accused.name + ' was spared (' + guilty.length + '–' + innocent.length + ').' });
     }
     this.verdict = {
       accusedId: accused.id, name: accused.name, avatar: accused.avatar, executed: executed, role: role,
-      guilty: guilty, innocent: innocent, text: text,
+      guilty: guilty, innocent: innocent, text: text, clips: clips,
       jester: executed && accused.role === 'jester'
     };
     this.announcement = text;
+    this.announcementClip = null; // the verdict overlay narrates it
     this.systemChat('day', (executed ? '⚰️ ' : '🕊️ ') + text, 'story');
     this.pendingWinner = executed ? this.checkWinner() : null;
     this.setPhase('verdict', executed ? 12 : 8);
@@ -948,21 +1012,15 @@
     var mafia = alive.filter(function (p) { return self.isMafia(p); }).length;
     var sk = alive.filter(function (p) { return p.role === 'serial_killer'; }).length;
     var town = alive.filter(function (p) { return self.teamOf(p) === 'town'; }).length;
-    if (!alive.length) return this.drawResult('Not a soul is left standing. The town is a graveyard.');
-    if (!mafia && !sk) {
-      if (!town) return this.drawResult('The killers are gone, but so is the town. Nobody wins.');
-      return { team: 'town', title: 'The Town Wins', text: 'Every threat has been rooted out. The streets are safe again — for now.' };
-    }
-    if (sk && !mafia && alive.length - sk <= 1) {
-      return { team: 'serial_killer', title: 'The Serial Killer Wins', text: 'In the end, only the killer remained. The town never stood a chance.' };
-    }
-    if (!sk && mafia >= alive.length - mafia) {
-      return { team: 'mafia', title: 'The Mafia Wins', text: 'The family now runs this town. Nobody is left to stop them.' };
-    }
+    if (!alive.length) return this.drawResult('graveyard');
+    if (!mafia && !sk) return town ? ending('town', 'town') : this.drawResult('empty');
+    if (sk && !mafia && alive.length - sk <= 1) return ending('serial_killer', 'serial_killer');
+    if (!sk && mafia >= alive.length - mafia) return ending('mafia', 'mafia');
     return null;
   };
 
-  G.drawResult = function (text) { return { team: 'none', title: 'Nobody Wins', text: text }; };
+  function ending(team, key) { return { team: team, title: ENDINGS[key].title, text: ENDINGS[key].text, clip: 'end.' + key }; }
+  G.drawResult = function (key) { return ending('none', key); };
 
   G.endGame = function (result) {
     var self = this;
@@ -980,10 +1038,11 @@
       p.stats.score += p.stats.goodVotes;
     });
     this.winner = {
-      team: result.team, title: result.title, text: result.text, winners: winners,
+      team: result.team, title: result.title, text: result.text, clip: result.clip, winners: winners,
       neutralWins: this.neutralWins.slice(), awards: this.awards()
     };
     this.announcement = result.title;
+    this.announcementClip = null; // the results screen narrates the ending
     this.timeline.push({ day: this.day, phase: 'gameover', text: result.title + '.' });
     this.systemChat('day', '🏁 ' + result.title + '. ' + result.text, 'story');
     this.systemChat('lobby', '🏁 ' + result.title + '.');
@@ -1253,6 +1312,7 @@
       limits: { min: MIN_PLAYERS, max: MAX_PLAYERS, timers: TIMER_LIMITS },
       players: players,
       announcement: this.announcement,
+      announcementClip: this.announcementClip,
       reactions: REACTIONS,
       me: null
     };
@@ -1340,7 +1400,7 @@
     TEAMS: TEAMS, ROLES: ROLES, ROLE_GROUPS: ROLE_GROUPS, DEFAULT_SETTINGS: DEFAULT_SETTINGS,
     TIMER_LIMITS: TIMER_LIMITS, MIN_PLAYERS: MIN_PLAYERS, MAX_PLAYERS: MAX_PLAYERS, REACTIONS: REACTIONS, AVATARS: AVATARS,
     PHASES: PHASES, describeRole: describeRole, buildRoleList: buildRoleList, sanitizeSettings: sanitizeSettings,
-    speechText: speechText, narrationLines: narrationLines, NARRATOR_PREVIEW: 'Night falls over the town... Lock your doors.',
+    speechText: speechText, SCRIPT: SCRIPT, SCRIPT_GROUPS: SCRIPT_GROUPS,
     MafiaGame: MafiaGame
   };
 });

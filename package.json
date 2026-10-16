@@ -16,8 +16,5 @@
   },
   "engines": {
     "node": ">=18"
-  },
-  "optionalDependencies": {
-    "kokoro-js": "^1.2.1"
   }
 }

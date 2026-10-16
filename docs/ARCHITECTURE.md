@@ -106,7 +106,8 @@ can ship an authoritative server inside its folder and name it in `game.json`:
 are never served over HTTP, so the game's server code stays private.
 
 Mafia uses this: `games/mafia/server/index.mjs` runs Socket.io at `/games/mafia/socket.io` and sends each player only
-their own view of the game. The rules live in `games/mafia/engine/mafia-engine.js`, which the browser also loads
+their own view of the game. It also accepts narrator recordings from `record.html` on `/games/mafia/voice-pack/*`,
+but only from localhost. The rules live in `games/mafia/engine/mafia-engine.js`, which the browser also loads
 for offline games against bots. Static hosts without Node still serve the game; only its online mode needs the server.
 
 ## Path to a hosted platform

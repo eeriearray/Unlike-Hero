@@ -1,21 +1,34 @@
 /* Mafia — the narrator's voice.
-   Two sources, best first:
-     studio — a neural voice rendered by the hub server (games/mafia/server/narrator.mjs), when it is running
-     device — the browser's own speech synthesis, ranked so neural "Natural/Enhanced" deep voices win
-   Any line the studio voice cannot deliver in time is read by the device voice instead.
-   window.MafiaVoice: available, enabled, setEnabled(bool), voices() -> [{id,label}], voiceId, setVoice(id),
-                      onVoices(fn), say(text), sequence(lines, onLine, onDone), cancel(). */
+   1. Recorded clips (games/mafia/voice/, made in record.html) — a real human voice, played through a
+      narrator effects chain in js/audio.js.
+   2. The browser's speech synthesis, only while no clips have been recorded yet (so a half-finished pack
+      never switches voices mid-story). Deep "Natural/Enhanced" voices are preferred.
+   A line is { clip: 'weather.3', text: 'The town awakens…' } — the clip id from the engine's SCRIPT.
+   window.MafiaVoice: available, enabled, setEnabled(bool), pack {count, total}, onChange(fn),
+                      say(line), sequence(lines, onLine, onDone), cancel(), voices(), voiceId, setVoice(id). */
 (function (global) {
   'use strict';
+  var A = global.MafiaAudio, E = global.MafiaEngine;
   var synth = global.speechSynthesis;
   var deviceOk = !!(synth && global.SpeechSynthesisUtterance);
   var enabled = true, wanted = '';
   try { enabled = localStorage.getItem('hub.mafia.narrator') !== '0'; wanted = localStorage.getItem('hub.mafia.voice') || ''; } catch (e) { /* storage blocked */ }
-  var deviceVoice = null, token = 0, listeners = [], current = null;
-  var studio = { ready: false, voices: {}, def: '', allowedHere: true };
-  var base = location.protocol === 'file:' ? null : location.pathname.replace(/[^/]*$/, '') + 'tts';
+  var pack = { clips: {}, deepen: 1, count: 0, total: E ? Object.keys(E.SCRIPT).length : 0 };
+  var base = location.pathname.replace(/[^/]*$/, '') + 'voice/';
+  var token = 0, listeners = [], deviceVoice = null;
+  function changed() { listeners.forEach(function (fn) { try { fn(); } catch (e) { /* ignore */ } }); }
 
-  // ── device voices ──
+  function loadPack() {
+    if (!global.fetch || location.protocol === 'file:') return;
+    fetch(base + 'index.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      if (!j) return;
+      pack.clips = j.clips || {}; pack.deepen = Number(j.deepen) || 1; pack.count = Object.keys(pack.clips).length;
+      changed();
+    }).catch(function () { /* no pack: device voice */ });
+  }
+  loadPack();
+
+  // ── device voices (fallback) ──
   var DEEP = /\b(Guy|Andrew|Christopher|Brian|Eric|Roger|Steffan|Davis|Tony|Jason|Ryan|Thomas|George|Daniel|Arthur|Oliver|Evan|Nathan|Aaron|Tom|Alfie|Elliot|Ethan|Liam|Noah|William|Connor|Duncan|Mitchell|Lee|James|UK English Male)\b/i;
   var ROBOTIC = /espeak|zarvox|trinoids|bahh|bells|boing|bubbles|cellos|deranged|hysterical|organ|whisper|good news|bad news|jester|superstar|wobble|albert|junior|ralph|fred|grandpa|grandma|rocko|eddy|flo|reed|sandy|shelley|kathy|princess/i;
   var FEMALE = /\b(female|Aria|Jenny|Sonia|Libby|Natasha|Clara|Emma|Ava|Michelle|Samantha|Karen|Moira|Tessa|Victoria|Zira|Hazel|Susan|Serena|Kate|Fiona|Allison|Joanna|Salli|Kimberly|Ivy|Nicky|Martha|Stephanie|Catherine|Sara|Amy|Emily|Olivia|Isabella|Ana|Jane|Nancy)\b/i;
@@ -32,161 +45,75 @@
     if (/en[-_]GB/i.test(v.lang)) s += 12; else if (/en[-_]US/i.test(v.lang)) s += 8;
     return s;
   }
-  function rankedDevice() {
-    if (!deviceOk) return [];
-    return synth.getVoices().filter(function (v) { return score(v) > -1000; }).sort(function (a, b) { return score(b) - score(a); });
-  }
-  function changed() {
-    var list = rankedDevice();
-    deviceVoice = (wanted && list.filter(function (v) { return v.name === wanted; })[0]) || list[0] || null;
-    listeners.forEach(function (fn) { try { fn(); } catch (e) { /* ignore */ } });
-  }
-  if (deviceOk) {
-    changed();
-    if (synth.addEventListener) synth.addEventListener('voiceschanged', changed); else synth.onvoiceschanged = changed;
-  }
-  function naturalDevice() { return deviceVoice && /natural|neural|enhanced|premium|studio|wavenet|journey|online|^Google/i.test(deviceVoice.name); }
+  function ranked() { return deviceOk ? synth.getVoices().filter(function (v) { return score(v) > -1000; }).sort(function (a, b) { return score(b) - score(a); }) : []; }
+  function pickDevice() { var l = ranked(); deviceVoice = (wanted && l.filter(function (v) { return v.name === wanted; })[0]) || l[0] || null; changed(); }
+  if (deviceOk) { pickDevice(); if (synth.addEventListener) synth.addEventListener('voiceschanged', pickDevice); }
+  function natural() { return deviceVoice && /natural|neural|enhanced|premium|studio|wavenet|journey|online|^Google/i.test(deviceVoice.name); }
 
-  // ── studio voice (server) ──
-  function pollStudio(delay) {
-    if (!base || !global.fetch) return;
-    setTimeout(function () {
-      fetch(base + '/status', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (s) {
-        if (!s) return; // no game server here (static hosting or offline)
-        studio.voices = s.voices || {}; studio.def = s.defaultVoice || '';
-        var was = studio.ready;
-        studio.ready = s.state === 'ready';
-        if (studio.ready !== was) changed();
-        if (s.state === 'loading' || s.state === 'off') pollStudio(8000); // the model is still downloading
-        else if (s.state === 'unavailable' && !/not installed/.test(s.error || '')) pollStudio(60000);
-      }).catch(function () { /* offline: device voice only */ });
-    }, delay || 0);
-  }
-  pollStudio(0);
-  function studioVoice() {
-    if (!studio.ready || !studio.allowedHere) return null;
-    if (wanted.indexOf('studio:') === 0 && studio.voices[wanted.slice(7)]) return wanted.slice(7);
-    if (wanted && wanted.indexOf('studio:') !== 0) return null; // the player chose a device voice
-    return studio.def || Object.keys(studio.voices)[0] || null;
-  }
-
-  function clean(text) { return global.MafiaEngine ? global.MafiaEngine.speechText(text) : String(text || '').trim(); }
-  function duck(on) { if (global.MafiaAudio) global.MafiaAudio.duck(on); }
-
-  /** Fetch one rendered line; resolves to an object URL or rejects. */
-  function fetchStudio(text, voice) {
-    var ctrl = global.AbortController ? new AbortController() : null;
-    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 20000);
-    return fetch(base + '?v=' + encodeURIComponent(voice) + '&t=' + encodeURIComponent(text), ctrl ? { signal: ctrl.signal } : undefined)
-      .then(function (r) { clearTimeout(timer); if (!r.ok) throw new Error('tts ' + r.status); return r.blob(); })
-      .then(function (b) { return URL.createObjectURL(b); });
-  }
-  function playUrl(url, my) {
-    return new Promise(function (resolve, reject) {
-      if (my !== token) return resolve();
-      var a = new Audio(url);
-      current = a;
-      a.onended = function () { URL.revokeObjectURL(url); resolve(); };
-      a.onerror = function () { URL.revokeObjectURL(url); reject(new Error('playback')); };
-      var p = a.play();
-      if (p && p.catch) p.catch(reject);
-    });
-  }
-
-  // Device speech, sentence by sentence with storyteller pauses.
   function phrases(text) {
     var out = [], re = /[^.!?…]+(?:\.\.\.|…|[.!?]+)?/g, m;
-    while ((m = re.exec(text))) {
-      var p = m[0].trim();
-      if (p) out.push({ text: p, pause: /(\.\.\.|…)$/.test(p) ? 650 : /[!?]$/.test(p) ? 420 : 330 });
-    }
+    while ((m = re.exec(text))) { var p = m[0].trim(); if (p) out.push({ text: p, pause: /(\.\.\.|…)$/.test(p) ? 650 : /[!?]$/.test(p) ? 420 : 330 }); }
     return out;
-  }
-  function utter(text, onEnd) {
-    var u = new SpeechSynthesisUtterance(text);
-    if (deviceVoice) { u.voice = deviceVoice; u.lang = deviceVoice.lang; }
-    u.rate = naturalDevice() ? 0.9 : 0.88;
-    u.pitch = naturalDevice() ? 0.95 : 0.88; // pitch-shifting is what makes voices sound robotic
-    var done = false;
-    var finish = function () { if (done) return; done = true; onEnd(); };
-    u.onend = finish; u.onerror = finish;
-    setTimeout(finish, 2500 + text.split(' ').length * 650);
-    synth.speak(u);
   }
   function speakDevice(text, my) {
     return new Promise(function (resolve) {
-      if (!deviceOk) return resolve();
-      var parts = phrases(text), i = 0;
+      if (!deviceOk || !text) return resolve();
+      var parts = phrases(E ? E.speechText(text) : text), i = 0;
       (function next() {
         if (my !== token || i >= parts.length) return resolve();
-        var part = parts[i++];
-        utter(part.text, function () { setTimeout(next, part.pause); });
+        var part = parts[i++], done = false;
+        var u = new SpeechSynthesisUtterance(part.text);
+        if (deviceVoice) { u.voice = deviceVoice; u.lang = deviceVoice.lang; }
+        u.rate = natural() ? 0.9 : 0.88; u.pitch = natural() ? 0.95 : 0.88;
+        var finish = function () { if (done) return; done = true; setTimeout(next, part.pause); };
+        u.onend = finish; u.onerror = finish;
+        setTimeout(finish, 2500 + part.text.split(' ').length * 650);
+        synth.speak(u);
       })();
     });
   }
 
+  function clipUrl(id) { return id && pack.clips[id] ? base + pack.clips[id] : null; }
+  /** Speak one line: its recording if there is one; the device voice only while nothing is recorded. */
+  function speakLine(line, my) {
+    var url = clipUrl(line.clip);
+    if (url) return A.playVoice(url, pack.deepen).catch(function () { return pack.count ? null : speakDevice(line.text, my); });
+    if (pack.count) return wait(900 + (line.text || '').split(' ').length * 300, my); // a pack exists: stay silent rather than switch voices
+    return speakDevice(line.text || (E && E.SCRIPT[line.clip]) || '', my);
+  }
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function norm(l) { return typeof l === 'string' ? { text: l } : (l || {}); }
+
   var API = {
-    get available() { return deviceOk || studio.ready; },
+    get available() { return pack.count > 0 || deviceOk; },
     get enabled() { return API.available && enabled; },
-    get studioReady() { return studio.ready; },
-    get voiceId() { var sv = studioVoice(); return sv ? 'studio:' + sv : deviceVoice ? deviceVoice.name : ''; },
-    /** Voices for the picker, best first: studio voices, then the device's ranked voices. */
-    voices: function () {
-      var out = [];
-      if (studio.ready) Object.keys(studio.voices).forEach(function (k) { out.push({ id: 'studio:' + k, label: '★ ' + studio.voices[k] }); });
-      rankedDevice().slice(0, 12).forEach(function (v) { out.push({ id: v.name, label: v.name }); });
-      return out;
-    },
-    onVoices: function (fn) { listeners.push(fn); },
-    /** Offline games never reach the server, so the studio cannot read their story. */
-    useStudio: function (on) { studio.allowedHere = !!on; },
-    setVoice: function (id) {
-      wanted = id || '';
-      try { localStorage.setItem('hub.mafia.voice', wanted); } catch (e) { /* storage blocked */ }
-      changed();
-    },
+    pack: pack,
+    onChange: function (fn) { listeners.push(fn); },
+    reload: loadPack,
     setEnabled: function (on) {
       enabled = !!on;
       try { localStorage.setItem('hub.mafia.narrator', enabled ? '1' : '0'); } catch (e) { /* storage blocked */ }
       if (!enabled) API.cancel();
     },
-    cancel: function () {
-      token++;
-      if (deviceOk) synth.cancel();
-      if (current) { try { current.pause(); } catch (e) { /* gone */ } current = null; }
-      duck(false);
-    },
-    say: function (text) { API.sequence([text]); },
-    /** Speak lines in order. onLine(i) fires as line i starts. The next studio line is fetched while one plays. */
+    voices: function () { return ranked().slice(0, 12).map(function (v) { return { id: v.name, label: v.name }; }); },
+    get voiceId() { return deviceVoice ? deviceVoice.name : ''; },
+    setVoice: function (id) { wanted = id || ''; try { localStorage.setItem('hub.mafia.voice', wanted); } catch (e) { /* storage blocked */ } pickDevice(); },
+    cancel: function () { token++; if (deviceOk) synth.cancel(); if (A.stopVoice) A.stopVoice(); A.duck(false); },
+    say: function (line) { return API.sequence([line]); },
+    /** Speak lines in order; onLine(i) fires as line i starts. Returns false if nothing will be spoken. */
     sequence: function (lines, onLine, onDone) {
       API.cancel();
-      var my = token;
-      var texts = lines.map(clean);
-      if (!API.enabled || !texts.length) { if (onDone) onDone(false); return false; }
-      duck(true);
-      var voice = studioVoice();
-      var pending = {};
-      function get(i) {
-        if (!voice || i >= texts.length || !texts[i]) return null;
-        if (!pending[i]) { pending[i] = fetchStudio(texts[i], voice); pending[i].catch(function () {}); }
-        return pending[i];
-      }
-      get(0);
+      var my = token, items = lines.map(norm);
+      if (!API.enabled || !items.length) { if (onDone) onDone(false); return false; }
+      items.forEach(function (l) { var u = clipUrl(l.clip); if (u) A.preloadVoice(u); });
+      A.duck(true);
       var i = 0;
       (function next() {
         if (my !== token) return;
-        if (i >= texts.length) { duck(false); if (onDone) onDone(true); return; }
+        if (i >= items.length) { A.duck(false); if (onDone) onDone(true); return; }
         var idx = i++;
         if (onLine) onLine(idx);
-        var text = texts[idx];
-        var after = function () { if (my === token) setTimeout(next, 420); };
-        if (!text) return after();
-        var clip = get(idx);
-        get(idx + 1);
-        if (!clip) { speakDevice(text, my).then(after); return; }
-        clip.then(function (url) { return playUrl(url, my); })
-          .catch(function () { return speakDevice(text, my); })
-          .then(after);
+        speakLine(items[idx], my).then(function () { if (my === token) setTimeout(next, 450); });
       })();
       return true;
     }

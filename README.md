@@ -24,17 +24,21 @@ The server hosts the folder and relays game messages over WebSocket, so linked p
 | --- | --- | --- |
 | [Short Fuse](games/short-fuse/) | 2 (Defuser + Expert) | 3D bomb defusal. The Expert opens `games/short-fuse/index.html#manual` and can link to the Defuser's case ID to see the live timer and strikes. |
 | [Sea of Chaos: Arena](games/sea-of-chaos/) | 1–8 (shared crews) | First-person 3D pirate battle royale. One player hosts an arena and shares the 4-letter code; up to 4 players crew one ship (5–8 split into two), and AI pirate ships fill the arena to five. Solo play works offline. Keyboard and mouse. Ship, weapon and shark models are CC-BY-4.0 (KarmaDiya, nedds, KinanArts, Arnaud Bellour, Kieran3D on Sketchfab). |
-| [Mafia](games/mafia/) | 4–16 (bots fill seats) | Social deduction with no moderator: an automated storyteller deals secret roles, runs the nights, reads the morning paper aloud and runs the trials. Host a room and share the 6-digit code; online rooms run on the game's own server (loaded by `npm start`) so roles stay secret. Solo play against bots works offline. 12 optional roles. |
+| [Mafia](games/mafia/) | 4–16 (bots fill seats) | Social deduction with no moderator: an automated storyteller deals secret roles, runs the nights, reads the morning paper aloud (record the narrator in `record.html`) and runs the trials. Host a room and share the 6-digit code; online rooms run on the game's own server (loaded by `npm start`) so roles stay secret. Solo play against bots works offline. 12 optional roles. |
 | [Signal Pair](games/signal-pair/) | 2 (Caller + Operator) | Small example built from the starter template. Safe to delete. |
 
-## Mafia's studio narrator
+## Mafia's narrator
 
-Mafia can read its story aloud in a neural, human-sounding voice (Kokoro, deep "George" storyteller by default).
-`npm install` adds it automatically as an optional dependency (about 700 MB in `node_modules`), and the first
-`npm start` downloads the voice model once (about 90 MB, kept in `.cache/`). Until it is ready — or if you skip it with
-`npm install --omit=optional` — players hear their browser's best voice instead. Pick voices in the game's sound menu.
-The server only ever reads the game's own story lines. `npm audit` flags image-decoding issues in a library the
-AI runtime bundles; the narrator never decodes images.
+Mafia's storyteller plays pre-recorded lines from `games/mafia/voice/`. To record them:
+
+1. `npm start`, then open http://localhost:8080/games/mafia/record.html on the same computer.
+2. Press **Record** (or **R**) on each of the 76 short lines, read it, press again to stop. Takes save straight into
+   `games/mafia/voice/`; silence is trimmed and a narrator effect (warmth, compression, room echo, optional
+   "deepen") is applied when played. You can also **Upload** mp3/m4a/wav files made elsewhere (e.g. ElevenLabs).
+3. Commit `games/mafia/voice/` so every player hears the recordings.
+
+No line contains a player name, so one recording covers every game. Until the first line is recorded, the game
+falls back to the browser's speech voice. Saving only works from the computer running the hub (localhost).
 
 ## Add a game
 

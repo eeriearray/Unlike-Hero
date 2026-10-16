@@ -270,8 +270,60 @@
     sfx('sine', 58, { to: 36, dur: 0.2, gain: g * 0.75, delay: 0.2 });
   }
 
+  // ───────────── recorded narration ─────────────
+  // Each take is trimmed of silence and run through a narrator chain: rumble cut, warm low shelf,
+  // presence dip, gentle compression and a little room reverb. `deepen` (<1) lowers pitch and pace together.
+  var voiceChain = null, voiceSrc = null, voiceCache = {};
+  function ensureVoiceChain() {
+    if (voiceChain) return voiceChain;
+    var hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 75;
+    var warm = ctx.createBiquadFilter(); warm.type = 'lowshelf'; warm.frequency.value = 180; warm.gain.value = 4;
+    var mud = ctx.createBiquadFilter(); mud.type = 'peaking'; mud.frequency.value = 3200; mud.Q.value = 0.8; mud.gain.value = -1.5;
+    var comp = ctx.createDynamicsCompressor(); comp.threshold.value = -22; comp.ratio.value = 3.5; comp.attack.value = 0.005; comp.release.value = 0.2;
+    var out = ctx.createGain(); out.gain.value = 1.15;
+    var verb = ctx.createConvolver();
+    var len = ctx.sampleRate * 1.3, ir = ctx.createBuffer(2, len, ctx.sampleRate);
+    for (var c = 0; c < 2; c++) { var d = ir.getChannelData(c); for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 4); }
+    verb.buffer = ir;
+    var wet = ctx.createGain(); wet.gain.value = 0.16;
+    hp.connect(warm); warm.connect(mud); mud.connect(comp); comp.connect(out); out.connect(master);
+    comp.connect(verb); verb.connect(wet); wet.connect(master);
+    voiceChain = hp;
+    return hp;
+  }
+  function trimmed(buf) {
+    var data = buf.getChannelData(0), th = 0.02, start = 0, end = data.length - 1;
+    while (start < end && Math.abs(data[start]) < th) start++;
+    while (end > start && Math.abs(data[end]) < th) end--;
+    var pad = Math.floor(buf.sampleRate * 0.06);
+    return { offset: Math.max(0, start - pad) / buf.sampleRate, duration: Math.max(0.05, (Math.min(data.length, end + pad * 3) - Math.max(0, start - pad)) / buf.sampleRate) };
+  }
+
   var API = {
     settings: prefs,
+    /** Play a recorded narration clip. Resolves when it ends (or is stopped); rejects if it cannot load. */
+    playVoice: function (url, deepen) {
+      if (!ensure()) return Promise.reject(new Error('no audio'));
+      if (ctx.state === 'suspended') ctx.resume();
+      var load = voiceCache[url] || (voiceCache[url] = fetch(url).then(function (r) { if (!r.ok) throw new Error('missing'); return r.arrayBuffer(); })
+        .then(function (b) { return new Promise(function (ok, bad) { ctx.decodeAudioData(b, ok, bad); }); }));
+      load.catch(function () { delete voiceCache[url]; });
+      return load.then(function (buf) {
+        return new Promise(function (resolve) {
+          API.stopVoice();
+          var src = ctx.createBufferSource(); src.buffer = buf;
+          src.playbackRate.value = deepen || 1;
+          src.connect(ensureVoiceChain());
+          var cut = trimmed(buf);
+          src.onended = function () { if (voiceSrc === src) voiceSrc = null; resolve(); };
+          voiceSrc = src;
+          src.start(0, cut.offset, cut.duration);
+        });
+      });
+    },
+    stopVoice: function () { if (voiceSrc) { try { voiceSrc.onended && voiceSrc.onended(); voiceSrc.stop(); } catch (e) { /* already stopped */ } voiceSrc = null; } },
+    /** Warm the decode cache for clips that are about to be played. */
+    preloadVoice: function (url) { if (ensure() && !voiceCache[url]) { voiceCache[url] = fetch(url).then(function (r) { if (!r.ok) throw new Error('missing'); return r.arrayBuffer(); }).then(function (b) { return new Promise(function (ok, bad) { ctx.decodeAudioData(b, ok, bad); }); }); voiceCache[url].catch(function () { delete voiceCache[url]; }); } },
     unlock: function () {
       if (!ensure()) return;
       if (ctx.state === 'suspended') ctx.resume();
