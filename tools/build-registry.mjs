@@ -24,6 +24,7 @@ for (const dir of readdirSync(gamesDir).sort()) {
   if (missing.length) { problems.push(`${dir}: game.json is missing ${missing.join(', ')}`); continue; }
   if (m.id !== dir) problems.push(`${dir}: id "${m.id}" should match the folder name`);
   if (!existsSync(join(folder, m.entry.split('#')[0]))) problems.push(`${dir}: entry ${m.entry} not found`);
+  if (m.server && !existsSync(join(folder, m.server))) problems.push(`${dir}: server ${m.server} not found`);
   games.push({ ...m, path: `games/${dir}/` });
 }
 

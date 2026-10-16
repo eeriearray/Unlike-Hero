@@ -1,0 +1,4 @@
+{
+  "//": "Lets Node load mafia-engine.js as CommonJS. Browsers load the same file as a classic <script> (window.MafiaEngine).",
+  "type": "commonjs"
+}
