@@ -27,7 +27,8 @@ export default function attach({ httpServer, basePath, log = console.log, voiceD
   const previous = httpServer.listeners('request').slice();
   httpServer.removeAllListeners('request');
   httpServer.on('request', (req, res) => {
-    const url = new URL(req.url, 'http://x');
+    let url;
+    try { url = new URL(req.url, 'http://x'); } catch { res.writeHead(400).end('Bad request'); return; }   // e.g. "//": never crash the hub
     if (!url.pathname.startsWith(`${basePath}voice-pack/`)) { for (const l of previous) l.call(httpServer, req, res); return; }
     voicePack.handle(req, res, url, basePath).catch(() => { if (!res.headersSent) res.writeHead(500).end(); });
   });

@@ -62,7 +62,8 @@ async function loadGameServers() {
 const rooms = new Map();            // room name -> Set of sockets
 const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_MSG });
 server.on('upgrade', (req, socket, head) => {
-  const url = new URL(req.url, 'http://x');
+  let url;
+  try { url = new URL(req.url, 'http://x'); } catch { socket.destroy(); return; }   // malformed path: drop it, don't crash the hub
   if (claimedPaths.some(p => url.pathname.startsWith(p))) return; // handled by a game server
   const room = (url.searchParams.get('room') || '').slice(0, 120);
   if (url.pathname !== '/relay' || !room) { socket.destroy(); return; }
