@@ -9,6 +9,7 @@
 // Run:  npm install  &&  npm start        (PORT=8080 by default)
 // Rooms are in memory and disappear when everyone leaves. Nothing is stored.
 import { createServer } from 'node:http';
+import { networkInterfaces } from 'node:os';
 import { readFile, readdir, stat } from 'node:fs/promises';
 import { join, normalize, extname, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -86,5 +87,11 @@ server.on('error', e => {
 await loadGameServers();
 server.listen(PORT, () => {
   console.log(`Game hub on http://localhost:${PORT}  (relay at ws://localhost:${PORT}/relay)`);
-  console.log('Other devices on your network: use this computer\'s IP address instead of localhost.');
+  // Print the exact address friends on the same Wi-Fi or hotspot should open.
+  const lan = Object.values(networkInterfaces()).flat().filter(a => a && a.family === 'IPv4' && !a.internal).map(a => a.address);
+  if (lan.length) {
+    console.log('\nFriends on the same Wi-Fi or hotspot open:');
+    for (const ip of lan) console.log(`   http://${ip}:${PORT}`);
+    console.log('');
+  } else console.log('Other devices on your network: use this computer\'s IP address instead of localhost.');
 });
