@@ -53,6 +53,33 @@
   function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
   function hash(s) { var h = 7; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; }
 
+  var ICONS = {
+    back: 'M15 18l-6-6 6-6',
+    book: 'M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14zM20 17v4H6.5A2.5 2.5 0 0 1 4 19.5',
+    chat: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z',
+    x: 'M18 6 6 18M6 6l12 12',
+    check: 'M20 6 9 17l-5-5',
+    link: 'M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7',
+    plus: 'M12 5v14M5 12h14',
+    news: 'M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9h4M18 14h-8M15 18h-5M10 6h8v4h-8z',
+    gavel: 'M14 13l-7.5 7.5a2.1 2.1 0 0 1-3-3L11 10M16 16l6-6M8 8l6-6M9 7l8 8M21 11l-8-8'
+  };
+  function Icon(props) {
+    return html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d=${ICONS[props.name]} /></svg>`;
+  }
+  function lookOf(avatar) { return window.MafiaHall3D ? window.MafiaHall3D.lookOf(avatar) : { hat: 'none', css: { coat: '#4a3a30', skin: '#e0ac7e', hat: '#2a2420' } }; }
+  /** A player's initial on their character's coat colour. */
+  function Mono(props) {
+    var l = lookOf(props.avatar), n = String(props.name || '?').replace(/\s*\(bot\)/i, '').trim();
+    return html`<span className="mono" style=${{ background: l.css.coat }} aria-hidden="true">${(n.charAt(0) || '?').toUpperCase()}</span>`;
+  }
+  /** A tiny portrait of the 3D character (coat, face, hat). */
+  function LookInner(props) {
+    var l = lookOf(props.avatar);
+    return html`<span className="coat" style=${{ background: l.css.coat }}></span><span className="face" style=${{ background: l.css.skin }}></span><span className=${'hat ' + l.hat} style=${{ background: l.css.hat }}></span>`;
+  }
+  function LookFigure(props) { return html`<span className="look" aria-hidden="true"><${LookInner} avatar=${props.avatar} /></span>`; }
+
   // ───────────────────────── hooks & small pieces ─────────────────────────
   function useRemaining(view) {
     var offset = useRef(0);
@@ -114,7 +141,7 @@
     var view = props.view, me = view.me;
     var mates = view.players.filter(function (p) { return p.mafiaMate; });
     return html`<div className="extras">
-      ${mates.length ? html`<div>Your family: ${mates.map(function (m, i) { return html`<span key=${m.id}>${i ? ', ' : ' '}${m.avatar} <b>${m.name}</b>${m.role ? ' (' + m.role.name + ')' : ''}</span>`; })}</div>` : null}
+      ${mates.length ? html`<div>Your family: ${mates.map(function (m, i) { return html`<span key=${m.id}>${i ? ', ' : ' '}<b>${m.name}</b>${m.role ? ' (' + m.role.name + ')' : ''}</span>`; })}</div>` : null}
       ${me.target ? html`<div>Your target: <b>${me.target.name}</b></div>` : null}
     </div>`;
   }
@@ -203,10 +230,10 @@
               <input className="input" maxLength="18" value=${p.name} placeholder="Your alias"
                 onInput=${function (e) { setP({ name: e.target.value, avatar: p.avatar }); }} />
             </label>
-            <div className="field">Face<div className="avatars">
-              ${E.AVATARS.map(function (a) {
-                return html`<button key=${a} className=${cx('avatar-opt', p.avatar === a && 'on')} aria-label=${'Avatar ' + a}
-                  onClick=${function () { A.unlock(); A.play('click'); setP({ name: p.name, avatar: a }); }}>${a}</button>`;
+            <div className="field">Your character<div className="looks">
+              ${E.AVATARS.map(function (a, i) {
+                return html`<button key=${a} className=${cx('look', p.avatar === a && 'on')} aria-label=${'Character ' + (i + 1)} aria-pressed=${p.avatar === a}
+                  onClick=${function () { A.unlock(); A.play('click'); setP({ name: p.name, avatar: a }); }}><${LookInner} avatar=${a} /></button>`;
               })}
             </div></div>
           </div>
@@ -271,19 +298,19 @@
             : html`<div className="label">Room code</div>
               <div className="digits">${view.code}</div>
               <div className="row" style=${{ justifyContent: 'center', marginTop: '8px' }}>
-                <button className="btn small" onClick=${copy}>Copy invite link</button>
+                <button className="btn small" onClick=${copy}><${Icon} name="link" /> Copy invite link</button>
               </div>
               <p className="muted small" style=${{ margin: '8px 0 0' }}>Friends join from any phone or computer with this code.</p>`}
         </section>
         <section className="panel">
           <div className="panel-head"><h3>At the table · ${count} of ${view.limits.max}</h3>
-            ${isHost ? html`<button className="btn small" disabled=${count >= view.limits.max} onClick=${function () { A.play('click'); send({ type: 'addBot' }); }}>Add a bot</button>` : null}
+            ${isHost ? html`<button className="btn small" disabled=${count >= view.limits.max} onClick=${function () { A.play('click'); send({ type: 'addBot' }); }}><${Icon} name="plus" /> Add a bot</button>` : null}
           </div>
           <div className="panel-body">
             <div className="seat-list">
               ${view.players.map(function (p) {
                 return html`<div className="seat" key=${p.id} style=${p.id === view.me.id ? { borderColor: 'var(--line-strong)' } : null}>
-                  <span className="av">${p.avatar}</span>
+                  <${Mono} avatar=${p.avatar} name=${p.name} />
                   <div style=${{ minWidth: 0 }}><div className="nm">${p.name}</div>
                     <div className="tag">${p.isHost ? 'Host' : p.isBot ? 'Bot' : p.connected ? 'Seated' : 'Reconnecting…'}${p.id === view.me.id ? ' · you' : ''}</div></div>
                   ${isHost && p.id !== view.me.id ? html`<button className="kick" title="Remove" aria-label=${'Remove ' + p.name} onClick=${function () { send({ type: 'kick', playerId: p.id }); }}>✕</button>` : null}
@@ -453,13 +480,14 @@
       setText('');
     }
     var canWrite = active !== 'notes' && me.canWrite[active];
-    return html`<section className="panel side" style=${props.only ? { height: '420px', position: 'static' } : null}>
+    return html`<section className="panel side" style=${props.only ? { height: '420px' } : null}>
       <div className="tabs" role="tablist">
         ${channels.map(function (ch) {
           var u = ch !== active ? unread(ch) : 0;
           return html`<button key=${ch} role="tab" aria-selected=${ch === active} className=${cx('tab', ch, ch === active && 'on')} onClick=${function () { A.play('click'); setTab(ch); }}>
             ${CHANNELS[ch]}${u ? html`<span className="dot">${u > 9 ? '9+' : u}</span>` : null}</button>`;
         })}
+        ${props.onClose ? html`<button className="icon-btn close-chat" aria-label="Close chat" onClick=${props.onClose}><${Icon} name="x" /></button>` : null}
         ${props.only ? null : html`<button role="tab" aria-selected=${active === 'notes'} className=${cx('tab', active === 'notes' && 'on')} onClick=${function () { A.play('click'); setTab('notes'); }}>Notebook${me.log.length ? html`<span className="dot" style=${{ background: 'var(--brass)', color: '#2a1a0c' }}>${me.log.length}</span>` : null}</button>`}
       </div>
       ${active === 'notes' ? html`<${Notebook} view=${view} onRole=${props.onRole} />` : html`
@@ -467,7 +495,7 @@
           ${msgs.length ? null : html`<p className="muted small" style=${{ textAlign: 'center', fontFamily: 'var(--f-type)' }}>${active === 'mafia' ? 'Only the family can read this.' : active === 'dead' ? 'Only the dead (and the Medium) can read this.' : 'No messages yet.'}</p>`}
           ${msgs.map(function (m) {
             if (m.system) return html`<div key=${m.id} className=${cx('msg', m.kind === 'story' ? 'story' : 'system')}>${m.text}</div>`;
-            return html`<div key=${m.id} className=${cx('msg', m.from === me.id && 'mine')}><span className="av">${m.avatar}</span><div><div className="who">${m.name}</div><div className="txt">${m.text}</div></div></div>`;
+            return html`<div key=${m.id} className=${cx('msg', m.from === me.id && 'mine')}><${Mono} avatar=${m.avatar} name=${m.name} /><div><div className="who">${m.name}</div><div className="txt">${m.text}</div></div></div>`;
           })}
         </div>
         ${canWrite
@@ -476,7 +504,7 @@
                 onInput=${function (e) { setText(e.target.value); }} aria-label="Message" />
               <button className="btn small gold" type="submit">Send</button></form>`
           : html`<div className="chat-locked">${lockReason(view, active)}</div>`}
-        ${!props.only && props.reactions ? props.reactions : null}`}
+      `}
     </section>`;
   }
 
@@ -564,7 +592,7 @@
     return html`<div className="wheel" style=${{ '--accent': theme.accent }}>
       <div className="ring"></div>
       <div className=${cx('core', theme.fx)} style=${{ borderColor: theme.accent }}>
-        <span className="core-icon">${focus ? focus.avatar : props.icon}</span>
+        <span className="core-icon">${focus ? html`<${Mono} avatar=${focus.avatar} name=${focus.name} />` : props.icon}</span>
         <span className="core-label">${focus ? html`${theme.word}<b>${focus.name}</b>` : props.verb}</span>
       </div>
       ${targets.map(function (p, i) {
@@ -576,7 +604,7 @@
           onClick=${function () { A.play('select'); props.onPick(props.selected === p.id ? null : p.id); }}
           title=${mates.length ? 'Family votes: ' + mates.map(function (m) { return m.name; }).join(', ') : p.name}>
           ${mates.length ? html`<span className="mates">${mates.length}</span>` : null}
-          <span className="av">${p.avatar}</span><span className="nm">${p.name}</span>
+          <${Mono} avatar=${p.avatar} name=${p.name} /><span className="nm">${p.name}</span>
         </button>`;
       })}
     </div>`;
@@ -680,7 +708,7 @@
         <div className="subhead">${sub}</div>
         <div className=${cx('news', !revealed.length && 'nophoto')}>
           ${revealed.length ? html`<div className="photos">${revealed.map(function (d) {
-            return html`<figure className="photo" key=${d.id}><div className="pic">${d.avatar}</div>
+            return html`<figure className="photo" key=${d.id}><div className="pic"><${LookFigure} avatar=${d.avatar} /></div>
               <figcaption><b>${d.name}</b>${d.role ? ', ' + d.role.name : ''}</figcaption></figure>`;
           })}</div>` : null}
           <div className="story">${lines.slice(0, shown).map(function (l, i) { return html`<p key=${i}>${l}</p>`; })}</div>
@@ -710,7 +738,7 @@
     return html`<div className="overlay" onClick=${props.onClose}><div className="verdict">
       <div className="gavel">🔨</div>
       <div className="tally"><span style=${{ color: 'var(--mafia)' }}>Guilty ${v.guilty.length}</span><span style=${{ color: 'var(--ok)' }}>Innocent ${v.innocent.length}</span></div>
-      <div className=${v.executed ? 'hanged' : 'dove'}>${v.executed ? v.avatar : '🕊️'}</div>
+      <div className=${v.executed ? 'hanged' : 'dove'}>${v.executed ? html`<${LookFigure} avatar=${v.avatar} />` : '🕊️'}</div>
       <h2>${v.executed ? v.name + ' is hanged' : v.name + ' walks free'}</h2>
       ${v.executed ? (v.role
         ? html`<div className=${cx('pill', teamClass(v.role.team))} style=${{ fontSize: '15px', padding: '8px 16px', animation: 'pop .6s 2s both' }}>${v.role.icon} ${v.role.name}</div>`
@@ -745,7 +773,7 @@
         ${w.neutralWins.length ? html`<div className="notice">${w.neutralWins.map(function (nw) { var p = byId(view, nw.id); return html`<div key=${nw.id}>${p ? p.name : '?'} ${nw.reason}</div>`; })}</div>` : null}
         <div className="awards">${awards.map(function (x, i) {
           var p = byId(view, x[2].id);
-          return html`<div className="award" key=${x[1]} style=${{ animationDelay: (0.2 + i * 0.15) + 's' }}><div className="ic">${x[0]}</div><div className="t">${x[1]}</div><div className="n">${p ? p.avatar + ' ' + p.name : '?'}</div><div className="small">${x[2].value} ${x[3]}</div></div>`;
+          return html`<div className="award" key=${x[1]} style=${{ animationDelay: (0.2 + i * 0.15) + 's' }}><div className="ic">${x[0]}</div><div className="t">${x[1]}</div><div className="n">${p ? p.name : '?'}</div><div className="small">${x[2].value} ${x[3]}</div></div>`;
         })}</div>
         <div className="panel table-wrap">
           <table className="results">
@@ -754,7 +782,7 @@
               var st = stats[p.id] || {};
               var won = w.winners.indexOf(p.id) >= 0;
               return html`<tr key=${p.id} className=${won ? 'win' : ''}>
-                <td>${p.avatar} ${p.name}${won ? ' ★' : ''}</td>
+                <td><span className="row" style=${{ gap: '8px', flexWrap: 'nowrap' }}><${Mono} avatar=${p.avatar} name=${p.name} />${p.name}${won ? ' ★' : ''}</span></td>
                 <td className=${p.role && teamClass(p.role.team)}>${st.originalRole ? st.originalRole.name + ' → ' : ''}${p.role ? p.role.icon + ' ' + p.role.name : '?'}</td>
                 <td>${p.alive ? 'Survived' : (p.deathCause === 'lynch' ? 'Hanged' : 'Killed') + ', day ' + p.deathDay}</td>
                 <td>${st.kills || 0}</td><td>${st.votesReceived || 0}</td><td><b>${st.score || 0}</b></td></tr>`;
@@ -772,51 +800,52 @@
     </div>`;
   }
 
-  // ───────────────────────── Game screen ─────────────────────────
+  // ───────────────────────── Game screen (HUD over the 3D hall) ─────────────────────────
   function ActionStrip(props) {
     var view = props.view, me = view.me, send = props.send, ph = view.phase;
     var alive = view.players.filter(function (p) { return p.alive; });
+    var hint = function (t) { return html`<span className="hint">${t}</span>`; };
     switch (ph) {
       case 'roles':
         return html`<div className="actions"><button className="btn gold" onClick=${props.openRole}>Look at my card</button></div>`;
       case 'night':
-        if (!me.alive) return html`<div className="actions"><span className="muted">You are a ghost now. Whisper with the dead in the Graveyard.</span></div>`;
+        if (!me.alive) return html`<div className="actions">${hint('You are a ghost. Whisper with the dead in the Graveyard chat.')}</div>`;
         if (me.actions && me.actions.length) {
           return html`<div className="actions">
-            <button className=${cx('btn big', me.nightDone ? '' : 'gold')} onClick=${props.openNight}>${me.nightDone ? '✓ Locked in — change your choice' : me.role.icon + ' Choose your night action'}</button></div>`;
+            <button className=${cx('btn', me.nightDone ? '' : 'gold')} onClick=${props.openNight}>${me.nightDone ? html`<${Icon} name="check" /> Locked in · change` : html`${me.role.icon} Choose your night action`}</button></div>`;
         }
-        return html`<div className="actions"><span className="muted">You sleep through the night.</span><button className="btn small ghost" onClick=${props.openNight}>Dream…</button></div>`;
+        return html`<div className="actions">${hint('You sleep through the night.')}<button className="btn small ghost" onClick=${props.openNight}>Dream…</button></div>`;
       case 'dawn':
-        return html`<div className="actions"><button className="btn small ghost" onClick=${props.openDawn}>Read the morning paper again</button></div>`;
+        return html`<div className="actions"><button className="btn small ghost" onClick=${props.openDawn}><${Icon} name="news" /> Morning paper</button></div>`;
       case 'discussion': {
         var ready = alive.filter(function (p) { return p.ready; }).length;
         return html`<div className="actions">
           ${me.alive ? html`<button className=${cx('btn', me.ready ? '' : 'gold')} onClick=${function () { A.play('click'); send({ type: 'ready' }); }}>
-            ${me.ready ? '✓ Ready to vote (tap to undo)' : 'Ready to vote'}</button>` : null}
-          <span className="muted small">${ready} of ${alive.length} ready · tap someone at the table, then an emoji, to point at them</span></div>`;
+            ${me.ready ? html`<${Icon} name="check" /> Ready · undo` : 'Ready to vote'}</button>` : null}
+          ${hint(ready + ' of ' + alive.length + ' ready')}</div>`;
       }
       case 'voting': {
-        if (!me.alive) return html`<div className="actions"><span className="muted">The living are voting.</span></div>`;
+        if (!me.alive) return html`<div className="actions">${hint('The living are voting.')}</div>`;
         var mine = me.vote;
         return html`<div className="actions">
-          <span className="muted small">${mine && mine !== 'skip' ? 'You voted for ' + (byId(view, mine) || {}).name + '. Tap them again to take it back.' : 'Tap someone at the table to put them on trial.'}</span>
+          ${hint(mine && mine !== 'skip' ? 'You accuse ' + (byId(view, mine) || {}).name + '. Click them again to take it back.' : 'Click someone at the table to accuse them.')}
           <button className=${cx('btn small', mine === 'skip' ? 'gold' : 'ghost')} onClick=${function () { A.play('vote'); send({ type: 'vote', target: mine === 'skip' ? null : 'skip' }); }}>
-            ${mine === 'skip' ? '✓ Skipping' : 'Skip the vote'} (${view.vote ? view.vote.skip : 0})</button></div>`;
+            ${mine === 'skip' ? 'Skipping' : 'Skip'} · ${view.vote ? view.vote.skip : 0}</button></div>`;
       }
       case 'defense':
-        return html`<div className="actions"><span className="muted">${view.trial && view.trial.accusedId === me.id ? 'Plead your case in the Town chat — only you may speak.' : 'The accused has the floor. Listen carefully.'}</span></div>`;
+        return html`<div className="actions">${hint(view.trial && view.trial.accusedId === me.id ? 'Plead your case in the Town chat — only you may speak.' : 'The accused has the floor.')}</div>`;
       case 'judgment': {
-        if (view.trial.accusedId === me.id) return html`<div className="actions"><span className="muted">Your fate is in their hands… (${view.trial.judgedCount} of ${view.trial.voterCount} have decided)</span></div>`;
-        if (!me.alive) return html`<div className="actions"><span className="muted">The living decide.</span></div>`;
+        if (view.trial.accusedId === me.id) return html`<div className="actions">${hint('Your fate is in their hands · ' + view.trial.judgedCount + ' of ' + view.trial.voterCount + ' decided')}</div>`;
+        if (!me.alive) return html`<div className="actions">${hint('The living decide.')}</div>`;
         var j = me.judgment;
         var judge = function (v) { A.play(v === 'guilty' ? 'tock' : 'select'); send({ type: 'judge', verdict: j === v ? null : v }); };
         return html`<div className="actions"><div className="verdict-btns">
           <button className=${cx('btn blood', j === 'guilty' && 'on')} onClick=${function () { judge('guilty'); }}>Guilty</button>
           <button className=${cx('btn innocent', j === 'innocent' && 'on')} onClick=${function () { judge('innocent'); }}>Innocent</button>
-        </div><span className="muted small" style=${{ width: '100%', textAlign: 'center' }}>${view.trial.judgedCount} of ${view.trial.voterCount} have decided · votes stay secret until the verdict</span></div>`;
+        </div>${hint(view.trial.judgedCount + '/' + view.trial.voterCount)}</div>`;
       }
       case 'verdict':
-        return html`<div className="actions"><button className="btn small ghost" onClick=${props.openVerdict}>Show the verdict</button></div>`;
+        return html`<div className="actions"><button className="btn small ghost" onClick=${props.openVerdict}><${Icon} name="gavel" /> The verdict</button></div>`;
       case 'gameover':
         return html`<div className="actions">
           <button className="btn gold" onClick=${props.openEnd}>Results</button>
@@ -825,8 +854,22 @@
     }
   }
 
+  function PhaseCard(props) {
+    var view = props.view, ph = view.phase, left = props.left;
+    var meta = PHASE[ph] || PHASE.lobby;
+    var kicker = ph === 'roles' ? 'Before the first night' : ph === 'gameover' ? 'Curtain' : ph === 'night' ? 'Night ' + view.day : 'Day ' + view.day;
+    var timed = TICKING[ph] && left != null;
+    var urgent = timed && left <= 10 && left > 0;
+    return html`<div className="hud-phase" role="status">
+      <div className="kicker">${kicker}</div>
+      <div className="title" key=${ph + view.day}>${meta.title}</div>
+      ${timed ? html`<span className=${cx('secs', urgent && 'urgent')}>${Math.ceil(left)}s</span>
+        <div className=${cx('timebar', urgent && 'urgent')}><i style=${{ width: Math.max(0, Math.min(100, (left / (view.phaseDuration || 1)) * 100)) + '%' }}></i></div>` : null}
+    </div>`;
+  }
+
   function Game(props) {
-    var view = props.view, me = view.me, send = props.send, ph = view.phase;
+    var view = props.view, me = view.me, send = props.send, ph = view.phase, hall = props.hall;
     var s1 = useState(null), selected = s1[0], setSelected = s1[1];
     var s2 = useState({}), closed = s2[0], setClosed = s2[1]; // overlays the player dismissed this phase
     var s3 = useState(false), roleOpen = s3[0], setRoleOpen = s3[1];
@@ -842,24 +885,35 @@
     function onCard(p) {
       if (ph === 'voting') { A.play('vote'); send({ type: 'vote', target: me.vote === p.id ? null : p.id }); return; }
       A.play('click');
-      setSelected(selected === p.id ? null : p.id);
+      setSelected(function (cur) { return cur === p.id ? null : p.id; });
     }
-    var meta = PHASE[ph] || PHASE.lobby;
-    var kicker = ph === 'roles' ? 'Before the first night' : ph === 'gameover' ? 'Curtain' : ph === 'night' ? 'Night ' + view.day : 'Day ' + view.day;
+    // Keep the 3D table in step with the game, and centred in the space the HUD leaves free.
+    useEffect(function () { if (hall) hall.update(view, { selectedId: selected, canClick: canClick, onPick: onCard }); });
+    useEffect(function () {
+      if (!hall) return;
+      var fit = function () {
+        var narrow = innerWidth <= 700;
+        hall.setInsets({ top: narrow ? 140 : 150, bottom: narrow ? 190 : 130, right: props.chatOpen && innerWidth > 1100 ? 392 : 0, left: 0 });
+      };
+      fit(); addEventListener('resize', fit);
+      return function () { removeEventListener('resize', fit); };
+    }, [hall, props.chatOpen]);
+
     var hasActions = me.actions && me.actions.length;
-    return html`<div className="game">
-      <div className="stage">
-        <section className="panel announce">
-          <span className="phase-title" key=${phaseKey}><small>${kicker}</small>${meta.title}</span>
-          <${Typewriter} text=${view.announcement} />
-        </section>
-        <${TownHall} view=${view} floats=${props.floats} selectedId=${selected} canClick=${canClick} onCard=${onCard} />
-        <section className="panel"><${ActionStrip} view=${view} send=${send}
+    return html`<div className=${cx('hud', props.chatOpen && 'chat-open')}>
+      ${!hall ? html`<div className="stage-fallback"><${TownHall} view=${view} floats=${props.floats} selectedId=${selected} canClick=${canClick} onCard=${onCard} /></div>` : null}
+      <${PhaseCard} view=${view} left=${props.left} />
+      <div className="hud-caption" aria-live="polite"><span><${Typewriter} text=${view.announcement} /></span></div>
+      ${me.role ? html`<button className="hud-role" onClick=${function () { setRoleOpen(true); }} aria-label=${'Your role: ' + me.role.name}>
+        <span className="ic">${me.role.icon}</span><div><b className=${teamClass(me.role.team)}>${me.role.name}</b><span>${me.alive ? 'Your secret role' : 'You are dead'}</span></div></button>` : null}
+      <div className="hud-dock hud-ghostable">
+        <${ActionStrip} view=${view} send=${send}
           openNight=${function () { open('night'); }} openDawn=${function () { open('dawn'); }} openVerdict=${function () { open('verdict'); }}
-          openEnd=${function () { open('end'); }} openRole=${function () { open('roles'); }} /></section>
+          openEnd=${function () { open('end'); }} openRole=${function () { open('roles'); }} />
+        <div className="sep"></div>
+        <${Reactions} view=${view} send=${send} selectedId=${selected} />
       </div>
-      <${SidePanel} view=${view} chat=${props.chat} send=${send} onRole=${function () { setRoleOpen(true); }}
-        reactions=${html`<${Reactions} view=${view} send=${send} selectedId=${selected} />`} />
+      ${props.chatOpen ? html`<div className="hud-chat"><${SidePanel} view=${view} chat=${props.chat} send=${send} onRole=${function () { setRoleOpen(true); }} onClose=${props.toggleChat} /></div>` : null}
 
       ${ph === 'roles' && !closed.roles ? html`<${RoleReveal} view=${view} send=${send} />` : null}
       ${ph === 'night' && me.alive && !closed.night && hasActions ? html`<${NightModal} view=${view} send=${send} onClose=${function () { close('night'); }} />` : null}
@@ -917,18 +971,19 @@
       if (view && view.phase !== 'lobby' && view.phase !== 'gameover' && !confirm('Leave this game? Your seat will be left empty.')) return;
       props.onLeave(true);
     }
-    return html`<header className=${cx('topbar', view && view.phase !== 'lobby' && 'in-game')}>
-      <button className="icon-btn" onClick=${back} aria-label=${view ? 'Leave room' : 'All games'} title=${view ? 'Leave room' : 'All games'}>←</button>
-      <span className="brand">Mafia<small>Town hall</small></span>
-      ${view ? (props.kind === 'offline' ? html`<span className="pill offline">Solo</span>` : html`<span className="pill code" title="Room code">${view.code}</span>`) : null}
-      ${meta && view.phase !== 'lobby' ? html`<span className="pill">${meta.title}${view.day && view.phase !== 'gameover' ? ' · ' + view.day : ''}</span>` : null}
-      <span className="spacer"></span>
+    var inGame = view && view.phase !== 'lobby';
+    return html`<header className=${cx('topbar', inGame && 'in-game')}>
+      <button className="icon-btn" onClick=${back} aria-label=${view ? 'Leave room' : 'All games'} title=${view ? 'Leave room' : 'All games'}><${Icon} name="back" /></button>
+      <span className="brand">Mafia</span>
+      ${view ? (props.kind === 'offline' ? html`<span className="pill offline">Solo vs bots</span>` : html`<span className="pill code" title="Room code">${view.code}</span>`) : null}
       ${view && props.kind === 'online' ? html`<span className=${cx('conn-dot', !props.online && 'bad')} title=${props.online ? 'Connected' : 'Reconnecting…'}></span>` : null}
-      ${view && TICKING[view.phase] ? html`<${Timer} left=${props.left} total=${view.phaseDuration} />` : null}
-      <button className="icon-btn" aria-label="Roles guide" title="Roles guide" onClick=${function () { setGuide(true); }}>Roles</button>
+      <span className="spacer"></span>
+      <button className="icon-btn" aria-label="Roles guide" title="Roles guide" onClick=${function () { setGuide(true); }}><${Icon} name="book" /><span className="label">Roles</span></button>
+      ${inGame ? html`<button className="icon-btn" aria-label=${props.chatOpen ? 'Hide chat' : 'Show chat'} aria-pressed=${props.chatOpen} title="Chat" onClick=${props.toggleChat}>
+        <${Icon} name="chat" /><span className="label">Chat</span>${props.unread && !props.chatOpen ? html`<span className="count">${props.unread > 9 ? '9+' : props.unread}</span>` : null}</button>` : null}
       <${SoundMenu} />
       ${guide ? html`<div className="overlay" onClick=${function () { setGuide(false); }}>
-        <button className="icon-btn close" aria-label="Close" onClick=${function () { setGuide(false); }}>✕</button>
+        <button className="icon-btn close" aria-label="Close" onClick=${function () { setGuide(false); }}><${Icon} name="x" /></button>
         <div className="panel" style=${{ width: 'min(900px,100%)' }} onClick=${function (e) { e.stopPropagation(); }}>
           <div className="panel-head"><h3>The roles</h3></div><div className="panel-body"><${RolesGuide} /></div></div></div>` : null}
     </header>`;
@@ -948,8 +1003,20 @@
     var s7 = useState([]), floats = s7[0], setFloats = s7[1];
     var s8 = useState(false), busy = s8[0], setBusy = s8[1];
     var s9 = useState(''), error = s9[0], setError = s9[1];
-    var connRef = useRef(null), viewRef = useRef(null);
-    connRef.current = conn; viewRef.current = view;
+    var s10 = useState(null), hall = s10[0], setHall = s10[1];
+    var s11 = useState(function () { return innerWidth > 1100; }), chatOpen = s11[0], setChatOpen = s11[1];
+    var s12 = useState(0), seenCount = s12[0], setSeenCount = s12[1];
+    var connRef = useRef(null), viewRef = useRef(null), hallRef = useRef(null);
+    connRef.current = conn; viewRef.current = view; hallRef.current = hall;
+
+    // One 3D town hall for every screen: an orbiting empty room on the menu, players taking seats in the lobby.
+    useEffect(function () {
+      if (!window.MafiaHall3D || !window.MafiaHall3D.supported()) return;
+      var h;
+      try { h = window.MafiaHall3D.create(document.getElementById('hall3d')); } catch (e) { return; }
+      setHall(h);
+      return function () { h.destroy(); };
+    }, []);
 
     function setProfile(p) { setProfileRaw(p); store.set('name', p.name); store.set('avatar', p.avatar); }
     var setToast = useCallback(function (text) { setToastState(function (t) { return { text: text, k: t.k + 1 }; }); }, []);
@@ -961,11 +1028,13 @@
           setChat(function (c) { var nx = Object.assign({}, c); nx[m.channel] = (c[m.channel] || []).concat([m]).slice(-150); return nx; });
           var v = viewRef.current;
           if (!m.system && v && v.me && m.from !== v.me.id) A.play('chat');
+          if (!m.system && m.channel === 'day' && m.from && hallRef.current) hallRef.current.say(m.from, m.text);
         },
         onChatHistory: function (h) { setChat(h || {}); },
         onFx: function (d) {
           if (d.type !== 'reaction') return;
           var v = viewRef.current, from = v && byId(v, d.from);
+          if (hallRef.current) { hallRef.current.react(d.target || d.from, d.emoji, from ? from.name : ''); return; }
           var f = { key: Math.random().toString(36).slice(2), emoji: d.emoji, from: d.from, target: d.target, fromName: from ? from.name : '' };
           setFloats(function (fl) { return fl.concat([f]).slice(-30); });
           setTimeout(function () { setFloats(function (fl) { return fl.filter(function (x) { return x.key !== f.key; }); }); }, 1900);
@@ -1020,9 +1089,20 @@
     var scene = view ? PHASE[view.phase].scene : 'lobby';
     var ghost = !!(view && view.me && view.phase !== 'lobby' && view.phase !== 'gameover' && !view.me.alive);
     useEffect(function () {
-      document.body.className = 'phase-' + scene + (ghost ? ' ghost' : '');
-      FX.ambient(SCENE_FX[scene]);
-    }, [scene, ghost]);
+      var menu = !view || view.phase === 'lobby';
+      document.body.className = 'phase-' + scene + (ghost ? ' ghost' : '') + (hall ? ' has-3d' : '') + (menu ? ' screen-menu' : '');
+      FX.ambient(hall ? null : SCENE_FX[scene]);
+    }, [scene, ghost, hall, !view || view.phase === 'lobby']);
+    // Outside a game the table just shows who is seated; the Game screen drives it during play.
+    useEffect(function () {
+      if (!hall || (view && view.phase !== 'lobby')) return;
+      hall.setInsets({});
+      hall.update(view, {});
+    });
+    // Unread chat while the drawer is closed.
+    var chatTotal = Object.keys(chat).reduce(function (n, ch) { return n + (chat[ch] || []).filter(function (m) { return !m.system; }).length; }, 0);
+    useEffect(function () { if (chatOpen) setSeenCount(chatTotal); }, [chatOpen, chatTotal]);
+    var toggleChat = function () { A.play('click'); setChatOpen(!chatOpen); };
     // After a killing (or while you haunt the table, or during the vote) the day turns suspenseful.
     var nightDeaths = !!(view && view.players.some(function (p) { return !p.alive && p.deathCause === 'night' && p.deathDay === view.day; }));
     var mood = SCENE_MUSIC[scene];
@@ -1092,10 +1172,10 @@
     } else if (view.phase === 'lobby') {
       body = html`<${Lobby} view=${view} chat=${chat} send=${send} kind=${conn && conn.kind} toast=${setToast} />`;
     } else {
-      body = html`<${Game} view=${view} chat=${chat} send=${send} floats=${floats} onLeave=${function () { leave(false); }} />`;
+      body = html`<${Game} view=${view} chat=${chat} send=${send} floats=${floats} hall=${hall} left=${left} chatOpen=${chatOpen} toggleChat=${toggleChat} onLeave=${function () { leave(false); }} />`;
     }
     return html`<div className="app">
-      <${Topbar} view=${view} kind=${conn && conn.kind} online=${online} left=${left} onLeave=${leave} />
+      <${Topbar} view=${view} kind=${conn && conn.kind} online=${online} onLeave=${leave} chatOpen=${chatOpen} toggleChat=${toggleChat} unread=${Math.max(0, chatTotal - seenCount)} />
       ${view && conn && conn.kind === 'online' && !online ? html`<div className="notice error" style=${{ margin: '10px 16px 0', textAlign: 'center' }}>Connection lost — reconnecting to the room…</div>` : null}
       ${body}
       <${Toast} text=${toast.text} k=${toast.k} />
