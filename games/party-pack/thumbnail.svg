@@ -1,19 +1,43 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720">
   <defs>
-    <radialGradient id="bg" cx="25%" cy="0%" r="110%"><stop offset="0" stop-color="#4a2380"/><stop offset=".6" stop-color="#160f26"/><stop offset="1" stop-color="#3a1030"/></radialGradient>
-    <linearGradient id="t" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3a6"/><stop offset=".5" stop-color="#ffcf3a"/><stop offset="1" stop-color="#ff7a3a"/></linearGradient>
+    <linearGradient id="curtain" x2="0" y2="1"><stop stop-color="#29183c"/><stop offset="1" stop-color="#100e1a"/></linearGradient>
+    <linearGradient id="stage" x2="0" y2="1"><stop stop-color="#45305a"/><stop offset="1" stop-color="#211a2b"/></linearGradient>
+    <pattern id="specks" width="36" height="36" patternUnits="userSpaceOnUse"><circle cx="4" cy="7" r="1.5" fill="#fff" opacity=".25"/><circle cx="25" cy="23" r="1" fill="#ffcb56" opacity=".28"/></pattern>
   </defs>
-  <rect width="320" height="200" fill="url(#bg)"/>
-  <rect x="96" y="26" width="128" height="80" rx="10" fill="#0d0a18" stroke="#ffcf3a" stroke-width="4"/>
-  <text x="160" y="62" text-anchor="middle" font-family="Arial Black,Impact,sans-serif" font-size="26" fill="url(#t)">PARTY</text>
-  <text x="160" y="90" text-anchor="middle" font-family="Arial Black,Impact,sans-serif" font-size="26" fill="url(#t)">PACK</text>
-  <rect x="150" y="106" width="20" height="10" fill="#0d0a18"/>
-  <g font-size="22" text-anchor="middle">
-    <g transform="translate(30 128) rotate(-12)"><rect width="38" height="64" rx="8" fill="#ff4f6d"/><text x="19" y="40">🎤</text></g>
-    <g transform="translate(82 138) rotate(-5)"><rect width="38" height="64" rx="8" fill="#3fa7ff"/><text x="19" y="40">🃏</text></g>
-    <g transform="translate(134 142)"><rect width="38" height="64" rx="8" fill="#ffc531"/><text x="19" y="40">🎨</text></g>
-    <g transform="translate(188 138) rotate(5)"><rect width="38" height="64" rx="8" fill="#b26bff"/><text x="19" y="40">🔪</text></g>
-    <g transform="translate(240 128) rotate(12)"><rect width="38" height="64" rx="8" fill="#3ee08f"/><text x="19" y="40">👕</text></g>
+  <rect width="1200" height="720" fill="url(#curtain)"/>
+  <path d="M0 0h1200v390q-65-42-120 0t-120 0t-120 0t-120 0t-120 0t-120 0t-120 0t-120 0T0 390Z" fill="#311d45" opacity=".7"/>
+  <path d="M138 0 390 462H206Zm924 0L812 462h184Z" fill="#ffcf58" opacity=".1"/>
+  <path d="M0 540q300-48 600 0t600 0v180H0Z" fill="url(#stage)"/>
+  <path d="M0 592q300-42 600 0t600 0" fill="none" stroke="#c65d91" stroke-opacity=".35" stroke-width="3"/>
+  <path d="M0 662q300-42 600 0t600 0" fill="none" stroke="#f1c258" stroke-opacity=".22" stroke-width="2"/>
+  <g transform="translate(237 202) rotate(-10)">
+    <rect x="12" y="20" width="160" height="296" rx="8" fill="#070911" opacity=".5"/>
+    <rect width="160" height="296" rx="8" fill="#f34d73"/>
+    <path d="M78 76v85m-20-24 20-18 20 18m-20 24v32" fill="none" stroke="#fff4e8" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="80" cy="222" r="6" fill="#fff4e8"/>
   </g>
-  <text x="288" y="34" font-size="26" text-anchor="middle">💼</text>
+  <g transform="translate(438 240) rotate(-4)">
+    <rect x="10" y="16" width="160" height="276" rx="8" fill="#080b14" opacity=".5"/>
+    <rect width="160" height="276" rx="8" fill="#42a8eb"/>
+    <rect x="30" y="52" width="93" height="70" rx="12" fill="#f7f1dc"/>
+    <path d="M48 84h56m-56 18h38" stroke="#29374e" stroke-width="8" stroke-linecap="round"/>
+    <path d="M102 120 120 142l-38-12" fill="#f7f1dc"/>
+    <rect x="50" y="176" width="72" height="42" rx="4" fill="#17324d"/>
+    <path d="M60 186h52m-52 12h34" stroke="#f3c755" stroke-width="5" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(642 226)">
+    <rect x="10" y="18" width="168" height="292" rx="8" fill="#080b14" opacity=".5"/>
+    <rect width="168" height="292" rx="8" fill="#f6bd42"/>
+    <path d="M82 78c-28 0-48 20-48 46 0 18 10 31 25 37l-11 33 31-23c28 2 51-18 51-46 0-27-21-47-48-47Z" fill="#f6ead1" stroke="#673c53" stroke-width="6"/>
+    <circle cx="61" cy="121" r="8" fill="#f34d73"/><circle cx="92" cy="108" r="8" fill="#43a8e8"/><circle cx="113" cy="134" r="8" fill="#4cae78"/>
+    <path d="m116 194 36 48" stroke="#603b4c" stroke-width="10" stroke-linecap="round"/><path d="m108 188 14-8 12 18-14 9Z" fill="#f7f1dc"/>
+  </g>
+  <g transform="translate(848 244) rotate(7)">
+    <rect x="10" y="16" width="160" height="272" rx="8" fill="#080b14" opacity=".5"/>
+    <rect width="160" height="272" rx="8" fill="#8a69d7"/>
+    <path d="M48 72h66l-7 30 31 41-29 18-22-34-22 34-30-18 30-41Z" fill="#f5e6cb" stroke="#352650" stroke-width="5" stroke-linejoin="round"/>
+    <circle cx="82" cy="213" r="18" fill="#372654"/><path d="M74 213h16m-8-8v16" stroke="#f6bd42" stroke-width="5" stroke-linecap="round"/>
+  </g>
+  <g fill="#f4cb60"><circle cx="118" cy="112" r="7"/><path d="m1082 112 8 19 19 8-19 8-8 19-8-19-19-8 19-8z"/><circle cx="1050" cy="477" r="5"/></g>
+  <rect width="1200" height="720" fill="url(#specks)" opacity=".22"/>
 </svg>

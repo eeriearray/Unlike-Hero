@@ -1,43 +1,51 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720">
   <defs>
-    <radialGradient id="sky" cx="72%" cy="22%" r="85%">
-      <stop offset="0" stop-color="#28324f"/>
-      <stop offset=".45" stop-color="#0d1020"/>
-      <stop offset="1" stop-color="#050508"/>
-    </radialGradient>
-    <radialGradient id="moon" cx="40%" cy="40%" r="60%">
-      <stop offset="0" stop-color="#fbf7e9"/>
-      <stop offset="1" stop-color="#b9b39d"/>
-    </radialGradient>
-    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
-      <stop offset="0" stop-color="#c9d4ff" stop-opacity=".35"/>
-      <stop offset="1" stop-color="#c9d4ff" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="fog" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#8f9ab8" stop-opacity="0"/>
-      <stop offset="1" stop-color="#8f9ab8" stop-opacity=".22"/>
-    </linearGradient>
-  </defs>
-  <rect width="800" height="500" fill="url(#sky)"/>
-  <circle cx="590" cy="120" r="150" fill="url(#glow)"/>
-  <circle cx="590" cy="120" r="62" fill="url(#moon)"/>
-  <!-- skyline -->
-  <path d="M0 360 L0 300 L40 300 L40 260 L70 260 L70 230 L95 230 L95 290 L130 290 L130 210 L150 190 L170 210 L170 300 L210 300 L210 250 L250 250 L250 320 L290 320 L290 180 L300 160 L310 180 L310 330 L360 330 L360 270 L400 270 L400 240 L430 240 L430 300 L470 300 L470 220 L500 220 L500 310 L540 310 L540 260 L580 260 L580 330 L620 330 L620 200 L640 170 L660 200 L660 300 L700 300 L700 250 L740 250 L740 310 L800 310 L800 500 L0 500 Z" fill="#050407"/>
-  <g fill="#d4af37" opacity=".75">
-    <rect x="140" y="230" width="6" height="9"/><rect x="155" y="250" width="6" height="9"/><rect x="297" y="200" width="5" height="8"/>
-    <rect x="480" y="240" width="6" height="9"/><rect x="630" y="220" width="6" height="9"/><rect x="645" y="250" width="6" height="9"/>
-  </g>
-  <rect y="330" width="800" height="170" fill="url(#fog)"/>
-  <!-- fedora + rose -->
-  <g transform="translate(400 372)">
-    <ellipse cx="0" cy="32" rx="150" ry="26" fill="#0b0a0e" stroke="#d4af37" stroke-opacity=".35" stroke-width="2"/>
-    <path d="M-92 30 C-96 -40 -60 -78 0 -80 C60 -78 96 -40 92 30 Z" fill="#141117" stroke="#d4af37" stroke-opacity=".35" stroke-width="2"/>
-    <path d="M-30 -78 C-12 -60 12 -60 30 -78" fill="none" stroke="#000" stroke-width="10" stroke-linecap="round" opacity=".6"/>
-    <rect x="-92" y="0" width="184" height="22" fill="#d01a33"/>
-    <g transform="translate(70 4) rotate(-20)">
-      <path d="M0 0 L36 -8" stroke="#2f6b3a" stroke-width="4"/>
-      <circle cx="0" cy="0" r="14" fill="#a3071e"/><circle cx="-3" cy="-3" r="8" fill="#d01a33"/><circle cx="-4" cy="-4" r="3" fill="#ff5468"/>
+    <g id="player">
+      <circle cx="50" cy="28" r="19" fill="#e7bc8c" stroke="#24212a" stroke-width="5"/>
+      <path d="M17 91q2-39 33-42 31 3 33 42Z" fill="currentColor" stroke="#24212a" stroke-width="5"/>
+      <path d="M37 51 50 77 63 51" fill="#f1e3c7"/>
+      <path d="M46 61h8l5 23-9 10-9-10z" fill="#c13a4a"/>
+      <path d="M31 25q4-24 23-24 18 2 23 24-13-9-24-9-10 0-22 9" fill="#33252b"/>
     </g>
+  </defs>
+  <rect width="1200" height="720" fill="#213142"/>
+  <path d="M0 0h1200v720H0Z" fill="#182530"/>
+  <path d="M0 108 1200 0v18L0 126M0 630l1200-108v16L0 646" fill="#344852" opacity=".45"/>
+  <ellipse cx="600" cy="395" rx="635" ry="338" fill="#352a30" stroke="#d29a55" stroke-width="26"/>
+  <ellipse cx="600" cy="395" rx="598" ry="301" fill="#87504a" stroke="#241a22" stroke-width="10"/>
+  <ellipse cx="600" cy="395" rx="558" ry="263" fill="#6e3e42" stroke="#bd8252" stroke-width="5"/>
+  <path d="M95 366q225-189 505-128 290 64 503 235" fill="none" stroke="#a8615a" stroke-width="3" opacity=".5"/>
+  <path d="M94 450q235 130 512 53 260-73 498 61" fill="none" stroke="#b87958" stroke-width="3" opacity=".38"/>
+  <g fill="#3b2b34" stroke="#241a22" stroke-width="8">
+    <rect x="74" y="147" width="147" height="91" rx="22"/><rect x="384" y="75" width="144" height="86" rx="22"/><rect x="673" y="75" width="144" height="86" rx="22"/><rect x="980" y="147" width="147" height="91" rx="22"/>
+    <rect x="74" y="480" width="147" height="91" rx="22"/><rect x="384" y="560" width="144" height="86" rx="22"/><rect x="673" y="560" width="144" height="86" rx="22"/><rect x="980" y="480" width="147" height="91" rx="22"/>
   </g>
-  <text x="400" y="470" text-anchor="middle" font-family="Georgia, serif" font-size="56" font-weight="700" letter-spacing="22" fill="#f3ead2">MAFIA</text>
+  <g stroke="#241a22" stroke-width="4">
+    <use href="#player" transform="translate(98 139) scale(.92)" color="#398097"/>
+    <use href="#player" transform="translate(406 70) scale(.86)" color="#497c68"/>
+    <use href="#player" transform="translate(695 70) scale(.86)" color="#65527f"/>
+    <use href="#player" transform="translate(1005 139) scale(.92)" color="#a23f4a"/>
+    <use href="#player" transform="translate(98 476) scale(.92)" color="#47776b"/>
+    <use href="#player" transform="translate(406 557) scale(.86)" color="#5d5678"/>
+    <use href="#player" transform="translate(695 557) scale(.86)" color="#9a6b3f"/>
+    <use href="#player" transform="translate(1005 476) scale(.92)" color="#3b647e"/>
+  </g>
+  <g transform="translate(438 245) rotate(-9)">
+    <rect x="8" y="10" width="152" height="220" rx="8" fill="#241a22" opacity=".6"/>
+    <rect width="152" height="220" rx="8" fill="#f0d9b0" stroke="#30222a" stroke-width="8"/>
+    <path d="M23 34h106M23 53h74M23 181h56" stroke="#9a7963" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="113" cy="142" r="20" fill="#bd3948" stroke="#f5e5c7" stroke-width="4"/>
+    <path d="M103 142h20m-10-10v20" stroke="#f5e5c7" stroke-width="4"/>
+  </g>
+  <g transform="translate(620 260) rotate(10)">
+    <rect x="8" y="10" width="152" height="220" rx="8" fill="#241a22" opacity=".6"/>
+    <rect width="152" height="220" rx="8" fill="#30252d" stroke="#f1c36d" stroke-width="8"/>
+    <circle cx="76" cy="101" r="45" fill="#e5c596" stroke="#241a22" stroke-width="6"/>
+    <circle cx="61" cy="96" r="4" fill="#241a22"/><circle cx="91" cy="96" r="4" fill="#241a22"/>
+    <path d="M62 117q14 12 28 0" fill="none" stroke="#9c3747" stroke-width="5" stroke-linecap="round"/>
+    <path d="M24 177h104" stroke="#b79b78" stroke-width="5" stroke-linecap="round"/>
+  </g>
+  <path d="M64 423C220 352 282 451 415 385s210-62 316 4 227 48 405-39" fill="none" stroke="#ed4d5b" stroke-width="7"/>
+  <g fill="#ffd17a" stroke="#3c242c" stroke-width="5"><circle cx="64" cy="423" r="15"/><circle cx="415" cy="385" r="15"/><circle cx="731" cy="389" r="15"/><circle cx="1136" cy="350" r="15"/></g>
+  <circle cx="600" cy="395" r="7" fill="#f4d489"/>
 </svg>

@@ -24,11 +24,11 @@
     DT: 1 / 120,           // base fixed step
     STEP: 0.16,            // floorAt: floors up to this far above the query height count as "under" it
     MAX_SPEED: 30,         // hard velocity clamp (prevents explosions)
-    MAX_SHOT: 19,          // full-power shot speed at strength 1.0
+    MAX_SHOT: 15,          // full-power shot speed at strength 1.0
     MIN_SHOT: 0.6,
-    ROLL_DECEL: 3.4,       // rolling resistance at speed
-    ROLL_SOFT: 0.5,        // below about this speed rolling resistance fades, so a ball glides to rest instead of braking
-    DRAG: 0.2,             // speed-proportional drag
+    ROLL_DECEL: 1.35,      // light rolling resistance; Rapier already models ball/surface friction
+    ROLL_SOFT: 0.35,       // below about this speed rolling resistance fades into a smooth stop
+    DRAG: 0.06,            // small speed-proportional drag
     STOP_SPEED: 0.2,
     STATIC_GRADE: 0.04,    // slopes gentler than this hold a slow ball still
     CAPTURE_SPEED: 8.0,    // slower than this over the cup drops in
@@ -718,13 +718,13 @@
     b.grounded = !!f && b.y - f.h < 0.06 && Math.abs(v.y) < 1.5;
     var ix = 0, iz = 0;
     if (b.grounded) {
-      // Rolling resistance, scaled by the surface (sand grabs, metal and glass run). It eases off at low
-      // speed, so the last stretch of a roll slows smoothly instead of stopping dead.
+      // A small, smooth rolling resistance supplements Rapier's contact friction. Keep it independent
+      // of the local grade: gravity supplies the uphill/downhill acceleration, and a grade-based brake
+      // here made balls lose speed abruptly where ramps meet flat floor pieces.
       var rvx = v.x - f.pvx, rvz = v.z - f.pvz, sp = Math.sqrt(rvx * rvx + rvz * rvz);
       if (sp > 1e-4) {
-        // On a slope it still holds at least as hard as gravity pulls, so a slow ball settles where it did.
         var full = C.ROLL_DECEL * (FLOOR_FRICTION[f.mat] || 1) * b.fric;
-        var roll = Math.max(full * sp / (sp + C.ROLL_SOFT), Math.min(full, C.G * Math.sqrt(f.gx * f.gx + f.gz * f.gz)));
+        var roll = full * sp / (sp + C.ROLL_SOFT);
         var dec = Math.min(sp, (roll + C.DRAG * sp) * h);
         ix -= rvx / sp * dec; iz -= rvz / sp * dec;
       }

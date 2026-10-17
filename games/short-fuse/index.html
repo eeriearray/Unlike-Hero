@@ -6,7 +6,7 @@
 <title>Short Fuse</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&family=Chakra+Petch:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Share+Tech+Mono&family=Saira+Stencil+One&family=Chakra+Petch:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@400;600&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
 <!-- optional game-hub SDK: the game runs the same without it -->
 <script src="../../shared/sdk/hub-config.js"></script>
@@ -52,8 +52,9 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible,su
 #menu{display:flex;align-items:center;background:linear-gradient(90deg,rgba(4,5,6,.94) 0%,rgba(4,5,6,.82) 34%,rgba(4,5,6,.2) 58%,rgba(4,5,6,0) 70%)}
 .menu-left{width:100%;max-width:560px;display:grid;gap:24px;margin-left:clamp(0px,5vw,80px)}
 .logo{display:grid;gap:8px;justify-items:start}
-.logo h1{margin:0;font:400 clamp(52px,8vw,100px)/.85 var(--f-display);letter-spacing:.01em}
-.logo h1 span{color:var(--danger);text-shadow:0 0 24px rgba(255,77,58,.45)}
+.logo h1{margin:0;display:flex;align-items:baseline;gap:clamp(10px,2vw,20px);line-height:.85;letter-spacing:0}
+.logo h1 .fuse-short{font-family:'Black Ops One','Saira Stencil One',var(--f-display);font-size:clamp(50px,7.5vw,94px);color:#ff3326;letter-spacing:.04em;text-shadow:0 0 28px rgba(255,51,38,.55),3px 3px 0 #280805}
+.logo h1 .fuse-fuse{font-family:'Share Tech Mono',var(--f-mono);font-size:clamp(44px,6.8vw,86px);font-weight:700;color:#ffffff;letter-spacing:.14em;text-shadow:0 0 16px rgba(255,255,255,.6),0 0 32px rgba(255,60,45,.3),3px 3px 0 #0d1215}
 .logo p{margin:0;color:var(--muted);max-width:50ch}
 .fuse{height:6px;border-radius:3px;width:min(520px,100%);background:repeating-linear-gradient(-45deg,var(--hazard) 0 12px,#141414 12px 24px)}
 .roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:14px}
@@ -277,14 +278,14 @@ table.mt th{background:var(--paper-ink);color:var(--paper);font-weight:600;lette
 </head>
 <body>
 <canvas id="gl" aria-label="3D view of the bomb case on a workbench"></canvas>
-<div class="loading" id="loading"><div><b>SHORT/FUSE</b>LOADING THE WORKSHOP…</div></div>
+<div class="loading" id="loading"><div><b><span style="color:#ff3326;font-family:'Black Ops One',sans-serif">SHORT</span> <span style="color:#ffffff;font-family:'Share Tech Mono',monospace">FUSE</span></b>LOADING THE WORKSHOP…</div></div>
 
 <!-- MENU -->
 <section id="menu" class="screen" hidden>
   <div class="menu-left">
     <div class="logo">
       <span class="eyebrow">Asymmetric co-op · 2 players · 1 case</span>
-      <h1>SHORT<span>/</span>FUSE</h1>
+      <h1 aria-label="Short Fuse"><span class="fuse-short">SHORT</span><span class="fuse-fuse">FUSE</span></h1>
       <div class="fuse" aria-hidden="true"></div>
       <p>A hard-shell case is ticking on the bench. One of you turns it over in your hands. The other holds the only manual that explains how to disarm it. Neither of you can see what the other sees.</p>
     </div>

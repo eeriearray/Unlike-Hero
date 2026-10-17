@@ -25,6 +25,7 @@ for (const dir of readdirSync(gamesDir).sort()) {
   if (m.id !== dir) problems.push(`${dir}: id "${m.id}" should match the folder name`);
   if (!existsSync(join(folder, m.entry.split('#')[0]))) problems.push(`${dir}: entry ${m.entry} not found`);
   if (m.server && !existsSync(join(folder, m.server))) problems.push(`${dir}: server ${m.server} not found`);
+  if (m.status === 'prototype') continue;
   games.push({ ...m, path: `games/${dir}/` });
 }
 

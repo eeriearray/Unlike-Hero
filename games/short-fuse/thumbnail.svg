@@ -25,5 +25,4 @@
   <g transform="rotate(45 324 246)"><rect x="304" y="226" width="18" height="18" rx="3" fill="#ff4a3d"/><rect x="326" y="226" width="18" height="18" rx="3" fill="#4a8dff"/><rect x="326" y="248" width="18" height="18" rx="3" fill="#3df07a"/><rect x="304" y="248" width="18" height="18" rx="3" fill="#ffd84a"/></g>
   <rect x="380" y="208" width="88" height="76" rx="8" fill="#1a1f22"/>
   <circle cx="424" cy="246" r="26" fill="#0b0d0e" stroke="#c8ced2" stroke-width="3"/><circle cx="424" cy="246" r="9" fill="#4b545b"/>
-  <text x="320" y="374" text-anchor="middle" font-family="Impact, sans-serif" font-size="40" letter-spacing="2" fill="#eef1ee">SHORT<tspan fill="#ff4d3a">/</tspan>FUSE</text>
 </svg>

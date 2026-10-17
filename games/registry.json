@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-17T13:00:28.914Z",
+  "generated": "2026-10-17T21:12:43.767Z",
   "games": [
     {
       "id": "mafia",
@@ -9,7 +9,7 @@
       "sdk": "1.x",
       "entry": "index.html",
       "server": "server/index.mjs",
-      "thumbnail": "thumbnail.svg",
+      "thumbnail": "banner.svg",
       "accent": "#d01a33",
       "players": {
         "min": 4,
@@ -72,22 +72,10 @@
           "description": "Join from a phone with the 4-character room code. The first player in is the VIP and picks the game."
         },
         {
-          "id": "audience",
-          "name": "Audience",
-          "entry": "index.html#audience",
-          "description": "Watch, vote and fill the Hype Meter. A unanimous audience vote doubles the points."
-        },
-        {
           "id": "studio",
           "name": "Prompt Studio",
           "entry": "index.html#studio",
           "description": "Write custom prompt packs and get a 7-digit share code."
-        },
-        {
-          "id": "booth",
-          "name": "Voice Booth",
-          "entry": "index.html#booth",
-          "description": "Upload or record the six hosts' lines. The full script with filenames is in voice/SCRIPT.md."
         }
       ],
       "multiplayer": {
@@ -206,9 +194,9 @@
     },
     {
       "id": "sea-of-chaos",
-      "title": "Sea of Chaos: Arena",
-      "tagline": "A first-person pirate battle royale. Crew one ship together, sink rivals, grab treasure, outrun the storm, dodge the Megalodon.",
-      "version": "1.0.0",
+      "title": "Sea of Chaos: Flag Raiders",
+      "tagline": "A free-for-all pirate arcade game. Steal the Skull Flag, race it to your personal buoy, and stash three flags before rival captains do.",
+      "version": "2.0.0",
       "sdk": "1.x",
       "entry": "index.html",
       "thumbnail": "thumbnail.svg",
@@ -219,33 +207,31 @@
       },
       "roles": [
         {
-          "id": "pirate",
-          "name": "Pirate",
+          "id": "captain",
+          "name": "Captain",
           "entry": "index.html",
-          "description": "Host an arena or join with its 4-letter code. Everyone crews the same ship (up to four); AI deckhands fill empty posts."
+          "description": "Sail solo against rival captains or host/join a free-for-all with a 4-letter room code."
         }
       ],
       "multiplayer": {
-        "style": "PvPvE battle royale, shared crews of up to 4, host-authoritative",
+        "style": "free-for-all flag raiding, host-authoritative",
         "sameDevice": false,
         "transports": [
           "local",
           "relay"
         ],
-        "notes": "Up to 4 players share one ship; 5 to 8 split into two rival ships. AI pirate ships fill the arena to five vessels. Solo play works offline. 3D models: CC-BY-4.0, credited in How to play and models.js."
+        "notes": "Every captain is a rival. The host simulates at 30 Hz and broadcasts state at 10 Hz; clients send controls at 20 Hz. Up to 8 humans may join; AI fills the roster to 6 captains when space allows. Two Sea Raiders hunt the flag carrier. Solo play uses the same rules against AI."
       },
       "tags": [
         "pvp",
-        "co-op",
         "pirates",
-        "battle royale",
+        "arcade",
         "3D",
-        "voice"
+        "mobile"
       ],
       "requires": [
-        "webgl",
-        "keyboard and mouse",
-        "internet (three.js and fonts load from CDNs)"
+        "WebGL",
+        "keyboard and mouse or touch controls"
       ],
       "status": "playable",
       "path": "games/sea-of-chaos/"
@@ -299,49 +285,6 @@
       ],
       "status": "playable",
       "path": "games/short-fuse/"
-    },
-    {
-      "id": "signal-pair",
-      "title": "Signal Pair",
-      "tagline": "A two-player co-op starter: one player calls a colour code, the other enters it.",
-      "version": "0.1.0",
-      "sdk": "1.x",
-      "entry": "index.html",
-      "thumbnail": "thumbnail.svg",
-      "accent": "#38c6f2",
-      "players": {
-        "min": 2,
-        "max": 2
-      },
-      "roles": [
-        {
-          "id": "caller",
-          "name": "Caller",
-          "entry": "index.html",
-          "description": "Sees the code and reads it out."
-        },
-        {
-          "id": "operator",
-          "name": "Operator",
-          "entry": "index.html",
-          "description": "Has the pads and enters the code."
-        }
-      ],
-      "multiplayer": {
-        "style": "co-op, room code",
-        "sameDevice": false,
-        "transports": [
-          "local",
-          "relay"
-        ]
-      },
-      "tags": [
-        "co-op",
-        "starter"
-      ],
-      "requires": [],
-      "status": "prototype",
-      "path": "games/signal-pair/"
     }
   ]
 }

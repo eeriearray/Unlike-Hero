@@ -55,6 +55,9 @@
    * focus: { pos: Vector3, moving, aiming, aimDir: [dx, dz] } for your ball (or the ball you watch).
    */
   CameraRig.prototype.update = function (dt, focus, t) {
+    // Keep the rendered camera pose fixed during a shot drag. AimInput projects the pointer through
+    // this camera to get a world direction, so easing the camera while aiming makes the target drift.
+    if (this.holdForAim) return;
     var aspect = this.camera.aspect;
     var portrait = aspect < 1 ? 1 + (1 - aspect) * 1.1 : 1;
     if (this.mode === 'menu') {
