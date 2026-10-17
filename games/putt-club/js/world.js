@@ -125,7 +125,26 @@
     }
 
     // ---- floors
-    var floorBatches = {}, sideBatch = new Batch(), thinBatch = new Batch(), glowEdges = [];
+    var floorBatches = {}, sideBatch = new Batch(), thinBatch = new Batch(), glowEdges = [], pilingMats = [];
+    var seabedY = th.water ? th.water.level - 1.25 : -2;
+    /** Square timber pilings along a deck's outline, from under the deck down to the seabed. */
+    function pilingsFor(f, unused, size, depth) {
+      size = size || 0.34;
+      var n = f.poly.length, cx2 = (f.bb[0] + f.bb[2]) / 2, cz2 = (f.bb[1] + f.bb[3]) / 2;
+      for (var i = 0; i < n; i++) {
+        var a = f.poly[i], b = f.poly[(i + 1) % n], L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+        if (L < 0.5) continue;
+        var cnt = Math.max(1, Math.round(L / 2.8));
+        for (var k = 0; k < cnt; k++) {
+          var u = (k + 0.5) / cnt, x = a[0] + (b[0] - a[0]) * u, z = a[1] + (b[1] - a[1]) * u;
+          var dx = cx2 - x, dz = cz2 - z, dl = Math.hypot(dx, dz) || 1;
+          x += dx / dl * size; z += dz / dl * size; // tucked just inside the deck edge
+          var top = Phys.heightOn(f, x, z) - depth + 0.02;
+          if (top <= seabedY) continue;
+          pilingMats.push(new THREE.Matrix4().compose(new THREE.Vector3(x, (top + seabedY) / 2, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), (PC.hash(x.toFixed(1) + ',' + z.toFixed(1)) % 7) * 0.05), new THREE.Vector3(size, top - seabedY, size)));
+        }
+      }
+    }
     var baseY = th.base === 'water' ? th.water.level - 1.0 : th.base === 'lawn' ? -0.86 : null;
     w.floors.forEach(function (f) {
       var key = f.mat;
@@ -137,18 +156,15 @@
       var thin = f.mat === 'bridge' || f.mat === 'glass';
       sideFaces(thin ? thinBatch : sideBatch, f, function (h) {
         if (thin) return h - (f.mat === 'glass' ? 0.08 : 0.16);
+        if (th.pilings) return h - th.sideDepth;
         return baseY != null ? Math.min(baseY, h - 0.4) : h - th.sideDepth;
       });
+      if (th.pilings && !thin) pilingsFor(f, null, null, th.sideDepth);
       if (f.mat === 'glass' || (themeId === 'neon' && f.rails === false)) glowEdges.push(f);
-      // Bridges stand on posts.
-      if (f.mat === 'bridge' && th.base === 'water') {
-        var bb = f.bb;
-        for (var px = bb[0] + 0.3; px <= bb[2] - 0.2; px += 1.6) for (var pz = bb[1] + 0.3; pz <= bb[3] - 0.2; pz += 1.6) {
-          if (!Phys.inPoly(f.poly, px, pz)) continue;
-          var pm = new THREE.Mesh(unitPost, kit.post); pm.scale.set(0.16, 1.4, 0.16); pm.position.set(px, Phys.heightOn(f, px, pz) - 0.8, pz); pm.castShadow = false; group.add(pm);
-        }
-      }
+      // Bridges stand on posts too.
+      if (f.mat === 'bridge' && th.base === 'water') pilingsFor(f, null, 0.18, 0.16);
     });
+    instanced(group, unitBox, kit.piling || kit.post, pilingMats, true);
     Object.keys(floorBatches).forEach(function (k) { var m = addMesh(group, floorBatches[k].geometry(), kit.floor[k], false, true); if (m) disposables.push(m.geometry); });
     var sm = addMesh(group, sideBatch.geometry(), kit.side, true, true); if (sm) disposables.push(sm.geometry);
     var tm = addMesh(group, thinBatch.geometry(), themeId === 'neon' ? kit.metal : kit.post, true, true); if (tm) disposables.push(tm.geometry);
@@ -180,7 +196,8 @@
         railBody.push(segMatrix(wl.ax, h0 - 0.18, wl.az, wl.bx, h1 - 0.18, wl.bz, hh + 0.18 - 0.05, wl.thick * 2, 0));
         if (themeId === 'neon') railCap.push(segMatrix(wl.ax, h0 + hh - 0.05, wl.az, wl.bx, h1 + hh - 0.05, wl.bz, 0.03, 0.05, 0.02));
         else railCap.push(segMatrix(wl.ax, h0 + hh - 0.05, wl.az, wl.bx, h1 + hh - 0.05, wl.bz, 0.05, wl.thick * 2 + 0.05, 0));
-        addPost(wl.ax, wl.az, h0, hh + 0.06, wl.thick * 2 + 0.1, 'rail'); addPost(wl.bx, wl.bz, h1, hh + 0.06, wl.thick * 2 + 0.1, 'rail');
+        var segLen = Math.hypot(wl.bx - wl.ax, wl.bz - wl.az);
+        addPost(wl.ax, wl.az, h0, hh + 0.06, wl.thick * 2 + 0.1, 'rail', segLen); addPost(wl.bx, wl.bz, h1, hh + 0.06, wl.thick * 2 + 0.1, 'rail', segLen);
         // Occlusion strip on the floor side of the rail.
         var ex = wl.bx - wl.ax, ez = wl.bz - wl.az, L = Math.hypot(ex, ez), nx = -ez / L, nz = ex / L;
         [1, -1].forEach(function (sgn) {
@@ -199,10 +216,11 @@
         addPost(wl.bx, wl.bz, base, wl.top - base, wl.thick * 2, 'interior-' + wl.mat);
       }
     });
-    function addPost(x, z, h, height, size, kind) {
-      var key = Math.round(x * 20) + ',' + Math.round(z * 20);
-      if (posts[key] && posts[key].h >= h) return;
-      posts[key] = { x: x, z: z, h: h, height: height, size: size, kind: kind };
+    function addPost(x, z, h, height, size, kind, segLen) {
+      var key = Math.round(x * 20) + ',' + Math.round(z * 20), old = posts[key];
+      var long = segLen == null || segLen >= 0.7 || (old && old.long);
+      if (old && old.h >= h) { old.long = long; return; }
+      posts[key] = { x: x, z: z, h: h, height: height, size: size, kind: kind, long: long };
     }
     function near(a, b) { return Math.abs(a[0] - b[0]) < 1e-3 && Math.abs(a[1] - b[1]) < 1e-3; }
     function onSeg(a, b, p) {
@@ -219,9 +237,16 @@
     var aoMesh = instanced(group, aoGeo, kit.ao, ao.map(function (m) { var c = m.clone(); var s = new THREE.Vector3(); var q = new THREE.Quaternion(); var p = new THREE.Vector3(); c.decompose(p, q, s); return new THREE.Matrix4().compose(p, q, new THREE.Vector3(s.x, 1, s.z)); }), false);
     if (aoMesh) { aoMesh.receiveShadow = false; aoMesh.renderOrder = 1; }
     Object.keys(interior).forEach(function (mat) { instanced(group, unitBox, mat === 'hedge' ? kit.hedge : mat === 'brass' ? kit.brass : kit.stone, interior[mat], true); });
-    var postMats = [], postCaps = [];
+    var postMats = [], postCaps = [], joints = [], jointCaps = [];
     Object.keys(posts).forEach(function (k) {
       var p = posts[k];
+      if (p.kind === 'rail' && (!p.long || th.railPosts === false)) {
+        // Joints along a curved rail: a smooth round fill instead of a post.
+        var js = p.size - 0.1, jh = p.height - 0.06;
+        joints.push(new THREE.Matrix4().compose(new THREE.Vector3(p.x, p.h + jh / 2 - 0.1, p.z), new THREE.Quaternion(), new THREE.Vector3(js, jh + 0.15, js)));
+        jointCaps.push(new THREE.Matrix4().compose(new THREE.Vector3(p.x, p.h + jh - 0.025, p.z), new THREE.Quaternion(), new THREE.Vector3(js + 0.05, 0.05, js + 0.05)));
+        return;
+      }
       if (p.kind.indexOf('interior') === 0) {
         if (p.kind === 'interior-hedge') return;
         postMats.push(new THREE.Matrix4().compose(new THREE.Vector3(p.x, p.h + p.height / 2, p.z), new THREE.Quaternion(), new THREE.Vector3(p.size, p.height, p.size)));
@@ -230,6 +255,8 @@
       postMats.push(new THREE.Matrix4().compose(new THREE.Vector3(p.x, p.h + p.height / 2 - 0.1, p.z), new THREE.Quaternion(), new THREE.Vector3(p.size, p.height + 0.2, p.size)));
       postCaps.push(new THREE.Matrix4().compose(new THREE.Vector3(p.x, p.h + p.height + 0.035, p.z), new THREE.Quaternion(), new THREE.Vector3(p.size * 0.86, 0.07, p.size * 0.86)));
     });
+    instanced(group, unitCyl, kit.rail, joints, true);
+    instanced(group, unitCyl, themeId === 'neon' ? kit.metal : kit.railCap, jointCaps, false);
     instanced(group, unitPost, themeId === 'garden' ? kit.stone : themeId === 'neon' ? kit.metal : kit.post, postMats, true);
     instanced(group, unitCyl, themeId === 'garden' ? kit.brass : themeId === 'neon' ? kit.neonCyan : kit.cream, postCaps, false);
 
@@ -379,12 +406,12 @@
       water.rotation.x = -Math.PI / 2; water.position.y = th.water.level; water.renderOrder = 0;
       group.add(water);
       // Sea floor so the shallows have something under them.
-      var bed = new THREE.Mesh(new THREE.PlaneGeometry(260, 260), new THREE.MeshLambertMaterial({ color: '#c9b48a' }));
-      bed.rotation.x = -Math.PI / 2; bed.position.y = th.water.level - 1.3; group.add(bed);
+      var bed = new THREE.Mesh(new THREE.PlaneGeometry(260, 260), kit.seabed || new THREE.MeshLambertMaterial({ color: '#c9b48a' }));
+      bed.rotation.x = -Math.PI / 2; bed.position.y = seabedY; bed.receiveShadow = true; group.add(bed);
       // Foam where the course meets the water.
       var foamMats = [];
       w.floors.forEach(function (f) {
-        if (f.overlay || f.mat === 'bridge') return;
+        if (f.overlay || f.mat === 'bridge' || th.pilings) return;
         for (var i = 0; i < f.poly.length; i++) {
           var a = f.poly[i], b = f.poly[(i + 1) % f.poly.length], ex = b[0] - a[0], ez = b[1] - a[1], L = Math.hypot(ex, ez);
           if (L < 0.2) continue;
@@ -434,13 +461,14 @@
       if (!o) return null;
       var fh = floorH(x, z);
       var y = h != null ? h : fh != null ? fh : (th.base === 'water' ? th.water.level : th.base === 'lawn' ? -0.86 : -0.3);
-      if (h == null && fh == null && th.base === 'water' && ['palm', 'hut', 'umbrella', 'rock', 'lighthouse'].indexOf(kind) >= 0) {
+      if (h == null && fh == null && th.base === 'water' && ['palm', 'hut', 'umbrella', 'rock', 'lighthouse', 'lantern', 'net', 'tuft'].indexOf(kind) >= 0) {
         // A little sand islet under anything standing in the sea.
         var isle = new THREE.Mesh(isleGeo(rng), kit.floor.sand);
         var is = kind === 'umbrella' ? 1.25 : kind === 'hut' ? 1.6 : kind === 'lighthouse' ? 2.2 : 1;
         isle.scale.set(is * (s || 1), 1, is * (s || 1));
         isle.position.set(x, th.water.level - 0.05, z); isle.receiveShadow = true; group.add(isle);
         y = th.water.level + 0.16;
+        foamRing(x, z, 1.45 * is * (s || 1));
       }
       o.position.set(x, y, z); o.userData.baseY = y;
       if (rot != null) o.rotation.y = rot;
@@ -449,7 +477,17 @@
       return o;
     }
     (hole.decor || []).forEach(function (d) { place(d.kind, d.at[0] * mirror, d.at[1], d.s, d.rot != null ? d.rot * mirror : rng() * 6, d.h); });
-    scatter(hole, w, themeId, rng, place, onFloor, cx, cz, span, hi);
+    function foamRing(x, z, r) {
+      var m = new THREE.Mesh(new THREE.RingGeometry(r * 0.92, r * 1.25, 28), kit.foam);
+      m.rotation.x = -Math.PI / 2; m.position.set(x, th.water.level + 0.015, z); m.renderOrder = 1; group.add(m);
+    }
+    scatter(hole, w, themeId, rng, place, onFloor, cx, cz, span, hi, foamRing);
+    if (th.clouds) {
+      for (var ci = 0; ci < (hi ? 7 : 4); ci++) {
+        var ca = rng() * Math.PI * 2, cr = span * 0.8 + 18 + rng() * 25;
+        place('cloud', cx + Math.cos(ca) * cr, cz + Math.sin(ca) * cr, 1.4 + rng() * 1.4, rng() * 6, 14 + rng() * 12);
+      }
+    }
 
     // Neon: a couple of coloured lights for mood.
     if (themeId === 'neon') {
@@ -525,7 +563,7 @@
   }
 
   /** Theme dressing around the course, deterministic per hole and kept off the playing surface. */
-  function scatter(hole, w, themeId, rng, place, onFloor, cx, cz, span, hi) {
+  function scatter(hole, w, themeId, rng, place, onFloor, cx, cz, span, hi, foamRing) {
     var b = w.bounds, n = hi ? 1 : 0.5;
     function ring(count, minR, maxR, fn) {
       var placed = 0, tries = 0;
@@ -538,16 +576,30 @@
     }
     var half = span / 2;
     if (themeId === 'cove') {
-      ring(5, half + 3, half + 11, function (x, z) { place('palm', x, z, 0.9 + rng() * 0.5); if (rng() < 0.6) place('rock', x + 1.2, z + 0.4, 0.6 + rng() * 0.6); });
-      ring(7, half + 1.5, half + 14, function (x, z) { place('rock', x, z, 0.5 + rng() * 1.1, null, -0.4); });
-      ring(1, half + 8, half + 14, function (x, z) { place('boat', x, z, 1, rng() * 6, -0.42); });
+      var lvl = -0.42;
+      // Beaches: sand banks with palms, grass and rocks, ringed by surf.
+      ring(4, half + 4, half + 12, function (x, z) {
+        var sc = 1.1 + rng() * 0.8;
+        place('sandBank', x, z, sc, rng() * 6, lvl); foamRing(x, z, 3.1 * sc);
+        for (var i = 0; i < 2 + Math.floor(rng() * 2); i++) place('palm', x + (rng() - 0.5) * 3 * sc, z + (rng() - 0.5) * 2 * sc, 0.9 + rng() * 0.5, null, lvl + 0.25);
+        if (rng() < 0.7) place('rock', x + (rng() - 0.5) * 3, z + (rng() - 0.5) * 2, 0.7 + rng() * 0.7, null, lvl + 0.1);
+        if (rng() < 0.4) place('lantern', x + (rng() - 0.5) * 2, z + (rng() - 0.5) * 1.5, 1, rng() * 6, lvl + 0.3);
+        if (rng() < 0.3) place('net', x + (rng() - 0.5) * 2, z + (rng() - 0.5) * 1.5, 0.9, rng() * 6, lvl + 0.25);
+      });
+      // Sandstone bluffs on the horizon, half in the water.
+      ring(3, half + 13, half + 22, function (x, z) { place('bluff', x, z, 1.6 + rng() * 1.6, null, lvl - 0.6); foamRing(x, z, 3.2); });
+      ring(6, half + 2, half + 14, function (x, z) { place('rock', x, z, 0.6 + rng() * 0.9, null, lvl - 0.25); });
+      ring(1, half + 6, half + 12, function (x, z) { place('stiltHut', x, z, 1, rng() * 6, lvl - 0.2); });
+      ring(1, half + 9, half + 16, function (x, z) { place('wreck', x, z, 1, rng() * 6, lvl - 0.45); foamRing(x, z, 2.8); });
+      ring(1, half + 4, half + 9, function (x, z) { place('dock', x, z, 1, rng() * 6, lvl + 0.35); });
+      ring(1, half + 8, half + 14, function (x, z) { place('boat', x, z, 1, rng() * 6, lvl); });
     } else if (themeId === 'garden') {
       ring(8, half + 2.5, half + 7, function (x, z) { place(rng() < 0.5 ? 'topiary' : 'hedgeBall', x, z, 0.9 + rng() * 0.4); });
       ring(6, half + 2, half + 9, function (x, z) { place('flowers', x, z, 0.8 + rng() * 0.5); });
       ring(3, half + 4, half + 10, function (x, z) { place('gear', x, z, 1 + rng() * 0.8); });
       ring(3, half + 3, half + 8, function (x, z) { place('lamp', x, z, 1); });
     } else {
-      ring(8, half + 7, half + 15, function (x, z) { place('pillar', x, z, 0.9 + rng() * 0.4, 0, -7.5 - rng() * 2); });
+      ring(8, half + 11, half + 19, function (x, z) { place('pillar', x, z, 0.9 + rng() * 0.4, 0, -7.5 - rng() * 2); });
       ring(6, half + 2.5, half + 10, function (x, z) { place('crystal', x, z, 0.8 + rng() * 0.8, null, -2.5 - rng() * 3); });
     }
   }

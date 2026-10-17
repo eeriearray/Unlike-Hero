@@ -8,23 +8,27 @@
 
   var THEMES = {
     cove: {
-      sky: { top: '#6fb0d4', horizon: '#ffdcb0', bottom: '#f6c79a', sun: '#ffd49a' },
-      fog: { color: '#f2d4b0', near: 34, far: 95 },
-      sun: { color: '#ffdcae', intensity: 1.25, dir: [-0.55, 0.62, 0.56] },
-      hemi: { sky: '#cfe4f2', ground: '#c9a678', intensity: 0.42 },
+      // Late-afternoon sun over a tropical lagoon: saturated sky, clear shallow water, warm light.
+      sky: { top: '#2c7fd4', horizon: '#a8dcf5', bottom: '#cfeefa', sun: '#fff1c8' },
+      fog: { color: '#bfe5f6', near: 40, far: 120 },
+      sun: { color: '#ffeccc', intensity: 0.95, dir: [-0.55, 0.7, 0.42] },
+      hemi: { sky: '#bfe0f7', ground: '#c9a472', intensity: 0.3 },
+      exposure: 0.78,
       ambient: 0.06,
-      water: { shallow: '#36b8b3', deep: '#145f86', foam: true, level: -0.42 },
-      base: 'water', sideDepth: 1.4,
-      grass: '#3e9a4f', grassVariant: 'cove', side: 'sandstone', flag: '#ef6a43',
-      rail: { body: '#9c6a42', cap: '#d8b78a', tex: 'wood' }, bridge: 'pale',
+      water: { shallow: '#3fd8d2', deep: '#1287bd', foam: true, level: -0.42, seabed: true },
+      base: 'water', sideDepth: 0.45, pilings: true, clouds: true, railPosts: false,
+      grass: '#4a9630', grassVariant: 'cove', checker: true, side: 'woodDark', flag: '#ef6a43',
+      rail: { body: '#e8d2bc', cap: '#5e3a22', tex: 'blocks' }, bridge: 'pale',
       bumper: '#ef6a43', accent: '#f2bd47',
       music: 'cove'
     },
     garden: {
-      sky: { top: '#9ec6d6', horizon: '#f3ecd6', bottom: '#d9d6b8', sun: '#fff1cf' },
+      clouds: true,
+      sky: { top: '#7fb6d8', horizon: '#eef0dc', bottom: '#d9d6b8', sun: '#fff1cf' },
       fog: { color: '#e8e4cd', near: 36, far: 100 },
-      sun: { color: '#fff0d6', intensity: 1.2, dir: [0.48, 0.78, 0.38] },
-      hemi: { sky: '#dcebe4', ground: '#6f8a4c', intensity: 0.42 },
+      sun: { color: '#fff0d6', intensity: 1.0, dir: [0.48, 0.78, 0.38] },
+      hemi: { sky: '#dcebe4', ground: '#6f8a4c', intensity: 0.34 },
+      exposure: 0.86,
       ambient: 0.06,
       water: { shallow: '#7cc7b7', deep: '#2f6f6a', foam: false },
       base: 'lawn', sideDepth: 0.85,
@@ -97,6 +101,10 @@
         'uniform float time; uniform vec3 shallow; uniform vec3 deep; uniform vec3 sunDir; uniform vec3 sunColor; uniform vec2 center; uniform float radius;',
         'varying vec3 vWorld;',
         'float wave(vec2 p){ return sin(p.x*1.3 + time*1.1)*0.5 + sin(p.y*1.7 - time*0.9)*0.5 + sin((p.x+p.y)*2.3 + time*1.7)*0.25; }',
+        'float caustic(vec2 p){ vec2 q = p * 1.6; float c = 0.0;',
+        '  c += abs(sin(q.x + time * 0.9 + sin(q.y * 1.3 + time * 0.6)));',
+        '  c += abs(sin(q.y * 1.2 - time * 0.7 + sin(q.x * 1.1 - time * 0.5)));',
+        '  return pow(clamp(1.0 - c * 0.55, 0.0, 1.0), 3.0); }',
         'void main(){',
         '  vec2 p = vWorld.xz;',
         '  float e = 0.08;',
@@ -111,7 +119,8 @@
         '  col += sunColor * (spec * 0.6 + glint);',
         '  float fres = pow(1.0 - max(dot(v, vec3(0.0,1.0,0.0)), 0.0), 3.0);',
         '  col = mix(col, col * 0.75 + vec3(0.08,0.12,0.16), fres * 0.5);',
-        '  gl_FragColor = vec4(col, 0.93);',
+        '  col += vec3(0.9, 1.0, 0.95) * caustic(p) * (1.0 - d) * 0.35;',
+        '  gl_FragColor = vec4(col, mix(0.62, 0.92, d));',
         '  #include <fog_fragment>',
         '}'
       ].join('\n')
@@ -132,15 +141,15 @@
       k.edgeGlow = new THREE.MeshBasicMaterial({ color: '#4fe3f0', toneMapped: false });
     } else {
       k.floor = {
-        grass: std({ map: T.grass(th.grassVariant), color: th.grass, roughness: 0.92, metalness: 0 }),
+        grass: std({ map: th.checker ? T.checker(th.grassVariant) : T.grass(th.grassVariant), color: th.grass, roughness: 0.92, metalness: 0 }),
         sand: std({ map: T.sand(), color: '#ffffff', roughness: 1 }),
         stone: std({ map: T.stone(themeId === 'garden' ? 'light' : 'warm'), color: '#ffffff', roughness: 0.85 }),
         bridge: std({ map: T.wood('pale'), color: '#ffffff', roughness: 0.8 }),
         wood: std({ map: T.wood('mid'), color: '#ffffff', roughness: 0.8 })
       };
-      k.side = themeId === 'cove' ? std({ map: T.sandstone(), color: '#ffffff', roughness: 0.95 }) : std({ map: T.brick(), color: '#ffffff', roughness: 0.92 });
+      k.side = themeId === 'cove' ? std({ map: T.blocks('wood'), color: '#d8c0a8', roughness: 0.9 }) : std({ map: T.brick(), color: '#ffffff', roughness: 0.92 });
     }
-    k.rail = std({ map: themeId === 'neon' ? T.metal('dark') : themeId === 'cove' ? T.wood('mid') : T.stone('light'), color: th.rail.body, roughness: themeId === 'neon' ? 0.4 : 0.75, metalness: themeId === 'neon' ? 0.6 : 0 });
+    k.rail = std({ map: themeId === 'neon' ? T.metal('dark') : themeId === 'cove' ? T.blocks('wood') : T.blocks('stone'), color: th.rail.body, roughness: themeId === 'neon' ? 0.4 : 0.8, metalness: themeId === 'neon' ? 0.6 : 0 });
     k.railCap = themeId === 'neon' ? new THREE.MeshBasicMaterial({ color: th.rail.cap, toneMapped: false }) : std({ color: th.rail.cap, roughness: themeId === 'garden' ? 0.35 : 0.7, metalness: themeId === 'garden' ? 0.85 : 0 });
     k.rope = std({ color: '#d9c39a', roughness: 1 });
     k.post = std({ map: T.wood('dark'), color: '#ffffff', roughness: 0.8 });
@@ -173,7 +182,18 @@
     k.gold = std({ color: PC.PALETTE.gold, roughness: 0.5, metalness: 0.2 });
     k.navy = std({ color: PC.PALETTE.navy, roughness: 0.6 });
     k.turq = std({ color: PC.PALETTE.turquoise, roughness: 0.6 });
-    k.lawn = std({ map: rep(T.sand(), [40, 40]), color: themeId === 'garden' ? '#8e9a74' : '#3f6f3a', roughness: 1 });
+    k.seabed = std({ map: rep(T.seabed(), [30, 30]), color: '#ffffff', roughness: 1 });
+    k.piling = std({ map: T.wood('dark'), color: '#b08a6a', roughness: 0.9 });
+    k.sandLow = std({ color: '#f0d7a4', roughness: 1, flatShading: true });
+    k.sandstone = std({ color: '#d39a62', roughness: 0.95, flatShading: true });
+    k.sandstoneDark = std({ color: '#b97d4b', roughness: 0.95, flatShading: true });
+    k.palmLeaf = std({ color: '#2f8a2c', roughness: 0.9, flatShading: true, side: THREE.DoubleSide });
+    k.palmLeafDark = std({ color: '#1f6c26', roughness: 0.9, flatShading: true, side: THREE.DoubleSide });
+    k.palmTrunk = std({ color: '#8f6a45', roughness: 1, flatShading: true });
+    k.tuft = std({ color: '#7fb648', roughness: 1, flatShading: true, side: THREE.DoubleSide });
+    k.plank = std({ map: T.wood('pale'), color: '#c8a27a', roughness: 0.9 });
+    k.cloud = new THREE.MeshLambertMaterial({ color: '#ffffff', flatShading: true, emissive: '#c9dff0', emissiveIntensity: 0.35 });
+    k.lawn = std({ map: rep(T.grass('lawn'), [40, 40]), color: '#466f34', roughness: 1 });
     k.gravel = std({ map: rep(T.sand(), [10, 10]), color: '#d8cfbd', roughness: 1 });
     kits[themeId] = k;
     return k;

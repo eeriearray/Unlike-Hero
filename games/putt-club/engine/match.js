@@ -244,7 +244,7 @@
     if (b.frozen) return { error: 'Your ball is frozen!' };
     if (b.moving && b.shotT < 4) return { error: 'Wait for your ball to stop (or give it a few seconds if it is stuck).' };
     var spot = this.teeSpot(this.players.indexOf(p));
-    b.x = spot[0]; b.z = spot[1]; b.y = this.world.teeH; b.vx = b.vy = b.vz = 0; b.moving = false; b.grounded = true;
+    P.place(b, spot[0], this.world.teeH, spot[1]);
     b.safe = { x: b.x, y: b.y, z: b.z };
     p.strokes += this.settings.resetPenalty; p.status = 'rest'; p.restSince = this.t;
     this.fx({ type: 'reset', id: p.id, x: b.x, y: b.y, z: b.z, penalty: this.settings.resetPenalty });
@@ -270,6 +270,7 @@
       if (!target.connected && !target.bot) return { error: target.name + ' is disconnected.' };
     }
     var ctx = this.ctx();
+    if (def.target === 'opponent' && target.ball && target.ball.holed) return { error: target.name + ' has already finished this hole.' };
     if (def.reject) { var why = def.reject(ctx, p, target); if (why) return { error: why }; }
     if (def.id === 'turbo' || def.id === 'ghost') {
       if (this.hasEffect(p, def.id)) return { error: 'You already have ' + def.name + ' ready.' };
@@ -357,14 +358,15 @@
     var b = p.ball;
     if (!b) return;
     b.fric = 1; b.ghost = false; b.magnet = false; b.rTarget = P.C.R;
-    var wasFrozen = b.frozen; b.frozen = false;
+    b.frozen = false;
     p.effects.forEach(function (e) {
       var def = Powerups.BY_ID[e.kind];
       if (!def || !def.mods) return;
       if (e.shots != null && def.effect && def.effect.shots && !e.live) return;
       def.mods(b, e);
     });
-    if (wasFrozen && !b.frozen && b.moving) { b.anchorT = 0; b.anchorX = b.x; b.anchorZ = b.z; }
+    // Rapier picks these up (size, collision groups, frozen body type) at the start of the next step.
+    if (!b.frozen && b.moving) { b.anchorT = 0; b.anchorX = b.x; b.anchorZ = b.z; }
   };
 
   M.tickEffects = function (p) {
@@ -400,7 +402,9 @@
   M.startHole = function () {
     var r = this.round;
     r.hole = r.course.holes[r.holeIdx];
+    this.freeSim();
     this.world = P.compileHole(r.hole, { mirror: r.mirror });
+    this.sim = P.createSim(this.world);
     this.t = 0;
     var freq = FREQ[this.settings.powerupFreq];
     var spots = this.settings.powerups ? this.world.tokens.filter(function (_t, i) { return freq.share >= 1 || i % 2 === 0; }) : [];
@@ -417,7 +421,8 @@
   M.enterRound = function (p) {
     var idx = this.players.indexOf(p);
     var spot = this.teeSpot(idx);
-    p.ball = P.newBall(p.id, spot[0], spot[1], this.world);
+    if (p.ball && p.ball.body && this.sim && this.sim.balls.indexOf(p.ball) >= 0) P.removeBall(this.sim, p.ball);
+    p.ball = P.addBall(this.sim, p.id, spot[0], spot[1]);
     p.finished = false; p.status = 'tee'; p.strokes = 0; p.shotOnce = false; p.effects = [];
     p.gustSafe = null; p.frostImmuneUntil = -1; p.gustCdUntil = -1; p.lastShotAt = -9; p.lastUseAt = -9; p.restSince = 0;
     p.botNext = 0;
@@ -491,7 +496,15 @@
     this.startMatch();
   };
 
+  /** Release the Rapier world of the current hole. */
+  M.freeSim = function () {
+    if (this.world && this.world._pred) { P.freeSim(this.world._pred); this.world._pred = null; }
+    if (this.sim) { P.freeSim(this.sim); this.sim = null; }
+  };
+  M.destroy = function () { this.freeSim(); };
+
   M.toLobby = function () {
+    this.freeSim();
     this.phase = 'lobby'; this.phaseEnds = 0; this.round = null; this.world = null; this.tokens = [];
     this.players.forEach(function (p) { p.ready = p.bot; p.ball = null; p.holes = []; p.courseTotals = []; p.inventory = []; p.effects = []; });
     this.emitState();
@@ -518,17 +531,13 @@
   };
 
   M.simulate = function (dt) {
-    var self = this, w = this.world;
-    var balls = [];
-    this.players.forEach(function (p) { if (p.ball && !p.ball.holed) balls.push(p.ball); });
+    var self = this;
     // Balls still on the tee (never shot) don't collide, so the opening shots can't scatter the field.
     var collide = this.settings.collisions;
     var byId = {};
-    this.players.forEach(function (p) { byId[p.id] = p; });
-    balls.forEach(function (b) { b.solo = !byId[b.id].shotOnce; });
+    this.players.forEach(function (p) { byId[p.id] = p; if (p.ball) p.ball.solo = !collide || !p.shotOnce; });
     var events = [];
-    var results = P.stepWorld(w, balls, this.t - dt, dt, {
-      collide: collide,
+    var results = P.stepSim(this.sim, this.t - dt, dt, {
       onEvent: function (e) { if (events.length < 24) events.push(e); }
     });
     events.forEach(function (e) {
@@ -559,7 +568,7 @@
     if (result === 'water' || result === 'oob') {
       var gust = p.gustSafe && p.gustSafe.until > this.t ? p.gustSafe : null;
       var spot = gust || b.safe, fell = [round2(b.x), round2(Math.max(b.y, this.world.water ? this.world.water.level : b.y)), round2(b.z)];
-      b.x = spot.x; b.y = spot.y; b.z = spot.z; b.vx = b.vy = b.vz = 0; b.moving = false; b.grounded = true;
+      P.place(b, spot.x, spot.y, spot.z);
       if (!gust) { p.strokes++; p.stats.splashes++; }
       p.gustSafe = null;
       p.status = 'rest'; p.restSince = this.t;
@@ -595,6 +604,7 @@
     if (p.strokes >= this.settings.maxStrokes && !p.ball.moving) {
       p.finished = true; p.status = 'maxed';
       p.ball.holed = true; // removed from play
+      if (p.ball.body) p.ball.body.setEnabled(false);
       this.fx({ type: 'maxed', id: p.id, strokes: p.strokes });
     }
   };
@@ -763,6 +773,7 @@
   };
   function round3(v) { return Math.round(v * 1000) / 1000; }
 
+  PuttMatch.physics = P;
   PuttMatch.MAX_PLAYERS = MAX_PLAYERS;
   PuttMatch.COLORS = COLORS;
   PuttMatch.COLOR_NAMES = COLOR_NAMES;

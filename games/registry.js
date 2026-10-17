@@ -96,7 +96,8 @@ window.GAME_REGISTRY = [
         "local",
         "relay"
       ],
-      "notes": "The Main Stage runs every game and pushes a view to each phone. Up to 8 players plus audience phones (the bundled relay caps a room at 16 connections). Design document: games/party-pack/docs/GDD.md."
+      "roomLimit": 40,
+      "notes": "The Main Stage runs every game and pushes a view to each phone. Up to 8 players plus up to 31 audience phones (roomLimit 40 on the bundled relay). Private screens are sent to one phone only. Design document: games/party-pack/docs/GDD.md."
     },
     "tags": [
       "party",
@@ -112,6 +113,52 @@ window.GAME_REGISTRY = [
     ],
     "status": "playable",
     "path": "games/party-pack/"
+  },
+  {
+    "id": "putt-club",
+    "title": "Putt Club",
+    "tagline": "Mini-golf for 2–8 friends at once: three diorama courses, real ball physics and twelve power-ups to ruin each other's putts.",
+    "version": "1.0.0",
+    "sdk": "1.x",
+    "entry": "index.html",
+    "server": "server/index.mjs",
+    "thumbnail": "thumbnail.svg",
+    "accent": "#ef6a43",
+    "players": {
+      "min": 1,
+      "max": 8
+    },
+    "roles": [
+      {
+        "id": "golfer",
+        "name": "Golfer",
+        "entry": "index.html",
+        "description": "Create a room and share the 4-letter code (or the link/QR), or join one. Everyone plays each hole at the same time on their own device."
+      }
+    ],
+    "multiplayer": {
+      "style": "simultaneous, server-authoritative, room code",
+      "sameDevice": false,
+      "transports": [
+        "server"
+      ],
+      "notes": "Online rooms run on the game's own Socket.io server (server/index.mjs, loaded by npm start). It simulates every ball and decides every score; clients only send aim and power. Solo practice with bots works offline."
+    },
+    "tags": [
+      "party",
+      "pvp",
+      "mini-golf",
+      "physics",
+      "3D",
+      "mobile",
+      "power-ups"
+    ],
+    "requires": [
+      "webgl",
+      "npm start for online rooms"
+    ],
+    "status": "playable",
+    "path": "games/putt-club/"
   },
   {
     "id": "sea-of-chaos",

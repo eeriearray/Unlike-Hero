@@ -9,4 +9,5 @@ So Putt Club works with no internet. Latin subset only.
 
 Other vendored files: `../three.min.js` (three.js r147, MIT, LICENSE-three), `../react.min.js` and `../react-dom.min.js`
 (React 18.3.1, MIT, LICENSE-react), `../htm.min.js` (htm 3.1.1, Apache-2.0, LICENSE-htm), `../qrcode.min.js`
-(qrcode-generator 1.4.4 by Kazuhiko Arase, MIT).
+(qrcode-generator 1.4.4 by Kazuhiko Arase, MIT), `../rapier.js` (Rapier 3D 0.19.3 physics engine by Dimforge,
+@dimforge/rapier3d-compat, Apache-2.0, LICENSE-rapier; the CommonJS build wrapped to define window.RAPIER).

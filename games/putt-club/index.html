@@ -21,7 +21,9 @@
 <script src="../../shared/sdk/hub-sdk.js"></script>
 <!-- Socket.io client, served by the Putt Club game server when the hub server runs. Missing = solo practice only. -->
 <script src="socket.io/socket.io.min.js" onerror="this.remove()"></script>
-<!-- Vendored so the game works offline and from file:// (three.js r147, React 18.3.1, htm 3.1.1, qrcode-generator 1.4.4; licenses in vendor/) -->
+<!-- Vendored so the game works offline and from file:// (three.js r147, React 18.3.1, htm 3.1.1, qrcode-generator 1.4.4,
+     Rapier 0.19.3 physics with its WASM embedded; licenses in vendor/) -->
+<script src="vendor/rapier.js"></script>
 <script src="vendor/three.min.js"></script>
 <script src="vendor/react.min.js"></script>
 <script src="vendor/react-dom.min.js"></script>

@@ -13,57 +13,183 @@
 
   // ---------------------------------------------------------------- Sunset Cove
 
+  /** Low-poly palm: a leaning, segmented trunk and sharp faceted fronds that droop at the tips. */
   function palm(k, rng, s) {
-    var g = new THREE.Group(), segs = 7, h = 3.2 * s, bend = 0.5 + rng() * 0.4, dir = rng() * Math.PI * 2;
-    var trunkMat = mat('trunk', function () { return std('#9a7650', { roughness: 1 }); });
-    var ringMat = mat('trunkRing', function () { return std('#7c5b3c', { roughness: 1 }); });
-    var p = new THREE.Vector3(), prev = new THREE.Vector3();
+    var g = new THREE.Group(), segs = 6, h = 3.6 * s, lean = 0.6 + rng() * 0.6, dir = rng() * Math.PI * 2;
+    var tip = new THREE.Vector3();
     for (var i = 0; i < segs; i++) {
-      var t = i / segs, t2 = (i + 1) / segs;
-      prev.set(Math.cos(dir) * bend * t * t * s, h * t, Math.sin(dir) * bend * t * t * s);
-      p.set(Math.cos(dir) * bend * t2 * t2 * s, h * t2, Math.sin(dir) * bend * t2 * t2 * s);
-      var r0 = (0.16 - t * 0.06) * s, r1 = (0.16 - t2 * 0.06) * s;
-      var seg = mesh(new THREE.CylinderGeometry(r1, r0 * 1.08, p.distanceTo(prev), 7), i % 2 ? trunkMat : ringMat);
-      seg.position.copy(prev).add(p).multiplyScalar(0.5);
-      seg.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), p.clone().sub(prev).normalize());
+      var t0 = i / segs, t1 = (i + 1) / segs;
+      var a = new THREE.Vector3(Math.cos(dir) * lean * t0 * t0 * s, h * t0, Math.sin(dir) * lean * t0 * t0 * s);
+      var b = new THREE.Vector3(Math.cos(dir) * lean * t1 * t1 * s, h * t1, Math.sin(dir) * lean * t1 * t1 * s);
+      var r0 = (0.17 - t0 * 0.07) * s, r1 = (0.17 - t1 * 0.07) * s;
+      var seg = mesh(new THREE.CylinderGeometry(r1 * 0.92, r0, a.distanceTo(b) * 1.04, 6), k.palmTrunk);
+      seg.position.copy(a).add(b).multiplyScalar(0.5);
+      seg.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize());
+      seg.rotation.y += i * 0.5;
       g.add(seg);
+      tip.copy(b);
     }
-    var crown = new THREE.Group(); crown.position.copy(p); g.add(crown);
-    var leafGeo = geo('frond', function () {
-      // A tapered, drooping frond strip.
-      var shape = new THREE.Shape();
-      shape.moveTo(0, 0); shape.quadraticCurveTo(0.35, 0.9, 0, 1.9); shape.quadraticCurveTo(-0.35, 0.9, 0, 0);
-      var gg = new THREE.ShapeGeometry(shape, 6);
-      var pos = gg.attributes.position;
-      for (var i2 = 0; i2 < pos.count; i2++) { var y = pos.getY(i2); pos.setZ(i2, -Math.pow(y / 1.9, 2) * 0.9); }
-      gg.rotateX(-Math.PI / 2 + 0.25); gg.computeVertexNormals();
+    var crown = new THREE.Group(); crown.position.copy(tip); g.add(crown);
+    var frond = geo('frondLow', function () {
+      // A long faceted blade: spine plus two drooping edges, built from triangles.
+      var L = 2.3, W = 0.42, n = 5, pos = [];
+      function pt(u, side) { var x = u * L, y = -Math.pow(u, 1.6) * 1.15 + Math.sin(u * Math.PI) * 0.25, w = Math.sin(Math.min(1, u * 1.15) * Math.PI) * W * (1 - u * 0.35); return [x, y - Math.abs(side) * w * 0.35, side * w]; }
+      for (var i2 = 0; i2 < n; i2++) {
+        var u0 = i2 / n, u1 = (i2 + 1) / n;
+        [-1, 1].forEach(function (sd) {
+          var a0 = pt(u0, 0), a1 = pt(u1, 0), e0 = pt(u0, sd), e1 = pt(u1, sd);
+          pos.push.apply(pos, a0.concat(e0, a1, a1, e0, e1));
+        });
+      }
+      var gg = new THREE.BufferGeometry(); gg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); gg.computeVertexNormals();
       return gg;
     });
-    var leaves = [];
     for (var j = 0; j < 8; j++) {
-      var lf = mesh(leafGeo, j % 2 ? k.leaf : k.leafDark);
-      lf.rotation.y = (j / 8) * Math.PI * 2 + rng() * 0.3;
-      lf.scale.setScalar(s * (0.9 + rng() * 0.25));
-      crown.add(lf); leaves.push(lf);
+      var lf = mesh(frond, j % 2 ? k.palmLeaf : k.palmLeafDark);
+      lf.rotation.y = (j / 8) * Math.PI * 2 + rng() * 0.35;
+      lf.rotation.z = 0.15 + rng() * 0.25;
+      lf.scale.setScalar(s * (0.85 + rng() * 0.3));
+      crown.add(lf);
     }
-    var coconut = geo('coconut', function () { return new THREE.SphereGeometry(0.09, 8, 6); });
-    for (var c = 0; c < 3; c++) { var cn = mesh(coconut, ringMat); cn.position.set(Math.cos(c * 2.1) * 0.12 * s, -0.08 * s, Math.sin(c * 2.1) * 0.12 * s); crown.add(cn); }
+    var nut = geo('coconutLow', function () { return new THREE.IcosahedronGeometry(0.11, 0); });
+    for (var c = 0; c < 3; c++) { var cn = mesh(nut, k.palmTrunk); cn.position.set(Math.cos(c * 2.1) * 0.13 * s, -0.12 * s, Math.sin(c * 2.1) * 0.13 * s); crown.add(cn); }
     var phase = rng() * 6;
-    g.userData.animate = function (t) { crown.rotation.z = Math.sin(t * 0.7 + phase) * 0.04; crown.rotation.x = Math.cos(t * 0.55 + phase) * 0.03; };
+    g.userData.animate = function (t) { crown.rotation.z = Math.sin(t * 0.7 + phase) * 0.035; crown.rotation.x = Math.cos(t * 0.55 + phase) * 0.03; };
     return g;
   }
 
+  /** Faceted sandstone: a cluster of two or three chunky blocks. */
   function rock(k, rng, s) {
-    var g2 = new THREE.IcosahedronGeometry(0.6, 1), pos = g2.attributes.position;
-    for (var i = 0; i < pos.count; i++) {
-      var v = new THREE.Vector3().fromBufferAttribute(pos, i);
-      var n = 0.75 + PC.hash(Math.round(v.x * 100) + ',' + Math.round(v.y * 100) + ',' + Math.round(v.z * 100)) % 1000 / 1000 * 0.45;
-      v.multiplyScalar(n); v.y *= 0.62;
-      pos.setXYZ(i, v.x, v.y, v.z);
+    var g = new THREE.Group(), n = 1 + Math.floor(rng() * 3);
+    for (var i = 0; i < n; i++) {
+      var m = mesh(new THREE.DodecahedronGeometry(0.6, 0), i % 2 ? k.sandstoneDark || k.rock : k.sandstone || k.rock);
+      m.scale.set(0.8 + rng() * 0.7, 0.5 + rng() * 0.6, 0.8 + rng() * 0.7);
+      m.position.set((rng() - 0.5) * 0.9, m.scale.y * 0.25, (rng() - 0.5) * 0.9);
+      m.rotation.set(rng() * 0.6, rng() * 6, rng() * 0.6);
+      g.add(m);
     }
-    g2.computeVertexNormals();
-    var m = mesh(g2, k.rock); m.scale.setScalar(s); m.rotation.y = rng() * 6;
-    return m;
+    g.scale.setScalar(s);
+    return g;
+  }
+
+  /** A big layered sandstone outcrop (background scenery). */
+  function bluff(k, rng, s) {
+    var g = new THREE.Group();
+    for (var i = 0; i < 5; i++) {
+      var m = mesh(new THREE.DodecahedronGeometry(1, 0), i % 2 ? k.sandstoneDark : k.sandstone);
+      var sc = 1.6 - i * 0.22;
+      m.scale.set(sc * (1 + rng() * 0.5), sc * (0.9 + rng() * 0.6), sc * (1 + rng() * 0.5));
+      m.position.set((rng() - 0.5) * 2.2, i * 0.75, (rng() - 0.5) * 2.2);
+      m.rotation.set(rng() * 0.4, rng() * 6, rng() * 0.4);
+      g.add(m);
+    }
+    g.scale.setScalar(s);
+    return g;
+  }
+
+  /** Low sand bank with grass tufts: the beaches around the course. */
+  function sandBank(k, rng, s) {
+    var g = new THREE.Group();
+    var geo2 = new THREE.SphereGeometry(1, 9, 5, 0, Math.PI * 2, 0, Math.PI / 2), pos = geo2.attributes.position, seed = rng() * 10;
+    for (var i = 0; i < pos.count; i++) {
+      var x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i), a = Math.atan2(z, x);
+      var r = 1 + 0.18 * Math.sin(a * 3 + seed) + 0.1 * Math.sin(a * 5 + seed * 2);
+      pos.setXYZ(i, x * r * 3, y * 0.55, z * r * 2.2);
+    }
+    geo2.computeVertexNormals();
+    var bank = mesh(geo2, k.sandLow); bank.position.y = -0.25; g.add(bank);
+    for (var t = 0; t < 7; t++) { var tf = tuft(k, rng, 0.8 + rng() * 0.6); var a2 = rng() * 6, rr = Math.sqrt(rng()) * 1.6; tf.position.set(Math.cos(a2) * rr * 1.3, 0.22, Math.sin(a2) * rr); g.add(tf); }
+    g.scale.setScalar(s);
+    return g;
+  }
+
+  function tuft(k, rng, s) {
+    var g = new THREE.Group();
+    var blade = geo('blade', function () { var gg = new THREE.ConeGeometry(0.05, 0.42, 3); gg.translate(0, 0.21, 0); return gg; });
+    for (var i = 0; i < 5; i++) { var b = mesh(blade, k.tuft, false); b.rotation.set((rng() - 0.5) * 0.9, rng() * 6, (rng() - 0.5) * 0.9); g.add(b); }
+    g.scale.setScalar(s);
+    return g;
+  }
+
+  /** Wooden pier: planks on posts. */
+  function dock(k, rng, s, opts) {
+    var g = new THREE.Group(), len = (opts && opts.len) || 6;
+    for (var i = 0; i < len / 0.42; i++) {
+      var p = mesh(new THREE.BoxGeometry(1.6, 0.08, 0.36), k.plank);
+      p.position.set((rng() - 0.5) * 0.06, 0, -i * 0.42); p.rotation.y = (rng() - 0.5) * 0.04; p.rotation.z = (rng() - 0.5) * 0.04;
+      g.add(p);
+    }
+    for (var j = 0; j <= len; j += 2) [-0.75, 0.75].forEach(function (x) {
+      var post = mesh(new THREE.BoxGeometry(0.2, 2.2, 0.2), k.piling); post.position.set(x, -0.75, -j); g.add(post);
+      if (j % 4 === 0) { var top = mesh(new THREE.BoxGeometry(0.2, 0.5, 0.2), k.piling); top.position.set(x, 0.3, -j); g.add(top); }
+    });
+    g.scale.setScalar(s);
+    return g;
+  }
+
+  function lantern(k, rng, s) {
+    var g = new THREE.Group();
+    var post = mesh(new THREE.BoxGeometry(0.16, 2.2, 0.16), k.piling); post.position.y = 1.1; g.add(post);
+    var arm = mesh(new THREE.BoxGeometry(0.6, 0.08, 0.08), k.piling); arm.position.set(0.28, 2.1, 0); g.add(arm);
+    var cage = mesh(new THREE.CylinderGeometry(0.12, 0.15, 0.32, 6), k.navy); cage.position.set(0.52, 1.84, 0); g.add(cage);
+    var light = mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.2, 6), mat('lanternGlow', function () { return new THREE.MeshBasicMaterial({ color: '#ffd38a', toneMapped: false }); }), false);
+    light.position.set(0.52, 1.84, 0); g.add(light);
+    g.scale.setScalar(s);
+    return g;
+  }
+
+  /** A fishing net slung between two posts. */
+  function net(k, rng, s) {
+    var g = new THREE.Group();
+    [-1.3, 1.3].forEach(function (x) { var p = mesh(new THREE.BoxGeometry(0.14, 2.2, 0.14), k.piling); p.position.set(x, 0.8, 0); p.rotation.z = x * 0.08; g.add(p); });
+    var ng = new THREE.PlaneGeometry(2.5, 1.5, 10, 6), pos = ng.attributes.position;
+    for (var i = 0; i < pos.count; i++) { var x = pos.getX(i); pos.setZ(i, Math.cos(x * 1.2) * 0.25); pos.setY(i, pos.getY(i) - Math.cos(x * 1.25) * 0.3); }
+    var m = new THREE.Mesh(ng, mat('net', function () { return new THREE.MeshStandardMaterial({ color: '#d9c39a', wireframe: true, transparent: true, opacity: 0.85 }); }));
+    m.position.y = 1.0; g.add(m);
+    g.scale.setScalar(s);
+    return g;
+  }
+
+  /** Half-sunk shipwreck. */
+  function wreck(k, rng, s) {
+    var g = new THREE.Group();
+    var sh = new THREE.Shape();
+    sh.moveTo(-2.6, 0.7); sh.lineTo(2.2, 0.7); sh.quadraticCurveTo(2.9, 0.4, 2.6, -0.2); sh.lineTo(-2.2, -0.5); sh.quadraticCurveTo(-2.8, -0.2, -2.6, 0.7);
+    var hull = mesh(new THREE.ExtrudeGeometry(sh, { depth: 1.5, bevelEnabled: false }), mat('wreckWood', function () { return new THREE.MeshStandardMaterial({ map: PC.tex.wood('dark'), color: '#a07a58', roughness: 1 }); }));
+    hull.position.z = -0.75; hull.rotation.z = 0.18; g.add(hull);
+    var mast = mesh(new THREE.CylinderGeometry(0.08, 0.1, 3.4, 6), k.piling); mast.position.set(0.4, 1.8, 0); mast.rotation.z = -0.5; g.add(mast);
+    var ribs = new THREE.Group();
+    for (var i = 0; i < 4; i++) { var r = mesh(new THREE.TorusGeometry(0.75, 0.06, 4, 10, Math.PI), k.piling); r.position.set(-1.6 + i * 0.5, 0.6, 0); r.rotation.y = Math.PI / 2; ribs.add(r); }
+    g.add(ribs);
+    g.scale.setScalar(s);
+    return g;
+  }
+
+  function stiltHut(k, rng, s) {
+    var g = new THREE.Group();
+    [[-0.9, -0.8], [0.9, -0.8], [-0.9, 0.8], [0.9, 0.8]].forEach(function (p) { var post = mesh(new THREE.BoxGeometry(0.18, 2.4, 0.18), k.piling); post.position.set(p[0], 0.2, p[1]); g.add(post); });
+    var deck = mesh(new THREE.BoxGeometry(2.4, 0.12, 2.2), k.plank); deck.position.y = 1.4; g.add(deck);
+    var body = mesh(new THREE.BoxGeometry(1.8, 1.2, 1.6), k.wood); body.position.y = 2.05; g.add(body);
+    var thatch = mat('thatch', function () { return new THREE.MeshStandardMaterial({ color: '#c9a160', roughness: 1, flatShading: true }); });
+    var roof = mesh(new THREE.ConeGeometry(1.75, 1.0, 4), thatch); roof.position.y = 3.1; roof.rotation.y = Math.PI / 4; g.add(roof);
+    var door = mesh(new THREE.BoxGeometry(0.45, 0.75, 0.04), k.navy); door.position.set(0, 1.85, 0.82); g.add(door);
+    g.scale.setScalar(s);
+    return g;
+  }
+
+  /** Chunky low-poly cloud that drifts slowly. */
+  function cloud(k, rng, s) {
+    var g = new THREE.Group();
+    for (var i = 0; i < 5; i++) {
+      var m = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 0), k.cloud);
+      m.scale.set(1.4 + rng(), 0.8 + rng() * 0.5, 1.1 + rng() * 0.6);
+      m.position.set(i * 1.3 - 2.6, (rng() - 0.3) * 0.8, (rng() - 0.5) * 1.2);
+      g.add(m);
+    }
+    var speed = 0.15 + rng() * 0.15, x0 = 0;
+    g.userData.animate = function (t) { if (!x0) x0 = g.position.x; g.position.x = x0 + Math.sin(t * 0.01 * speed * 10) * 6; };
+    g.scale.setScalar(s);
+    return g;
   }
 
   function umbrella(k, rng, s) {
@@ -133,7 +259,7 @@
     var beam = new THREE.Mesh(new THREE.ConeGeometry(1.4, 9, 16, 1, true), beamMat);
     beam.rotation.z = Math.PI / 2; beam.position.x = 4.5;
     var pivot = new THREE.Group(); pivot.position.y = h + 0.47; pivot.add(beam); g.add(pivot);
-    var base = mesh(new THREE.CylinderGeometry(1.5, 1.8, 0.6, 14), k.rock); base.position.y = -0.1; g.add(base);
+    var base = mesh(new THREE.CylinderGeometry(1.5, 1.8, 0.6, 7), k.sandstone || k.rock); base.position.y = -0.1; g.add(base);
     g.userData.animate = function (t) { pivot.rotation.y = t * 0.6; };
     g.scale.setScalar(s);
     return g;
@@ -355,7 +481,8 @@
   }
 
   var BUILDERS = {
-    palm: palm, rock: rock, umbrella: umbrella, hut: hut, boat: boat, starfish: starfish, lighthouse: lighthouse,
+    palm: palm, rock: rock, bluff: bluff, sandBank: sandBank, tuft: tuft, dock: dock, lantern: lantern, net: net, wreck: wreck, stiltHut: stiltHut, cloud: cloud,
+    umbrella: umbrella, hut: hut, boat: boat, starfish: starfish, lighthouse: lighthouse,
     gear: gear, hedgeBall: hedgeBall, topiary: topiary, flowers: flowers, lamp: lamp, bench: bench, lily: lily, windmill: windmill, orrery: orrery,
     pillar: pillar, crystal: crystal, screen: screen, cables: cables, core: core
   };
@@ -364,7 +491,7 @@
     build: function (kind, kit, rng, opts) {
       var b = BUILDERS[kind];
       if (!b) return null;
-      return b(kit, rng, (opts && opts.s) || 1, opts);
+      return b(kit, rng, (opts && opts.s) || 1, opts || {});
     },
     gearGeometry: gearGeometry
   };

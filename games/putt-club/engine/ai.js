@@ -53,14 +53,14 @@
   function planner(w, b, t, opts) {
     opts = opts || {};
     var dist = distanceField(w), strength = opts.strength || 1, rng = opts.rng || Math.random, turbo = opts.turbo || 1;
-    var angles = opts.angles || 24, powers = opts.powers || [0.16, 0.3, 0.46, 0.64, 0.82, 1];
+    var angles = opts.angles || 20, powers = opts.powers || [0.18, 0.34, 0.52, 0.72, 0.95];
     var base = Math.atan2(w.cup[0] - b.x, -(w.cup[1] - b.z));
     var queue = [];
     for (var a = 0; a < angles; a++) for (var p = 0; p < powers.length; p++) queue.push([base + (a / angles) * Math.PI * 2, powers[p]]);
-    var refine = opts.refine == null ? 10 : opts.refine;
+    var refine = opts.refine == null ? 8 : opts.refine;
     var self = { done: false, best: null, evaluated: 0 };
     function score(th, pw) {
-      var r = P.predict(w, b, Math.sin(th), -Math.cos(th), P.shotSpeed(pw, strength) * turbo, t, { maxT: 6, every: 1 });
+      var r = P.predict(w, b, Math.sin(th), -Math.cos(th), P.shotSpeed(pw, strength) * turbo, t, { maxT: 6, every: 1, step: 1 / 60 });
       if (r.result === 'cup') return -10;
       if (r.result === 'water' || r.result === 'oob') return 1e6;
       return dist(r.ball.x, r.ball.z) + (r.ball.moving ? 1.5 : 0);
@@ -112,7 +112,7 @@
     var plan = p.plan;
     if (!plan.pl.done) {
       // Each match shares a few milliseconds of planning per tick between its bots.
-      var budget = m.botBudget == null ? 3 : m.botBudget, start = now(), n = 0;
+      var budget = m.botBudget == null ? 4 : m.botBudget, start = now(), n = 0;
       if (budget === Infinity) plan.pl.step(1e9);
       else do { plan.pl.step(1); n++; } while (!plan.pl.done && now() - start < budget / Math.max(1, m.botCount || 1));
       if (!plan.pl.done) return;

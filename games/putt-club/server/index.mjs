@@ -38,7 +38,8 @@ function isLocal(req) {
   return a === '127.0.0.1' || a === '::1' || a === '::ffff:127.0.0.1';
 }
 
-export default function attach({ httpServer, basePath, log = console.log, tickMs = 1000 / 60 }) {
+export default async function attach({ httpServer, basePath, log = console.log, tickMs = 1000 / 60 }) {
+  await PuttMatch.physics.init(); // Rapier (WASM)
   const path = `${basePath}socket.io`;
 
   // <basePath>net-info: this computer's Wi-Fi address, so a host on localhost can share a link phones can open.
@@ -93,6 +94,7 @@ export default function attach({ httpServer, basePath, log = console.log, tickMs
   }
 
   function closeRoom(room, reason) {
+    room.match.destroy();
     for (const t of room.graceTimers.values()) clearTimeout(t);
     clearTimeout(room.idleTimer);
     for (const s of room.sockets.values()) { s.emit('closed', { reason }); s.leave(`room:${room.code}`); s.data = {}; }

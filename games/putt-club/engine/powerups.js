@@ -84,8 +84,7 @@
         dx /= l; dz /= l;
         target.gustCdUntil = ctx.t + 6;
         target.gustSafe = { x: b.x, y: b.y, z: b.z, until: ctx.t + 8 };
-        P.wake(b);
-        b.vx += dx * 7.5; b.vz += dz * 7.5;
+        P.push(b, dx * 7.5, dz * 7.5);
         ctx.setMoving(target);
         return { ok: true, dir: [dx, dz] };
       }
@@ -102,10 +101,10 @@
       use: function (ctx, user, target) {
         var a = user.ball, b = target.ball;
         var from = [a.x, a.y, a.z], to = [b.x, b.y, b.z];
-        var t;
-        t = a.x; a.x = b.x; b.x = t; t = a.y; a.y = b.y; b.y = t; t = a.z; a.z = b.z; b.z = t;
-        t = a.safe; a.safe = b.safe; b.safe = t;
-        a.vx = a.vy = a.vz = b.vx = b.vy = b.vz = 0;
+        // Swap through Rapier, lifted a hair so neither spawns overlapping the floor.
+        P.place(a, to[0], to[1] + 0.005, to[2]);
+        P.place(b, from[0], from[1] + 0.005, from[2]);
+        var t = a.safe; a.safe = b.safe; b.safe = t;
         return { ok: true, from: from, to: to };
       }
     },

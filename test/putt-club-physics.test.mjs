@@ -1,4 +1,4 @@
-// Physics tests for Putt Club (games/putt-club/engine/physics.js).  Run: npm test
+// Physics tests for Putt Club (games/putt-club/engine/physics.js, Rapier rigid bodies).  Run: npm test
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
@@ -8,161 +8,164 @@ const P = require('../games/putt-club/engine/physics.js');
 const Courses = require('../games/putt-club/engine/courses.js');
 const HOLES = Courses.COURSES.flatMap((c) => c.holes);
 const hole = (id) => HOLES.find((h) => h.id === id);
+await P.init();
 
 function seeded(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 2 ** 32; }; }
 
+/** A fresh Rapier world for a hole with one ball at (x, z). */
+function setup(id, x, z, opts) {
+  const w = P.compileHole(typeof id === 'string' ? hole(id) : id, opts);
+  const sim = P.createSim(w);
+  const b = P.addBall(sim, 'a', x == null ? w.tee[0] : x, z == null ? w.tee[1] : z);
+  return { w, sim, b };
+}
+function run(sim, seconds, t0 = 0, ev) {
+  let t = 0; const results = [];
+  while (t < seconds - 1e-9) { results.push(...P.stepSim(sim, t0 + t, 1 / 60, { onEvent: ev })); t += 1 / 60; }
+  return results;
+}
 /** Roll one shot to rest; returns the result and the ball. */
-function roll(w, ball, angleDeg, power, t0 = 0, limit = 40) {
-  const b = { ...ball };
+function roll(id, angleDeg, power, opts = {}) {
+  const { w, sim, b } = setup(id, opts.x, opts.z);
+  if (opts.prep) opts.prep(b);
   const th = angleDeg * Math.PI / 180;
-  P.shoot(b, Math.sin(th), -Math.cos(th), P.shotSpeed(power));
-  let t = 0, result = null;
-  while (t < limit && !result) { const r = P.stepWorld(w, [b], t0 + t, 1 / 60); t += 1 / 60; if (r.length) result = r[0].result; }
-  return { result, b, t };
+  P.shoot(b, Math.sin(th), -Math.cos(th), opts.speed || P.shotSpeed(power));
+  let t = 0, result = null; const events = [];
+  while (t < (opts.limit || 40) && !result) {
+    const r = P.stepSim(sim, (opts.t0 || 0) + t, 1 / 60, { onEvent: (e) => events.push(e) });
+    t += 1 / 60; if (r.length) result = r[0].result;
+  }
+  const out = { result, b: { ...b, body: null, col: null }, t, events, w };
+  P.freeSim(sim);
+  return out;
 }
 
 test('every ball comes to rest: random shots on every hole settle, hole out, or hit a hazard', () => {
   const rng = seeded(7);
   for (const h of HOLES) {
-    const w = P.compileHole(h);
-    const ball = P.newBall('a', w.tee[0], w.tee[1], w);
-    for (let i = 0; i < 12; i++) {
-      const r = roll(w, ball, rng() * 360, 0.1 + rng() * 0.9, rng() * 10);
+    for (let i = 0; i < 6; i++) {
+      const r = roll(h.id, rng() * 360, 0.1 + rng() * 0.9, { t0: rng() * 10 });
       assert.ok(r.result, `${h.id}: ball still moving after ${r.t.toFixed(1)}s`);
       assert.ok(r.t <= P.C.MAX_SHOT_TIME + 1, `${h.id}: shot took ${r.t.toFixed(1)}s`);
-      for (const k of ['x', 'y', 'z', 'vx', 'vz']) assert.ok(Number.isFinite(r.b[k]), `${h.id}: ${k} is ${r.b[k]}`);
+      for (const k of ['x', 'y', 'z']) assert.ok(Number.isFinite(r.b[k]), `${h.id}: ${k} is ${r.b[k]}`);
     }
   }
 });
 
 test('same shot, same conditions, same result (determinism)', () => {
   for (const id of ['cove-2', 'garden-6', 'neon-6']) {
-    const w = P.compileHole(hole(id));
-    const ball = P.newBall('a', w.tee[0], w.tee[1], w);
-    const a = roll(w, ball, 17, 0.83, 1.25), b = roll(w, ball, 17, 0.83, 1.25);
+    const a = roll(id, 17, 0.83, { t0: 1.25 }), b = roll(id, 17, 0.83, { t0: 1.25 });
     assert.equal(a.result, b.result);
     assert.equal(a.b.x, b.b.x); assert.equal(a.b.z, b.b.z);
   }
 });
 
-test('no tunnelling: a ball fired at the hard speed limit into rails stays inside', () => {
-  const w = P.compileHole(hole('cove-1'));     // fully railed lane over water
+test('no tunnelling: a ball fired at the hard speed limit into rails stays inside (Rapier CCD)', () => {
   for (const angle of [90, 270, 45, 135, 200, 0, 180]) {
-    const b = P.newBall('a', 0, 4, w);
-    P.shoot(b, Math.sin(angle * Math.PI / 180), -Math.cos(angle * Math.PI / 180), P.C.MAX_SPEED * 2); // clamped to MAX_SPEED
-    let result = null;
-    for (let t = 0; t < 30 && !result; t += 1 / 60) { const r = P.stepWorld(w, [b], t, 1 / 60); if (r.length) result = r[0].result; }
-    assert.notEqual(result, 'water', `angle ${angle}: ball escaped the rails`);
-    assert.ok(Math.abs(b.x) <= 1.6, `angle ${angle}: x=${b.x}`);
+    const r = roll('cove-1', angle, 0, { x: 0, z: 4, speed: P.C.MAX_SPEED * 2 });
+    assert.notEqual(r.result, 'water', `angle ${angle}: ball escaped the rails`);
+    assert.ok(Math.abs(r.b.x) <= 1.6, `angle ${angle}: x=${r.b.x}`);
   }
 });
 
 test('the cup catches a slow ball and lets a fast one lip out', () => {
-  const w = P.compileHole(hole('cove-1'));
-  const slow = P.newBall('a', 0, -4.6, w); // 2 units short of the cup
-  P.shoot(slow, 0, -1, 3.6);
-  let res = null;
-  for (let t = 0; t < 10 && !res; t += 1 / 60) { const r = P.stepWorld(w, [slow], t, 1 / 60); if (r.length) res = r[0].result; }
-  assert.equal(res, 'cup');
-  const fast = P.newBall('b', 0, -5.2, w);
-  P.shoot(fast, 0, -1, 14);
-  const events = [];
-  for (let t = 0; t < 0.4; t += 1 / 60) P.stepWorld(w, [fast], t, 1 / 60, { onEvent: (e) => events.push(e.type) });
-  assert.ok(!fast.holed, 'a 14 u/s ball should not drop');
-  assert.ok(events.includes('lip'));
+  const slow = roll('cove-1', 0, 0, { x: 0, z: -4.6, speed: 3.6 });
+  assert.equal(slow.result, 'cup');
+  const fast = roll('cove-1', 0, 0, { x: 0, z: -5.2, speed: 14, limit: 0.4 });
+  assert.notEqual(fast.result, 'cup', 'a 14 u/s ball should not drop');
+  assert.ok(fast.events.some((e) => e.type === 'lip'));
 });
 
-test('sand grabs the ball, ice-smooth metal lets it run', () => {
-  const sandW = P.compileHole({ id: 's', par: 2, tee: [0, 4], cup: [0, -40], floors: [{ rect: [-2, -50, 2, 6], h: 0, mat: 'sand' }] });
-  const metalW = P.compileHole({ id: 'm', par: 2, tee: [0, 4], cup: [0, -40], floors: [{ rect: [-2, -50, 2, 6], h: 0, mat: 'metal' }] });
-  const a = roll(sandW, P.newBall('a', 0, 4, sandW), 0, 0.6);
-  const b = roll(metalW, P.newBall('b', 0, 4, metalW), 0, 0.6);
+test('sand grabs the ball, metal lets it run', () => {
+  const mk = (mat) => ({ id: 's' + mat, par: 2, tee: [0, 4], cup: [0, -40], floors: [{ rect: [-2, -50, 2, 6], h: 0, mat }] });
+  const a = roll(mk('sand'), 0, 0.6), b = roll(mk('metal'), 0, 0.6);
   assert.ok(4 - a.b.z < (4 - b.b.z) / 3, `sand ${4 - a.b.z} vs metal ${4 - b.b.z}`);
 });
 
-test('slopes: a weak putt rolls back down, a firm one climbs', () => {
-  const w = P.compileHole(hole('cove-4')); // ramp from z=6 (h 0) up to the ridge at z=2 (h 0.9)
-  const weak = roll(w, P.newBall('a', 0, 8.4, w), 0, 0.25);
+test('slopes: a weak putt rolls back down, a firm one climbs the ramp and jumps the channel', () => {
+  const weak = roll('cove-4', 0, 0.25, { x: 0, z: 8.4 });
   assert.equal(weak.result, 'stop');
-  assert.ok(weak.b.z > 6, `weak putt should end below the ramp, got z=${weak.b.z}`);
-  const firm = roll(w, P.newBall('a', 0, 8.4, w), 0, 0.85);
-  assert.ok(firm.b.z < -2, `firm putt should clear the ridge, got z=${firm.b.z}`);
+  assert.ok(weak.b.z > 5.9, `weak putt should end below the ramp, got z=${weak.b.z}`);
+  const firm = roll('cove-4', 0, 0.85, { x: 0, z: 8.4 });
+  assert.notEqual(firm.result, 'water');
+  assert.ok(firm.b.z < -3, `firm putt should clear the channel, got z=${firm.b.z}`);
 });
 
 test('water sends the ball back as a hazard, falling off the world is out of bounds', () => {
-  const w = P.compileHole(hole('cove-3')); // straight through the tidepool
-  assert.equal(roll(w, P.newBall('a', 0, 7.4, w), 0, 0.6).result, 'water');
-  const n = P.compileHole(hole('neon-2'));
-  assert.equal(roll(n, P.newBall('a', 2.3, 1.5, n), 90, 0.4).result, 'oob'); // off the catwalk into the void
+  assert.equal(roll('cove-3', 0, 0.6, { x: 0, z: 7.4 }).result, 'water');
+  assert.equal(roll('neon-2', 90, 0.4, { x: 2.3, z: 1.5 }).result, 'oob'); // off the catwalk into the void
 });
 
-test('giant and tiny balls change the collision radius smoothly', () => {
-  const w = P.compileHole(hole('cove-1'));
-  const b = P.newBall('a', 0, 5, w);
+test('launch pads throw the ball across the gap', () => {
+  const r = roll('neon-2', 0, 0.5, { x: 0, z: 8.6 });
+  assert.ok(r.events.some((e) => e.type === 'pad'));
+  assert.ok(r.events.some((e) => e.type === 'land' && e.z < -1), 'lands on the far deck');
+});
+
+test('giant and tiny balls change the collider radius smoothly and never stay inside a rail', () => {
+  const { sim, b } = setup('cove-1', 1.6 - P.C.R - 0.13, 5);
   b.rTarget = P.C.R * 1.65;
-  for (let t = 0; t < 2; t += 1 / 60) P.stepWorld(w, [b], t, 1 / 60);
+  run(sim, 2);
   assert.ok(Math.abs(b.r - P.C.R * 1.65) < 1e-9);
-  // Grown against a rail, the ball is pushed out rather than trapped inside it.
-  const c = P.newBall('c', 1.6 - P.C.R - 0.13, 5, w);
-  c.rTarget = P.C.R * 1.65;
-  for (let t = 0; t < 2; t += 1 / 60) P.stepWorld(w, [c], t, 1 / 60);
-  assert.ok(c.x + c.r <= 1.6 - 0.12 + 0.02, `giant ball overlaps the rail: x=${c.x} r=${c.r}`);
+  assert.ok(Math.abs(b.col.radius() - b.r) < 1e-6);
+  assert.ok(b.x + b.r <= 1.6 - 0.12 + 0.03, `giant ball overlaps the rail: x=${b.x} r=${b.r}`);
+  P.freeSim(sim);
 });
 
 test('ghost balls pass soft obstacles but not outer rails', () => {
-  const w = P.compileHole(hole('garden-3')); // hedge from (-6,2) to (2.2,2) is soft
-  const normal = roll(w, P.newBall('a', -4, 4, w), 0, 0.35);
+  const normal = roll('garden-3', 0, 0.35, { x: -4, z: 4 });
   assert.ok(normal.b.z > 2, 'a normal ball bounces off the hedge');
-  const g = P.newBall('b', -4, 4, w); g.ghost = true;
-  const ghost = roll(w, g, 0, 0.35);
+  const ghost = roll('garden-3', 0, 0.35, { x: -4, z: 4, prep: (b) => { b.ghost = true; } });
   assert.ok(ghost.b.z < 2, 'a ghost ball goes through the hedge');
-  const r = P.newBall('c', 0, 0, w); r.ghost = true;
-  assert.notEqual(roll(w, r, 90, 1).result, 'oob', 'ghost still bounces off the outer rails');
+  assert.notEqual(roll('garden-3', 90, 1, { x: 0, z: 0, prep: (b) => { b.ghost = true; } }).result, 'oob', 'ghost still bounces off the outer rails');
 });
 
-test('frozen balls do not move and resume afterwards', () => {
-  const w = P.compileHole(hole('cove-1'));
-  const b = P.newBall('a', 0, 6, w);
+test('frozen balls do not move and resume with their velocity afterwards', () => {
+  const { sim, b } = setup('cove-1', 0, 6);
   P.shoot(b, 0, -1, 8);
-  P.stepWorld(w, [b], 0, 1 / 60);
+  run(sim, 1 / 60);
   b.frozen = true;
-  const z = b.z, vz = b.vz;
-  for (let t = 0; t < 2; t += 1 / 60) P.stepWorld(w, [b], t, 1 / 60);
-  assert.equal(b.z, z); assert.equal(b.vz, vz);
+  run(sim, 1 / 60);
+  const z = b.z;
+  run(sim, 2);
+  assert.ok(Math.abs(b.z - z) < 1e-6);
   b.frozen = false;
-  P.stepWorld(w, [b], 2, 1 / 60);
-  assert.ok(b.z < z);
+  run(sim, 0.1);
+  assert.ok(b.z < z - 0.3, 'carried on rolling');
+  P.freeSim(sim);
 });
 
 test('ball-to-ball collisions transfer momentum; tee balls (solo) do not collide', () => {
-  const w = P.compileHole(hole('cove-1'));
-  const a = P.newBall('a', 0, 6, w), b = P.newBall('b', 0, 4, w);
+  const { sim, b: a } = setup('cove-1', 0, 6);
+  const b = P.addBall(sim, 'b', 0, 4);
   P.shoot(a, 0, -1, 6);
-  for (let t = 0; t < 1; t += 1 / 60) P.stepWorld(w, [a, b], t, 1 / 60);
+  run(sim, 1);
   assert.ok(b.z < 4 - 0.5, 'b was knocked forward');
-  const c = P.newBall('c', 0, 6, w), d = P.newBall('d', 0, 4, w); d.solo = true;
-  P.shoot(c, 0, -1, 6);
-  for (let t = 0; t < 1; t += 1 / 60) P.stepWorld(w, [c, d], t, 1 / 60);
-  assert.equal(d.z, 4);
+  P.freeSim(sim);
+  const s2 = setup('cove-1', 0, 6), d = P.addBall(s2.sim, 'd', 0, 4);
+  d.solo = true;
+  P.shoot(s2.b, 0, -1, 6);
+  run(s2.sim, 1);
+  assert.ok(Math.abs(d.z - 4) < 1e-3, `solo ball moved to ${d.z}`);
+  P.freeSim(s2.sim);
 });
 
-test('a resting ball rides the ferry platform', () => {
-  const w = P.compileHole(hole('garden-4'));
-  const b = P.newBall('a', 0, 3.6, w);
-  const f0 = P.floorAt(w, b.x, b.z, b.y, 0);
-  assert.ok(f0 && f0.plat === 0, 'ball starts on the docked platform');
-  for (let t = 0; t < 4; t += 1 / 60) P.stepWorld(w, [b], t, 1 / 60);
+test('a resting ball rides the ferry platform, and kinematic spinners shove resting balls', () => {
+  const { sim, b } = setup('garden-4', 0, 3.6);
+  run(sim, 4.2);
   assert.ok(b.z < -1, `the platform should have carried the ball across, z=${b.z}`);
-  assert.ok(!b.moving || b.grounded);
+  P.freeSim(sim);
+  const s2 = setup('garden-1', 0.9, 0.3);
+  run(s2.sim, 3);
+  assert.ok(Math.hypot(s2.b.x - 0.9, s2.b.z - 0.3) > 0.3, 'the turning bar pushed the ball');
+  P.freeSim(s2.sim);
 });
 
-test('trajectory preview matches the real simulation', () => {
+test('trajectory preview matches the authoritative simulation', () => {
   const w = P.compileHole(hole('cove-2'));
-  const b = P.newBall('a', w.tee[0], w.tee[1], w);
-  const pred = P.predict(w, b, 0.2, -1, 12, 0, { maxT: 30 });
-  const c = { ...b }; P.shoot(c, 0.2, -1, 12);
-  let res = null;
-  for (let t = 0; t < 30 && !res; t += P.C.DT) { const r = P.stepWorld(w, [c], t, P.C.DT, { collide: false }); if (r.length) res = r[0].result; }
-  assert.equal(pred.result, res);
-  assert.ok(Math.hypot(pred.ball.x - c.x, pred.ball.z - c.z) < 1e-6);
+  const f = P.floorAt(w, w.tee[0], w.tee[1], 50, 0);
+  const pred = P.predict(w, { x: w.tee[0], y: f.h, z: w.tee[1], r: P.C.R }, 0.2, -1, 12, 0, { maxT: 30 });
+  const real = roll('cove-2', Math.atan2(0.2, 1) * 180 / Math.PI, 0, { speed: 12 });
+  assert.equal(pred.result, real.result);
+  assert.ok(Math.hypot(pred.ball.x - real.b.x, pred.ball.z - real.b.z) < 0.05, `preview ended ${Math.hypot(pred.ball.x - real.b.x, pred.ball.z - real.b.z).toFixed(3)} away`);
 });

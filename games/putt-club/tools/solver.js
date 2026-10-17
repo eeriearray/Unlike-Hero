@@ -7,17 +7,10 @@ const Courses = require('../engine/courses.js');
 
 const { distanceField } = require('../engine/ai.js');
 
-/** Simulate one shot to rest. Returns { result, ball, t }. */
+/** Simulate one shot to rest on the hole's own Rapier world. Returns { result, ball, t }. */
 function play(w, ball, dx, dz, speed, t0) {
-  const b = { ...ball, safe: null, lipped: false };
-  P.shoot(b, dx, dz, speed);
-  let t = 0, result = null;
-  while (t < P.C.MAX_SHOT_TIME + 2) {
-    const r = P.stepWorld(w, [b], t0 + t, 1 / 60);
-    t += 1 / 60;
-    if (r.length) { result = r[0].result; break; }
-  }
-  return { result: result || 'stop', ball: b, t: t0 + t };
+  const r = P.predict(w, ball, dx, dz, speed, t0, { maxT: P.C.MAX_SHOT_TIME + 2, every: 1 });
+  return { result: r.result || 'stop', ball: { x: r.ball.x, y: r.ball.y, z: r.ball.z, r: P.C.R, rTarget: P.C.R }, t: t0 + (r.points.length - 1) };
 }
 
 function solve(hole, opts = {}) {
@@ -27,7 +20,8 @@ function solve(hole, opts = {}) {
   const dynamic = w.spinners.length || w.sliders.length || w.gates.length || w.platforms.length;
   const waits = dynamic ? (opts.waits || [0, 0.9, 1.9, 3.1]) : [0];
   const beam = opts.beam || 8, maxDepth = opts.maxDepth || hole.par + 2;
-  let states = [{ ball: P.newBall('s', w.tee[0], w.tee[1], w), t: 0, path: [] }];
+  const tf = P.floorAt(w, w.tee[0], w.tee[1], 50, 0);
+  let states = [{ ball: { x: w.tee[0], y: tf ? tf.h : 0, z: w.tee[1], r: P.C.R, rTarget: P.C.R }, t: 0, path: [] }];
   for (let depth = 1; depth <= maxDepth; depth++) {
     const next = new Map();
     for (const s of states) {
@@ -35,7 +29,7 @@ function solve(hole, opts = {}) {
         const th = (a / angles) * Math.PI * 2;
         const r = play(w, s.ball, Math.sin(th), -Math.cos(th), P.shotSpeed(pw), s.t + wait);
         const step = { angle: Math.round(th * 180 / Math.PI), power: pw, wait };
-        if (r.result === 'cup') return { solved: true, strokes: depth, path: s.path.concat([step]) };
+        if (r.result === 'cup') { done(w); return { solved: true, strokes: depth, path: s.path.concat([step]) }; }
         if (r.result !== 'stop') continue;
         const key = Math.round(r.ball.x / 0.6) + ',' + Math.round(r.ball.z / 0.6) + ',' + Math.round(r.ball.y * 4);
         const score = dist(r.ball.x, r.ball.z);
@@ -46,10 +40,12 @@ function solve(hole, opts = {}) {
     states = [...next.values()].sort((x, y) => x.score - y.score).slice(0, beam);
     if (!states.length) break;
   }
+  done(w);
   return { solved: false, best: states[0] && states[0].score };
 }
+function done(w) { if (w._pred) { P.freeSim(w._pred); w._pred = null; } }
 
-if (require.main === module) {
+if (require.main === module) P.init().then(() => {
   const only = process.argv[2];
   for (const c of Courses.COURSES) for (const h of c.holes) {
     if (only && h.id !== only) continue;
@@ -57,6 +53,6 @@ if (require.main === module) {
     const r = solve(h);
     console.log(`${h.id.padEnd(10)} par ${h.par}  ${r.solved ? 'solved in ' + r.strokes : 'NOT SOLVED (best distance ' + (r.best || 0).toFixed(1) + ')'}  ${Date.now() - t0}ms  ${r.path ? JSON.stringify(r.path) : ''}`);
   }
-}
+});
 
 module.exports = { solve, play, distanceField };

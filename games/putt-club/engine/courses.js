@@ -27,6 +27,22 @@
   function R(x0, z0, x1, z1, h, o) { var f = { rect: [x0, z0, x1, z1], h: h || 0 }; for (var k in o) f[k] = o[k]; return f; }
   /** Slope over a rect: h0 at the min-z (or min-x) edge, h1 at the max edge. */
   function S(x0, z0, x1, z1, h0, h1, axis, o) { var f = { rect: [x0, z0, x1, z1], h: [h0, h1], axis: axis || 'z' }; for (var k in o) f[k] = o[k]; return f; }
+  /**
+   * Flat rect with rounded corners: r = [far-left, far-right, near-right, near-left] (far = min z).
+   * Only round corners whose two edges no other floor shares, so joins stay straight.
+   */
+  function RR(x0, z0, x1, z1, h, r, o) {
+    var pts = [], n = 6;
+    var cs = [[x0, z0, r[0], 1, 1, Math.PI], [x1, z0, r[1], -1, 1, -Math.PI / 2], [x1, z1, r[2], -1, -1, 0], [x0, z1, r[3], 1, -1, Math.PI / 2]];
+    cs.forEach(function (c) {
+      if (!c[2]) { pts.push([c[0], c[1]]); return; }
+      var cx = c[0] + c[3] * c[2], cz = c[1] + c[4] * c[2];
+      for (var i = 0; i <= n; i++) { var a = c[5] + (i / n) * (Math.PI / 2); pts.push([cx + Math.cos(a) * c[2], cz + Math.sin(a) * c[2]]); }
+    });
+    var f = { poly: pts, h: h || 0 };
+    for (var k in o) f[k] = o[k];
+    return f;
+  }
   function sand(x0, z0, x1, z1, h) { return { rect: [x0, z0, x1, z1], h: (h || 0) + 0.001, mat: 'sand', overlay: true }; }
   function paint(x0, z0, x1, z1, h, mat) { return { rect: [x0, z0, x1, z1], h: (h || 0) + 0.001, mat: mat, overlay: true }; }
 
@@ -40,21 +56,20 @@
         id: 'cove-1', name: 'Lagoon Lane', par: 2, tee: [0, 7.5], cup: [0, -6.6],
         tip: 'A gentle hump in the middle. Firm, straight putt.',
         floors: [
-          R(-1.6, 3, 1.6, 9.2), S(-1.6, 0, 1.6, 3, 0.32, 0), S(-1.6, -3, 1.6, 0, 0, 0.32), R(-1.6, -8.6, 1.6, -3),
-          sand(0.5, -8.4, 1.6, -7.3)
+          RR(-1.6, 3, 1.6, 9.2, 0, [0, 0, 1.3, 1.3]), S(-1.6, 0, 1.6, 3, 0.32, 0), S(-1.6, -3, 1.6, 0, 0, 0.32), RR(-1.6, -8.6, 1.6, -3, 0, [1.4, 1.4, 0, 0]),
+          sand(-1.6, -5.4, -0.55, -4.1)
         ],
         tokens: [[-0.8, 1.6]],
         decor: [{ kind: 'palm', at: [-3.2, 5], s: 1.1 }, { kind: 'palm', at: [3.4, -2], s: 1.25, rot: 2 }, { kind: 'umbrella', at: [3.0, 6.5] }, { kind: 'rock', at: [-2.8, -6], s: 1.2 }, { kind: 'starfish', at: [2.4, -7.6] }]
       },
       {
         id: 'cove-2', name: 'Boardwalk Bend', par: 3, tee: [-5.3, 6.4], cup: [5.2, -3.3], teeDir: [0, -1],
-        tip: 'Bank it off the corner, or brave the plank bridge for a shortcut.',
+        tip: 'Bank it round the curved corner, or brave the plank bridge for a shortcut.',
         floors: [
-          R(-7, -5, -3.6, 8), R(-3.6, -5, 6.8, -1.6),
+          RR(-7, -5, -3.6, 8, 0, [2.2, 0, 1.3, 1.3]), RR(-3.6, -5, 6.8, -1.6, 0, [0, 1.3, 1.3, 0]),
           { poly: [[-3.6, 5.0], [-3.6, 3.4], [2.4, -1.6], [4.0, -1.6]], h: 0, mat: 'bridge', rails: false },
-          sand(-7, -5, -5.6, -3.6)
+          sand(-1.2, -5, 0.6, -4.1)
         ],
-        bumpers: [{ at: [-6.4, -4.4], r: 0.5, post: true, e: 0.6, kick: 0, mat: 'stone' }],
         tokens: [[0.1, 1.4], [-5.3, -1.0]],
         decor: [{ kind: 'hut', at: [-9.6, 2], rot: 1.4 }, { kind: 'palm', at: [0.4, 4.4], s: 1.2 }, { kind: 'palm', at: [8.6, -6], s: 1.0 }, { kind: 'boat', at: [3, 5.5], rot: 0.6 }, { kind: 'rock', at: [-8.6, -6.5] }]
       },
@@ -62,7 +77,7 @@
         id: 'cove-3', name: 'Tidepool', par: 3, tee: [0, 7.4], cup: [0, -6.8],
         tip: 'Go around the tidepool. The rock posts make handy banks.',
         floors: [
-          R(-5, 1.5, 5, 9), R(-5, -9, 5, -1.5), R(-5, -1.5, -1.5, 1.5), R(1.5, -1.5, 5, 1.5),
+          RR(-5, 1.5, 5, 9, 0, [0, 0, 1.6, 1.6]), RR(-5, -9, 5, -1.5, 0, [1.6, 1.6, 0, 0]), R(-5, -1.5, -1.5, 1.5), R(1.5, -1.5, 5, 1.5),
           sand(-5, 4, -1.6, 5.1), sand(1.6, -5.2, 5, -4.1)
         ],
         noRail: [[-1.6, -1.6, 1.6, 1.6]],
@@ -74,8 +89,8 @@
         id: 'cove-4', name: 'Coconut Ridge', par: 3, tee: [0, 8.4], cup: [-1.2, -10.4], teeDir: [0, -1],
         tip: 'Hit it hard up the ridge to jump the channel, or take the long way round on the left.',
         floors: [
-          R(-6, 6, 1.8, 10), S(-1.8, 2, 1.8, 6, 0.9, 0), R(-1.8, -1, 1.8, 2, 0.9), R(-1.8, -8, 1.8, -3),
-          R(-6, -12.2, 1.8, -8), R(-6, -8, -3.8, 6), sand(-3.6, -12.2, -2.2, -11)
+          RR(-6, 6, 1.8, 10, 0, [0, 0, 1.3, 1.3]), S(-1.8, 2, 1.8, 6, 0.9, 0), R(-1.8, -1, 1.8, 2, 0.9), R(-1.8, -8, 1.8, -3),
+          RR(-6, -12.2, 1.8, -8, 0, [1.6, 1.6, 0, 0]), R(-6, -8, -3.8, 6), sand(-3.6, -12.2, -2.2, -11)
         ],
         noRail: [[-1.9, -3.1, 1.9, -0.9]],
         tokens: [[0, -5], [-4.9, 0]],
@@ -85,7 +100,7 @@
         id: 'cove-5', name: 'Island Hopper', par: 4, tee: [-0.6, 9.2], cup: [3.4, -8.4], teeDir: [-1, 0],
         tip: 'Hop island to island over the rope bridges, or thread the long plank straight to the green.',
         floors: [
-          R(-2.6, 6, 4, 11.4), R(-7, -1, -2.6, 3.6), R(0.4, -11, 6.2, -5),
+          RR(-2.6, 6, 4, 11.4, 0, [0, 0, 1.4, 1.4]), RR(-7, -1, -2.6, 3.6, 0, [1.4, 0, 0, 1.4]), RR(0.4, -11, 6.2, -5, 0, [1.6, 1.6, 1.0, 0]),
           R(-4.9, 3.6, -3.5, 8.8, 0, { mat: 'bridge', rails: { mat: 'rope', height: 0.3 } }),
           R(-3.5, 7.4, -2.6, 8.8, 0, { mat: 'bridge', rails: { mat: 'rope', height: 0.3 } }),
           R(-2.6, -0.2, 0.4, 1.2, 0, { mat: 'bridge', rails: { mat: 'rope', height: 0.3 } }),
@@ -99,8 +114,8 @@
         id: 'cove-6', name: 'Lighthouse Point', par: 4, tee: [4.3, 8.6], cup: [3.6, -12], teeDir: [0, -1],
         tip: 'Climb the switchbacks to the lighthouse. The narrow plank on the right is a daring shortcut.',
         floors: [
-          R(1, 6, 6, 10.4), S(2.5, 0, 6, 6, 0.6, 0), R(-6, -3.5, 6, 0, 0.6), S(-6, -9.5, -2.5, -3.5, 1.2, 0.6),
-          R(-6, -14.2, 6, -9.5, 1.2), S(3, -9.5, 4.2, -3.5, 1.2, 0.6, 'z', { mat: 'bridge', rails: false }),
+          RR(1, 6, 6, 10.4, 0, [0.8, 0, 1.3, 1.3]), S(2.5, 0, 6, 6, 0.6, 0), RR(-6, -3.5, 6, 0, 0.6, [0, 1.3, 0, 1.3]), S(-6, -9.5, -2.5, -3.5, 1.2, 0.6),
+          RR(-6, -14.2, 6, -9.5, 1.2, [1.8, 1.8, 1.0, 0]), S(3, -9.5, 4.2, -3.5, 1.2, 0.6, 'z', { mat: 'bridge', rails: false }),
           sand(-1.5, -14.2, 1, -12.6, 1.2)
         ],
         bumpers: [{ at: [-1.2, -1.8], r: 0.45, post: true, e: 0.6, kick: 0, mat: 'stone', h: 0.6 }],
@@ -192,10 +207,9 @@
       },
       {
         id: 'neon-2', name: 'Launch Window', par: 2, tee: [0, 8.6], cup: [1.3, -6.8],
-        tip: 'Roll over the launch pad to fly the gap. The catwalk on the right is for the brave.',
+        tip: 'Roll over the launch pad to fly the gap. The rail-less catwalk on the right is for the brave.',
         floors: [R(-1.8, 2, 2.8, 10), R(-1.8, -9, 2.8, -1), R(1.8, -1, 2.8, 2, 0, { mat: 'glass', rails: false })],
-        noRail: [[-1.9, -1.2, 1.85, -0.8]],
-        pads: [{ at: [0, 4], r: 0.75, dir: [0, -1], speed: 12.5, up: 6 }],
+        pads: [{ at: [0, 4], r: 0.75, dir: [0, -1], speed: 12.5, up: 6.5 }],
         bumpers: [{ at: [0.4, -4.6], r: 0.4, kick: 2.6 }],
         tokens: [[2.3, 0.3], [-1, -4]],
         decor: [{ kind: 'pillar', at: [-3.4, 8] }, { kind: 'crystal', at: [-3.5, -3] }, { kind: 'screen', at: [4.8, 5], rot: -1.57 }, { kind: 'pillar', at: [4.4, -8] }, { kind: 'cables', at: [0, 0.3] }]
@@ -235,8 +249,7 @@
           R(-2.5, 6, 2.5, 12), R(2.5, 6, 5, 12), S(2.5, -6, 5, 6, 1.0, 0), R(-2.5, -6, 2.5, 3, 1.0), R(-5, -12, 5, -6, 1.0),
           paint(-2.5, -6, 2.5, 3, 1.0, 'tile')
         ],
-        noRail: [[-2.6, 2.8, 2.45, 3.2]],
-        pads: [{ at: [0, 7.2], r: 0.75, dir: [0, -1], speed: 10, up: 8 }],
+        pads: [{ at: [0, 7.2], r: 0.75, dir: [0, -1], speed: 10, up: 8.6 }],
         spinners: [{ at: [0, -1.6], len: 3.4, arms: 1, speed: 1.5, mat: 'metal', h: 1.0 }],
         gates: [{ a: [-5, -7.6], b: [5, -7.6], h: 1.0, period: 4, open: 0.45, mat: 'neon' }],
         magnets: [{ at: [3.6, -10.6], r: 2, k: -5, h: 1 }],
@@ -268,5 +281,5 @@
 
   function byId(id) { for (var i = 0; i < COURSES.length; i++) if (COURSES[i].id === id) return COURSES[i]; return null; }
 
-  return { COURSES: COURSES, byId: byId, roundRect: roundRect };
+  return { COURSES: COURSES, byId: byId, roundRect: roundRect, RR: RR };
 });

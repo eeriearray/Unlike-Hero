@@ -2,6 +2,17 @@
  * (online or offline), the 3D scene, audio and the interface. */
 (function (global) {
   'use strict';
+  // The physics engine (Rapier, WASM) must be ready before anything simulates or previews a shot.
+  global.PuttPhysics.init().then(function () { start(global); }, function (e) {
+    var el = document.getElementById('nogl');
+    el.querySelector('h1').textContent = 'Putt Club could not start';
+    el.querySelector('p').textContent = 'The physics engine failed to load (' + (e && e.message) + '). Try reloading, or a newer browser.';
+    el.hidden = false;
+  });
+})(window);
+
+function start(global) {
+  'use strict';
   var PC = global.PC, Match = global.PuttMatch, Powerups = global.PuttPowerups, Courses = global.PuttCourses;
   var hub = global.Hub ? global.Hub.init({ id: PC.GAME.id, version: PC.GAME.version, title: PC.GAME.title }) : null;
 
@@ -316,4 +327,4 @@
   }
   void backdropTimer; void Courses;
   PC.app = { store: store, actions: actions, scene: scene, get net() { return net; } };
-})(window);
+}

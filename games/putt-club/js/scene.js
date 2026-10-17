@@ -80,7 +80,7 @@
     this.ambient.intensity = th.ambient;
     this.sun.color.set(th.sun.color); this.sun.intensity = th.sun.intensity;
     this.sunDir = new THREE.Vector3().fromArray(th.sun.dir).normalize();
-    this.renderer.toneMappingExposure = themeId === 'neon' ? 1.1 : 0.98;
+    this.renderer.toneMappingExposure = th.exposure || (themeId === 'neon' ? 1.1 : 0.95);
   };
 
   /** Load a hole (course id, hole index, mirror). Reuses the current one if unchanged. */
@@ -89,6 +89,7 @@
     if (key === this.holeKey) return false;
     var course = Courses.byId(courseId), hole = course.holes[holeIdx];
     if (this.holeView) { this.scene.remove(this.holeView.group); this.holeView.dispose(); }
+    if (this.world && this.world._pred) { Phys.freeSim(this.world._pred); this.world._pred = null; }
     this.clearBalls();
     this.holeKey = key;
     this.world = Phys.compileHole(hole, { mirror: mirror });
@@ -170,8 +171,7 @@
   S.ballState = function (id) {
     var s = this.interp.latest(id);
     if (!s || !this.world) return null;
-    var b = Phys.newBall(id, s.x, s.z, this.world);
-    b.y = s.y; b.r = s.r; b.rTarget = s.r;
+    var b = { id: id, x: s.x, y: s.y, z: s.z, r: s.r, rTarget: s.r, fric: 1, ghost: false, magnet: false };
     var p = this.view && this.view.players.find(function (q) { return q.id === id; });
     if (p) p.effects.forEach(function (e) {
       if (e.kind === 'sticky') b.fric *= 2.6;
@@ -206,7 +206,7 @@
     if (!b) return;
     var sp = this.shotParams(aim);
     var t0 = this.interp.serverNow();
-    var r = Phys.predict(this.world, b, sp.dir[0], sp.dir[1], sp.speed, t0, { maxT: Phys.C.MAX_SHOT_TIME, every: 1 / 60 });
+    var r = Phys.predict(this.world, b, sp.dir[0], sp.dir[1], sp.speed, t0, { maxT: 14, every: 1 / 60 });
     this.pred = { t0: t0, pts: r.points, result: r.result, start: performance.now(), diverged: false, from: [b.x, b.z], ball: b, sp: sp };
   };
 
@@ -215,7 +215,7 @@
     var p = this.pred;
     if (!p) return;
     if (Math.abs(t - p.t0) > 0.04) {
-      var r = Phys.predict(this.world, p.ball, p.sp.dir[0], p.sp.dir[1], p.sp.speed, t, { maxT: Phys.C.MAX_SHOT_TIME, every: 1 / 60 });
+      var r = Phys.predict(this.world, p.ball, p.sp.dir[0], p.sp.dir[1], p.sp.speed, t, { maxT: 14, every: 1 / 60 });
       p.pts = r.points; p.result = r.result;
     }
     p.t0 = t;
@@ -278,11 +278,11 @@
     }
     // Trajectory dots from the real physics, refreshed ~30 times a second.
     var now = performance.now();
-    if (now - this.previewAt > 33 && PC.store.get('preview', true) && !sp.reversed) {
+    if (now - this.previewAt > 50 && PC.store.get('preview', true) && !sp.reversed) {
       this.previewAt = now;
       var b = this.ballState(this.me.id);
       if (b) {
-        var r = Phys.predict(this.world, b, sp.dir[0], sp.dir[1], sp.speed, this.interp.serverNow(), { maxT: 2.4, every: 1 / 30, maxBounces: 2 });
+        var r = Phys.predict(this.world, b, sp.dir[0], sp.dir[1], sp.speed, this.interp.serverNow(), { maxT: 2.2, every: 1 / 30, maxBounces: 2, step: 1 / 60 });
         var m = new THREE.Matrix4(), pts = r.points, n = Math.min(60, pts.length - 1), dist = 0, k = 0;
         for (var i = 1; i < pts.length && k < 60; i++) {
           dist += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][2] - pts[i - 1][2]);

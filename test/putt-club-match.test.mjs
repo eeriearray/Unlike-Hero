@@ -8,6 +8,7 @@ const require = createRequire(import.meta.url);
 const PuttMatch = require('../games/putt-club/engine/match.js');
 const P = require('../games/putt-club/engine/physics.js');
 const Powerups = require('../games/putt-club/engine/powerups.js');
+await P.init();
 
 function seeded(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 2 ** 32; }; }
 
@@ -98,7 +99,7 @@ test('max strokes ends a hole for that player with max + 1', () => {
   assert.match(m.command('p0', { type: 'shoot', dx: 0, dz: -1, power: 0.5 }).error, /finished/);
   // The other player holes out; the hole ends and p0 is scored 6.
   const q = m.get('p1');
-  q.ball.x = 0; q.ball.z = -6.0;
+  P.place(q.ball, 0, 0, -6.0);
   m.command('p1', { type: 'shoot', dx: 0, dz: -1, power: 0.12 });
   untilRest(m, ['p1']);
   run(m, 0.2);
@@ -121,7 +122,7 @@ test('hole time limit scores unfinished players and moves on; last ball standing
   const { m, fx } = room(2, { holeTime: 90 });
   toPlay(m);
   const q = m.get('p1');
-  q.ball.x = 0; q.ball.z = -6.0;
+  P.place(q.ball, 0, 0, -6.0);
   m.command('p1', { type: 'shoot', dx: 0, dz: -1, power: 0.12 });
   untilRest(m, ['p1']);
   assert.ok(fx.some((e) => e.type === 'hurry' && e.id === 'p0'));
@@ -135,7 +136,7 @@ test('crates award a weighted random power-up; inventory holds two', () => {
   const { m, fx } = room(1);
   toPlay(m);
   const p = m.get('p0'), tk = m.tokens[0];
-  p.ball.x = tk.x; p.ball.z = tk.z + 1.5;
+  P.place(p.ball, tk.x, tk.y, tk.z + 1.5);
   m.command('p0', { type: 'shoot', dx: 0, dz: -1, power: 0.25 });
   untilRest(m, ['p0']);
   assert.equal(p.inventory.length, 1);
@@ -262,7 +263,7 @@ test('gust pushes the target away from the attacker; a gust into water is not pe
   m.round.holeIdx = 2; m.startHole(); run(m, 3.8); // Tidepool
   const a = m.get('p0'), b = m.get('p1');
   a.shotOnce = b.shotOnce = true;
-  a.ball.x = 0; a.ball.z = 4; b.ball.x = 0; b.ball.z = 2.4; // b sits just above the pool
+  P.place(a.ball, 0, 0, 4); P.place(b.ball, 0, 0, 2.4); // b sits just above the pool
   const strokes = b.strokes;
   give(m, 'p0', 'gust');
   assert.ok(m.command('p0', { type: 'use', slot: 0, target: 'p1' }).ok);
@@ -386,7 +387,7 @@ test('a disconnected player keeps their score and does not hold the hole up', ()
   untilRest(m, ['p0']);
   m.setConnected('p0', false);
   const q = m.get('p1');
-  q.ball.x = 0; q.ball.z = -6.0;
+  P.place(q.ball, 0, 0, -6.0);
   m.command('p1', { type: 'shoot', dx: 0, dz: -1, power: 0.12 });
   untilRest(m, ['p1']);
   run(m, 0.2);

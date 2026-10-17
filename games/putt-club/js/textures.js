@@ -57,6 +57,53 @@
     });
   };
 
+  /** Diagonal two-tone checkerboard turf, like a freshly rolled mini-golf green. */
+  T.checker = function (variant) {
+    return tex('checker-' + variant, 256, 256, function (g, w, h) {
+      var rng = PC.rng('checker' + variant);
+      g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h);
+      g.save(); g.translate(w / 2, h / 2); g.rotate(Math.PI / 4);
+      var n = 4, s = (w * Math.SQRT2) / n;
+      for (var i = -n; i < n; i++) for (var j = -n; j < n; j++) {
+        if ((i + j) % 2) { g.fillStyle = 'rgba(0,0,0,0.11)'; g.fillRect(i * s, j * s, s, s); }
+      }
+      g.restore();
+      for (var k = 0; k < 5000; k++) {
+        var x = rng() * w, y = rng() * h, v = 215 + rng() * 40;
+        g.fillStyle = 'rgba(' + Math.round(v * 0.9) + ',' + Math.round(v) + ',' + Math.round(v * 0.85) + ',' + (0.12 + rng() * 0.2) + ')';
+        g.fillRect(x, y, 1, 1.6 + rng() * 1.6);
+      }
+    });
+  };
+
+  /** Rail blocks: staggered wooden bricks with dark joints (top of the rail is the last row). */
+  T.blocks = function (variant) {
+    return tex('blocks-' + variant, 256, 128, function (g, w, h) {
+      var rng = PC.rng('blocks' + variant);
+      var base = variant === 'stone' ? '#bdb3a2' : '#8a5634';
+      g.fillStyle = '#3d2414'; g.fillRect(0, 0, w, h);
+      var rows = 4, bh = h / rows, bw = w / 4;
+      for (var r = 0; r < rows; r++) for (var c = -1; c < 5; c++) {
+        var x = c * bw + (r % 2 ? bw / 2 : 0);
+        g.fillStyle = shade(base, (rng() - 0.5) * 28);
+        g.fillRect(x + 1.5, r * bh + 1.5, bw - 3, bh - 3);
+        g.fillStyle = 'rgba(255,255,255,0.07)'; g.fillRect(x + 1.5, r * bh + 1.5, bw - 3, 3);
+        for (var k = 0; k < 4; k++) { g.strokeStyle = 'rgba(40,20,8,' + (0.12 + rng() * 0.12) + ')'; var yy = r * bh + 4 + rng() * (bh - 8); g.beginPath(); g.moveTo(x + 3, yy); g.lineTo(x + bw - 3, yy + (rng() - 0.5) * 2); g.stroke(); }
+      }
+    });
+  };
+
+  /** Rippled sandy seabed seen through shallow water. */
+  T.seabed = function () {
+    return tex('seabed', 256, 256, function (g, w, h) {
+      var rng = PC.rng('seabed');
+      g.fillStyle = '#e9cf9e'; g.fillRect(0, 0, w, h);
+      noise(g, w, h, rng, 6000, 1.4, ['#dcbd86', '#f6e2b8', '#cfae78'], 0.5);
+      g.strokeStyle = 'rgba(170,130,80,0.22)'; g.lineWidth = 3;
+      for (var y = 0; y < h; y += 14) { g.beginPath(); for (var x = 0; x <= w; x += 8) g.lineTo(x, y + Math.sin(x * 0.06 + y * 0.3) * 3); g.stroke(); }
+    });
+  };
+
   T.sand = function () {
     return tex('sand', 256, 256, function (g, w, h) {
       var rng = PC.rng('sand');
