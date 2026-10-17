@@ -31,9 +31,9 @@
     DRAG: 0.2,             // speed-proportional drag
     STOP_SPEED: 0.2,
     STATIC_GRADE: 0.04,    // slopes gentler than this hold a slow ball still
-    CAPTURE_SPEED: 6.0,    // slower than this over the cup drops in
-    CAPTURE_SPEED_CENTER: 8.0,
-    RIM_PULL: 5,
+    CAPTURE_SPEED: 8.0,    // slower than this over the cup drops in
+    CAPTURE_SPEED_CENTER: 9.0,
+    RIM_PULL: 8,
     MAGNET_GAIN: 4,        // course magnets (attract and repel) pull this many times their listed strength
     BUMPER_MIN_OUT: 3.2,   // a springy bumper sends the ball off at least kick x this along its normal
     MAX_SHOT_TIME: 22,     // seconds before a rolling ball is forced to settle
@@ -223,9 +223,16 @@
             var c1 = (ex * (c[1] - a[1]) - ez * (c[0] - a[0])) / L, c2 = (ex * (d[1] - a[1]) - ez * (d[0] - a[0])) / L;
             if (Math.abs(c1) > 1e-3 || Math.abs(c2) > 1e-3) continue;
             var u1 = ((c[0] - a[0]) * ex + (c[1] - a[1]) * ez) / L2, u2 = ((d[0] - a[0]) * ex + (d[1] - a[1]) * ez) / L2;
-            var lo = Math.min(u1, u2), hi = Math.max(u1, u2);
+            var lo = Math.max(0, Math.min(u1, u2)), hi = Math.min(1, Math.max(u1, u2));
             if (hi <= 1e-4 || lo >= 1 - 1e-4) continue;
-            keep = subtractInterval(keep, lo, hi);
+            // Only where the two floors meet level is the edge open. Where they meet at a step (a ramp
+            // running beside a deck), keep the rail: otherwise the step is an invisible, unmarked wall.
+            var parts = Math.max(1, Math.ceil((hi - lo) * L / 0.25));
+            for (var pi2 = 0; pi2 < parts; pi2++) {
+              var p0 = lo + (hi - lo) * pi2 / parts, p1 = lo + (hi - lo) * (pi2 + 1) / parts, um = (p0 + p1) / 2;
+              var mxq = a[0] + ex * um, mzq = a[1] + ez * um;
+              if (Math.abs(heightOn(f, mxq, mzq) - heightOn(g, mxq, mzq)) < 0.06) keep = subtractInterval(keep, p0, p1);
+            }
           }
         }
         for (var k = 0; k < noRail.length && keep.length; k++) {
@@ -723,8 +730,8 @@
       }
       var cd = inCupZone(w, b), cdx = w.cup[0] - b.x, cdz = w.cup[1] - b.z;
       // The cup's lip slopes in: a ball grazing the rim curls toward the hole.
-      if (cd < C.CUP_R + b.r && cd > 1e-4 && Math.abs(b.y - w.cupH) < 0.1) {
-        var pull = C.RIM_PULL * (1 - cd / (C.CUP_R + b.r)) + 1.5;
+      if (cd < C.CUP_R + b.r + 0.1 && cd > 1e-4 && Math.abs(b.y - w.cupH) < 0.1) {
+        var pull = C.RIM_PULL * (1 - cd / (C.CUP_R + b.r + 0.1)) + 1.5;
         ix += cdx / cd * pull * h; iz += cdz / cd * pull * h;
       }
       if (b.magnet && cd < 3.6 && cd > 1e-4 && Math.abs(b.y - w.cupH) < 0.6 && !blocked(w, b.x, b.z, w.cup[0], w.cup[1], b.y)) {
@@ -861,8 +868,13 @@
     if (b.y < w.oobY) { hazard(b); if (ev) ev({ type: 'oob', id: b.id, x: b.x, z: b.z }); return 'oob'; }
     // Cup: slow enough over the hole and it drops; too fast and it hops the lip.
     var dd = inCupZone(w, b), spd = Math.sqrt(s2);
-    if (dd < C.CUP_R && Math.abs(b.y - w.cupH) < 0.12) {
-      var lim = (dd < C.CUP_R * 0.55 ? C.CAPTURE_SPEED_CENTER : C.CAPTURE_SPEED) * (b.r > C.R * 1.2 ? 0.8 : 1);
+    // It drops once it is mostly over the hole (centre within the cup plus half the ball), not only when its
+    // centre is: a ball half over the hole rolling straight across looked like the cup was covered. The
+    // speed it can drop at eases off from the middle toward the rim.
+    var edge = C.CUP_R + b.r * 0.5;
+    if (dd < edge && Math.abs(b.y - w.cupH) < 0.12) {
+      var inner = C.CUP_R * 0.55, k = dd < inner ? 0 : (dd - inner) / (edge - inner);
+      var lim = (dd < inner ? C.CAPTURE_SPEED_CENTER : C.CAPTURE_SPEED * (1 - 0.4 * k)) * (b.r > C.R * 1.2 ? 0.8 : 1);
       if (spd < lim) {
         b.holed = true; b.moving = false;
         body.setLinvel({ x: 0, y: 0, z: 0 }, true); body.setEnabled(false);
@@ -874,7 +886,7 @@
         body.setLinvel({ x: v.x * 0.9, y: v.y, z: v.z * 0.9 }, true);
         if (ev) ev({ type: 'lip', id: b.id, x: b.x, z: b.z });
       }
-    } else if (dd > C.CUP_R + 0.2) b.lipped = false;
+    } else if (dd > edge + 0.15) b.lipped = false;
     // Settling: slow, on the ground and not on a real slope.
     var f = floorAt(w, b.x, b.z, b.y + 0.05, t);
     var grounded = !!f && b.y - f.h < 0.06;

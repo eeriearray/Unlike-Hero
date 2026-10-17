@@ -291,6 +291,7 @@ function start(global) {
       if (v && v.settings.resetPenalty && !confirm('Go back to the tee for +' + v.settings.resetPenalty + ' stroke' + (v.settings.resetPenalty > 1 ? 's' : '') + '?')) return;
       send({ type: 'reset' });
     },
+    zoom: function (f) { scene.rig.zoom(f); },
     toggleOverview: function () { scene.rig.mode = scene.rig.mode === 'overview' ? 'play' : 'overview'; },
     cancelAim: function () { input.cancelAim(); },
     endTutorial: endTutorial,

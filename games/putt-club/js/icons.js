@@ -47,6 +47,7 @@
     camera: '<path d="M3 7.5h4l1.8-2.5h6.4L17 7.5h4v11.5H3z" class="stroke"/><circle cx="12" cy="13" r="3.4" class="stroke"/>',
     play: '<path d="M7 4.5l12 7.5-12 7.5z" fill="currentColor"/>',
     plus: '<path d="M12 5v14M5 12h14" class="stroke"/>',
+    minus: '<path d="M5 12h14" class="stroke"/>',
     link: '<path d="M10 14a4.2 4.2 0 0 0 6 0l3.3-3.3a4.2 4.2 0 0 0-6-6L12 6M14 10a4.2 4.2 0 0 0-6 0l-3.3 3.3a4.2 4.2 0 0 0 6 6L12 18" class="stroke"/>',
     sound: '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11" class="stroke"/>',
     mute: '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path d="M15.5 9.5l5 5M20.5 9.5l-5 5" class="stroke"/>',

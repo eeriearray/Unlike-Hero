@@ -324,6 +324,8 @@
           ${v.course.count > 1 ? html`<span class="course-n">Course ${v.course.index + 1}/${v.course.count}</span>` : null}
         </div>
         <div class="hud-btns">
+          <${Btn} kind="icon" icon="plus" title="Zoom in (scroll or pinch)" label="Zoom in" onClick=${function () { A.zoom(0.8); }} />
+          <${Btn} kind="icon" icon="minus" title="Zoom out (scroll or pinch)" label="Zoom out" onClick=${function () { A.zoom(1.25); }} />
           <${Btn} kind="icon" icon="camera" title="Overview (O)" label="Toggle overview camera" onClick=${A.toggleOverview} />
           <${Btn} kind="icon" icon="list" title="Scorecard (Tab)" label="Scorecard" onClick=${function () { A.ui({ modal: s.modal === 'scores' ? null : 'scores' }); }} />
           <${Btn} kind="icon" icon="help" title="How to play (H)" label="How to play" onClick=${function () { A.ui({ modal: 'help' }); }} />
@@ -357,7 +359,7 @@
       ['Aim', (p.touch ? 'Put your finger on your ball' : 'Click on your ball') + ' and pull back, like a slingshot. The arrow shows the direction and strength.'],
       ['Putt', 'Drag farther for more power, then let go. Drag back onto the ball (or press Esc) to cancel.'],
       ['Power-ups', 'Roll through a glowing crate to grab a power-up, then tap its slot (or press 1 or 2) to use it.'],
-      ['Camera', p.touch ? 'Drag away from your ball (or use two fingers) to turn the camera, pinch to zoom. Everyone plays at the same time!' : 'Drag away from your ball, right-drag or Q/E to turn the camera, scroll to zoom. Everyone plays at the same time!']
+      ['Camera', p.touch ? 'Drag away from your ball (or use two fingers) to turn the camera, pinch or the + / − buttons to zoom. Everyone plays at the same time!' : 'Drag away from your ball, right-drag or Q/E to turn the camera, scroll, + / − keys or the + / − buttons to zoom. Everyone plays at the same time!']
     ];
     var cur = steps[step];
     return html`<div class="tutorial" role="dialog" aria-label="Quick tutorial">
@@ -484,7 +486,7 @@
         <li><b>Putt:</b> let go. Drag back onto the ball${touch ? ', tap Cancel shot' : ' or press Esc'} to cancel.</li>
         <li><b>Everyone plays at once.</b> Fewest strokes wins. Water or falling off costs a stroke and puts you back where you were.</li>
         <li><b>Stroke limit:</b> after the limit you score limit + 1. Out of time scores your strokes + 2. <b>Reset</b> sends you to the tee for a penalty.</li>
-        <li><b>Camera:</b> ${touch ? 'two fingers turn it, pinch zooms' : 'right-drag or Q/E turns it, scroll or Z zooms'}; the camera button shows the whole hole. A drag that starts away from your ball always turns the camera.</li>
+        <li><b>Camera:</b> ${touch ? 'two fingers turn it, pinch or the + / − buttons zoom' : 'right-drag or Q/E turns it, scroll, + / − keys or the + / − buttons zoom'}; the camera button shows the whole hole. A drag that starts away from your ball always turns the camera.</li>
         ${touch ? null : html`<li><b>Keyboard:</b> ←/→ aim, ↑/↓ power, Space putts; O overview; Tab scorecard; 1/2 use power-ups.</li>`}
       </ol>
       <h3>Power-ups</h3>

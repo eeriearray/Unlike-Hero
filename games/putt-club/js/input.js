@@ -1,6 +1,6 @@
 /* Putt Club — aiming and camera input. Drag back from your ball to aim (the shot goes the opposite way),
  * drag farther for more power, release to putt. Dragging empty space orbits the camera; wheel or pinch zooms.
- * Keyboard: ←/→ aim, ↑/↓ power, Space putts, Esc cancels, Q/E orbit, Z zoom.
+ * Keyboard: ←/→ aim, ↑/↓ power, Space putts, Esc cancels, Q/E orbit, Z or +/- zoom.
  * Pointer gestures never scroll or select text (touch-action: none on the canvas). */
 (function (global) {
   'use strict';
@@ -131,6 +131,8 @@
     if (k === 'q' || k === 'Q') { this.h.rotate(0.25, 0); return; }
     if (k === 'e' || k === 'E') { this.h.rotate(-0.25, 0); return; }
     if (k === 'z' || k === 'Z') { this.h.zoom(e.shiftKey ? 1.2 : 0.85); return; }
+    if (k === '=' || k === '+') { this.h.zoom(0.85); return; }
+    if (k === '-' || k === '_') { this.h.zoom(1.18); return; }
     if (!this.h.canAim()) return;
     var ball = this.h.ball();
     if (!ball) return;

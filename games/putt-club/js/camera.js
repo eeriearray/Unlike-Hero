@@ -49,7 +49,7 @@
     this.goalYaw += dYaw; this.manualYawAt = performance.now();
     this.userPitch = PC.clamp(this.userPitch + dPitch, -0.35, 0.4);
   };
-  CameraRig.prototype.zoom = function (f) { this.userZoom = PC.clamp(this.userZoom * f, 0.55, 2.2); };
+  CameraRig.prototype.zoom = function (f) { this.userZoom = PC.clamp(this.userZoom * f, 0.4, 2.6); };
 
   /**
    * focus: { pos: Vector3, moving, aiming, aimDir: [dx, dz] } for your ball (or the ball you watch).
