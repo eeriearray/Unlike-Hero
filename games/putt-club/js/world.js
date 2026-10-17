@@ -504,7 +504,11 @@
       gateMeshes.forEach(function (gm, i) {
         var k = dyn.gates[i], g = gm.gate;
         if (gm.neon) { gm.panel.position.y = g.h + g.height / 2; gm.panel.scale.y = g.height * Math.max(0.02, k); gm.panel.position.y = g.h + g.height * k / 2; gm.panel.material.opacity = 0.15 + 0.5 * k; gm.panel.visible = k > 0.02; }
-        else gm.panel.position.y = g.h - g.height / 2 + g.height * k;
+        else {
+          // Lowered, its top would sit flush with the floor and flicker against it: sink it a hair and hide it.
+          gm.panel.position.y = g.h - g.height / 2 + g.height * k - 0.03 * (1 - k);
+          gm.panel.visible = k > 0.01;
+        }
       });
       platMeshes.forEach(function (pm, i) { var p = dyn.platforms[i]; pm.g.position.set(p.x, pm.p.h, p.z); });
       bumperMeshes.forEach(function (b) { if (b.hit > 0) { b.hit = Math.max(0, b.hit - dt * 4); var s = 1 + Math.sin(b.hit * Math.PI) * 0.22; b.g.scale.set(s, 1 - (s - 1) * 0.6, s); } });

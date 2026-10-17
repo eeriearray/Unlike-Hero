@@ -92,7 +92,7 @@
     this.trail = new THREE.Mesh(tg, this.trailMat); this.trail.frustumCulled = false; this.trail.visible = false; scene.add(this.trail);
 
     this.pos = new THREE.Vector3(); this.prev = null; this.r = R; this.squash = 0; this.lastR = R;
-    this.holedAt = 0; this.sink = 0; this.visible = true; this.effects = {};
+    this.holedAt = 0; this.sink = 0; this.visible = true; this.effects = {}; this.vel = { x: 0, z: 0 }; this.sinkVel = { x: 0, z: 0 };
     this.quat = new THREE.Quaternion();
   }
 
@@ -103,14 +103,24 @@
     var dt = ctx.dt;
     this.effects = effects;
     var holed = !!(s.flags & 2);
-    if (holed && !this.holedAt) { this.holedAt = ctx.t; this.sinkFrom = this.pos.clone(); }
+    if (holed && !this.holedAt) {
+      this.holedAt = ctx.t; this.sinkFrom = this.pos.clone();
+      // Keep the speed it arrived with (capped), so it carries on into the hole instead of stopping on the lip.
+      var vl = Math.hypot(this.vel.x, this.vel.z), cap = vl > 5 ? 5 / vl : 1;
+      this.sinkVel = { x: this.vel.x * cap, z: this.vel.z * cap };
+    }
     if (!holed) { this.holedAt = 0; this.sink = 0; }
     var x = s.x, y = s.y, z = s.z;
     if (this.holedAt) {
-      // Drop into the cup: slide to the centre, then sink.
-      var k = PC.clamp((ctx.t - this.holedAt) / 0.45, 0, 1);
-      x = PC.lerp(this.sinkFrom.x, ctx.cup.x, Math.min(1, k * 1.6)); z = PC.lerp(this.sinkFrom.z, ctx.cup.z, Math.min(1, k * 1.6));
-      y = ctx.cup.y - PC.easeInOutCubic(k) * 0.45;
+      // Drop into the cup: it carries on along its line, curls toward the centre against the far wall,
+      // and falls under gravity.
+      var st = ctx.t - this.holedAt, T = 0.42, k = PC.clamp(st / T, 0, 1);
+      var carry = 0.07 * (1 - Math.exp(-st / 0.07));
+      var cx = this.sinkFrom.x + this.sinkVel.x * carry, cz = this.sinkFrom.z + this.sinkVel.z * carry;
+      var c = PC.clamp(st / 0.26, 0, 1), pull = c * c * (3 - 2 * c);
+      x = PC.lerp(cx, ctx.cup.x, pull); z = PC.lerp(cz, ctx.cup.z, pull);
+      var fall = Math.min(0.5, 0.5 * 22 * Math.max(0, st - 0.03) * Math.max(0, st - 0.03));
+      y = ctx.cup.y - fall;
       this.sink = k;
     }
     // Rolling: rotate by distance travelled.
@@ -122,6 +132,7 @@
         this.spin.quaternion.premultiply(tmpQ);
       }
       this.speed = d / Math.max(dt, 1e-3);
+      if (!this.holedAt) { var a = Math.min(1, dt * 20); this.vel.x += (dx / Math.max(dt, 1e-3) - this.vel.x) * a; this.vel.z += (dz / Math.max(dt, 1e-3) - this.vel.z) * a; }
     } else this.speed = 0;
     this.prev = { x: x, z: z };
     // Squash and stretch when the size changes.

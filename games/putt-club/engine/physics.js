@@ -26,9 +26,10 @@
     MAX_SPEED: 30,         // hard velocity clamp (prevents explosions)
     MAX_SHOT: 17,          // full-power shot speed at strength 1.0
     MIN_SHOT: 0.6,
-    ROLL_DECEL: 2.6,       // constant rolling resistance
-    DRAG: 0.2,             // speed-proportional drag
-    STOP_SPEED: 0.1,
+    ROLL_DECEL: 2.8,       // rolling resistance at speed
+    ROLL_SOFT: 1.2,        // below about this speed rolling resistance fades, so a ball glides to rest instead of braking
+    DRAG: 0.17,            // speed-proportional drag
+    STOP_SPEED: 0.15,
     STATIC_GRADE: 0.04,    // slopes gentler than this hold a slow ball still
     CAPTURE_SPEED: 6.0,    // slower than this over the cup drops in
     CAPTURE_SPEED_CENTER: 8.0,
@@ -708,10 +709,14 @@
     b.grounded = !!f && b.y - f.h < 0.06 && Math.abs(v.y) < 1.5;
     var ix = 0, iz = 0;
     if (b.grounded) {
-      // Rolling resistance, scaled by the surface (sand grabs, metal and glass run).
+      // Rolling resistance, scaled by the surface (sand grabs, metal and glass run). It eases off at low
+      // speed, so the last stretch of a roll slows smoothly instead of stopping dead.
       var rvx = v.x - f.pvx, rvz = v.z - f.pvz, sp = Math.sqrt(rvx * rvx + rvz * rvz);
       if (sp > 1e-4) {
-        var dec = Math.min(sp, (C.ROLL_DECEL * (FLOOR_FRICTION[f.mat] || 1) * b.fric + C.DRAG * sp) * h);
+        // On a slope it still holds at least as hard as gravity pulls, so a slow ball settles where it did.
+        var full = C.ROLL_DECEL * (FLOOR_FRICTION[f.mat] || 1) * b.fric;
+        var roll = Math.max(full * sp / (sp + C.ROLL_SOFT), Math.min(full, C.G * Math.sqrt(f.gx * f.gx + f.gz * f.gz)));
+        var dec = Math.min(sp, (roll + C.DRAG * sp) * h);
         ix -= rvx / sp * dec; iz -= rvz / sp * dec;
       }
       var cd = inCupZone(w, b), cdx = w.cup[0] - b.x, cdz = w.cup[1] - b.z;
@@ -728,12 +733,14 @@
         var mg = w.magnets[i], mdx = mg.x - b.x, mdz = mg.z - b.z, md = Math.sqrt(mdx * mdx + mdz * mdz);
         if (md < mg.r && md > 0.05) { var mf = mg.k * (1 - md / mg.r); ix += mdx / md * mf * h; iz += mdz / md * mf * h; }
       }
-      // Launch pads set the forward speed (keeping sideways motion) and throw the ball up.
+      // Launch pads throw the ball up and forward at least at their own speed (a faster ball keeps its pace,
+      // so a pad never brakes), keeping sideways motion.
       if (b.padCd <= 0) for (var pi = 0; pi < w.pads.length; pi++) {
         var pd = w.pads[pi];
         if (Math.abs(b.y - pd.h) < 0.2 && (b.x - pd.x) * (b.x - pd.x) + (b.z - pd.z) * (b.z - pd.z) < pd.r * pd.r) {
-          var lat = v.x * -pd.dz + v.z * pd.dx;
-          body.setLinvel({ x: pd.dx * pd.speed - pd.dz * lat, y: pd.up, z: pd.dz * pd.speed + pd.dx * lat }, true);
+          var lat = v.x * -pd.dz + v.z * pd.dx, fwd = Math.max(pd.speed, v.x * pd.dx + v.z * pd.dz);
+          body.setLinvel({ x: pd.dx * fwd - pd.dz * lat, y: pd.up, z: pd.dz * fwd + pd.dx * lat }, true);
+          rollAlong(b);
           b.padCd = 0.6; ix = iz = 0;
           if (ev) ev({ type: 'pad', id: b.id, x: b.x, z: b.z, y: b.y });
           break;
@@ -797,6 +804,7 @@
       b.body.applyImpulse({ x: nx / nl * bp.kick * b.body.mass(), y: 0, z: nz / nl * bp.kick * b.body.mass() }, true);
       s = Math.max(s, bp.kick);
     }
+    if (other.kind !== 'floor') rollAlong(b);
     if (other.kind === 'floor') {
       var lf = floorAt(sim.w, b.x, b.z, b.y + 0.1, sim.t || 0);
       if (ev && pv.y < -1.5) ev({ type: 'land', id: b.id, s: Math.round(-pv.y * 10) / 10, mat: lf ? lf.mat : other.mat, x: b.x, z: b.z, y: b.y });
@@ -809,6 +817,14 @@
       b.bounces++;
       if (ev) ev({ type: other.kind === 'bumper' ? 'bumper' : 'wall', id: b.id, mat: other.mat, s: Math.round(s * 10) / 10, x: b.x, z: b.z, y: b.y });
     }
+  }
+
+  // After a rebound the ball would keep its old topspin, and floor friction would turn that spin against the
+  // new direction: rebounds died almost at once and balls stopped dead after grazing a rail. A putting
+  // ball skids briefly and picks up the new roll, so match the spin to the new direction of travel.
+  function rollAlong(b) {
+    var v = b.body.linvel();
+    b.body.setAngvel({ x: v.z / b.r, y: 0, z: -v.x / b.r }, true);
   }
 
   /** Mirror the body into the ball object and apply the rules: hazards, cup, settling, stuck. */
@@ -942,13 +958,13 @@
   /** Advance one ball by h seconds. Emits events through ev(e). */
 
   /**
-   * Map a 0..1 aim power to a launch speed. A rolling ball travels roughly with speed squared, so speed
-   * follows the square root of power: half a pull rolls about half as far as a full one, and short pulls
-   * still move the ball a useful distance.
+   * Map a 0..1 aim power to a launch speed. Speed follows power^0.75, which makes roll distance close to
+   * proportional to the pull on flat ground: a tenth of a pull rolls about a tenth as far as a full one,
+   * so short putts are as controllable as long ones.
    */
   function shotSpeed(power, strength) {
     power = clamp(power, 0, 1);
-    return Math.max(C.MIN_SHOT, Math.sqrt(power) * C.MAX_SHOT * (strength || 1));
+    return Math.max(C.MIN_SHOT, Math.pow(power, 0.75) * C.MAX_SHOT * (strength || 1));
   }
 
   var api = {

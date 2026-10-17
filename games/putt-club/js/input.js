@@ -44,9 +44,10 @@
     if (this.pointers.size === 2) { this.cancelAim(); this.mode = 'pinch'; this.pinch = dist2(this.pointers); this.mid = midpoint(this.pointers); return; }
     if (e.button === 2) { this.cancelAim(); this.mode = 'orbit'; this.last = { x: e.clientX, y: e.clientY }; return; }
     var ball = this.h.ball();
-    if (ball && this.h.canAim()) {
-      // Your shot: a drag anywhere aims. Everything is measured from where the drag started, with the
-      // camera held still, so the same pull always gives the same shot.
+    if (ball && this.h.canAim() && this.nearBall(ball, e)) {
+      // Your shot: a drag that starts on or near your ball aims; anywhere else turns the camera. Everything
+      // is measured from where the drag started, with the camera held still, so the same pull always
+      // gives the same shot.
       this.anchor = { x: e.clientX, y: e.clientY };
       this.basis = this.h.cameraBasis();
       this.mode = 'aim';
@@ -55,6 +56,15 @@
       return;
     }
     this.mode = 'orbit'; this.last = { x: e.clientX, y: e.clientY };
+  };
+
+  /** Whether a press lands close enough to the ball to start a shot (generous, and more so for fingers). */
+  AimInput.prototype.nearBall = function (ball, e) {
+    var c = this.screenOf(ball.pos);
+    var edge = this.screenOf(ball.pos.clone().add(new THREE.Vector3(0, ball.r || 0.22, 0)));
+    var ballPx = Math.abs(c.y - edge.y);
+    var grab = Math.max(e.pointerType === 'touch' ? 100 : 80, ballPx * 4);
+    return Math.hypot(e.clientX - c.x, e.clientY - c.y) <= grab;
   };
 
   AimInput.prototype.move = function (e) {

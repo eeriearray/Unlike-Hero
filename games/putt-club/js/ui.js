@@ -238,13 +238,27 @@
       ${slots.map(function (i) {
         var id = me.inventory[i], def = id && Powerups.BY_ID[id];
         var isNew = def && p.state.reveal && p.state.reveal.slot === i;
-        return html`<button key=${i + (id || '')} type="button" class=${'slot' + (def ? ' full' : '') + (isNew ? ' reveal' : '')} style=${def ? { '--pw': PC.POWER_COLORS[id] } : null}
-          disabled=${!def || me.finished} title=${def ? def.name + ' — ' + def.desc : 'Empty slot: roll through a crate'} aria-label=${def ? 'Use ' + def.name + ' (key ' + (i + 1) + ')' : 'Empty power-up slot'}
-          onClick=${function () { PC.audio.unlock(); A.usePower(i); }}>
-          ${def ? html`<${Icon} power=${id} cls="pwi" /><span class="sl-name">${def.name}</span><span class="sl-kind">${def.kind}</span>` : html`<span class="sl-empty">Empty</span>`}
-          <kbd>${i + 1}</kbd>
-        </button>`;
+        // The tip lives on a wrapper, so it still shows over a slot that is disabled (e.g. once you've holed out).
+        return html`<div key=${i + (id || '')} class="slot-wrap">
+          <button type="button" class=${'slot' + (def ? ' full' : '') + (isNew ? ' reveal' : '')} style=${def ? { '--pw': PC.POWER_COLORS[id] } : null}
+            disabled=${!def || me.finished} aria-label=${def ? 'Use ' + def.name + ' (key ' + (i + 1) + '): ' + def.desc : 'Empty power-up slot'}
+            onClick=${function () { PC.audio.unlock(); A.usePower(i); }}>
+            ${def ? html`<${Icon} power=${id} cls="pwi" /><span class="sl-name">${def.name}</span><span class="sl-kind">${def.kind}</span>` : html`<span class="sl-empty">Empty</span>`}
+            <kbd>${i + 1}</kbd>
+          </button>
+          <${PowerTip} def=${def} empty="Empty slot. Roll through a glowing crate to pick up a power-up." />
+        </div>`;
       })}
+    </div>`;
+  }
+
+  /** Hover / focus card explaining a power-up. */
+  function PowerTip(p) {
+    var def = p.def;
+    if (!def) return p.empty ? html`<div class="power-tip" role="tooltip"><p>${p.empty}</p></div>` : null;
+    var who = def.target === 'opponent' ? 'Targets an opponent' : 'Helps you';
+    return html`<div class="power-tip" role="tooltip" style=${{ '--pw': PC.POWER_COLORS[def.id] }}>
+      <b>${def.name}</b><span class="pt-meta">${def.kind} · ${who}</span><p>${def.desc}</p>
     </div>`;
   }
 
@@ -256,8 +270,9 @@
         var def = Powerups.BY_ID[e.kind], hostile = def.hostile;
         var detail = e.left != null && !(def.effect && def.effect.shots) ? Math.ceil(e.left) + 's' : e.shots ? e.shots + (e.shots === 1 ? ' shot' : ' shots') : e.live ? 'active' : e.left == null ? 'until blocked' : Math.ceil(e.left) + 's';
         var label = e.kind === 'reverse' ? 'Aim reversed!' : e.kind === 'freeze' ? 'Frozen!' : e.kind === 'confetti' ? 'Confetti!' : def.name;
-        return html`<div key=${e.kind} class=${'effect' + (hostile ? ' hostile' : '')} style=${{ '--pw': PC.POWER_COLORS[e.kind] }} title=${def.desc}>
-          <${Icon} power=${e.kind} cls="pwi" /><span><b>${label}</b><small>${detail}</small></span></div>`;
+        return html`<div key=${e.kind} class=${'effect' + (hostile ? ' hostile' : '')} style=${{ '--pw': PC.POWER_COLORS[e.kind] }} tabindex="0">
+          <${Icon} power=${e.kind} cls="pwi" /><span><b>${label}</b><small>${detail}</small></span>
+          <${PowerTip} def=${def} /></div>`;
       })}
     </div>`;
   }
@@ -339,10 +354,10 @@
   function Tutorial(p) {
     var _s = useState(0), step = _s[0], setStep = _s[1];
     var steps = [
-      ['Aim', (p.touch ? 'Drag your finger anywhere' : 'Click and drag anywhere') + ' and pull back, like a slingshot. The arrow shows the direction and strength.'],
+      ['Aim', (p.touch ? 'Put your finger on your ball' : 'Click on your ball') + ' and pull back, like a slingshot. The arrow shows the direction and strength.'],
       ['Putt', 'Drag farther for more power, then let go. Drag back onto the ball (or press Esc) to cancel.'],
       ['Power-ups', 'Roll through a glowing crate to grab a power-up, then tap its slot (or press 1 or 2) to use it.'],
-      ['Camera', p.touch ? 'Use two fingers to turn the camera and pinch to zoom. Everyone plays at the same time!' : 'Right-drag (or Q/E) to turn the camera, scroll to zoom. Everyone plays at the same time!']
+      ['Camera', p.touch ? 'Drag away from your ball (or use two fingers) to turn the camera, pinch to zoom. Everyone plays at the same time!' : 'Drag away from your ball, right-drag or Q/E to turn the camera, scroll to zoom. Everyone plays at the same time!']
     ];
     var cur = steps[step];
     return html`<div class="tutorial" role="dialog" aria-label="Quick tutorial">
@@ -464,12 +479,12 @@
     return html`<div class="help">
       <h3>How to play</h3>
       <ol class="steps">
-        <li><b>Aim:</b> when it's your shot, ${touch ? 'drag a finger anywhere' : 'click and drag anywhere'} and pull back. The ball goes the opposite way, like a slingshot.</li>
+        <li><b>Aim:</b> when it's your shot, ${touch ? 'press on (or near) your ball' : 'click on (or near) your ball'} and pull back. The ball goes the opposite way, like a slingshot.</li>
         <li><b>Power:</b> the farther you pull, the harder the putt (half a pull is half power). The arrow grows and warms from teal to coral as you pull harder.</li>
         <li><b>Putt:</b> let go. Drag back onto the ball${touch ? ', tap Cancel shot' : ' or press Esc'} to cancel.</li>
         <li><b>Everyone plays at once.</b> Fewest strokes wins. Water or falling off costs a stroke and puts you back where you were.</li>
         <li><b>Stroke limit:</b> after the limit you score limit + 1. Out of time scores your strokes + 2. <b>Reset</b> sends you to the tee for a penalty.</li>
-        <li><b>Camera:</b> ${touch ? 'two fingers turn it, pinch zooms' : 'right-drag or Q/E turns it, scroll or Z zooms'}; the camera button shows the whole hole. While your ball rolls, a normal drag turns the camera too.</li>
+        <li><b>Camera:</b> ${touch ? 'two fingers turn it, pinch zooms' : 'right-drag or Q/E turns it, scroll or Z zooms'}; the camera button shows the whole hole. A drag that starts away from your ball always turns the camera.</li>
         ${touch ? null : html`<li><b>Keyboard:</b> ←/→ aim, ↑/↓ power, Space putts; O overview; Tab scorecard; 1/2 use power-ups.</li>`}
       </ol>
       <h3>Power-ups</h3>
