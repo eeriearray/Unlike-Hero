@@ -3,10 +3,13 @@
 //   <base>voice-pack/*  the Voice Booth's uploads (voice-pack.mjs)
 //   <base>net-info      this computer's Wi-Fi/LAN addresses, so the Main Stage can put a join link
 //                       and QR code on screen that phones can actually open (localhost never works on a phone)
+//   <base>packs         custom prompt packs from the Prompt Studio, shared with every device on this hub
+//                       (POST a pack -> its 7-digit code; GET <base>packs/<code>)
 import { networkInterfaces } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createVoicePack, loadScript, isLocal } from './voice-pack.mjs';
+import { createPackStore } from './packs.mjs';
 
 const VOICE_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'voice');
 
@@ -24,6 +27,7 @@ export function lanAddresses(ifaces = networkInterfaces()) {
 
 export default async function attach({ httpServer, basePath, log = console.log, voiceDir = VOICE_DIR }) {
   const pack = createVoicePack({ dir: voiceDir, lines: await loadScript() });
+  const packs = await createPackStore({ dir: join(VOICE_DIR, '..', 'packs') });
   const previous = httpServer.listeners('request').slice();
   httpServer.removeAllListeners('request');
   httpServer.on('request', (req, res) => {
@@ -32,6 +36,10 @@ export default async function attach({ httpServer, basePath, log = console.log, 
     if (url.pathname === `${basePath}net-info`) {
       res.writeHead(isLocal(req) ? 200 : 403, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
       res.end(JSON.stringify(isLocal(req) ? { addresses: lanAddresses(), port: httpServer.address() && httpServer.address().port } : { error: 'localhost only' }));
+      return;
+    }
+    if (url.pathname === `${basePath}packs` || url.pathname.startsWith(`${basePath}packs/`)) {
+      packs.handle(req, res, url.pathname.slice(`${basePath}packs`.length)).catch(() => { if (!res.headersSent) res.writeHead(500).end(); });
       return;
     }
     if (!url.pathname.startsWith(`${basePath}voice-pack/`)) { for (const l of previous) l.call(httpServer, req, res); return; }
