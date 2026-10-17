@@ -3,7 +3,7 @@
 // Loaded by server/relay.mjs because games/putt-club/game.json names it in "server".
 // Runs Socket.io at /games/putt-club/socket.io. Each room owns one PuttMatch (engine/match.js) that simulates
 // every ball at 60 Hz; clients only send intents (shoot, use an item, vote) and receive:
-//   'state'  the room view (coalesced, on change)      'snap'  ball positions, 20 Hz while balls can move
+//   'state'  the room view (coalesced, on change)      'snap'  ball positions, 30 Hz while balls can move
 //   'fx'     batched one-off events (sounds, effects)  'closed' the room went away
 // This folder is never served over HTTP (relay.mjs blocks paths containing /server/).
 import { Server } from 'socket.io';
@@ -15,7 +15,7 @@ const require = createRequire(import.meta.url);
 const PuttMatch = require('../engine/match.js');
 
 const TICK = 1 / 60;
-const SNAP_EVERY = 3;                     // ticks per snapshot (20 Hz)
+const SNAP_EVERY = 2;                     // ticks per snapshot (30 Hz)
 const LOBBY_GRACE_MS = 20_000;            // a lobby seat survives a refresh or a brief drop
 const IDLE_ROOM_MS = 5 * 60_000;          // rooms with no connected humans close after this
 const MAX_ROOMS = 300;

@@ -51,23 +51,19 @@ function start(global) {
   PC.audio.music('menu');
   var backdropTimer = setInterval(function () { if (!store.get().view) scene.menuBackdrop(++menuCourse); }, 24000);
 
-  var powerFill = null, powerText = null;
-  function showPower(aim) {
-    powerFill = powerFill || document.getElementById('power-fill');
-    powerText = powerText || document.getElementById('power-text');
-    document.body.classList.toggle('aiming', !!aim);
-    if (!powerFill) return;
-    var p = aim ? aim.power : 0;
-    powerFill.style.transform = 'scaleX(' + p.toFixed(3) + ')';
-    powerFill.style.background = p < 0.5 ? 'var(--turquoise)' : p < 0.8 ? 'var(--gold)' : 'var(--coral)';
-    if (powerText) powerText.textContent = aim ? Math.round(p * 100) + '%' : '';
-  }
+  function showPower(aim) { document.body.classList.toggle('aiming', !!aim); }
 
   var input = new PC.AimInput(canvas, {
     camera: function () { return scene.camera; },
     ball: function () { return scene.myBallView(); },
     canAim: function () { return scene.canAim() && !store.get().modal && !store.get().pick; },
-    aimAnywhere: function () { return false; },
+    aimStart: function () { scene.rig.holdForAim = true; },
+    aimEnd: function () { scene.rig.holdForAim = false; },
+    cameraBasis: function () {
+      // Ground-plane right and forward vectors of the camera at the moment aiming starts.
+      var c = scene.camera, f = new THREE.Vector3(); c.getWorldDirection(f); f.y = 0; f.normalize();
+      return { fx: f.x, fz: f.z, rx: -f.z, rz: f.x };
+    },
     defaultAim: function () { return scene.defaultAim(); },
     onAim: function (aim) { scene.setAim(aim); showPower(aim); if (!!aim !== store.get().aiming) store.set({ aiming: !!aim }); },
     onShoot: shoot,
@@ -76,7 +72,8 @@ function start(global) {
   });
 
   function shoot(aim) {
-    scene.setAim(null); showPower(null); store.set({ aiming: false });
+    if (navigator.vibrate) try { navigator.vibrate(12 + Math.round(aim.power * 20)); } catch (e) { /* not allowed */ }
+    scene.setAim(null); showPower(null); store.set({ aiming: false }); scene.rig.holdForAim = false;
     if (store.get().showTutorial) endTutorial();
     scene.startPrediction(aim);
     send({ type: 'shoot', dx: aim.dir[0], dz: aim.dir[1], power: aim.power }, true).then(function (res) {

@@ -220,7 +220,7 @@
     var l = Math.hypot(dx, dz);
     if (l < 1e-3 || l > 1e3) return { error: 'Bad shot.' };
     power = clamp(power, 0, 1);
-    if (power < 0.02) return { error: 'Too soft.' };
+    if (power < 0.005) return { error: 'Too soft.' };
     dx /= l; dz /= l;
     if (this.hasEffect(p, 'reverse')) { dx = -dx; dz = -dz; }
     var speed = P.shotSpeed(power, STRENGTH[this.settings.strength]);

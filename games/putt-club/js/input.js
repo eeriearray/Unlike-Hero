@@ -41,18 +41,18 @@
     e.preventDefault();
     this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     try { this.canvas.setPointerCapture(e.pointerId); } catch (err) { /* old browsers */ }
-    if (this.pointers.size === 2) { this.cancelAim(); this.mode = 'pinch'; this.pinch = dist2(this.pointers); return; }
+    if (this.pointers.size === 2) { this.cancelAim(); this.mode = 'pinch'; this.pinch = dist2(this.pointers); this.mid = midpoint(this.pointers); return; }
     if (e.button === 2) { this.cancelAim(); this.mode = 'orbit'; this.last = { x: e.clientX, y: e.clientY }; return; }
     var ball = this.h.ball();
     if (ball && this.h.canAim()) {
-      var s = this.screenOf(ball.pos);
-      var r = this.canvas.getBoundingClientRect();
-      var grab = Math.max(64, Math.min(r.width, r.height) * 0.09);
-      if (Math.hypot(e.clientX - s.x, e.clientY - s.y) < grab || this.h.aimAnywhere()) {
-        this.mode = 'aim'; this.start = { x: e.clientX, y: e.clientY }; this.ballScreen = s;
-        this.updateAim(e.clientX, e.clientY);
-        return;
-      }
+      // Your shot: a drag anywhere aims. Everything is measured from where the drag started, with the
+      // camera held still, so the same pull always gives the same shot.
+      this.anchor = { x: e.clientX, y: e.clientY };
+      this.basis = this.h.cameraBasis();
+      this.mode = 'aim';
+      this.h.aimStart();
+      this.updateAim(e.clientX, e.clientY);
+      return;
     }
     this.mode = 'orbit'; this.last = { x: e.clientX, y: e.clientY };
   };
@@ -61,9 +61,10 @@
     if (!this.pointers.has(e.pointerId)) return;
     this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (this.mode === 'pinch' && this.pointers.size === 2) {
-      var d = dist2(this.pointers);
+      var d = dist2(this.pointers), mid = midpoint(this.pointers);
       if (this.pinch) this.h.zoom(this.pinch / d);
-      this.pinch = d;
+      if (this.mid) this.h.rotate(-(mid.x - this.mid.x) * 0.006, (mid.y - this.mid.y) * 0.003);
+      this.pinch = d; this.mid = mid;
     } else if (this.mode === 'aim') {
       e.preventDefault();
       this.updateAim(e.clientX, e.clientY);
@@ -78,17 +79,15 @@
   AimInput.prototype.updateAim = function (cx, cy) {
     var ball = this.h.ball();
     if (!ball || !this.h.canAim()) { this.cancelAim(); return; }
-    var s = this.screenOf(ball.pos);
     var r = this.canvas.getBoundingClientRect();
-    var reach = Math.min(r.width, r.height) * 0.36;
-    var sd = Math.hypot(cx - s.x, cy - s.y);
-    var power = PC.clamp((sd - 8) / reach, 0, 1);
-    var p = this.groundPoint(cx, cy, ball.pos.y - ball.r);
-    var dx, dz;
-    if (p) { dx = ball.pos.x - p.x; dz = ball.pos.z - p.z; }
-    var l = Math.hypot(dx, dz);
-    if (!p || l < 1e-3) { this.aim = { dir: this.aim ? this.aim.dir : [0, -1], power: 0, pointer: { x: cx, y: cy }, ball: s }; this.h.onAim(this.aim); return; }
-    this.aim = { dir: [dx / l, dz / l], power: power, pointer: { x: cx, y: cy }, ball: s };
+    var a = this.anchor, sx = cx - a.x, sy = cy - a.y, sd = Math.hypot(sx, sy);
+    // A pull of ~30% of the screen's short side is full power; a small dead zone avoids accidental taps.
+    var reach = Math.max(120, Math.min(r.width, r.height) * 0.3), dead = 6;
+    var power = PC.clamp((sd - dead) / reach, 0, 1);
+    if (sd < dead) { this.aim = { dir: this.aim ? this.aim.dir : this.h.defaultAim(), power: 0 }; this.h.onAim(this.aim); return; }
+    // Screen drag -> ground direction using the camera's (frozen) orientation. Pull back = shoot forward.
+    var b = this.basis, wx = -(sx * b.rx + -sy * b.fx), wz = -(sx * b.rz + -sy * b.fz), l = Math.hypot(wx, wz) || 1;
+    this.aim = { dir: [wx / l, wz / l], power: power };
     this.h.onAim(this.aim);
   };
 
@@ -97,14 +96,15 @@
     if (this.mode === 'aim' && this.aim) {
       var a = this.aim;
       this.aim = null; this.mode = null;
-      if (a.power >= 0.04 && this.h.canAim()) this.h.onShoot(a); else this.h.onAim(null);
+      if (a.power >= 0.01 && this.h.canAim()) this.h.onShoot(a); else this.h.onAim(null);
+      this.h.aimEnd();
       return;
     }
     if (this.pointers.size === 0) this.mode = null;
   };
 
   AimInput.prototype.cancel = function (e) { this.pointers.delete(e.pointerId); this.cancelAim(); this.mode = null; };
-  AimInput.prototype.cancelAim = function () { if (this.aim || this.mode === 'aim') { this.aim = null; this.mode = null; this.h.onAim(null); } };
+  AimInput.prototype.cancelAim = function () { if (this.aim || this.mode === 'aim') { this.aim = null; this.mode = null; this.h.onAim(null); this.h.aimEnd(); } };
 
   AimInput.prototype.key = function (e) {
     var tag = (e.target && e.target.tagName) || '';
@@ -133,6 +133,7 @@
     }
   };
 
+  function midpoint(map) { var a = Array.from(map.values()); return { x: (a[0].x + a[1].x) / 2, y: (a[0].y + a[1].y) / 2 }; }
   function dist2(map) { var a = Array.from(map.values()); return Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y) || 1; }
 
   PC.AimInput = AimInput;

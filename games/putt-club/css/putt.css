@@ -220,7 +220,7 @@ fieldset:disabled .seg button, fieldset:disabled .course-card { cursor: default;
 .effect.hostile { background: #fff0ea; box-shadow: var(--shadow), inset 0 0 0 2px rgba(201, 81, 46, 0.4); }
 .effect b { display: block; font-size: 0.9rem; }
 .effect small { color: #6b6355; font-size: 0.78rem; }
-.pwi { --pw: var(--navy); width: 34px; height: 34px; border-radius: 11px; background: var(--pw); color: var(--navy); display: inline-grid; place-items: center; flex: none; }
+.pwi { width: 34px; height: 34px; border-radius: 11px; background: var(--pw, var(--cream-3)); color: var(--navy); display: inline-grid; place-items: center; flex: none; }
 .pwi .icon { width: 22px; height: 22px; }
 .pwi.big { width: 44px; height: 44px; margin-right: 8px; }
 .stroke-box { flex: 1; display: grid; justify-items: center; gap: 2px; text-align: center; color: var(--cream-2); text-shadow: 0 2px 10px rgba(0, 0, 0, 0.55); }
