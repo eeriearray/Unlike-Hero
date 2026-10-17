@@ -1,6 +1,6 @@
 # Party Pack: the hosts' script
 
-88 lines across six hosts and the Announcer. Generate each line with any text-to-speech service (or record it),
+126 lines across six hosts and the Announcer. Generate each line with any text-to-speech service (or record it),
 and save it with the **exact filename** shown: the line id plus `.mp3` (`.m4a`, `.wav`, `.ogg` and `.webm` also work).
 
 **Upload:** run `npm start`, open **http://localhost:8080/games/party-pack/#booth** on this computer and press
@@ -142,6 +142,79 @@ A CSV of the same lines (`script.csv`) is next to this file for bulk tools.
 | `pitch.guessRight.0.mp3` | They guessed the product! Pivot successful! |
 | `pitch.guessWrong.0.mp3` | Wrong guess. Bankrupt. |
 | `pitch.end.0.mp3` | That's the meeting. Our winner leaves with the most equity. This is not financial advice. |
+
+## Madame Meld — Mind Meld
+
+**Voice:** Dreamy, mystical fortune-teller who is a little too into it. Slow, breathy, dramatic pauses.
+
+| File | Line |
+| --- | --- |
+| `meld.intro.0.mp3` | Welcome, beautiful minds. I am Madame Meld. Tonight, you will think as one. Or you will be alone. Forever. |
+| `meld.ask.0.mp3` | Do not be clever. Clever is lonely. Say what everyone else would say. |
+| `meld.ask.1.mp3` | Clear your mind. Now fill it with the most obvious answer possible. |
+| `meld.reveal.0.mp3` | The spirits have counted your answers. |
+| `meld.reveal.1.mp3` | Let us see whose minds are connected. |
+| `meld.meld.0.mp3` | A perfect mind meld! You are one brain now. It is beautiful. And slightly terrifying. |
+| `meld.lone.0.mp3` | Everyone answered something different. Chaos. Pure chaos. |
+| `meld.end.0.mp3` | Our winner has the most average brain in the room. It is a gift. |
+
+## Gossip Gerry — Who Said That?
+
+**Voice:** Nosy, delighted gossip columnist. Fast, conspiratorial, loves a scandal.
+
+| File | Line |
+| --- | --- |
+| `whosaid.intro.0.mp3` | Darlings! Gossip Gerry here. I want your secrets, and then I want your friends to guess whose secrets they are. |
+| `whosaid.write.0.mp3` | Answer honestly. Or lie beautifully. I don't judge. I just tell everyone. |
+| `whosaid.write.1.mp3` | Write it down. Nobody will know it was you. Probably. |
+| `whosaid.guess.0.mp3` | Now, who said it? Look at their faces. Someone is sweating. |
+| `whosaid.caught.0.mp3` | Caught! You are an open book, sweetie. |
+| `whosaid.caught.1.mp3` | Oh, everyone knew that was you. Everyone. |
+| `whosaid.fooled.0.mp3` | Nobody saw that coming! A true mystery. |
+| `whosaid.fooled.1.mp3` | Ooh, sneaky. I love sneaky. |
+| `whosaid.end.0.mp3` | And our winner knows their friends a little too well. Watch out for that one. |
+
+## Principal Prom — Most Likely To
+
+**Voice:** Over-enthusiastic school principal hosting the yearbook awards. Big, proud, slightly embarrassing.
+
+| File | Line |
+| --- | --- |
+| `likely.intro.0.mp3` | Good evening, students! It's yearbook season, and you are voting on each other. What could go wrong? |
+| `likely.vote.0.mp3` | Vote for a friend. You may vote for yourself. Bold, but allowed. |
+| `likely.vote.1.mp3` | Cast your votes! Be honest. Be brutal. Be kind. Mostly honest. |
+| `likely.crowned.0.mp3` | And the title goes to… them! Congratulations. I think. |
+| `likely.crowned.1.mp3` | The people have spoken. Wear that title with pride. |
+| `likely.tie.0.mp3` | A tie! You can share the title. Or fight for it. Please share it. |
+| `likely.end.0.mp3` | That's yearbook! Our winner agreed with the room the most. A true people person. |
+
+## Professor Approx — Guesstimate
+
+**Voice:** Excitable, nerdy maths professor who gets way too emotional about numbers.
+
+| File | Line |
+| --- | --- |
+| `guess.intro.0.mp3` | Hello! I'm Professor Approximately. Nobody knows these answers. That's the point. Just guess with confidence! |
+| `guess.ask.0.mp3` | Type a number. Any number. Trust your gut. Your gut is bad at maths, but trust it. |
+| `guess.exact.0.mp3` | Exactly right! Exactly! I need to sit down. |
+| `guess.close.0.mp3` | So close! Mathematically beautiful. |
+| `guess.wild.0.mp3` | Some of you were not even in the same universe. I love that for you. |
+| `guess.nobody.0.mp3` | Nobody guessed. The numbers are disappointed. |
+| `guess.end.0.mp3` | And our winner is the human calculator. Please, never do my taxes. |
+
+## Emo Gee — Emoji Charades
+
+**Voice:** Hyper, bubbly influencer who speaks in exclamation marks. Fast and bright.
+
+| File | Line |
+| --- | --- |
+| `emoji.intro.0.mp3` | Hiii! It's Emo Gee! No words, only emoji! Describe it, guess it, love it! |
+| `emoji.describe.0.mp3` | Shh! Only emoji! Make it obvious. Or make it art. |
+| `emoji.guess.0.mp3` | Guess, guess, guess! Wrong guesses are fine, just keep going! |
+| `emoji.gotit.0.mp3` | Yes! Somebody got it! Big emoji energy! |
+| `emoji.allgot.0.mp3` | Everyone got it! That was a perfect clue! |
+| `emoji.nobody.0.mp3` | Nobody got it. That clue was… a choice. |
+| `emoji.end.0.mp3` | Our winner speaks fluent emoji! Fire, fire, crown! |
 
 ## The Announcer: shared lines — Shared lines: ties, AFK, hype and other surprises (played in the Announcer's voice in every game)
 

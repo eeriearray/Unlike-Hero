@@ -2,7 +2,7 @@
 // Voices every host line with macOS's built-in voices: a free starter cast until you upload better ones.
 // Needs macOS (`say`) and ffmpeg. Writes voice/<line id>.mp3 for every line and updates voice/index.json.
 //   node games/party-pack/tools/mac-voices.mjs            all lines
-//   node games/party-pack/tools/mac-voices.mjs quip       one host (lobby, quip, fib, draw, quiz, tee, pitch, edge)
+//   node games/party-pack/tools/mac-voices.mjs quip       one host (lobby, quip, fib, draw, quiz, tee, pitch, meld, whosaid, likely, guess, emoji, edge)
 // Files you uploaded yourself are replaced only for the hosts you name, so pass a host to redo just that one.
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
@@ -20,7 +20,12 @@ const CAST = {
   draw:  { voice: 'Daniel', rate: 158 },                   // Professor Pallette: slow, posh
   quiz:  { voice: 'Daniel', rate: 148, pitch: 0.84 },      // The Proprietor: slow, deep, creepy-polite
   tee:   { voice: 'Moira', rate: 205 },                    // Ripley Thread: fast, bright
-  pitch: { voice: 'Aman', rate: 192 }                      // Chad Venture: quick, confident
+  pitch: { voice: 'Aman', rate: 192 },                     // Chad Venture: quick, confident
+  meld:  { voice: 'Tessa', rate: 150, pitch: 0.94 },       // Madame Meld: slow, mystical
+  whosaid: { voice: 'Tara', rate: 205 },                   // Gossip Gerry: fast, nosy
+  likely: { voice: 'Rishi', rate: 182, pitch: 0.9 },       // Principal Prom: proud, a bit deeper
+  guess: { voice: 'Daniel', rate: 196, pitch: 1.08 },      // Professor Approx: excitable, brighter
+  emoji: { voice: 'Karen', rate: 210, pitch: 1.12 }        // Emo Gee: bubbly, high
 };
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');

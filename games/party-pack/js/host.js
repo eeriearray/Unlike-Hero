@@ -410,10 +410,9 @@
       <section class="lobby-hero">
         <div class="howto">
           <div class="join-row"><h1 class="logo">PARTY<br>PACK</h1><div class="bigcode" aria-label="Room code">${esc(H.code)}</div></div>
-          <div class="join-card"><div id="qr" class="qr" aria-label="QR code to join"></div><div><small>Grab your phone and go to</small><b class="url">${esc(url.replace(/^https?:\/\//, '').split('?')[0])}</b><small>then enter the room code</small></div></div>
-          ${H.lanState === 'none' ? '<p class="note-line warn-line"><b>Phones can\'t reach this computer yet.</b> Connect it to the same Wi-Fi or phone hotspot as the players, over Wi-Fi rather than a USB cable. The join link updates by itself.</p>' : ''}
-          ${H.resumed ? `<p class="note-line">The Main Stage was reloaded${H.resumed.game ? ` during ${esc((PP.GAMES[H.resumed.game] || {}).title || 'a game')}` : ''}: players and scores are kept. Pick a game to carry on.</p>` : ''}
-          <p class="note-line">First phone in is the VIP and picks the game. <button class="chip-btn" id="addbot">+ Add a bot</button></p>
+          <div class="join-card"><div id="qr" class="qr" aria-label="QR code to join"></div><div><small>Grab your phone and go to</small><b class="url">${esc(url.replace(/^https?:\/\//, '').split(/[?#]/)[0].replace(/index\.html$/, ''))}</b><small>then enter the room code</small></div></div>
+          ${H.lanState === 'none' ? '<p class="note-line warn-line"><b>Phones can\'t reach this computer yet.</b> Join the same Wi-Fi or hotspot as the players (not a USB cable).</p>' : ''}
+          <p class="note-line">${H.resumed ? `The Main Stage was reloaded${H.resumed.game ? ` during ${esc((PP.GAMES[H.resumed.game] || {}).title || 'a game')}` : ''}: players and scores are kept. Pick a game to carry on.<br>` : ''}First phone in is the VIP and picks the game. <button class="chip-btn" id="addbot">+ Add a bot</button></p>
         </div>
         <div class="slots">${slots.map((p, i) => p ? `
           <div class="slot full" style="--c:${H.colorOf(p)}">${H.vip === p.id ? PP.Art.crown : ''}<span class="av">${PP.Art.player(p, H.colorOf(p))}</span><b>${esc(p.name)}</b><small>${H.vip === p.id ? 'VIP' : p.bot ? 'Bot' : H.moderator === p.id ? 'Moderator' : p.connected ? 'Ready!' : 'Disconnected'}</small><button class="x" data-kick="${esc(p.id)}" aria-label="Remove ${esc(p.name)}">✕</button></div>`
@@ -425,7 +424,7 @@
         ${Object.entries(PP.GAMES).map(([k, g]) => `
           <button class="game-card" data-game="${k}" style="--a:${g.accent};--gfont:${g.font}" title="${esc(g.blurb)}">
             <span class="gc-art">${PP.Art.host(k)}</span><b>${esc(g.title)}</b><small class="sr-only">${esc(g.blurb)}</small>
-            <span class="req">${g.min}–8 players${H.players.length < g.min ? ` · bots fill ${g.min - H.players.length}` : ''}</span>
+            <span class="req">${g.min}–8 players${H.players.length < g.min ? ` · +${g.min - H.players.length} bot${g.min - H.players.length > 1 ? 's' : ''}` : ''}</span>
           </button>`).join('')}
       </section>`;
     $('#stage').querySelectorAll('[data-kick]').forEach(b => b.onclick = () => H.kick(b.dataset.kick));

@@ -14,6 +14,8 @@
   PP.clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   PP.sleep = ms => new Promise(r => setTimeout(r, ms));
   PP.fill = (s, vars) => String(s).replace(/\{(\w+)\}/g, (_, k) => vars && vars[k] != null ? vars[k] : '');
+  /** Keep only emoji (and the joiners/variation selectors/skin tones/flags that build them) plus spaces. */
+  PP.emojiOnly = s => (String(s || '').match(/(\p{Extended_Pictographic}|\p{Regional_Indicator}|[\u200d\ufe0f\u20e3\u{1F3FB}-\u{1F3FF}]|[0-9#*](?=\ufe0f?\u20e3)|\s)/gu) || []).join('').replace(/\s+/g, ' ').trim().slice(0, 60);
   PP.listNames = names => names.length <= 1 ? (names[0] || '') : names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1];
   PP.norm = s => String(s || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/^(a|an|the)\s+/, '').replace(/[^a-z0-9]+/g, '');
   PP.lev = (a, b) => {

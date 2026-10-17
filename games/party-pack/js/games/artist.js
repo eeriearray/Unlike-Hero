@@ -23,7 +23,7 @@
     await G.banner(ctx, blind ? 'BLIND CONTOUR' : 'Round 1', blind ? 'Your drawing vanishes from your phone as you draw it. Points ×2.' : 'Draw what your phone tells you.', 2600);
     if (blind) await ctx.say('blind'); else ctx.say('draw');
     const ps = ctx.players();
-    const prompts = new Map(ps.map(p => [p.id, G.take(C.draw, used)]));
+    const dealt = G.deal(ctx, 'draw', C.draw, ps.length); const prompts = new Map(ps.map((p, i) => [p.id, dealt[i]]));
     const inks = new Map(ps.map((p, i) => [p.id, INKS[(i + (blind ? 3 : 0)) % INKS.length]]));
     ctx.setPhase('DRAWING');
     G.busyStage(ctx, blind ? 'Draw… blind' : 'Draw!', 'Your secret prompt is on your phone.');

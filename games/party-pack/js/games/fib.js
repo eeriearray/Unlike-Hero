@@ -11,7 +11,7 @@
     blurb: 'Obscure true facts. Write lies that fool your friends, then sniff out the truth.',
     rules: ['Fill the blank with a believable lie.', 'Then pick what you think is the truth.', 'Truth: +1000. Each player you fool: +500.', 'Once per game: the DOUBLE BLUFF.'],
     async run(ctx) {
-      const C = ctx.content(); const facts = shuffle(C.fib).slice(0, ROUNDS.length);
+      const C = ctx.content(); const facts = G.deal(ctx, 'fib', C.fib, ROUNDS.length);
       const dbUsed = new Set();
       await G.intro(ctx, game);
       for (let r = 0; r < facts.length; r++) await question(ctx, facts[r], ROUNDS[r], r, dbUsed);
