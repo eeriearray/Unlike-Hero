@@ -20,7 +20,8 @@
     "style": "party, host-authoritative, phones as controllers, room code",
     "sameDevice": false,
     "transports": ["local", "relay"],
-    "notes": "The Main Stage runs every game and pushes a view to each phone. Up to 8 players plus audience phones (the bundled relay caps a room at 16 connections). Design document: games/party-pack/docs/GDD.md."
+    "roomLimit": 40,
+    "notes": "The Main Stage runs every game and pushes a view to each phone. Up to 8 players plus up to 31 audience phones (roomLimit 40 on the bundled relay). Private screens are sent to one phone only. Design document: games/party-pack/docs/GDD.md."
   },
   "tags": ["party", "phones as controllers", "drawing", "trivia", "social deduction", "voice"],
   "requires": ["a shared screen plus one phone per player", "npm start for play across devices and for saving voices"],

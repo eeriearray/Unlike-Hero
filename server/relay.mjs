@@ -45,10 +45,14 @@ const server = createServer(async (req, res) => {
 
 // Game servers claim URL prefixes for their own WebSocket upgrades; the relay leaves those alone.
 const claimedPaths = [];
+// Games can ask for bigger relay rooms in game.json: "multiplayer": { "roomLimit": 40 } (2–200; default 16).
+const roomLimits = new Map();
 async function loadGameServers() {
   const gamesDir = join(root, 'games');
   for (const dir of (await readdir(gamesDir, { withFileTypes: true })).filter(d => d.isDirectory()).map(d => d.name).sort()) {
     const manifest = await readFile(join(gamesDir, dir, 'game.json'), 'utf8').then(JSON.parse).catch(() => null);
+    const limit = Number(manifest && manifest.multiplayer && manifest.multiplayer.roomLimit);
+    if (limit) roomLimits.set(dir, Math.max(2, Math.min(200, Math.round(limit))));
     if (!manifest || !manifest.server) continue;
     try {
       const mod = await import(pathToFileURL(join(gamesDir, dir, manifest.server)).href);
@@ -69,12 +73,20 @@ server.on('upgrade', (req, socket, head) => {
   const room = (url.searchParams.get('room') || '').slice(0, 120);
   if (url.pathname !== '/relay' || !room) { socket.destroy(); return; }
   const members = rooms.get(room) || new Set();
-  if (members.size >= MAX_PER_ROOM) { socket.destroy(); return; }
+  if (members.size >= (roomLimits.get(room.split(':')[0]) || MAX_PER_ROOM)) { socket.destroy(); return; }
   wss.handleUpgrade(req, socket, head, ws => {
     members.add(ws); rooms.set(room, members);
     ws.on('message', (data, isBinary) => {
       if (isBinary) return;
-      for (const peer of members) if (peer !== ws && peer.readyState === 1) peer.send(data.toString());
+      const text = data.toString();
+      let msg; try { msg = JSON.parse(text); } catch { return; }
+      if (!msg || typeof msg !== 'object') return;
+      // A socket's connection id is the "from" of its first frame; frames claiming another id are dropped.
+      if (!ws.conn && typeof msg.from === 'string') ws.conn = msg.from.slice(0, 64);
+      if (msg.from !== ws.conn) return;
+      // Direct messages ("to": a connection id) reach only that socket, so private views stay private.
+      if (typeof msg.to === 'string') { for (const peer of members) if (peer.conn === msg.to && peer.readyState === 1) peer.send(text); return; }
+      for (const peer of members) if (peer !== ws && peer.readyState === 1) peer.send(text);
     });
     ws.on('close', () => { members.delete(ws); if (!members.size) rooms.delete(room); });
     ws.on('error', () => ws.close());

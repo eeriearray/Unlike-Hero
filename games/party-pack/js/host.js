@@ -11,7 +11,7 @@
 
   const H = PP.Host = {
     code: null, room: null, players: [], audience: new Map(), vip: null, moderator: null,
-    views: {}, audView: null, ask: null, game: null, runToken: 0, hype: 0, phase: 'LOBBY_WAITING',
+    views: {}, audView: null, conns: new Map(), ask: null, game: null, runToken: 0, hype: 0, phase: 'LOBBY_WAITING',
     settings: Object.assign({ family: true, moderation: false, timerMult: 1, audience: true, voice: true, captions: true, music: 0.32, textScale: 1, highContrast: false, colorBlind: 'none', reduceMotion: false, ugc: '' }, PP.prefs.get('host', {}))
   };
   const saveSettings = () => PP.prefs.set('host', H.settings);
@@ -54,7 +54,7 @@
   H.kick = id => {
     const p = byId(id); if (!p) return;
     H.players = H.players.filter(x => x !== p);
-    if (!p.bot) H.room.emit('bye', { to: id, reason: 'The host removed you from the game.' });
+    if (!p.bot) sendTo(id, 'bye', { to: id, reason: 'The host removed you from the game.' });
     if (H.vip === id) passVip(); if (H.moderator === id) H.moderator = null;
     refresh();
   };
@@ -68,12 +68,15 @@
   H.start = () => {
     let code = null; try { code = sessionStorage.getItem('pp.hostCode'); } catch (e) { /* none */ }
     H.code = code || PP.makeCode(); try { sessionStorage.setItem('pp.hostCode', H.code); } catch (e) { /* none */ }
+    restoreState();
     H.room = PP.connect(H.code, s => { H.relay = s; renderTop(); if (s === 'connected') H.room.emit('host-up', {}); });
     if (!H.room) { $('#stage').innerHTML = '<div class="center"><h1>Hub SDK missing</h1><p>Open this game from the Unlike Hero folder.</p></div>'; return; }
-    H.room.on('join', onJoin);
-    H.room.on('in', onInput);
-    H.room.on('hb', onHeartbeat);
-    H.room.on('react', onReact);
+    // Remember which connection each phone (tab token) speaks from, so its private screen goes to it alone.
+    const via = fn => (d, from) => { if (d && d.token && from && from.id) H.conns.set(String(d.token).slice(0, 40), from.id); fn(d); };
+    H.room.on('join', via(onJoin));
+    H.room.on('in', via(onInput));
+    H.room.on('hb', via(onHeartbeat));
+    H.room.on('react', via(onReact));
     setTimeout(() => H.room.emit('host-up', {}), 50);
     setInterval(housekeeping, 1000);
     findLanAddress(); setInterval(() => { if (!H.game) findLanAddress(); }, 10000);   // picks up Wi-Fi joining later
@@ -107,7 +110,7 @@
     const wantsSeat = d.role !== 'audience';
     if (wantsSeat && !H.game && freeSeat() >= 0) { p = addPlayer(token, d.name, d.avatar); sendView(p); refresh(); return; }
     // full, or a game is already running: join the audience (the Megaphone)
-    if (!H.settings.audience) { H.room.emit('bye', { to: token, reason: H.game ? 'A game is in progress and the audience is off.' : 'The room is full.' }); return; }
+    if (!H.settings.audience) { sendTo(token, 'bye', { to: token, reason: H.game ? 'A game is in progress and the audience is off.' : 'The room is full.' }); return; }
     const isNew = !H.audience.has(token);
     H.audience.set(token, { name: cleanName(d.name || 'Audience', null), lastSeen: Date.now(), wantSeat: wantsSeat, avatar: d.avatar, note: d.role === 'audience' ? '' : (H.game ? 'A game is in progress, so you\'re in the audience. You\'ll get a seat in the next game.' : 'The room is full (8 players), so you\'re in the audience.') });
     if (isNew && H.audience.size === 1) speak('lobby', 'audience');
@@ -115,9 +118,9 @@
   }
   function onHeartbeat(d) {
     if (!d || !d.token) return; const p = byId(d.token);
-    if (p) { const was = p.connected; p.connected = true; p.lastSeen = Date.now(); H.room.emit('ack', { to: p.id }); if (!was) { sendView(p); refresh(); } return; }
-    const a = H.audience.get(d.token); if (a) { a.lastSeen = Date.now(); H.room.emit('ack', { to: d.token }); return; }
-    H.room.emit('who', { to: d.token });                                      // host restarted: ask the phone to join again
+    if (p) { const was = p.connected; p.connected = true; p.lastSeen = Date.now(); sendTo(p.id, 'ack', { to: p.id }); if (!was) { sendView(p); refresh(); } return; }
+    const a = H.audience.get(d.token); if (a) { a.lastSeen = Date.now(); sendTo(d.token, 'ack', { to: d.token }); return; }
+    sendTo(d.token, 'who', { to: d.token });                                      // host restarted: ask the phone to join again
   }
   function housekeeping() {
     const now = Date.now(); let changed = false;
@@ -125,6 +128,14 @@
     for (const [t, a] of H.audience) if (now - a.lastSeen > 30000) { H.audience.delete(t); changed = true; }
     if (changed) refresh();
     if (H.ask) tickAsk();
+  }
+
+  // ---------------------------------------------------------------- addressed sends
+  // Private: with the relay, a message with a connection id reaches only that phone (room.emitTo). The `to`
+  // token stays in the payload so phones still ignore anything not meant for them on the same-browser transport.
+  function sendTo(token, topic, data) {
+    const conn = H.conns.get(token);
+    if (conn && H.room.emitTo) H.room.emitTo(conn, topic, data); else H.room.emit(topic, data);
   }
 
   // ---------------------------------------------------------------- views
@@ -136,15 +147,15 @@
     const v = H.views[p.id] || lobbyView(p);
     const out = Object.assign({}, v, { me: me(p) });
     if (v.endAt) out.endsIn = Math.max(0, v.endAt - Date.now());
-    H.room.emit('view', { to: p.id, v: out });
+    sendTo(p.id, 'view', { to: p.id, v: out });
   }
   H.setView = (p, v) => { H.views[p.id] = v; sendView(p); };
-  H.sendAsset = (p, id, data) => { if (!p.bot) H.room.emit('asset', { to: p.id, id, data }); };
+  H.sendAsset = (p, id, data) => { if (!p.bot) sendTo(p.id, 'asset', { to: p.id, id, data }); };
   function sendAudienceTo(token) {
     const a = H.audience.get(token); const v = Object.assign({ type: 'aud-wait' }, H.audView || {});
     if (v.endAt) v.endsIn = Math.max(0, v.endAt - Date.now());
     v.note = a && a.note; v.game = H.game ? PP.GAMES[H.game.key].title : null; v.code = H.code; v.theme = H.game ? H.game.key : 'lobby';
-    H.room.emit('aud', { to: token, v });
+    sendTo(token, 'aud', { to: token, v });
   }
   function setAudience(v) { H.audView = v; for (const t of H.audience.keys()) sendAudienceTo(t); }
 
@@ -351,6 +362,7 @@
         <span class="sc">${p.score.toLocaleString()}</span>${p.afk ? '<span class="badge">AFK</span>' : ''}${p.bot ? '<span class="badge">BOT</span>' : ''}${state === 'is-done' ? '<span class="tick">✓</span>' : ''}</div>`;
     }).join('');
     PP.Audio.setStandings(H.players.map(p => ({ seat: p.seat, score: p.score })));
+    saveState();
   }
   function renderAudienceBar(final) {
     const a = H.ask, el = $('#audbar');
@@ -363,6 +375,27 @@
   }
   // The VIP is always a connected human: whoever held it may have dropped while nobody else was here.
   function ensureVip() { const v = byId(H.vip); if (!v || !v.connected) { const next = humans().find(p => p.connected); H.vip = next ? next.id : null; } }
+  // ---------------------------------------------------------------- surviving a reload
+  // The whole game lives in this tab, so a refresh would wipe it. After every change the seats, scores, VIP and
+  // moderator are saved for this tab (sessionStorage, with the room code); on reload they come back, phones rejoin
+  // their own seats by token, and the lobby says so. A round in progress can't resume mid-prompt: pick it again.
+  function saveState() {
+    try {
+      sessionStorage.setItem('pp.hostState', JSON.stringify({ code: H.code, at: Date.now(), vip: H.vip, moderator: H.moderator, game: H.game ? H.game.key : null,
+        players: H.players.map(p => ({ id: p.id, seat: p.seat, name: p.name, avatar: p.avatar, score: p.score, bot: p.bot })) }));
+    } catch (e) { /* storage unavailable */ }
+  }
+  function restoreState() {
+    let st = null; try { st = JSON.parse(sessionStorage.getItem('pp.hostState') || 'null'); } catch (e) { st = null; }
+    if (!st || st.code !== H.code || Date.now() - st.at > 6 * 3600e3 || !Array.isArray(st.players) || !st.players.length) return;
+    const now = Date.now();
+    H.players = st.players.filter(p => p && p.id).slice(0, MAX_PLAYERS).map(p => ({ id: String(p.id), seat: p.seat | 0, name: String(p.name || 'Player').slice(0, 12), avatar: String(p.avatar || '0'),
+      score: Math.max(0, p.score | 0), bot: !!p.bot, connected: true, lastSeen: now, afkMisses: 0, afk: false }));
+    H.vip = st.vip; H.moderator = st.moderator;
+    H.resumed = { game: st.game, players: H.players.length };
+  }
+  H.saveState = saveState;
+
   function refresh() { ensureVip(); renderTop(); renderStrip(); if (!H.game) lobby(); H.players.forEach(p => { if (!H.game) H.views[p.id] = null; sendView(p); }); }
   H.refresh = refresh;
 
@@ -379,6 +412,7 @@
           <div class="join-row"><h1 class="logo">PARTY<br>PACK</h1><div class="bigcode" aria-label="Room code">${esc(H.code)}</div></div>
           <div class="join-card"><div id="qr" class="qr" aria-label="QR code to join"></div><div><small>Grab your phone and go to</small><b class="url">${esc(url.replace(/^https?:\/\//, '').split('?')[0])}</b><small>then enter the room code</small></div></div>
           ${H.lanState === 'none' ? '<p class="note-line warn-line"><b>Phones can\'t reach this computer yet.</b> Connect it to the same Wi-Fi or phone hotspot as the players, over Wi-Fi rather than a USB cable. The join link updates by itself.</p>' : ''}
+          ${H.resumed ? `<p class="note-line">The Main Stage was reloaded${H.resumed.game ? ` during ${esc((PP.GAMES[H.resumed.game] || {}).title || 'a game')}` : ''}: players and scores are kept. Pick a game to carry on.</p>` : ''}
           <p class="note-line">First phone in is the VIP and picks the game. <button class="chip-btn" id="addbot">+ Add a bot</button></p>
         </div>
         <div class="slots">${slots.map((p, i) => p ? `
@@ -410,6 +444,7 @@
     if (H.players.length < G.min) return;
     // a fresh game: reset scores, promote audience members who want a seat
     H.players.forEach(p => { p.score = 0; p.afk = false; p.afkMisses = 0; p.ghost = false; });
+    H.resumed = null;
     const token = ++H.runToken; H.game = { key, token };
     PP.Voice.stop(); PP.Audio.setStyle(key); H.views = {}; setTheme(key);
     renderTop(); renderStrip();
