@@ -68,8 +68,10 @@
     if (!box) return;
     var t = el('<div class="toast ' + (cls || '') + '">' + html + '</div>');
     box.appendChild(t);
-    while (box.children.length > 2) box.removeChild(box.firstChild);
-    setTimeout(function () { t.classList.add('out'); setTimeout(function () { t.remove(); }, 320); }, ms || 2400);
+    while (box.children.length > 3) box.removeChild(box.firstChild);
+    // Stay up long enough to read: at least 4.5 s, longer for longer messages.
+    var words = t.textContent.split(/\s+/).length;
+    setTimeout(function () { t.classList.add('out'); setTimeout(function () { t.remove(); }, 320); }, Math.max(ms || 4500, 2500 + words * 320));
   }
   function log(html, e) {
     app.logLines.push(html);
@@ -77,7 +79,7 @@
     var d = $('.logdrawer .lines');
     if (d) { d.insertBefore(el('<div class="ln">' + html + '</div>'), d.firstChild); while (d.children.length > 150) d.removeChild(d.lastChild); }
     app.recent.unshift({ html: html, icon: eventIcon(e) });
-    if (app.recent.length > 4) app.recent.length = 4;
+    if (app.recent.length > 5) app.recent.length = 5;
     renderRecent();
   }
   // Recent Events: the last few things that happened, each with a small colored icon.
@@ -162,6 +164,41 @@
     setTimeout(done, 9000);
   }
   function clearTips() { $$('.coach').forEach(function (c) { c.remove(); }); app.tipShown = null; app.tipQueue = []; }
+
+  // ───────────── hover tooltips ─────────────
+  // Mouse users get a short explanation of anything with data-tip after a brief hover. Touch is unaffected.
+  var tipBox = null, tipFor = null, tipTimer = null;
+  function setTip(node, title, body) {
+    if (!node) return;
+    if (title) node.setAttribute('data-tip-title', title); else node.removeAttribute('data-tip-title');
+    node.setAttribute('data-tip', body || '');
+  }
+  function hideHoverTip() { clearTimeout(tipTimer); tipFor = null; if (tipBox) { tipBox.remove(); tipBox = null; } }
+  function showHoverTip(node) {
+    if (!node.isConnected) return;
+    var title = node.getAttribute('data-tip-title'), body = node.getAttribute('data-tip');
+    if (!title && !body) return;
+    tipBox = el('<div class="hovertip" role="tooltip">' + (title ? '<b>' + esc(title) + '</b>' : '') + (body ? '<span>' + esc(body).replace(/\n/g, '<br>') + '</span>' : '') + '</div>');
+    document.body.appendChild(tipBox);
+    var r = node.getBoundingClientRect(), tr = tipBox.getBoundingClientRect();
+    var x = Math.max(8, Math.min(window.innerWidth - tr.width - 8, r.left + r.width / 2 - tr.width / 2));
+    var y = r.top - tr.height - 10;
+    if (y < 8) y = Math.min(window.innerHeight - tr.height - 8, r.bottom + 10);
+    tipBox.style.left = x + 'px'; tipBox.style.top = y + 'px';
+  }
+  document.addEventListener('pointerover', function (e) {
+    if (e.pointerType && e.pointerType !== 'mouse') return;
+    var t = e.target.closest && e.target.closest('[data-tip]');
+    if (t === tipFor) return;
+    hideHoverTip();
+    if (!t) return;
+    tipFor = t;
+    tipTimer = setTimeout(function () { if (tipFor === t) showHoverTip(t); }, 380);
+  });
+  document.addEventListener('pointerout', function (e) {
+    if (tipFor && !(e.relatedTarget && tipFor.contains(e.relatedTarget)) && tipFor.contains(e.target)) hideHoverTip();
+  });
+  ['pointerdown', 'wheel', 'keydown'].forEach(function (ev) { document.addEventListener(ev, hideHoverTip, true); });
 
   // ───────────── navigation ─────────────
   function show(screen) {
@@ -384,11 +421,11 @@
     var s = el('<section class="screen game">' +
       '<div class="topbar"><div class="logo mini"><span class="a">RIFTBREAK</span><span class="b" aria-hidden="true">RIFTBREAK</span><i class="seam"></i></div>' +
       '<span class="room"></span><span class="sp"></span>' +
-      '<button class="btn icon round b-mute" title="Mute (M)" aria-label="Mute"></button>' +
-      '<button class="btn icon round b-rules" title="Rules (R)" aria-label="Rules">' + ICON.book + '</button>' +
-      '<button class="btn icon round b-log" title="What happened" aria-label="Event log">' + ICON.log + '</button>' +
-      '<button class="btn icon round b-set" title="Settings" aria-label="Settings">' + ICON.gear + '</button>' +
-      '<button class="btn icon round b-exit" title="Leave" aria-label="Leave">' + ICON.exit + '</button></div>' +
+      '<button class="btn icon round b-mute" data-tip="Sound on / off (M)" aria-label="Mute"></button>' +
+      '<button class="btn icon round b-rules" data-tip="Rules and card list (R)" aria-label="Rules">' + ICON.book + '</button>' +
+      '<button class="btn icon round b-log" data-tip="Full history of this match" aria-label="Event log">' + ICON.log + '</button>' +
+      '<button class="btn icon round b-set" data-tip="Music, effects, motion and tips" aria-label="Settings">' + ICON.gear + '</button>' +
+      '<button class="btn icon round b-exit" data-tip="Leave the match" aria-label="Leave">' + ICON.exit + '</button></div>' +
       '<div class="arena"><div class="playfield"><div class="seats"></div>' +
       '<div class="center"><div class="island">' + A.island() + '</div>' +
       '<div class="pilewrap"><button class="pile" aria-label="Draw pile"></button><div class="plabel pcount"></div></div>' +
@@ -399,26 +436,40 @@
       '<div class="events panel" role="button" tabindex="0" aria-label="Recent events — open the full log"><div class="ptitle">Recent Events</div><div class="lines"></div></div></div></div>' +
       '<div class="handzone"><div class="mepanel panel"><div class="me-badge"></div><div class="status"></div></div><div class="hand"><div class="inner"></div></div><div class="actions"></div></div>' +
       '<div class="toasts" aria-live="polite"></div>' +
-      '<div class="logdrawer panel"><div class="label" style="margin-bottom:8px">What happened</div><div class="lines"></div></div>' +
+      '<div class="logdrawer panel" role="dialog" aria-label="What happened"><div class="dhead"><span class="ptitle">What happened</span><button class="btn icon round dclose" aria-label="Close" data-tip="Close (Esc)">' + ICON.close + '</button></div><div class="lines"></div><div class="ln empty">Nothing has happened yet.</div></div>' +
       '</section>');
     root.appendChild(s);
     app.handEls = new Map();
     $('.b-rules', s).onclick = function () { S.play('select'); showRules(); };
-    $('.b-log', s).onclick = function () { S.play('select'); app.logOpen = !app.logOpen; $('.logdrawer').classList.toggle('open', app.logOpen); };
+    $('.b-log', s).onclick = function () { S.play('select'); setLog(!app.logOpen); };
+    $('.dclose', s).onclick = function () { S.play('select'); setLog(false); };
     $('.b-set', s).onclick = function () { S.play('select'); showSettings(); };
     $('.b-mute', s).onclick = function () { S.setPref('muted', !S.prefs.muted); updateMute(); S.play('select'); };
     $('.b-exit', s).onclick = function () { S.play('select'); confirmLeave(); };
     $('.rulepanel', s).onclick = function () { S.play('select'); showRules(); };
-    $('.events', s).onclick = function () { S.play('select'); app.logOpen = !app.logOpen; $('.logdrawer').classList.toggle('open', app.logOpen); };
+    $('.events', s).onclick = function () { S.play('select'); setLog(!app.logOpen); };
     renderRecent();
     $('.pile', s).onclick = function () { doDraw(); };
-    var lines = $('.lines', s);
+    app.logOpen = false;
+    var lines = $('.logdrawer .lines', s);
     app.logLines.slice().reverse().forEach(function (l) { lines.appendChild(el('<div class="ln">' + l + '</div>')); });
     updateMute();
     if (app.view) renderGame([]);
     tip('rule');
     setTimeout(function () { tip('meltdown'); }, 400);
   }
+  function setLog(open) {
+    app.logOpen = open;
+    var d = $('.logdrawer'); if (!d) return;
+    d.classList.toggle('open', open);
+    var b = $('.b-log'); if (b) b.classList.toggle('on', open);
+  }
+  // Clicking anywhere outside the open drawer (other than its toggles) closes it.
+  document.addEventListener('pointerdown', function (e) {
+    if (!app.logOpen || !e.target.closest) return;
+    if (e.target.closest('.logdrawer, .b-log, .events')) return;
+    setLog(false);
+  }, true);
   function updateMute() { var b = $('.b-mute'); if (b) b.innerHTML = S.prefs.muted ? ICON.mute : ICON.sound; }
   function confirmLeave() {
     var v = app.view;
@@ -562,7 +613,9 @@
       var active = m.turn === p.id && v.phase === 'playing';
       if (active) chips = '<span class="chip turn">' + (m.phase === 'attack' ? 'Facing +' + m.stack : 'Playing…') + '</span>' + chips;
       var cnt = p.count === 1 ? 'one' : p.count <= 3 ? 'low' : '';
-      s.title = info.isBot ? p.name + ' · ' + info.level + ' bot' : p.name;
+      setTip(s, p.name, (info.isBot ? info.level[0].toUpperCase() + info.level.slice(1) + ' bot' : info.autopilot ? 'Disconnected — a bot is playing for them' : 'Player') +
+        ' · ' + p.count + ' card' + (p.count === 1 ? '' : 's') + (info.wins ? ' · ' + info.wins + ' win' + (info.wins === 1 ? '' : 's') : '') +
+        (active ? '\nIt is their turn' + (m.phase === 'attack' ? ' — facing +' + m.stack + '.' : '.') : '') + (p.count === 1 ? '\nOne card left!' : ''));
       s.innerHTML = '<div class="avatar">' + avatarSvg(p.id) + timerRing(p.id) + (p.called && p.count === 1 ? '<span class="lastflag">LAST</span>' : '') + '</div>' +
         '<div class="plate"><span class="nm">' + esc(p.name) + '</span>' + (info.wins ? '<span class="wins">★' + info.wins + '</span>' : '') +
         '<span class="count ' + cnt + '" aria-label="' + p.count + ' cards">' + ICON.card + p.count + '</span></div>' +
@@ -593,6 +646,7 @@
       mb.innerHTML = '<div class="avatar">' + avatarSvg(o.mine.id) + timerRing(o.mine.id) + '</div><div class="nm">' + esc(o.mine.name) + (info.wins ? ' <span class="wins">★' + info.wins + '</span>' : '') + '</div>' +
         '<div class="count" aria-label="' + o.mine.count + ' cards">' + ICON.card + o.mine.count + '</div>';
       $('.mepanel').classList.toggle('active', m.turn === o.mine.id && v.phase === 'playing');
+      setTip(mb, 'You', o.mine.count + ' card' + (o.mine.count === 1 ? '' : 's') + ' in hand. Empty your hand to win.');
     } else mb.innerHTML = '<div class="nm">Spectating</div>';
   }
 
@@ -630,6 +684,7 @@
     p.innerHTML = '<div class="head"><span class="badge">' + A.ruleGlyph(r.glyph) + '</span><div><div class="ptitle">Current Reality Rule</div><div class="rname">' + esc(r.name) + '</div></div></div>' +
       '<div class="rtext">' + esc(r.text) + '</div>' +
       (n ? '<div class="next">Next Rift: <b>' + esc(n.name) + '</b></div>' : '');
+    setTip(p, 'Reality Rule: ' + r.name, r.text + '\nFavors ' + r.tone + '.' + (n ? '\nA Rift card switches to ' + n.name + ': ' + n.text : '') + '\nClick for all rules.');
   }
 
   var STAGE_HEX = ['#22c7f0', '#ffb020', '#f0435a'];
@@ -665,6 +720,7 @@
     $('.pcount').innerHTML = 'Draw Pile <b>' + m.drawCount + '</b>';
     pile.classList.toggle('can', myTurn && m.phase !== 'drawn');
     pile.setAttribute('aria-label', m.phase === 'attack' ? 'Take ' + m.stack + ' cards' : 'Draw a card');
+    setTip(pile, 'Draw pile', m.drawCount + ' cards left.' + (myTurn ? (m.phase === 'attack' ? '\nClick to take ' + m.stack + ' cards.' : m.phase === 'drawn' ? '' : '\nClick (or press D) to draw a card.') : ''));
     // Meltdown dial
     var meter = $('.meter');
     var stage = E.STAGES[m.stage];
@@ -675,7 +731,7 @@
     var col = E.COLLAPSES[m.nextCollapse];
     $('.readout', meter).innerHTML = '<div class="lvl">Meltdown</div><div class="val">' + m.meltdown + '<small>/10</small></div><div class="stagepill">' + esc(stage.name) + '</div>' +
       '<div class="next">At 10: <b>' + esc(col.name) + '</b></div>';
-    meter.title = stage.name + ': ' + stage.text + ' — At 10: ' + col.name + '. ' + col.text;
+    setTip(meter, 'Meltdown ' + m.meltdown + '/10 · ' + stage.name, stage.text + '\nAt 10: ' + col.name + ' — ' + col.text + '\nRifts and attacks raise it; Stabilize and 0s lower it.');
     meter.setAttribute('aria-label', 'Meltdown ' + m.meltdown + ' of 10, ' + stage.name + '. At 10: ' + col.name + '. ' + col.text);
     // discard trail
     var disc = $('.discard');
@@ -691,14 +747,17 @@
       if (hidePlays && i >= arr.length - hidePlays) ce.style.opacity = '0';
       disc.appendChild(ce);
     });
+    setTip(disc, 'Top card: ' + E.cardName(m.top), 'Play a card of the same color (' + SUIT_NAME[m.color] + '), the same ' + (m.top.kind === 'num' ? 'number (' + m.top.value + ')' : 'symbol') + ', or a Wild.' + (m.rule !== 'stable' ? '\nThe Reality Rule may change this.' : ''));
     var stack = $('.stack');
     if (m.stack > 0) {
       stack.classList.remove('hidden');
+      setTip(stack, 'Attack stack: +' + m.stack, nameOf(m.turn) + ' must counter with Surge/Overload, block with Stabilize (take half) or take ' + m.stack + ' cards.');
       stack.innerHTML = '<b>+' + m.stack + '</b> → ' + esc(nameOf(m.turn)) + '<span>' + (m.stack >= E.LIMITS.stackCap ? 'at cap' : 'cap ' + E.LIMITS.stackCap) + '</span>';
     } else stack.classList.add('hidden');
     // active color
     var chip = $('.colorsel');
     chip.setAttribute('aria-label', 'Active color: ' + SUIT_NAME[m.color]);
+    setTip(chip, 'Active color: ' + SUIT_NAME[m.color], 'Cards of this color can be played. Wild cards change it.' + (m.rule === 'mirror' ? '\nMirror: it flips to ' + SUIT_NAME[E.SUIT_INFO[m.color].opposite] + ' after this turn.' : ''));
     chip.innerHTML = '<div class="ptitle">Active Color · <b style="color:' + A.SUIT_HEX[m.color] + '">' + SUIT_NAME[m.color] + '</b></div><div class="dots">' +
       E.SUITS.map(function (s) { return '<i class="' + (s === m.color ? 'on' : '') + '" style="--sw:' + A.SUIT_HEX[s] + '" title="' + SUIT_NAME[s] + '"><svg viewBox="-7 -7 14 14">' + A.PIP[s] + '</svg></i>'; }).join('') + '</div>' +
       (m.rule === 'mirror' ? '<div class="mirrornote">Mirror: flips to ' + SUIT_NAME[E.SUIT_INFO[m.color].opposite] + ' after this turn</div>' : '') +
@@ -776,6 +835,8 @@
       node.classList.toggle('dim', myTurn && !legal[c.id]);
       node.classList.toggle('drawnnew', !!drawnSet[c.id] && myTurn);
       node.style.setProperty('--glow', c.color ? A.SUIT_HEX[c.color] : '#fff');
+      var what = E.CARD_TYPES[c.kind].short + (c.kind === 'num' && c.value === 0 ? ' Coolant: Meltdown −1.' : '');
+      setTip(node, E.cardName(c), what + (myTurn ? (isLegal ? '\n✓ You can play this now.' : '\n✗ ' + whyNot(m, c)) : ''));
       node.style.visibility = '';
       // Meltdown badge: what this play would do to the meter.
       var badge = $('.mbadge', node);
@@ -829,6 +890,7 @@
     if (!mine) return;
     if (myTurn && m.hand.length === 2 && v.settings.lastCall && !m.exposed) {
       var lc = el('<button class="btn ' + (app.armedCall ? 'armed' : 'ghost pulse') + '">' + (app.armedCall ? 'LAST CARD ✓' : 'LAST CARD') + '</button>');
+      setTip(lc, 'Last card', 'Press before playing your second-to-last card, or anyone can catch you and make you draw 2. (L)');
       lc.onclick = function () { app.armedCall = !app.armedCall; S.play(app.armedCall ? 'lastCard' : 'select'); renderActions(); };
       box.appendChild(lc);
       tip('lastcard');
@@ -840,6 +902,7 @@
     db.disabled = !myTurn;
     if (myTurn && m.phase === 'turn' && !m.legal.length) db.classList.add('pulse');
     db.onclick = function () { doDraw(); };
+    setTip(db, label === 'Take' ? 'Take the attack' : label === 'Draw' ? 'Draw a card' : 'Keep the card', !myTurn ? 'Wait for your turn.' : m.phase === 'attack' ? 'Take all ' + m.stack + ' cards and end your turn.' : m.phase === 'drawn' ? 'Keep the drawn card and end your turn.' : 'Draw one card (D or Space). If it can be played, you may play it.');
     box.appendChild(db);
   }
 
@@ -891,7 +954,7 @@
     if (m.legal.indexOf(id) < 0) {
       S.play('error');
       node.classList.remove('shake'); void node.offsetWidth; node.classList.add('shake');
-      toast(esc(whyNot(m, card)), 'bad', 2200);
+      toast(esc(whyNot(m, card)), 'bad', 4500);
       return;
     }
     S.play('select');
@@ -973,7 +1036,7 @@
 
   document.addEventListener('keydown', function (e) {
     if (e.target && /input|textarea/i.test(e.target.tagName)) return;
-    if (e.key === 'Escape') { closeChooser(); closeModal(); return; }
+    if (e.key === 'Escape') { closeChooser(); closeModal(); setLog(false); return; }
     if (app.screen !== 'game' || !match()) return;
     var k = e.key.toLowerCase();
     if (k === 'd' || k === ' ') { e.preventDefault(); doDraw(); }
@@ -1054,7 +1117,7 @@
           if (e.stageTo != null && e.stageTo > e.stageFrom && !e.reset) {
             later(function () {
               var st = E.STAGES[e.stageTo];
-              toast('<span class="big">' + st.name.toUpperCase() + '</span>' + esc(st.text), 'up', 3200);
+              toast('<span class="big">' + st.name.toUpperCase() + '</span>' + esc(st.text), 'up', 6000);
               S.play(e.stageTo === 2 ? 'breaking' : 'critical');
               tip(e.stageTo === 2 ? 'breaking' : 'critical');
             }, t + 380);
@@ -1212,20 +1275,20 @@
       var r = E.RULES[e.to], nx = E.RULES[e.next];
       html = '<div class="kicker">' + (e.cause === 'fracture' ? 'Reality Fracture' : 'New Reality Rule') + '</div><span class="badge">' + A.ruleGlyph(r.glyph) + '</span><div class="name">' + esc(r.name) + '</div><div class="desc">' + esc(r.text) + '</div>' +
         '<div class="sub">' + (e.cause === 'card' ? esc(nameOf(e.by)) + ' opened a Rift · Meltdown +1' : 'The Collapse tore reality') + (nx ? ' · Next Rift: ' + esc(nx.name) : '') + '</div>';
-      dur = 1700;
+      dur = 3800;
       S.play('rift'); S.stinger('rift');
       setTimeout(function () { S.play('rule'); }, 650);
     } else {
       var c = E.COLLAPSES[e.event];
       html = '<div class="kicker">Meltdown 10 · Collapse</div><span class="badge">' + A.ruleGlyph(e.event) + '</span><div class="name">' + esc(c.name) + '</div><div class="desc">' + esc(c.text) + '</div><div class="sub">Caused by ' + esc(nameOf(e.by)) + ' · Meltdown resets to 3</div>';
-      dur = 2200;
+      dur = 4500;
       S.play('collapse'); S.stinger('collapse');
       if (!reduced()) {
         var g = $('.game'); if (g) { g.classList.remove('shakeit'); void g.offsetWidth; g.classList.add('shakeit'); }
       }
     }
     var o = el('<div class="shift-overlay ' + item.kind + '"><div class="veil"></div>' +
-      '<div class="content panel">' + html + '</div></div>');
+      '<div class="content panel">' + html + '<div class="skip">Tap to continue</div></div></div>');
     document.body.appendChild(o);
     if (item.kind === 'rift') { var rp = $('.rulepanel'); if (rp) { rp.classList.remove('shift'); void rp.offsetWidth; rp.classList.add('shift'); } }
     var closed = false;
@@ -1235,7 +1298,7 @@
       setTimeout(function () { o.remove(); app.overlayBusy = false; runOverlay(); nextTip(); }, 300);
     };
     o.onclick = close;
-    setTimeout(close, reduced() ? Math.min(dur, 1400) : dur);
+    setTimeout(close, dur);
   }
 
   // ───────────── results ─────────────
