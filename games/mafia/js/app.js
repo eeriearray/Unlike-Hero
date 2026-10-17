@@ -346,6 +346,7 @@
                 <option value="auto">Auto</option>${[1, 2, 3, 4, 5].map(function (n) { return html`<option key=${n} value=${n}>${n}</option>`; })}
               </select><span></span></div>
             <label className="switch"><input type="checkbox" disabled=${!isHost} checked=${st.revealRoles} onChange=${function (e) { send({ type: 'settings', settings: { revealRoles: e.target.checked } }); }} /> Reveal roles on death</label>
+            <label className="switch" title="Off: only the host's device reads the story aloud, so a room full of phones doesn't echo. Everyone still sees the captions."><input type="checkbox" disabled=${!isHost} checked=${st.narrator === 'all'} onChange=${function (e) { send({ type: 'settings', settings: { narrator: e.target.checked ? 'all' : 'host' } }); }} /> Narrator on every device</label>
             ${Object.keys(view.limits.timers).map(function (k) {
               var lim = view.limits.timers[k];
               return html`<div className="setting-row" key=${k}><span>${k}</span>
@@ -699,6 +700,8 @@
     var count = dawn.deaths.length;
     var headline = !count ? 'A Quiet Night' : count === 1 ? dawn.deaths[0].name + ' Found Dead' : (NUMBER_WORDS[count] || count) + ' Found Dead';
     var sub = !count ? (dawn.saves ? 'A narrow escape — doctors credited' : 'Residents dare to breathe again') : dawn.day === 1 ? 'Town in shock as the killing begins' : 'The killer strikes again — who is next?';
+    // Your own results from last night (Detective, Consigliere, Medium…), so nobody has to dig for them in the Notebook.
+    var secrets = ((props.me && props.me.log) || []).filter(function (l) { return l.phase === 'night' && l.day === dawn.day; });
     function tap() { if (shown < lines.length) { V.cancel(); setShown(lines.length); } else props.onClose(); }
     return html`<div className="overlay" onClick=${tap}>
       <article className="paper" aria-live="polite">
@@ -713,6 +716,7 @@
           })}</div>` : null}
           <div className="story">${lines.slice(0, shown).map(function (l, i) { return html`<p key=${i}>${l}</p>`; })}</div>
         </div>
+        ${secrets.length && shown >= lines.length ? html`<aside className="telegram" aria-live="polite"><b>Private telegram · for your eyes only</b>${secrets.map(function (l, i) { return html`<p key=${i}>${l.text}</p>`; })}<small>Also kept in your Notebook.</small></aside>` : null}
         <div className="foot">${shown < lines.length ? 'Tap to read it all' : 'Tap to put the paper down'}</div>
       </article>
     </div>`;
@@ -918,7 +922,7 @@
       ${ph === 'roles' && !closed.roles ? html`<${RoleReveal} view=${view} send=${send} />` : null}
       ${ph === 'night' && me.alive && !closed.night && hasActions ? html`<${NightModal} view=${view} send=${send} onClose=${function () { close('night'); }} />` : null}
       ${ph === 'night' && me.alive && closed.night === false && !hasActions ? html`<${DreamModal} view=${view} onClose=${function () { close('night'); }} />` : null}
-      ${ph === 'dawn' && view.dawn && !closed.dawn ? html`<${Newspaper} dawn=${view.dawn} onClose=${function () { close('dawn'); }} />` : null}
+      ${ph === 'dawn' && view.dawn && !closed.dawn ? html`<${Newspaper} dawn=${view.dawn} me=${view.me} onClose=${function () { close('dawn'); }} />` : null}
       ${ph === 'verdict' && view.verdict && !closed.verdict ? html`<${VerdictOverlay} verdict=${view.verdict} view=${view} onClose=${function () { close('verdict'); }} />` : null}
       ${ph === 'gameover' && view.winner && !closed.end ? html`<${GameOver} view=${view} send=${send} onClose=${function () { close('end'); }} onLeave=${props.onLeave} />` : null}
       ${roleOpen && me.role ? html`<${RoleSheet} view=${view} onClose=${function () { setRoleOpen(false); }} />` : null}
@@ -1087,6 +1091,7 @@
 
     // Lighting, music and ghost mode follow the phase.
     var scene = view ? PHASE[view.phase].scene : 'lobby';
+    V.setAllowed(!view || !view.settings || view.settings.narrator === 'all' || !!(view.me && view.me.isHost));
     var ghost = !!(view && view.me && view.phase !== 'lobby' && view.phase !== 'gameover' && !view.me.alive);
     useEffect(function () {
       var menu = !view || view.phase === 'lobby';
