@@ -4,6 +4,7 @@
 import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 import { Economy, netWorth } from './economy.mjs';
 import { blackjack } from './games/blackjack.mjs';
+import * as bank from './bank.mjs';
 
 export const MAX_PLAYERS = 12;
 export const HOST_GRACE_MS = 90_000;
@@ -136,13 +137,17 @@ export class CasinoRoom {
     this.tableState = {};             // table id -> engine state (plain JSON, saved with the room)
     this.tableTimers = new Map();     // table id -> timer handle (not saved)
     this.ending = false;
+    this.offers = new Map();          // open player-loan offers (bank.mjs)
+    this.bailoutTimers = new Map();   // playerId -> bankruptcy bailout timer (not saved)
+    this.bankTimer = null;
     this.economy = new Economy({ now });
     this.wireEconomy();
   }
 
   wireEconomy() {
-    this.economy.onSettle = () => {
+    this.economy.onSettle = (round) => {
       this.session.rounds += 1;
+      for (const r of round.result || []) bank.checkSolvency(this, r.playerId);
       if (!this.ending && this.session.phase === 'live' && this.settings.session.mode === 'rounds' && this.session.rounds >= this.settings.session.rounds) {
         this.endSession('Round limit reached');
       }
@@ -151,6 +156,11 @@ export class CasinoRoom {
 
   // ───────────── helpers ─────────────
   get(id) { return this.players.get(id) || null; }
+  /** Milliseconds of unpaused play this session. Interest and loan deadlines run on this clock. */
+  liveNow() {
+    const s = this.session;
+    return (s.liveMs || 0) + (s.phase === 'live' && s.liveSince != null ? this.now() - s.liveSince : 0);
+  }
   humans() { return [...this.players.values()]; }
   connected() { return this.humans().filter((p) => p.connected); }
   sync() { this.hooks.sync(); }
@@ -310,8 +320,12 @@ export class CasinoRoom {
     s.summary = null;
     s.endReason = null;
     s.remainingMs = this.settings.session.mode === 'time' ? this.settings.session.minutes * 60_000 : null;
+    s.liveMs = 0;
+    s.liveSince = this.now();
+    s.nextInterestLive = this.settings.loans.interestEveryMin * 60_000;
     this.economy.locked = false;
     this.armSessionTimer();
+    bank.armTick(this);
     this.log('session', `Session ${s.no} started — everyone has ${money(this.settings.startingCash)}`);
     this.hooks.fx(null, { kind: 'session-start' });
     return { ok: true };
@@ -334,9 +348,12 @@ export class CasinoRoom {
     this.timers.clear(this.sessionTimer);
     this.sessionTimer = null;
     s.endsAt = null;
+    s.liveMs = this.liveNow();
+    s.liveSince = null;
     s.phase = 'paused';
     this.economy.locked = true;
     for (const t of this.openTables()) t.engine.pause(this, t);
+    bank.pause(this);
     this.log('session', 'The host paused the session — betting is closed');
     return { ok: true };
   }
@@ -344,9 +361,11 @@ export class CasinoRoom {
   resumeSession() {
     if (this.session.phase !== 'paused') return { error: 'The session isn\'t paused.' };
     this.session.phase = 'live';
+    this.session.liveSince = this.now();
     this.economy.locked = false;
     this.armSessionTimer();
     for (const t of this.openTables()) t.engine.resume(this, t);
+    bank.resume(this);
     this.log('session', 'The session resumed — betting is open');
     return { ok: true };
   }
@@ -361,6 +380,9 @@ export class CasinoRoom {
       for (const t of this.openTables()) t.engine.close(this, t);   // dealt hands are played out and paid; undealt bets come back
     } finally { this.ending = false; }
     this.economy.voidAllOpen('Session ended — open bet refunded');
+    s.liveMs = this.liveNow();
+    s.liveSince = null;
+    bank.stopAll(this);
     this.timers.clear(this.sessionTimer);
     this.sessionTimer = null;
     s.phase = 'ended';
@@ -384,8 +406,9 @@ export class CasinoRoom {
     for (const p of this.humans()) if (p.left && p.id !== this.hostId) { this.players.delete(p.id); this.creds.delete(p.id); }
     this.economy.resetSession(this.humans().map((p) => p.id), this.settings.startingCash);
     this.economy.locked = true;
-    Object.assign(s, { no: prev + 1, phase: 'lobby', startedAt: null, endsAt: null, remainingMs: null, rounds: 0, endedAt: null, summary: null, endReason: null });
-    for (const p of this.humans()) { p.ready = false; p.status = 'active'; p.tableId = null; }
+    Object.assign(s, { no: prev + 1, phase: 'lobby', startedAt: null, endsAt: null, remainingMs: null, rounds: 0, endedAt: null, summary: null, endReason: null, liveMs: 0, liveSince: null });
+    bank.stopAll(this);
+    for (const p of this.humans()) { p.ready = false; p.status = 'active'; p.tableId = null; p.insolvent = null; }
     for (const id of this.tableTimers.keys()) this.timers.clear(this.tableTimers.get(id));
     this.tableTimers.clear();
     this.tableState = {};
@@ -429,6 +452,8 @@ export class CasinoRoom {
       bestGame: gameList[0] || null,
       comeback,
       rounds: this.session.rounds,
+      debts: bank.openDebts(this),
+      bankrupt: rows.filter((r) => r.status === 'bankrupt').map((r) => r.id),
       startedAt: this.session.startedAt,
       endedAt: this.now(),
     };
@@ -532,8 +557,11 @@ export class CasinoRoom {
         const before = Number.isSafeInteger(cmd.before) ? cmd.before : Infinity;
         return { ok: true, entries: this.economy.history(playerId, { limit: 100, before }) };
       }
-      default:
-        return { error: 'Unknown command.' };
+      default: {
+        const b = bank.command(this, playerId, cmd);
+        if (!b) return { error: 'Unknown command.' };
+        res = b;
+      }
     }
     if (res && res.ok) this.sync();
     return res;
@@ -546,6 +574,7 @@ export class CasinoRoom {
     return {
       id: p.id, name: p.name, avatar: p.avatar, connected: p.connected, left: p.left, ready: p.ready,
       status: p.status, isHost: p.id === this.hostId, tableId: p.tableId,
+      insolvent: p.insolvent ? { until: p.insolvent.until || null, leftMs: p.insolvent.leftMs } : null,
       hasWallet: staked,
       cash: staked ? a.cash : 0, reserved: staked ? a.reserved : 0,
       debt: staked ? a.debt + a.interest : 0, owes: staked ? a.owes : 0, owed: staked ? a.owed : 0,
@@ -579,6 +608,7 @@ export class CasinoRoom {
       players,
       leaderboard,
       feed: this.feed.slice(-40),
+      bank: bank.publicView(this),
       chat: this.chat.slice(-60),
       me: me && a ? {
         account: {
@@ -587,6 +617,7 @@ export class CasinoRoom {
           rounds: a.rounds, biggestWin: a.biggestWin, biggestLoss: a.biggestLoss, byGame: a.byGame,
         },
         history: this.economy.history(playerId, { limit: 30 }),
+        bank: bank.viewFor(this, playerId),
       } : null,
     };
   }
@@ -595,8 +626,9 @@ export class CasinoRoom {
   toJSON() {
     return {
       v: 1, code: this.code, createdAt: this.createdAt, hostId: this.hostId, settings: this.settings, seq: this.seq,
-      session: { ...this.session, endsAt: null, remainingMs: this.session.endsAt ? Math.max(0, this.session.endsAt - this.now()) : this.session.remainingMs },
-      players: this.humans(), creds: [...this.creds], feed: this.feed, chat: this.chat, economy: this.economy.toJSON(),
+      session: { ...this.session, endsAt: null, remainingMs: this.session.endsAt ? Math.max(0, this.session.endsAt - this.now()) : this.session.remainingMs, liveMs: this.liveNow(), liveSince: null },
+      offers: [...this.offers.values()],
+      players: this.humans().map((p) => (p.insolvent ? { ...p, insolvent: { ...p.insolvent, leftMs: p.insolvent.until ? Math.max(1_000, p.insolvent.until - this.now()) : p.insolvent.leftMs, until: null } } : p)), creds: [...this.creds], feed: this.feed, chat: this.chat, economy: this.economy.toJSON(),
       tables: Object.fromEntries(Object.entries(this.tableState).map(([id, st]) => { const t = this.table(id); return [id, t ? t.engine.snapshot(this, st) : st]; })),
     };
   }
@@ -613,12 +645,19 @@ export class CasinoRoom {
     room.economy = Economy.fromJSON(data.economy, { now: room.now });
     room.wireEconomy();
     room.tableState = data.tables || {};
+    room.offers = new Map((data.offers || []).map((o) => [o.id, o]));
+    if (room.session.phase === 'live') room.session.liveSince = room.now();
+    // Rooms saved before loans existed have no interest clock yet: start one from here.
+    if (room.session.nextInterestLive == null) room.session.nextInterestLive = room.liveNow() + room.settings.loans.interestEveryMin * 60_000;
     room.armSessionTimer();
     for (const t of room.openTables()) t.engine.restore(room, t);
+    if (room.session.phase === 'live') bank.resume(room);
     return room;
   }
 
   destroy() {
+    bank.stopTick(this);
+    for (const h of this.bailoutTimers.values()) this.timers.clear(h);
     for (const h of this.tableTimers.values()) this.timers.clear(h);
     this.tableTimers.clear();
     this.timers.clear(this.sessionTimer);

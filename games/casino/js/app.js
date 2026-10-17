@@ -21,7 +21,7 @@
     poker: { blurb: 'No-limit Texas Hold\'em against your friends.', icon: '♦' },
     teenpatti: { blurb: 'Three cards, blind or seen. Trail beats all.', icon: '♥' }
   };
-  var ENTRY_LABEL = { stake: 'Starting cash', bet: 'Bet placed', refund: 'Bet refunded', settle: 'Round result', loan: 'Casino loan', repay: 'Loan repayment', interest: 'Interest', 'p2p-lend': 'Lent to a player', 'p2p-borrow': 'Borrowed from a player', 'p2p-repay': 'Player loan repaid', fee: 'Fee' };
+  var ENTRY_LABEL = { stake: 'Starting cash', bet: 'Bet placed', refund: 'Bet refunded', settle: 'Round result', loan: 'Casino loan', repay: 'Loan repayment', interest: 'Interest', 'p2p-lend': 'Lent to a player', 'p2p-borrow': 'Borrowed from a player', 'p2p-repay': 'You repaid a player', 'p2p-repaid': 'A player repaid you', fee: 'Fee' };
   var PHASE_LABEL = { lobby: 'Lobby', live: 'Live', paused: 'Paused', ended: 'Session over' };
 
   function cx() { return Array.prototype.filter.call(arguments, Boolean).join(' '); }
@@ -146,6 +146,7 @@
       (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(function () { copied[1](true); setTimeout(function () { copied[1](false); }, 1500); }, function () { });
     }
     var left = s.endsAt ? s.endsAt - now : s.remainingMs;
+    var waiting = v.me && v.me.bank ? v.me.bank.offers.filter(function (o) { return o.awaiting === v.you; }).length : 0;
     return html`<header className="topbar">
       <div className="topbar-left">
         <span className="logo small">Neon <em>Casino</em></span>
@@ -165,6 +166,7 @@
           <div className="wallet-item worth"><span>Net worth</span><b className="num">${money(acc.netWorth)}</b></div>`
         : html`<div className="wallet-item"><span>Wallet</span><b>${s.phase === 'lobby' ? money(v.settings.startingCash) + ' at the start' : 'Spectating'}</b></div>`}
         <button type="button" className="btn btn-ghost" onClick=${props.onLedger}>History</button>
+        ${acc && acc.staked ? html`<button type="button" className="btn btn-ghost bank-btn" onClick=${props.onBank}>Bank${waiting ? html`<span className="badge num" aria-label=${waiting + ' offers waiting for you'}>${waiting}</span>` : null}</button>` : null}
       </div>
       <div className="topbar-right">
         <span className=${cx('conn', 'conn-' + props.status)} title=${props.status === 'online' ? 'Connected' : 'Reconnecting…'}>${props.status === 'online' ? 'Online' : 'Reconnecting…'}</span>
@@ -340,6 +342,7 @@
       var tags = [];
       if (p.isHost) tags.push(html`<span key="h" className="tag gold">Host</span>`);
       if (p.status === 'bankrupt') tags.push(html`<span key="b" className="tag red">Bankrupt</span>`);
+      if (p.insolvent) tags.push(html`<${BrokeTag} key="i" view=${v} insolvent=${p.insolvent} />`);
       if (p.status === 'spectator') tags.push(html`<span key="s" className="tag">Spectating</span>`);
       if (v.session.phase === 'lobby' && !p.isHost) tags.push(p.ready ? html`<span key="r" className="tag green">Ready</span>` : html`<span key="r" className="tag">Not ready</span>`);
       if (p.left) tags.push(html`<span key="l" className="tag">Left</span>`);
@@ -361,7 +364,14 @@
       <div className="panel-head"><h2 id="players-h">${v.session.phase === 'lobby' ? 'Players' : 'Leaderboard'}</h2><span className="muted small">${v.players.filter(function (p) { return p.connected; }).length}/${v.players.length} online</span></div>
       ${ranked.length ? html`<div className="lb-head small muted"><span>Player</span><span>Net worth</span></div>` : null}
       <ol className="player-list">${ranked.map(function (p, i) { return row(p, i + 1); })}${rest.map(function (p) { return row(p, null); })}</ol>
+      ${window.CasinoBank ? html`<${window.CasinoBank.DebtBoard} view=${v} />` : null}
     </section>`;
+  }
+
+  function BrokeTag(props) {
+    var now = useNow(props.view, 1000), ins = props.insolvent;
+    var left = ins.until ? Math.max(0, ins.until - now) : ins.leftMs;
+    return html`<span className="tag red" title="Out of chips: bankrupt unless someone lends them money">Broke · ${clockText(left)}</span>`;
   }
 
   // ───────────────────────── feed & chat ─────────────────────────
@@ -471,6 +481,12 @@
         ${s.bestGame ? html`<div className="highlight"><span className="eyebrow">Luckiest table</span><b>${GAME_NAMES[s.bestGame.game] || s.bestGame.game}</b><span className="num">${signed(s.bestGame.net)} for players</span></div>` : null}
         ${s.comeback ? html`<div className="highlight"><span className="eyebrow">Comeback of the night</span><b>${name(s.comeback.id)}</b><span className="num">${money(s.comeback.from)} → ${money(s.comeback.to)}</span></div>` : null}
       </div>
+      ${s.debts && s.debts.length ? html`<div className="debts-final">
+        <span className="eyebrow">Unpaid debts — counted in every net worth above</span>
+        <ul>${s.debts.map(function (d, i) {
+          return html`<li key=${i}><span>${name(d.borrower)} owes ${d.lender ? name(d.lender) : 'the casino'}</span><b className="num red">${money(d.due)}</b></li>`;
+        })}</ul>
+      </div>` : null}
       <div className="table-scroll">
         <table className="standings">
           <thead><tr><th>#</th><th>Player</th><th>Started</th><th>Cash</th><th>Debt</th><th>Won</th><th>Lost</th><th>Net worth</th></tr></thead>
@@ -504,9 +520,10 @@
     function sit() { return props.send({ type: 'sit', tableId: table.id }); }
     function standUp() { return props.send({ type: 'stand-up' }); }
     return html`<div className=${cx('room', 'phase-' + s.phase)}>
-      <${TopBar} view=${v} status=${props.status} onLedger=${props.onLedger} onLeave=${props.onLeave} />
+      <${TopBar} view=${v} status=${props.status} onLedger=${props.onLedger} onBank=${props.onBank} onLeave=${props.onLeave} />
       <div className="room-grid">
         <main className="room-main">
+          ${window.CasinoBank && (s.phase === 'live' || s.phase === 'paused') ? html`<${window.CasinoBank.MoneyBanner} view=${v} onBank=${props.onBank} />` : null}
           ${showNotice ? html`<div className="banner" role="status"><span>${s.notice.text}</span><button type="button" className="btn btn-ghost" onClick=${function () { store.set('noticeSeen', s.notice.id); setSeen(s.notice.id); }}>Got it</button></div>` : null}
           ${TableView ? html`<${TableView} view=${v} table=${table} send=${props.send} onBack=${function () { open(null); }} onSit=${sit} onStand=${standUp} />`
             : html`<${R.Fragment}>
@@ -537,6 +554,7 @@
     var cl = useState(null), closed = cl[0], setClosed = cl[1];
     var tl = useState(null), toastMsg = tl[0], setToast = tl[1];
     var lg = useState(false), ledgerOpen = lg[0], setLedger = lg[1];
+    var bk = useState(false), bankOpen = bk[0], setBank = bk[1];
     var fl = useState([]), floaters = fl[0], setFloaters = fl[1];
     var mo = useState(null), moment = mo[0], setMoment = mo[1];
     useEffect(function () { if (!moment) return; var t = setTimeout(function () { setMoment(null); }, 2200); return function () { clearTimeout(t); }; }, [moment]);
@@ -559,6 +577,9 @@
           }
           if (d.kind === 'session-start' && hub) window.Hub.report('session-start', {});
           if (d.kind === 'big-win' && viewRef.current && d.playerId === viewRef.current.you) setMoment({ key: Date.now(), amount: d.amount, blackjack: d.blackjack });
+          var cur = viewRef.current, who = cur && byId(cur, d.from || d.playerId);
+          if (d.kind === 'loan-offer' && who) setToast(who.name + ' sent you a loan offer. Open the bank to answer.');
+          if (d.kind === 'bankrupt' && who && cur && d.playerId !== cur.you) setToast(who.name + ' went bankrupt.');
         }
       });
     }, []);
@@ -588,10 +609,11 @@
     // A seat saved in this tab is resumed on connect; show a loader rather than the entrance meanwhile.
     var resuming = net && net.hasSeat() && !view && !closed;
     return html`<${R.Fragment}>
-      ${view ? html`<${Room} view=${view} status=${status} send=${send} toast=${setToast} onLedger=${function () { setLedger(true); }} onLeave=${leave} />`
+      ${view ? html`<${Room} view=${view} status=${status} send=${send} toast=${setToast} onLedger=${function () { setLedger(true); }} onBank=${function () { setBank(true); }} onLeave=${leave} />`
         : resuming ? html`<div className="loading-screen"><span className="spinner big"></span><p>Finding your seat…</p></div>`
         : html`<${Entrance} net=${net} status=${net ? status : 'offline'} closed=${closed} initialCode=${initialCode} />`}
       ${view && ledgerOpen ? html`<${Ledger} view=${view} send=${send} onClose=${function () { setLedger(false); }} />` : null}
+      ${view && bankOpen && window.CasinoBank ? html`<${window.CasinoBank.BankDrawer} view=${view} send=${send} onClose=${function () { setBank(false); }} />` : null}
       ${view && status !== 'online' ? html`<div className="reconnect" role="status"><span className="spinner"></span> Connection lost — reconnecting. Your seat and wallet are safe.</div>` : null}
       <${Floaters} items=${floaters} />
       ${moment ? html`<button type="button" className="moment" onClick=${function () { setMoment(null); }} aria-label="Dismiss">

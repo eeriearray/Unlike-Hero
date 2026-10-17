@@ -10,6 +10,7 @@
 export const FIELDS = ['cash', 'reserved', 'debt', 'interest', 'owes', 'owed'];
 
 export const isAmount = (n) => Number.isSafeInteger(n) && n > 0;
+const fmt = (n) => '$' + Math.round(n).toLocaleString('en-US');
 
 export function netWorth(a) {
   return a.cash + a.reserved + a.owed - a.debt - a.interest - a.owes;
@@ -36,7 +37,8 @@ export class Economy {
     this.bets = new Map();     // betId -> { id, playerId, roundId, amount, state: open | settled | refunded }
     this.rounds = new Map();   // roundId -> { id, game, tableId, state: open | settled | void, bets: [], result }
     this.locked = true;        // no betting until the session is live
-    this.house = 0;            // the house's running result from house-banked games (positive = house is up)
+    this.house = 0;            // chips the house has taken in minus paid out (games and loans). Σ(cash + reserved) + house = Σ stakes
+    this.loans = new Map();    // loanId -> { id, kind: casino | p2p, lender, borrower, principal, due, ratePct, takenAt, dueLive, status }
     this.archive = [];         // earlier sessions: { session, ledger, accounts }
     this.onSettle = null;      // hook(round) after a round settles
   }
@@ -191,6 +193,104 @@ export class Economy {
     return { ok: true };
   }
 
+  // ───────────── loans ─────────────
+  /** Casino loan: cash and debt rise together, so net worth is unchanged until interest is charged. */
+  casinoLoan({ loanId, playerId, amount, ratePct = 0, dueLive = null, memo }) {
+    if (typeof loanId !== 'string' || !loanId || this.loans.has(loanId)) return { error: 'Loan id required.' };
+    if (!isAmount(amount)) return { error: 'Borrow a positive whole number of chips.' };
+    const acct = this.accounts.get(playerId);
+    if (!acct || !acct.staked) return { error: 'You have no wallet in this session.' };
+    if (acct.frozen) return { error: acct.frozen };
+    const loan = { id: loanId, kind: 'casino', lender: null, borrower: playerId, principal: amount, due: amount, ratePct, takenAt: this.now(), dueLive, status: 'open' };
+    this.loans.set(loanId, loan);
+    this.house -= amount;
+    this.post(playerId, 'loan', { cash: amount, debt: amount }, { loanId, memo: memo || 'Casino loan' });
+    return { ok: true, loan };
+  }
+
+  /** Repay the casino from cash: accrued interest first, then the oldest loans. */
+  repayCasino(playerId, amount, memo) {
+    const acct = this.accounts.get(playerId);
+    if (!acct) return { error: 'You have no wallet in this session.' };
+    if (!isAmount(amount)) return { error: 'Repay a positive whole number of chips.' };
+    const owed = acct.debt + acct.interest;
+    if (!owed) return { error: 'You don\'t owe the casino anything.' };
+    if (amount > owed) return { error: `You only owe the casino ${fmt(owed)}.` };
+    if (amount > acct.cash) return { error: `Not enough cash: you have ${fmt(acct.cash)} available.` };
+    const toInterest = Math.min(amount, acct.interest);
+    let toPrincipal = amount - toInterest;
+    const touched = [];
+    for (const loan of this.casinoLoansOf(playerId)) {
+      if (!toPrincipal) break;
+      const part = Math.min(loan.due, toPrincipal);
+      loan.due -= part; toPrincipal -= part;
+      if (!loan.due) loan.status = 'repaid';
+      touched.push(loan.id);
+    }
+    this.house += amount;
+    this.post(playerId, 'repay', { cash: -amount, interest: -toInterest, debt: -(amount - toInterest) }, { loans: touched, memo: memo || 'Repaid the casino' });
+    return { ok: true, interest: toInterest, principal: amount - toInterest };
+  }
+
+  /** Interest owed to the casino. Lowers net worth; moves no cash. */
+  chargeInterest(playerId, amount, memo) {
+    if (!isAmount(amount)) return { error: 'Interest must be a positive whole number.' };
+    if (!this.accounts.has(playerId)) return { error: 'No such wallet.' };
+    this.post(playerId, 'interest', { interest: amount }, { memo: memo || 'Casino interest' });
+    return { ok: true };
+  }
+
+  casinoLoansOf(playerId) {
+    return [...this.loans.values()].filter((l) => l.kind === 'casino' && l.borrower === playerId && l.status === 'open').sort((a, b) => a.takenAt - b.takenAt);
+  }
+
+  /**
+   * Player-to-player loan, already agreed by both sides. The borrower receives `amount` now and owes `total`
+   * (amount plus the agreed flat interest). Chips only move between the two players.
+   */
+  p2pLoan({ loanId, lender, borrower, amount, total, ratePct, dueLive = null }) {
+    if (typeof loanId !== 'string' || !loanId || this.loans.has(loanId)) return { error: 'Loan id required.' };
+    if (lender === borrower) return { error: 'You can\'t lend to yourself.' };
+    if (!isAmount(amount) || !Number.isSafeInteger(total) || total < amount) return { error: 'Invalid loan terms.' };
+    const L = this.accounts.get(lender), B = this.accounts.get(borrower);
+    if (!L || !L.staked || !B || !B.staked) return { error: 'Both players need a wallet in this session.' };
+    if (amount > L.cash) return { error: `The lender only has ${fmt(L.cash)} in cash.` };
+    const loan = { id: loanId, kind: 'p2p', lender, borrower, principal: amount, total, due: total, ratePct, takenAt: this.now(), dueLive, status: 'open' };
+    this.loans.set(loanId, loan);
+    this.post(lender, 'p2p-lend', { cash: -amount, owed: total }, { loanId, counterparty: borrower, memo: 'Lent to a player' });
+    this.post(borrower, 'p2p-borrow', { cash: amount, owes: total }, { loanId, counterparty: lender, memo: 'Borrowed from a player' });
+    return { ok: true, loan };
+  }
+
+  p2pRepay(loanId, amount, memo) {
+    const loan = this.loans.get(loanId);
+    if (!loan || loan.kind !== 'p2p' || loan.status !== 'open') return { error: 'That loan isn\'t open.' };
+    if (!isAmount(amount)) return { error: 'Repay a positive whole number of chips.' };
+    if (amount > loan.due) return { error: `Only ${fmt(loan.due)} is left on this loan.` };
+    const B = this.accounts.get(loan.borrower);
+    if (amount > B.cash) return { error: `Not enough cash: you have ${fmt(B.cash)} available.` };
+    loan.due -= amount;
+    if (!loan.due) loan.status = 'repaid';
+    this.post(loan.borrower, 'p2p-repay', { cash: -amount, owes: -amount }, { loanId, counterparty: loan.lender, memo: memo || 'Repaid a player' });
+    this.post(loan.lender, 'p2p-repaid', { cash: amount, owed: -amount }, { loanId, counterparty: loan.borrower, memo: memo || 'A player repaid you' });
+    return { ok: true, remaining: loan.due };
+  }
+
+  /** At a loan's deadline: take what the borrower's cash can cover. Whatever is left stays owed. */
+  collect(loanId) {
+    const loan = this.loans.get(loanId);
+    if (!loan || loan.status !== 'open') return { ok: true, collected: 0 };
+    const B = this.accounts.get(loan.borrower);
+    if (loan.kind === 'casino') {
+      const want = Math.min(B.cash, loan.due + B.interest);
+      if (want) this.repayCasino(loan.borrower, want, 'Collected by the casino at the deadline');
+      return { ok: true, collected: want };
+    }
+    const want = Math.min(B.cash, loan.due);
+    if (want) this.p2pRepay(loanId, want, 'Collected at the deadline');
+    return { ok: true, collected: want };
+  }
+
   openRounds() { return [...this.rounds.values()].filter((r) => r.state === 'open'); }
 
   voidAllOpen(memo) { for (const r of this.openRounds()) this.voidRound(r.id, memo); }
@@ -198,13 +298,14 @@ export class Economy {
   /** Archive this session and give every listed player a fresh, identical wallet. */
   resetSession(playerIds, startingCash) {
     this.voidAllOpen('Session restarted — bet refunded');
-    this.archive.push({ session: this.session, ledger: this.ledger, accounts: [...this.accounts.values()].map((a) => ({ ...a, netWorth: netWorth(a) })) });
+    this.archive.push({ session: this.session, ledger: this.ledger, loans: [...this.loans.values()], accounts: [...this.accounts.values()].map((a) => ({ ...a, netWorth: netWorth(a) })) });
     if (this.archive.length > 5) this.archive.shift();
     this.session += 1;
     this.ledger = [];
     this.accounts = new Map();
     this.bets = new Map();
     this.rounds = new Map();
+    this.loans = new Map();
     this.house = 0;
     for (const id of playerIds) this.open(id);
     return { ok: true, session: this.session, startingCash };
@@ -238,6 +339,16 @@ export class Economy {
       let open = 0;
       for (const b of this.bets.values()) if (b.playerId === a.playerId && b.state === 'open') open += b.amount;
       if (open !== a.reserved) problems.push(`${a.playerId}.reserved is ${a.reserved} but open bets total ${open}`);
+      let debt = 0, owes = 0, owed = 0;
+      for (const l of this.loans.values()) {
+        if (l.status !== 'open') continue;
+        if (l.kind === 'casino' && l.borrower === a.playerId) debt += l.due;
+        if (l.kind === 'p2p' && l.borrower === a.playerId) owes += l.due;
+        if (l.kind === 'p2p' && l.lender === a.playerId) owed += l.due;
+      }
+      if (debt !== a.debt) problems.push(`${a.playerId}.debt is ${a.debt} but open casino loans total ${debt}`);
+      if (owes !== a.owes) problems.push(`${a.playerId}.owes is ${a.owes} but open player loans total ${owes}`);
+      if (owed !== a.owed) problems.push(`${a.playerId}.owed is ${a.owed} but loans to others total ${owed}`);
     }
     return problems;
   }
@@ -246,7 +357,7 @@ export class Economy {
     return {
       session: this.session, seq: this.seq, locked: this.locked, house: this.house,
       accounts: [...this.accounts.values()], ledger: this.ledger,
-      bets: [...this.bets.values()], rounds: [...this.rounds.values()], archive: this.archive,
+      bets: [...this.bets.values()], rounds: [...this.rounds.values()], loans: [...this.loans.values()], archive: this.archive,
     };
   }
 
@@ -257,6 +368,7 @@ export class Economy {
     e.ledger = data.ledger;
     for (const b of data.bets) e.bets.set(b.id, b);
     for (const r of data.rounds) e.rounds.set(r.id, r);
+    for (const l of data.loans || []) e.loans.set(l.id, l);
     e.archive = data.archive || [];
     return e;
   }

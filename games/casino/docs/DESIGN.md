@@ -58,7 +58,9 @@ Append-only. Every change to any wallet field is one entry, and the wallet is ex
 ```
 
 Types: `stake` (session starting cash), `bet` (cash → reserved), `refund` (reserved → cash, round voided),
-`settle` (reserved −staked, cash +payout), `loan`, `repay`, `interest`, `p2p-lend`, `p2p-borrow`, `p2p-repay`, `fee`.
+`settle` (reserved −staked, cash +payout), `loan`, `repay`, `interest`, `p2p-lend`, `p2p-borrow`, `p2p-repay`, `p2p-repaid`.
+The audit also checks that `debt`, `owes` and `owed` equal the open loans, and the house keeps count of every chip it
+pays out or takes in, so Σ(cash + reserved) + house = Σ starting cash at all times.
 
 ## Bets and rounds (exactly-once settlement)
 
@@ -76,30 +78,40 @@ A table game opens a **round**, players **reserve** bets into it, and the game *
 Disconnecting does not touch money: open bets stay reserved and the game resolves them (auto-stand / auto-fold on
 timeout), so refreshing can't cancel a losing bet.
 
-## Loans and debt (Stage 3)
+## Loans and debt
 
-- **Casino loans:** borrow up to `creditLimit`, never past `maxDebt` (principal + interest). `loan` adds equal cash and
-  debt. Interest accrues every `interestEveryMin` minutes of live play at `interestPct` on outstanding principal
-  (simple interest, rounded up to a whole chip). Each loan has a due time `termMin` after it was taken.
-  `repay` pays interest first, then principal, from cash only.
-- **Player loans:** an offer (amount, interest %, term) is a proposal until both sides accept. Counter-offers replace
-  it. On acceptance the lender's cash moves to the borrower and both get `owes` / `owed`. Repayment moves cash back.
-- **Anti-exploit:** no self-loans; one open offer per pair; a lender needs the cash at acceptance; loans count toward
-  `maxDebt`; borrowing is disabled while bankrupt; no plain gifts or transfers exist, so there's no loop to farm.
+Implemented in `server/bank.mjs` (rules) on top of `server/economy.mjs` (money). Interest and deadlines run on
+**live time** — minutes of unpaused play — so pausing the session or restarting the server never costs anyone interest.
 
-## Bankruptcy (Stage 3)
+- **Casino loans:** borrow up to `creditLimit`, and never past `maxDebt` counting casino debt, interest and player
+  debts. A loan adds equal cash and debt (net worth unchanged). Every `interestEveryMin` minutes of play each borrower
+  is charged `interestPct`% of their principal, rounded up to a whole chip (simple interest). Each loan is due
+  `termMin` minutes of play after it was taken. Repayments clear interest first, then the oldest loan.
+- **Player loans:** one side proposes (lend or borrow) with an amount, a one-time interest rate (≤ `p2pMaxPct`%) and a
+  term. The other side accepts, declines or counters; each counter bumps a version, and accepting needs the current
+  version, so nobody can accept terms that changed under them. On acceptance the lender's cash moves to the borrower,
+  who owes amount + interest; the lender is owed the same. Chips only move between the two.
+- **Deadlines:** at a loan's deadline the lender (or the casino) takes what the borrower's cash covers, and keeps
+  sweeping new cash (winnings, new loans) every few seconds until it is paid. Overdue debt never disappears.
+- **Anti-exploit:** no self-loans; one open offer per pair, six per player; a lender needs the cash at acceptance;
+  anyone who owes the casino can't lend (so casino credit can't be passed around); you can't lend to someone you
+  still owe (no loops); player debts count toward the borrower's `maxDebt`; bankrupt players can't borrow or lend;
+  there are no gifts or plain transfers.
 
-Evaluated after every settlement, loan, repayment and interest charge, never because of one lost hand alone:
+## Bankruptcy
 
-A player is **bankrupt** when all hold:
-1. no open bets (`reserved == 0`) — an unresolved hand might still pay out;
-2. `cash` is below the lowest table minimum;
-3. the casino credit they could still draw (`min(creditLimit − debt, maxDebt − debt − interest)`, 0 if loans are off)
-   would not lift cash to the table minimum;
-4. with `bankruptcy.mode: 'floor'` also when net worth falls to `−netWorthFloor` or below, regardless of 1–3.
+Checked after every settled round, loan, repayment, interest charge and collection — never because of one lost hand:
 
-Bankrupt players can't bet or borrow, stay in the room, spectate, chat and react. Their debt stays on the books and in
-final rankings. Nothing is forgiven and no money is created. They play again only after the host restarts the session.
+1. A player is **insolvent** when nothing of theirs is on a table (`reserved == 0`), their cash is below the lowest
+   table minimum, and the casino credit they could still draw wouldn't lift them to it.
+2. Insolvency starts a **60-second bailout clock** (frozen while paused). Everyone sees "Broke" on their row. A player
+   loan, or anything else that makes them solvent, stops the clock.
+3. If the clock runs out they are **bankrupt**. With `bankruptcy.mode: 'floor'` a player is also bankrupt at once when
+   net worth reaches −`netWorthFloor`.
+
+Bankrupt players stand up from their table, can't bet, borrow or lend, stay in the room, watch any table, chat and
+react. Their wallet, debts and receivables stay on the books and in the final standings, which list every unpaid debt.
+Nothing is forgiven and no chips are created. A host restart gives everyone a fresh, equal wallet.
 
 ## Multiplayer state
 
@@ -131,7 +143,7 @@ CasinoRoom
 
 1. Rooms, profiles, shared wallet + ledger, lobby, host settings, session lifecycle, reconnection, persistence. ✅
 2. Blackjack, fully playable, on the shared wallet: curved table scene, seated character silhouettes, dealer peek, S17, 3:2, double, split to four hands, turn timers. ✅
-3. Loans, interest, repayments, debt limits, player loans, bankruptcy, spectator mode.
+3. Loans, interest, repayments, debt limits, player loans, bankruptcy, spectator mode. ✅
 4. Texas Hold'em (side pots), Teen Patti (blind/seen), roulette.
 5. Leaderboards polish, profiles, achievements, challenges, reactions, animations.
 6. Edge-case and security testing, balancing, polish.
