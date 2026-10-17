@@ -31,6 +31,7 @@
     mute: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="m23 9-6 6M17 9l6 6"/></svg>',
     exit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>',
     close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+    card: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="3" width="13" height="18" rx="2.5" transform="rotate(12 12 12)"/></svg>',
     copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>'
   };
   var SUIT_NAME = { cyan: 'Cyan', crimson: 'Crimson', gold: 'Gold', violet: 'Violet' };
@@ -41,7 +42,7 @@
   // ───────────── app state ─────────────
   var app = {
     net: null, view: null, screen: 'title', round: -1, lastSeq: 0, practice: false, serverOnline: null, connected: true,
-    handEls: new Map(), trail: [], armedCall: false, chooser: null, logLines: [], logOpen: false, resultsShownFor: -1,
+    handEls: new Map(), trail: [], armedCall: false, chooser: null, logLines: [], recent: [], logOpen: false, resultsShownFor: -1,
     lastStage: 0, receivedAt: 0, overlayQueue: [], overlayBusy: false, tipQueue: [], tipShown: null, myTurnSeen: -1, joinCode: ''
   };
   var hashJoin = (location.hash.match(/join=([A-Za-z]{4})/) || [])[1];
@@ -70,11 +71,43 @@
     while (box.children.length > 2) box.removeChild(box.firstChild);
     setTimeout(function () { t.classList.add('out'); setTimeout(function () { t.remove(); }, 320); }, ms || 2400);
   }
-  function log(html) {
+  function log(html, e) {
     app.logLines.push(html);
     if (app.logLines.length > 150) app.logLines.shift();
     var d = $('.logdrawer .lines');
     if (d) { d.insertBefore(el('<div class="ln">' + html + '</div>'), d.firstChild); while (d.children.length > 150) d.removeChild(d.lastChild); }
+    app.recent.unshift({ html: html, icon: eventIcon(e) });
+    if (app.recent.length > 4) app.recent.length = 4;
+    renderRecent();
+  }
+  // Recent Events: the last few things that happened, each with a small colored icon.
+  var EV_ICON = {
+    card: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="3" width="12" height="18" rx="2.5" transform="rotate(10 12 12)"/></svg>',
+    flame: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c2 4 7 6 7 12a7 7 0 0 1-14 0c0-3 2-5 3-7 1 2 2 3 2 3s3-3 2-8z"/></svg>',
+    cool: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7"/></svg>',
+    swirl: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 12c0-2 3-2 3 0s-2 4.5-5 4-4-5-1-7.5 8-1.5 8 2.5-3 7-7.5 6.5"/></svg>',
+    bolt: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h7l-2 8 9-12h-7z"/></svg>',
+    dot: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="5"/></svg>'
+  };
+  function eventIcon(e) {
+    if (!e) return { svg: EV_ICON.dot, hex: '#8e9ad8' };
+    switch (e.t) {
+      case 'play': return { svg: EV_ICON.card, hex: e.card.color ? A.SUIT_HEX[e.card.color] : '#ffffff' };
+      case 'meltdown': return e.delta > 0 ? { svg: EV_ICON.flame, hex: '#ff8a3d' } : { svg: EV_ICON.cool, hex: A.SUIT_HEX.cyan };
+      case 'rift': return { svg: EV_ICON.swirl, hex: A.SUIT_HEX.violet };
+      case 'collapse': return { svg: EV_ICON.flame, hex: A.SUIT_HEX.crimson };
+      case 'stack': case 'accept': case 'caught': case 'exposed': return { svg: EV_ICON.bolt, hex: A.SUIT_HEX.crimson };
+      case 'draw': case 'timeout': case 'reshuffle': return { svg: EV_ICON.card, hex: '#c8d0ff' };
+      case 'win': case 'call': return { svg: EV_ICON.bolt, hex: A.SUIT_HEX.gold };
+      default: return { svg: EV_ICON.dot, hex: '#8e9ad8' };
+    }
+  }
+  function renderRecent() {
+    var box = $('.events .lines');
+    if (!box) return;
+    box.innerHTML = app.recent.length ? app.recent.map(function (r) {
+      return '<div class="ev"><span class="evi" style="--ec:' + r.icon.hex + '">' + r.icon.svg + '</span><span class="evt">' + r.html + '</span></div>';
+    }).join('') : '<div class="ev empty">Nothing yet — the match is just starting.</div>';
   }
   function modal(inner, opts) {
     opts = opts || {};
@@ -92,11 +125,11 @@
   var TIPS = {
     yourturn: ['Your turn', 'Glowing cards are legal right now. Tap one to play it, or tap the draw pile to draw.', '.hand'],
     rule: ['Reality Rule', 'This rule changes how cards match. A Rift card replaces it with the next rule shown underneath.', '.rulepanel'],
-    meltdown: ['Meltdown', 'Rifts and attacks raise the meter; Stabilize and 0s cool it. At 10 the announced Collapse Event hits, then it resets to 3.', '.reactor'],
+    meltdown: ['Meltdown', 'Rifts and attacks raise the meter; Stabilize and 0s cool it. At 10 the announced Collapse Event hits, then it resets to 3.', '.meter'],
     attack: ['Under attack', 'Counter with any Surge or Overload to pass it on, play Stabilize to take only half, or take the cards.', '.actions'],
     lastcard: ['Two cards left', 'Press LAST CARD before you play, or anyone can catch you and make you draw 2.', '.actions'],
-    critical: ['Critical', 'Meltdown is 4+. Rift cards can now be played on any card.', '.reactor'],
-    breaking: ['Breaking', 'Meltdown is 7+. Every attack adds +1. One more push could trigger the Collapse.', '.reactor'],
+    critical: ['Critical', 'Meltdown is 4+. Rift cards can now be played on any card.', '.meter'],
+    breaking: ['Breaking', 'Meltdown is 7+. Every attack adds +1. One more push could trigger the Collapse.', '.meter'],
     drawn: ['Playable draw', 'The card you drew can be played. Play it now, or keep it and end your turn.', '.actions'],
     catch: ['Catch them!', 'Someone forgot to call LAST CARD. Catch them before the next player finishes their turn.', '.actions'],
     badges: ['Meltdown badges', 'The small ▲/▼ tags on your cards show how much each play would move the Meltdown.', '.hand']
@@ -351,18 +384,20 @@
     var s = el('<section class="screen game">' +
       '<div class="topbar"><div class="logo mini"><span class="a">RIFTBREAK</span><span class="b" aria-hidden="true">RIFTBREAK</span><i class="seam"></i></div>' +
       '<span class="room"></span><span class="sp"></span>' +
-      '<button class="btn icon ghost b-rules" title="Rules (R)" aria-label="Rules">' + ICON.book + '</button>' +
-      '<button class="btn icon ghost b-log" title="What happened" aria-label="Event log">' + ICON.log + '</button>' +
-      '<button class="btn icon ghost b-set" title="Settings" aria-label="Settings">' + ICON.gear + '</button>' +
-      '<button class="btn icon ghost b-mute" title="Mute (M)" aria-label="Mute"></button>' +
-      '<button class="btn icon ghost b-exit" title="Leave" aria-label="Leave">' + ICON.exit + '</button></div>' +
-      '<div class="table"><div class="rim"><svg class="flow" viewBox="0 0 100 60" preserveAspectRatio="none"><ellipse cx="50" cy="30" rx="49" ry="29" vector-effect="non-scaling-stroke"/></svg></div>' +
-      '<div class="seats"></div>' +
-      '<div class="rulepanel panel" role="button" tabindex="0" aria-label="Reality Rule — open details"></div>' +
-      '<div class="center"><button class="pile" aria-label="Draw pile"></button>' +
-      '<div class="reactor"><svg class="ring" viewBox="-100 -100 200 200"></svg><div class="stagename"></div><div class="discard"></div><div class="readout"></div>' +
-      '<div class="stack hidden"></div><div class="colorchip"></div></div></div></div>' +
-      '<div class="handzone"><div class="status"></div><div class="me-badge"></div><div class="hand"><div class="inner"></div></div><div class="actions"></div></div>' +
+      '<button class="btn icon round b-mute" title="Mute (M)" aria-label="Mute"></button>' +
+      '<button class="btn icon round b-rules" title="Rules (R)" aria-label="Rules">' + ICON.book + '</button>' +
+      '<button class="btn icon round b-log" title="What happened" aria-label="Event log">' + ICON.log + '</button>' +
+      '<button class="btn icon round b-set" title="Settings" aria-label="Settings">' + ICON.gear + '</button>' +
+      '<button class="btn icon round b-exit" title="Leave" aria-label="Leave">' + ICON.exit + '</button></div>' +
+      '<div class="arena"><div class="playfield"><div class="seats"></div>' +
+      '<div class="center"><div class="island">' + A.island() + '</div>' +
+      '<div class="pilewrap"><button class="pile" aria-label="Draw pile"></button><div class="plabel pcount"></div></div>' +
+      '<div class="discwrap"><div class="stack hidden"></div><div class="discard"></div><div class="plabel">Discard Pile</div><div class="colorsel panel"></div></div>' +
+      '<div class="meter" tabindex="0"><div class="dial"><svg class="ring" viewBox="-100 -100 200 200"></svg><div class="core"></div></div><div class="readout"></div></div>' +
+      '</div></div>' +
+      '<div class="side"><div class="rulepanel panel" role="button" tabindex="0" aria-label="Reality Rule — open details"></div>' +
+      '<div class="events panel" role="button" tabindex="0" aria-label="Recent events — open the full log"><div class="ptitle">Recent Events</div><div class="lines"></div></div></div></div>' +
+      '<div class="handzone"><div class="mepanel panel"><div class="me-badge"></div><div class="status"></div></div><div class="hand"><div class="inner"></div></div><div class="actions"></div></div>' +
       '<div class="toasts" aria-live="polite"></div>' +
       '<div class="logdrawer panel"><div class="label" style="margin-bottom:8px">What happened</div><div class="lines"></div></div>' +
       '</section>');
@@ -374,6 +409,8 @@
     $('.b-mute', s).onclick = function () { S.setPref('muted', !S.prefs.muted); updateMute(); S.play('select'); };
     $('.b-exit', s).onclick = function () { S.play('select'); confirmLeave(); };
     $('.rulepanel', s).onclick = function () { S.play('select'); showRules(); };
+    $('.events', s).onclick = function () { S.play('select'); app.logOpen = !app.logOpen; $('.logdrawer').classList.toggle('open', app.logOpen); };
+    renderRecent();
     $('.pile', s).onclick = function () { doDraw(); };
     var lines = $('.lines', s);
     app.logLines.slice().reverse().forEach(function (l) { lines.appendChild(el('<div class="ln">' + l + '</div>')); });
@@ -408,6 +445,7 @@
         app.trail = [m.top];
         app.armedCall = false;
         app.logLines = [];
+        app.recent = [];
         var ld = $('.logdrawer .lines'); if (ld) ld.innerHTML = '';
         if (fresh) {
           if (hub) hub.report('session-start', { players: m.players.length, mode: app.net.kind });
@@ -426,7 +464,7 @@
       if (fresh) dealFx(m);
       app.lastStage = m ? m.stage : 0;
       S.setStage(app.lastStage);
-      events.forEach(function (e) { var t = eventText(e); if (t) log(t.text); });
+      events.forEach(function (e) { var t = eventText(e); if (t) log(t.text, e); });
       return;
     }
     // Capture where played cards come from before the DOM changes.
@@ -457,7 +495,7 @@
     document.documentElement.style.setProperty('--active', hex);
     document.body.classList.toggle('stage-1', m.stage === 1);
     document.body.classList.toggle('stage-2', m.stage === 2);
-    $('.rim').classList.toggle('ccw', m.dir < 0);
+    $('.game').classList.toggle('ccw', m.dir < 0);
     renderSeats();
     renderRule();
     renderCenter(opt.hidePlays);
@@ -480,64 +518,82 @@
     return { mine: m.players[i], others: others };
   }
 
+  // The table is a floating island; opponents sit around its far rim in turn order (clockwise from your left).
+  // Returns the island's top-surface ellipse in play-field pixels.
+  function islandGeom(field) {
+    var G = A.ISLAND();
+    var aspect = G.rx / G.ry;
+    var rx = Math.min(field.width * 0.45, field.height * 0.4 * aspect);
+    var ry = rx / aspect;
+    return { cx: field.width / 2, cy: Math.max(ry + 64, field.height * 0.52), rx: rx, ry: ry, w: rx * 2 * G.w / (2 * G.rx) };
+  }
+  function seatAngles(k) {
+    if (k === 1) return [90];
+    var span = Math.min(210, 50 * (k - 1)), a0 = 90 - span / 2, out = [];
+    for (var i = 0; i < k; i++) out.push(a0 + span * i / (k - 1));
+    return out;
+  }
   function renderSeats() {
     var m = match(), v = app.view;
     var box = $('.seats');
     var mobile = isMobile();
     box.className = 'seats' + (mobile ? ' seatrow' : '');
-    box.style.cssText = mobile ? '' : 'position:absolute;inset:0;pointer-events:none';
     var o = orderedPlayers();
     var others = o.others;
-    var tableRect = $('.table').getBoundingClientRect();
+    var field = $('.playfield').getBoundingClientRect();
     var stackTarget = m.phase === 'attack' && m.stack ? m.turn : null;
     var existing = {};
     $$('.seat-el', box).forEach(function (s) { existing[s.dataset.id] = s; });
+    var center = $('.center');
+    var geo = null, angles = seatAngles(others.length);
+    if (!mobile) {
+      geo = islandGeom(field);
+      center.style.top = geo.cy + 'px';
+      center.style.setProperty('--iw', geo.w + 'px');
+    } else { center.style.top = ''; center.style.removeProperty('--iw'); }
     others.forEach(function (p, i) {
       var s = existing[p.id];
       delete existing[p.id];
       if (!s) { s = el('<div class="seat-el" data-id="' + p.id + '"></div>'); box.appendChild(s); }
       var info = seatInfo(p.id) || {};
       var chips = '';
-      if (info.isBot) chips += '<span class="chip">' + esc(info.level) + ' bot</span>';
       if (info.autopilot) chips += '<span class="chip" title="Disconnected — a bot is playing this seat">auto</span>';
       else if (!info.isBot && !info.connected) chips += '<span class="chip">offline</span>';
-      if (info.wins) chips += '<span class="chip">★ ' + info.wins + '</span>';
-      var fan = '';
-      var nf = Math.min(p.count, 7);
-      for (var f = 0; f < nf; f++) fan += '<i style="transform:rotate(' + ((f - (nf - 1) / 2) * 9) + 'deg)"></i>';
+      var active = m.turn === p.id && v.phase === 'playing';
+      if (active) chips = '<span class="chip turn">' + (m.phase === 'attack' ? 'Facing +' + m.stack : 'Playing…') + '</span>' + chips;
       var cnt = p.count === 1 ? 'one' : p.count <= 3 ? 'low' : '';
-      s.innerHTML = '<div class="avatar">' + avatarSvg(p.id) + '<div class="minifan">' + fan + '</div><div class="count ' + cnt + '" aria-label="' + p.count + ' cards">' + p.count + '</div>' +
-        (p.called && p.count === 1 ? '<span class="lastflag">LAST</span>' : '') + timerRing(p.id) + '</div>' +
-        '<div class="nm">' + esc(p.name) + '</div><div class="meta">' + chips + '</div>';
-      s.classList.toggle('active', m.turn === p.id && v.phase === 'playing');
+      s.title = info.isBot ? p.name + ' · ' + info.level + ' bot' : p.name;
+      s.innerHTML = '<div class="avatar">' + avatarSvg(p.id) + timerRing(p.id) + (p.called && p.count === 1 ? '<span class="lastflag">LAST</span>' : '') + '</div>' +
+        '<div class="plate"><span class="nm">' + esc(p.name) + '</span>' + (info.wins ? '<span class="wins">★' + info.wins + '</span>' : '') +
+        '<span class="count ' + cnt + '" aria-label="' + p.count + ' cards">' + ICON.card + p.count + '</span></div>' +
+        '<div class="meta">' + chips + '</div>';
+      s.classList.toggle('active', active);
       s.classList.toggle('target', stackTarget === p.id);
       s.classList.toggle('off', !!(!info.isBot && (!info.connected || info.autopilot)));
-      s.style.pointerEvents = 'auto';
       if (m.exposed === p.id && v.settings.lastCall) {
         var cb = el('<button class="btn gold small catch">Catch!</button>');
         cb.onclick = function (ev) { ev.stopPropagation(); doCatch(p.id); };
         s.appendChild(cb);
       }
-      if (!mobile) {
-        var k = others.length;
-        var t = k === 1 ? 0.5 : i / (k - 1);
-        var ang = (22 + 136 * t) * Math.PI / 180;
-        var rx = Math.min(tableRect.width * 0.43, 560), ry = tableRect.height * 0.40;
-        var x = tableRect.width / 2 - rx * Math.cos(ang);
-        var y = tableRect.height * 0.5 - ry * Math.sin(ang) + (k > 5 ? 0 : 10);
-        s.style.left = x + 'px'; s.style.top = Math.max(52, y) + 'px';
+      if (geo) {
+        // Sit just outside the rim: the avatar overlaps the island's edge.
+        var a = angles[i] * Math.PI / 180, sw = s.offsetWidth || 170, sh = s.offsetHeight || 120;
+        var x = geo.cx - (geo.rx + 24) * Math.cos(a), y = geo.cy - (geo.ry + 34) * Math.sin(a);
+        s.style.left = Math.max(sw / 2 + 4, Math.min(field.width - sw / 2 - 4, x)) + 'px';
+        s.style.top = Math.max(sh / 2 + 2, y) + 'px';
       } else {
         s.style.left = ''; s.style.top = '';
       }
     });
     Object.keys(existing).forEach(function (id) { existing[id].remove(); });
-    // my own badge
+    // my own panel (bottom left)
     var mb = $('.me-badge');
     if (o.mine) {
       var info = seatInfo(o.mine.id) || {};
-      mb.innerHTML = '<div class="avatar">' + avatarSvg(o.mine.id) + timerRing(o.mine.id) + '</div><div><div class="nm">' + esc(o.mine.name) + '</div><div class="sub">' + o.mine.count + ' card' + (o.mine.count === 1 ? '' : 's') + (info.wins ? ' · ★ ' + info.wins : '') + '</div></div>';
-      mb.classList.toggle('active', m.turn === o.mine.id && v.phase === 'playing');
-    } else mb.innerHTML = '<div class="sub">Watching — you’ll be dealt in next match.</div>';
+      mb.innerHTML = '<div class="avatar">' + avatarSvg(o.mine.id) + timerRing(o.mine.id) + '</div><div class="nm">' + esc(o.mine.name) + (info.wins ? ' <span class="wins">★' + info.wins + '</span>' : '') + '</div>' +
+        '<div class="count" aria-label="' + o.mine.count + ' cards">' + ICON.card + o.mine.count + '</div>';
+      $('.mepanel').classList.toggle('active', m.turn === o.mine.id && v.phase === 'playing');
+    } else mb.innerHTML = '<div class="nm">Spectating</div>';
   }
 
   function timerRing(id) {
@@ -571,29 +627,34 @@
     var m = match();
     var r = E.RULES[m.rule], n = E.RULES[m.nextRule];
     var p = $('.rulepanel');
-    p.innerHTML = '<div class="cur"><div class="label">Reality Rule</div><div class="head">' + A.ruleGlyph(r.glyph) + '<div class="rname">' + esc(r.name) + '</div></div>' +
-      '<div class="rtext">' + esc(r.text) + '</div><div class="tone">Favors ' + esc(r.tone) + '</div></div>' +
-      (n ? '<div class="next">' + A.ruleGlyph(n.glyph) + '<div><div class="label" style="font-size:9px">Next Rift</div><div class="nn">' + esc(n.name) + '</div><div class="nt">' + esc(n.text) + '</div></div></div>' : '');
+    p.innerHTML = '<div class="head"><span class="badge">' + A.ruleGlyph(r.glyph) + '</span><div><div class="ptitle">Current Reality Rule</div><div class="rname">' + esc(r.name) + '</div></div></div>' +
+      '<div class="rtext">' + esc(r.text) + '</div>' +
+      (n ? '<div class="next">Next Rift: <b>' + esc(n.name) + '</b></div>' : '');
   }
 
+  var STAGE_HEX = ['#22c7f0', '#ffb020', '#f0435a'];
+  /** Compact segmented Meltdown dial: 10 segments, colored by the danger band they belong to. */
+  var SEG_HEX = ['#22c7f0', '#2fd6dc', '#45e0c0', '#ffd23c', '#ffbd2e', '#ffa424', '#ff8a2a', '#ff6a2e', '#f74b3c', '#f0304f'];
+  /** Compact segmented Meltdown dial: a bezel with 10 segments graded from cool cyan to hot red. */
   function ringSvg(mv) {
-    var o = '<circle r="99" fill="none" stroke="rgba(160,175,255,.12)" stroke-width="1"/><circle r="78" fill="none" stroke="rgba(160,175,255,.08)" stroke-width="1"/>';
-    var R = 96, r = 84;
+    var o = '<defs><linearGradient id="rb-bezel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a46a8"/><stop offset="1" stop-color="#151a4a"/></linearGradient>' +
+      '<radialGradient id="rb-dialcore"><stop offset="0" stop-color="#2a1a40"/><stop offset="1" stop-color="#10143a"/></radialGradient></defs>' +
+      '<circle r="98" fill="#141833"/><circle r="94" fill="url(#rb-bezel)"/><circle r="90" fill="#10143a"/>';
+    var R = 86, r = 62;
     for (var i = 0; i < 10; i++) {
       var a0 = (-90 + i * 36 + 2.5) * Math.PI / 180, a1 = (-90 + (i + 1) * 36 - 2.5) * Math.PI / 180;
-      var lvl = i + 1;
-      var col = lvl <= 3 ? '#2fe6ff' : lvl <= 6 ? '#ffc23d' : lvl <= 9 ? '#ff3d6e' : '#ffffff';
-      var on = mv >= lvl;
+      var lvl = i + 1, col = SEG_HEX[i], on = mv >= lvl;
       var d = 'M' + (R * Math.cos(a0)).toFixed(2) + ' ' + (R * Math.sin(a0)).toFixed(2) + 'A' + R + ' ' + R + ' 0 0 1 ' + (R * Math.cos(a1)).toFixed(2) + ' ' + (R * Math.sin(a1)).toFixed(2) +
         'L' + (r * Math.cos(a1)).toFixed(2) + ' ' + (r * Math.sin(a1)).toFixed(2) + 'A' + r + ' ' + r + ' 0 0 0 ' + (r * Math.cos(a0)).toFixed(2) + ' ' + (r * Math.sin(a0)).toFixed(2) + 'Z';
-      o += '<g class="seg" data-lvl="' + lvl + '"><path d="' + d + '" fill="' + (on ? col : 'rgba(200,210,255,.07)') + '"' + (on ? ' filter="url(#rb-glow)"' : '') + ' stroke="' + col + '" stroke-opacity="' + (on ? 0 : 0.25) + '" stroke-width=".8"/></g>';
-      var am = (-90 + i * 36 + 18) * Math.PI / 180;
-      o += '<text x="' + (108 * Math.cos(am)).toFixed(1) + '" y="' + (108 * Math.sin(am) + 3).toFixed(1) + '" text-anchor="middle" font-size="8" font-family="Unbounded, system-ui" fill="' + (on ? col : 'rgba(200,210,255,.35)') + '">' + lvl + '</text>';
+      o += '<g class="seg" data-lvl="' + lvl + '"><path d="' + d + '" fill="' + (on ? col : '#252d6c') + '" stroke="#141833" stroke-width="1.5"/></g>';
     }
-    // stage boundaries
-    [3, 6, 9].forEach(function (b) { var a = (-90 + b * 36) * Math.PI / 180; o += '<line x1="' + (80 * Math.cos(a)).toFixed(1) + '" y1="' + (80 * Math.sin(a)).toFixed(1) + '" x2="' + (100 * Math.cos(a)).toFixed(1) + '" y2="' + (100 * Math.sin(a)).toFixed(1) + '" stroke="rgba(255,255,255,.5)" stroke-width="1.2"/>'; });
+    o += '<circle r="57" fill="url(#rb-dialcore)" stroke="#2c3684" stroke-width="3"/>';
     return o;
   }
+  var FLAME = '<svg viewBox="0 0 48 48"><defs><linearGradient id="rb-flame" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#f0304f"/><stop offset=".55" stop-color="#ff8a2a"/><stop offset="1" stop-color="#ffd23c"/></linearGradient></defs>' +
+    '<path d="M24 3c4 8 15 13 15 26a15 15 0 0 1-30 0c0-7 4-11 6-15 2 4 4 6 4 6s6-6 5-17z" fill="url(#rb-flame)" stroke="#141833" stroke-width="2" stroke-linejoin="round"/>' +
+    '<path d="M24 24c2 4 7 6 7 12a7 7 0 0 1-14 0c0-3 2-5 3-7 1 2 2 3 2 3s3-3 2-8z" fill="#fff3b0"/></svg>';
+  var COOL = '<svg viewBox="0 0 48 48"><path d="M24 4c4 8 14 13 14 25a14 14 0 0 1-28 0c0-7 4-11 6-15 2 4 4 6 4 6s5-6 4-16z" fill="#22c7f0" stroke="#141833" stroke-width="2" stroke-linejoin="round"/><path d="M24 25c2 4 6 6 6 11a6 6 0 0 1-12 0c0-3 2-5 3-7 1 2 2 3 2 3s2-3 1-7z" fill="#d9f6ff"/></svg>';
 
   function renderCenter(hidePlays) {
     var m = match(), v = app.view;
@@ -601,44 +662,47 @@
     var pile = $('.pile');
     pile.innerHTML = '';
     for (var i = 0; i < Math.min(3, Math.max(1, Math.ceil(m.drawCount / 30))); i++) pile.appendChild(cardEl(null));
-    pile.appendChild(el('<div class="count">' + m.drawCount + ' LEFT</div>'));
+    $('.pcount').innerHTML = 'Draw Pile <b>' + m.drawCount + '</b>';
     pile.classList.toggle('can', myTurn && m.phase !== 'drawn');
     pile.setAttribute('aria-label', m.phase === 'attack' ? 'Take ' + m.stack + ' cards' : 'Draw a card');
-    var reactor = $('.reactor');
+    // Meltdown dial
+    var meter = $('.meter');
     var stage = E.STAGES[m.stage];
-    var stageHex = ['#2fe6ff', '#ffc23d', '#ff3d6e'][m.stage];
-    reactor.style.setProperty('--stagehex', stageHex);
-    reactor.style.setProperty('--pulse', ['3.4s', '1.8s', '.9s'][m.stage]);
-    reactor.classList.toggle('pulse', !reduced());
-    $('svg.ring', reactor).innerHTML = ringSvg(m.meltdown);
-    $('.stagename', reactor).innerHTML = '<span style="color:' + stageHex + '">' + stage.name + '</span>';
+    var stageHex = STAGE_HEX[m.stage];
+    meter.style.setProperty('--stagehex', stageHex);
+    $('svg.ring', meter).innerHTML = ringSvg(m.meltdown);
+    $('.core', meter).innerHTML = m.stage === 0 ? COOL : FLAME;
     var col = E.COLLAPSES[m.nextCollapse];
-    $('.readout', reactor).innerHTML = '<div class="lvl">MELTDOWN <span style="color:' + stageHex + '">' + m.meltdown + '</span> / 10</div><div class="next">At 10 → <b>' + esc(col.name) + '</b>' + (isMobile() ? '' : ': ' + esc(col.text)) + '</div>' +
-      (isMobile() ? '<div class="next"><span class="swatch" style="--sw:' + A.SUIT_HEX[m.color] + ';padding:2px 8px 2px 5px;font-size:11px"><i style="width:10px;height:10px"></i>' + SUIT_NAME[m.color] + '</span>' + (m.rule === 'mirror' ? ' flips to ' + SUIT_NAME[E.SUIT_INFO[m.color].opposite] : '') + '</div>' : '');
-    reactor.title = stage.name + ': ' + stage.text + ' — At 10: ' + col.name + '. ' + col.text;
+    $('.readout', meter).innerHTML = '<div class="lvl">Meltdown</div><div class="val">' + m.meltdown + '<small>/10</small></div><div class="stagepill">' + esc(stage.name) + '</div>' +
+      '<div class="next">At 10: <b>' + esc(col.name) + '</b></div>';
+    meter.title = stage.name + ': ' + stage.text + ' — At 10: ' + col.name + '. ' + col.text;
+    meter.setAttribute('aria-label', 'Meltdown ' + m.meltdown + ' of 10, ' + stage.name + '. At 10: ' + col.name + '. ' + col.text);
     // discard trail
-    var disc = $('.discard', reactor);
+    var disc = $('.discard');
     disc.innerHTML = '';
     var trail = app.trail.length ? app.trail : [m.top];
     if (trail[trail.length - 1].id !== m.top.id) { trail = trail.concat([m.top]); app.trail = trail.slice(-5); }
-    trail.slice(-4).forEach(function (c, i, arr) {
+    trail.slice(-3).forEach(function (c, i, arr) {
       var ce = cardEl(c);
       var h = (c.id * 2654435761) >>> 0;
-      var rot = ((h % 2000) / 2000 - 0.5) * 26, dx = ((h >> 11) % 14) - 7, dy = ((h >> 17) % 10) - 5;
-      if (i === arr.length - 1) { rot *= 0.4; dx *= 0.3; dy *= 0.3; }
+      var rot = ((h % 2000) / 2000 - 0.5) * 18, dx = ((h >> 11) % 10) - 5, dy = ((h >> 17) % 6) - 3;
+      if (i === arr.length - 1) { rot *= 0.2; dx = 0; dy = 0; }
       ce.style.transform = 'translate(' + dx + 'px,' + dy + 'px) rotate(' + rot + 'deg)';
       if (hidePlays && i >= arr.length - hidePlays) ce.style.opacity = '0';
       disc.appendChild(ce);
     });
-    var stack = $('.stack', reactor);
+    var stack = $('.stack');
     if (m.stack > 0) {
       stack.classList.remove('hidden');
-      stack.innerHTML = '<div class="n">+' + m.stack + '</div><div class="t">→ ' + esc(nameOf(m.turn)) + '</div><div class="cap">' + (m.stack >= E.LIMITS.stackCap ? 'AT CAP' : 'cap ' + E.LIMITS.stackCap) + '</div>';
+      stack.innerHTML = '<b>+' + m.stack + '</b> → ' + esc(nameOf(m.turn)) + '<span>' + (m.stack >= E.LIMITS.stackCap ? 'at cap' : 'cap ' + E.LIMITS.stackCap) + '</span>';
     } else stack.classList.add('hidden');
-    var chip = $('.colorchip', reactor);
-    chip.innerHTML = '<div class="label">Active color</div><span class="swatch" style="--sw:' + A.SUIT_HEX[m.color] + '"><i></i>' + SUIT_NAME[m.color] + '</span>' +
-      (m.rule === 'mirror' ? '<span class="mirrornote">Mirror: flips to ' + SUIT_NAME[E.SUIT_INFO[m.color].opposite] + ' after this turn</span>' : '') +
-      (m.chainBonus ? '<span class="chip" style="color:var(--crimson)">Chain armed: next attack +' + m.chainBonus + '</span>' : '');
+    // active color
+    var chip = $('.colorsel');
+    chip.setAttribute('aria-label', 'Active color: ' + SUIT_NAME[m.color]);
+    chip.innerHTML = '<div class="ptitle">Active Color · <b style="color:' + A.SUIT_HEX[m.color] + '">' + SUIT_NAME[m.color] + '</b></div><div class="dots">' +
+      E.SUITS.map(function (s) { return '<i class="' + (s === m.color ? 'on' : '') + '" style="--sw:' + A.SUIT_HEX[s] + '" title="' + SUIT_NAME[s] + '"><svg viewBox="-7 -7 14 14">' + A.PIP[s] + '</svg></i>'; }).join('') + '</div>' +
+      (m.rule === 'mirror' ? '<div class="mirrornote">Mirror: flips to ' + SUIT_NAME[E.SUIT_INFO[m.color].opposite] + ' after this turn</div>' : '') +
+      (m.chainBonus ? '<div class="mirrornote" style="color:var(--crimson)">Chain armed: next attack +' + m.chainBonus + '</div>' : '');
   }
 
   function sortHand(hand) {
@@ -675,16 +739,16 @@
     var keep = {};
     cards.forEach(function (c) { keep[c.id] = 1; });
     app.handEls.forEach(function (node, id) { if (!keep[id]) { node.remove(); app.handEls.delete(id); } });
-    var cw = $('.pile').getBoundingClientRect().width || 90, ch = cw * 1.4;
+    var cw = parseFloat(getComputedStyle(hand).getPropertyValue('--cw')) || 100, ch = cw * 1.4;
     var W = hand.clientWidth;
     var n = cards.length;
-    var maxSp = cw * 0.74, minSp = isMobile() ? cw * 0.42 : cw * 0.34;
+    var maxSp = cw * 0.8, minSp = isMobile() ? cw * 0.4 : cw * 0.32;
     var sp = n > 1 ? Math.max(minSp, Math.min(maxSp, (W - cw - 40) / (n - 1))) : 0;
     var totalW = cw + sp * (n - 1);
     var innerW = Math.max(W, totalW + 40);
     inner.style.width = innerW + 'px';
     var x0 = (innerW - totalW) / 2;
-    var fanStep = Math.min(3.2, 34 / Math.max(n, 1));
+    var fanStep = Math.min(3, 30 / Math.max(n, 1));
     var innerRect = inner.getBoundingClientRect(), pileRect = $('.pile').getBoundingClientRect();
     var drawnSet = {};
     (m.drawn || []).forEach(function (id) { drawnSet[id] = 1; });
@@ -703,8 +767,8 @@
       }
       var off = i - (n - 1) / 2;
       var isLegal = myTurn && legal[c.id];
-      var lift = isLegal ? -18 : 0;
-      var y = Math.abs(off) * Math.abs(off) * (n > 10 ? 0.35 : 0.9) + lift;
+      var lift = isLegal ? -14 : 0;
+      var y = Math.abs(off) * Math.abs(off) * (n > 10 ? 0.3 : 0.8) + lift;
       var x = x0 + sp * i;
       var target = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px) rotate(' + (off * fanStep).toFixed(2) + 'deg)';
       node.style.zIndex = String(i + 1);
@@ -720,10 +784,10 @@
         anyBadge = true;
         var willCollapse = m.meltdown + d >= 10;
         var txt = willCollapse ? '☢ 10' : (d > 0 ? '▲' + d : '▼' + (-d));
-        var bc = willCollapse ? '#fff' : d > 0 ? '#ff7a5c' : '#2fe6ff';
+        var bc = willCollapse ? '#ffffff' : d > 0 ? '#ff8a5c' : '#5ad8f7';
         if (!badge) { badge = el('<span class="mbadge"></span>'); node.appendChild(badge); }
         badge.textContent = txt;
-        badge.style.cssText = 'position:absolute;top:-14px;right:-4px;font:800 10px var(--display);padding:3px 6px;border-radius:7px;background:#070a1e;color:' + bc + ';box-shadow:inset 0 0 0 1px ' + bc + ',0 0 10px ' + bc + '55;z-index:3;pointer-events:none';
+        badge.style.setProperty('--bc', bc);
       } else if (badge) badge.remove();
       if (isNew && arriving[c.id] != null && !reduced()) {
         var dx = pileRect.left - innerRect.left, dy = pileRect.top - (innerRect.bottom - 12 - ch);
@@ -769,12 +833,12 @@
       box.appendChild(lc);
       tip('lastcard');
     }
-    var label = 'Draw', cls = '';
-    if (myTurn && m.phase === 'attack') { label = 'Take ' + m.stack; cls = 'danger'; }
-    if (myTurn && m.phase === 'drawn') { label = 'Keep & end turn'; cls = 'ghost'; }
-    var db = el('<button class="btn ' + cls + ' drawbtn">' + label + '</button>');
+    var label = 'Draw', cls = '', n = 1;
+    if (myTurn && m.phase === 'attack') { label = 'Take'; cls = 'danger'; n = m.stack; }
+    if (myTurn && m.phase === 'drawn') { label = 'Keep & end turn'; cls = 'ghost'; n = 0; }
+    var db = el('<button class="btn ' + cls + ' drawbtn">' + (n ? ICON.card : '') + '<span>' + label + '</span>' + (n ? '<i class="n">' + n + '</i>' : '') + '</button>');
     db.disabled = !myTurn;
-    if (myTurn && m.phase === 'turn' && !m.legal.length) db.classList.add('primary', 'pulse');
+    if (myTurn && m.phase === 'turn' && !m.legal.length) db.classList.add('pulse');
     db.onclick = function () { doDraw(); };
     box.appendChild(db);
   }
@@ -782,28 +846,27 @@
   function renderStatus() {
     var m = match(), v = app.view;
     var st = $('.status');
-    if (v.phase === 'ended') { st.innerHTML = '<b>' + esc(nameOf(m.winner)) + '</b> ' + (m.winner === me() ? 'win!' : 'wins the match'); return; }
-    var secs = v.deadline ? '<span class="secs"></span>' : '';
+    var put = function (tone, head, sub) { st.className = 'status ' + tone; st.innerHTML = '<div class="head"><i></i><span>' + head + '</span>' + (v.deadline && v.phase === 'playing' ? ' <span class="secs"></span>' : '') + '</div>' + (sub ? '<div class="sub">' + sub + '</div>' : ''); };
+    if (v.phase === 'ended') { put('go', '<b>' + esc(nameOf(m.winner)) + '</b> ' + (m.winner === me() ? 'win!' : 'wins'), 'Match over.'); return; }
     if (m.turn !== me()) {
-      st.innerHTML = 'Waiting for <b>' + esc(nameOf(m.turn)) + '</b>' + (m.phase === 'attack' ? ' — facing <b style="color:var(--crimson)">+' + m.stack + '</b>' : '') + '… ' + secs;
+      put('wait', 'Waiting for <b>' + esc(nameOf(m.turn)) + '</b>', m.phase === 'attack' ? 'They are facing <b style="color:var(--crimson)">+' + m.stack + '</b>.' : 'Watch the table — your turn is coming.');
       return;
     }
-    var top = m.top, txt;
+    var top = m.top;
     if (m.phase === 'attack') {
-      txt = '<b style="color:var(--crimson)">Incoming +' + m.stack + '</b> — counter with an attack, block with Stabilize (take ' + Math.floor(m.stack / 2) + '), or take ' + m.stack;
+      put('bad', 'Incoming <b>+' + m.stack + '</b>', 'Counter with an attack, block with Stabilize (take ' + Math.floor(m.stack / 2) + '), or take ' + m.stack + '.');
       tip('attack');
     } else if (m.phase === 'drawn') {
-      txt = 'You drew a playable card — <b>play it</b> or keep it';
+      put('go', 'Playable draw', 'Play the card you drew, or keep it.');
       tip('drawn');
     } else if (!m.legal.length) {
-      txt = 'No playable cards — <b>draw</b>';
+      put('go', 'Your turn', 'No playable cards — draw.');
     } else {
       var what = m.rule === 'color_lock' ? SUIT_NAME[m.color] + ' only (Color Lock)' : SUIT_NAME[m.color] + ' or ' + (top.kind === 'num' ? top.value : A.LABEL[top.kind].toLowerCase());
       if (m.rule === 'odd_world') what += ' · odd numbers only';
       if (m.rule === 'echo' && top.kind === 'num') what += ' · or ' + [top.value - 1, top.value + 1].filter(function (x) { return x >= 0 && x <= 9; }).join('/') + ' any color';
-      txt = '<b>Your turn</b> — match ' + what;
+      put('go', 'Your turn', 'Play ' + what + ', or draw.');
     }
-    st.innerHTML = txt + ' ' + secs;
   }
 
   // ───────────── input ─────────────
@@ -961,10 +1024,10 @@
     var t = 0;
     var later = function (fn, d) { setTimeout(fn, d); };
     var flights = 0;
-    var discRect = $('.reactor .discard').getBoundingClientRect();
+    var discRect = $('.discard').getBoundingClientRect();
     events.forEach(function (e) {
       var txt = eventText(e);
-      if (txt) log(txt.text);
+      if (txt) log(txt.text, e);
       var notify = txt && !txt.quiet;
       switch (e.t) {
         case 'play': {
@@ -1036,7 +1099,7 @@
   }
 
   function landPlay(e) {
-    var disc = $$('.reactor .discard .cardel');
+    var disc = $$('.discard .cardel');
     disc.forEach(function (c) { c.style.opacity = ''; });
     S.play('place', { pitch: e.card.value || 0 });
     if (!reduced()) {
@@ -1057,10 +1120,10 @@
     var sx = from.left + from.width / 2 - (toRect.left + w / 2), sy = from.top + from.height / 2 - (toRect.top + h / 2);
     var s0 = Math.max(0.4, from.width / w);
     var anim = f.animate([
-      { transform: 'translate(' + sx + 'px,' + sy + 'px) scale(' + s0 + ') rotate(-10deg)', opacity: 0.9 },
-      { transform: 'translate(' + (sx * 0.35) + 'px,' + (sy * 0.35 - 40) + 'px) scale(1.15) rotate(6deg)', opacity: 1, offset: 0.6 },
+      { transform: 'translate(' + sx + 'px,' + sy + 'px) scale(' + s0 + ') rotate(-6deg)', opacity: 1 },
+      { transform: 'translate(' + (sx * 0.3) + 'px,' + (sy * 0.3 - 16) + 'px) scale(1.05) rotate(2deg)', opacity: 1, offset: 0.65 },
       { transform: 'translate(0,0) scale(1) rotate(0deg)', opacity: 1 }
-    ], { duration: 360, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    ], { duration: 300, easing: 'cubic-bezier(.2,.8,.2,1)' });
     anim.onfinish = function () { f.remove(); done(); };
   }
 
@@ -1108,21 +1171,21 @@
   }
   function ripple(color) {
     if (reduced()) return;
-    var r = $('.reactor .discard').getBoundingClientRect();
+    var r = $('.discard').getBoundingClientRect();
     var d = el('<div class="ripple"></div>');
     d.style.left = (r.left + r.width / 2) + 'px'; d.style.top = (r.top + r.height / 2) + 'px'; d.style.setProperty('--rc', color);
     document.body.appendChild(d);
     setTimeout(function () { d.remove(); }, 820);
   }
   function pulseSegments() {
-    var ring = $('.reactor svg.ring');
-    if (!ring || reduced() || !ring.animate) return;
-    ring.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.06)' }, { transform: 'scale(1)' }], { duration: 380, easing: 'ease-out' });
+    var dial = $('.meter .dial');
+    if (!dial || reduced() || !dial.animate) return;
+    dial.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.06)' }, { transform: 'scale(1)' }], { duration: 320, easing: 'ease-out' });
   }
   function shards() {
     if (reduced()) return;
-    var cols = ['#2fe6ff', '#ff3d6e', '#ffc23d', '#a46bff', '#fff'];
-    for (var i = 0; i < 46; i++) {
+    var cols = [A.SUIT_HEX.cyan, A.SUIT_HEX.crimson, A.SUIT_HEX.gold, A.SUIT_HEX.violet, '#fff'];
+    for (var i = 0; i < 28; i++) {
       var s = document.createElement('div'); s.className = 'shard';
       s.style.background = cols[i % cols.length];
       s.style.left = (window.innerWidth / 2) + 'px'; s.style.top = (window.innerHeight * 0.45) + 'px';
@@ -1147,25 +1210,22 @@
     var e = item.e, html, dur;
     if (item.kind === 'rift') {
       var r = E.RULES[e.to], nx = E.RULES[e.next];
-      html = '<div class="kicker">' + (e.cause === 'fracture' ? 'REALITY FRACTURE' : 'REALITY SHIFTED') + '</div>' + A.ruleGlyph(r.glyph) + '<div class="name">' + esc(r.name) + '</div><div class="desc">' + esc(r.text) + '</div>' +
+      html = '<div class="kicker">' + (e.cause === 'fracture' ? 'Reality Fracture' : 'New Reality Rule') + '</div><span class="badge">' + A.ruleGlyph(r.glyph) + '</span><div class="name">' + esc(r.name) + '</div><div class="desc">' + esc(r.text) + '</div>' +
         '<div class="sub">' + (e.cause === 'card' ? esc(nameOf(e.by)) + ' opened a Rift · Meltdown +1' : 'The Collapse tore reality') + (nx ? ' · Next Rift: ' + esc(nx.name) : '') + '</div>';
       dur = 1700;
       S.play('rift'); S.stinger('rift');
       setTimeout(function () { S.play('rule'); }, 650);
     } else {
       var c = E.COLLAPSES[e.event];
-      html = '<div class="kicker">MELTDOWN 10 · COLLAPSE</div>' + A.ruleGlyph(e.event) + '<div class="name">' + esc(c.name) + '</div><div class="desc">' + esc(c.text) + '</div><div class="sub">Caused by ' + esc(nameOf(e.by)) + ' · Meltdown resets to 3</div>';
+      html = '<div class="kicker">Meltdown 10 · Collapse</div><span class="badge">' + A.ruleGlyph(e.event) + '</span><div class="name">' + esc(c.name) + '</div><div class="desc">' + esc(c.text) + '</div><div class="sub">Caused by ' + esc(nameOf(e.by)) + ' · Meltdown resets to 3</div>';
       dur = 2200;
       S.play('collapse'); S.stinger('collapse');
       if (!reduced()) {
-        document.body.appendChild(el('<div class="flash"></div>'));
-        setTimeout(function () { var f = $('.flash'); if (f) f.remove(); }, 520);
         var g = $('.game'); if (g) { g.classList.remove('shakeit'); void g.offsetWidth; g.classList.add('shakeit'); }
       }
     }
     var o = el('<div class="shift-overlay ' + item.kind + '"><div class="veil"></div>' +
-      (item.kind === 'rift' ? '<svg class="tear" viewBox="0 0 1000 600" preserveAspectRatio="none"><path d="M-10 420 L180 380 L230 400 L380 300 L420 330 L560 230 L600 250 L760 170 L800 190 L1010 90"/></svg>' : '') +
-      '<div class="content">' + html + '</div></div>');
+      '<div class="content panel">' + html + '</div></div>');
     document.body.appendChild(o);
     if (item.kind === 'rift') { var rp = $('.rulepanel'); if (rp) { rp.classList.remove('shift'); void rp.offsetWidth; rp.classList.add('shift'); } }
     var closed = false;
@@ -1242,7 +1302,7 @@
       var s = TUT[i];
       var stage = (s.cards || []).map(function (c) { return '<div class="cardel">' + A.card(c) + '</div>'; }).join('');
       if (s.rules) stage += s.rules.map(function (r) { var R = E.RULES[r]; return '<div class="rulecard" style="max-width:200px">' + A.ruleGlyph(R.glyph) + '<div><b>' + R.name + '</b><span>' + esc(R.text) + '</span></div></div>'; }).join('');
-      if (s.meter) stage += '<svg viewBox="-112 -112 224 224" style="width:150px;height:150px">' + ringSvg(5) + '</svg>';
+      if (s.meter) stage += '<svg viewBox="-100 -100 200 200" style="width:130px;height:130px">' + ringSvg(5) + '</svg>';
       if (s.collapse) stage += Object.keys(E.COLLAPSES).map(function (k) { var c = E.COLLAPSES[k]; return '<div class="rulecard" style="max-width:160px">' + A.ruleGlyph(k) + '<div><b>' + c.name + '</b><span>' + esc(c.text) + '</span></div></div>'; }).join('');
       box.innerHTML = '<div class="label">How to play · ' + (i + 1) + ' / ' + TUT.length + '</div><h2>' + esc(s.t) + '</h2><p>' + esc(s.p) + '</p><div class="stage">' + stage + '</div>' +
         '<div class="dots">' + TUT.map(function (_, k) { return '<i class="' + (k === i ? 'on' : '') + '"></i>'; }).join('') + '</div>' +
