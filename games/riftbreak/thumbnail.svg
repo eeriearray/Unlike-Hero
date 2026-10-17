@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="58%" r="75%"><stop offset="0" stop-color="#1d2675"/><stop offset=".55" stop-color="#0a0f33"/><stop offset="1" stop-color="#04061a"/></radialGradient>
+    <linearGradient id="seam" x1="0" x2="1"><stop offset="0" stop-color="#a46bff" stop-opacity="0"/><stop offset=".5" stop-color="#ffffff"/><stop offset="1" stop-color="#2fe6ff" stop-opacity="0"/></linearGradient>
+    <filter id="g" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <linearGradient id="face" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#141b44"/><stop offset="1" stop-color="#070a1e"/></linearGradient>
+  </defs>
+  <rect width="800" height="500" fill="url(#bg)"/>
+  <g fill="none" stroke="#a0afff" stroke-opacity=".08"><circle cx="400" cy="300" r="120"/><circle cx="400" cy="300" r="180"/><circle cx="400" cy="300" r="240"/><circle cx="400" cy="300" r="300"/></g>
+  <g transform="translate(400 300)">
+    <g transform="rotate(-24) translate(-150 -30)"><rect width="100" height="140" rx="10" fill="url(#face)" stroke="#2fe6ff" stroke-width="2.5"/><path d="M-6 126 74 -6 96 -6 16 126z" fill="#2fe6ff" opacity=".85"/><circle cx="50" cy="70" r="30" fill="#070a1e" stroke="#2fe6ff" stroke-width="2.5"/><text x="50" y="86" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="44" fill="#fff">7</text></g>
+    <g transform="rotate(-8) translate(-80 -60)"><rect width="100" height="140" rx="10" fill="url(#face)" stroke="#ffc23d" stroke-width="2.5"/><path d="M-6 120 70 -6 92 -6 16 120z" fill="#ffc23d" opacity=".85"/><circle cx="50" cy="70" r="30" fill="#070a1e" stroke="#ffc23d" stroke-width="2.5"/><path d="M54 46 36 75 48 75 44 96 64 65 52 65z" fill="#ffc23d"/></g>
+    <g transform="rotate(10) translate(-10 -62)"><rect width="100" height="140" rx="10" fill="url(#face)" stroke="#a46bff" stroke-width="2.5"/><path d="M-10 132 44 20 58 20 4 132z" fill="#a46bff" opacity=".9"/><path d="M58 30 112 -18 118 -6 64 42z" fill="#a46bff" opacity=".7"/><circle cx="50" cy="70" r="30" fill="#070a1e" stroke="#a46bff" stroke-width="2.5"/><path d="M44 42 55 60 46 66 59 78 49 83 56 98" fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round" filter="url(#g)"/></g>
+    <g transform="rotate(26) translate(60 -38)"><rect width="100" height="140" rx="10" fill="url(#face)" stroke="#ff3d6e" stroke-width="2.5"/><path d="M-6 126 74 -6 96 -6 16 126z" fill="#ff3d6e" opacity=".85"/><circle cx="50" cy="70" r="30" fill="#070a1e" stroke="#ff3d6e" stroke-width="2.5"/><path d="M50 50v18M34 68h32M40 78h20M46 88h8" stroke="#ff3d6e" stroke-width="5" stroke-linecap="round"/></g>
+  </g>
+  <g font-family="Arial Black, Impact, sans-serif" font-size="86" font-weight="900" text-anchor="middle">
+    <text x="400" y="152" fill="#eef1ff" filter="url(#g)">RIFTBREAK</text>
+  </g>
+  <path d="M100 128 L700 108" stroke="url(#seam)" stroke-width="3" filter="url(#g)"/>
+  <g transform="translate(400 300)" fill="none" stroke-width="7" stroke-linecap="round" opacity=".9">
+    <path d="M0 -168a168 168 0 0 1 98 32" stroke="#2fe6ff"/><path d="M118 -118a168 168 0 0 1 44 70" stroke="#ffc23d"/><path d="M166 -26a168 168 0 0 1 -8 70" stroke="#ff3d6e"/>
+  </g>
+</svg>

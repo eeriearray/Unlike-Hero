@@ -96,7 +96,8 @@ window.GAME_REGISTRY = [
         "local",
         "relay"
       ],
-      "notes": "The Main Stage runs every game and pushes a view to each phone. Up to 8 players plus audience phones (the bundled relay caps a room at 16 connections). Design document: games/party-pack/docs/GDD.md."
+      "roomLimit": 40,
+      "notes": "The Main Stage runs every game and pushes a view to each phone. Up to 8 players plus up to 31 audience phones (roomLimit 40 on the bundled relay). Private screens are sent to one phone only. Design document: games/party-pack/docs/GDD.md."
     },
     "tags": [
       "party",
@@ -112,6 +113,49 @@ window.GAME_REGISTRY = [
     ],
     "status": "playable",
     "path": "games/party-pack/"
+  },
+  {
+    "id": "riftbreak",
+    "title": "RIFTBREAK",
+    "tagline": "A shedding-card party game where the rules of reality keep changing and a shared Meltdown meter threatens to collapse the table.",
+    "version": "1.0.0",
+    "sdk": "1.x",
+    "entry": "index.html",
+    "server": "server/index.mjs",
+    "thumbnail": "thumbnail.svg",
+    "accent": "#a46bff",
+    "players": {
+      "min": 2,
+      "max": 8
+    },
+    "roles": [
+      {
+        "id": "player",
+        "name": "Player",
+        "entry": "index.html",
+        "description": "Quick Play against bots offline, or create a room and share the 4-letter code. Bots fill empty seats."
+      }
+    ],
+    "multiplayer": {
+      "style": "competitive card game, server-authoritative, room code",
+      "sameDevice": false,
+      "transports": [
+        "server"
+      ],
+      "notes": "Online rooms run on the game's own WebSocket server (server/index.mjs, loaded by npm start): shuffles, draws, legality and turns are decided there and each player only receives their own hand. Solo play against Easy/Normal/Hard bots works offline. Rules: games/riftbreak/docs/RULES.md."
+    },
+    "tags": [
+      "card game",
+      "party",
+      "pvp",
+      "bots",
+      "mobile"
+    ],
+    "requires": [
+      "npm start for online rooms"
+    ],
+    "status": "playable",
+    "path": "games/riftbreak/"
   },
   {
     "id": "sea-of-chaos",
