@@ -467,10 +467,10 @@
       var path = new THREE.Mesh(new THREE.RingGeometry(span * 0.62 + 3, span * 0.62 + 4.6, 64), kit.gravel); path.rotation.x = -Math.PI / 2; path.position.set(cx, -0.85, cz); path.receiveShadow = true; group.add(path);
     } else {
       var gridMat = new THREE.ShaderMaterial({
-        transparent: true, depthWrite: false, fog: true,
+        transparent: false, depthWrite: true, fog: true,
         uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { time: { value: 0 } }]),
         vertexShader: '#include <fog_pars_vertex>\nvarying vec2 vP; void main(){ vec4 wp = modelMatrix*vec4(position,1.0); vP = wp.xz; vec4 mvPosition = viewMatrix*wp; gl_Position = projectionMatrix*mvPosition;\n#include <fog_vertex>\n}',
-        fragmentShader: '#include <fog_pars_fragment>\nuniform float time; varying vec2 vP; void main(){ vec2 g = abs(fract(vP/2.0 - 0.5) - 0.5) / fwidth(vP/2.0); float l = 1.0 - min(min(g.x, g.y), 1.0); float pulse = 0.5 + 0.5*sin(time*0.8 - length(vP)*0.15); vec3 c = mix(vec3(0.05,0.35,0.42), vec3(0.3,0.9,1.0), pulse*0.4); gl_FragColor = vec4(c, l*0.55);\n#include <fog_fragment>\n}',
+        fragmentShader: '#include <fog_pars_fragment>\nuniform float time; varying vec2 vP; void main(){ vec2 g = abs(fract(vP/2.0 - 0.5) - 0.5) / fwidth(vP/2.0); float l = 1.0 - min(min(g.x, g.y), 1.0); float pulse = 0.5 + 0.5*sin(time*0.8 - length(vP)*0.15); vec3 c = mix(vec3(0.05,0.35,0.42), vec3(0.3,0.9,1.0), pulse*0.4); gl_FragColor = vec4(mix(fogColor, c, l*0.55), 1.0);\n#include <fog_fragment>\n}',
         extensions: { derivatives: true }
       });
       var grid = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), gridMat); grid.rotation.x = -Math.PI / 2; grid.position.y = -9; group.add(grid);
@@ -526,10 +526,23 @@
       }
     }
 
-    // Neon: a couple of coloured lights for mood.
+    // Neon: coloured pools of light for mood. Painted glows rather than real point lights: two point lights
+    // made every lit surface on screen pay for them on every pixel, which laptops felt.
     if (themeId === 'neon') {
-      var l1 = new THREE.PointLight('#37d6e6', 1.2, 22, 2); l1.position.set(bounds[0] - 1, 3, cz + 2); group.add(l1);
-      var l2 = new THREE.PointLight('#ffb547', 0.9, 22, 2); l2.position.set(bounds[2] + 1, 3, cz - 3); group.add(l2);
+      var glowTex = (function () {
+        var cv = document.createElement('canvas'); cv.width = cv.height = 128;
+        var cx2 = cv.getContext('2d'), gr = cx2.createRadialGradient(64, 64, 0, 64, 64, 64);
+        gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.4, 'rgba(255,255,255,0.45)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+        cx2.fillStyle = gr; cx2.fillRect(0, 0, 128, 128);
+        var tx = new THREE.CanvasTexture(cv); disposables.push(tx); return tx;
+      })();
+      [['#37d6e6', 0.55, bounds[0] + 1.5, cz + 2], ['#ffb547', 0.45, bounds[2] - 1.5, cz - 3]].forEach(function (gl) {
+        var m = new THREE.MeshBasicMaterial({ map: glowTex, color: gl[0], transparent: true, opacity: gl[1], blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+        var pool = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), m); disposables.push(pool.geometry);
+        pool.rotation.x = -Math.PI / 2; pool.scale.set(14, 14, 1);
+        var fl = Phys.floorAt(w, gl[2], gl[3], 50, 0);
+        pool.position.set(gl[2], (fl ? fl.h : 0) + 0.02, gl[3]); pool.renderOrder = 2; group.add(pool);
+      });
     }
 
     // ---------------------------------------------------------------- per-frame update

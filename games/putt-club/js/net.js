@@ -62,7 +62,7 @@
         fx: function (ev, to) { if (!to || to.indexOf(myId) >= 0) fxq.push(ev); }
       }
     });
-    m.botBudget = 4;
+    m.botBudget = 2.5; // ms per tick for bot planning, shared with drawing the game on this thread
     m.addPlayer({ id: myId, name: profile.name, color: profile.color });
     for (var i = 0; i < bots; i++) m.addBot(myId);
     var last = performance.now(), acc = 0;

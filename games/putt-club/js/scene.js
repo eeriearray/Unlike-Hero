@@ -81,6 +81,9 @@
     this.sun.color.set(th.sun.color); this.sun.intensity = th.sun.intensity;
     this.sunDir = new THREE.Vector3().fromArray(th.sun.dir).normalize();
     this.renderer.toneMappingExposure = th.exposure || (themeId === 'neon' ? 1.1 : 0.95);
+    // Sun shadows cost about a third of each frame; on Neon's dark floors they barely show (balls keep
+    // their contact shadow), so skip them there.
+    this.sun.castShadow = themeId !== 'neon';
   };
 
   /** Load a hole (course id, hole index, mirror). Reuses the current one if unchanged. */
@@ -342,9 +345,13 @@
 
   S.frame = function (now) {
     var dt = Math.min(0.05, (now - this.last) / 1000); this.last = now; this.t += dt;
-    // Graceful degradation: sustained slow frames lower the resolution once.
-    if (dt > 0.034) this.slowFrames++; else this.slowFrames = Math.max(0, this.slowFrames - 1);
-    if (this.slowFrames > 150 && this.pixelRatio > 1) { this.pixelRatio = 1; this.renderer.setPixelRatio(1); this.resize(); this.slowFrames = 0; }
+    // Graceful degradation: when frames run under ~50 fps for a couple of seconds, step the resolution down
+    // a notch (never below 1x), so a busy course on a laptop stays smooth instead of staying laggy.
+    if (dt > 0.02) this.slowFrames++; else this.slowFrames = Math.max(0, this.slowFrames - 2);
+    if (this.slowFrames > 120 && this.pixelRatio > 1) {
+      this.pixelRatio = Math.max(1, Math.round((this.pixelRatio - 0.25) * 4) / 4);
+      this.renderer.setPixelRatio(this.pixelRatio); this.resize(); this.slowFrames = 0;
+    }
     if (this.dom.hidden && this.dom.hidden()) return;
     var serverNow = this.interp.serverNow(), renderT = serverNow - this.interp.delay;
     var self = this, focus = null, myBall = null, rolling = 0;
