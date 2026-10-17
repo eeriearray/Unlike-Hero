@@ -5,7 +5,7 @@
   'use strict';
   var PC = global.PC;
   var ctx = null, master, sfxBus, musicBus, comp, noiseBuf = null, rollSrc = null, rollGain = null, rollFilter = null;
-  var settings = { music: PC.store.get('vol.music', 0.4), sfx: PC.store.get('vol.sfx', 0.8), mute: PC.store.get('mute', false) };
+  var settings = { music: PC.store.get('vol.music', 0.6), sfx: PC.store.get('vol.sfx', 0.8), mute: PC.store.get('mute', false) };
   var lastPlay = {};
 
   function ensure() {
@@ -34,7 +34,7 @@
     var t = ctx.currentTime;
     master.gain.setTargetAtTime(settings.mute ? 0 : 1, t, 0.05);
     sfxBus.gain.setTargetAtTime(settings.sfx, t, 0.05);
-    musicBus.gain.setTargetAtTime(settings.music * 0.55, t, 0.2);
+    musicBus.gain.setTargetAtTime(settings.music * 0.8, t, 0.2);
   }
 
   function now() { return ctx.currentTime; }
@@ -148,38 +148,101 @@
   // ---------------------------------------------------------------- music
 
   var music = { theme: null, timer: null, next: 0, step: 0 };
-  // Upbeat loops: a synth drum kit, a driving bass, chord stabs and an arpeggiated lead, one groove per course.
-  // Patterns are 16 sixteenth-notes per bar; 'x' = hit.
+  // One genre per course, each with a composed hook. 16 sixteenths per bar, 8-bar song (128 steps):
+  // bars 0–1 build (drums + bass), 2–7 full with melody, a snare-roll fill and riser into bar 0 again.
+  // Melody arrays are semitones above root+24 per sixteenth (null = rest), two bars long, played twice per 4 bars.
+  var _ = null;
   var SONGS = {
-    cove: { bpm: 116, root: 50, chords: [[0, 4, 7], [7, 11, 14], [9, 12, 16], [5, 9, 12]], lead: 'triangle', bass: 'sine', stab: 'square',
-      kick: 'x...x...x...x...', snare: '....x.......x...', hat: '..x...x...x...x.', shaker: 'xxxxxxxxxxxxxxxx', bassPat: 'x..x..x.x..x..x.', arp: [0, 1, 2, 1, 2, 0, 1, 2] },
-    garden: { bpm: 112, root: 52, chords: [[0, 4, 7], [5, 9, 12], [7, 11, 14], [4, 7, 11]], lead: 'triangle', bass: 'triangle', stab: 'triangle',
-      kick: 'x.....x.x.......', snare: '....x.......x..x', hat: 'x.x.x.x.x.x.x.x.', shaker: '', bassPat: 'x...x.x.x...x.x.', arp: [0, 2, 1, 2, 0, 2, 1, 2] },
-    neon: { bpm: 128, root: 45, chords: [[0, 3, 7], [8, 12, 15], [3, 7, 10], [10, 14, 17]], lead: 'sawtooth', bass: 'sawtooth', stab: 'square',
-      kick: 'x...x...x...x...', snare: '....x.......x...', hat: '..x...x...x...x.', shaker: 'x.xxx.xxx.xxx.xx', bassPat: 'xxx.xxx.xxx.xxx.', arp: [0, 1, 2, 3, 2, 1, 0, 1] },
-    menu: { bpm: 120, root: 48, chords: [[0, 4, 7], [9, 12, 16], [5, 9, 12], [7, 11, 14]], lead: 'square', bass: 'sine', stab: 'triangle',
-      kick: 'x...x...x...x...', snare: '....x.......x...', hat: '..x...x...x...x.', shaker: 'x.x.x.x.x.x.x.x.', bassPat: 'x..x..x...x..x..', arp: [0, 1, 2, 3, 2, 1, 2, 3] }
+    // Tropical house: four-on-the-floor, claps, off-beat bass, echoing marimba hook.
+    cove: { bpm: 122, root: 50, swing: 0, chords: [[0, 4, 7], [7, 11, 14], [9, 12, 16], [5, 9, 12]],
+      kick: 'x...x...x...x...', snare: '....x.......x...', snareSound: 'clap', hat: '..x...x...x...x.', shaker: 'x.xxx.xxx.xxx.xx',
+      bassPat: '..x...x...x...x.', bassOct: 0, bass: 'triangle', lead: 'marimba', pad: 'square',
+      melody: [12, _, 14, _, 16, _, 19, _, 16, _, 14, _, 12, _, 9, _, 12, _, 14, _, 16, _, 21, _, 19, _, 16, 14, _, _, 12, _],
+      melody2: [19, _, 21, _, 19, 16, _, 14, 16, _, 12, _, 14, _, 16, _, 19, _, 21, 23, 24, _, 21, _, 19, _, 16, _, 14, _, 12, _] },
+    // Bouncy swing: walking bass, shuffled hats, staccato toy-piano tune.
+    garden: { bpm: 132, root: 52, swing: 0.32, chords: [[0, 4, 7], [9, 12, 16], [2, 5, 9], [7, 11, 14]],
+      kick: 'x.......x.......', snare: '....x.......x...', snareSound: 'snare', hat: 'x.x.x.x.x.x.x.x.', shaker: '',
+      bassPat: 'x...x...x...x...', walk: true, bass: 'triangle', lead: 'toy', pad: 'triangle',
+      melody: [12, _, 16, _, 19, _, 16, _, 21, _, 19, _, 16, _, _, _, 14, _, 17, _, 21, _, 17, _, 19, _, 17, _, 14, _, _, _],
+      melody2: [24, _, 23, _, 21, _, 19, _, 16, _, 19, _, 21, _, _, _, 19, _, 17, _, 16, _, 14, _, 12, _, 14, _, 16, _, _, _] },
+    // Synthwave / drum & bass: rolling 16th bass, pumping pads, saw lead with octave jumps.
+    neon: { bpm: 140, root: 45, swing: 0, chords: [[0, 3, 7], [8, 12, 15], [3, 7, 10], [10, 14, 17]],
+      kick: 'x.........x.....', snare: '....x.......x...', snareSound: 'snare', hat: 'x.xxx.xxx.xxx.xx', shaker: '..x...x...x...x.',
+      bassPat: 'xxxxxxxxxxxxxxxx', bassOct: 1, bass: 'sawtooth', lead: 'saw', pad: 'sawtooth',
+      melody: [12, _, _, 15, _, _, 19, _, 24, _, 22, _, 19, _, 15, _, 12, _, _, 15, _, _, 19, _, 20, _, 19, _, 15, _, 17, _],
+      melody2: [24, _, 27, _, 24, _, 22, _, 19, _, 22, _, 24, _, _, _, 20, _, 24, _, 27, _, 29, _, 27, _, 24, _, 22, _, 19, _] },
+    // Menu: punchy pop-funk.
+    menu: { bpm: 118, root: 48, swing: 0.12, chords: [[0, 4, 7], [9, 12, 16], [5, 9, 12], [7, 11, 14]],
+      kick: 'x..x..x...x..x..', snare: '....x.......x...', snareSound: 'clap', hat: 'x.x.x.x.x.x.x.x.', shaker: '...x...x...x...x',
+      bassPat: 'x..x..x.x.x..x.x', bassOct: 0, bass: 'square', lead: 'marimba', pad: 'triangle',
+      melody: [16, _, 19, _, 21, 19, _, 16, _, _, 14, _, 16, _, 12, _, 16, _, 19, _, 21, 24, _, 21, _, _, 19, _, 16, _, _, _],
+      melody2: [24, _, 21, _, 19, _, 16, _, 19, _, 21, _, 19, 16, _, _, 14, _, 16, _, 19, _, 16, _, 14, _, 12, _, _, _, _, _] }
   };
   function midi(n) { return 440 * Math.pow(2, (n - 69) / 12); }
-  function kick(t) { var o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.12); g.gain.setValueAtTime(0.5, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.22); o.connect(g); g.connect(musicBus); o.start(t); o.stop(t + 0.25); }
-  function snare(t) { noise(t, 0.14, 0.22, 'highpass', 1500, 0.7, musicBus); tone('triangle', 190, t, 0.001, 0.08, 0.12, musicBus, 140); }
-  function hat(t, v) { noise(t, 0.035, v, 'highpass', 7500, 1, musicBus); }
+  var echo = null, padDuck = null;
+  function buses() {
+    if (echo) return;
+    // Echo for the lead (dotted-eighth feel) and a pad bus that ducks on every kick for that pumping sound.
+    echo = { in: ctx.createGain(), delay: ctx.createDelay(1), fb: ctx.createGain(), wet: ctx.createGain() };
+    echo.delay.delayTime.value = 0.34; echo.fb.gain.value = 0.32; echo.wet.gain.value = 0.35;
+    echo.in.connect(musicBus); echo.in.connect(echo.delay); echo.delay.connect(echo.fb); echo.fb.connect(echo.delay); echo.delay.connect(echo.wet); echo.wet.connect(musicBus);
+    padDuck = ctx.createGain(); padDuck.connect(musicBus);
+  }
+  function kick(t) {
+    var o = ctx.createOscillator(), g = ctx.createGain();
+    o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.11);
+    g.gain.setValueAtTime(0.6, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.24);
+    o.connect(g); g.connect(musicBus); o.start(t); o.stop(t + 0.26);
+    padDuck.gain.cancelScheduledValues(t); padDuck.gain.setValueAtTime(0.25, t); padDuck.gain.linearRampToValueAtTime(1, t + 0.22);
+  }
+  function snareHit(kind, t, v) {
+    if (kind === 'clap') { for (var i = 0; i < 3; i++) noise(t + i * 0.012, 0.09, 0.2 * v, 'bandpass', 1300, 0.9, musicBus); }
+    else { noise(t, 0.16, 0.24 * v, 'highpass', 1400, 0.7, musicBus); tone('triangle', 200, t, 0.001, 0.09, 0.14 * v, musicBus, 150); }
+  }
+  function hat(t, v, open) { noise(t, open ? 0.18 : 0.035, v, 'highpass', 7800, 1, musicBus); }
+  function crash(t) { noise(t, 1.4, 0.13, 'highpass', 5000, 0.5, musicBus); }
+  function riser(t, d) {
+    var src = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    src.buffer = noiseBuf; src.loop = true; f.type = 'bandpass'; f.Q.value = 2;
+    f.frequency.setValueAtTime(300, t); f.frequency.exponentialRampToValueAtTime(7000, t + d);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.16, t + d); g.gain.linearRampToValueAtTime(0, t + d + 0.05);
+    src.connect(f); f.connect(g); g.connect(musicBus); src.start(t); src.stop(t + d + 0.1);
+  }
+  function leadNote(kind, f, t, d) {
+    if (kind === 'marimba') { tone('sine', f, t, 0.002, 0.22, 0.13, echo.in); tone('sine', f * 4, t, 0.001, 0.05, 0.03, echo.in); }
+    else if (kind === 'toy') { tone('triangle', f, t, 0.002, 0.16, 0.12, echo.in); tone('square', f * 2, t, 0.001, 0.05, 0.015, echo.in); }
+    else { tone('sawtooth', f, t, 0.005, d * 1.8, 0.035, echo.in); tone('sawtooth', f * 1.006, t, 0.005, d * 1.8, 0.03, echo.in); }
+  }
   function schedule() {
     var song = SONGS[music.theme];
     if (!song || !ctx) return;
-    var six = 60 / song.bpm / 4; // sixteenth notes
+    buses();
+    var six = 60 / song.bpm / 4;
     while (music.next < ctx.currentTime + 0.2) {
-      var t = music.next, s = music.step, i = s % 16, bar = Math.floor(s / 16) % 4, chord = song.chords[bar];
-      var intro = s < 32; // first two bars build up: no lead yet
-      if (song.kick[i] === 'x') kick(t);
-      if (song.snare[i] === 'x' && !(intro && s < 16)) snare(t);
-      if (song.hat[i] === 'x') hat(t, 0.09);
-      if (song.shaker && song.shaker[i] === 'x') hat(t, 0.035);
-      if (song.bassPat[i] === 'x') tone(song.bass, midi(song.root - 12 + chord[0] + (i === 14 ? 7 : 0)), t, 0.005, six * 1.6, song.bass === 'sawtooth' ? 0.07 : 0.16, musicBus);
-      if (i === 0 || i === 6 || i === 10) chord.forEach(function (n) { tone(song.stab, midi(song.root + 12 + n), t, 0.004, six * 1.4, song.stab === 'square' ? 0.018 : 0.035, musicBus); });
-      if (!intro && i % 2 === 0) {
-        var step = song.arp[(i / 2) % song.arp.length], note = chord[step % 3] + (step >= 3 ? 12 : 0) + (bar === 3 && i >= 12 ? 2 : 0);
-        tone(song.lead, midi(song.root + 24 + note), t, 0.003, six * 1.5, song.lead === 'sawtooth' ? 0.022 : song.lead === 'square' ? 0.02 : 0.055, musicBus);
+      var t = music.next, s = music.step, i = s % 16, barN = Math.floor(s / 16), bar = barN % 4, chord = song.chords[bar];
+      // Swing pushes every second sixteenth late.
+      var tt = t + (i % 2 ? song.swing * six : 0);
+      var build = barN < 2, fill = barN === 7 && i >= 8;
+      if (s === 0 || s === 32) crash(t);
+      if (song.kick[i] === 'x' && !(fill && i >= 12)) kick(t);
+      if (fill) { if (i % 2 === 0 || i >= 12) snareHit(song.snareSound, tt, 0.5 + (i - 8) * 0.07); }
+      else if (song.snare[i] === 'x' && !(build && barN === 0)) snareHit(song.snareSound, tt, 1);
+      if (song.hat[i] === 'x') hat(tt, 0.08, !build && i === 14 && song.swing === 0);
+      if (song.shaker && song.shaker[i] === 'x' && !build) hat(tt, 0.035);
+      if (barN === 7 && i === 0) riser(t, six * 16);
+      // Bass: walking line, rolling 16ths or off-beats.
+      if (song.bassPat[i] === 'x') {
+        var bn = chord[0];
+        if (song.walk) bn = [chord[0], chord[1], chord[2], chord[1] + 1][(i / 4) % 4];
+        else if (song.bassOct && i % 4 === 2) bn += 12;
+        tone(song.bass, midi(song.root - 12 + bn), tt, 0.004, six * (song.bass === 'sawtooth' ? 0.9 : 1.7), song.bass === 'sawtooth' ? 0.06 : song.bass === 'square' ? 0.05 : 0.17, musicBus);
+      }
+      // Pads / stabs through the ducking bus.
+      if (!build && (i === 0 || (song.pad !== 'sawtooth' && (i === 6 || i === 10)))) chord.forEach(function (n) { tone(song.pad, midi(song.root + 12 + n), tt, 0.006, six * (song.pad === 'sawtooth' ? 14 : 1.5), song.pad === 'sawtooth' ? 0.016 : song.pad === 'square' ? 0.018 : 0.04, padDuck); });
+      // The hook: melody A for bars 2–5, the higher melody B for bars 6–7.
+      if (!build) {
+        var mel = barN >= 6 ? song.melody2 : song.melody, n = mel[(s % 32)];
+        if (n != null) leadNote(song.lead, midi(song.root + 24 + n - 12), tt, six);
       }
       music.next += six; music.step = (s + 1) % 128;
     }
@@ -198,6 +261,14 @@
       music.timer = setInterval(schedule, 60);
     },
     settings: settings,
+    /** Peak level of the mix over the last moment (for tests). */
+    level: function () {
+      if (!ctx) return null;
+      if (!music.an) { music.an = ctx.createAnalyser(); music.an.fftSize = 2048; comp.connect(music.an); }
+      var d = new Float32Array(2048); music.an.getFloatTimeDomainData(d);
+      var pk = 0; for (var i = 0; i < d.length; i++) pk = Math.max(pk, Math.abs(d[i]));
+      return pk;
+    },
     set: function (k, v) { settings[k] = v; PC.store.set(k === 'mute' ? 'mute' : 'vol.' + k, v); apply(); }
   };
 })(window);
