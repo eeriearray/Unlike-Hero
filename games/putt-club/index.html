@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#24493b">
+<meta name="description" content="Putt Club: a multiplayer mini-golf party game for 2–8 friends, with power-ups.">
+<title>Putt Club</title>
+<link rel="stylesheet" href="vendor/fonts.css">
+<link rel="stylesheet" href="css/putt.css">
+</head>
+<body>
+<canvas id="scene" aria-label="Mini-golf course"></canvas>
+<div id="labels" aria-hidden="true"></div>
+<canvas id="confetti" aria-hidden="true"></canvas>
+<div id="ui"><noscript><p class="nojs">Putt Club needs JavaScript.</p></noscript></div>
+<div id="nogl" class="nogl" hidden><h1>Putt Club needs WebGL</h1><p>Your browser or device has 3D graphics turned off. Try another browser, or enable hardware acceleration in its settings.</p></div>
+
+<!-- Hub SDK (optional: the game also runs standalone) -->
+<script src="../../shared/sdk/hub-config.js"></script>
+<script src="../../shared/sdk/hub-sdk.js"></script>
+<!-- Socket.io client, served by the Putt Club game server when the hub server runs. Missing = solo practice only. -->
+<script src="socket.io/socket.io.min.js" onerror="this.remove()"></script>
+<!-- Vendored so the game works offline and from file:// (three.js r147, React 18.3.1, htm 3.1.1, qrcode-generator 1.4.4; licenses in vendor/) -->
+<script src="vendor/three.min.js"></script>
+<script src="vendor/react.min.js"></script>
+<script src="vendor/react-dom.min.js"></script>
+<script src="vendor/htm.min.js"></script>
+<script src="vendor/qrcode.min.js"></script>
+<!-- Shared rules engine: the same files the server runs -->
+<script src="engine/physics.js"></script>
+<script src="engine/courses.js"></script>
+<script src="engine/powerups.js"></script>
+<script src="engine/ai.js"></script>
+<script src="engine/match.js"></script>
+<!-- Client -->
+<script src="js/util.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/textures.js"></script>
+<script src="js/themes.js"></script>
+<script src="js/props.js"></script>
+<script src="js/world.js"></script>
+<script src="js/balls.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/camera.js"></script>
+<script src="js/input.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/net.js"></script>
+<script src="js/scene.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

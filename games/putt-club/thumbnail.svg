@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6fb0d4"/><stop offset=".62" stop-color="#ffdcb0"/><stop offset="1" stop-color="#f6c79a"/></linearGradient>
+    <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5fd8cc"/><stop offset="1" stop-color="#1f7a9c"/></linearGradient>
+  </defs>
+  <rect width="640" height="400" fill="url(#sky)"/>
+  <circle cx="500" cy="210" r="46" fill="#ffd49a" opacity=".9"/>
+  <rect y="230" width="640" height="170" fill="url(#sea)"/>
+  <path d="M60 300 L330 238 L600 290 L330 372 Z" fill="#d7b47e"/>
+  <path d="M60 290 L330 228 L600 280 L330 362 Z" fill="#58a35c"/>
+  <path d="M60 290 L330 228 L600 280" fill="none" stroke="#a8774d" stroke-width="9" stroke-linejoin="round"/>
+  <path d="M60 290 L330 362 L600 280" fill="none" stroke="#8a5f3c" stroke-width="9" stroke-linejoin="round"/>
+  <path d="M120 292 L330 244 L540 284 L330 344 Z" fill="none" stroke="#6bb36e" stroke-width="10" opacity=".5"/>
+  <ellipse cx="452" cy="286" rx="16" ry="6" fill="#141a1c"/>
+  <path d="M452 286 V200" stroke="#f4f0e6" stroke-width="5" stroke-linecap="round"/>
+  <path d="M455 202 h46 l-11 13 l11 13 h-46 z" fill="#ef6a43"/>
+  <circle cx="230" cy="300" r="12" fill="#f2683c"/><circle cx="226" cy="296" r="4" fill="#fff" opacity=".6"/>
+  <ellipse cx="232" cy="312" rx="12" ry="4" fill="#000" opacity=".2"/>
+  <path d="M230 300 Q 330 330 446 290" fill="none" stroke="#fbf6ea" stroke-width="5" stroke-dasharray="2 12" stroke-linecap="round"/>
+  <g transform="translate(560 252)"><path d="M0 40 C4 20 2 6 -6 -30" stroke="#9a7650" stroke-width="8" fill="none" stroke-linecap="round"/><path d="M-6 -30 q-34 -4 -46 18 M-6 -30 q30 -14 46 6 M-6 -30 q-12 -26 -36 -28 M-6 -30 q20 -22 40 -18" stroke="#3f8a4a" stroke-width="9" fill="none" stroke-linecap="round"/></g>
+  <text x="320" y="118" text-anchor="middle" font-family="'Lilita One', 'Trebuchet MS', system-ui, sans-serif" font-size="92" fill="#fffaf0" stroke="#24493b" stroke-width="7" paint-order="stroke fill" letter-spacing="2">PUTT CLUB</text>
+</svg>

@@ -1,0 +1,4 @@
+{
+  "//": "Lets Node load the Putt Club engine as CommonJS. Browsers load the same files as classic <script>s.",
+  "type": "commonjs"
+}
