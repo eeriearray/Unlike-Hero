@@ -51,17 +51,7 @@ function start(global) {
   PC.audio.music('menu');
   var backdropTimer = setInterval(function () { if (!store.get().view) scene.menuBackdrop(++menuCourse); }, 24000);
 
-  var powerFill = null, powerText = null;
-  function showPower(aim) {
-    powerFill = powerFill || document.getElementById('power-fill');
-    powerText = powerText || document.getElementById('power-text');
-    document.body.classList.toggle('aiming', !!aim);
-    if (!powerFill) return;
-    var p = aim ? aim.power : 0;
-    powerFill.style.transform = 'scaleX(' + p.toFixed(3) + ')';
-    powerFill.style.background = p < 0.5 ? 'var(--turquoise)' : p < 0.8 ? 'var(--gold)' : 'var(--coral)';
-    if (powerText) powerText.textContent = aim ? Math.round(p * 100) + '%' : '';
-  }
+  function showPower(aim) { document.body.classList.toggle('aiming', !!aim); }
 
   var input = new PC.AimInput(canvas, {
     camera: function () { return scene.camera; },
@@ -82,6 +72,7 @@ function start(global) {
   });
 
   function shoot(aim) {
+    if (navigator.vibrate) try { navigator.vibrate(12 + Math.round(aim.power * 20)); } catch (e) { /* not allowed */ }
     scene.setAim(null); showPower(null); store.set({ aiming: false }); scene.rig.holdForAim = false;
     if (store.get().showTutorial) endTutorial();
     scene.startPrediction(aim);

@@ -30,8 +30,8 @@
     DRAG: 0.2,             // speed-proportional drag
     STOP_SPEED: 0.1,
     STATIC_GRADE: 0.04,    // slopes gentler than this hold a slow ball still
-    CAPTURE_SPEED: 5.2,    // slower than this over the cup drops in
-    CAPTURE_SPEED_CENTER: 7.2,
+    CAPTURE_SPEED: 6.0,    // slower than this over the cup drops in
+    CAPTURE_SPEED_CENTER: 8.0,
     RIM_PULL: 5,
     MAX_SHOT_TIME: 22,     // seconds before a rolling ball is forced to settle
     STUCK_TIME: 3.5,
@@ -408,6 +408,81 @@
     return { x: sy * sp, y: sy * cp, z: cy * sp, w: cy * cp };
   }
 
+
+  /**
+   * Weld every floor into one mesh. Each outline is split wherever another floor's corner lies on it, so
+   * neighbouring triangles share exact vertices along every join; tops are fanned from the centroid (all
+   * floors are convex). Side faces are added only where no same-height floor continues past the edge.
+   */
+  function floorMesh(w) {
+    var pieces = w.floors.filter(function (f) { return !f.overlay; });
+    var verts = [], index = {}, tris = [];
+    // Every triangle wound so its normal faces up (tops) or outward (sides): Rapier's internal-edge fix needs it.
+    function tri(a, b, c, nx, ny, nz) {
+      var ax = verts[a * 3], ay = verts[a * 3 + 1], az = verts[a * 3 + 2];
+      var ux = verts[b * 3] - ax, uy = verts[b * 3 + 1] - ay, uz = verts[b * 3 + 2] - az;
+      var vx = verts[c * 3] - ax, vy = verts[c * 3 + 1] - ay, vz = verts[c * 3 + 2] - az;
+      var cx2 = uy * vz - uz * vy, cy2 = uz * vx - ux * vz, cz2 = ux * vy - uy * vx;
+      if (cx2 * cx2 + cy2 * cy2 + cz2 * cz2 < 1e-12) return;
+      if (cx2 * nx + cy2 * ny + cz2 * nz < 0) tris.push(a, c, b); else tris.push(a, b, c);
+    }
+    function vid(x, y, z) {
+      var k = Math.round(x * 1000) + ',' + Math.round(y * 1000) + ',' + Math.round(z * 1000);
+      if (index[k] == null) { index[k] = verts.length / 3; verts.push(x, y, z); }
+      return index[k];
+    }
+    pieces.forEach(function (f) {
+      var thin = f.mat === 'bridge' || f.mat === 'glass', depth = thin ? 0.16 : 0.8;
+      var poly = f.poly, n = poly.length, ring = [];
+      for (var i = 0; i < n; i++) {
+        var a = poly[i], b = poly[(i + 1) % n], ex = b[0] - a[0], ez = b[1] - a[1], L2 = ex * ex + ez * ez;
+        ring.push(a);
+        if (L2 < 1e-10) continue;
+        var extra = [];
+        pieces.forEach(function (g) {
+          if (g === f) return;
+          g.poly.forEach(function (q) {
+            var u = ((q[0] - a[0]) * ex + (q[1] - a[1]) * ez) / L2;
+            if (u <= 1e-4 || u >= 1 - 1e-4) return;
+            var cr = Math.abs(ex * (q[1] - a[1]) - ez * (q[0] - a[0])) / Math.sqrt(L2);
+            if (cr < 1e-3) extra.push(u);
+          });
+        });
+        extra.sort(function (x, y) { return x - y; });
+        var last = 0;
+        extra.forEach(function (u) { if (u - last > 1e-4) { ring.push([a[0] + ex * u, a[1] + ez * u]); last = u; } });
+      }
+      var cx = 0, cz = 0;
+      poly.forEach(function (q) { cx += q[0]; cz += q[1]; });
+      cx /= n; cz /= n;
+      var c = vid(cx, heightOn(f, cx, cz), cz), m = ring.length;
+      var ccw = polyArea(ring) > 0;
+      for (var j = 0; j < m; j++) {
+        var p0 = ring[j], p1 = ring[(j + 1) % m];
+        var i0 = vid(p0[0], heightOn(f, p0[0], p0[1]), p0[1]), i1 = vid(p1[0], heightOn(f, p1[0], p1[1]), p1[1]);
+        tri(c, i0, i1, 0, 1, 0);
+        // Side face unless another floor carries on at the same height just past this edge.
+        var mxp = (p0[0] + p1[0]) / 2, mzp = (p0[1] + p1[1]) / 2, ex2 = p1[0] - p0[0], ez2 = p1[1] - p0[1], el = Math.hypot(ex2, ez2) || 1;
+        var nx = ez2 / el, nz = -ex2 / el;
+        if (!ccw) { nx = -nx; nz = -nz; }
+        var hm = heightOn(f, mxp, mzp), joined = false;
+        for (var k = 0; k < pieces.length && !joined; k++) {
+          var g = pieces[k];
+          if (g === f) continue;
+          var px = mxp + nx * 0.03, pz = mzp + nz * 0.03;
+          if (px < g.bb[0] || px > g.bb[2] || pz < g.bb[1] || pz > g.bb[3] || !inPoly(g.poly, px, pz)) continue;
+          if (Math.abs(heightOn(g, px, pz) - hm) < 0.03) joined = true;
+        }
+        if (joined) continue;
+        var b0 = vid(p0[0], heightOn(f, p0[0], p0[1]) - depth, p0[1]), b1 = vid(p1[0], heightOn(f, p1[0], p1[1]) - depth, p1[1]);
+        tri(i0, b0, b1, nx, 0, nz); tri(i0, b1, i1, nx, 0, nz);
+      }
+    });
+    return { vertices: new Float32Array(verts), indices: new Uint32Array(tris) };
+  }
+
+  function polyArea(poly) { var s2 = 0; for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) s2 += (poly[j][0] - poly[i][0]) * (poly[j][1] + poly[i][1]); return s2 / 2; }
+
   function floorPrism(f, depth) {
     var v = [];
     f.poly.forEach(function (p) { var h = heightOn(f, p[0], p[1]); v.push(p[0], h, p[1]); v.push(p[0], h - depth, p[1]); });
@@ -422,15 +497,14 @@
     var sim = { w: w, world: world, balls: [], byHandle: {}, info: {}, kin: [], t: 0, events: new R.EventQueue(true) };
     function tag(col, info) { sim.info[col.handle] = info; return col; }
 
-    // Floors: solid slabs (thin decks for bridges and glass).
-    w.floors.forEach(function (f) {
-      if (f.overlay) return;
-      var thin = f.mat === 'bridge' || f.mat === 'glass';
-      var d = R.ColliderDesc.convexHull(floorPrism(f, thin ? 0.16 : 0.8));
-      if (!d) return;
-      d.setFriction(0.9).setRestitution(0.05).setCollisionGroups(groups(G_STATIC, G_BALL));
-      tag(world.createCollider(d), { kind: 'floor', mat: f.mat });
-    });
+    // Floors: one welded triangle mesh for every playing surface, with Rapier's internal-edge fix, so a ball
+    // rolls across joins between pieces without catching on them. Sides only where there is a real drop.
+    var mesh = floorMesh(w);
+    if (mesh.indices.length) {
+      var fd = R.ColliderDesc.trimesh(mesh.vertices, mesh.indices, R.TriMeshFlags.FIX_INTERNAL_EDGES)
+        .setFriction(0.9).setRestitution(0.05).setCollisionGroups(groups(G_STATIC, G_BALL));
+      tag(world.createCollider(fd), { kind: 'floor', mat: 'grass' });
+    }
     // Rails and walls: boxes from the floor up to their top, with a round post at each end.
     var posts = {};
     w.walls.forEach(function (wl) {
@@ -724,10 +798,13 @@
       s = Math.max(s, bp.kick);
     }
     if (other.kind === 'floor') {
-      if (ev && pv.y < -1.5) ev({ type: 'land', id: b.id, s: Math.round(-pv.y * 10) / 10, mat: other.mat, x: b.x, z: b.z, y: b.y });
+      var lf = floorAt(sim.w, b.x, b.z, b.y + 0.1, sim.t || 0);
+      if (ev && pv.y < -1.5) ev({ type: 'land', id: b.id, s: Math.round(-pv.y * 10) / 10, mat: lf ? lf.mat : other.mat, x: b.x, z: b.z, y: b.y });
       return;
     }
     if (other.kind === 'ball') { wake(b); b.lastHit = other.ball.id; if (ev && s > 0.5) ev({ type: 'ball', id: b.id, other: other.ball.id, s: Math.round(s * 10) / 10, x: b.x, z: b.z, y: b.y }); return; }
+    // Clipping the top edge of a rail must not fling the ball into the sky: walls push sideways, not up.
+    if (v.y > 1.2 && pv.y < v.y) { b.body.setLinvel({ x: v.x, y: Math.max(pv.y, Math.min(v.y, 1.2)), z: v.z }, true); }
     if (s > 0.6) {
       b.bounces++;
       if (ev) ev({ type: other.kind === 'bumper' ? 'bumper' : 'wall', id: b.id, mat: other.mat, s: Math.round(s * 10) / 10, x: b.x, z: b.z, y: b.y });
@@ -768,8 +845,9 @@
         if (ev) ev({ type: 'cup', id: b.id, x: w.cup[0], z: w.cup[1], y: w.cupH });
         return 'cup';
       } else if (!b.lipped) {
+        // Too fast: it rattles across the hole and carries on, a little slower, along its line.
         b.lipped = true;
-        body.setLinvel({ x: v.x * 0.82, y: Math.min(2.2, spd * 0.12), z: v.z * 0.82 }, true);
+        body.setLinvel({ x: v.x * 0.9, y: v.y, z: v.z * 0.9 }, true);
         if (ev) ev({ type: 'lip', id: b.id, x: b.x, z: b.z });
       }
     } else if (dd > C.CUP_R + 0.2) b.lipped = false;
@@ -863,10 +941,14 @@
 
   /** Advance one ball by h seconds. Emits events through ev(e). */
 
-  /** Map a 0..1 aim power to a launch speed. */
+  /**
+   * Map a 0..1 aim power to a launch speed. A rolling ball travels roughly with speed squared, so speed
+   * follows the square root of power: half a pull rolls about half as far as a full one, and short pulls
+   * still move the ball a useful distance.
+   */
   function shotSpeed(power, strength) {
     power = clamp(power, 0, 1);
-    return C.MIN_SHOT + power * (C.MAX_SHOT * (strength || 1) - C.MIN_SHOT);
+    return Math.max(C.MIN_SHOT, Math.sqrt(power) * C.MAX_SHOT * (strength || 1));
   }
 
   var api = {

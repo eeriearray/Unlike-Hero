@@ -200,34 +200,9 @@
     return { dir: dir, speed: speed, reversed: !!fx.reverse };
   };
 
-  S.startPrediction = function (aim) {
-    if (!this.me || !this.world) return;
-    var b = this.ballState(this.me.id);
-    if (!b) return;
-    var sp = this.shotParams(aim);
-    var t0 = this.interp.serverNow();
-    var r = Phys.predict(this.world, b, sp.dir[0], sp.dir[1], sp.speed, t0, { maxT: 14, every: 1 / 60 });
-    this.pred = { t0: t0, pts: r.points, result: r.result, start: performance.now(), diverged: false, from: [b.x, b.z], ball: b, sp: sp };
-  };
-
-  /** The server confirmed the shot at hole time t: re-time the prediction exactly. */
-  S.confirmShot = function (t) {
-    var p = this.pred;
-    if (!p) return;
-    if (Math.abs(t - p.t0) > 0.04) {
-      var r = Phys.predict(this.world, p.ball, p.sp.dir[0], p.sp.dir[1], p.sp.speed, t, { maxT: 14, every: 1 / 60 });
-      p.pts = r.points; p.result = r.result;
-    }
-    p.t0 = t;
-  };
-
-  function pathAt(pts, rel) {
-    var f = rel * 60, i = Math.floor(f);
-    if (i >= pts.length - 1) return pts[pts.length - 1];
-    if (i < 0) return pts[0];
-    var a = pts[i], b = pts[i + 1], k = f - i;
-    return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k];
-  }
+  /** A shot was sent: block a second one until the server shows the ball moving. */
+  S.startPrediction = function () { this.shotAt = performance.now(); };
+  S.confirmShot = function () {};
 
   // ---------------------------------------------------------------- aiming visuals
 
@@ -249,55 +224,46 @@
   };
 
   var POWER_LOW = new THREE.Color('#5fb8b0'), POWER_MID = new THREE.Color('#f2bd47'), POWER_HIGH = new THREE.Color('#ef6a43');
-  S.setAim = function (aim) { this.aim = aim; this.previewAt = 0; };
+  S.setAim = function (aim) { this.aim = aim; };
 
-  S.updateAim = function (ball) {
-    var aim = this.aim;
-    var show = aim && ball && this.world;
-    this.arrow.visible = !!show; this.powerRing.visible = !!show;
-    if (!show) { this.dots.count = 0; this.endMarker.visible = false; return; }
-    var sp = this.shotParams(aim);
-    var col = aim.power < 0.5 ? POWER_LOW.clone().lerp(POWER_MID, aim.power * 2) : POWER_MID.clone().lerp(POWER_HIGH, (aim.power - 0.5) * 2);
-    // While reversed, the guide shows where you *pulled* in a warning colour: no help from the preview.
-    if (sp.reversed) col.set('#d85db0');
-    this.arrowMat.color.copy(col); this.powerRingMat.color.copy(col);
-    var y = ball.pos.y - ball.r + 0.02;
-    var ang = Math.atan2(aim.dir[0], aim.dir[1]);
-    var len = 0.5 + aim.power * 2.4;
-    this.arrow.position.set(ball.pos.x + aim.dir[0] * ball.r * 1.6, y, ball.pos.z + aim.dir[1] * ball.r * 1.6);
-    this.arrow.rotation.set(0, ang + Math.PI, 0);
-    this.arrow.scale.set(1 + aim.power * 0.4, 1, len);
-    // Power ring fills clockwise.
-    this.powerRing.position.set(ball.pos.x, y + 0.002, ball.pos.z);
-    var rs = ball.r / Phys.C.R;
-    this.powerRing.scale.set(rs, rs, rs);
-    var g = this.powerRing.geometry;
-    if (Math.abs((g.parameters.thetaLength || 0) - aim.power * Math.PI * 2) > 0.02) {
-      g.dispose();
-      this.powerRing.geometry = new THREE.RingGeometry(0.42, 0.52, 48, 1, Math.PI / 2, Math.max(0.01, aim.power * Math.PI * 2));
+  /** The aim arrow and power ring glide toward the pull (eased), so aiming feels smooth, never twitchy. */
+  S.updateAim = function (ball, dt) {
+    var aim = this.aim, va = this.aimVis || (this.aimVis = { ang: 0, power: 0, alpha: 0, on: false });
+    var show = !!(aim && ball && this.world);
+    var dtc = Math.min(dt || 0.016, 0.05);
+    if (show) {
+      var sp = this.shotParams(aim), ang = Math.atan2(aim.dir[0], aim.dir[1]);
+      if (!va.on) { va.ang = ang; va.power = 0; }
+      va.on = true; va.reversed = sp.reversed;
+      va.ang = PC.angleLerp(va.ang, ang, 1 - Math.exp(-22 * dtc));
+      va.power = PC.damp(va.power, aim.power, 18, dtc);
+      va.alpha = PC.damp(va.alpha, 1, 14, dtc);
+      va.ball = ball;
+    } else {
+      va.on = false;
+      va.alpha = PC.damp(va.alpha, 0, 16, dtc);
     }
-    // Trajectory dots from the real physics, refreshed ~30 times a second.
-    var now = performance.now();
-    if (now - this.previewAt > 50 && PC.store.get('preview', true) && !sp.reversed) {
-      this.previewAt = now;
-      var b = this.ballState(this.me.id);
-      if (b) {
-        var r = Phys.predict(this.world, b, sp.dir[0], sp.dir[1], sp.speed, this.interp.serverNow(), { maxT: 2.2, every: 1 / 30, maxBounces: 2, step: 1 / 60 });
-        var m = new THREE.Matrix4(), pts = r.points, n = Math.min(60, pts.length - 1), dist = 0, k = 0;
-        for (var i = 1; i < pts.length && k < 60; i++) {
-          dist += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][2] - pts[i - 1][2]);
-          if (dist < 0.35 * (k + 1)) continue;
-          var fade = 1 - k / 60;
-          m.compose(new THREE.Vector3(pts[i][0], pts[i][1] + 0.02, pts[i][2]), new THREE.Quaternion(), new THREE.Vector3(fade, 1, fade));
-          this.dots.setMatrixAt(k++, m);
-        }
-        this.dots.count = k; this.dots.instanceMatrix.needsUpdate = true;
-        var end = pts[pts.length - 1];
-        this.endMarker.visible = r.result === 'stop';
-        if (this.endMarker.visible) this.endMarker.position.set(end[0], end[1] + 0.02, end[2]);
-        void n;
-      }
-    } else if (sp.reversed || !PC.store.get('preview', true)) { this.dots.count = 0; this.endMarker.visible = false; }
+    var vis = va.alpha > 0.02 && va.ball;
+    this.arrow.visible = vis; this.powerRing.visible = vis;
+    this.dots.count = 0; this.endMarker.visible = false;
+    if (!vis) return;
+    var bl = va.ball, p = va.power;
+    var col = p < 0.5 ? POWER_LOW.clone().lerp(POWER_MID, p * 2) : POWER_MID.clone().lerp(POWER_HIGH, (p - 0.5) * 2);
+    if (va.reversed) col.set('#d85db0');
+    this.arrowMat.color.copy(col); this.powerRingMat.color.copy(col);
+    this.arrowMat.opacity = 0.92 * va.alpha; this.powerRingMat.opacity = 0.85 * va.alpha;
+    var y = bl.pos.y - bl.r + 0.02, dx = Math.sin(va.ang), dz = Math.cos(va.ang);
+    this.arrow.position.set(bl.pos.x + dx * bl.r * 1.5, y, bl.pos.z + dz * bl.r * 1.5);
+    this.arrow.rotation.set(0, va.ang + Math.PI, 0);
+    this.arrow.scale.set(0.9 + p * 0.5, 1, 0.45 + p * 2.6);
+    this.powerRing.position.set(bl.pos.x, y + 0.002, bl.pos.z);
+    var rs = (bl.r / Phys.C.R) * (1 + Math.sin(this.t * 6) * 0.03 * p);
+    this.powerRing.scale.set(rs, rs, rs);
+    var g = this.powerRing.geometry, want = Math.max(0.01, p * Math.PI * 2);
+    if (Math.abs((g.parameters.thetaLength || 0) - want) > 0.03) {
+      g.dispose();
+      this.powerRing.geometry = new THREE.RingGeometry(0.4, 0.5, 64, 1, Math.PI / 2, want);
+    }
   };
 
   // ---------------------------------------------------------------- events from the server
@@ -400,37 +366,17 @@
     if (focus && this.aim) { focus.aiming = true; focus.aimDir = this.shotParams(this.aim).dir; focus.power = this.aim.power; }
     if (this.me && this.me.finished && this.rig.mode === 'play') focus = this.spectateFocus() || focus;
     this.rig.update(dt, focus, this.t);
-    this.updateAim(this.aim && this.canAim() ? myBall : null);
+    this.updateAim(this.aim && this.canAim() ? myBall : null, dt);
     this.particles.update(dt);
     if (this.confetti.active()) { this.dom.confetti.style.display = 'block'; this.confetti.update(dt); } else this.dom.confetti.style.display = 'none';
     this.renderer.render(this.scene, this.camera);
     if (this.dom.onFrame) this.dom.onFrame(dt);
   };
 
-  /** Which position to draw a ball at this frame. */
+  /** Which position to draw a ball at this frame: always the server's path, smoothly interpolated. */
   S.sampleBall = function (id, isMe, serverNow, renderT, dt) {
-    var target;
-    var pred = this.pred;
-    if (isMe && pred && !pred.diverged) {
-      var rel = serverNow - pred.t0;
-      var pp = pathAt(pred.pts, rel);
-      // Compare with the server: where did it have the ball at its latest snapshot?
-      var last = this.interp.latest(id);
-      if (last && last.t >= pred.t0) {
-        var ap = pathAt(pred.pts, last.t - pred.t0);
-        var err = Math.hypot(last.x - ap[0], last.z - ap[2]);
-        if (err > 0.6 || (last.flags & 2) && pred.result !== 'cup') pred.diverged = true;
-        // Done once the server has the ball at rest and our path has finished too.
-        if (!(last.flags & 1) && last.t - pred.t0 > 0.25 && rel > (pred.pts.length - 1) / 60) pred.diverged = true;
-      }
-      if (!pred.diverged) {
-        var f = last || { r: Phys.C.R, flags: 17 };
-        var moving = rel < (pred.pts.length - 1) / 60;
-        target = { x: pp[0], y: pp[1], z: pp[2], r: f.r, flags: (moving ? 1 : 0) | (f.flags & ~1) | (pred.result === 'cup' && !moving ? 2 : 0), vx: f.vx, vz: f.vz };
-        if (target.flags & 2 && !(f.flags & 2)) target.flags &= ~2; // only sink once the server agrees
-      } else this.pred = null;
-    }
-    if (!target) target = this.interp.sample(id, isMe ? serverNow - 0.05 : renderT);
+    var target = null;
+    target = this.interp.sample(id, isMe ? serverNow - 0.07 : renderT);
     if (!target) return null;
     // Smooth over source switches; snap on teleports (resets, hazards, swaps).
     var sm = this.smooth[id];
@@ -470,7 +416,7 @@
     if (!v || !me || v.phase !== 'play' || me.finished) return false;
     var s = this.interp.latest(me.id);
     if (!s || (s.flags & 1) || (s.flags & 4)) return false;
-    if (this.pred && !this.pred.diverged) return false;
+    if (this.shotAt && performance.now() - this.shotAt < 600 && !(s.flags & 1)) return false; // shot sent, waiting for it to start
     return true;
   };
 

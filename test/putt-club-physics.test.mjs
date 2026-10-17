@@ -169,3 +169,22 @@ test('trajectory preview matches the authoritative simulation', () => {
   assert.equal(pred.result, real.result);
   assert.ok(Math.hypot(pred.ball.x - real.b.x, pred.ball.z - real.b.z) < 0.05, `preview ended ${Math.hypot(pred.ball.x - real.b.x, pred.ball.z - real.b.z).toFixed(3)} away`);
 });
+
+test('floors are one welded surface: rolling across joins never kicks the ball up or drops it through', () => {
+  // Gear Gate (join at z=4) and Grand Orrery (entry lane into the arena at z=7) used to snag balls.
+  for (const [id, x, z, power] of [['garden-2', -4.3, 8.4, 0.6], ['garden-6', 0, 11.4, 0.5], ['cove-1', 0, 7.5, 0.5], ['cove-3', -3.3, 7.4, 0.6]]) {
+    const { w, sim, b } = setup(id, x, z);
+    P.shoot(b, 0, -1, P.shotSpeed(power));
+    let t = 0, worst = 0, hit = 0, result = null;
+    while (t < 6 && !result) {
+      const r = P.stepSim(sim, t, 1 / 60, { onEvent: (e) => { if (e.type !== 'stop') hit = 4; } });
+      t += 1 / 60; if (r.length) result = r[0].result;
+      const f = P.floorAt(w, b.x, b.z, b.y + 0.05, t);
+      if (!hit && f && Math.hypot(f.gx, f.gz) < 0.01) worst = Math.max(worst, b.vy);
+      if (hit) hit--;
+    }
+    assert.notEqual(result, 'water', `${id}: fell through the floor`);
+    assert.ok(worst < 0.5, `${id}: kicked up at ${worst.toFixed(2)} u/s crossing a join`);
+    P.freeSim(sim);
+  }
+});

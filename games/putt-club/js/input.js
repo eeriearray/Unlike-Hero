@@ -82,7 +82,7 @@
     var r = this.canvas.getBoundingClientRect();
     var a = this.anchor, sx = cx - a.x, sy = cy - a.y, sd = Math.hypot(sx, sy);
     // A pull of ~30% of the screen's short side is full power; a small dead zone avoids accidental taps.
-    var reach = Math.min(r.width, r.height) * 0.3, dead = 12;
+    var reach = Math.max(120, Math.min(r.width, r.height) * 0.3), dead = 6;
     var power = PC.clamp((sd - dead) / reach, 0, 1);
     if (sd < dead) { this.aim = { dir: this.aim ? this.aim.dir : this.h.defaultAim(), power: 0 }; this.h.onAim(this.aim); return; }
     // Screen drag -> ground direction using the camera's (frozen) orientation. Pull back = shoot forward.
@@ -96,7 +96,7 @@
     if (this.mode === 'aim' && this.aim) {
       var a = this.aim;
       this.aim = null; this.mode = null;
-      if (a.power >= 0.03 && this.h.canAim()) this.h.onShoot(a); else this.h.onAim(null);
+      if (a.power >= 0.01 && this.h.canAim()) this.h.onShoot(a); else this.h.onAim(null);
       this.h.aimEnd();
       return;
     }

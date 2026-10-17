@@ -323,7 +323,6 @@
       <div class="hud-bottom">
         <${Effects} me=${me} />
         <div class="stroke-box" aria-live="polite">
-          <div class="power-meter" aria-hidden="true"><i id="power-fill"></i><span id="power-text"></span></div>
           ${me.finished
             ? html`<span class="stroke-main">${me.status === 'holed' ? PC.relName(me.strokes, par) : 'Out'}</span><small>${me.strokes} ${me.strokes === 1 ? 'stroke' : 'strokes'} · ${v.players.some(function (q) { return !q.finished; }) ? 'watching the others' : 'hole complete'}</small>`
             : html`<span class="stroke-main">Stroke ${me.strokes + 1}</span><small>${me.strokes} taken · par ${par} · limit ${v.settings.maxStrokes}</small>`}
@@ -340,7 +339,7 @@
   function Tutorial(p) {
     var _s = useState(0), step = _s[0], setStep = _s[1];
     var steps = [
-      ['Aim', (p.touch ? 'Drag your finger anywhere' : 'Click and drag anywhere') + ' and pull back, like a slingshot. The dotted line shows where it will roll.'],
+      ['Aim', (p.touch ? 'Drag your finger anywhere' : 'Click and drag anywhere') + ' and pull back, like a slingshot. The arrow shows the direction and strength.'],
       ['Putt', 'Drag farther for more power, then let go. Drag back onto the ball (or press Esc) to cancel.'],
       ['Power-ups', 'Roll through a glowing crate to grab a power-up, then tap its slot (or press 1 or 2) to use it.'],
       ['Camera', p.touch ? 'Use two fingers to turn the camera and pinch to zoom. Everyone plays at the same time!' : 'Right-drag (or Q/E) to turn the camera, scroll to zoom. Everyone plays at the same time!']
@@ -466,7 +465,7 @@
       <h3>How to play</h3>
       <ol class="steps">
         <li><b>Aim:</b> when it's your shot, ${touch ? 'drag a finger anywhere' : 'click and drag anywhere'} and pull back. The ball goes the opposite way, like a slingshot.</li>
-        <li><b>Power:</b> the farther you pull, the harder the putt (half a pull is half power). The dotted line is a real physics preview of the first bounces.</li>
+        <li><b>Power:</b> the farther you pull, the harder the putt (half a pull is half power). The arrow grows and warms from teal to coral as you pull harder.</li>
         <li><b>Putt:</b> let go. Drag back onto the ball${touch ? ', tap Cancel shot' : ' or press Esc'} to cancel.</li>
         <li><b>Everyone plays at once.</b> Fewest strokes wins. Water or falling off costs a stroke and puts you back where you were.</li>
         <li><b>Stroke limit:</b> after the limit you score limit + 1. Out of time scores your strokes + 2. <b>Reset</b> sends you to the tee for a penalty.</li>
@@ -494,7 +493,6 @@
       <h3>Display</h3>
       <label class="row">Graphics
         <select value=${PC.store.get('quality', 'auto')} onChange=${function (e) { setPref('quality', e.target.value); }}><option value="auto">Auto</option><option value="high">High</option><option value="low">Battery saver</option></select></label>
-      <label class="row toggle"><input type="checkbox" checked=${PC.store.get('preview', true)} onChange=${function (e) { setPref('preview', e.target.checked); }} /> Show trajectory preview</label>
       <label class="row toggle"><input type="checkbox" checked=${PC.reducedMotion()} onChange=${function (e) { setPref('reducedMotion', e.target.checked); }} /> Reduce motion</label>
       <label class="row">Camera speed <input type="range" min="0.4" max="2" step="0.1" value=${PC.store.get('camSens', 1)} onInput=${function (e) { setPref('camSens', Number(e.target.value)); }} /></label>
       <p class="note">Graphics changes apply the next time the page loads.</p>
