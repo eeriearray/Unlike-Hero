@@ -1,8 +1,9 @@
 // Neon Casino — one private room: players, host controls, settings, the session lifecycle, feed and chat.
 // The room owns one Economy shared by every table. All state changes arrive through command(playerId, cmd);
 // each player sees only viewFor(playerId). Time and timers are injectable so tests run instantly.
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 import { Economy, netWorth } from './economy.mjs';
+import { blackjack } from './games/blackjack.mjs';
 
 export const MAX_PLAYERS = 12;
 export const HOST_GRACE_MS = 90_000;
@@ -15,8 +16,9 @@ export const GAMES = {
   poker: { name: "Texas Hold'em" },
   teenpatti: { name: 'Teen Patti' },
 };
-// Table engines register here as each game is built (Stage 2+). A table without an engine is listed but closed.
-export const ENGINES = {};
+// Table engines, by game. A table whose game has no engine yet is listed but closed.
+// Engine interface: create(), sit(), leave(), command(), view(), pause(), resume(), close(), disconnected(), snapshot(), restore().
+export const ENGINES = { blackjack };
 
 export const DEFAULT_SETTINGS = {
   startingCash: 10_000,
@@ -114,8 +116,9 @@ function sameHash(a, b) {
 }
 
 export class CasinoRoom {
-  constructor({ code, now = Date.now, timers = { set: setTimeout, clear: clearTimeout }, hooks = {}, settings } = {}) {
+  constructor({ code, now = Date.now, timers = { set: setTimeout, clear: clearTimeout }, hooks = {}, settings, rng = randomInt } = {}) {
     this.code = code;
+    this.rng = rng;                   // rng(n) -> whole number in [0, n); a CSPRNG unless a test injects one
     this.now = now;
     this.timers = timers;
     this.hooks = { sync() {}, fx() {}, ...hooks };
@@ -130,6 +133,9 @@ export class CasinoRoom {
     this.seq = 0;
     this.sessionTimer = null;
     this.hostTimer = null;
+    this.tableState = {};             // table id -> engine state (plain JSON, saved with the room)
+    this.tableTimers = new Map();     // table id -> timer handle (not saved)
+    this.ending = false;
     this.economy = new Economy({ now });
     this.wireEconomy();
   }
@@ -137,7 +143,7 @@ export class CasinoRoom {
   wireEconomy() {
     this.economy.onSettle = () => {
       this.session.rounds += 1;
-      if (this.session.phase === 'live' && this.settings.session.mode === 'rounds' && this.session.rounds >= this.settings.session.rounds) {
+      if (!this.ending && this.session.phase === 'live' && this.settings.session.mode === 'rounds' && this.session.rounds >= this.settings.session.rounds) {
         this.endSession('Round limit reached');
       }
     };
@@ -149,6 +155,25 @@ export class CasinoRoom {
   connected() { return this.humans().filter((p) => p.connected); }
   sync() { this.hooks.sync(); }
   id(prefix) { return `${prefix}${(++this.seq).toString(36)}${randomBytes(3).toString('hex')}`; }
+
+  /** A table's current config (limits follow the settings) with its live engine state. */
+  table(id) {
+    const cfg = tablesFor(this.settings).find((t) => t.id === id);
+    const engine = cfg && ENGINES[cfg.game];
+    if (!engine) return null;
+    if (!this.tableState[id]) this.tableState[id] = engine.create();
+    return { ...cfg, state: this.tableState[id], engine };
+  }
+
+  openTables() { return tablesFor(this.settings).map((t) => this.table(t.id)).filter(Boolean); }
+
+  leaveTable(playerId) {
+    const p = this.get(playerId);
+    if (!p || !p.tableId) return;
+    const t = this.table(p.tableId);
+    p.tableId = null;
+    if (t) t.engine.leave(this, t, playerId);
+  }
 
   log(kind, text, extra = {}) {
     this.feed.push({ id: this.id('f'), at: this.now(), kind, text, ...extra });
@@ -227,6 +252,7 @@ export class CasinoRoom {
     p.connected = on;
     p.lastSeen = this.now();
     if (on) p.left = false;
+    if (!on && p.tableId) { const t = this.table(p.tableId); if (t) t.engine.disconnected(this, t, id); }
     this.checkHost();
     this.sync();
   }
@@ -235,6 +261,7 @@ export class CasinoRoom {
   removePlayer(id) {
     const p = this.get(id);
     if (!p) return;
+    this.leaveTable(id);
     if (this.session.phase === 'lobby' && this.economy.account(id)?.staked !== true) {
       this.players.delete(id);
       this.creds.delete(id);
@@ -309,6 +336,7 @@ export class CasinoRoom {
     s.endsAt = null;
     s.phase = 'paused';
     this.economy.locked = true;
+    for (const t of this.openTables()) t.engine.pause(this, t);
     this.log('session', 'The host paused the session — betting is closed');
     return { ok: true };
   }
@@ -318,6 +346,7 @@ export class CasinoRoom {
     this.session.phase = 'live';
     this.economy.locked = false;
     this.armSessionTimer();
+    for (const t of this.openTables()) t.engine.resume(this, t);
     this.log('session', 'The session resumed — betting is open');
     return { ok: true };
   }
@@ -327,7 +356,10 @@ export class CasinoRoom {
     const s = this.session;
     if (s.phase !== 'live' && s.phase !== 'paused') return { error: 'There\'s no session running.' };
     this.economy.locked = true;
-    for (const t of tablesFor(this.settings)) ENGINES[t.game]?.close?.(this, t);   // let tables finish or void their hands
+    this.ending = true;
+    try {
+      for (const t of this.openTables()) t.engine.close(this, t);   // dealt hands are played out and paid; undealt bets come back
+    } finally { this.ending = false; }
     this.economy.voidAllOpen('Session ended — open bet refunded');
     this.timers.clear(this.sessionTimer);
     this.sessionTimer = null;
@@ -354,6 +386,9 @@ export class CasinoRoom {
     this.economy.locked = true;
     Object.assign(s, { no: prev + 1, phase: 'lobby', startedAt: null, endsAt: null, remainingMs: null, rounds: 0, endedAt: null, summary: null, endReason: null });
     for (const p of this.humans()) { p.ready = false; p.status = 'active'; p.tableId = null; }
+    for (const id of this.tableTimers.keys()) this.timers.clear(this.tableTimers.get(id));
+    this.tableTimers.clear();
+    this.tableState = {};
     s.notice = { id: this.id('n'), at: this.now(), text: `The host reset the economy. Session ${prev} is archived; everyone starts session ${s.no} with ${money(this.settings.startingCash)} when the host deals in.` };
     this.log('session', s.notice.text);
     return { ok: true };
@@ -457,6 +492,30 @@ export class CasinoRoom {
         res = { ok: true };
         break;
       }
+      case 'sit': {
+        const t = this.table(cmd.tableId);
+        if (!t) return { error: 'That table isn\'t open.' };
+        if (this.session.phase !== 'live' && this.session.phase !== 'paused') return { error: 'Tables open when the session starts.' };
+        if (p.status !== 'active') return { error: p.status === 'bankrupt' ? 'Bankrupt players can watch but not play.' : 'Spectators can watch but not play.' };
+        if (p.tableId === t.id) return { ok: true };
+        const r = t.engine.sit(this, t, playerId);
+        if (r.error) return r;
+        this.leaveTable(playerId);              // one seat at a time; leaving the old table stands any open hands
+        p.tableId = t.id;
+        res = { ok: true };
+        break;
+      }
+      case 'stand-up':
+        this.leaveTable(playerId);
+        res = { ok: true };
+        break;
+      case 'play': {
+        const t = this.table(cmd.tableId);
+        if (!t) return { error: 'That table isn\'t open.' };
+        if (p.tableId !== t.id) return { error: 'Sit at this table to play.' };
+        res = t.engine.command(this, t, playerId, cmd);
+        break;
+      }
       case 'chat': {
         const text = cleanText(cmd.text, 240);
         if (!text) return { error: 'Say something first.' };
@@ -513,7 +572,10 @@ export class CasinoRoom {
         endReason: s.endReason, summary: s.summary, notice: s.notice,
       },
       settings: this.settings,
-      tables: tablesFor(this.settings).map((t) => ({ ...t, open: !!ENGINES[t.game], seated: players.filter((p) => p.tableId === t.id).map((p) => p.id) })),
+      tables: tablesFor(this.settings).map((cfg) => {
+        const t = this.table(cfg.id);
+        return { ...cfg, open: !!t, seated: players.filter((p) => p.tableId === cfg.id).map((p) => p.id), state: t ? t.engine.view(this, t, playerId) : null };
+      }),
       players,
       leaderboard,
       feed: this.feed.slice(-40),
@@ -535,6 +597,7 @@ export class CasinoRoom {
       v: 1, code: this.code, createdAt: this.createdAt, hostId: this.hostId, settings: this.settings, seq: this.seq,
       session: { ...this.session, endsAt: null, remainingMs: this.session.endsAt ? Math.max(0, this.session.endsAt - this.now()) : this.session.remainingMs },
       players: this.humans(), creds: [...this.creds], feed: this.feed, chat: this.chat, economy: this.economy.toJSON(),
+      tables: Object.fromEntries(Object.entries(this.tableState).map(([id, st]) => { const t = this.table(id); return [id, t ? t.engine.snapshot(this, st) : st]; })),
     };
   }
 
@@ -543,16 +606,21 @@ export class CasinoRoom {
     const room = new CasinoRoom({ ...opts, code: data.code, settings: data.settings });
     room.createdAt = data.createdAt; room.hostId = data.hostId; room.seq = data.seq;
     room.session = data.session;
-    for (const p of data.players) room.players.set(p.id, { ...p, connected: false });
+    // Everyone is offline after a restart; the host's grace period starts now, not when the server went down.
+    for (const p of data.players) room.players.set(p.id, { ...p, connected: false, lastSeen: room.now() });
     room.creds = new Map(data.creds);
     room.feed = data.feed; room.chat = data.chat;
     room.economy = Economy.fromJSON(data.economy, { now: room.now });
     room.wireEconomy();
+    room.tableState = data.tables || {};
     room.armSessionTimer();
+    for (const t of room.openTables()) t.engine.restore(room, t);
     return room;
   }
 
   destroy() {
+    for (const h of this.tableTimers.values()) this.timers.clear(h);
+    this.tableTimers.clear();
     this.timers.clear(this.sessionTimer);
     this.timers.clear(this.hostTimer);
   }

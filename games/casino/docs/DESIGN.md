@@ -10,7 +10,7 @@ browser (games/casino/index.html, React 18 + htm, no build)        hub server (n
   js/net.js  ── Socket.io /games/casino/socket.io ──────────────►   games/casino/server/index.mjs   sockets, seats, rate limits, persistence
                 ◄── 'state' (this player's view only) ───────────     games/casino/server/room.mjs    CasinoRoom: players, host, settings, session, feed, chat
                                                                       games/casino/server/economy.mjs Economy: wallets, ledger, bets, rounds, audit
-                                                                      games/casino/server/games/*.mjs one module per table game (Stage 2+)
+                                                                      games/casino/server/games/*.mjs one engine per table game (blackjack.mjs today)
                                                                       games/casino/server/data/       room snapshots (gitignored, never served)
 ```
 
@@ -130,7 +130,7 @@ CasinoRoom
 ## Stages
 
 1. Rooms, profiles, shared wallet + ledger, lobby, host settings, session lifecycle, reconnection, persistence. ✅
-2. Blackjack, fully playable, on the shared wallet.
+2. Blackjack, fully playable, on the shared wallet: curved table scene, seated character silhouettes, dealer peek, S17, 3:2, double, split to four hands, turn timers. ✅
 3. Loans, interest, repayments, debt limits, player loans, bankruptcy, spectator mode.
 4. Texas Hold'em (side pots), Teen Patti (blind/seen), roulette.
 5. Leaderboards polish, profiles, achievements, challenges, reactions, animations.

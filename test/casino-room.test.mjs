@@ -231,11 +231,15 @@ test('a saved room restores wallets, credentials and the session clock', () => {
   const tok = t.room.addPlayer({ deviceKey: 'device-key-00000001' }).token;
   const snapshot = JSON.parse(JSON.stringify(t.room.toJSON()));
   const c2 = clock();
+  c2.advance(60 * 60_000);                            // the server was down for an hour
   const restored = CasinoRoom.fromJSON(snapshot, { now: c2.now, timers: c2.timers });
   assert.deepEqual(restored.economy.audit(), []);
   assert.equal(restored.economy.account(b).reserved, 1_200);
   assert.ok(restored.checkToken(b, tok));
   assert.ok(restored.humans().every((p) => !p.connected));
+  const guest = restored.humans().find((p) => p.id !== restored.hostId);
+  restored.setConnected(guest.id, true);              // the guest is back first, long after the host was last seen
+  assert.equal(restored.hostId, t.host, 'the host keeps the room through a restart');
   assert.equal(restored.session.endsAt - c2.now(), 25 * 60_000);
   c2.advance(25 * 60_000);
   assert.equal(restored.session.phase, 'ended');

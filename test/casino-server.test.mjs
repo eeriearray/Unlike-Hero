@@ -132,6 +132,36 @@ test('simultaneous commands from many players are all applied, in order, without
   [host, ...others].forEach((c) => c.close()); await s.casino.close();
 });
 
+test('a double-clicked bet and a mid-hand refresh charge once and keep the hand', async () => {
+  const s = await startServer(join(dataDir, 'f'));
+  const a = await connect(s.port), b = await connect(s.port);
+  const made = await a.emit('room:create', { name: 'Asha', deviceKey: device(1) });
+  const seatB = await b.emit('room:join', { code: made.code, name: 'Ben', deviceKey: device(2) });
+  await b.cmd({ type: 'ready', ready: true });
+  await a.cmd({ type: 'start' });
+  await Promise.all([a.cmd({ type: 'sit', tableId: 'blackjack' }), b.cmd({ type: 'sit', tableId: 'blackjack' })]);
+  const bets = await Promise.all([
+    a.cmd({ type: 'play', tableId: 'blackjack', action: 'bet', amount: 500 }),
+    a.cmd({ type: 'play', tableId: 'blackjack', action: 'bet', amount: 500 }),
+    b.cmd({ type: 'play', tableId: 'blackjack', action: 'bet', amount: 800 }),
+  ]);
+  assert.deepEqual(bets.map((r) => !!r.ok), [true, false, true]);
+  const v = await a.waitFor((x) => x.tables[0].state.phase === 'playing' || x.tables[0].state.phase === 'results');
+  assert.equal(v.me.account.netWorth, v.me.account.cash + v.me.account.reserved);
+  const room = s.casino.rooms.get(made.code).room;
+  assert.equal(room.economy.ledger.filter((e) => e.type === 'bet' && e.playerId === made.playerId).length, 1, 'one bet, not two');
+  // Ben refreshes mid-hand: same seat, same hand, nothing refunded.
+  b.close();
+  const b2 = await connect(s.port);
+  assert.ok((await b2.emit('room:resume', { code: made.code, playerId: seatB.playerId, token: seatB.token })).ok);
+  const vb = await b2.waitFor((x) => x.you === seatB.playerId);
+  const t = vb.tables.find((x) => x.id === 'blackjack').state;
+  assert.ok(t.you.seated);
+  assert.ok(!room.economy.ledger.some((e) => e.type === 'refund'), 'refreshing never refunds a bet');
+  assert.deepEqual(room.economy.audit(), []);
+  a.close(); b2.close(); await s.casino.close();
+});
+
 test('a socket that floods the server is slowed down', async () => {
   const s = await startServer(join(dataDir, 'd'));
   const host = await connect(s.port);

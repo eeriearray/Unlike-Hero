@@ -64,6 +64,8 @@
       ${busy ? html`<span className="spinner" aria-hidden="true"></span>` : null}${props.children}</button>`;
   }
 
+  window.CasinoUI = { AVATARS: AVATARS, html: html, cx: cx, money: money, signed: signed, clockText: clockText, byId: byId, useNow: useNow, Avatar: Avatar, Button: Button, store: store };
+
   // ───────────────────────── entrance ─────────────────────────
   function Entrance(props) {
     var hp = hub ? window.Hub.player() : null;
@@ -310,15 +312,18 @@
       <div className="tables">
         ${v.tables.map(function (t) {
           var info = GAME_INFO[t.game] || {};
-          return html`<article key=${t.id} className=${cx('table-card', 'game-' + t.game, t.highRoller && 'high-roller', !t.open && 'closed')}>
+          var canOpen = t.open && (v.session.phase === 'live' || v.session.phase === 'paused');
+          return html`<article key=${t.id} className=${cx('table-card', 'game-' + t.game, t.highRoller && 'high-roller', !t.open && 'closed', canOpen && 'openable')}>
             <div className="table-felt" aria-hidden="true"><span className="table-icon">${info.icon}</span></div>
             <div className="table-body">
               <div className="table-title"><h3>${t.name}</h3>${t.highRoller ? html`<span className="tag gold">VIP</span>` : null}</div>
               <p className="muted small">${info.blurb}</p>
               <div className="table-meta">
                 <span className="num">${money(t.minBet)} – ${money(t.maxBet)}</span>
-                ${t.open ? html`<span>${t.seated.length} seated</span>` : html`<span className="tag">Opening soon</span>`}
+                ${!t.open ? html`<span className="tag">Opening soon</span>`
+                  : html`<span className="seated-avatars" title=${t.seated.length + ' seated'}>${t.seated.length ? t.seated.map(function (id) { var p = byId(v, id); return p ? html`<span key=${id}>${AVATARS[p.avatar]}</span>` : null; }) : html`<span className="muted">Empty</span>`}</span>`}
               </div>
+              ${t.open ? html`<button type="button" className="btn table-open" disabled=${!canOpen} onClick=${function () { props.onOpen(t.id); }}>${canOpen ? (byId(v, v.you) && byId(v, v.you).tableId === t.id ? 'Back to your seat' : 'Open table') : 'Opens when the session starts'}</button>` : null}
             </div>
           </article>`;
         })}
@@ -338,6 +343,7 @@
       if (p.status === 'spectator') tags.push(html`<span key="s" className="tag">Spectating</span>`);
       if (v.session.phase === 'lobby' && !p.isHost) tags.push(p.ready ? html`<span key="r" className="tag green">Ready</span>` : html`<span key="r" className="tag">Not ready</span>`);
       if (p.left) tags.push(html`<span key="l" className="tag">Left</span>`);
+      if (p.tableId) { var tb = v.tables.filter(function (t) { return t.id === p.tableId; })[0]; if (tb) tags.push(html`<span key="t" className=${'tag at-table game-' + tb.game}>${tb.name}</span>`); }
       return html`<li key=${p.id} className=${cx('player', p.id === v.you && 'me', !p.connected && 'offline')}>
         <span className="rank num">${rank || ''}</span>
         <span className="player-avatar"><${Avatar} id=${p.avatar} /><i className=${cx('dot', p.connected ? 'on' : 'off')} title=${p.connected ? 'Online' : 'Offline'}></i></span>
@@ -491,14 +497,23 @@
     var v = props.view, s = v.session;
     var d = useState(store.get('noticeSeen', null)), seen = d[0], setSeen = d[1];
     var showNotice = s.notice && s.notice.id !== seen;
+    var o = useState(function () { try { return sessionStorage.getItem('casino.table'); } catch (e) { return null; } }), openId = o[0], setOpenId = o[1];
+    function open(id) { setOpenId(id); try { if (id) sessionStorage.setItem('casino.table', id); else sessionStorage.removeItem('casino.table'); } catch (e) { /* storage blocked */ } scrollTo(0, 0); }
+    var table = openId && (s.phase === 'live' || s.phase === 'paused') ? v.tables.filter(function (t) { return t.id === openId && t.open; })[0] : null;
+    var TableView = table && window.CasinoTables && window.CasinoTables[table.game];
+    function sit() { return props.send({ type: 'sit', tableId: table.id }); }
+    function standUp() { return props.send({ type: 'stand-up' }); }
     return html`<div className=${cx('room', 'phase-' + s.phase)}>
       <${TopBar} view=${v} status=${props.status} onLedger=${props.onLedger} onLeave=${props.onLeave} />
       <div className="room-grid">
         <main className="room-main">
           ${showNotice ? html`<div className="banner" role="status"><span>${s.notice.text}</span><button type="button" className="btn btn-ghost" onClick=${function () { store.set('noticeSeen', s.notice.id); setSeen(s.notice.id); }}>Got it</button></div>` : null}
-          ${s.phase === 'ended' ? html`<${Results} view=${v} send=${props.send} />` : html`<${SessionPanel} view=${v} send=${props.send} />`}
-          <${Floor} view=${v} />
-          <${SettingsPanel} view=${v} send=${props.send} />
+          ${TableView ? html`<${TableView} view=${v} table=${table} send=${props.send} onBack=${function () { open(null); }} onSit=${sit} onStand=${standUp} />`
+            : html`<${R.Fragment}>
+              ${s.phase === 'ended' ? html`<${Results} view=${v} send=${props.send} />` : html`<${SessionPanel} view=${v} send=${props.send} />`}
+              <${Floor} view=${v} onOpen=${open} />
+              <${SettingsPanel} view=${v} send=${props.send} />
+            </${R.Fragment}>`}
         </main>
         <aside className="room-rail">
           <${Players} view=${v} />
@@ -523,6 +538,8 @@
     var tl = useState(null), toastMsg = tl[0], setToast = tl[1];
     var lg = useState(false), ledgerOpen = lg[0], setLedger = lg[1];
     var fl = useState([]), floaters = fl[0], setFloaters = fl[1];
+    var mo = useState(null), moment = mo[0], setMoment = mo[1];
+    useEffect(function () { if (!moment) return; var t = setTimeout(function () { setMoment(null); }, 2200); return function () { clearTimeout(t); }; }, [moment]);
     var viewRef = useRef(null);
     viewRef.current = view;
     var initialCode = useMemo(function () { var m = location.hash.match(/join=([A-Za-z0-9]{5})/); return m ? m[1].toUpperCase() : ''; }, []);
@@ -541,6 +558,7 @@
             setTimeout(function () { setFloaters(function (list) { return list.filter(function (f) { return f !== item; }); }); }, 2600);
           }
           if (d.kind === 'session-start' && hub) window.Hub.report('session-start', {});
+          if (d.kind === 'big-win' && viewRef.current && d.playerId === viewRef.current.you) setMoment({ key: Date.now(), amount: d.amount, blackjack: d.blackjack });
         }
       });
     }, []);
@@ -576,9 +594,18 @@
       ${view && ledgerOpen ? html`<${Ledger} view=${view} send=${send} onClose=${function () { setLedger(false); }} />` : null}
       ${view && status !== 'online' ? html`<div className="reconnect" role="status"><span className="spinner"></span> Connection lost — reconnecting. Your seat and wallet are safe.</div>` : null}
       <${Floaters} items=${floaters} />
+      ${moment ? html`<button type="button" className="moment" onClick=${function () { setMoment(null); }} aria-label="Dismiss">
+        <span className="moment-card">
+          <span className="eyebrow">${moment.blackjack ? 'Blackjack' : 'Big win'}</span>
+          <b className="num">${moment.amount > 0 ? '+' + money(moment.amount) : money(moment.amount)}</b>
+          <small className="muted">Tap to continue</small>
+        </span>
+      </button>` : null}
       ${toastMsg ? html`<div className="toast" role="alert">${toastMsg}</div>` : null}
     </${R.Fragment}>`;
   }
 
-  ReactDOM.createRoot(document.getElementById('root')).render(html`<${App} />`);
+  // Table modules (js/blackjack.js, …) load after this file and register in window.CasinoTables; render once they have.
+  function mount() { ReactDOM.createRoot(document.getElementById('root')).render(html`<${App} />`); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount); else mount();
 })();
