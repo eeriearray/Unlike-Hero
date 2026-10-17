@@ -84,11 +84,8 @@
       this.goal.copy(focus.pos).add(ahead);
       this.goalPitch = 0.92 + this.userPitch;
       this.goalDist = (focus.moving ? 12.5 : 11) * portrait * this.userZoom;
-      // While the ball rolls, swing gently to look along its path unless the player is steering the camera.
-      if (focus.moving && focus.vel && performance.now() - this.manualYawAt > 2500) {
-        var sp = Math.hypot(focus.vel[0], focus.vel[1]);
-        if (sp > 3) { var want = Math.atan2(-focus.vel[0], -focus.vel[1]); this.goalYaw = PC.angleLerp(this.goalYaw, want, Math.min(1, dt * 0.35)); }
-      }
+      // The camera follows a rolling ball but never turns by itself: swinging round to look along the path
+      // made straight rolls look curved on screen.
     }
     var lam = this.mode === 'intro' ? 6 : 4.5;
     this.target.x = PC.damp(this.target.x, this.goal.x, lam, dt);

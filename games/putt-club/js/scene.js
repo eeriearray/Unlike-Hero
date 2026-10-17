@@ -223,6 +223,8 @@
     this.previewAt = 0;
   };
 
+  var AIM_UP = new THREE.Vector3(0, 1, 0), AIM_N = new THREE.Vector3(), AIM_TILT = new THREE.Quaternion(), AIM_Q = new THREE.Quaternion();
+  var AIM_FLAT = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
   var POWER_LOW = new THREE.Color('#5fb8b0'), POWER_MID = new THREE.Color('#f2bd47'), POWER_HIGH = new THREE.Color('#ef6a43');
   S.setAim = function (aim) { this.aim = aim; };
 
@@ -253,9 +255,16 @@
     this.arrowMat.color.copy(col); this.powerRingMat.color.copy(col);
     this.arrowMat.opacity = 0.92 * va.alpha; this.powerRingMat.opacity = 0.85 * va.alpha;
     var y = bl.pos.y - bl.r + 0.02, dx = Math.sin(va.ang), dz = Math.cos(va.ang);
-    this.arrow.position.set(bl.pos.x + dx * bl.r * 1.5, y, bl.pos.z + dz * bl.r * 1.5);
-    this.arrow.rotation.set(0, va.ang + Math.PI, 0);
+    // Lay the arrow and ring on the floor's slope, so an uphill arrow doesn't dip under the ground.
+    var f = Phys.floorAt(this.world, bl.pos.x, bl.pos.z, bl.pos.y - bl.r + 0.05, this.t || 0);
+    var gx = f ? f.gx : 0, gz = f ? f.gz : 0, ax = bl.pos.x + dx * bl.r * 1.5, az = bl.pos.z + dz * bl.r * 1.5;
+    AIM_N.set(-gx, 1, -gz).normalize();
+    AIM_TILT.setFromUnitVectors(AIM_UP, AIM_N);
+    AIM_Q.setFromAxisAngle(AIM_UP, va.ang + Math.PI);
+    this.arrow.quaternion.copy(AIM_TILT).multiply(AIM_Q);
+    this.arrow.position.set(ax, y + 0.01 + gx * (ax - bl.pos.x) + gz * (az - bl.pos.z), az);
     this.arrow.scale.set(0.9 + p * 0.5, 1, 0.45 + p * 2.6);
+    this.powerRing.quaternion.copy(AIM_TILT).multiply(AIM_FLAT);
     this.powerRing.position.set(bl.pos.x, y + 0.002, bl.pos.z);
     var rs = (bl.r / Phys.C.R) * (1 + Math.sin(this.t * 6) * 0.03 * p);
     this.powerRing.scale.set(rs, rs, rs);
