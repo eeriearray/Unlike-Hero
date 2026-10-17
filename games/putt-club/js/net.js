@@ -92,6 +92,8 @@
   Interp.prototype.push = function (snap) {
     if (snap.t < this.lastT - 0.5) this.reset(); // new hole: the hole clock restarted
     this.lastT = snap.t;
+    // For the performance readout: the longest real-time gap between snapshots lately.
+    var nowS = this.now(); if (this.lastArrive) this.gapMax = Math.max((this.gapMax || 0) * 0.995, nowS - this.lastArrive); this.lastArrive = nowS;
     // Keep the render clock steady: nudge it gently toward each estimate (a little faster toward fresher
     // packets), and only jump when it is far off. A clock that lurches makes balls stall and surge on screen.
     var est = snap.t - this.now();

@@ -42,7 +42,7 @@
   };
 
   // Friction multiplier and bounce per material.
-  var FLOOR_FRICTION = { grass: 1, felt: 1, stone: 0.95, wood: 0.9, bridge: 0.95, sand: 5.5, metal: 0.75, glass: 0.7, brass: 0.8, tile: 0.85, carpet: 1.1, pad: 1 };
+  var FLOOR_FRICTION = { grass: 1, felt: 1, stone: 0.95, wood: 0.9, bridge: 0.95, sand: 5.5, metal: 0.92, glass: 0.88, brass: 0.9, tile: 0.95, carpet: 1.1, pad: 1 };
   var WALL_BOUNCE = { wood: 0.7, stone: 0.62, metal: 0.8, brass: 0.78, glass: 0.82, rope: 0.45, hedge: 0.5, bumper: 1.25, neon: 0.85, rubber: 0.9 };
 
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }

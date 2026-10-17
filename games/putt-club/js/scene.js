@@ -341,10 +341,37 @@
     }
   };
 
+  // ---------------------------------------------------------------- performance readout (toggle with `)
+
+  S.perf = function (dt) {
+    var pf = this.pf || (this.pf = { n: 0, sum: 0, worst: 0, at: 0, el: null, on: false });
+    if (!pf.bound) {
+      pf.bound = true;
+      global.addEventListener('keydown', function (e) { if (e.key === '`') { pf.on = !pf.on; if (pf.el) pf.el.style.display = pf.on ? 'block' : 'none'; } });
+    }
+    if (!pf.on) return;
+    if (!pf.el) {
+      pf.el = document.createElement('div');
+      pf.el.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:99;padding:6px 9px;border-radius:8px;background:rgba(0,0,0,.72);color:#9ef0c0;font:12px/1.35 ui-monospace,Menlo,monospace;white-space:pre;pointer-events:none';
+      document.body.appendChild(pf.el);
+    }
+    pf.n++; pf.sum += dt; pf.worst = Math.max(pf.worst, dt);
+    var t = performance.now();
+    if (t - pf.at < 500) return;
+    var fps = pf.n / Math.max(pf.sum, 1e-3), gap = this.interp.gapMax ? Math.round(this.interp.gapMax * 1000) : null;
+    var c = this.renderer.domElement;
+    pf.el.textContent = 'fps ' + fps.toFixed(0) + '  slowest frame ' + Math.round(pf.worst * 1000) + ' ms\n' +
+      'resolution ' + c.width + 'x' + c.height + ' (' + this.pixelRatio + 'x)\n' +
+      'updates: ' + (gap == null ? '-' : 'longest gap ' + gap + ' ms') + '  course ' + (this.theme || '-');
+    pf.n = 0; pf.sum = 0; pf.worst = 0; pf.at = t;
+  };
+
   // ---------------------------------------------------------------- frame
 
   S.frame = function (now) {
-    var dt = Math.min(0.05, (now - this.last) / 1000); this.last = now; this.t += dt;
+    var rawDt = (now - this.last) / 1000;
+    var dt = Math.min(0.05, rawDt); this.last = now; this.t += dt;
+    this.perf(rawDt);
     // Graceful degradation: when frames run under ~50 fps for a couple of seconds, step the resolution down
     // a notch (never below 1x), so a busy course on a laptop stays smooth instead of staying laggy.
     if (dt > 0.02) this.slowFrames++; else this.slowFrames = Math.max(0, this.slowFrames - 2);
