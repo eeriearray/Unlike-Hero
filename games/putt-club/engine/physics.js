@@ -24,12 +24,12 @@
     DT: 1 / 120,           // base fixed step
     STEP: 0.16,            // floorAt: floors up to this far above the query height count as "under" it
     MAX_SPEED: 30,         // hard velocity clamp (prevents explosions)
-    MAX_SHOT: 17,          // full-power shot speed at strength 1.0
+    MAX_SHOT: 19,          // full-power shot speed at strength 1.0
     MIN_SHOT: 0.6,
-    ROLL_DECEL: 2.8,       // rolling resistance at speed
-    ROLL_SOFT: 1.2,        // below about this speed rolling resistance fades, so a ball glides to rest instead of braking
-    DRAG: 0.17,            // speed-proportional drag
-    STOP_SPEED: 0.15,
+    ROLL_DECEL: 3.4,       // rolling resistance at speed
+    ROLL_SOFT: 0.5,        // below about this speed rolling resistance fades, so a ball glides to rest instead of braking
+    DRAG: 0.2,             // speed-proportional drag
+    STOP_SPEED: 0.2,
     STATIC_GRADE: 0.04,    // slopes gentler than this hold a slow ball still
     CAPTURE_SPEED: 6.0,    // slower than this over the cup drops in
     CAPTURE_SPEED_CENTER: 8.0,
@@ -966,13 +966,13 @@
   /** Advance one ball by h seconds. Emits events through ev(e). */
 
   /**
-   * Map a 0..1 aim power to a launch speed. Speed follows power^0.75, which makes roll distance close to
+   * Map a 0..1 aim power to a launch speed. Speed follows power^0.7, which makes roll distance close to
    * proportional to the pull on flat ground: a tenth of a pull rolls about a tenth as far as a full one,
    * so short putts are as controllable as long ones.
    */
   function shotSpeed(power, strength) {
     power = clamp(power, 0, 1);
-    return Math.max(C.MIN_SHOT, Math.pow(power, 0.75) * C.MAX_SHOT * (strength || 1));
+    return Math.max(C.MIN_SHOT, Math.pow(power, 0.7) * C.MAX_SHOT * (strength || 1));
   }
 
   var api = {
