@@ -522,5 +522,17 @@ canvas.pad{width:100%;aspect-ratio:1;border-radius:10px;background:#fbf8f1;displ
   .opt-grid,.opt-grid.three{grid-template-columns:1fr}
   .host{transform:scale(.7);transform-origin:0 100%}
 }
-/* short screens (a 720p TV or laptop): drop the extra tip so all games fit without scrolling */
-@media (max-height:780px){.howto .note-line:not(.warn-line){display:none}.howto .warn-line{font-size:.74em}.picker{margin-top:10px}}
+/* lobby: keep the logo and the code side by side, and the notes small, so the hero stays short */
+.join-row{flex-wrap:nowrap;gap:clamp(14px,2vw,26px)}
+.howto .logo{font-size:clamp(34px,min(4.4vw,7vh),70px);white-space:nowrap}
+.bigcode{font-size:clamp(40px,min(5vw,9vh),92px)}
+.howto .note-line{font-size:clamp(12px,1.1vw,15px);margin:0}
+.join-card{padding:10px 14px}
+.join-card .qr{flex:none}
+.game-card > :not(.gc-art){min-width:0}
+.game-card b{font-size:clamp(12px,1vw,17px)}
+.picker{max-width:1400px}
+@media (min-width:1000px){.picker{grid-template-columns:repeat(6,minmax(0,1fr))}}
+.game-card .req{white-space:normal;max-width:100%}
+@media (max-height:820px){.slot{aspect-ratio:1/.72}.qr svg{width:72px;height:72px}.howto{gap:8px}.picker{margin-top:10px}}
+@media (max-height:600px){.join-card .qr{display:none}}
