@@ -307,6 +307,17 @@
       panel.scale.set(L, g.height, neon ? 0.05 : g.thick * 2);
       panel.position.set((g.ax + g.bx) / 2, g.h, (g.az + g.bz) / 2); panel.rotation.y = ang; panel.castShadow = !neon;
       group.add(panel);
+      if (!neon) {
+        // The slot the gate drops into, so a lowered gate still shows where it is. Drawn just above the floor
+        // with a depth offset, so it never flickers against the grass.
+        var slot = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshStandardMaterial({ color: '#4a3b26', roughness: 0.6, metalness: 0.4, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+        slot.rotation.set(-Math.PI / 2, 0, ang); slot.scale.set(L, g.thick * 2 + 0.08, 1);
+        slot.position.set((g.ax + g.bx) / 2, g.h + 0.003, (g.az + g.bz) / 2); slot.receiveShadow = true;
+        group.add(slot);
+        var lip = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshStandardMaterial({ color: '#c9a24a', roughness: 0.35, metalness: 0.7, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }));
+        lip.rotation.copy(slot.rotation); lip.scale.set(L, g.thick * 2 + 0.16, 1); lip.position.copy(slot.position); lip.position.y -= 0.001;
+        group.add(lip);
+      }
       [[g.ax, g.az], [g.bx, g.bz]].forEach(function (p) {
         var post = new THREE.Mesh(unitPost, neon ? kit.metal : kit.stone);
         post.scale.set(0.3, g.height + 0.25, 0.3); post.position.set(p[0], g.h + (g.height + 0.25) / 2, p[1]); post.castShadow = true; group.add(post);
