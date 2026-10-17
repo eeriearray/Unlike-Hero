@@ -844,9 +844,9 @@
   // ───────────────────────────────────────── RiftGame (session) ─────────────────────────────────────────
 
   var DEFAULT_SETTINGS = { seats: 6, botLevel: 'normal', turnTimer: 0, lastCall: true, botSpeed: 'normal' };
-  var BOT_DELAY = { fast: [380, 260], normal: [850, 650], relaxed: [1400, 900] };
+  var BOT_DELAY = { fast: [450, 300], normal: [1100, 700], relaxed: [1700, 1000] };
   var AUTOPILOT_GRACE_MS = 10000;
-  var FX_HOLD_MS = { rift: 1500, collapse: 2100 };
+  var FX_HOLD_MS = { rift: 3600, collapse: 4300 };
   var EXPOSED_HOLD_MS = 1800;
 
   function sanitizeSettings(s, prev) {

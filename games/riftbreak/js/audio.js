@@ -15,7 +15,7 @@
 
   var ctx = null, master, sfxBus, musicBus, duckGain, verbIn, noiseBuf, comp;
   var layers = {};
-  var MUSIC_MAX = 0.32, SFX_MAX = 0.9;
+  var MUSIC_MAX = 0.4, SFX_MAX = 0.9;
 
   function ensure() {
     if (ctx) return ctx;
@@ -40,7 +40,7 @@
     verbIn.connect(conv); conv.connect(verbLp); verbLp.connect(verbOut); verbOut.connect(master);
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
     var nd = noiseBuf.getChannelData(0); for (var j = 0; j < nd.length; j++) nd[j] = Math.random() * 2 - 1;
-    ['calm', 'critical', 'breaking'].forEach(function (n) { var g = ctx.createGain(); g.gain.value = n === 'calm' ? 1 : 0; g.connect(musicBus); layers[n] = g; });
+    ['calm', 'drive', 'critical', 'breaking'].forEach(function (n) { var g = ctx.createGain(); g.gain.value = n === 'calm' ? 1 : 0; g.connect(musicBus); layers[n] = g; });
     return ctx;
   }
 
@@ -190,54 +190,74 @@
   }
 
   // ───────────── adaptive music ─────────────
-  var BPM = 98, STEP = 60 / BPM / 4;
-  // D Dorian: Dm9 – Fmaj7 – Cadd9 – Gm7 (bars), voiced around middle C.
+  // A driving synthwave loop in D minor. The title screen gets the pad and sub only; a match adds the "drive"
+  // layer (four-on-the-floor kick, off-beat bass, hats, claps, 16th arpeggio) from the first card, Critical adds a
+  // lead and busier percussion, and Breaking adds a rolling 16th bass, chord stabs and a riser into every phrase.
+  var BPM = 126, STEP = 60 / BPM / 4;
+  // Dm – Bb – F – C
   var PROG = [
-    { root: 38, chord: [50, 53, 57, 60, 64] },
-    { root: 41, chord: [48, 53, 57, 60, 64] },
-    { root: 36, chord: [48, 52, 55, 62, 64] },
-    { root: 43, chord: [50, 55, 58, 62, 65] }
+    { root: 38, chord: [50, 53, 57, 62, 65] },
+    { root: 34, chord: [50, 53, 58, 62, 65] },
+    { root: 41, chord: [48, 53, 57, 60, 65] },
+    { root: 36, chord: [48, 52, 55, 60, 64] }
   ];
-  var ARPS = [[0, 2, 1, 3, 2, 4, 3, 1], [0, 1, 2, 3, 4, 3, 2, 1], [4, 2, 3, 1, 2, 0, 1, 3]];
-  var LEADS = [[74, null, 77, 76, null, 72, 74, null], [69, 72, null, 74, 76, null, 74, 72], [81, null, 79, 77, 76, null, 74, null]];
+  var ARPS = [[0, 2, 4, 2, 1, 3, 4, 3], [0, 1, 2, 4, 3, 2, 4, 1], [4, 3, 2, 0, 2, 3, 4, 2]];
+  // Lead melodies: 8th notes over the 4-bar loop (null = rest).
+  var LEADS = [
+    [74, null, 74, 77, null, 76, 74, null, 74, null, 72, 74, null, 77, 79, null, 77, null, 76, 74, null, 72, 74, null, 72, null, 72, 76, null, 79, 76, null],
+    [81, 79, 77, null, 77, 76, 74, null, 77, null, 81, null, 82, 81, 79, null, 81, 79, 77, null, 76, null, 72, null, 76, 77, 79, null, 79, null, 76, null]
+  ];
   var seqTimer = null, nextTime = 0, step = 0, mode = 'off', stage = 0, section = 0, arpIx = 0, leadIx = 0;
 
   function mtone(type, f, t, dur, peak, layer, opts) { return tone(type, f, t, dur, peak, layers[layer], opts); }
+  function kick(t, layer, peak) { mtone('sine', 160, t, 0.22, peak, layer, { to: 42, glide: 0.09 }); noise(t, 0.012, 0.12, 'highpass', 3000, 0.7, layers[layer]); }
+  function pluck(m, t, layer, peak, cutoff) {
+    var o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = NOTE(m);
+    var lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(cutoff, t); lp.frequency.exponentialRampToValueAtTime(180, t + 0.13); lp.Q.value = 7;
+    var g = env(layers[layer], t, 0.004, peak, 0.16); o.connect(lp); lp.connect(g); o.start(t); o.stop(t + 0.2);
+  }
 
   function scheduleStep(s, t) {
     var bar = Math.floor(s / 16) % 4, sx = s % 16, ch = PROG[bar];
     if (sx === 0 && bar === 0) {
       section++;
-      if (section % 2 === 0) arpIx = (arpIx + 1) % ARPS.length;
-      if (section % 3 === 0) leadIx = (leadIx + 1) % LEADS.length;
+      arpIx = (arpIx + 1) % ARPS.length;
+      if (section % 2 === 0) leadIx = (leadIx + 1) % LEADS.length;
     }
-    // calm: pad on the bar, sub bass on beats 1 and 3 (and an anticipation), off-beat brushed ticks.
+    // calm (always): pad on the bar and a sub bass.
     if (sx === 0) {
       ch.chord.forEach(function (m, i) {
-        var lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = mode === 'title' ? 900 : 1300 + stage * 500; lp.Q.value = 0.4;
-        var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.028, t + 0.6); g.gain.linearRampToValueAtTime(0.0001, t + STEP * 16 + 0.3);
-        lp.connect(g); g.connect(layers.calm); var r = ctx.createGain(); r.gain.value = 0.6; g.connect(r); r.connect(verbIn);
-        [-6, 6].forEach(function (dt) { var o = ctx.createOscillator(); o.type = i < 2 ? 'triangle' : 'sawtooth'; o.frequency.value = NOTE(m); o.detune.value = dt; o.connect(lp); o.start(t); o.stop(t + STEP * 16 + 0.4); });
+        var lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = mode === 'title' ? 1000 : 1800 + stage * 600; lp.Q.value = 0.5;
+        var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.024, t + 0.25); g.gain.linearRampToValueAtTime(0.0001, t + STEP * 16 + 0.2);
+        lp.connect(g); g.connect(layers.calm); var r = ctx.createGain(); r.gain.value = 0.5; g.connect(r); r.connect(verbIn);
+        [-7, 7].forEach(function (dt) { var o = ctx.createOscillator(); o.type = i < 2 ? 'triangle' : 'sawtooth'; o.frequency.value = NOTE(m); o.detune.value = dt; o.connect(lp); o.start(t); o.stop(t + STEP * 16 + 0.3); });
       });
     }
-    if (sx === 0 || sx === 8 || sx === 14) mtone('sine', NOTE(ch.root - 12 + (sx === 14 ? 12 : 0)), t, STEP * (sx === 14 ? 1.5 : 5), 0.2, 'calm', { attack: 0.01 });
-    if (sx % 4 === 2) noise(t, 0.04, 0.035, 'highpass', 7000, 0.7, layers.calm);
-    if (mode === 'title') return;
-    // critical: soft kick on the beat, plucked arpeggio.
-    if (sx % 4 === 0) { mtone('sine', 110, t, 0.18, 0.32, 'critical', { to: 42, glide: 0.12 }); }
-    if (sx % 2 === 0) {
-      var a = ARPS[arpIx][(sx / 2) % 8];
-      mtone('triangle', NOTE(ch.chord[a] + 12), t, 0.16, 0.05, 'critical', { verb: 0.35 });
+    if (sx === 0 || sx === 8) mtone('sine', NOTE(ch.root - 12), t, STEP * 7, 0.18, 'calm', { attack: 0.01 });
+    if (mode === 'title') { if (sx % 4 === 2) noise(t, 0.04, 0.03, 'highpass', 7000, 0.7, layers.calm); return; }
+    // drive (whole match): four-on-the-floor kick, off-beat bass, hats, claps on 2 and 4, 16th arpeggio.
+    if (sx % 4 === 0) kick(t, 'drive', 0.5);
+    if (sx % 4 === 2) pluck(ch.root + 12, t, 'drive', 0.11, 2200);
+    if (sx % 4 === 3) pluck(ch.root + 24, t, 'drive', 0.05, 1800);
+    if (sx % 2 === 1) noise(t, 0.03, 0.035, 'highpass', 9000, 0.6, layers.drive);
+    if (sx % 4 === 2) noise(t, 0.11, 0.05, 'highpass', 7500, 0.6, layers.drive);
+    if (sx === 4 || sx === 12) { noise(t, 0.12, 0.14, 'bandpass', 1500, 0.9, layers.drive, { verb: 0.25 }); noise(t + 0.012, 0.08, 0.1, 'bandpass', 2100, 1, layers.drive); }
+    var a = ARPS[arpIx][sx % 8];
+    mtone('square', NOTE(ch.chord[a] + 12), t, 0.09, 0.022, 'drive', { verb: 0.3 });
+    // critical: lead melody, extra 16th hats, a snare fill at the end of the loop.
+    if (sx % 2 === 0) { var ln = LEADS[leadIx][bar * 8 + sx / 2]; if (ln) { mtone('sawtooth', NOTE(ln), t, 0.24, 0.03, 'critical', { verb: 0.45, detune: -8 }); mtone('square', NOTE(ln), t, 0.24, 0.018, 'critical', { detune: 8 }); } }
+    if (sx % 2 === 0) noise(t, 0.025, 0.025, 'highpass', 10000, 0.6, layers.critical);
+    if (bar === 3 && sx >= 12) noise(t, 0.07, 0.07 + (sx - 12) * 0.02, 'bandpass', 1800, 0.9, layers.critical);
+    // breaking: rolling 16th bass, chord stabs on the off-beats, a riser into every new loop, double kick.
+    pluck(ch.root, t, 'breaking', 0.07, 1400);
+    if (sx === 6 || sx === 14) ch.chord.slice(1, 4).forEach(function (m) { mtone('sawtooth', NOTE(m + 12), t, 0.12, 0.02, 'breaking', { verb: 0.3 }); });
+    if (sx === 7) kick(t, 'breaking', 0.35);
+    if (bar === 3 && sx === 0) {
+      var rs = ctx.createBufferSource(); rs.buffer = noiseBuf; rs.loop = true;
+      var rf = ctx.createBiquadFilter(); rf.type = 'bandpass'; rf.Q.value = 2; rf.frequency.setValueAtTime(500, t); rf.frequency.exponentialRampToValueAtTime(7000, t + STEP * 16);
+      var rg = ctx.createGain(); rg.gain.setValueAtTime(0.0001, t); rg.gain.exponentialRampToValueAtTime(0.06, t + STEP * 15.5); rg.gain.linearRampToValueAtTime(0.0001, t + STEP * 16 + 0.04);
+      rs.connect(rf); rf.connect(rg); rg.connect(layers.breaking); rs.start(t); rs.stop(t + STEP * 16 + 0.1);
     }
-    // breaking: driving 8th bass, claps on 2 and 4, 16th hats, tension lead.
-    if (sx % 2 === 0) {
-      var o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = NOTE(ch.root);
-      var lp2 = ctx.createBiquadFilter(); lp2.type = 'lowpass'; lp2.frequency.setValueAtTime(1600, t); lp2.frequency.exponentialRampToValueAtTime(220, t + 0.14); lp2.Q.value = 6;
-      var g2 = env(layers.breaking, t, 0.004, 0.09, 0.15); o.connect(lp2); lp2.connect(g2); o.start(t); o.stop(t + 0.2);
-    }
-    if (sx === 4 || sx === 12) { noise(t, 0.12, 0.13, 'bandpass', 1500, 0.9, layers.breaking, { verb: 0.3 }); noise(t + 0.012, 0.08, 0.1, 'bandpass', 1900, 1, layers.breaking); }
-    noise(t, sx % 4 === 2 ? 0.09 : 0.03, sx % 4 === 2 ? 0.05 : 0.025, 'highpass', 8500, 0.6, layers.breaking);
-    if (sx % 2 === 0) { var ln = LEADS[leadIx][(sx / 2) % 8]; if (ln) mtone('square', NOTE(ln), t, 0.2, 0.022, 'breaking', { verb: 0.5 }); }
   }
 
   function tick() {
@@ -249,7 +269,7 @@
   function setLayers(ramp) {
     if (!ctx) return;
     var t = ctx.currentTime;
-    var want = { calm: 1, critical: mode === 'game' && stage >= 1 ? 1 : 0, breaking: mode === 'game' && stage >= 2 ? 1 : 0 };
+    var want = { calm: 1, drive: mode === 'game' ? 1 : 0, critical: mode === 'game' && stage >= 1 ? 1 : 0, breaking: mode === 'game' && stage >= 2 ? 1 : 0 };
     for (var n in layers) { layers[n].gain.cancelScheduledValues(t); layers[n].gain.setTargetAtTime(want[n], t, ramp || 1.2); }
   }
   function musicLevel() { return prefs.muted || mode === 'off' ? 0 : prefs.music * MUSIC_MAX; }
