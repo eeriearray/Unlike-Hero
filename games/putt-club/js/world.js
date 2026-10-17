@@ -505,9 +505,12 @@
         var k = dyn.gates[i], g = gm.gate;
         if (gm.neon) { gm.panel.position.y = g.h + g.height / 2; gm.panel.scale.y = g.height * Math.max(0.02, k); gm.panel.position.y = g.h + g.height * k / 2; gm.panel.material.opacity = 0.15 + 0.5 * k; gm.panel.visible = k > 0.02; }
         else {
-          // Lowered, its top would sit flush with the floor and flicker against it: sink it a hair and hide it.
-          gm.panel.position.y = g.h - g.height / 2 + g.height * k - 0.03 * (1 - k);
-          gm.panel.visible = k > 0.01;
+          // Retract by shrinking into the floor slot rather than sliding through the floor: a sliding panel's
+          // top passes flush with the grass and flickers against it. Its top stays clear of the floor until hidden.
+          var hk = Math.max(k, 0.05);
+          gm.panel.scale.y = g.height * hk + 0.04;
+          gm.panel.position.y = g.h - 0.04 + (g.height * hk + 0.04) / 2;
+          gm.panel.visible = k > 0.03;
         }
       });
       platMeshes.forEach(function (pm, i) { var p = dyn.platforms[i]; pm.g.position.set(p.x, pm.p.h, p.z); });
