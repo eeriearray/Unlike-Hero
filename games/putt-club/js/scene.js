@@ -236,7 +236,7 @@
       if (!va.on) { va.ang = ang; va.power = 0; }
       va.on = true; va.reversed = sp.reversed;
       va.ang = PC.angleLerp(va.ang, ang, 1 - Math.exp(-22 * dtc));
-      va.power = PC.damp(va.power, aim.power, 18, dtc);
+      va.power = PC.damp(va.power, aim.power, 40, dtc);
       va.alpha = PC.damp(va.alpha, 1, 14, dtc);
       va.ball = ball;
     } else {

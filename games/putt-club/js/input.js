@@ -44,11 +44,12 @@
     if (this.pointers.size === 2) { this.cancelAim(); this.mode = 'pinch'; this.pinch = dist2(this.pointers); this.mid = midpoint(this.pointers); return; }
     if (e.button === 2) { this.cancelAim(); this.mode = 'orbit'; this.last = { x: e.clientX, y: e.clientY }; return; }
     var ball = this.h.ball();
-    if (ball && this.h.canAim() && this.nearBall(ball, e)) {
-      // Your shot: a drag that starts on or near your ball aims; anywhere else turns the camera. Everything
-      // is measured from where the drag started, with the camera held still, so the same pull always
-      // gives the same shot.
-      this.anchor = { x: e.clientX, y: e.clientY };
+    var spot = ball && this.h.canAim() ? this.ballSpot(ball) : null;
+    if (spot && Math.hypot(e.clientX - spot.x, e.clientY - spot.y) <= Math.max(e.pointerType === 'touch' ? 100 : 80, spot.r * 4)) {
+      // Your shot: a drag that starts on or near your ball aims; anywhere else turns the camera. The pull is
+      // measured from the ball itself (not from where you pressed), with the camera held still, so the same
+      // pull away from the ball always gives the same shot.
+      this.anchor = spot; this.press = { x: e.clientX, y: e.clientY }; this.dragged = false;
       this.basis = this.h.cameraBasis();
       this.mode = 'aim';
       this.h.aimStart();
@@ -58,13 +59,11 @@
     this.mode = 'orbit'; this.last = { x: e.clientX, y: e.clientY };
   };
 
-  /** Whether a press lands close enough to the ball to start a shot (generous, and more so for fingers). */
-  AimInput.prototype.nearBall = function (ball, e) {
+  /** The ball's centre and radius on screen. */
+  AimInput.prototype.ballSpot = function (ball) {
     var c = this.screenOf(ball.pos);
     var edge = this.screenOf(ball.pos.clone().add(new THREE.Vector3(0, ball.r || 0.22, 0)));
-    var ballPx = Math.abs(c.y - edge.y);
-    var grab = Math.max(e.pointerType === 'touch' ? 100 : 80, ballPx * 4);
-    return Math.hypot(e.clientX - c.x, e.clientY - c.y) <= grab;
+    return { x: c.x, y: c.y, r: Math.abs(c.y - edge.y) };
   };
 
   AimInput.prototype.move = function (e) {
@@ -91,10 +90,13 @@
     if (!ball || !this.h.canAim()) { this.cancelAim(); return; }
     var r = this.canvas.getBoundingClientRect();
     var a = this.anchor, sx = cx - a.x, sy = cy - a.y, sd = Math.hypot(sx, sy);
-    // A pull of ~30% of the screen's short side is full power; a small dead zone avoids accidental taps.
-    var reach = Math.max(120, Math.min(r.width, r.height) * 0.3), dead = 6;
+    // A pull of ~30% of the screen's short side beyond the ball's edge is full power. On the ball itself
+    // there is no power, so dragging back onto the ball cancels.
+    var reach = Math.max(120, Math.min(r.width, r.height) * 0.3), dead = Math.max(10, a.r + 4);
     var power = PC.clamp((sd - dead) / reach, 0, 1);
-    if (sd < dead) { this.aim = { dir: this.aim ? this.aim.dir : this.h.defaultAim(), power: 0 }; this.h.onAim(this.aim); return; }
+    // A press that hasn't moved yet is not a pull: a plain click near the ball never fires a shot.
+    if (!this.dragged && Math.hypot(cx - this.press.x, cy - this.press.y) > 5) this.dragged = true;
+    if (sd < dead || !this.dragged) { this.aim = { dir: this.aim ? this.aim.dir : this.h.defaultAim(), power: 0 }; this.h.onAim(this.aim); return; }
     // Screen drag -> ground direction using the camera's (frozen) orientation. Pull back = shoot forward.
     var b = this.basis, wx = -(sx * b.rx + -sy * b.fx), wz = -(sx * b.rz + -sy * b.fz), l = Math.hypot(wx, wz) || 1;
     this.aim = { dir: [wx / l, wz / l], power: power };
