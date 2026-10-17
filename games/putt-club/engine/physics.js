@@ -866,7 +866,7 @@
   /** Map a 0..1 aim power to a launch speed. */
   function shotSpeed(power, strength) {
     power = clamp(power, 0, 1);
-    return C.MIN_SHOT + Math.pow(power, 1.25) * (C.MAX_SHOT * (strength || 1) - C.MIN_SHOT);
+    return C.MIN_SHOT + power * (C.MAX_SHOT * (strength || 1) - C.MIN_SHOT);
   }
 
   var api = {

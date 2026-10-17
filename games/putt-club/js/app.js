@@ -67,7 +67,13 @@ function start(global) {
     camera: function () { return scene.camera; },
     ball: function () { return scene.myBallView(); },
     canAim: function () { return scene.canAim() && !store.get().modal && !store.get().pick; },
-    aimAnywhere: function () { return false; },
+    aimStart: function () { scene.rig.holdForAim = true; },
+    aimEnd: function () { scene.rig.holdForAim = false; },
+    cameraBasis: function () {
+      // Ground-plane right and forward vectors of the camera at the moment aiming starts.
+      var c = scene.camera, f = new THREE.Vector3(); c.getWorldDirection(f); f.y = 0; f.normalize();
+      return { fx: f.x, fz: f.z, rx: -f.z, rz: f.x };
+    },
     defaultAim: function () { return scene.defaultAim(); },
     onAim: function (aim) { scene.setAim(aim); showPower(aim); if (!!aim !== store.get().aiming) store.set({ aiming: !!aim }); },
     onShoot: shoot,
@@ -76,7 +82,7 @@ function start(global) {
   });
 
   function shoot(aim) {
-    scene.setAim(null); showPower(null); store.set({ aiming: false });
+    scene.setAim(null); showPower(null); store.set({ aiming: false }); scene.rig.holdForAim = false;
     if (store.get().showTutorial) endTutorial();
     scene.startPrediction(aim);
     send({ type: 'shoot', dx: aim.dir[0], dz: aim.dir[1], power: aim.power }, true).then(function (res) {

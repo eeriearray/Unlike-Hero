@@ -340,10 +340,10 @@
   function Tutorial(p) {
     var _s = useState(0), step = _s[0], setStep = _s[1];
     var steps = [
-      ['Aim', p.touch ? 'Put your finger on your ball and drag back, like a slingshot. The dotted line shows where it will roll.' : 'Click your ball and drag back, like a slingshot. The dotted line shows where it will roll.'],
+      ['Aim', (p.touch ? 'Drag your finger anywhere' : 'Click and drag anywhere') + ' and pull back, like a slingshot. The dotted line shows where it will roll.'],
       ['Putt', 'Drag farther for more power, then let go. Drag back onto the ball (or press Esc) to cancel.'],
       ['Power-ups', 'Roll through a glowing crate to grab a power-up, then tap its slot (or press 1 or 2) to use it.'],
-      ['Camera', p.touch ? 'Drag empty space to look around and pinch to zoom. Everyone plays at the same time!' : 'Drag empty space (or Q/E) to look around, scroll to zoom. Everyone plays at the same time!']
+      ['Camera', p.touch ? 'Use two fingers to turn the camera and pinch to zoom. Everyone plays at the same time!' : 'Right-drag (or Q/E) to turn the camera, scroll to zoom. Everyone plays at the same time!']
     ];
     var cur = steps[step];
     return html`<div class="tutorial" role="dialog" aria-label="Quick tutorial">
@@ -465,12 +465,13 @@
     return html`<div class="help">
       <h3>How to play</h3>
       <ol class="steps">
-        <li><b>Aim:</b> ${touch ? 'put your finger on your ball' : 'click your ball'} and drag back. The shot goes the opposite way, like a slingshot.</li>
-        <li><b>Power:</b> drag farther for a harder putt. The dotted line is a real physics preview of the first bounces.</li>
+        <li><b>Aim:</b> when it's your shot, ${touch ? 'drag a finger anywhere' : 'click and drag anywhere'} and pull back. The ball goes the opposite way, like a slingshot.</li>
+        <li><b>Power:</b> the farther you pull, the harder the putt (half a pull is half power). The dotted line is a real physics preview of the first bounces.</li>
         <li><b>Putt:</b> let go. Drag back onto the ball${touch ? ', tap Cancel shot' : ' or press Esc'} to cancel.</li>
         <li><b>Everyone plays at once.</b> Fewest strokes wins. Water or falling off costs a stroke and puts you back where you were.</li>
         <li><b>Stroke limit:</b> after the limit you score limit + 1. Out of time scores your strokes + 2. <b>Reset</b> sends you to the tee for a penalty.</li>
-        ${touch ? null : html`<li><b>Keyboard:</b> ←/→ aim, ↑/↓ power, Space putts; Q/E or drag empty space to orbit, scroll or Z to zoom; O overview; Tab scorecard; 1/2 use power-ups.</li>`}
+        <li><b>Camera:</b> ${touch ? 'two fingers turn it, pinch zooms' : 'right-drag or Q/E turns it, scroll or Z zooms'}; the camera button shows the whole hole. While your ball rolls, a normal drag turns the camera too.</li>
+        ${touch ? null : html`<li><b>Keyboard:</b> ←/→ aim, ↑/↓ power, Space putts; O overview; Tab scorecard; 1/2 use power-ups.</li>`}
       </ol>
       <h3>Power-ups</h3>
       <p class="note">Roll through a crate to grab one (you can hold two). Hostile ones target an opponent; Bubble Guard blocks the next one aimed at you.</p>

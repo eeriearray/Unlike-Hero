@@ -148,37 +148,41 @@
   // ---------------------------------------------------------------- music
 
   var music = { theme: null, timer: null, next: 0, step: 0 };
+  // Upbeat loops: a synth drum kit, a driving bass, chord stabs and an arpeggiated lead, one groove per course.
+  // Patterns are 16 sixteenth-notes per bar; 'x' = hit.
   var SONGS = {
-    cove: { bpm: 92, root: 55, scale: [0, 2, 4, 7, 9], chords: [[0, 4, 7], [9, 0, 4], [5, 9, 0], [7, 11, 2]], lead: 'sine', pad: 'triangle' },
-    garden: { bpm: 84, root: 57, scale: [0, 2, 4, 5, 7, 9, 11], chords: [[0, 4, 7], [5, 9, 0], [2, 5, 9], [7, 11, 2]], lead: 'triangle', pad: 'sine' },
-    neon: { bpm: 104, root: 50, scale: [0, 3, 5, 7, 10], chords: [[0, 3, 7], [8, 0, 3], [3, 7, 10], [10, 2, 5]], lead: 'square', pad: 'sawtooth' },
-    menu: { bpm: 88, root: 53, scale: [0, 2, 4, 7, 9], chords: [[0, 4, 7], [5, 9, 0], [9, 0, 4], [7, 11, 2]], lead: 'triangle', pad: 'sine' }
+    cove: { bpm: 116, root: 50, chords: [[0, 4, 7], [7, 11, 14], [9, 12, 16], [5, 9, 12]], lead: 'triangle', bass: 'sine', stab: 'square',
+      kick: 'x...x...x...x...', snare: '....x.......x...', hat: '..x...x...x...x.', shaker: 'xxxxxxxxxxxxxxxx', bassPat: 'x..x..x.x..x..x.', arp: [0, 1, 2, 1, 2, 0, 1, 2] },
+    garden: { bpm: 112, root: 52, chords: [[0, 4, 7], [5, 9, 12], [7, 11, 14], [4, 7, 11]], lead: 'triangle', bass: 'triangle', stab: 'triangle',
+      kick: 'x.....x.x.......', snare: '....x.......x..x', hat: 'x.x.x.x.x.x.x.x.', shaker: '', bassPat: 'x...x.x.x...x.x.', arp: [0, 2, 1, 2, 0, 2, 1, 2] },
+    neon: { bpm: 128, root: 45, chords: [[0, 3, 7], [8, 12, 15], [3, 7, 10], [10, 14, 17]], lead: 'sawtooth', bass: 'sawtooth', stab: 'square',
+      kick: 'x...x...x...x...', snare: '....x.......x...', hat: '..x...x...x...x.', shaker: 'x.xxx.xxx.xxx.xx', bassPat: 'xxx.xxx.xxx.xxx.', arp: [0, 1, 2, 3, 2, 1, 0, 1] },
+    menu: { bpm: 120, root: 48, chords: [[0, 4, 7], [9, 12, 16], [5, 9, 12], [7, 11, 14]], lead: 'square', bass: 'sine', stab: 'triangle',
+      kick: 'x...x...x...x...', snare: '....x.......x...', hat: '..x...x...x...x.', shaker: 'x.x.x.x.x.x.x.x.', bassPat: 'x..x..x...x..x..', arp: [0, 1, 2, 3, 2, 1, 2, 3] }
   };
   function midi(n) { return 440 * Math.pow(2, (n - 69) / 12); }
+  function kick(t) { var o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.12); g.gain.setValueAtTime(0.5, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.22); o.connect(g); g.connect(musicBus); o.start(t); o.stop(t + 0.25); }
+  function snare(t) { noise(t, 0.14, 0.22, 'highpass', 1500, 0.7, musicBus); tone('triangle', 190, t, 0.001, 0.08, 0.12, musicBus, 140); }
+  function hat(t, v) { noise(t, 0.035, v, 'highpass', 7500, 1, musicBus); }
   function schedule() {
     var song = SONGS[music.theme];
     if (!song || !ctx) return;
-    var beat = 60 / song.bpm / 2; // eighth notes
+    var six = 60 / song.bpm / 4; // sixteenth notes
     while (music.next < ctx.currentTime + 0.2) {
-      var t = music.next, s = music.step, bar = Math.floor(s / 16) % 4, chord = song.chords[bar];
-      if (s % 16 === 0) chord.forEach(function (n) { padNote(song, midi(song.root + 12 + n), t, beat * 16); });
-      if (s % 4 === 0) tone('sine', midi(song.root + chord[0] - 12 + 12), t, 0.01, beat * 3, 0.13, musicBus);
-      var r = PC.hash(music.theme + s) % 100;
-      if (r < (music.theme === 'neon' ? 55 : 38)) {
-        var deg = song.scale[(PC.hash('n' + s) % song.scale.length)];
-        var oct = PC.hash('o' + s) % 3 === 0 ? 36 : 24;
-        tone(song.lead, midi(song.root + oct + deg), t, 0.005, beat * 1.6, song.lead === 'square' ? 0.025 : 0.06, musicBus);
+      var t = music.next, s = music.step, i = s % 16, bar = Math.floor(s / 16) % 4, chord = song.chords[bar];
+      var intro = s < 32; // first two bars build up: no lead yet
+      if (song.kick[i] === 'x') kick(t);
+      if (song.snare[i] === 'x' && !(intro && s < 16)) snare(t);
+      if (song.hat[i] === 'x') hat(t, 0.09);
+      if (song.shaker && song.shaker[i] === 'x') hat(t, 0.035);
+      if (song.bassPat[i] === 'x') tone(song.bass, midi(song.root - 12 + chord[0] + (i === 14 ? 7 : 0)), t, 0.005, six * 1.6, song.bass === 'sawtooth' ? 0.07 : 0.16, musicBus);
+      if (i === 0 || i === 6 || i === 10) chord.forEach(function (n) { tone(song.stab, midi(song.root + 12 + n), t, 0.004, six * 1.4, song.stab === 'square' ? 0.018 : 0.035, musicBus); });
+      if (!intro && i % 2 === 0) {
+        var step = song.arp[(i / 2) % song.arp.length], note = chord[step % 3] + (step >= 3 ? 12 : 0) + (bar === 3 && i >= 12 ? 2 : 0);
+        tone(song.lead, midi(song.root + 24 + note), t, 0.003, six * 1.5, song.lead === 'sawtooth' ? 0.022 : song.lead === 'square' ? 0.02 : 0.055, musicBus);
       }
-      music.next += beat; music.step = (s + 1) % 128;
+      music.next += six; music.step = (s + 1) % 128;
     }
-  }
-  function padNote(song, f, t, d) {
-    var o = ctx.createOscillator(), o2 = ctx.createOscillator(), g = ctx.createGain(), flt = ctx.createBiquadFilter();
-    o.type = song.pad; o2.type = song.pad; o.frequency.value = f; o2.frequency.value = f * 1.004;
-    flt.type = 'lowpass'; flt.frequency.value = song.pad === 'sawtooth' ? 700 : 1400;
-    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.03, t + d * 0.25); g.gain.linearRampToValueAtTime(0.0001, t + d);
-    o.connect(flt); o2.connect(flt); flt.connect(g); g.connect(musicBus);
-    o.start(t); o2.start(t); o.stop(t + d + 0.1); o2.stop(t + d + 0.1);
   }
 
   PC.audio = {

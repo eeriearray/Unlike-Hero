@@ -74,6 +74,8 @@
     } else if (this.mode === 'overview') {
       this.goal.copy(this.center);
       this.goalPitch = 1.2; this.goalDist = this.overviewDist() * portrait * 0.95;
+    } else if (this.holdForAim) {
+      // Aiming: keep the view perfectly still so the drag maps to the same shot every time.
     } else if (focus && focus.pos) {
       // Look a little past the ball toward the cup (or along the aim), but never lose the ball.
       var ahead = new THREE.Vector3();
