@@ -34,6 +34,8 @@
     CAPTURE_SPEED: 6.0,    // slower than this over the cup drops in
     CAPTURE_SPEED_CENTER: 8.0,
     RIM_PULL: 5,
+    MAGNET_GAIN: 4,        // course magnets (attract and repel) pull this many times their listed strength
+    BUMPER_MIN_OUT: 3.2,   // a springy bumper sends the ball off at least kick x this along its normal
     MAX_SHOT_TIME: 22,     // seconds before a rolling ball is forced to settle
     STUCK_TIME: 3.5,
     VOID_Y: -5
@@ -731,7 +733,7 @@
       }
       for (var i = 0; i < w.magnets.length; i++) {
         var mg = w.magnets[i], mdx = mg.x - b.x, mdz = mg.z - b.z, md = Math.sqrt(mdx * mdx + mdz * mdz);
-        if (md < mg.r && md > 0.05) { var mf = mg.k * (1 - md / mg.r); ix += mdx / md * mf * h; iz += mdz / md * mf * h; }
+        if (md < mg.r && md > 0.05) { var mf = mg.k * C.MAGNET_GAIN * (1 - md / mg.r); ix += mdx / md * mf * h; iz += mdz / md * mf * h; }
       }
       // Launch pads throw the ball up and forward at least at their own speed (a faster ball keeps its pace,
       // so a pad never brakes), keeping sideways motion.
@@ -799,10 +801,16 @@
     var v = b.body.linvel(), pv = b.pv || v;
     var s = Math.hypot(v.x - pv.x, v.y - pv.y, v.z - pv.z);
     if (other.kind === 'bumper' && other.bumper && other.bumper.kick) {
-      // Springy bumpers add a kick straight out from their centre.
+      // Springy bumpers kick straight out from their centre like a pinball bumper: the ball leaves at its
+      // rebound speed plus the kick, and never slower than a firm minimum, even from a glancing touch.
       var bp = other.bumper, nx = b.x - bp.x, nz = b.z - bp.z, nl = Math.hypot(nx, nz) || 1;
-      b.body.applyImpulse({ x: nx / nl * bp.kick * b.body.mass(), y: 0, z: nz / nl * bp.kick * b.body.mass() }, true);
-      s = Math.max(s, bp.kick);
+      nx /= nl; nz /= nl;
+      // The contact can register a step before the bounce, while the ball still heads in: bounce it here.
+      var vn = v.x * nx + v.z * nz; if (vn < 0) vn = -vn * 0.95;
+      var out = Math.max(vn + bp.kick, bp.kick * C.BUMPER_MIN_OUT);
+      vn = v.x * nx + v.z * nz;
+      if (out > vn) b.body.setLinvel({ x: v.x + nx * (out - vn), y: v.y, z: v.z + nz * (out - vn) }, true);
+      s = Math.max(s, out);
     }
     if (other.kind !== 'floor') rollAlong(b);
     if (other.kind === 'floor') {
