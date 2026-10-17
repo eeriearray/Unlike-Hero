@@ -1,0 +1,4 @@
+{
+  "//": "Lets Node load riftbreak-engine.js as CommonJS. Browsers load the same file as a classic <script> (window.RiftEngine).",
+  "type": "commonjs"
+}

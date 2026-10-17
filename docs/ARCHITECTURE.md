@@ -112,6 +112,11 @@ their own view of the game. It also accepts narrator recordings from `record.htm
 but only from localhost. The rules live in `games/mafia/engine/mafia-engine.js`, which the browser also loads
 for offline games against bots. Static hosts without Node still serve the game; only its online mode needs the server.
 
+RIFTBREAK does the same with plain WebSockets instead of Socket.io: `games/riftbreak/server/index.mjs` claims
+`/games/riftbreak/ws`, runs `games/riftbreak/engine/riftbreak-engine.js` authoritatively (shuffles, draws, legality, turns)
+and pushes each socket `viewFor(itsPlayer)` plus only the events it hasn't seen. Seats survive reloads through a
+per-seat token kept in `sessionStorage`; a dropped player's seat is played by a bot until they return.
+
 ## Path to a hosted platform
 
 The folder already works as a static site. When you build the platform:
