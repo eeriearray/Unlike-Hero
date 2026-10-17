@@ -71,7 +71,7 @@
       acc = Math.min(acc + (now - last) / 1000, 0.1); last = now;
       while (acc >= 1 / 60) {
         acc -= 1 / 60; m.tick(1 / 60); tickN++;
-        if ((m.phase === 'intro' || m.phase === 'play') && tickN % 2 === 0) h.onSnap(m.snapshot());
+        if (m.phase === 'intro' || m.phase === 'play') h.onSnap(m.snapshot());
       }
       if (fxq.length) { var list = fxq; fxq = []; h.onFx(list); }
       if (tickN % 30 === 0 && (m.phase === 'intro' || m.phase === 'play')) h.onState(m.view(myId));
@@ -92,9 +92,11 @@
   Interp.prototype.push = function (snap) {
     if (snap.t < this.lastT - 0.5) this.reset(); // new hole: the hole clock restarted
     this.lastT = snap.t;
+    // Keep the render clock steady: nudge it gently toward each estimate (a little faster toward fresher
+    // packets), and only jump when it is far off. A clock that lurches makes balls stall and surge on screen.
     var est = snap.t - this.now();
-    if (this.offset == null || Math.abs(est - this.offset) > 1) this.offset = est;
-    else this.offset += (est - this.offset) * (est > this.offset ? 0.25 : 0.05);
+    if (this.offset == null || Math.abs(est - this.offset) > 0.3) this.offset = est;
+    else this.offset += (est - this.offset) * (est > this.offset ? 0.06 : 0.015);
     for (var i = 0; i < snap.b.length; i++) {
       var b = snap.b[i], arr = this.buf[b[0]] || (this.buf[b[0]] = []);
       arr.push({ t: snap.t, x: b[1], y: b[2], z: b[3], r: b[4], flags: b[5], vx: b[6], vz: b[7] });

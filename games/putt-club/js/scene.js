@@ -385,15 +385,10 @@
   /** Which position to draw a ball at this frame: always the server's path, smoothly interpolated. */
   S.sampleBall = function (id, isMe, serverNow, renderT, dt) {
     var target = null;
-    target = this.interp.sample(id, isMe ? serverNow - 0.07 : renderT);
-    if (!target) return null;
-    // Smooth over source switches; snap on teleports (resets, hazards, swaps).
-    var sm = this.smooth[id];
-    if (!sm) { this.smooth[id] = sm = { x: target.x, y: target.y, z: target.z }; return target; }
-    var jump = Math.hypot(target.x - sm.x, target.z - sm.z);
-    if (jump > 3) { sm.x = target.x; sm.y = target.y; sm.z = target.z; }
-    else { var k = 1 - Math.exp(-(isMe ? 18 : 25) * dt); sm.x += (target.x - sm.x) * k; sm.y += (target.y - sm.y) * k; sm.z += (target.z - sm.z) * k; }
-    return { x: sm.x, y: sm.y, z: sm.z, r: target.r, flags: target.flags, vx: target.vx, vz: target.vz };
+    // Drawn straight from the interpolated snapshots on one steady clock. (An extra smoothing pass here
+    // made a ball look like it gathered speed after the putt and lag behind on every change.)
+    target = this.interp.sample(id, renderT);
+    return target;
   };
 
   /** After you finish, watch whoever is still playing (the furthest from the cup). */

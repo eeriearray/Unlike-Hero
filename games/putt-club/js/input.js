@@ -97,8 +97,13 @@
     // A press that hasn't moved yet is not a pull: a plain click near the ball never fires a shot.
     if (!this.dragged && Math.hypot(cx - this.press.x, cy - this.press.y) > 5) this.dragged = true;
     if (sd < dead || !this.dragged) { this.aim = { dir: this.aim ? this.aim.dir : this.h.defaultAim(), power: 0 }; this.h.onAim(this.aim); return; }
-    // Screen drag -> ground direction using the camera's (frozen) orientation. Pull back = shoot forward.
-    var b = this.basis, wx = -(sx * b.rx + -sy * b.fx), wz = -(sx * b.rz + -sy * b.fz), l = Math.hypot(wx, wz) || 1;
+    // Direction: from the point on the ground under your pointer, through the ball (pull back = shoot
+    // forward), so the shot heads exactly away from where your pointer is as you see it, at any camera
+    // angle. Above the horizon there is no ground point: fall back to the camera's flat orientation.
+    var b = this.basis, wx, wz, gp = this.groundPoint(cx, cy, ball.pos.y - (ball.r || 0.22));
+    if (gp && Math.hypot(ball.pos.x - gp.x, ball.pos.z - gp.z) > 1e-3) { wx = ball.pos.x - gp.x; wz = ball.pos.z - gp.z; }
+    else { wx = -(sx * b.rx + -sy * b.fx); wz = -(sx * b.rz + -sy * b.fz); }
+    var l = Math.hypot(wx, wz) || 1;
     this.aim = { dir: [wx / l, wz / l], power: power };
     this.h.onAim(this.aim);
   };

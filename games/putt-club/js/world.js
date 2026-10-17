@@ -169,6 +169,32 @@
     var sm = addMesh(group, sideBatch.geometry(), kit.side, true, true); if (sm) disposables.push(sm.geometry);
     var tm = addMesh(group, thinBatch.geometry(), themeId === 'neon' ? kit.metal : kit.post, true, true); if (tm) disposables.push(tm.geometry);
 
+    // Slope chevrons: faint arrows painted down every slope, so the green can be read and a ball that
+    // bends or slows on a slope doesn't look like it hit a random patch of friction.
+    var slopeMat = null, chevMats = [];
+    w.floors.forEach(function (f) {
+      var g = Math.hypot(f.gx, f.gz);
+      if (f.overlay || g < 0.02) return;
+      var dx = -f.gx / g, dz = -f.gz / g, yaw = Math.atan2(dx, dz), step = 1.5;
+      var n = new THREE.Vector3(-f.gx, 1, -f.gz).normalize();
+      var tilt = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), n);
+      var q = tilt.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw));
+      var sc = 0.5 + Math.min(1, g / 0.2) * 0.35;
+      for (var x = f.bb[0] + step / 2; x < f.bb[2]; x += step) for (var z = f.bb[1] + step / 2; z < f.bb[3]; z += step) {
+        if (!Phys.inPoly(f.poly, x, z)) continue;
+        if (!Phys.inPoly(f.poly, x + dz * 0.4, z - dx * 0.4) || !Phys.inPoly(f.poly, x - dz * 0.4, z + dx * 0.4)) continue;
+        chevMats.push(new THREE.Matrix4().compose(new THREE.Vector3(x, Phys.heightOn(f, x, z) + 0.012, z), q, new THREE.Vector3(sc, 1, sc)));
+      }
+    });
+    if (chevMats.length) {
+      var cs = new THREE.Shape();
+      cs.moveTo(-0.32, -0.12); cs.lineTo(0, 0.16); cs.lineTo(0.32, -0.12); cs.lineTo(0.32, -0.26); cs.lineTo(0, 0.02); cs.lineTo(-0.32, -0.26); cs.closePath();
+      var cg = new THREE.ShapeGeometry(cs); cg.rotateX(Math.PI / 2); disposables.push(cg);
+      slopeMat = new THREE.MeshBasicMaterial({ color: themeId === 'neon' ? '#7ff3ff' : '#ffffff', transparent: true, opacity: 0.3, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3, toneMapped: false });
+      var chev = instanced(group, cg, slopeMat, chevMats, false);
+      if (chev) { chev.receiveShadow = false; chev.renderOrder = 3; }
+    }
+
     // Glowing edges on open catwalks (Neon) so the drop is readable.
     var glowMats = [];
     glowEdges.forEach(function (f) {
@@ -510,6 +536,7 @@
     var dirty = 0;
     function update(t, dt) {
       var dyn = Phys.dynamicAt(w, t);
+      if (slopeMat) slopeMat.opacity = 0.42 + 0.12 * Math.sin(t * 2.2);
       spinMeshes.forEach(function (m, i) { m.rotation.y = -dyn.spinners[i]; });
       slideMeshes.forEach(function (m, i) { var s = dyn.sliders[i], sl = w.sliders[i]; m.position.set(s.cx, sl.h + (sl.top - sl.h) / 2, s.cz); m.rotation.y = -sl.ang; });
       gateMeshes.forEach(function (gm, i) {
