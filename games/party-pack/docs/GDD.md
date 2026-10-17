@@ -367,3 +367,13 @@ The **ctx API** each game uses: `ask({to, view, secs, audience, validate, partia
 | Hosted pack service, creator revenue share | Designed (§3.2–3.3); packs work locally and via share links | `POST/GET /packs` |
 | ML toxicity classifier | Designed (§4.6); layer 1 + VIP Moderator are built | `POST /moderate` |
 | Hosted voice packs | The Voice Booth records and plays clips locally (§4.4) | Upload packs to the pack service so every Main Stage can download a cast |
+
+## Added: five more games and a no-repeat deck
+
+- **Mind Meld**: everyone types the answer they think the room will give; matching answers score.
+- **Who Said That?**: answer a question about yourself, then guess who wrote each answer.
+- **Most Likely To**: vote for a friend; voting with the majority scores, and the winner earns the title for the yearbook.
+- **Guesstimate**: closest number wins; an exact answer scores 2,000.
+- **Emoji Charades**: one player describes a secret using emoji only; the others race to guess it.
+
+Content lives in `js/content/*.js` (one file per game). `G.deal()` picks prompts the Main Stage hasn't shown yet, stored in its browser, and starts a new cycle only once the whole list has been used. `test/party-pack-content.test.mjs` checks counts, duplicates and that every game has a host, theme, art and voice.

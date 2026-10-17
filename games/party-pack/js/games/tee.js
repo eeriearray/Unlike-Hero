@@ -29,7 +29,7 @@
     G.busyStage(ctx, 'Draw two things', 'Anything goes. They\'ll end up on someone\'s chest.');
     ctx.say('draw');
     const ps = ctx.players(); const progress = new Map(); const out = new Map();
-    const prompts = new Map(ps.map(p => [p.id, shuffle(C.teeInspo).slice(0, 2).map(x => 'Draw ' + x)]));
+    const inspo = G.deal(ctx, 'teeInspo', C.teeInspo, ps.length * 2); const prompts = new Map(ps.map((p, i) => [p.id, inspo.slice(i * 2, i * 2 + 2).map(x => 'Draw ' + x)]));
     await ctx.ask({
       to: ps, secs: 70, clean: false,
       view: p => ({ type: 'draw', count: 2, prompt: prompts.get(p.id), palette: INK, sub: 'Draw anything' }),
@@ -48,7 +48,7 @@
     G.busyStage(ctx, 'Write three slogans', 'Bumper stickers. Life advice. Threats.');
     ctx.say('slogan');
     const ps = ctx.players(); const progress = new Map();
-    const prompts = new Map(ps.map(p => [p.id, shuffle(C.teeSlogan).slice(0, 3).map(x => 'Write ' + x)]));
+    const starters = G.deal(ctx, 'teeSlogan', C.teeSlogan, ps.length * 3); const prompts = new Map(ps.map((p, i) => [p.id, starters.slice(i * 3, i * 3 + 3).map(x => 'Write ' + x)]));
     await ctx.ask({
       to: ps, secs: 60,
       view: p => ({ type: 'multitext', prompts: prompts.get(p.id), max: 45, placeholder: 'Your slogan' }),

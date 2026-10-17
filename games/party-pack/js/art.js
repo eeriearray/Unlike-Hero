@@ -49,7 +49,17 @@
         // Ripley Thread: a T-shirt in a backwards cap
         tee: `<path d="M24 34l22-10q6 8 12 0l22 10 16 20-14 10-6-6v58H30V58l-6 6-14-10z" fill="#ffe14d" ${ol}/><path d="M28 26c0-18 48-18 48 0z" fill="#6c2bd9" ${ol}/><path d="M28 26h-14" ${ol}/>${eyes(60)}${mouth(52, 84, 9)}`,
         // Chad Venture: a briefcase with sunglasses and a tie
-        pitch: `<rect x="40" y="10" width="24" height="14" rx="5" fill="none" ${ol}/><rect x="10" y="22" width="84" height="84" rx="12" fill="#8a5a2b" ${ol}/><path d="M10 50h84" ${ol}/><path d="M24 52h22v10q-11 6-22 0zM58 52h22v10q-11 6-22 0z" fill="${INK}"/><path d="M46 56h12" ${ol}/>${mouth(52, 80, 9)}<path d="M52 92l-6 8 6 12 6-12z" fill="#ff6b4a" ${ol}/>`
+        pitch: `<rect x="40" y="10" width="24" height="14" rx="5" fill="none" ${ol}/><rect x="10" y="22" width="84" height="84" rx="12" fill="#8a5a2b" ${ol}/><path d="M10 50h84" ${ol}/><path d="M24 52h22v10q-11 6-22 0zM58 52h22v10q-11 6-22 0z" fill="${INK}"/><path d="M46 56h12" ${ol}/>${mouth(52, 80, 9)}<path d="M52 92l-6 8 6 12 6-12z" fill="#ff6b4a" ${ol}/>`,
+        // Madame Meld: a crystal ball with a tiny turban
+        meld: `<rect x="30" y="98" width="44" height="16" rx="6" fill="#6b3fa0" ${ol}/><rect x="22" y="110" width="60" height="12" rx="6" fill="#4a2a73" ${ol}/><circle cx="52" cy="62" r="40" fill="#b58cff" ${ol}/><circle cx="38" cy="44" r="8" fill="#ffffff66"/><path d="M34 24q18-22 36 0" fill="#2fd3c4" ${ol}/><circle cx="52" cy="14" r="5" fill="#ffd23f" ${ol}/>${eyes(60)}${mouth(52, 82, 8)}`,
+        // Gossip Gerry: a pink rotary telephone
+        whosaid: `<path d="M14 40q38-32 76 0l-8 14q-30-20-60 0z" fill="#ff6fb5" ${ol}/><rect x="16" y="50" width="72" height="62" rx="16" fill="#ff8fc8" ${ol}/><circle cx="52" cy="98" r="9" fill="#fff" ${ol}/><path d="M88 80q16 6 8 18t8 18" fill="none" ${ol}/>${eyes(68)}${mouth(52, 88, 7)}`,
+        // Principal Prom: a golden trophy
+        likely: `<path d="M26 20h52v26q0 30-26 30t-26-30z" fill="#ffd23f" ${ol}/><path d="M26 28q-16 0-14 14t16 12M78 28q16 0 14 14t-16 12" fill="none" ${ol}/><rect x="44" y="76" width="16" height="18" fill="#e0a800" ${ol}/><rect x="28" y="94" width="48" height="16" rx="4" fill="#5b8cff" ${ol}/><path d="M38 102h28" stroke="#fff" stroke-width="3"/>${eyes(40)}${mouth(52, 60, 8)}`,
+        // Professor Approx: a calculator
+        guess: `<rect x="18" y="8" width="68" height="112" rx="12" fill="#c9ced8" ${ol}/><rect x="26" y="16" width="52" height="40" rx="6" fill="#d8f5c8" ${ol}/>${eyes(30)}${mouth(52, 46, 7)}${[0, 1, 2].map(r => [0, 1, 2].map(c => `<rect x="${28 + c * 17}" y="${64 + r * 17}" width="13" height="12" rx="3" fill="${r === 2 && c === 2 ? '#ffb347' : '#fff'}" ${ol}/>`).join('')).join('')}`,
+        // Emo Gee: a giant winking emoji
+        emoji: `<circle cx="52" cy="62" r="46" fill="#ffd23f" ${ol}/><circle cx="38" cy="50" r="6" fill="${INK}"/><path d="M58 50q8-6 16 0" fill="none" ${ol}/><g class="mouth"><path class="m-open" d="M32 70q20 30 40 0z" fill="#5a1222" ${ol}/><path class="m-shut" d="M34 72q18 16 36 0" fill="none" ${ol}/></g><path d="M50 84q8 14 16 0" fill="#ff6fb5" ${ol}/>`
       };
       return `<svg class="host-svg" viewBox="0 0 104 128" aria-hidden="true">${H[key] || H.lobby}</svg>`;
     },

@@ -13,7 +13,7 @@ const sandbox = {}; sandbox.window = sandbox;
 vm.runInNewContext(await readFile(join(root, 'js', 'content.js'), 'utf8'), sandbox);
 const PP = sandbox.PP;
 const lines = PP.scriptLines();
-const games = { lobby: 'The lobby, between games', quip: 'The Comedy Writer', fib: 'The Bluffing Game', draw: 'The Terrible Artist', quiz: 'The Cutthroat Quiz', tee: 'The Chaos Mashup', pitch: "The Imposter's Pitch", edge: 'Shared lines: ties, AFK, hype and other surprises (played in the Announcer\'s voice in every game)' };
+const games = { lobby: 'The lobby, between games', quip: 'The Comedy Writer', fib: 'The Bluffing Game', draw: 'The Terrible Artist', quiz: 'The Cutthroat Quiz', tee: 'The Chaos Mashup', pitch: "The Imposter's Pitch", meld: 'Mind Meld', whosaid: 'Who Said That?', likely: 'Most Likely To', guess: 'Guesstimate', emoji: 'Emoji Charades', edge: 'Shared lines: ties, AFK, hype and other surprises (played in the Announcer\'s voice in every game)' };
 const hostOf = h => h === 'edge' ? PP.HOSTS.lobby : PP.HOSTS[h];
 
 let md = `# Party Pack: the hosts' script

@@ -23,7 +23,7 @@
 
   async function round(ctx, C, used, pastImposters, r, rounds) {
     const ps = ctx.players();
-    const product = G.take(C.pitch, used);
+    const product = G.deal(ctx, 'pitch', C.pitch, 1)[0];
     const pool = ps.filter(p => !pastImposters.has(p.id)); const imposter = pick(pool.length ? pool : ps); pastImposters.add(imposter.id);
     await G.banner(ctx, `Pitch meeting ${r + 1} of ${rounds}`, 'Check your phone. Secretly.', 2000);
 

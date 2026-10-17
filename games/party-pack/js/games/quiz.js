@@ -16,7 +16,7 @@
       const C = ctx.content();
       ctx.players().forEach(p => { p.ghost = false; }); ctx.refreshStrip();
       await G.intro(ctx, game);
-      const qs = shuffle(C.quiz).slice(0, QUESTIONS);
+      const qs = G.deal(ctx, 'quiz', C.quiz, QUESTIONS);
       for (let k = 0; k < qs.length; k++) {
         await question(ctx, qs[k], k);
         if (!ctx.players().some(p => !p.ghost)) { await ctx.say('allDead'); break; }
@@ -132,7 +132,7 @@
     const ps = ctx.players(); const pos = new Map(ps.map(p => [p.id, p.ghost ? 0 : 3]));
     await G.banner(ctx, 'THE EXIT', `First to the door (${EXIT_GOAL} steps) escapes. The living start 3 steps ahead.`, 2600);
     await ctx.say('exit');
-    const qs = shuffle(C.exit);
+    const qs = G.deal(ctx, 'exit', C.exit, 14);
     const track = () => `<div class="track">${ps.map(p => `<div class="lane ${p.ghost ? 'ghost' : ''}" style="--c:${ctx.color(p)}"><span class="lname">${esc(p.name)}</span><div class="road">${Array.from({ length: EXIT_GOAL }, (_, i) => `<i class="${i < pos.get(p.id) ? 'on' : ''}"></i>`).join('')}<span class="runner" style="--x:${Math.min(EXIT_GOAL, pos.get(p.id)) / EXIT_GOAL}">${PP.Art.player(p, ctx.color(p))}</span></div><span class="door">🚪</span></div>`).join('')}</div>`;
     for (let k = 0; k < Math.min(qs.length, 14); k++) {
       const q = qs[k];

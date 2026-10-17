@@ -48,7 +48,12 @@
     draw: { root: 57, bpm: 92, lead: 'sine', bass: 'triangle', swing: 0.15 },
     quiz: { root: 45, bpm: 96, lead: 'sawtooth', bass: 'sawtooth', swing: 0 },
     tee: { root: 52, bpm: 118, lead: 'square', bass: 'sawtooth', swing: 0.1 },
-    pitch: { root: 48, bpm: 104, lead: 'triangle', bass: 'square', swing: 0.06 }
+    pitch: { root: 48, bpm: 104, lead: 'triangle', bass: 'square', swing: 0.06 },
+    meld: { root: 51, bpm: 96, lead: 'sine', bass: 'triangle', swing: 0.12 },
+    whosaid: { root: 54, bpm: 114, lead: 'square', bass: 'sawtooth', swing: 0.14 },
+    likely: { root: 50, bpm: 110, lead: 'triangle', bass: 'square', swing: 0.08 },
+    guess: { root: 47, bpm: 100, lead: 'square', bass: 'triangle', swing: 0.04 },
+    emoji: { root: 56, bpm: 122, lead: 'square', bass: 'sawtooth', swing: 0.1 }
   };
   const MAJOR = [0, 2, 4, 5, 7, 9, 11], MINOR = [0, 2, 3, 5, 7, 8, 10];
   const PROG = { major: [0, 4, 5, 3], minor: [0, 5, 3, 4] };          // I–V–vi–IV  /  i–VI–iv–v (scale degrees)
@@ -134,7 +139,7 @@
   // 2. Otherwise the device's best text-to-speech voice, ranked so neural/enhanced voices win and
   //    novelty voices never play, spoken phrase by phrase with natural pauses.
   const V = { on: true, onSpeak: null, queue: [], busy: false, clips: new Map(), buffers: new Map(), fx: null, ttsVoices: [] };
-  const DEFAULT_CHAR = { lobby: 1, quip: 0.97, fib: 1.06, draw: 0.94, quiz: 0.86, tee: 1.08, pitch: 1.0 };
+  const DEFAULT_CHAR = { lobby: 1, quip: 0.97, fib: 1.06, draw: 0.94, quiz: 0.86, tee: 1.08, pitch: 1.0, meld: 0.96, whosaid: 1.06, likely: 1.0, guess: 0.95, emoji: 1.1 };
   V.character = Object.assign({}, DEFAULT_CHAR, PP.prefs.get('voiceChar', {}));
 
   // --- clip storage: IndexedDB (this browser) + an optional voice/ folder pack ---
@@ -197,7 +202,7 @@
   const ROBOTIC = /espeak|zarvox|trinoids|bahh|bells|boing|bubbles|cellos|deranged|hysterical|organ|whisper|good news|bad news|jester|superstar|wobble|albert|junior|ralph|fred|grandpa|grandma|rocko|eddy|flo\b|reed|sandy|shelley|kathy|princess/i;
   const MALE = /\b(male|Guy|Andrew|Christopher|Brian|Eric|Roger|Davis|Tony|Jason|Ryan|Thomas|George|Daniel|Arthur|Oliver|Evan|Nathan|Aaron|Tom|Alex|Rishi|Lee|James|Gordon)\b/i;
   const FEMALE = /\b(female|Aria|Jenny|Sonia|Libby|Natasha|Clara|Emma|Ava|Michelle|Samantha|Karen|Moira|Tessa|Victoria|Zira|Hazel|Susan|Serena|Kate|Fiona|Allison|Joanna|Salli|Kimberly|Ivy|Martha|Stephanie|Catherine|Sara|Amy|Emily|Olivia|Zoe|Nicky)\b/i;
-  const HOST_GENDER = { lobby: 'm', quip: 'f', fib: 'm', draw: 'm', quiz: 'm', tee: 'f', pitch: 'm', edge: 'm' };
+  const HOST_GENDER = { lobby: 'm', quip: 'f', fib: 'm', draw: 'm', quiz: 'm', tee: 'f', pitch: 'm', meld: 'f', whosaid: 'm', likely: 'm', guess: 'm', emoji: 'f', edge: 'm' };
   function vscore(v, want) {
     if (!/^en([-_]|$)/i.test(v.lang)) return -1000;
     let s = 0; const n = v.name;
