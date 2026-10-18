@@ -271,6 +271,11 @@
     var e = useState(''), err = e[0], setErr = e[1];
     function act(cmd) { setErr(''); return props.send(cmd).then(function (res) { if (res.error) setErr(res.error); else setAsk(null); }); }
 
+    var bots = v.players.filter(function (p) { return p.isBot && !p.left; });
+    var botRow = v.isHost && s.phase !== 'ended' ? html`<div className="row bots-row">
+      <${Button} kind="ghost" onClick=${function () { return act({ type: 'add-bot' }); }} disabled=${bots.length >= 6}>+ Add a bot</${Button}>
+      ${bots.length ? html`<${Button} kind="ghost" onClick=${function () { return act({ type: 'remove-bot', id: bots[bots.length - 1].id }); }}>Remove a bot (${bots.length})</${Button}>` : null}
+    </div>` : null;
     var body;
     if (s.phase === 'lobby') {
       body = html`<div className="session-lobby">
@@ -287,6 +292,7 @@
             ? html`<${Button} kind="primary" className="big" onClick=${function () { return act({ type: 'start' }); }} disabled=${ready.length < present.length}>${ready.length < present.length ? 'Waiting for players…' : 'Deal everyone in'}</${Button}>`
             : html`<${Button} kind=${me && me.ready ? 'ghost' : 'primary'} className="big" onClick=${function () { return act({ type: 'ready', ready: !(me && me.ready) }); }}>${me && me.ready ? 'Not ready' : 'I\'m ready'}</${Button}>`}
         </div>
+        ${botRow}
       </div>`;
     } else if (s.phase === 'ended') {
       body = null;
@@ -303,6 +309,7 @@
           <${Button} onClick=${function () { setAsk('end'); }}>End session</${Button}>
           <${Button} kind="danger" onClick=${function () { setAsk('restart'); }}>Restart…</${Button}>
         </div>` : null}
+        ${botRow}
       </div>`;
     }
     return html`<section className="panel session" aria-label="Session">
@@ -372,6 +379,7 @@
     function row(p, rank) {
       var tags = [];
       if (p.isHost) tags.push(html`<span key="h" className="tag gold">Host</span>`);
+      if (p.isBot) tags.push(html`<span key="bot" className="tag">Bot</span>`);
       if (p.status === 'bankrupt') tags.push(html`<span key="b" className="tag red">Bankrupt</span>`);
       if (p.insolvent) tags.push(html`<${BrokeTag} key="i" view=${v} insolvent=${p.insolvent} />`);
       if (p.status === 'spectator') tags.push(html`<span key="s" className="tag">Spectating</span>`);

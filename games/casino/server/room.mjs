@@ -12,6 +12,7 @@ import * as social from './social.mjs';
 
 export const MAX_PLAYERS = 12;
 export const HOST_GRACE_MS = 90_000;
+import { addBot, removeBot, runBots, hasBots } from './bots.mjs';
 export const AVATARS = ['fox', 'tiger', 'panda', 'owl', 'frog', 'octopus', 'unicorn', 'dragon', 'cat', 'wolf', 'koala', 'shark', 'monkey', 'penguin', 'lion', 'robot'];
 export const EMOTES = ['clap', 'fire', 'laugh', 'shock', 'cry', 'money', 'pray', 'cool'];
 
@@ -171,7 +172,14 @@ export class CasinoRoom {
     return (s.liveMs || 0) + (s.phase === 'live' && s.liveSince != null ? this.now() - s.liveSince : 0);
   }
   humans() { return [...this.players.values()]; }
-  connected() { return this.humans().filter((p) => p.connected); }
+  connected() { return this.humans().filter((p) => p.connected && !p.isBot); }
+  get maxPlayers() { return MAX_PLAYERS; }
+  get avatars() { return AVATARS; }
+  /** Bots act on a slow tick while any are in the room (bots.mjs). */
+  scheduleBots() {
+    if (this.botTimer || !hasBots(this)) return;
+    this.botTimer = this.timers.set(() => { this.botTimer = null; runBots(this); this.scheduleBots(); }, 1000);
+  }
   sync() { this.hooks.sync(); }
   id(prefix) { return `${prefix}${(++this.seq).toString(36)}${randomBytes(3).toString('hex')}`; }
 
@@ -295,8 +303,8 @@ export class CasinoRoom {
   }
 
   migrateHost() {
-    const next = this.humans().filter((p) => p.connected && p.id !== this.hostId).sort((a, b) => a.joinedAt - b.joinedAt)[0];
-    if (!next) { if (!this.players.has(this.hostId)) this.hostId = this.humans()[0]?.id || null; return; }
+    const next = this.humans().filter((p) => p.connected && !p.isBot && p.id !== this.hostId).sort((a, b) => a.joinedAt - b.joinedAt)[0];
+    if (!next) { if (!this.players.has(this.hostId)) this.hostId = this.humans().find((p) => !p.isBot)?.id || null; return; }
     this.hostId = next.id;
     this.log('host', `${next.name} is now the host`, { playerId: next.id });
   }
@@ -512,6 +520,8 @@ export class CasinoRoom {
         res = this.startSession();
         break;
       }
+      case 'add-bot': { const e = hostOnly(); if (e) return e; res = addBot(this); break; }
+      case 'remove-bot': { const e = hostOnly(); if (e) return e; res = removeBot(this, cmd.id); break; }
       case 'pause': { const e = hostOnly(); if (e) return e; res = this.pauseSession(); break; }
       case 'resume': { const e = hostOnly(); if (e) return e; res = this.resumeSession(); break; }
       case 'end': { const e = hostOnly(); if (e) return e; res = this.endSession(); break; }
@@ -588,7 +598,7 @@ export class CasinoRoom {
     const staked = !!(a && a.staked);
     return {
       id: p.id, name: p.name, avatar: p.avatar, connected: p.connected, left: p.left, ready: p.ready,
-      status: p.status, isHost: p.id === this.hostId, tableId: p.tableId,
+      status: p.status, isHost: p.id === this.hostId, isBot: !!p.isBot, tableId: p.tableId,
       insolvent: p.insolvent ? { until: p.insolvent.until || null, leftMs: p.insolvent.leftMs } : null,
       hasWallet: staked,
       cash: staked ? a.cash : 0, reserved: staked ? a.reserved : 0,
@@ -657,7 +667,7 @@ export class CasinoRoom {
     room.createdAt = data.createdAt; room.hostId = data.hostId; room.seq = data.seq;
     room.session = data.session;
     // Everyone is offline after a restart; the host's grace period starts now, not when the server went down.
-    for (const p of data.players) room.players.set(p.id, { ...p, connected: false, lastSeen: room.now() });
+    for (const p of data.players) room.players.set(p.id, { ...p, connected: !!p.isBot && !p.left, lastSeen: room.now() });
     room.creds = new Map(data.creds);
     room.feed = data.feed; room.chat = data.chat;
     room.economy = Economy.fromJSON(data.economy, { now: room.now });
@@ -672,6 +682,7 @@ export class CasinoRoom {
     room.armSessionTimer();
     for (const t of room.openTables()) t.engine.restore(room, t);
     if (room.session.phase === 'live') bank.resume(room);
+    room.scheduleBots();
     return room;
   }
 
@@ -683,5 +694,6 @@ export class CasinoRoom {
     this.tableTimers.clear();
     this.timers.clear(this.sessionTimer);
     this.timers.clear(this.hostTimer);
+    this.timers.clear(this.botTimer);
   }
 }

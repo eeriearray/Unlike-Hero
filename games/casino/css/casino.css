@@ -1274,3 +1274,10 @@ button.seat-orb:hover .orb-glass { box-shadow: inset 0 -.5cqw 1cqw rgba(0, 0, 0,
 .gl-look { position: absolute; right: 10px; top: 52px; display: flex; flex-direction: column; gap: 4px; }
 .gl-look button { width: 36px; height: 36px; border-radius: 8px; border: 1px solid rgba(201, 164, 92, .35); background: rgba(10, 6, 3, .72); color: #e8d5a0; font-size: 14px; cursor: pointer; }
 .gl-look button:hover { background: rgba(60, 40, 16, .9); }
+.bots-row { gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+/* table cards never outgrow their column on narrow screens */
+.tables > *, .table-card, .table-body { min-width: 0; max-width: 100%; }
+.table-card .btn { white-space: normal; text-align: center; line-height: 1.25; }
+.table-body p, .table-body h3, .table-body span { overflow-wrap: anywhere; }
+.table-body > p.muted { -webkit-line-clamp: 2; }
+@media (max-width: 420px) { .tables { grid-template-columns: minmax(0, 1fr); } }
