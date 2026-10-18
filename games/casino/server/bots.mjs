@@ -13,7 +13,7 @@ export function addBot(room) {
   const free = room.avatars.filter((a) => !used.has(a));
   const avatar = (free.length ? free : room.avatars)[room.rng((free.length ? free : room.avatars).length)];
   const takenNames = new Set([...room.players.values()].map((p) => p.name.toLowerCase()));
-  const name = NAMES.filter((n) => !takenNames.has(n.toLowerCase()))[0] || 'Bot';
+  const name = NAMES.filter((n) => !takenNames.has((n + ' (bot)').toLowerCase()))[0] || 'Bot';
   const id = 'b' + room.id('');
   const p = { id, name: room.uniqueName(name + ' (bot)'), avatar, joinedAt: room.now(), lastSeen: room.now(), connected: true, left: false, ready: true, tableId: null, status: 'active', isBot: true };
   room.players.set(id, p);
