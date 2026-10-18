@@ -3,3 +3,4 @@ node_modules/
 *.log
 .cursor/
 Unlike-Hero/
+games/casino/server/data/
