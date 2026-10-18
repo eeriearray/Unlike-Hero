@@ -80,6 +80,7 @@
     if (this.ctx.deck) this.deck.set(this.ctx.deck.position.x, TOP + 0.06, this.ctx.deck.position.z);
     this.visible = true; this.alive = true; this.frameMs = 16; this.slow = 0;
     this.resize();
+    this.prewarm();
     if (global.ResizeObserver) { this.ro = new ResizeObserver(function () { self.resize(); }); this.ro.observe(el); }
     else { this.onResize = function () { self.resize(); }; global.addEventListener('resize', this.onResize); }
     if (global.IntersectionObserver) { this.io = new IntersectionObserver(function (e) { self.visible = e[0].isIntersecting; }); this.io.observe(el); }
@@ -216,6 +217,18 @@
     this.camera.updateProjectionMatrix();
     this.hemi.intensity = this.portrait ? 0.85 : 0.5;
     if (this.lampMeshes) this.lampMeshes.forEach(function (m) { m.visible = !this.portrait; }, this);                    // seen from above the shade would hide the table
+    // setSize clears the canvas and the ResizeObserver fires after our animation frame, so without this the cleared (white or black) canvas gets painted
+    if (this.camInit) { try { this.renderer.render(this.scene, this.camera); } catch (e) {} }
+  };
+
+  /** Compile every shader the table will need now, so the first card, chip or highlight doesn't stall a frame mid-game. */
+  E.prewarm = function () {
+    var M = this.m, tmp = [];
+    [[new T.PlaneGeometry(0.1, 0.1), M.card], [new T.BoxGeometry(0.1, 0.1, 0.1), M.vc], [new T.BoxGeometry(0.1, 0.1, 0.1), M.vcSmooth], [new T.PlaneGeometry(0.1, 0.1), M.ring], [new T.BoxGeometry(0.1, 0.1, 0.1), M.glow]].forEach(function (p) {
+      var m = new T.Mesh(p[0], p[1]); m.position.set(0, -50, 0); m.frustumCulled = false; this.scene.add(m); tmp.push(m);
+    }, this);
+    try { this.renderer.compile(this.scene, this.camera); } catch (e) {}
+    tmp.forEach(function (m) { this.scene.remove(m); m.geometry.dispose(); }, this);
   };
 
   // ───────────── syncing the model ─────────────
