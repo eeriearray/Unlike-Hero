@@ -236,6 +236,7 @@
           if (forSlots) {
             reelsFor(E, mach, m.strips);
             var sp = (m.spins || {})[i]; if (!sp) return;
+            if (sp.state === 'spinning' && mach.fx) { mach.fx = null; mach.lines.forEach(function (l) { l.visible = false; }); for (var q = 0; q < mach.coins.n; q++) mach.coins.live[q] = 0; if (E.hallGlow) E.hallGlow.intensity = 1.8; }     // a new spin wipes the last win's lines and coins
             if (sp.state === 'done' && sp.payout > 0 && mach.paidNo !== sp.no) startWin(E, mach, s, sp.no, sp.payout, sp.bet, (sp.wins || []).map(function (w) { return w.line; }));
             mach.reels.forEach(function (r, ri) {
               if (sp.no !== r.no && sp.state === 'spinning') { r.no = sp.no; r.mode = 'spin'; r.vel = 13 + ri * 1.5; r.stopAt = performance.now() + 1500 + ri * 520; r.target = null; mach.leverT = 1; mach.tease = false; r.teased = null; if (GL.audio && s.me && ri === 0) { GL.audio.lever(); GL.audio.spin(); } }
