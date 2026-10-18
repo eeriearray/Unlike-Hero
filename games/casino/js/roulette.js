@@ -310,7 +310,6 @@
         </div>
       </div>`;
     var sh = useState(true), sheetOpen = sh[0], setSheet = sh[1];
-    useEffect(function () { setSheet(st.phase !== 'spinning' && st.phase !== 'results'); }, [st.phase]);
     var glModel = glOn ? rlModel(v, table, st, r, now, you, me, chipsBySpot) : null;
     return html`<section className="rl game-roulette" aria-label=${table.name}>
       <div className="table-bar">
