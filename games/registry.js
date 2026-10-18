@@ -4,7 +4,7 @@ window.GAME_REGISTRY = [
     "id": "casino",
     "title": "Neon Casino",
     "tagline": "A private casino night for friends: blackjack, roulette, Texas Hold'em and Teen Patti on one shared wallet, with loans, bankruptcies and a final reckoning. Play money only.",
-    "version": "0.4.0",
+    "version": "0.5.0",
     "sdk": "1.x",
     "entry": "index.html",
     "server": "server/index.mjs",

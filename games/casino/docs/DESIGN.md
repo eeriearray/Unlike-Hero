@@ -128,6 +128,23 @@ snapshot, restore`), keeps its state as plain JSON saved with the room, and move
 Disconnected players get a 6-second turn clock instead of 25; standing up folds or packs. Hidden cards (hole cards,
 Teen Patti hands, the deck, the dealer's hole card) are only in the views of the players allowed to see them.
 
+## Social layer
+
+`server/social.mjs`. Nothing here can create money; everything is derived from settled results.
+
+- **Achievements** (17, per session): awarded from settled rounds (first win, jackpot ≥ ½ starting cash, five wins in a
+  row, table-maximum stake, high-roller win, all four games played, comeback from below half), from tags games put on a
+  round before settling it (blackjack natural, straight-up roulette hit, four of a kind or better, a Teen Patti trail),
+  from bank events (bailed out, casino paid off, a player loan repaid with interest), from challenges, and at session
+  end (champion; survivor = finished solvent after dropping below a quarter of the stake). Each is awarded once.
+- **Challenges:** high card, dice or a coin flip against one player, stake between the table minimum and maximum,
+  60 s to accept. Both stakes are reserved only on acceptance (re-checked then), the server resolves with the CSPRNG
+  and settles once as a pool, so the house takes nothing. One open challenge per pair.
+- **Watching and hot tables:** opening a table view sends `watch`; tables report watchers and a `hot` label when the
+  chips in play reach max($2,000, 20% of the stake) or someone is all in. Reactions carry the table they were sent from.
+- **Profiles and history** are fetched on demand (`stats`, `session-history`) and don't trigger a state push. Net-worth
+  trails are rebuilt from the ledger's per-entry balances, thinned to at most 60–80 points.
+
 ## Multiplayer state
 
 ```
@@ -160,5 +177,5 @@ CasinoRoom
 2. Blackjack, fully playable, on the shared wallet: curved table scene, seated character silhouettes, dealer peek, S17, 3:2, double, split to four hands, turn timers. ✅
 3. Loans, interest, repayments, debt limits, player loans, bankruptcy, spectator mode. ✅
 4. Texas Hold'em (side pots), Teen Patti (blind/seen), roulette. ✅
-5. Leaderboards polish, profiles, achievements, challenges, reactions, animations.
+5. Leaderboards polish, profiles, achievements, challenges, reactions, animations. ✅
 6. Edge-case and security testing, balancing, polish.

@@ -265,6 +265,7 @@ function finish(room, table, live, shown = false) {
     potResults.push({ amount: pot.amount, winners: winners.map((w) => w.pid), hand: shown && contenders.length > 1 ? winners[0].best.name : null, uncalled: pot.eligible.length === 1 && live.length > 1 });
   }
   st.phase = 'results';
+  if (shown) for (const p of live) if (p.best.key[0] >= 7 && (payouts[p.pid] || 0) > p.contrib) room.economy.tagRound(h.id, p.pid, 'monster');
   const res = room.economy.settleRound(h.id, payouts, { mode: 'pool', memo: `${table.name} hand` });
   if (res.error) throw new Error(`poker settlement refused: ${res.error}`);
   const per = {};
@@ -375,6 +376,9 @@ export const poker = {
       rules: { sb: blinds(table).sb, bb: blinds(table).bb, maxIn: table.maxBet, turnSec: RULES.turnMs / 1000, seats: RULES.seats },
     };
   },
+
+  /** Someone still in the hand is all in (the floor and watchers see the table as hot). */
+  allIn(room, table) { const st = table.state; return st.phase === 'playing' && !!st.hand && st.hand.players.some((p) => p.allIn && !p.folded); },
 
   snapshot(room, state) { return timers.snapshot(room, state); },
   restore(room, table) {

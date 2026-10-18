@@ -196,6 +196,7 @@ function finish(room, table) {
     payouts[h.owner] = (payouts[h.owner] || 0) + payout;
   }
   st.phase = 'results';
+  for (const h of r.hands) if (h.result === 'blackjack') room.economy.tagRound(r.id, h.owner, 'natural');
   const res = room.economy.settleRound(r.id, payouts, { mode: 'house', maxMultiplier: RULES.maxMultiplier, memo: `${table.name} result` });
   if (res.error) throw new Error(`blackjack settlement refused: ${res.error}`);
   const per = {};

@@ -8,6 +8,7 @@ import { roulette } from './games/roulette.mjs';
 import { poker } from './games/poker.mjs';
 import { teenpatti } from './games/teenpatti.mjs';
 import * as bank from './bank.mjs';
+import * as social from './social.mjs';
 
 export const MAX_PLAYERS = 12;
 export const HOST_GRACE_MS = 90_000;
@@ -143,6 +144,10 @@ export class CasinoRoom {
     this.offers = new Map();          // open player-loan offers (bank.mjs)
     this.bailoutTimers = new Map();   // playerId -> bankruptcy bailout timer (not saved)
     this.bankTimer = null;
+    this.achievements = {};          // playerId -> [{ id, at }] this session (social.mjs)
+    this.challenges = new Map();      // open head-to-head challenges
+    this.challengeTimers = new Map();
+    this.duels = [];                  // recent challenge results
     this.economy = new Economy({ now });
     this.wireEconomy();
   }
@@ -151,6 +156,7 @@ export class CasinoRoom {
     this.economy.onSettle = (round) => {
       this.session.rounds += 1;
       for (const r of round.result || []) bank.checkSolvency(this, r.playerId);
+      social.onRound(this, round);
       if (!this.ending && this.session.phase === 'live' && this.settings.session.mode === 'rounds' && this.session.rounds >= this.settings.session.rounds) {
         this.endSession('Round limit reached');
       }
@@ -394,6 +400,8 @@ export class CasinoRoom {
     s.endedAt = this.now();
     s.endReason = reason;
     s.summary = this.summarize();
+    social.onEvent(this, 'session-end', { summary: s.summary });
+    social.clearChallenges(this);
     const w = s.summary.winners.map((id) => this.get(id)?.name).filter(Boolean);
     this.log('session', `${reason}. ${w.length ? `${w.join(' & ')} won with ${money(s.summary.rows[0].netWorth)}` : 'No winner'}`);
     this.hooks.fx(null, { kind: 'session-end' });
@@ -411,7 +419,10 @@ export class CasinoRoom {
     this.economy.locked = true;
     Object.assign(s, { no: prev + 1, phase: 'lobby', startedAt: null, endsAt: null, remainingMs: null, rounds: 0, endedAt: null, summary: null, endReason: null, liveMs: 0, liveSince: null });
     bank.stopAll(this);
-    for (const p of this.humans()) { p.ready = false; p.status = 'active'; p.tableId = null; p.insolvent = null; }
+    social.clearChallenges(this);
+    this.achievements = {};
+    this.duels = [];
+    for (const p of this.humans()) { p.ready = false; p.status = 'active'; p.tableId = null; p.insolvent = null; p.watching = null; }
     for (const id of this.tableTimers.keys()) this.timers.clear(this.tableTimers.get(id));
     this.tableTimers.clear();
     this.tableState = {};
@@ -554,14 +565,15 @@ export class CasinoRoom {
       }
       case 'emote':
         if (!EMOTES.includes(cmd.emote)) return { error: 'Unknown reaction.' };
-        this.hooks.fx(null, { kind: 'emote', from: playerId, emote: cmd.emote });
+        this.hooks.fx(null, { kind: 'emote', from: playerId, emote: cmd.emote, table: this.table(cmd.tableId) ? cmd.tableId : null });
         return { ok: true };                       // reactions are fleeting: no state change, no sync
       case 'history': {
         const before = Number.isSafeInteger(cmd.before) ? cmd.before : Infinity;
         return { ok: true, entries: this.economy.history(playerId, { limit: 100, before }) };
       }
       default: {
-        const b = bank.command(this, playerId, cmd);
+        if (cmd.type === 'stats' || cmd.type === 'session-history') return social.command(this, playerId, cmd);   // reads: no sync
+        const b = bank.command(this, playerId, cmd) || social.command(this, playerId, cmd);
         if (!b) return { error: 'Unknown command.' };
         res = b;
       }
@@ -583,6 +595,7 @@ export class CasinoRoom {
       debt: staked ? a.debt + a.interest : 0, owes: staked ? a.owes : 0, owed: staked ? a.owed : 0,
       netWorth: staked ? netWorth(a) : 0, startingCash: staked ? a.startingCash : 0,
       won: staked ? a.won : 0, lost: staked ? a.lost : 0, rounds: staked ? a.rounds : 0,
+      profit: staked ? netWorth(a) - a.startingCash : 0, streak: staked ? a.streak || 0 : 0, watching: p.watching || null,
     };
   }
 
@@ -606,12 +619,13 @@ export class CasinoRoom {
       settings: this.settings,
       tables: tablesFor(this.settings).map((cfg) => {
         const t = this.table(cfg.id);
-        return { ...cfg, open: !!t, seated: players.filter((p) => p.tableId === cfg.id).map((p) => p.id), state: t ? t.engine.view(this, t, playerId) : null };
+        return { ...cfg, open: !!t, seated: players.filter((p) => p.tableId === cfg.id).map((p) => p.id), ...social.tableSocial(this, cfg, players), state: t ? t.engine.view(this, t, playerId) : null };
       }),
       players,
       leaderboard,
       feed: this.feed.slice(-40),
       bank: bank.publicView(this),
+      social: social.publicView(this),
       chat: this.chat.slice(-60),
       me: me && a ? {
         account: {
@@ -631,6 +645,7 @@ export class CasinoRoom {
       v: 1, code: this.code, createdAt: this.createdAt, hostId: this.hostId, settings: this.settings, seq: this.seq,
       session: { ...this.session, endsAt: null, remainingMs: this.session.endsAt ? Math.max(0, this.session.endsAt - this.now()) : this.session.remainingMs, liveMs: this.liveNow(), liveSince: null },
       offers: [...this.offers.values()],
+      achievements: this.achievements, duels: this.duels,
       players: this.humans().map((p) => (p.insolvent ? { ...p, insolvent: { ...p.insolvent, leftMs: p.insolvent.until ? Math.max(1_000, p.insolvent.until - this.now()) : p.insolvent.leftMs, until: null } } : p)), creds: [...this.creds], feed: this.feed, chat: this.chat, economy: this.economy.toJSON(),
       tables: Object.fromEntries(Object.entries(this.tableState).map(([id, st]) => { const t = this.table(id); return [id, t ? t.engine.snapshot(this, st) : st]; })),
     };
@@ -649,6 +664,8 @@ export class CasinoRoom {
     room.wireEconomy();
     room.tableState = data.tables || {};
     room.offers = new Map((data.offers || []).map((o) => [o.id, o]));
+    room.achievements = data.achievements || {};
+    room.duels = data.duels || [];
     if (room.session.phase === 'live') room.session.liveSince = room.now();
     // Rooms saved before loans existed have no interest clock yet: start one from here.
     if (room.session.nextInterestLive == null) room.session.nextInterestLive = room.liveNow() + room.settings.loans.interestEveryMin * 60_000;
@@ -660,6 +677,7 @@ export class CasinoRoom {
 
   destroy() {
     bank.stopTick(this);
+    for (const h of this.challengeTimers.values()) this.timers.clear(h);
     for (const h of this.bailoutTimers.values()) this.timers.clear(h);
     for (const h of this.tableTimers.values()) this.timers.clear(h);
     this.tableTimers.clear();

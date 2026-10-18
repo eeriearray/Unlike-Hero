@@ -173,6 +173,7 @@ function finish(room, table, live, shown) {
     potResults.push({ amount: pt.amount, winners: winners.map((w) => w.pid), hand: shown && contenders.length > 1 ? handName(winners[0].cards) : null });
   }
   st.phase = 'results';
+  if (shown) for (const p of live) if (eval3(p.cards)[0] === 6 && (payouts[p.pid] || 0) > p.contrib) room.economy.tagRound(h.id, p.pid, 'trail');
   const res = room.economy.settleRound(h.id, payouts, { mode: 'pool', memo: `${table.name} hand` });
   if (res.error) throw new Error(`teen patti settlement refused: ${res.error}`);
   const per = {};
@@ -273,6 +274,9 @@ export const teenpatti = {
       rules: { boot: table.minBet, potLimit: table.minBet * RULES.potLimitBoots, turnSec: RULES.turnMs / 1000, seats: RULES.seats },
     };
   },
+
+  /** Someone still in the hand is all in (the floor and watchers see the table as hot). */
+  allIn(room, table) { const st = table.state; return st.phase === 'playing' && !!st.hand && st.hand.players.some((p) => p.allIn && !p.folded); },
 
   snapshot(room, state) { return timers.snapshot(room, state); },
   restore(room, table) {

@@ -101,6 +101,7 @@ function settle(room, table) {
   st.phase = 'results';
   st.history.unshift(n);
   st.history.length = Math.min(st.history.length, RULES.history);
+  for (const b of r.bets) if (b.won && b.type === 'straight') room.economy.tagRound(r.id, b.owner, 'straight-up');
   const res = room.economy.settleRound(r.id, payouts, { mode: 'house', maxMultiplier: PAYOUT.straight + 1, memo: `${table.name}: ${n} ${colorOf(n)}` });
   if (res.error) throw new Error(`roulette settlement refused: ${res.error}`);
   const per = {};

@@ -5,6 +5,7 @@
 // and deadlines stop while the host has the session paused. See docs/DESIGN.md, "Loans and debt" and "Bankruptcy".
 import { randomBytes } from 'node:crypto';
 import { netWorth } from './economy.mjs';
+import { onEvent } from './social.mjs';
 
 export const BANK_TICK_MS = 5_000;          // how often interest and deadlines are checked during live play
 export const BAILOUT_MS = 60_000;           // an insolvent player has this long to be rescued by a player loan
@@ -63,6 +64,7 @@ export function checkSolvency(room, pid) {
     clearBailout(room, pid);
     p.insolvent = null;
     room.log('rescued', `${p.name} is back in the game`, { playerId: pid });
+    onEvent(room, 'rescued', { playerId: pid });
   }
 }
 
@@ -76,7 +78,7 @@ function armBailout(room, pid) {
     const q = room.get(pid);
     if (!q || !q.insolvent || q.status !== 'active') return;
     if (isInsolvent(room, pid)) declareBankrupt(room, pid, 'no one bailed them out');
-    else { q.insolvent = null; room.log('rescued', `${q.name} is back in the game`, { playerId: pid }); }
+    else { q.insolvent = null; room.log('rescued', `${q.name} is back in the game`, { playerId: pid }); onEvent(room, 'rescued', { playerId: pid }); }
     room.sync();
   }, p.insolvent.leftMs));
 }
@@ -190,7 +192,7 @@ export function command(room, pid, cmd) {
       const res = e.repayCasino(pid, cmd.amount);
       if (res.error) return res;
       const a = e.account(pid);
-      if (!a.debt && !a.interest) room.log('repay', `${p.name} paid off the casino`, { playerId: pid });
+      if (!a.debt && !a.interest) { room.log('repay', `${p.name} paid off the casino`, { playerId: pid }); onEvent(room, 'casino-paid-off', { playerId: pid }); }
       checkSolvency(room, pid);
       return { ok: true };
     }
@@ -252,7 +254,10 @@ export function command(room, pid, cmd) {
       if (!loan || loan.kind !== 'p2p' || loan.borrower !== pid) return { error: 'That isn\'t your loan.' };
       const res = e.p2pRepay(loan.id, cmd.amount);
       if (res.error) return res;
-      if (!res.remaining) room.log('repay', `${p.name} paid back ${name(room, loan.lender)} in full`, { playerId: pid });
+      if (!res.remaining) {
+        room.log('repay', `${p.name} paid back ${name(room, loan.lender)} in full`, { playerId: pid });
+        onEvent(room, 'p2p-repaid', { lender: loan.lender, borrower: pid, interest: loan.total - loan.principal });
+      }
       checkSolvency(room, pid);
       checkSolvency(room, loan.lender);
       return { ok: true };

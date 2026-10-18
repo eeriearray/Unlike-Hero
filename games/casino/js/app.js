@@ -6,7 +6,7 @@
   var html = htm.bind(R.createElement);
   var Net = window.CasinoNet;
 
-  var VERSION = '0.4.0';
+  var VERSION = '0.5.0';
   var hub = window.Hub ? window.Hub.init({ id: 'casino', version: VERSION, title: 'Neon Casino' }) : null;
   var store = hub ? hub.storage('casino') : {
     get: function (k, d) { try { var v = localStorage.getItem('hub.casino.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
@@ -64,7 +64,7 @@
       ${busy ? html`<span className="spinner" aria-hidden="true"></span>` : null}${props.children}</button>`;
   }
 
-  window.CasinoUI = { AVATARS: AVATARS, html: html, cx: cx, money: money, signed: signed, clockText: clockText, byId: byId, useNow: useNow, Avatar: Avatar, Button: Button, store: store };
+  window.CasinoUI = { AVATARS: AVATARS, EMOTES: EMOTES, html: html, cx: cx, money: money, signed: signed, clockText: clockText, byId: byId, useNow: useNow, Avatar: Avatar, Button: Button, store: store };
 
   // ───────────────────────── entrance ─────────────────────────
   function Entrance(props) {
@@ -315,10 +315,11 @@
         ${v.tables.map(function (t) {
           var info = GAME_INFO[t.game] || {};
           var canOpen = t.open && (v.session.phase === 'live' || v.session.phase === 'paused');
-          return html`<article key=${t.id} className=${cx('table-card', 'game-' + t.game, t.highRoller && 'high-roller', !t.open && 'closed', canOpen && 'openable')}>
+          return html`<article key=${t.id} className=${cx('table-card', 'game-' + t.game, t.highRoller && 'high-roller', !t.open && 'closed', canOpen && 'openable', t.hot && 'is-hot')}>
             <div className="table-felt" aria-hidden="true"><span className="table-icon">${info.icon}</span></div>
             <div className="table-body">
               <div className="table-title"><h3>${t.name}</h3>${t.highRoller ? html`<span className="tag gold">VIP</span>` : null}</div>
+              ${t.hot || (t.watchers && t.watchers.length) ? html`<div className="row">${t.hot ? html`<span className="tag hot">🔥 ${t.hot.label}</span>` : null}${t.watchers && t.watchers.length ? html`<span className="tag">👀 ${t.watchers.length} watching</span>` : null}</div>` : null}
               <p className="muted small">${info.blurb}</p>
               <div className="table-meta">
                 <span className="num">${money(t.minBet)} – ${money(t.maxBet)}</span>
@@ -334,9 +335,25 @@
   }
 
   // ───────────────────────── players & leaderboard ─────────────────────────
+  /** Remembers each player's last rank and shows ▲/▼ for a little while after it changes. */
+  function useRankMoves(order) {
+    var prev = useRef({}), moves = useRef({});
+    var now = Date.now();
+    order.forEach(function (id, i) {
+      var before = prev.current[id];
+      if (before != null && before !== i) moves.current[id] = { by: before - i, at: now };
+      prev.current[id] = i;
+    });
+    var out = {};
+    Object.keys(moves.current).forEach(function (id) { if (now - moves.current[id].at < 20000) out[id] = moves.current[id].by; });
+    return out;
+  }
+
   function Players(props) {
     var v = props.view;
     var ranked = v.leaderboard.map(function (id) { return byId(v, id); }).filter(Boolean);
+    var moves = useRankMoves(v.leaderboard);
+    var ach = (v.social && v.social.achievements) || {};
     var rest = v.players.filter(function (p) { return v.leaderboard.indexOf(p.id) < 0; });
     function row(p, rank) {
       var tags = [];
@@ -347,21 +364,27 @@
       if (v.session.phase === 'lobby' && !p.isHost) tags.push(p.ready ? html`<span key="r" className="tag green">Ready</span>` : html`<span key="r" className="tag">Not ready</span>`);
       if (p.left) tags.push(html`<span key="l" className="tag">Left</span>`);
       if (p.tableId) { var tb = v.tables.filter(function (t) { return t.id === p.tableId; })[0]; if (tb) tags.push(html`<span key="t" className=${'tag at-table game-' + tb.game}>${tb.name}</span>`); }
+      var mv = moves[p.id], count = (ach[p.id] || []).length;
       return html`<li key=${p.id} className=${cx('player', p.id === v.you && 'me', !p.connected && 'offline')}>
-        <span className="rank num">${rank || ''}</span>
+        <button type="button" className="player-hit" onClick=${function () { props.onProfile(p.id); }} aria-label=${'Open ' + p.name + '\u2019s profile'}></button>
+        <span className="rank num">${rank || ''}${mv ? html`<i className=${cx('rank-move', mv > 0 ? 'up' : 'down')} aria-label=${mv > 0 ? 'up ' + mv : 'down ' + -mv}>${mv > 0 ? '▲' : '▼'}</i>` : null}</span>
         <span className="player-avatar"><${Avatar} id=${p.avatar} /><i className=${cx('dot', p.connected ? 'on' : 'off')} title=${p.connected ? 'Online' : 'Offline'}></i></span>
         <span className="player-main">
           <span className="player-name">${p.name}${p.id === v.you ? html` <span className="muted">(you)</span>` : null}</span>
           <span className="player-tags">${tags}</span>
           ${p.hasWallet ? html`<span className="player-money small">
             <span title="Cash">${money(p.cash)}</span>${p.debt + p.owes > 0 ? html` · <span className="red" title="Debt">debt ${money(p.debt + p.owes)}</span>` : null}
+            ${p.streak >= 3 ? html` · <span title=${p.streak + ' wins in a row'}>🔥${p.streak}</span>` : p.streak <= -3 ? html` · <span title=${-p.streak + ' losses in a row'}>🧊${-p.streak}</span>` : null}
+            ${count ? html` · <span title=${count + ' achievements'}>🏅${count}</span>` : null}
           </span>` : null}
         </span>
-        ${p.hasWallet ? html`<span className="player-worth num" title="Net worth">${money(p.netWorth)}</span>` : null}
+        ${p.hasWallet ? html`<span className="player-worth num" title="Net worth">${money(p.netWorth)}<small className=${cx('profit', p.profit > 0 ? 'green' : p.profit < 0 ? 'red' : 'muted')}>${signed(p.profit)}</small></span>` : null}
       </li>`;
     }
     return html`<section className="panel players" aria-labelledby="players-h">
-      <div className="panel-head"><h2 id="players-h">${v.session.phase === 'lobby' ? 'Players' : 'Leaderboard'}</h2><span className="muted small">${v.players.filter(function (p) { return p.connected; }).length}/${v.players.length} online</span></div>
+      <div className="panel-head"><h2 id="players-h">${v.session.phase === 'lobby' ? 'Players' : 'Leaderboard'}</h2>
+        <span className="row"><span className="muted small">${v.players.filter(function (p) { return p.connected; }).length}/${v.players.length} online</span>
+        ${v.session.startedAt ? html`<button type="button" className="btn btn-ghost" onClick=${props.onHistory}>History</button>` : null}</span></div>
       ${ranked.length ? html`<div className="lb-head small muted"><span>Player</span><span>Net worth</span></div>` : null}
       <ol className="player-list">${ranked.map(function (p, i) { return row(p, i + 1); })}${rest.map(function (p) { return row(p, null); })}</ol>
       ${window.CasinoBank ? html`<${window.CasinoBank.DebtBoard} view=${v} />` : null}
@@ -469,7 +492,7 @@
     if (!s) return null;
     function name(id) { var p = byId(v, id); return p ? p.name : 'Someone'; }
     var winners = s.winners.map(name);
-    var GAME_NAMES = { blackjack: 'Blackjack', roulette: 'Roulette', poker: 'Texas Hold\'em', teenpatti: 'Teen Patti' };
+    var GAME_NAMES = { blackjack: 'Blackjack', roulette: 'Roulette', poker: 'Texas Hold\'em', teenpatti: 'Teen Patti', duel: 'Challenges' };
     return html`<section className="panel results" aria-labelledby="results-h">
       <div className="results-head">
         <span className="eyebrow">${v.session.endReason || 'Session over'}</span>
@@ -499,6 +522,7 @@
           })}</tbody>
         </table>
       </div>
+      <div className="row"><${Button} kind="ghost" onClick=${props.onHistory}>See the session story</${Button}></div>
       ${v.isHost ? html`<div className="row end">
         ${asking ? html`<span className="muted small">Every wallet goes back to ${money(v.settings.startingCash)}.</span>
           <${Button} kind="ghost" onClick=${function () { setAsking(false); }}>Cancel</${Button}>
@@ -518,22 +542,27 @@
     var table = openId && (s.phase === 'live' || s.phase === 'paused') ? v.tables.filter(function (t) { return t.id === openId && t.open; })[0] : null;
     var TableView = table && window.CasinoTables && window.CasinoTables[table.game];
     function sit() { return props.send({ type: 'sit', tableId: table.id }); }
+    var watched = table ? table.id : null;
+    useEffect(function () { props.send({ type: 'watch', tableId: watched }); }, [watched]);
+    var S = window.CasinoSocial;
     function standUp() { return props.send({ type: 'stand-up' }); }
     return html`<div className=${cx('room', 'phase-' + s.phase)}>
       <${TopBar} view=${v} status=${props.status} onLedger=${props.onLedger} onBank=${props.onBank} onLeave=${props.onLeave} />
       <div className="room-grid">
         <main className="room-main">
           ${window.CasinoBank && (s.phase === 'live' || s.phase === 'paused') ? html`<${window.CasinoBank.MoneyBanner} view=${v} onBank=${props.onBank} />` : null}
+          ${S ? html`<${S.ChallengeBanner} view=${v} send=${props.send} />` : null}
           ${showNotice ? html`<div className="banner" role="status"><span>${s.notice.text}</span><button type="button" className="btn btn-ghost" onClick=${function () { store.set('noticeSeen', s.notice.id); setSeen(s.notice.id); }}>Got it</button></div>` : null}
-          ${TableView ? html`<${TableView} view=${v} table=${table} send=${props.send} onBack=${function () { open(null); }} onSit=${sit} onStand=${standUp} />`
+          ${TableView ? html`<${R.Fragment}><${TableView} view=${v} table=${table} send=${props.send} onBack=${function () { open(null); }} onSit=${sit} onStand=${standUp} />
+              ${S ? html`<${S.ReactionBar} table=${table} send=${props.send} />` : null}</${R.Fragment}>`
             : html`<${R.Fragment}>
-              ${s.phase === 'ended' ? html`<${Results} view=${v} send=${props.send} />` : html`<${SessionPanel} view=${v} send=${props.send} />`}
+              ${s.phase === 'ended' ? html`<${Results} view=${v} send=${props.send} onHistory=${props.onHistory} />` : html`<${SessionPanel} view=${v} send=${props.send} />`}
               <${Floor} view=${v} onOpen=${open} />
               <${SettingsPanel} view=${v} send=${props.send} />
             </${R.Fragment}>`}
         </main>
         <aside className="room-rail">
-          <${Players} view=${v} />
+          <${Players} view=${v} onProfile=${props.onProfile} onHistory=${props.onHistory} />
           <${Feed} view=${v} />
           <${Chat} view=${v} send=${props.send} toast=${props.toast} />
         </aside>
@@ -555,6 +584,10 @@
     var tl = useState(null), toastMsg = tl[0], setToast = tl[1];
     var lg = useState(false), ledgerOpen = lg[0], setLedger = lg[1];
     var bk = useState(false), bankOpen = bk[0], setBank = bk[1];
+    var pf = useState(null), profileId = pf[0], setProfile = pf[1];
+    var hs = useState(false), historyOpen = hs[0], setHistory = hs[1];
+    var du = useState(null), duel = du[0], setDuel = du[1];
+    var ac = useState([]), achQueue = ac[0], setAchQueue = ac[1];
     var fl = useState([]), floaters = fl[0], setFloaters = fl[1];
     var mo = useState(null), moment = mo[0], setMoment = mo[1];
     useEffect(function () { if (!moment) return; var t = setTimeout(function () { setMoment(null); }, 2200); return function () { clearTimeout(t); }; }, [moment]);
@@ -580,6 +613,13 @@
           var cur = viewRef.current, who = cur && byId(cur, d.from || d.playerId);
           if (d.kind === 'loan-offer' && who) setToast(who.name + ' sent you a loan offer. Open the bank to answer.');
           if (d.kind === 'bankrupt' && who && cur && d.playerId !== cur.you) setToast(who.name + ' went bankrupt.');
+          if (d.kind === 'big-loss' && cur && d.playerId === cur.you) setMoment({ key: Date.now(), amount: d.amount, loss: true });
+          if (d.kind === 'achievement' && cur && d.playerId === cur.you) setAchQueue(function (q) { return q.concat(d.id); });
+          if (d.kind === 'challenge' && who) setToast(who.name + ' challenged you!');
+          if (d.kind === 'duel' && cur) {
+            if (d.from === cur.you || d.to === cur.you) setDuel(d);
+            else { var w = byId(cur, d.winner), l = byId(cur, d.winner === d.from ? d.to : d.from); if (w && l) setToast(w.name + ' beat ' + l.name + ' in a challenge for ' + money(d.amount) + '.'); }
+          }
         }
       });
     }, []);
@@ -609,17 +649,21 @@
     // A seat saved in this tab is resumed on connect; show a loader rather than the entrance meanwhile.
     var resuming = net && net.hasSeat() && !view && !closed;
     return html`<${R.Fragment}>
-      ${view ? html`<${Room} view=${view} status=${status} send=${send} toast=${setToast} onLedger=${function () { setLedger(true); }} onBank=${function () { setBank(true); }} onLeave=${leave} />`
+      ${view ? html`<${Room} view=${view} status=${status} send=${send} toast=${setToast} onLedger=${function () { setLedger(true); }} onBank=${function () { setBank(true); }} onProfile=${setProfile} onHistory=${function () { setHistory(true); }} onLeave=${leave} />`
         : resuming ? html`<div className="loading-screen"><span className="spinner big"></span><p>Finding your seat…</p></div>`
         : html`<${Entrance} net=${net} status=${net ? status : 'offline'} closed=${closed} initialCode=${initialCode} />`}
       ${view && ledgerOpen ? html`<${Ledger} view=${view} send=${send} onClose=${function () { setLedger(false); }} />` : null}
       ${view && bankOpen && window.CasinoBank ? html`<${window.CasinoBank.BankDrawer} view=${view} send=${send} onClose=${function () { setBank(false); }} />` : null}
+      ${view && profileId && window.CasinoSocial ? html`<${window.CasinoSocial.ProfileDrawer} view=${view} send=${send} playerId=${profileId} onClose=${function () { setProfile(null); }} />` : null}
+      ${view && historyOpen && window.CasinoSocial ? html`<${window.CasinoSocial.HistoryDrawer} view=${view} send=${send} onClose=${function () { setHistory(false); }} />` : null}
+      ${view && duel && window.CasinoSocial ? html`<${window.CasinoSocial.DuelMoment} view=${view} duel=${duel} onDone=${function () { setDuel(null); }} />` : null}
+      ${view && achQueue.length && window.CasinoSocial ? html`<${window.CasinoSocial.AchievementToast} key=${achQueue[0]} id=${achQueue[0]} onDone=${function () { setAchQueue(function (q) { return q.slice(1); }); }} />` : null}
       ${view && status !== 'online' ? html`<div className="reconnect" role="status"><span className="spinner"></span> Connection lost — reconnecting. Your seat and wallet are safe.</div>` : null}
       <${Floaters} items=${floaters} />
-      ${moment ? html`<button type="button" className="moment" onClick=${function () { setMoment(null); }} aria-label="Dismiss">
+      ${moment ? html`<button type="button" className=${cx('moment', moment.loss && 'loss-moment')} onClick=${function () { setMoment(null); }} aria-label="Dismiss">
         <span className="moment-card">
-          <span className="eyebrow">${moment.blackjack ? 'Blackjack' : 'Big win'}</span>
-          <b className="num">${moment.amount > 0 ? '+' + money(moment.amount) : money(moment.amount)}</b>
+          <span className="eyebrow">${moment.loss ? 'Ouch' : moment.blackjack ? 'Blackjack' : 'Big win'}</span>
+          <b className=${cx('num', moment.loss && 'loss')}>${moment.amount > 0 ? '+' + money(moment.amount) : money(moment.amount)}</b>
           <small className="muted">Tap to continue</small>
         </span>
       </button>` : null}

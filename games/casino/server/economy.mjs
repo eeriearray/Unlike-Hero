@@ -22,6 +22,7 @@ function blankAccount(playerId) {
     cash: 0, reserved: 0, debt: 0, interest: 0, owes: 0, owed: 0,
     startingCash: 0, staked: false,
     won: 0, lost: 0, rounds: 0, biggestWin: 0, biggestLoss: 0,
+    wins: 0, losses: 0, pushes: 0, streak: 0, bestStreak: 0,   // streak > 0: wins in a row; < 0: losses in a row
     peakNetWorth: 0, lowNetWorth: 0,
     byGame: {},          // game -> { rounds, won, lost, net }
   };
@@ -91,6 +92,14 @@ export class Economy {
     const round = { id: roundId, game: String(game || 'table'), tableId: tableId || null, state: 'open', bets: [], openedAt: this.now(), result: null };
     this.rounds.set(roundId, round);
     return { ok: true, round };
+  }
+
+  /** Games mark notable moments on a round before settling it (a natural, a straight-up hit…); achievements read them. */
+  tagRound(roundId, playerId, tag) {
+    const round = this.rounds.get(roundId);
+    if (!round) return;
+    round.tags = round.tags || {};
+    (round.tags[playerId] = round.tags[playerId] || []).push(tag);
   }
 
   /** Lock chips for a bet. Idempotent per betId: a retried request returns the original bet. */
@@ -174,8 +183,10 @@ export class Economy {
       this.post(pid, 'settle', { reserved: -staked, cash: payout }, { roundId, game: round.game, tableId: round.tableId, staked, payout, net, memo: memo || `${round.game} result` });
       const acct = this.accounts.get(pid);
       acct.rounds += 1;
-      if (net > 0) { acct.won += net; acct.biggestWin = Math.max(acct.biggestWin, net); }
-      if (net < 0) { acct.lost += -net; acct.biggestLoss = Math.max(acct.biggestLoss, -net); }
+      if (net > 0) { acct.won += net; acct.biggestWin = Math.max(acct.biggestWin, net); acct.wins = (acct.wins || 0) + 1; acct.streak = Math.max(0, acct.streak || 0) + 1; }
+      if (net < 0) { acct.lost += -net; acct.biggestLoss = Math.max(acct.biggestLoss, -net); acct.losses = (acct.losses || 0) + 1; acct.streak = Math.min(0, acct.streak || 0) - 1; }
+      if (net === 0) acct.pushes = (acct.pushes || 0) + 1;
+      acct.bestStreak = Math.max(acct.bestStreak || 0, acct.streak);
       const g = acct.byGame[round.game] || (acct.byGame[round.game] = { rounds: 0, won: 0, lost: 0, net: 0 });
       g.rounds += 1; g.net += net; if (net > 0) g.won += net; else g.lost += -net;
       if (mode === 'house') this.house -= net;
