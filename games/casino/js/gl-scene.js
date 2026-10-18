@@ -136,7 +136,8 @@
     M.woodDark = new T.MeshStandardMaterial({ map: K.woodTex('#2c1a0e', '#100803', 6, 21, [3, 3]), roughness: 0.8 });
     M.leather = new T.MeshStandardMaterial({ map: K.leatherTex(), roughness: 0.55 });
     M.brass = new T.MeshStandardMaterial({ color: 0xc9a24a, roughness: 0.38, metalness: 0.7, emissive: 0x2a1e08 });
-    M.card = new T.MeshStandardMaterial({ map: K.cardAtlas(this.coarse ? 0.75 : 1), roughness: 0.65 });
+    var atlas = K.cardAtlas(this.coarse ? 0.75 : 1);
+    M.card = new T.MeshStandardMaterial({ map: atlas, roughness: 0.65, emissive: 0xffffff, emissiveMap: atlas, emissiveIntensity: 0.42 });     // cards glow a little so they read in the dim room
     M.floor = new T.MeshStandardMaterial({ map: K.woodTex('#2a1a10', '#0a0503', 8, 41, [3.5, 3.5], 40), roughness: 0.85 });
     M.wall = new T.MeshStandardMaterial({ map: K.wallTex(), roughness: 0.95, side: T.BackSide });
     M.glow = new T.MeshBasicMaterial({ color: 0xffd9a0 });
@@ -560,15 +561,15 @@
       TABLES.oval.retheme(E, m.theme);
       var out = { cards: [], chips: [], labels: [] }, n = (m.seats || []).length, tilt = cardTilt(E);
       (m.hands || []).forEach(function (h) {
-        var pose = E.seatPose(h.seat), s = m.seats[h.seat], me = s && s.me, cnt = h.cards.length, base = { x: pose.x * 0.58, z: pose.z * 0.56 };
-        var sp = me ? 0.17 : 0.125;
+        var pose = E.seatPose(h.seat), s = m.seats[h.seat], me = s && s.me, cnt = h.cards.length, base = me ? { x: pose.x * 0.4, z: pose.z * 0.33 } : { x: pose.x * 0.52, z: pose.z * 0.5 };   // yours sit further in, clear of your own head
+        var sp = me ? 0.2 : 0.15;
         h.cards.forEach(function (c, j) {
-          out.cards.push({ id: h.id + ':' + j, face: c, x: base.x + (j - (cnt - 1) / 2) * sp, y: TOP + 0.004 + j * 0.0012, z: base.z + (me ? 0.06 : 0), ry: (me ? 0 : (pose.slot % 2 ? 0.1 : -0.1)) + (j - (cnt - 1) / 2) * 0.05, tilt: me ? tilt : tilt * 0.5, scale: me ? CARD_S * 1.12 : CARD_S * 0.9, from: h.from });
+          out.cards.push({ id: h.id + ':' + j, face: c, x: base.x + (j - (cnt - 1) / 2) * sp, y: TOP + 0.004 + j * 0.0012, z: base.z + (me ? 0.06 : 0), ry: (me ? 0 : (pose.slot % 2 ? 0.1 : -0.1)) + (j - (cnt - 1) / 2) * 0.05, tilt: me ? tilt : tilt * 0.9, scale: me ? CARD_S * 1.3 : CARD_S * 1.12, from: h.from });
         });
         if (h.bet) out.chips.push({ id: 'bet' + h.seat, amount: h.bet, x: pose.x * 0.4, z: pose.z * 0.38, from: { x: pose.x, z: pose.z } });
         if (h.note) out.labels.push({ id: 'note' + h.seat, x: base.x, y: TOP + 0.2, z: base.z, html: esc(h.note), cls: 'gl-note ' + (h.noteCls || ''), prio: 2 });
       });
-      (m.board || []).forEach(function (c, j) { out.cards.push({ id: 'board:' + j, face: c, x: (j - 2) * 0.19, y: TOP + 0.004, z: -0.03, ry: 0, tilt: tilt * 0.8, scale: CARD_S * 1.1 }); });
+      (m.board || []).forEach(function (c, j) { out.cards.push({ id: 'board:' + j, face: c, x: (j - 2) * 0.22, y: TOP + 0.004, z: -0.03, ry: 0, tilt: tilt, scale: CARD_S * 1.3 }); });
       if (m.pot) out.chips.push({ id: 'pot', amount: m.pot, x: 0, z: 0.3, from: { x: 0, z: 0.5 } });
       if (m.potLabel) out.labels.push({ id: 'pot', x: 0, y: TOP + 0.3, z: 0.18, html: m.potLabel, cls: 'gl-pot', prio: 4 });
       if (m.button != null && m.button >= 0 && E.ctx.dealerBtn !== false) {
@@ -699,7 +700,7 @@
     R.useEffect(function () { return GL.audio ? GL.audio.onChange(setMuted) : undefined; }, []);
     return html`<div className=${'gl-stage gl-' + props.kind}><div className="gl-view" ref=${ref}></div><div className="gl-hud">${props.children}
       
-<button type="button" className="gl-quality" title="Graphics quality: change if the picture flickers or goes blank" onClick=${function () { GL.setQuality((GL.getQuality() + 1) % 3); setEpoch(function (n) { return n + 1; }); }}>${['High', 'Medium', 'Low'][GL.getQuality()]}</button>
+<button type="button" className="gl-quality" title=${'Graphics quality: ' + ['High', 'Medium', 'Low'][GL.getQuality()] + '. Click to change if the picture flickers or goes blank.'} aria-label="Graphics quality" onClick=${function () { GL.setQuality((GL.getQuality() + 1) % 3); setEpoch(function (n) { return n + 1; }); }}>⚙ ${['H', 'M', 'L'][GL.getQuality()]}</button>
       ${GL.audio ? html`<button type="button" className="gl-mute" aria-pressed=${!muted} aria-label=${muted ? 'Turn sound on' : 'Mute sound'} onClick=${function () { GL.audio.init(); GL.audio.setMuted(!muted); }}>${muted ? '🔇' : '🔊'}</button>` : null}</div></div>`;
   }
   GL.Stage = Stage;
