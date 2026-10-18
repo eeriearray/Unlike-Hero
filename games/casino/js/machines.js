@@ -55,9 +55,11 @@
   /** The celebration: a big number that counts up, and a label that grows with the win (WIN, BIG WIN, MEGA WIN, JACKPOT). */
   var TIER_LABEL = ['', 'WIN', 'BIG WIN', 'MEGA WIN', 'JACKPOT'];
   function WinBanner(props) {
-    var w = props.win, seen = useRef(w ? w.no : 0), sv = useState(null), show = sv[0], setShow = sv[1], vs = useState(0), val = vs[0], setVal = vs[1];
+    var w = props.win, seen = useRef(w ? w.no : 0), sv = useState(null), show = sv[0], setShow = sv[1], vs = useState(0), val = vs[0], setVal = vs[1], hideT = useRef(0);
+    useEffect(function () { return function () { clearTimeout(hideT.current); }; }, []);
     useEffect(function () {
-      if (!w || seen.current === w.no) return;
+      if (!w) { clearTimeout(hideT.current); setShow(null); return; }          // a new spin (or a loss) takes the old banner away at once
+      if (seen.current === w.no) return;
       seen.current = w.no;
       var tier = window.CasinoGL && CasinoGL.winTier ? CasinoGL.winTier(w.amount, w.bet) : 1, dur = [0, 900, 1500, 2300, 3400][tier], t0 = performance.now(), raf = 0, lastTick = 0;
       setShow({ tier: tier, amount: w.amount, no: w.no });
@@ -67,8 +69,8 @@
         if (now - lastTick > 70 && u < 1 && window.CasinoGL && CasinoGL.audio) { lastTick = now; CasinoGL.audio.countTick(u); }
         if (u < 1) raf = requestAnimationFrame(frame);
       })(t0);
-      var hide = setTimeout(function () { setShow(null); }, dur + 1800);
-      return function () { cancelAnimationFrame(raf); clearTimeout(hide); };
+      clearTimeout(hideT.current); hideT.current = setTimeout(function () { setShow(null); }, dur + 1800);
+      return function () { cancelAnimationFrame(raf); };
     }, [w && w.no]);
     if (!show) return null;
     return html`<div className=${'win-banner tier-' + show.tier} role="status"><span className="win-rays" aria-hidden="true"></span><b className="win-label">${TIER_LABEL[show.tier]}</b><b className="win-amount num">+${money(val)}</b></div>`;
