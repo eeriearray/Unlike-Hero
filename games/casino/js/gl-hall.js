@@ -149,10 +149,11 @@
     var gr = g.createLinearGradient(0, 0, 0, Hh); gr.addColorStop(0, '#0a1c46'); gr.addColorStop(1, '#040a1e'); g.fillStyle = gr; g.fillRect(0, 0, W, Hh);
     g.strokeStyle = '#6fa0ff'; g.lineWidth = 4; g.strokeRect(6, 6, W - 12, Hh - 12);
     g.font = '700 26px "Cormorant Garamond", Georgia, serif'; g.textAlign = 'left'; g.fillStyle = '#ffe28a';
-    var lines = [['ROYAL FLUSH', '800'], ['STRAIGHT FLUSH', '50'], ['FOUR OF A KIND', '25'], ['FULL HOUSE', '9'], ['FLUSH', '6']];
-    lines.forEach(function (l, i) { g.fillText(l[0], 20, 38 + i * 24); g.textAlign = 'right'; g.fillText(l[1], 250, 38 + i * 24); g.textAlign = 'left'; });
-    var lines2 = [['STRAIGHT', '4'], ['THREE OF A KIND', '3'], ['TWO PAIR', '2'], ['JACKS OR BETTER', '1']];
-    g.textAlign = 'left'; lines2.forEach(function (l, i) { g.fillText(l[0], 300, 38 + i * 24); g.textAlign = 'right'; g.fillText(l[1], 620, 38 + i * 24); g.textAlign = 'left'; });
+    var left = [['royal', 'ROYAL FLUSH', '800'], ['sflush', 'STRAIGHT FLUSH', '50'], ['four', 'FOUR OF A KIND', '25'], ['full', 'FULL HOUSE', '9'], ['flush', 'FLUSH', '6']];
+    var right = [['straight', 'STRAIGHT', '4'], ['three', 'THREE OF A KIND', '3'], ['twopair', 'TWO PAIR', '2'], ['jacks', 'JACKS OR BETTER', '1']];
+    var live = hand && (hand.phase === 'done' ? hand.rank : null);
+    function row(list, x0, x1, i) { var r = list[i], y = 38 + i * 24; if (live && r[0] === live) { g.fillStyle = 'rgba(255,226,138,.28)'; g.fillRect(x0 - 8, y - 20, x1 - x0 + 24, 25); g.fillStyle = '#fff6c0'; } else g.fillStyle = '#ffe28a'; g.textAlign = 'left'; g.fillText(r[1], x0, y); g.textAlign = 'right'; g.fillText(r[2], x1, y); }
+    left.forEach(function (r, i) { row(left, 20, 250, i); }); right.forEach(function (r, i) { row(right, 300, 620, i); }); g.textAlign = 'left';
     var atlas = E.atlas && E.atlas.image;
     var cards = hand ? hand.cards : [null, null, null, null, null], x0 = (W - (5 * 112 + 4 * 10)) / 2;
     for (var i = 0; i < 5; i++) {
@@ -172,7 +173,7 @@
   }
 
   /** A win: coins out of the tray, winning lines flash, the marquee goes wild, the camera shakes a little (and the sound, if it's yours). */
-  function startWin(E, mach, s, no, payout, bet, lines) {
+  function startWin(E, mach, s, no, payout, bet, lines, silent) {
     var tier = GL.winTier(payout, bet);
     mach.paidNo = no;
     mach.fx = { t: 0, dur: 2.2 + tier * 0.9, tier: tier, lines: lines };
@@ -181,7 +182,7 @@
       c.live[i] = i < count ? 1 : 0; c.start[i] = Math.random() * mach.fx.dur * 0.55;
       c.vel[i * 3] = (Math.random() - 0.5) * 0.9; c.vel[i * 3 + 1] = 1.7 + Math.random() * 1.8; c.vel[i * 3 + 2] = 0.5 + Math.random() * 1.0;
     }
-    if (s.me) { E.shake = Math.max(E.shake, tier >= 2 ? 0.7 + tier * 0.45 : 0); if (GL.audio) GL.audio.fanfare(tier); }
+    if (s.me) { E.shake = Math.max(E.shake, tier >= 2 ? 0.7 + tier * 0.45 : 0); if (!silent && GL.audio) GL.audio.fanfare(tier); }
   }
   function stepFx(E, mach, dt, t, mine) {
     var fx = mach.fx;
@@ -257,7 +258,7 @@
             });
           } else {
             var h = (m.hands || {})[i], bet = h ? h.bet : (s.bet || 0);
-            if (h && h.phase === 'done' && h.payout > 0 && mach.paidNo !== h.no) startWin(E, mach, s, h.no, h.payout, h.bet, []);
+            if (h && h.phase === 'done' && h.payout > 0 && mach.paidNo !== h.no) { mach.paidNo = h.no; setTimeout(function () { if (E.alive) startWin(E, mach, s, h.no, h.payout, h.bet, [], true); }, 1100); }      // after the new cards have flipped in
             var sig = JSON.stringify([h && h.cards, h && h.held, h && h.phase, h && h.payout, bet]);
             if (sig !== mach.sig) { mach.sig = sig; drawScreen(E, mach, h, bet); }
           }

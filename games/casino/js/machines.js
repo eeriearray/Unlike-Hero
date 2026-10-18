@@ -52,6 +52,35 @@
     </div>`;
   }
 
+  // ── video poker helpers: what five cards make, and which of them make it ──
+  var RV = '23456789TJQKA';
+  function vpRank(c) {
+    if (!c || c.length < 5 || c.some(function (x) { return !x; })) return null;
+    var vals = c.map(function (x) { return RV.indexOf(x[0]) + 2; }).sort(function (a, b) { return b - a; });
+    var flush = c.every(function (x) { return x[1] === c[0][1]; }), uniq = vals.filter(function (v, i) { return vals.indexOf(v) === i; }), straight = false, high = vals[0];
+    if (uniq.length === 5) { if (vals[0] - vals[4] === 4) straight = true; else if (vals[0] === 14 && vals[1] === 5) { straight = true; high = 5; } }
+    var counts = {}; vals.forEach(function (v) { counts[v] = (counts[v] || 0) + 1; });
+    var g = Object.keys(counts).map(function (v) { return [counts[v], +v]; }).sort(function (a, b) { return b[0] - a[0] || b[1] - a[1]; });
+    if (straight && flush) return high === 14 && vals[1] === 13 ? 'royal' : 'sflush';
+    if (g[0][0] === 4) return 'four';
+    if (g[0][0] === 3 && g[1][0] === 2) return 'full';
+    if (flush) return 'flush';
+    if (straight) return 'straight';
+    if (g[0][0] === 3) return 'three';
+    if (g[0][0] === 2 && g[1][0] === 2) return 'twopair';
+    if (g[0][0] === 2 && g[0][1] >= 11) return 'jacks';
+    return null;
+  }
+  /** Indices of the cards that make the hand (so they can glow). */
+  function vpScoring(c, rank) {
+    if (!rank) return [];
+    if (rank === 'royal' || rank === 'sflush' || rank === 'flush' || rank === 'straight' || rank === 'full') return [0, 1, 2, 3, 4];
+    var counts = {}; c.forEach(function (x) { counts[x[0]] = (counts[x[0]] || 0) + 1; });
+    var need = rank === 'four' ? 4 : rank === 'three' ? 3 : 2;
+    return c.map(function (x, i) { return counts[x[0]] >= need ? i : -1; }).filter(function (i) { return i >= 0; });
+  }
+  var VP_TIER = { jacks: 1, twopair: 1, three: 2, straight: 2, flush: 3, full: 3, four: 3, sflush: 4, royal: 4 };
+
   /** The celebration: a big number that counts up, and a label that grows with the win (WIN, BIG WIN, MEGA WIN, JACKPOT). */
   var TIER_LABEL = ['', 'WIN', 'BIG WIN', 'MEGA WIN', 'JACKPOT'];
   function WinBanner(props) {
@@ -61,19 +90,19 @@
       if (!w) { clearTimeout(hideT.current); setShow(null); return; }          // a new spin (or a loss) takes the old banner away at once
       if (seen.current === w.no) return;
       seen.current = w.no;
-      var tier = window.CasinoGL && CasinoGL.winTier ? CasinoGL.winTier(w.amount, w.bet) : 1, dur = [0, 900, 1500, 2300, 3400][tier], t0 = performance.now(), raf = 0, lastTick = 0;
-      setShow({ tier: tier, amount: w.amount, no: w.no });
-      (function frame(now) {
+      var tier = w.tier || (window.CasinoGL && CasinoGL.winTier ? CasinoGL.winTier(w.amount, w.bet) : 1), dur = [0, 900, 1500, 2300, 3400][tier], raf = 0, lastTick = 0, t0 = 0, startT = 0;
+      function go() { t0 = performance.now(); setShow({ tier: tier, amount: w.amount, no: w.no, label: w.label }); frame(t0); clearTimeout(hideT.current); hideT.current = setTimeout(function () { setShow(null); }, dur + 1800); }
+      function frame(now) {
         var u = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - u, 3);
         setVal(Math.round(w.amount * e));
         if (now - lastTick > 70 && u < 1 && window.CasinoGL && CasinoGL.audio) { lastTick = now; CasinoGL.audio.countTick(u); }
         if (u < 1) raf = requestAnimationFrame(frame);
-      })(t0);
-      clearTimeout(hideT.current); hideT.current = setTimeout(function () { setShow(null); }, dur + 1800);
-      return function () { cancelAnimationFrame(raf); };
+      }
+      startT = setTimeout(go, w.delay || 0);
+      return function () { cancelAnimationFrame(raf); clearTimeout(startT); };
     }, [w && w.no]);
     if (!show) return null;
-    return html`<div className=${'win-banner tier-' + show.tier} role="status"><span className="win-rays" aria-hidden="true"></span><b className="win-label">${TIER_LABEL[show.tier]}</b><b className="win-amount num">+${money(val)}</b></div>`;
+    return html`<div className=${'win-banner tier-' + show.tier} role="status"><span className="win-rays" aria-hidden="true"></span><b className="win-label">${show.label || TIER_LABEL[show.tier]}</b><b className="win-amount num">+${money(val)}</b></div>`;
   }
 
   /** A line drawn through the winning cells of the result grid (rows = the row each reel contributes to the line). */
@@ -160,6 +189,22 @@
     var bet = opts.indexOf(want) >= 0 ? want : opts[0];
     var mySeat = st.seats.indexOf(v.you), hand = st.hands[v.you] || null, holding = you.holding;
     var GL = window.CasinoGL, glOn = !!(GL && GL.Stage && GL.supported());
+    // deal and draw choreography: cards flip in one after another, with a sound each; the result lands after the last flip
+    var prev = useRef({ no: hand ? hand.no : 0, cards: hand ? hand.cards.join() : '', arr: hand ? hand.cards.slice() : [], anim: [0, 0, 0, 0, 0], pending: null, resultDelay: 0 }), P = prev.current;
+    if (hand) {
+      var cs = hand.cards.join();
+      if (hand.no !== P.no) { P.no = hand.no; P.cards = cs; P.arr = hand.cards.slice(); P.anim = [0, 1, 2, 3, 4].map(function (i) { return 0.1 + i * 0.13; }); P.pending = 'deal'; }
+      else if (cs !== P.cards) { var kk = 0; P.anim = hand.cards.map(function (c, i) { return c !== P.arr[i] ? 0.15 + (kk++) * 0.22 : 0; }); P.resultDelay = (0.15 + kk * 0.22 + 0.5) * 1000; P.cards = cs; P.arr = hand.cards.slice(); P.pending = 'draw'; P.changed = kk; }
+    }
+    useEffect(function () {
+      var A = window.CasinoGL && CasinoGL.audio, pend = P.pending; if (!pend || !A) { P.pending = null; return; }
+      P.pending = null;
+      var timers = [];
+      if (pend === 'deal') { A.shuffle(); P.anim.forEach(function (d) { timers.push(setTimeout(function () { A.flip(); }, 120 + d * 1000)); }); }
+      else { P.anim.forEach(function (d) { if (d) timers.push(setTimeout(function () { A.flip(); }, d * 1000)); });
+        if (hand && hand.phase === 'done') timers.push(setTimeout(function () { if (hand.payout > 0) A.fanfare(VP_TIER[hand.rank] || 1); else A.lose(); }, P.resultDelay)); }
+      return function () { timers.forEach(clearTimeout); };
+    });
     function act(action, extra) { return props.send(Object.assign({ type: 'play', tableId: table.id, action: action }, extra || {})); }
     function deal() { return act('deal', { amount: bet }).then(function (r) { if (r.ok) UI.store.set('vp.bet', bet); }); }
     useEffect(function () { function k(e) { if (/INPUT|TEXTAREA|SELECT/.test((e.target && e.target.tagName) || '')) return; if (holding && e.key >= '1' && e.key <= '5') act('hold', { index: +e.key - 1 }); else if (e.code === 'Space' && !/BUTTON/.test((e.target && e.target.tagName) || '')) { e.preventDefault(); if (holding) act('draw'); else if (you.canDeal) deal(); } } addEventListener('keydown', k); return function () { removeEventListener('keydown', k); }; });
@@ -169,13 +214,17 @@
     var model = glOn ? { n: st.seats.length, mySeat: mySeat, hands: hands, onSit: props.onSit,
       seats: seatsModel(v, st, function (pid) { var h = st.hands[pid]; return { bet: h ? h.bet : 0, status: h && h.phase === 'done' && h.payout ? h.name : '', statusCls: 'green', result: h && h.phase === 'done' ? (h.net > 0 ? 'win' : 'lose') : null }; }).map(function (s) { return s.pid ? s : { pid: null, canSit: !you.seated && !!UI.byId(v, v.you) && UI.byId(v, v.you).status === 'active' }; }) } : null;
 
-    var msg = !you.seated ? '' : !hand ? 'Place your bet and deal' : hand.phase === 'hold' ? 'Tap the cards to hold, then draw' : hand.payout ? hand.name + ' — you won ' + money(hand.payout) : 'No win';
-    var vwin = hand && hand.phase === 'done' && hand.payout > 0 ? { no: hand.no, amount: hand.payout, bet: hand.bet } : null;
+    var rules = st.rules.paytable, live = hand ? (hand.phase === 'done' ? hand.rank : vpRank(hand.cards)) : null;
+    function rankName(k) { var r = rules.filter(function (x) { return x[0] === k; })[0]; return r ? r[1] : ''; }
+    var scoring = hand && hand.phase === 'done' && hand.rank ? vpScoring(hand.cards, hand.rank) : [];
+    var msg = !you.seated ? '' : !hand ? 'Place your bet and deal' : hand.phase === 'hold' ? (live ? 'You have ' + rankName(live) + ' · tap cards to hold, then draw' : 'Tap the cards to hold, then draw') : hand.payout ? hand.name + ' — you won ' + money(hand.payout) : 'No win';
+    var vwin = hand && hand.phase === 'done' && hand.payout > 0 ? { no: hand.no, amount: hand.payout, bet: hand.bet, tier: VP_TIER[hand.rank] || 1, label: hand.name.toUpperCase(), delay: P.resultDelay || 0 } : null;
     var hud = html`<div className="mach-hud">
       <${WinBanner} win=${vwin} />
+      ${hand ? html`<div className="vp-pay" aria-label="Pay table">${rules.map(function (r) { return html`<div key=${r[0]} className=${cx('vp-pay-row', live === r[0] && 'live', live === r[0] && hand.phase === 'done' && 'won')}><span>${r[1]}</span><b className="num">${r[2]}×</b></div>`; })}</div>` : null}
       <div className="vp-hand" aria-label="Your hand">
         ${hand ? hand.cards.map(function (c, i) {
-          return html`<button key=${i + ':' + (c || 'x')} type="button" className=${cx('vp-card', hand.held && hand.held[i] && hand.phase === 'hold' && 'held')} disabled=${hand.phase !== 'hold'} onClick=${function () { act('hold', { index: i }); }} aria-pressed=${!!(hand.held && hand.held[i])} aria-label=${'Card ' + (i + 1) + (hand.held && hand.held[i] ? ', held' : '')}>
+          return html`<button key=${hand.no + ':' + i + ':' + (c || 'x')} type="button" style=${{ '--d': (P.anim[i] || 0) + 's' }} className=${cx('vp-card', hand.held && hand.held[i] && hand.phase === 'hold' && 'held', scoring.indexOf(i) >= 0 && 'scoring')} disabled=${hand.phase !== 'hold'} onClick=${function () { var A = window.CasinoGL && CasinoGL.audio; if (A) { if (hand.held && hand.held[i]) A.unhold(); else A.hold(hand.held ? hand.held.filter(Boolean).length : 0); } act('hold', { index: i }); }} aria-pressed=${!!(hand.held && hand.held[i])} aria-label=${'Card ' + (i + 1) + (hand.held && hand.held[i] ? ', held' : '')}>
             <${K.Card} card=${c} i=${i} />${hand.held && hand.held[i] && hand.phase === 'hold' ? html`<b className="held-tag">HELD</b>` : null}</button>`;
         }) : null}
       </div>
