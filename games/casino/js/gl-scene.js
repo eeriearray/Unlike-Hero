@@ -46,7 +46,7 @@
     var self = this; GL.last = this; GL.live = (GL.live || 0) + 1;
     this.el = el; this.kind = kind; this.table = TABLES[kind];
     this.coarse = !!(global.matchMedia && global.matchMedia('(pointer: coarse)').matches);
-    this.maxDpr = this.coarse ? 1.5 : 2;
+    this.maxDpr = 1.5;
     this.renderer = new T.WebGLRenderer({ antialias: !this.coarse, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(global.devicePixelRatio || 1, this.maxDpr));
     this.renderer.outputEncoding = T.sRGBEncoding;
@@ -106,7 +106,17 @@
     this.canvas.addEventListener('pointerdown', this.onDown); this.canvas.addEventListener('pointermove', this.onMove); this.canvas.addEventListener('pointerup', this.onUp); this.canvas.addEventListener('pointercancel', this.onUp);
     this.canvas.addEventListener('wheel', this.onWheel, { passive: false });
     this.canvas.addEventListener('webglcontextlost', this.onLost); this.canvas.addEventListener('webglcontextrestored', this.onRestored);
-    (function loop() { if (!self.alive) return; self.raf = global.requestAnimationFrame(loop); if (!document.hidden && self.visible && !self.lost) self.frame(); })();
+    this.errors = 0;
+    (function loop() {
+      if (!self.alive) return; self.raf = global.requestAnimationFrame(loop);
+      if (document.hidden || !self.visible || self.lost) return;
+      try { self.frame(); self.errors = 0; }
+      catch (e) {
+        // one bad frame must never leave a blank canvas: log it, keep going, and rebuild the scene if it keeps failing
+        if (global.console && self.errors === 0) console.warn('3D frame failed:', e);
+        if (++self.errors === 30 && self.onLostCb) self.onLostCb();
+      }
+    })();
   }
   var E = Engine.prototype;
 
@@ -167,7 +177,7 @@
     var bulb = new T.Mesh(new T.SphereGeometry(0.07, 10, 8), M.glow); bulb.position.y = -0.14; arm.add(bulb);
     var spot = this.spot = new T.SpotLight(0xffc27a, 2.7, 9, 0.62, 0.9, 1.1);
     spot.position.set(0, -0.1, 0); arm.add(spot); var tgt = new T.Object3D(); tgt.position.set(0, -3, 0); arm.add(tgt); spot.target = tgt;
-    spot.castShadow = !this.coarse; spot.shadow.mapSize.set(1024, 1024); spot.shadow.bias = -0.0005; spot.shadow.camera.near = 0.5; spot.shadow.camera.far = 6;
+    spot.castShadow = !this.coarse; spot.shadow.mapSize.set(this.coarse ? 512 : 1024, this.coarse ? 512 : 1024); spot.shadow.bias = -0.0005; spot.shadow.camera.near = 0.5; spot.shadow.camera.far = 6;
     var glow = this.bulbLight = new T.PointLight(0xffb868, 0.9, 5, 1.3); glow.position.set(0, -0.35, 0); arm.add(glow);
     // haze cone: brighter at the shade, fading with distance
     var c = document.createElement('canvas'); c.width = 4; c.height = 64; var cg = c.getContext('2d'), gr = cg.createLinearGradient(0, 0, 0, 64);
@@ -347,7 +357,9 @@
     // camera
     if (this.model) {
       var cam = this.table.camera(this, this.model);
-      var kk = this.camInit ? 1 - Math.pow(0.1, dt) : 1; this.camInit = true;
+      var okCam = cam.pos.concat(cam.look, [cam.fov]).every(isFinite);
+      if (!okCam) cam = { pos: [0, 2.6, 3.2], look: [0, 0.7, 0], fov: 55 };
+      var kk = this.camInit && isFinite(this.camPos.x + this.camPos.y + this.camPos.z + this.camLook.x + this.camLook.y + this.camLook.z) ? 1 - Math.pow(0.1, dt) : 1; this.camInit = true;
       if (Math.abs(this.camera.fov - cam.fov) > 0.01) { this.camera.fov = lerp(this.camera.fov, cam.fov, kk); this.camera.updateProjectionMatrix(); }
       this.camPos.x = lerp(this.camPos.x, cam.pos[0], kk); this.camPos.y = lerp(this.camPos.y, cam.pos[1], kk); this.camPos.z = lerp(this.camPos.z, cam.pos[2], kk);
       this.camLook.x = lerp(this.camLook.x, cam.look[0], kk); this.camLook.y = lerp(this.camLook.y, cam.look[1], kk); this.camLook.z = lerp(this.camLook.z, cam.look[2], kk);
@@ -650,13 +662,13 @@
     var ref = R.useRef(null), eng = R.useRef(null), st = R.useState(false), failed = st[0], setFailed = st[1], ep = R.useState(0), epoch = ep[0], setEpoch = ep[1];
     R.useEffect(function () {
       if (!ref.current) return;
-      try { eng.current = new Engine(ref.current, props.kind, function () { setEpoch(function (n) { return n + 1; }); }); eng.current.update(props.model); }
+      try { eng.current = new Engine(ref.current, props.kind, function () { setEpoch(function (n) { return n + 1; }); }); safeUpdate(eng.current, props.model); }
       catch (e) { if (global.console) console.warn('3D table unavailable, using the flat table:', e); if (eng.current) { try { eng.current.destroy(); } catch (x) {} eng.current = null; } setFailed(true); return; }
       var click = function (ev) { var b = ev.target.closest && ev.target.closest('.gl-sit'); if (b && eng.current && eng.current.onSit) { ev.preventDefault(); eng.current.onSit(+b.getAttribute('data-seat')); } };
       ref.current.addEventListener('click', click);
       return function () { if (ref.current) ref.current.removeEventListener('click', click); if (eng.current) { eng.current.destroy(); eng.current = null; } };
     }, [props.kind, epoch]);
-    R.useEffect(function () { if (eng.current) eng.current.update(props.model); });
+    R.useEffect(function () { if (eng.current) safeUpdate(eng.current, props.model); });
     if (failed) return props.fallback || null;
     var ms = R.useState(GL.audio ? GL.audio.isMuted() : true), muted = ms[0], setMuted = ms[1];
     R.useEffect(function () { return GL.audio ? GL.audio.onChange(setMuted) : undefined; }, []);
@@ -665,4 +677,6 @@
       ${GL.audio ? html`<button type="button" className="gl-mute" aria-pressed=${!muted} aria-label=${muted ? 'Turn sound on' : 'Mute sound'} onClick=${function () { GL.audio.init(); GL.audio.setMuted(!muted); }}>${muted ? '🔇' : '🔊'}</button>` : null}</div></div>`;
   }
   GL.Stage = Stage;
+  /** A model the scene can't draw (say, a player stood up mid-round) is skipped, never thrown into React. */
+  function safeUpdate(e, m) { try { e.update(m); } catch (err) { if (global.console) console.warn('3D table update skipped:', err); } }
 })(window);

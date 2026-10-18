@@ -177,7 +177,7 @@
     seatPose: function (E, i) { var p = SEATS[i % SEATS.length]; return { x: p[0], z: p[1], ry: p[2] }; },
     layout: function (E, m) {
       var out = { cards: [], chips: [], labels: [] };
-      (m.bets || []).forEach(function (b) { var p = GL.rouletteSpot(b); out.chips.push({ id: 'bet:' + b.id, amount: b.amount, x: p.x, z: p.z, y: TOP + 0.004, from: b.from ? E.seatPose(b.from) : null }); });
+      (m.bets || []).forEach(function (b) { var p = GL.rouletteSpot(b); out.chips.push({ id: 'bet:' + b.id, amount: b.amount, x: p.x, z: p.z, y: TOP + 0.004, from: b.from >= 0 && b.from != null ? E.seatPose(b.from) : null }); });
       E.seatLabels(m, out.labels);
       return out;
     },
