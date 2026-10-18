@@ -11,13 +11,15 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CasinoRoom, normalizeSettings, DEFAULT_SETTINGS } from './room.mjs';
 
-const DATA_DIR = fileURLToPath(new URL('./data/', import.meta.url));
+const DATA_DIR = process.env.CASINO_DATA_DIR || fileURLToPath(new URL('./data/', import.meta.url));
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // no 0/O or 1/I
 const LOBBY_GRACE_MS = 2 * 60_000;     // a lobby seat with nobody on it is released after this
 const IDLE_ROOM_MS = 24 * 60 * 60_000; // rooms nobody has visited for a day are closed
 const MAX_ROOMS = 300;
 const RATE = { burst: 20, perSecond: 8 }; // per-socket command budget
 const SAVE_DELAY_MS = 750;
+// Per network address: a socket rate limit alone doesn't stop someone opening many sockets.
+const PER_IP = { sockets: 40, creates: 20, createWindowMs: 10 * 60_000, badJoins: 30, badJoinWindowMs: 5 * 60_000 };
 
 export default async function attach({ httpServer, basePath, log = console.log, dataDir = DATA_DIR, persist = true }) {
   const path = `${basePath}socket.io`;
@@ -139,6 +141,18 @@ export default async function attach({ httpServer, basePath, log = console.log, 
     } catch (e) { if (e.code !== 'ENOENT') log('[casino] could not read saved rooms:', e.message); }
   }
 
+  const ips = new Map();   // ip -> { sockets, creates: [times], badJoins: [times] }
+  const ipOf = (socket) => String(socket.handshake.address || '').replace(/^::ffff:/, '');
+  const ipRec = (ip) => { let r = ips.get(ip); if (!r) { r = { sockets: 0, creates: [], badJoins: [] }; ips.set(ip, r); } return r; };
+  const within = (list, ms) => { const cut = Date.now() - ms; while (list.length && list[0] < cut) list.shift(); return list.length; };
+  io.use((socket, next) => {
+    const rec = ipRec(ipOf(socket));
+    if (rec.sockets >= PER_IP.sockets) return next(new Error('Too many connections from this network.'));
+    rec.sockets += 1;
+    socket.once('disconnect', () => { rec.sockets -= 1; if (!rec.sockets && !rec.creates.length && !rec.badJoins.length) ips.delete(ipOf(socket)); });
+    next();
+  });
+
   const sweeper = setInterval(() => {
     const now = Date.now();
     for (const entry of rooms.values()) {
@@ -166,6 +180,9 @@ export default async function attach({ httpServer, basePath, log = console.log, 
 
     socket.on('room:create', (data, ack) => {
       if (!allow()) return reply(ack, { error: 'Too many requests. Wait a moment.' });
+      const rec = ipRec(ipOf(socket));
+      if (within(rec.creates, PER_IP.createWindowMs) >= PER_IP.creates) return reply(ack, { error: 'Too many rooms opened from this network. Try again in a few minutes.' });
+      rec.creates.push(Date.now());
       if (rooms.size >= MAX_ROOMS) return reply(ack, { error: 'The casino is full. Try again later.' });
       let settings = DEFAULT_SETTINGS;
       if (data && data.settings) { const n = normalizeSettings(data.settings); if (n.error) return reply(ack, n); settings = n.settings; }
@@ -182,8 +199,10 @@ export default async function attach({ httpServer, basePath, log = console.log, 
 
     socket.on('room:join', (data, ack) => {
       if (!allow()) return reply(ack, { error: 'Too many requests. Wait a moment.' });
+      const rec = ipRec(ipOf(socket));
+      if (within(rec.badJoins, PER_IP.badJoinWindowMs) >= PER_IP.badJoins) return reply(ack, { error: 'Too many wrong room codes. Wait a few minutes and try again.' });
       const entry = rooms.get(String(data && data.code || '').trim().toUpperCase());
-      if (!entry) return reply(ack, { error: 'No room with that code. Check it with the host.' });
+      if (!entry) { rec.badJoins.push(Date.now()); return reply(ack, { error: 'No room with that code. Check it with the host.' }); }
       unbind(socket, { leaving: false });
       const res = entry.room.addPlayer(profile(data));
       if (res.error) return reply(ack, res);
@@ -195,7 +214,7 @@ export default async function attach({ httpServer, basePath, log = console.log, 
       if (!allow()) return reply(ack, { error: 'Too many requests. Wait a moment.' });
       const entry = rooms.get(String(data && data.code || ''));
       const playerId = String(data && data.playerId || '');
-      if (!entry || !entry.room.checkToken(playerId, String(data && data.token || ''))) return reply(ack, { error: 'That seat is no longer available.' });
+      if (!entry || !entry.room.checkToken(playerId, String(data && data.token || ''))) { ipRec(ipOf(socket)).badJoins.push(Date.now()); return reply(ack, { error: 'That seat is no longer available.' }); }
       if (socket.data && socket.data.playerId !== playerId) unbind(socket);
       if (!socket.data || !socket.data.playerId) bind(socket, entry, playerId);
       reply(ack, { ok: true, code: entry.room.code, playerId, token: data.token });

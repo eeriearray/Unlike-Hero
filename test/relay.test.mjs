@@ -5,11 +5,14 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import WebSocket from 'ws';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 const PORT = 20000 + Math.floor(Math.random() * 20000);
 let hub;
 test.before(async () => {
-  hub = spawn(process.execPath, [fileURLToPath(new URL('../server/relay.mjs', import.meta.url))], { env: { ...process.env, PORT: String(PORT) }, stdio: ['ignore', 'pipe', 'pipe'] });
+  // CASINO_DATA_DIR keeps the casino's saved rooms out of this test.
+  hub = spawn(process.execPath, [fileURLToPath(new URL('../server/relay.mjs', import.meta.url))], { env: { ...process.env, PORT: String(PORT), CASINO_DATA_DIR: join(tmpdir(), 'casino-relay-test-' + PORT) }, stdio: ['ignore', 'pipe', 'pipe'] });
   await new Promise((resolve, reject) => { hub.stdout.on('data', d => { if (/Game hub on/.test(String(d))) resolve(); }); hub.on('exit', c => reject(new Error('hub exited ' + c))); });
 });
 test.after(() => hub && hub.kill());

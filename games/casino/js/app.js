@@ -6,7 +6,7 @@
   var html = htm.bind(R.createElement);
   var Net = window.CasinoNet;
 
-  var VERSION = '0.5.0';
+  var VERSION = '1.0.0';
   var hub = window.Hub ? window.Hub.init({ id: 'casino', version: VERSION, title: 'Neon Casino' }) : null;
   var store = hub ? hub.storage('casino') : {
     get: function (k, d) { try { var v = localStorage.getItem('hub.casino.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
@@ -189,7 +189,7 @@
       { path: 'session.rounds', label: 'Round limit', when: function (s) { return s.session.mode === 'rounds'; }, lockedLive: true },
       { path: 'lateJoin', label: 'Late joiners get the starting cash', bool: true }
     ] },
-    { group: 'Loans', note: 'Loans open with the loan desk; these are the rules it will use.', items: [
+    { group: 'Loans', note: 'Players borrow from the Bank in the top bar. Interest and deadlines count minutes of play, not paused time.', items: [
       { path: 'loans.casino', label: 'Casino loans', bool: true },
       { path: 'loans.creditLimit', label: 'Credit limit', money: true },
       { path: 'loans.maxDebt', label: 'Maximum debt', money: true },

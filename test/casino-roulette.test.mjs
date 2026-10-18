@@ -182,7 +182,7 @@ test('a player who leaves keeps their chips in play', () => {
 test('500 random spins never create or lose a chip', () => {
   const t = setup(3);
   let seed = 7;
-  const rnd = (n) => { seed = (seed * 1103515245 + 12345) >>> 0; return seed % n; };
+  const rnd = (n) => { seed = (Math.imul(seed, 1103515245) + 12345) >>> 0; return Math.floor((seed / 2 ** 32) * n); };
   const spots = [{ type: 'red' }, { type: 'odd' }, { type: 'dozen', key: 2 }, { type: 'column', key: 3 }, { type: 'split', numbers: [14, 17] }, { type: 'corner', numbers: [25, 26, 28, 29] }, { type: 'sixline', numbers: [1, 2, 3, 4, 5, 6] }, { type: 'trio', numbers: [0, 2, 3] }];
   for (let i = 0; i < 500; i++) {
     t.land(rnd(37));

@@ -145,6 +145,36 @@ Teen Patti hands, the deck, the dealer's hole card) are only in the views of the
 - **Profiles and history** are fetched on demand (`stats`, `session-history`) and don't trigger a state push. Net-worth
   trails are rebuilt from the ledger's per-entry balances, thinned to at most 60–80 points.
 
+## Security, abuse and testing
+
+| Threat | Mitigation | Test |
+| --- | --- | --- |
+| Editing your own balance or payout | Clients only send intents; every amount is validated server-side; payouts are capped per game and pools must balance | `casino-economy`, every game's tests |
+| Paying twice / double-click / retry | Bet ids are idempotent; rounds settle once; host start, accepts and buttons are idempotent or rejected the second time | `casino-economy`, `casino-server` |
+| Spending the same chips twice | Node runs each command to completion; reserve checks cash at that moment | `casino-economy`, `casino-chaos` |
+| Refresh or disconnect to escape a loss | Bets stay reserved; stalled turns stand/check/fold/pack; leaving folds; same-device rejoin returns the same seat and wallet | game tests, `casino-room` |
+| Seeing hidden cards | Hole cards, Teen Patti hands, the deck, the dealer's hole card and the next roulette number never leave the server early | game tests; the chaos run checks every player's view after every action |
+| Minting chips via loans | No gifts or transfers; debtors can't lend; no lending back to someone you owe; debt cap counts all debts | `casino-bank` |
+| Garbage input | Every command validated; prototype keys ignored; names and chat cleaned and capped; malformed frames drop only the sender | `casino-security` (34 command types × random garbage) |
+| Flooding | Per-socket command budget; per-network caps on connections (40), rooms opened (20 / 10 min) and wrong codes or tokens (30 / 5 min); 16 KB message cap | `casino-security`, `casino-server` |
+| Reading server code or saved wallets over HTTP | The hub never serves `server/` folders; saved rooms live in `server/data/` (gitignored); tokens are stored hashed | `casino-security` |
+
+**Chaos run** (`test/casino-chaos.test.mjs`): five players take 3,000 random actions per seed across every feature —
+all four games, loans and offers, challenges, disconnects, pauses, settings changes, save/restore mid-round and
+restarts. After every action: ledger audit, chip conservation (Σ cash + reserved + house = Σ stakes), no negative
+fields, seats consistent, no bankrupt player seated, no hidden information in any view. It asserts it really reached
+settlements, loans, duels and bankruptcies.
+
+**Balance.** Blackjack returns ~99.5% to perfect basic strategy (a simplified strategy measures 98.8% over 40,000
+hands in the tests); roulette returns exactly 36/37 on every bet type; poker, Teen Patti and challenges are zero-edge
+pools. Defaults: $10,000 each, bets $100–$5,000, credit $10,000 up to $20,000 total debt, 10% interest per 10 minutes
+of play, 30-minute loan terms, a 60-second bailout window — swingy enough that loans and bankruptcies happen in an
+evening, and every number is a host setting.
+
+**Known limits.** No accounts: identity is a per-browser device key, so a player can rejoin as someone new from a
+private window (the host sees every join in the feed and can turn off late joining). Rooms live in one process and one
+file; a hosted version would move the economy into a database with transactions.
+
 ## Multiplayer state
 
 ```
@@ -178,4 +208,4 @@ CasinoRoom
 3. Loans, interest, repayments, debt limits, player loans, bankruptcy, spectator mode. ✅
 4. Texas Hold'em (side pots), Teen Patti (blind/seen), roulette. ✅
 5. Leaderboards polish, profiles, achievements, challenges, reactions, animations. ✅
-6. Edge-case and security testing, balancing, polish.
+6. Edge-case and security testing, balancing, polish. ✅

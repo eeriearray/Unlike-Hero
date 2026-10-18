@@ -52,6 +52,7 @@
       if (seat) emit('room:resume', seat).then(function (res) { if (res.error) drop(res.error); });
     });
     socket.on('disconnect', function () { h.onStatus('offline'); });
+    socket.on('connect_error', function (err) { if (err && /Too many/.test(err.message)) h.onClosed(err.message); });
     socket.io.on('reconnect_attempt', function () { h.onStatus('connecting'); });
     socket.on('state', function (v) { h.onState(v); });
     socket.on('fx', function (d) { h.onFx(d); });

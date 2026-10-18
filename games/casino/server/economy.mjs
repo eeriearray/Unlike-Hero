@@ -37,6 +37,7 @@ export class Economy {
     this.seq = 0;
     this.bets = new Map();     // betId -> { id, playerId, roundId, amount, state: open | settled | refunded }
     this.rounds = new Map();   // roundId -> { id, game, tableId, state: open | settled | void, bets: [], result }
+    this.openIds = new Set();     // ids of open rounds, so views never scan a whole session's rounds
     this.locked = true;        // no betting until the session is live
     this.house = 0;            // chips the house has taken in minus paid out (games and loans). Σ(cash + reserved) + house = Σ stakes
     this.loans = new Map();    // loanId -> { id, kind: casino | p2p, lender, borrower, principal, due, ratePct, takenAt, dueLive, status }
@@ -91,6 +92,7 @@ export class Economy {
     if (this.rounds.has(roundId)) return { error: 'That round already exists.' };
     const round = { id: roundId, game: String(game || 'table'), tableId: tableId || null, state: 'open', bets: [], openedAt: this.now(), result: null };
     this.rounds.set(roundId, round);
+    this.openIds.add(roundId);
     return { ok: true, round };
   }
 
@@ -194,6 +196,7 @@ export class Economy {
     }
     for (const id of round.bets) { const b = this.bets.get(id); if (b.state === 'open') b.state = 'settled'; }
     round.state = 'settled';
+    this.openIds.delete(roundId);
     round.result = results;
     round.settledAt = this.now();
     if (this.onSettle) this.onSettle(round);
@@ -212,6 +215,7 @@ export class Economy {
       this.post(b.playerId, 'refund', { reserved: -b.amount, cash: b.amount }, { roundId, game: round.game, tableId: round.tableId, memo });
     }
     round.state = 'void';
+    this.openIds.delete(roundId);
     return { ok: true };
   }
 
@@ -313,7 +317,7 @@ export class Economy {
     return { ok: true, collected: want };
   }
 
-  openRounds() { return [...this.rounds.values()].filter((r) => r.state === 'open'); }
+  openRounds() { return [...this.openIds].map((id) => this.rounds.get(id)); }
 
   voidAllOpen(memo) { for (const r of this.openRounds()) this.voidRound(r.id, memo); }
 
@@ -327,6 +331,7 @@ export class Economy {
     this.accounts = new Map();
     this.bets = new Map();
     this.rounds = new Map();
+    this.openIds = new Set();
     this.loans = new Map();
     this.house = 0;
     for (const id of playerIds) this.open(id);
@@ -389,7 +394,7 @@ export class Economy {
     for (const a of data.accounts) e.accounts.set(a.playerId, a);
     e.ledger = data.ledger;
     for (const b of data.bets) e.bets.set(b.id, b);
-    for (const r of data.rounds) e.rounds.set(r.id, r);
+    for (const r of data.rounds) { e.rounds.set(r.id, r); if (r.state === 'open') e.openIds.add(r.id); }
     for (const l of data.loans || []) e.loans.set(l.id, l);
     e.archive = data.archive || [];
     return e;

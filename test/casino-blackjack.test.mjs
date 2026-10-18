@@ -373,3 +373,38 @@ test('300 random rounds with three players never create or lose a chip', () => {
   assert.equal(t.room.session.rounds, settled);
   assert.ok(settled >= 150, `played ${settled} rounds`);
 });
+
+test('balance: basic strategy over 40,000 hands returns about 99.5% (dealer stands on 17, blackjack pays 3:2)', () => {
+  const t = setup(1, { seed: 2024 });
+  const [a] = t.ids;
+  const e = t.room.economy;
+  e.post(a, 'stake', { cash: 50_000_000 }, { memo: 'simulation bankroll' });   // a deep bankroll, through the ledger
+  const bet = 100;
+  let staked = 0, returned = 0;
+  const up = () => { const c = t.st().round.dealer[0]; return c[0] === 'A' ? 11 : 'TJQK'.includes(c[0]) ? 10 : Number(c[0]); };
+  for (let i = 0; i < 40_000; i++) {
+    const before = e.account(a).cash;
+    t.play(a, 'bet', { amount: bet });
+    let guard = 0;
+    while (t.st().phase === 'playing' && guard++ < 20) {
+      const r = t.st().round, h = r.hands[r.turn], v = handValue(h.cards), d = up();
+      const pair = h.cards.length === 2 && h.cards[0][0] === h.cards[1][0];
+      const moves = t.view(a).you.moves;
+      let m;
+      if (pair && moves.includes('split') && (h.cards[0][0] === 'A' || h.cards[0][0] === '8')) m = 'split';
+      else if (moves.includes('double') && !v.soft && (v.total === 11 || (v.total === 10 && d < 10))) m = 'double';
+      else if (v.soft) m = v.total >= 19 || (v.total === 18 && d < 9) ? 'stand' : 'hit';
+      else m = v.total >= 17 || (v.total >= 13 && d < 7) || (v.total === 12 && d >= 4 && d <= 6) ? 'stand' : 'hit';
+      t.play(a, m);
+    }
+    const last = t.st().last.players[a];
+    staked += last.staked; returned += last.payout;
+    assert.equal(e.account(a).cash, before + last.net);
+    t.c.advance(RULES.resultsMs);
+  }
+  const rtp = returned / staked;
+  // Perfect basic strategy returns ~99.5% here; this simplified one (no soft doubles, few splits) gives up about half a point more.
+  assert.ok(rtp > 0.975 && rtp < 1.01, `return to player ${(rtp * 100).toFixed(2)}%`);
+  if (process.env.RTP_REPORT) console.log('BLACKJACK RTP', (rtp * 100).toFixed(2) + '%', 'over', staked / bet, 'units staked');
+  assert.deepEqual(e.audit(), []);
+});

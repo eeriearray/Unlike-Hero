@@ -1,11 +1,11 @@
 {
-  "generated": "2026-10-18T06:59:36.980Z",
+  "generated": "2026-10-18T08:27:57.519Z",
   "games": [
     {
       "id": "casino",
       "title": "Neon Casino",
       "tagline": "A private casino night for friends: blackjack, roulette, Texas Hold'em and Teen Patti on one shared wallet, with loans, bankruptcies and a final reckoning. Play money only.",
-      "version": "0.5.0",
+      "version": "1.0.0",
       "sdk": "1.x",
       "entry": "index.html",
       "server": "server/index.mjs",
