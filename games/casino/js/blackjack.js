@@ -117,6 +117,32 @@
     </div>`;
   }
 
+
+  /** What's on the table, as plain data for the 3D room (js/gl-scene.js). */
+  function bjModel(v, st, table, now, turnSeat, dealerCards, dealerTotal, me, you, onSit) {
+    var r = st.round, last = st.last, tm = st.timer;
+    var seats = st.seats.map(function (pid, i) {
+      var p = pid && UI.byId(v, pid);
+      if (!p) return { pid: null, canSit: !you.seated && !!me && me.status === 'active' };
+      var net = st.phase === 'results' && last && last.players[pid] ? last.players[pid].net : 0;
+      var bet = r && r.bets[pid];
+      return { pid: pid, name: p.name, avatar: p.avatar, cash: p.cash, me: pid === v.you, offline: !p.connected, result: net > 0 ? 'win' : net < 0 ? 'lose' : null,
+        status: net ? signed(net) : bet && !(r.hands && r.hands.length) ? 'Bet ' + money(bet) : '', statusCls: net > 0 ? 'green' : net < 0 ? 'red' : '' };
+    });
+    var all = r ? r.hands : last ? last.hands : [], rid = r ? r.id : last ? last.roundId : 'x', hands = [];
+    all.forEach(function (h, i) {
+      var seat = st.seats.indexOf(h.owner); if (seat < 0) return;
+      hands.push({ id: rid + ':' + i, seat: seat, cards: h.cards, bet: h.bet, total: h.soft && h.total < 21 && !h.result ? (h.total - 10) + '/' + h.total : h.total, totalCls: h.total > 21 ? 'bust' : '',
+        note: h.result ? RESULT[h.result] : h.doubled ? 'Doubled' : '', noteCls: h.result ? 'result-' + h.result : '', active: !!(r && r.turn === i) });
+    });
+    var bets = [];
+    if (r && !(r.hands && r.hands.length)) Object.keys(r.bets).forEach(function (pid) { var seat = st.seats.indexOf(pid); if (seat >= 0) bets.push({ seat: seat, amount: r.bets[pid] }); });
+    var left = tm ? (tm.endsAt ? Math.max(0, tm.endsAt - now) : tm.remainingMs || 0) : 0;
+    return { n: st.seats.length, mySeat: st.seats.indexOf(v.you), theme: table.highRoller ? { felt: '#4a1630', ink: '#ffe0ee' } : { felt: '#0f4a30', ink: '#d8f5e4' }, seats: seats, turnSeat: turnSeat, onSit: onSit,
+      dealer: { cards: dealerCards || [], total: dealerTotal }, hands: hands, bets: bets,
+      timer: tm ? { pct: Math.max(0, Math.min(100, left / tm.ms * 100)), secs: Math.ceil(left / 1000), urgent: left < 5000 } : null };
+  }
+
   function statusLine(v, st, now) {
     var r = st.round, t = st.timer;
     var secs = t ? Math.ceil((t.endsAt ? Math.max(0, t.endsAt - now) : t.remainingMs || 0) / 1000) : null;
@@ -205,17 +231,7 @@
     var turnSeat = r && r.turn != null && r.hands[r.turn] ? st.seats.indexOf(r.hands[r.turn].owner) : -1;
     var dealerCards = r ? r.dealer : st.last ? st.last.dealer : [];
     var dealerTotal = r ? r.dealerTotal : st.last ? st.last.dealerTotal : null;
-    return html`<section className=${cx('bj', 'game-blackjack', table.highRoller && 'high-roller')} aria-label=${table.name}>
-      <div className="table-bar">
-        <button type="button" className="btn btn-ghost" onClick=${props.onBack}>← Casino floor</button>
-        <div className="table-bar-title"><h2>${table.name}</h2>${table.highRoller ? html`<span className="tag gold">VIP</span>` : null}<span className="muted small num">${money(table.minBet)} – ${money(table.maxBet)}</span></div>
-        <div className="row">
-          <button type="button" className="btn btn-ghost" aria-expanded=${showRules} onClick=${function () { setRules(!showRules); }}>Rules & payouts</button>
-          ${you.seated && !you.moves.length ? html`<button type="button" className="btn btn-ghost" onClick=${props.onStand}>Stand up</button>` : null}
-        </div>
-      </div>
-      ${showRules ? html`<${Rules} rules=${st.rules} table=${table} />` : null}
-      <div className="bj-scene scene3d">
+    var scene2d = html`<div className="bj-scene scene3d">
         <div className="stage3d"><div className="plane3d"><div className="floor3d" aria-hidden="true"></div>
         <div className="bj-dealer billboard" style=${at({ x: CX, y: 12 })}><${Dealer} /></div>
         <${TableSvg} seats=${st.seats} you=${v.you} turnSeat=${turnSeat} />
@@ -231,7 +247,20 @@
         })}
         </div></div>
         <div className="spotlight" aria-hidden="true"></div>
+      </div>`;
+    var GL = window.CasinoGL, glOn = !!(GL && GL.Stage && GL.supported());
+    var glModel = glOn ? bjModel(v, st, table, now, turnSeat, dealerCards, dealerTotal, me, you, props.onSit) : null;
+    return html`<section className=${cx('bj', 'game-blackjack', table.highRoller && 'high-roller')} aria-label=${table.name}>
+      <div className="table-bar">
+        <button type="button" className="btn btn-ghost" onClick=${props.onBack}>← Casino floor</button>
+        <div className="table-bar-title"><h2>${table.name}</h2>${table.highRoller ? html`<span className="tag gold">VIP</span>` : null}<span className="muted small num">${money(table.minBet)} – ${money(table.maxBet)}</span></div>
+        <div className="row">
+          <button type="button" className="btn btn-ghost" aria-expanded=${showRules} onClick=${function () { setRules(!showRules); }}>Rules & payouts</button>
+          ${you.seated && !you.moves.length ? html`<button type="button" className="btn btn-ghost" onClick=${props.onStand}>Stand up</button>` : null}
+        </div>
       </div>
+      ${showRules ? html`<${Rules} rules=${st.rules} table=${table} />` : null}
+      ${glOn ? html`<${GL.Stage} kind="moon" model=${glModel} fallback=${scene2d}><div className="gl-status-hud" aria-live="polite">${statusLine(v, st, now)}</div></${GL.Stage}>` : scene2d}
       ${mySummary && st.phase !== 'playing' ? html`<div className=${cx('round-summary', mySummary.net > 0 && 'up', mySummary.net < 0 && 'down')} role="status">
         <span className="eyebrow">Last round</span>
         <span>Bet <b className="num">${money(mySummary.staked)}</b>${myLastHands.some(function (h) { return h.doubled; }) ? ' · doubled' : ''}${myLastHands.length > 1 ? ' · ' + myLastHands.length + ' hands' : ''}</span>

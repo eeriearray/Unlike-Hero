@@ -201,6 +201,25 @@
     </div>`;
   }
 
+
+  /** What's on the table, as plain data for the 3D room (js/gl-scene.js). The betting layout itself stays HTML. */
+  function rlModel(v, table, st, r, now, you, me, chipsBySpot) {
+    var last = st.last, seats = st.seats.map(function (pid, i) {
+      var p = pid && UI.byId(v, pid);
+      if (!p) return { pid: null, canSit: !you.seated && !!me && me.status === 'active' };
+      var total = r ? r.bets.filter(function (b) { return b.owner === pid; }).reduce(function (a, b) { return a + b.amount; }, 0) : 0;
+      var res = last && st.phase === 'results' ? last.players[pid] : null;
+      return { pid: pid, name: p.name, avatar: p.avatar, cash: p.cash, me: pid === v.you, offline: !p.connected, result: res ? (res.net > 0 ? 'win' : res.net < 0 ? 'lose' : null) : null,
+        status: res ? (res.net ? signed(res.net) : 'Even') : total ? money(total) + ' bet' : r && r.done && r.done[pid] ? 'Ready' : '', statusCls: res ? (res.net > 0 ? 'green' : res.net < 0 ? 'red' : '') : 'gold' };
+    });
+    var agg = {};
+    if (r) r.bets.forEach(function (b) {
+      var k = spotKey(b), e = agg[k] || (agg[k] = { id: k, type: b.type, key: b.key, numbers: b.numbers, amount: 0, from: st.seats.indexOf(b.owner) });
+      e.amount += b.amount;
+    });
+    return { n: st.seats.length, mySeat: st.seats.indexOf(v.you), seats: seats, turnSeat: -1, wheel: { round: r, phase: st.phase, spinSec: st.rules.spinSec }, bets: Object.keys(agg).map(function (k) { return agg[k]; }), onSit: function () {} };
+  }
+
   function RouletteTable(props) {
     var v = props.view, table = props.table, st = table.state, r = st.round, you = st.you, me = UI.byId(v, v.you);
     var acc = v.me && v.me.account;
@@ -264,17 +283,8 @@
       </div>`;
     }
 
-    return html`<section className="rl game-roulette" aria-label=${table.name}>
-      <div className="table-bar">
-        <button type="button" className="btn btn-ghost" onClick=${props.onBack}>← Casino floor</button>
-        <div className="table-bar-title"><h2>${table.name}</h2><span className="muted small num">${money(table.minBet)} – ${money(table.maxBet)}</span></div>
-        <div className="row">
-          <button type="button" className="btn btn-ghost" aria-expanded=${showRules} onClick=${function () { setRules(!showRules); }}>Rules & payouts</button>
-          ${you.seated ? html`<button type="button" className="btn btn-ghost" onClick=${props.onStand}>Stand up</button>` : null}
-        </div>
-      </div>
-      ${showRules ? html`<${Rules} rules=${st.rules} table=${table} />` : null}
-      <div className="rl-scene">
+    var GL = window.CasinoGL, glOn = !!(GL && GL.Stage && GL.supported());
+    var scene2d = html`<div className="rl-scene">
         <div className="spotlight" aria-hidden="true"></div>
         <div className="rl-wheel-col">
           <${Wheel} round=${r} phase=${st.phase} spinSec=${st.rules.spinSec} />
@@ -298,7 +308,33 @@
             })}
           </div>
         </div>
+      </div>`;
+    var sh = useState(true), sheetOpen = sh[0], setSheet = sh[1];
+    useEffect(function () { setSheet(st.phase !== 'spinning' && st.phase !== 'results'); }, [st.phase]);
+    var glModel = glOn ? rlModel(v, table, st, r, now, you, me, chipsBySpot) : null;
+    return html`<section className="rl game-roulette" aria-label=${table.name}>
+      <div className="table-bar">
+        <button type="button" className="btn btn-ghost" onClick=${props.onBack}>← Casino floor</button>
+        <div className="table-bar-title"><h2>${table.name}</h2><span className="muted small num">${money(table.minBet)} – ${money(table.maxBet)}</span></div>
+        <div className="row">
+          <button type="button" className="btn btn-ghost" aria-expanded=${showRules} onClick=${function () { setRules(!showRules); }}>Rules & payouts</button>
+          ${you.seated ? html`<button type="button" className="btn btn-ghost" onClick=${props.onStand}>Stand up</button>` : null}
+        </div>
       </div>
+      ${showRules ? html`<${Rules} rules=${st.rules} table=${table} />` : null}
+      ${glOn ? html`<div className="rl-gl">
+        <${GL.Stage} kind="roulette" model=${glModel} fallback=${scene2d}>
+          <div className="gl-status-hud" aria-live="polite">${status}</div>
+          <div className="gl-history" aria-label="Recent numbers">${st.history.slice(0, 8).map(function (n, i) { return html`<span key=${i} className=${'hist ' + color(n) + (i === 0 ? ' latest' : '')}>${n}</span>`; })}</div>
+          ${st.phase === 'results' && st.last ? html`<div className=${'gl-result ' + st.last.color}><b className="num">${st.last.result}</b><span>${st.last.color}</span></div>` : null}
+        </${GL.Stage}>
+        ${you.seated ? html`<div className=${cx('rl-sheet', !sheetOpen && 'closed')}>
+          <button type="button" className="btn btn-ghost rl-sheet-toggle" aria-expanded=${sheetOpen} onClick=${function () { setSheet(!sheetOpen); }}>${sheetOpen ? 'Hide the layout' : 'Show the betting layout'}</button>
+          ${sheetOpen ? html`<div className="rl-table"><div className="rl-felt">
+            <${Layout} chips=${chipsBySpot} canBet=${you.canBet} onBet=${bet} winning=${st.phase === 'results' && r ? r.result : null} resultPhase=${st.phase === 'results'} />
+          </div></div>` : null}
+        </div>` : null}
+      </div>` : scene2d}
       ${lastMine && st.phase !== 'spinning' ? html`<div className=${cx('round-summary', lastMine.net > 0 && 'up', lastMine.net < 0 && 'down')} role="status">
         <span className="eyebrow">Last spin</span>
         <span>Landed <b className=${'num ' + (st.last.color === 'red' ? 'red' : st.last.color === 'green' ? 'green' : '')}>${st.last.result} ${st.last.color}</b></span>

@@ -50,7 +50,7 @@
    *        seatBody(pid, slot) -> cards/chips in front of the seat, plaqueExtra(pid) -> status line, center, print,
    *        canSit, onSit, now
    */
-  function OvalScene(props) {
+  function OvalScene2D(props) {
     var v = props.view, st = props.state, n = props.n;
     var seats = st.seats.map(function (pid, seat) { return { pid: pid, seat: seat, slot: slotOf(seat, props.mySeat, n) }; });
     function figure(s) {
@@ -90,6 +90,37 @@
       </div></div>
       <div className="spotlight" aria-hidden="true"></div>
     </div>`;
+  }
+
+
+  /**
+   * The 3D room (js/gl-scene.js). Games supply plain data instead of markup:
+   *   glHand(pid) -> { cards, bet, note, noteCls } | null     glStatus(pid) -> { text, cls } | null
+   *   glKey (this hand's id), board[], pot, centerText, myHand (cards to show large in the HUD), theme{felt, ink, print, print2}
+   */
+  function glModel(props) {
+    var v = props.view, st = props.state, n = props.n, last = st.last, tm = st.timer;
+    var key = props.glKey || '';
+    var turn = props.turnPid ? st.seats.indexOf(props.turnPid) : -1;
+    var seats = st.seats.map(function (pid, i) {
+      var p = pid && UI.byId(v, pid), res = null, net = pid && st.phase === 'results' && last && last.players && last.players[pid] ? last.players[pid].net : 0;
+      if (net > 0) res = 'win'; else if (net < 0) res = 'lose';
+      var stt = pid && props.glStatus ? props.glStatus(pid) : null;
+      return p ? { pid: pid, name: p.name, avatar: p.avatar, cash: p.cash, me: pid === v.you, offline: !p.connected, folded: !!(props.dim && props.dim(pid)), status: stt && stt.text, statusCls: stt && stt.cls, result: res }
+        : { pid: null, canSit: !!props.canSit };
+    });
+    var hands = [];
+    st.seats.forEach(function (pid, i) { var g = pid && props.glHand ? props.glHand(pid) : null; if (g) hands.push({ id: key + ':' + i, seat: i, cards: g.cards, bet: g.bet, note: g.note, noteCls: g.noteCls }); });
+    var left = tm ? (tm.endsAt ? Math.max(0, tm.endsAt - props.now) : tm.remainingMs || 0) : 0;
+    return { n: n, mySeat: props.mySeat, theme: props.theme, seats: seats, turnSeat: turn, onSit: props.onSit, hands: hands, board: props.board || [], pot: props.pot || 0, potLabel: props.centerText,
+      button: props.buttonSeat, buttonLabel: props.buttonLabel, timer: tm ? { pct: Math.max(0, Math.min(100, left / tm.ms * 100)), secs: Math.ceil(left / 1000), urgent: left < 5000 } : null };
+  }
+  function OvalScene(props) {
+    var GL = window.CasinoGL;
+    if (!(GL && GL.Stage && GL.supported())) return html`<${OvalScene2D} ...${props} />`;
+    return html`<${GL.Stage} kind="oval" model=${glModel(props)} fallback=${html`<${OvalScene2D} ...${props} />`}>
+      ${props.myHand && props.myHand.length ? html`<div className="gl-myhand" aria-label="Your cards"><${K.Cards} cards=${props.myHand} /></div>` : null}
+    </${GL.Stage}>`;
   }
 
   window.CasinoCardroom = { OvalScene: OvalScene };

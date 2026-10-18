@@ -61,7 +61,26 @@
       return act ? html`<span className="plaque-status">${ACT[act.action]}${act.action === 'raise' || act.action === 'call' ? ' ' + money(act.to) : ''}</span>` : null;
     }
 
+    function glHand(pid) {
+      var p = h && h.players.filter(function (x) { return x.pid === pid; })[0];
+      if (p) return { cards: p.hole && p.hole.length ? p.hole : (p.folded ? [] : [null, null]), bet: p.street || 0 };
+      if (last && last.shown && last.hands[pid] && st.phase === 'results') { var won = last.pots.some(function (pt) { return pt.winners.indexOf(pid) >= 0; }); return { cards: last.hands[pid].hole, bet: 0, note: last.hands[pid].name, noteCls: won ? 'win' : '' }; }
+      return null;
+    }
+    function glStatus(pid) {
+      var p = h && h.players.filter(function (x) { return x.pid === pid; })[0];
+      if (st.phase === 'results' && last && last.players[pid]) { var n = last.players[pid].net; return { text: n ? signed(n) : 'Even', cls: n > 0 ? 'green' : n < 0 ? 'red' : '' }; }
+      if (!p) return null;
+      if (p.folded) return { text: 'Folded', cls: 'muted' };
+      if (p.allIn) return { text: 'All in', cls: 'gold' };
+      var act = h.log.slice().reverse().filter(function (l) { return l.pid === pid && l.street === h.street; })[0];
+      return act ? { text: ACT[act.action] + (act.action === 'raise' || act.action === 'call' ? ' ' + money(act.to) : ''), cls: '' } : null;
+    }
     var board = h ? h.board : last ? last.board : [];
+    var centerText = h ? 'Pot ' + money(h.pot) + ' · ' + STREET[h.street]
+      : last ? last.pots.map(function (pt) { var names = pt.winners.map(function (id) { var q = UI.byId(v, id); return q ? q.name : '?'; }).join(' & '); return pt.uncalled ? money(pt.amount) + ' back to ' + names : money(pt.amount) + ' to ' + names + (pt.hand ? ' (' + pt.hand.toLowerCase() + ')' : ''); }).join(' · ')
+      : st.seats.filter(Boolean).length < 2 ? 'Waiting for a second player' : 'Next hand starting…';
+    var myP = h && h.players.filter(function (x) { return x.pid === v.you; })[0];
     var center = html`<div className="cr-middle">
       <div className="board">${[0, 1, 2, 3, 4].map(function (i) { return board[i] ? html`<${K.Card} key=${i + board[i]} card=${board[i]} i=${i} />` : html`<span key=${'e' + i} className="card-slot"></span>`; })}</div>
       ${h ? html`<span className="pot-tag">Pot <b className="num">${money(h.pot)}</b> · ${STREET[h.street]}</span>`
@@ -118,7 +137,9 @@
       ${showRules ? html`<${Rules} rules=${st.rules} />` : null}
       <${OvalScene} view=${v} state=${st} n=${st.seats.length} mySeat=${mySeat} turnPid=${h ? h.turn : null} buttonSeat=${st.button} now=${now}
         canSit=${!st.seated && me && me.status === 'active'} onSit=${props.onSit} seatBody=${seatBody} plaqueExtra=${plaqueExtra} center=${center}
-        print="TEXAS HOLD'EM · NO LIMIT" dim=${function (pid) { return h && h.players.some(function (x) { return x.pid === pid && x.folded; }); }} />
+        print="TEXAS HOLD'EM · NO LIMIT"
+        glHand=${glHand} glStatus=${glStatus} glKey=${h ? h.id : last ? last.handId : ''} board=${board.slice(0, h ? board.length : 5)} pot=${h ? h.pot : 0} centerText=${centerText}
+        myHand=${myP && myP.hole && myP.hole.length && !myP.folded ? myP.hole : null} theme=${{ felt: '#123f2f', ink: '#d6e8dc', print: "TEXAS HOLD'EM", print2: 'NO LIMIT' }} dim=${function (pid) { return h && h.players.some(function (x) { return x.pid === pid && x.folded; }); }} />
       ${mine && st.phase !== 'playing' ? html`<div className=${cx('round-summary', mine.net > 0 && 'up', mine.net < 0 && 'down')} role="status">
         <span className="eyebrow">Last hand</span>
         <span>Put in <b className="num">${money(mine.staked)}</b></span>

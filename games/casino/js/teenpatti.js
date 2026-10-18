@@ -56,6 +56,24 @@
       return html`<span className=${cx('plaque-status', p.seen ? 'seen' : 'blind')}>${p.seen ? 'Seen' : 'Blind'}</span>`;
     }
 
+    function glHand(pid) {
+      var p = h && h.players.filter(function (x) { return x.pid === pid; })[0];
+      if (p) return { cards: p.folded ? [] : (p.cards || [null, null, null]), bet: p.contrib || 0 };
+      if (last && last.shown && last.hands[pid] && st.phase === 'results') { var won = last.pots.some(function (pt) { return pt.winners.indexOf(pid) >= 0; }); return { cards: last.hands[pid].cards, bet: 0, note: last.hands[pid].name, noteCls: won ? 'win' : '' }; }
+      return null;
+    }
+    function glStatus(pid) {
+      var p = h && h.players.filter(function (x) { return x.pid === pid; })[0];
+      if (st.phase === 'results' && last && last.players[pid]) { var n = last.players[pid].net; return { text: n ? signed(n) : 'Even', cls: n > 0 ? 'green' : n < 0 ? 'red' : '' }; }
+      if (!p) return null;
+      if (p.folded) return { text: 'Packed', cls: 'muted' };
+      if (p.allIn) return { text: 'All in', cls: 'gold' };
+      return { text: p.seen ? 'Seen' : 'Blind', cls: p.seen ? 'seen' : 'blind' };
+    }
+    var centerText = h ? 'Pot ' + money(h.pot) + ' · Stake ' + money(h.stake)
+      : last ? last.pots.map(function (pt) { var names = pt.winners.map(function (id) { var q = UI.byId(v, id); return q ? q.name : '?'; }).join(' & '); return money(pt.amount) + ' to ' + names + (pt.hand ? ' (' + pt.hand.toLowerCase() + ')' : ''); }).join(' · ')
+      : st.seats.filter(Boolean).length < 2 ? 'Waiting for a second player' : 'Next hand starting…';
+    var myP = h && h.players.filter(function (x) { return x.pid === v.you; })[0];
     var center = html`<div className="cr-middle">
       ${h ? html`<span className="pot-tag big">Pot <b className="num">${money(h.pot)}</b></span>
         <span className="pot-tag">Stake ${money(h.stake)} · limit ${money(h.potLimit)}</span>`
@@ -108,7 +126,9 @@
       ${showRules ? html`<${Rules} rules=${st.rules} />` : null}
       <${OvalScene} view=${v} state=${st} n=${st.seats.length} mySeat=${mySeat} turnPid=${h ? h.turn : null} buttonSeat=${st.dealer} now=${now}
         canSit=${!st.seated && me && me.status === 'active'} onSit=${props.onSit} seatBody=${seatBody} plaqueExtra=${plaqueExtra} center=${center}
-        print="TEEN PATTI · 3 PATTI" dim=${function (pid) { return h && h.players.some(function (x) { return x.pid === pid && x.folded; }); }} />
+        print="TEEN PATTI · 3 PATTI"
+        glHand=${glHand} glStatus=${glStatus} glKey=${h ? h.id : last ? last.handId : ''} pot=${h ? h.pot : 0} centerText=${centerText}
+        myHand=${myP && !myP.folded && myP.cards && myP.cards.length ? myP.cards : null} theme=${{ felt: '#3f1a4c', ink: '#f2e0fb', print: 'TEEN PATTI', print2: '3 PATTI' }} dim=${function (pid) { return h && h.players.some(function (x) { return x.pid === pid && x.folded; }); }} />
       ${mine && st.phase !== 'playing' ? html`<div className=${cx('round-summary', mine.net > 0 && 'up', mine.net < 0 && 'down')} role="status">
         <span className="eyebrow">Last hand</span>
         <span>Put in <b className="num">${money(mine.staked)}</b></span>
