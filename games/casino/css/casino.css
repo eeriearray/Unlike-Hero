@@ -1279,3 +1279,8 @@ button.seat-orb:hover .orb-glass { box-shadow: inset 0 -.5cqw 1cqw rgba(0, 0, 0,
 .bot-game { position: relative; z-index: 3; pointer-events: auto; }
 .bot-game { width: fit-content; max-width: 220px; }
 .gl-quality { position: absolute; left: 58px; top: 10px; height: 40px; padding: 0 12px; border-radius: 20px; border: 1px solid rgba(201, 164, 92, .4); background: rgba(10, 6, 3, .75); color: #e8d5a0; font: 700 12px Manrope, system-ui, sans-serif; letter-spacing: .04em; cursor: pointer; }
+/* Blurring whatever is behind a bar that overlaps the live WebGL canvas makes some GPUs flash white or black: opaque bars instead */
+.topbar, .dock, .reaction-bar, .wallet, .gl-tag { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+.topbar { background: rgba(11, 10, 8, .96); }
+.dock { background-color: #14111c; }
+.gl-tag { background: rgba(14, 9, 6, .88); }

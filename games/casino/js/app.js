@@ -589,6 +589,20 @@
   }
 
   // ───────────────────────── room ─────────────────────────
+  /** A table that fails to draw shows a message and a retry instead of taking the whole page down with it. */
+  class TableBoundary extends R.Component {
+    constructor(p) { super(p); this.state = { err: null }; }
+    static getDerivedStateFromError(err) { return { err: err }; }
+    componentDidCatch(err) { if (window.console) console.error('Table failed to draw:', err); }
+    render() {
+      if (!this.state.err) return this.props.children;
+      var self = this;
+      return html`<div className="panel"><h3>This table hit a problem</h3><p className="muted">Your bets and seat are safe on the server.</p>
+        <button type="button" className="btn btn-primary" onClick=${function () { self.setState({ err: null }); }}>Try again</button>
+        <button type="button" className="btn btn-ghost" onClick=${this.props.onBack}>← Casino floor</button></div>`;
+    }
+  }
+
   function Room(props) {
     var v = props.view, s = v.session;
     var d = useState(store.get('noticeSeen', null)), seen = d[0], setSeen = d[1];
@@ -611,7 +625,7 @@
           ${window.CasinoBank && (s.phase === 'live' || s.phase === 'paused') ? html`<${window.CasinoBank.MoneyBanner} view=${v} onBank=${props.onBank} />` : null}
           ${S ? html`<${S.ChallengeBanner} view=${v} send=${props.send} />` : null}
           ${showNotice ? html`<div className="banner" role="status"><span>${s.notice.text}</span><button type="button" className="btn btn-ghost" onClick=${function () { store.set('noticeSeen', s.notice.id); setSeen(s.notice.id); }}>Got it</button></div>` : null}
-          ${TableView ? html`<${TableView} view=${v} table=${table} send=${props.send} onBack=${function () { open(null); }} onSit=${sit} onStand=${standUp} />`
+          ${TableView ? html`<${TableBoundary} key=${table.id} onBack=${function () { open(null); }}><${TableView} view=${v} table=${table} send=${props.send} onBack=${function () { open(null); }} onSit=${sit} onStand=${standUp} /></${TableBoundary}>`
             : html`<${R.Fragment}>
               ${s.phase === 'ended' ? html`<${Results} view=${v} send=${props.send} onHistory=${props.onHistory} />` : html`<${SessionPanel} view=${v} send=${props.send} />`}
               <${Floor} view=${v} onOpen=${open} />

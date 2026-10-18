@@ -394,6 +394,10 @@
       var yaw = Math.atan2(off.x, off.z) + ob.yaw, hz = Math.hypot(off.x, off.z), el = clamp(Math.atan2(off.y, hz) + ob.pitch, 0.08, 1.45);
       this.camera.position.set(this.camLook.x + Math.sin(yaw) * Math.cos(el) * len, this.camLook.y + Math.sin(el) * len, this.camLook.z + Math.cos(yaw) * Math.cos(el) * len);
     }
+    var lx = this.lampG.position.x, lz = this.lampG.position.z, cp = this.camera.position;   // never let the camera pass through the lamp's glowing shade, which fills the screen with white or black
+    var dxl = cp.x - lx, dzl = cp.z - lz, dl = Math.hypot(dxl, dzl);
+    if (cp.y > 1.7 && cp.y < 2.8 && dl < 0.75) { var kpush = (0.75 / (dl || 0.001)); cp.x = lx + dxl * kpush; cp.z = lz + dzl * kpush; }
+    cp.x = clamp(cp.x, -5.5, 5.5); cp.z = clamp(cp.z, -5.5, 5.5); cp.y = clamp(cp.y, 0.45, 4.2);
     this.camera.lookAt(this.camLook); this.camera.updateMatrixWorld();
     this.animals(dt, t);
     this.stepCards(dt); this.stepChips(dt);
