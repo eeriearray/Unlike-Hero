@@ -86,3 +86,18 @@ test('the host chooses which game a bot plays, and can change it', () => {
   assert.equal(room.get(r.id).tableId, 'poker');
   assert.equal(room.viewFor(host).players.find((p) => p.id === r.id).botTable, 'poker');
 });
+
+test('bots never end roulette betting early; the timer does', () => {
+  const { c, room, host } = setup();
+  room.command(host, { type: 'add-bot', tableId: 'roulette' });
+  room.command(host, { type: 'start' });
+  const t = room.table('roulette');
+  room.command(host, { type: 'sit', tableId: 'roulette' });
+  c.advance(8_000);
+  assert.equal(t.state.phase, 'betting', 'bot has bet, still waiting on the clock');
+  assert.ok(t.state.round.bets.length > 0);
+  c.advance(10_000);
+  assert.equal(t.state.phase, 'betting', 'still before the deadline');
+  c.advance(15_000);
+  assert.notEqual(t.state.phase, 'betting', 'the timer closed betting');
+});

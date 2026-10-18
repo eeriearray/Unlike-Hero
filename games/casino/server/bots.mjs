@@ -110,7 +110,7 @@ function roulette(room, t, v, you, cash, play) {
     return play('bet', { spot, amount: chip });
   }
   if (you.total < chip * 3 && cash >= t.minBet && room.rng(3) === 0) return play('bet', { spot: { type: 'straight', numbers: [room.rng(37)] }, amount: chip });
-  return play('done');
+  return false;                                   // never press Spin: the betting clock decides, so people at the table always get their full time
 }
 
 function poker(room, v, you, play) {
