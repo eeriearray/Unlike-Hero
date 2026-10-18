@@ -72,3 +72,17 @@ test('bots sit down and play every table without breaking the books', () => {
   for (const p of room.players.values()) { const a = room.economy.account(p.id); assert.ok(a.cash >= 0 && Number.isFinite(a.cash)); }
   assert.equal(room.viewFor(host).players.filter((p) => p.isBot).length, 6);
 });
+
+test('the host chooses which game a bot plays, and can change it', () => {
+  const { c, room, host } = setup();
+  const r = room.command(host, { type: 'add-bot', tableId: 'roulette' });
+  assert.ok(r.ok);
+  assert.ok(room.command(host, { type: 'add-bot', tableId: 'nope' }).error);
+  room.command(host, { type: 'start' });
+  c.advance(10_000);
+  assert.equal(room.get(r.id).tableId, 'roulette');
+  assert.ok(room.command(host, { type: 'bot-table', id: r.id, tableId: 'poker' }).ok);
+  c.advance(10_000);
+  assert.equal(room.get(r.id).tableId, 'poker');
+  assert.equal(room.viewFor(host).players.find((p) => p.id === r.id).botTable, 'poker');
+});

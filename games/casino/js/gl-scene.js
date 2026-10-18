@@ -80,10 +80,23 @@
     document.addEventListener('visibilitychange', this.onVis);
     this.onLost = function (e) { e.preventDefault(); self.lost = true; };
     this.onRestored = function () { self.lost = false; };
-    var drag = null;
-    this.onDown = function (e) { drag = { x: e.clientX, y: e.clientY, yaw: self.orbit.ty, pitch: self.orbit.tp, id: e.pointerId }; self.canvas.classList.add('grab'); try { self.canvas.setPointerCapture(e.pointerId); } catch (x) {} };
-    this.onMove = function (e) { if (!drag || e.pointerId !== drag.id) return; self.orbit.ty = clamp(drag.yaw - (e.clientX - drag.x) * 0.006, -1.6, 1.6); if (e.pointerType !== 'touch') self.orbit.tp = clamp(drag.pitch + (e.clientY - drag.y) * 0.004, -0.6, 0.6); };
-    this.onUp = function () { drag = null; self.canvas.classList.remove('grab'); };
+    // Look around by dragging (mouse or finger); wheel or pinch to zoom; double-click or double-tap to reset.
+    var ptrs = {}, drag = null, pinch = null, lastTap = 0;
+    function count() { return Object.keys(ptrs).length; }
+    this.onDown = function (e) {
+      ptrs[e.pointerId] = { x: e.clientX, y: e.clientY };
+      try { self.canvas.setPointerCapture(e.pointerId); } catch (x) {}
+      if (count() === 1) { drag = { x: e.clientX, y: e.clientY, yaw: self.orbit.ty, pitch: self.orbit.tp }; self.canvas.classList.add('grab'); var now = Date.now(); if (now - lastTap < 320) self.look(null); lastTap = now; }
+      else if (count() === 2) { var k = Object.keys(ptrs), a2 = ptrs[k[0]], b2 = ptrs[k[1]]; pinch = { d: Math.hypot(a2.x - b2.x, a2.y - b2.y), z: self.orbit.tz }; drag = null; }
+    };
+    this.onMove = function (e) {
+      if (!ptrs[e.pointerId]) return; ptrs[e.pointerId] = { x: e.clientX, y: e.clientY };
+      if (pinch && count() === 2) { var k = Object.keys(ptrs), a2 = ptrs[k[0]], b2 = ptrs[k[1]]; self.orbit.tz = clamp(pinch.z * pinch.d / Math.max(20, Math.hypot(a2.x - b2.x, a2.y - b2.y)), 0.55, 1.4); return; }
+      if (!drag) return;
+      self.orbit.ty = clamp(drag.yaw - (e.clientX - drag.x) * 0.006, -1.6, 1.6);
+      self.orbit.tp = clamp(drag.pitch + (e.clientY - drag.y) * 0.004, -0.6, 0.6);
+    };
+    this.onUp = function (e) { delete ptrs[e.pointerId]; pinch = null; if (count() === 1) { var k = Object.keys(ptrs)[0]; drag = { x: ptrs[k].x, y: ptrs[k].y, yaw: self.orbit.ty, pitch: self.orbit.tp }; } else { drag = null; self.canvas.classList.remove('grab'); } };
     this.onWheel = function (e) { e.preventDefault(); self.orbit.tz = clamp(self.orbit.tz * (e.deltaY > 0 ? 1.08 : 0.93), 0.55, 1.4); };
     this.canvas.addEventListener('pointerdown', this.onDown); this.canvas.addEventListener('pointermove', this.onMove); this.canvas.addEventListener('pointerup', this.onUp); this.canvas.addEventListener('pointercancel', this.onUp);
     this.canvas.addEventListener('wheel', this.onWheel, { passive: false });
@@ -643,13 +656,7 @@
     var ms = R.useState(GL.audio ? GL.audio.isMuted() : true), muted = ms[0], setMuted = ms[1];
     R.useEffect(function () { return GL.audio ? GL.audio.onChange(setMuted) : undefined; }, []);
     return html`<div className=${'gl-stage gl-' + props.kind}><div className="gl-view" ref=${ref}></div><div className="gl-hud">${props.children}
-      <div className="gl-look" role="group" aria-label="Look around">
-        <button type="button" aria-label="Look left" onClick=${function () { eng.current && eng.current.look(-0.35, 0); }}>◀</button>
-        <button type="button" aria-label="Reset view" onClick=${function () { eng.current && eng.current.look(null); }}>⌂</button>
-        <button type="button" aria-label="Look right" onClick=${function () { eng.current && eng.current.look(0.35, 0); }}>▶</button>
-        <button type="button" aria-label="Look down" onClick=${function () { eng.current && eng.current.look(0, 0.2); }}>▼</button>
-        <button type="button" aria-label="Look up" onClick=${function () { eng.current && eng.current.look(0, -0.2); }}>▲</button>
-      </div>
+      
       ${GL.audio ? html`<button type="button" className="gl-mute" aria-pressed=${!muted} aria-label=${muted ? 'Turn sound on' : 'Mute sound'} onClick=${function () { GL.audio.init(); GL.audio.setMuted(!muted); }}>${muted ? '🔇' : '🔊'}</button>` : null}</div></div>`;
   }
   GL.Stage = Stage;

@@ -12,7 +12,7 @@ import * as social from './social.mjs';
 
 export const MAX_PLAYERS = 12;
 export const HOST_GRACE_MS = 90_000;
-import { addBot, removeBot, runBots, hasBots } from './bots.mjs';
+import { addBot, removeBot, setBotTable, runBots, hasBots } from './bots.mjs';
 export const AVATARS = ['fox', 'tiger', 'panda', 'owl', 'frog', 'octopus', 'unicorn', 'dragon', 'cat', 'wolf', 'koala', 'shark', 'monkey', 'penguin', 'lion', 'robot'];
 export const EMOTES = ['clap', 'fire', 'laugh', 'shock', 'cry', 'money', 'pray', 'cool'];
 
@@ -520,7 +520,8 @@ export class CasinoRoom {
         res = this.startSession();
         break;
       }
-      case 'add-bot': { const e = hostOnly(); if (e) return e; res = addBot(this); break; }
+      case 'add-bot': { const e = hostOnly(); if (e) return e; res = addBot(this, cmd.tableId); break; }
+      case 'bot-table': { const e = hostOnly(); if (e) return e; res = setBotTable(this, cmd.id, cmd.tableId); break; }
       case 'remove-bot': { const e = hostOnly(); if (e) return e; res = removeBot(this, cmd.id); break; }
       case 'pause': { const e = hostOnly(); if (e) return e; res = this.pauseSession(); break; }
       case 'resume': { const e = hostOnly(); if (e) return e; res = this.resumeSession(); break; }
@@ -598,7 +599,7 @@ export class CasinoRoom {
     const staked = !!(a && a.staked);
     return {
       id: p.id, name: p.name, avatar: p.avatar, connected: p.connected, left: p.left, ready: p.ready,
-      status: p.status, isHost: p.id === this.hostId, isBot: !!p.isBot, tableId: p.tableId,
+      status: p.status, isHost: p.id === this.hostId, isBot: !!p.isBot, botTable: p.isBot ? p.botTable || null : undefined, tableId: p.tableId,
       insolvent: p.insolvent ? { until: p.insolvent.until || null, leftMs: p.insolvent.leftMs } : null,
       hasWallet: staked,
       cash: staked ? a.cash : 0, reserved: staked ? a.reserved : 0,

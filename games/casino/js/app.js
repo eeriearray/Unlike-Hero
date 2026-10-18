@@ -271,9 +271,14 @@
     var e = useState(''), err = e[0], setErr = e[1];
     function act(cmd) { setErr(''); return props.send(cmd).then(function (res) { if (res.error) setErr(res.error); else setAsk(null); }); }
 
+    var bg = useState(''), botGame = bg[0], setBotGame = bg[1];
     var bots = v.players.filter(function (p) { return p.isBot && !p.left; });
     var botRow = v.isHost && s.phase !== 'ended' ? html`<div className="row bots-row">
-      <${Button} kind="ghost" onClick=${function () { return act({ type: 'add-bot' }); }} disabled=${bots.length >= 6}>+ Add a bot</${Button}>
+      <select aria-label="Game for the new bot" value=${botGame} onChange=${function (e) { setBotGame(e.target.value); }}>
+        <option value="">Any game</option>
+        ${v.tables.map(function (t) { return html`<option key=${t.id} value=${t.id}>${t.name}</option>`; })}
+      </select>
+      <${Button} kind="ghost" onClick=${function () { return act({ type: 'add-bot', tableId: botGame || undefined }); }} disabled=${bots.length >= 6}>+ Add a bot</${Button}>
       ${bots.length ? html`<${Button} kind="ghost" onClick=${function () { return act({ type: 'remove-bot', id: bots[bots.length - 1].id }); }}>Remove a bot (${bots.length})</${Button}>` : null}
     </div>` : null;
     var body;
@@ -394,6 +399,10 @@
         <span className="player-main">
           <span className="player-name">${p.name}${p.id === v.you ? html` <span className="muted">(you)</span>` : null}</span>
           <span className="player-tags">${tags}</span>
+          ${p.isBot && v.isHost && !p.left ? html`<select className="bot-game" aria-label=${p.name + '\u2019s game'} value=${p.botTable || ''} onChange=${function (e) { props.send({ type: 'bot-table', id: p.id, tableId: e.target.value || null }); }}>
+            <option value="">Any game</option>
+            ${v.tables.map(function (t) { return html`<option key=${t.id} value=${t.id}>${t.name}</option>`; })}
+          </select>` : null}
           ${p.hasWallet ? html`<span className="player-money small">
             <span title="Cash">${money(p.cash)}</span>${p.debt + p.owes > 0 ? html` · <span className="red" title="Debt">debt ${money(p.debt + p.owes)}</span>` : null}
             ${p.streak >= 3 ? html` · <span className="green" title=${p.streak + ' wins in a row'}>${p.streak}W</span>` : p.streak <= -3 ? html` · <span className="red" title=${-p.streak + ' losses in a row'}>${-p.streak}L</span>` : null}
@@ -481,7 +490,7 @@
         <button type="button" className="rail-fold" onClick=${function () { props.setOpen(!props.open); }} aria-label=${props.open ? 'Hide panel' : 'Show panel'} title=${props.open ? 'Hide panel' : 'Show panel'}>${props.open ? '›' : '‹'}</button>
       </div>
       ${props.open ? html`<div className="rail-body" role="tabpanel">
-        ${tab === 'players' ? html`<${Players} view=${v} onProfile=${props.onProfile} onHistory=${props.onHistory} />`
+        ${tab === 'players' ? html`<${Players} view=${v} send=${props.send} onProfile=${props.onProfile} onHistory=${props.onHistory} />`
           : tab === 'feed' ? html`<${Feed} view=${v} />`
           : html`<${Chat} view=${v} send=${props.send} toast=${props.toast} />`}
       </div>` : null}

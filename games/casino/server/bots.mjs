@@ -6,7 +6,8 @@ const NAMES = ['Mara', 'Boris', 'Lulu', 'Otto', 'Pip', 'Zed', 'Ines', 'Kai', 'Ne
 const MAX_BOTS = 6;
 const next = new WeakMap();                       // bot player -> earliest time (ms) of their next action
 
-export function addBot(room) {
+export function addBot(room, tableId) {
+  if (tableId && !room.table(tableId)) return { error: 'That table isn\'t open.' };
   if (room.humans().filter((p) => p.isBot && !p.left).length >= MAX_BOTS) return { error: `A room can have up to ${MAX_BOTS} bots.` };
   if (room.players.size >= room.maxPlayers) return { error: 'This room is full.' };
   const used = new Set([...room.players.values()].map((p) => p.avatar));
@@ -15,13 +16,23 @@ export function addBot(room) {
   const takenNames = new Set([...room.players.values()].map((p) => p.name.toLowerCase()));
   const name = NAMES.filter((n) => !takenNames.has((n + ' (bot)').toLowerCase()))[0] || 'Bot';
   const id = 'b' + room.id('');
-  const p = { id, name: room.uniqueName(name + ' (bot)'), avatar, joinedAt: room.now(), lastSeen: room.now(), connected: true, left: false, ready: true, tableId: null, status: 'active', isBot: true };
+  const p = { id, name: room.uniqueName(name + ' (bot)'), avatar, joinedAt: room.now(), lastSeen: room.now(), connected: true, left: false, ready: true, tableId: null, status: 'active', isBot: true, botTable: tableId || null };
   room.players.set(id, p);
   room.economy.open(id);
   if (room.session.phase === 'live' || room.session.phase === 'paused') room.economy.stake(id, room.settings.startingCash);
   room.log('join', `${p.name} sat down at the casino`, { playerId: id });
   room.scheduleBots();
   return { ok: true, id };
+}
+
+/** Point a bot at one table for good (or null: wherever people are). */
+export function setBotTable(room, id, tableId) {
+  const p = room.get(id);
+  if (!p || !p.isBot) return { error: 'That isn\'t a bot.' };
+  if (tableId && !room.table(tableId)) return { error: 'That table isn\'t open.' };
+  p.botTable = tableId || null;
+  next.delete(p);
+  return { ok: true };
 }
 
 export function removeBot(room, id) {
@@ -51,6 +62,7 @@ export function runBots(room) {
 const cmd = (room, p, c) => { const r = room.command(p.id, c); return !!(r && r.ok); };
 
 function act(room, p) {
+  if (p.botTable && p.tableId !== p.botTable) return cmd(room, p, { type: 'sit', tableId: p.botTable });       // the host picked their game
   if (!p.tableId) {
     // Join the table with the most people at it (a human first), else any ordinary table.
     const tables = room.openTables().filter((t) => !t.highRoller);
