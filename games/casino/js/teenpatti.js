@@ -129,7 +129,7 @@
         print="TEEN PATTI · 3 PATTI"
         glHand=${glHand} glStatus=${glStatus} glKey=${h ? h.id : last ? last.handId : ''} pot=${h ? h.pot : 0} centerText=${centerText}
         reveals=${st.phase === 'results' && last && last.shown ? Object.keys(last.hands).map(function (pid) { var q = UI.byId(v, pid); return { name: q ? q.name : '?', cards: last.hands[pid].cards, note: last.hands[pid].name, won: last.pots.some(function (pt) { return pt.winners.indexOf(pid) >= 0; }) }; }) : null}
-        myHand=${myP && !myP.folded && myP.cards && myP.cards.length ? myP.cards : null} theme=${{ felt: '#3f1a4c', ink: '#f2e0fb', print: 'TEEN PATTI', print2: '3 PATTI' }} dim=${function (pid) { return h && h.players.some(function (x) { return x.pid === pid && x.folded; }); }} />
+        myHand=${myP && !myP.folded ? (myP.cards && myP.cards.length ? myP.cards : [null, null, null]) : null} theme=${{ felt: '#3f1a4c', ink: '#f2e0fb', print: 'TEEN PATTI', print2: '3 PATTI' }} dim=${function (pid) { return h && h.players.some(function (x) { return x.pid === pid && x.folded; }); }} />
       ${mine && st.phase !== 'playing' ? html`<div className=${cx('round-summary', mine.net > 0 && 'up', mine.net < 0 && 'down')} role="status">
         <span className="eyebrow">Last hand</span>
         <span>Put in <b className="num">${money(mine.staked)}</b></span>

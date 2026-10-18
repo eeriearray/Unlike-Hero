@@ -9,8 +9,17 @@
   if (!T) { GL.supported = function () { return false; }; return; }
   if (T.ColorManagement) T.ColorManagement.legacyMode = false;     // hex colours are sRGB, like the canvas textures
 
+  // Asked on every table render, so the answer is worked out once: a throwaway WebGL context per call used to pile up until the
+  // browser hit its limit and killed the live one (the random white or black screen).
+  var supportedCache = null;
   GL.supported = function () {
-    try { var c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; }
+    if (supportedCache !== null) return supportedCache;
+    try {
+      var c = document.createElement('canvas'), g = c.getContext('webgl2') || c.getContext('webgl');
+      supportedCache = !!g;
+      var lose = g && g.getExtension && g.getExtension('WEBGL_lose_context'); if (lose) lose.loseContext();
+    } catch (e) { supportedCache = false; }
+    return supportedCache;
   };
 
   var K = GL.kit = {};

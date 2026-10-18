@@ -81,6 +81,7 @@
     this.visible = true; this.alive = true; this.frameMs = 16; this.slow = 0;
     this.resize();
     this.prewarm();
+    try { this.renderer.initTexture(this.atlas); } catch (e) {}       // upload the card atlas now: doing it on the first deal stalls a frame and can flash
     if (global.ResizeObserver) { this.ro = new ResizeObserver(function () { self.resize(); }); this.ro.observe(el); }
     else { this.onResize = function () { self.resize(); }; global.addEventListener('resize', this.onResize); }
     if (global.IntersectionObserver) { this.io = new IntersectionObserver(function (e) { self.visible = e[0].isIntersecting; }); this.io.observe(el); }
@@ -137,6 +138,7 @@
     M.leather = new T.MeshStandardMaterial({ map: K.leatherTex(), roughness: 0.55 });
     M.brass = new T.MeshStandardMaterial({ color: 0xc9a24a, roughness: 0.38, metalness: 0.7, emissive: 0x2a1e08 });
     var atlas = K.cardAtlas(this.coarse ? 0.75 : 1);
+    this.atlas = atlas;
     M.card = new T.MeshStandardMaterial({ map: atlas, roughness: 0.65, emissive: 0xffffff, emissiveMap: atlas, emissiveIntensity: 0.42 });     // cards glow a little so they read in the dim room
     M.floor = new T.MeshStandardMaterial({ map: K.woodTex('#2a1a10', '#0a0503', 8, 41, [3.5, 3.5], 40), roughness: 0.85 });
     M.wall = new T.MeshStandardMaterial({ map: K.wallTex(), roughness: 0.95, side: T.BackSide });
@@ -561,7 +563,7 @@
       TABLES.oval.retheme(E, m.theme);
       var out = { cards: [], chips: [], labels: [] }, n = (m.seats || []).length, tilt = cardTilt(E);
       (m.hands || []).forEach(function (h) {
-        var pose = E.seatPose(h.seat), s = m.seats[h.seat], me = s && s.me, cnt = h.cards.length, base = me ? { x: pose.x * 0.4, z: pose.z * 0.33 } : { x: pose.x * 0.52, z: pose.z * 0.5 };   // yours sit further in, clear of your own head
+        var pose = E.seatPose(h.seat), s = m.seats[h.seat], me = s && s.me, cnt = h.cards.length, base = me ? { x: pose.x * 0.3, z: pose.z * 0.2 } : { x: pose.x * 0.52, z: pose.z * 0.5 };   // yours sit further in, clear of your own head
         var sp = me ? 0.2 : 0.15;
         h.cards.forEach(function (c, j) {
           out.cards.push({ id: h.id + ':' + j, face: c, x: base.x + (j - (cnt - 1) / 2) * sp, y: TOP + 0.004 + j * 0.0012, z: base.z + (me ? 0.06 : 0), ry: (me ? 0 : (pose.slot % 2 ? 0.1 : -0.1)) + (j - (cnt - 1) / 2) * 0.05, tilt: me ? tilt : tilt * 0.9, scale: me ? CARD_S * 1.3 : CARD_S * 1.12, from: h.from });
