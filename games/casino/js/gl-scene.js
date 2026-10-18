@@ -60,7 +60,7 @@
     this.scene = new T.Scene();
     this.scene.fog = new T.FogExp2(0x0c0705, 0.07);
     this.camera = new T.PerspectiveCamera(50, 1, 0.1, 40);
-    this.camPos = new T.Vector3(0, 2, 4); this.camLook = new T.Vector3(0, 0.8, 0); this.camInit = false;
+    this.camPos = new T.Vector3(0, 2, 4); this.camLook = new T.Vector3(0, 0.8, 0); this.camInit = false; this.orbit = { yaw: 0, pitch: 0, zoom: 1, ty: 0, tp: 0, tz: 1 };
     this.clock = new T.Clock();
     this.seats = {}; this.cards = {}; this.chips = {}; this.lbl = {};
     this.model = null; this.dealCount = 0; this.sceneT = 0;
@@ -80,6 +80,13 @@
     document.addEventListener('visibilitychange', this.onVis);
     this.onLost = function (e) { e.preventDefault(); self.lost = true; };
     this.onRestored = function () { self.lost = false; };
+    var drag = null;
+    this.onDown = function (e) { drag = { x: e.clientX, y: e.clientY, yaw: self.orbit.ty, pitch: self.orbit.tp, id: e.pointerId }; self.canvas.classList.add('grab'); try { self.canvas.setPointerCapture(e.pointerId); } catch (x) {} };
+    this.onMove = function (e) { if (!drag || e.pointerId !== drag.id) return; self.orbit.ty = clamp(drag.yaw - (e.clientX - drag.x) * 0.006, -1.6, 1.6); if (e.pointerType !== 'touch') self.orbit.tp = clamp(drag.pitch + (e.clientY - drag.y) * 0.004, -0.6, 0.6); };
+    this.onUp = function () { drag = null; self.canvas.classList.remove('grab'); };
+    this.onWheel = function (e) { e.preventDefault(); self.orbit.tz = clamp(self.orbit.tz * (e.deltaY > 0 ? 1.08 : 0.93), 0.55, 1.4); };
+    this.canvas.addEventListener('pointerdown', this.onDown); this.canvas.addEventListener('pointermove', this.onMove); this.canvas.addEventListener('pointerup', this.onUp); this.canvas.addEventListener('pointercancel', this.onUp);
+    this.canvas.addEventListener('wheel', this.onWheel, { passive: false });
     this.canvas.addEventListener('webglcontextlost', this.onLost); this.canvas.addEventListener('webglcontextrestored', this.onRestored);
     (function loop() { if (!self.alive) return; self.raf = global.requestAnimationFrame(loop); if (!document.hidden && self.visible && !self.lost) self.frame(); })();
   }
@@ -329,6 +336,13 @@
     }
     var sway = this.portrait ? 0.5 : 1; if (this.model && this.model.seats && this.model.seats.some(function (q) { return q.canSit; })) sway = 0;   // hold still so the sit buttons are easy to hit
     this.camera.position.set(this.camPos.x + Math.sin(t * 0.37) * 0.035 * sway, this.camPos.y + Math.sin(t * 0.53) * 0.02 * sway, this.camPos.z + Math.cos(t * 0.29) * 0.02 * sway);
+    var ob = this.orbit, ko = 1 - Math.pow(0.001, dt);
+    ob.yaw = lerp(ob.yaw, ob.ty, ko); ob.pitch = lerp(ob.pitch, ob.tp, ko); ob.zoom = lerp(ob.zoom, ob.tz, ko);
+    if (Math.abs(ob.yaw) > 0.001 || Math.abs(ob.pitch) > 0.001 || Math.abs(ob.zoom - 1) > 0.001) {          // look around: orbit the camera about what it's looking at
+      var off = this.camera.position.clone().sub(this.camLook), len = off.length() * ob.zoom;
+      var yaw = Math.atan2(off.x, off.z) + ob.yaw, hz = Math.hypot(off.x, off.z), el = clamp(Math.atan2(off.y, hz) + ob.pitch, 0.08, 1.45);
+      this.camera.position.set(this.camLook.x + Math.sin(yaw) * Math.cos(el) * len, this.camLook.y + Math.sin(el) * len, this.camLook.z + Math.cos(yaw) * Math.cos(el) * len);
+    }
     this.camera.lookAt(this.camLook); this.camera.updateMatrixWorld();
     this.animals(dt, t);
     this.stepCards(dt); this.stepChips(dt);
@@ -377,6 +391,8 @@
     } else if (this.ctx.ring) this.ctx.ring.visible = false;
   };
 
+  /** Look around from the buttons: dx/dy in radians, or null to go back to the default view. */
+  E.look = function (dx, dy) { var o = this.orbit; if (dx == null) { o.ty = o.tp = 0; o.tz = 1; return; } o.ty = clamp(o.ty + dx, -1.6, 1.6); o.tp = clamp(o.tp + (dy || 0), -0.6, 0.6); };
   E.destroy = function () {
     if (!this.alive) return;
     this.alive = false; GL.live--; global.cancelAnimationFrame(this.raf);
@@ -509,7 +525,7 @@
     camera: function (E, m) {
       if (E.portrait || m.mySeat < 0) return E.portrait ? rig(E, [0, 0.66, 0.05], 3.35, 2.5, 0.95, 0, 56) : rig(E, [0, 0.74, -0.05], 4.5, 2.5, 0.3, 0, 52);
       var my = E.seatPose(m.mySeat), l = Math.hypot(my.x, my.z) || 1;       // sit in your chair: just behind where your head is
-      return { pos: [my.x + my.x / l * 0.95, 1.95, my.z + my.z / l * 0.95], look: [0, 0.66, -0.25], fov: 56 };
+      return { pos: [my.x + my.x / l * 1.35, 2.2, my.z + my.z / l * 1.35], look: [0, 0.6, -0.2], fov: 56 };
     }
   };
 
@@ -598,14 +614,14 @@
       an.eyes.scale.y = Math.sin(t * 0.8 + 2) > 0.988 ? 0.12 : 1;
     },
     camera: function (E, m) {
-      if (E.portrait) return rig(E, [0, 0.66, 0.2], 3.5, 2.6, 0.95, 0, 56);
+      if (E.portrait) { var mp = m.mySeat >= 0 ? E.seatPose(m.mySeat) : null; return rig(E, [mp ? mp.x * 0.5 : 0, 0.66, 0.35], mp ? 4.3 : 3.5, 3.0, 0.95, 0, 56); }
       var my = m.mySeat >= 0 ? E.seatPose(m.mySeat) : null, az = 0, tx = 0;
       if (my) { az = Math.atan2(my.x, my.z - BJ.zd) * 0.7; tx = my.x * 0.2; }
-      return rig(E, [tx, 0.78, BJ.zd + 0.55], 3.5, 1.9, 0.6, az * 0.6, 52);
+      return rig(E, [tx, 0.78, BJ.zd + 0.55], 3.9, 2.3, 0.62, az * 0.6, 52);
     }
   };
 
-  TABLES.oval.hideSelf = TABLES.moon.hideSelf = function (E) { return !E.portrait; };
+  TABLES.oval.hideSelf = TABLES.moon.hideSelf = function () { return false; };
   GL.TABLES = TABLES; GL.Engine = Engine;
   GL.helpers = { seatTag: seatTag, rig: rig, tableBody: tableBody, roundRect: roundRect, ringMesh: ringMesh, deckMesh: deckMesh, money: money, short: short, lerp: lerp, clamp: clamp, TOP: TOP, TAU: TAU, wrapPi: wrapPi, CARD_S: CARD_S, cardTilt: cardTilt };
 
@@ -627,6 +643,13 @@
     var ms = R.useState(GL.audio ? GL.audio.isMuted() : true), muted = ms[0], setMuted = ms[1];
     R.useEffect(function () { return GL.audio ? GL.audio.onChange(setMuted) : undefined; }, []);
     return html`<div className=${'gl-stage gl-' + props.kind}><div className="gl-view" ref=${ref}></div><div className="gl-hud">${props.children}
+      <div className="gl-look" role="group" aria-label="Look around">
+        <button type="button" aria-label="Look left" onClick=${function () { eng.current && eng.current.look(-0.35, 0); }}>◀</button>
+        <button type="button" aria-label="Reset view" onClick=${function () { eng.current && eng.current.look(null); }}>⌂</button>
+        <button type="button" aria-label="Look right" onClick=${function () { eng.current && eng.current.look(0.35, 0); }}>▶</button>
+        <button type="button" aria-label="Look down" onClick=${function () { eng.current && eng.current.look(0, 0.2); }}>▼</button>
+        <button type="button" aria-label="Look up" onClick=${function () { eng.current && eng.current.look(0, -0.2); }}>▲</button>
+      </div>
       ${GL.audio ? html`<button type="button" className="gl-mute" aria-pressed=${!muted} aria-label=${muted ? 'Turn sound on' : 'Mute sound'} onClick=${function () { GL.audio.init(); GL.audio.setMuted(!muted); }}>${muted ? '🔇' : '🔊'}</button>` : null}</div></div>`;
   }
   GL.Stage = Stage;
