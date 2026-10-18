@@ -112,6 +112,10 @@ their own view of the game. It also accepts narrator recordings from `record.htm
 but only from localhost. The rules live in `games/mafia/engine/mafia-engine.js`, which the browser also loads
 for offline games against bots. Static hosts without Node still serve the game; only its online mode needs the server.
 
+The Hollow uses the same mechanism and adds persistence: `games/the-hollow/server/index.mjs` serialises unfinished rooms
+to `HOLLOW_DATA_DIR` (default `games/the-hollow/server/.data/`) and restores them at start-up, and its `engine/` is a data-driven
+rules engine (content in `engine/data/*.js`) that runs on the server for online play and in the browser for solo play.
+
 ## Path to a hosted platform
 
 The folder already works as a static site. When you build the platform:

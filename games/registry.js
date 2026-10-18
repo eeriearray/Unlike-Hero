@@ -96,7 +96,8 @@ window.GAME_REGISTRY = [
         "local",
         "relay"
       ],
-      "notes": "The Main Stage runs every game and pushes a view to each phone. Up to 8 players plus audience phones (the bundled relay caps a room at 16 connections). Design document: games/party-pack/docs/GDD.md."
+      "roomLimit": 40,
+      "notes": "The Main Stage runs every game and pushes a view to each phone. Up to 8 players plus up to 31 audience phones (roomLimit 40 on the bundled relay). Private screens are sent to one phone only. Design document: games/party-pack/docs/GDD.md."
     },
     "tags": [
       "party",
@@ -251,5 +252,50 @@ window.GAME_REGISTRY = [
     "requires": [],
     "status": "prototype",
     "path": "games/signal-pair/"
+  },
+  {
+    "id": "the-hollow",
+    "title": "The Hollow",
+    "tagline": "A dark-fantasy horror expedition for 1–6. Explore a vanished village, make terrible bargains, and decide whether the bell is silenced, rung backward, sold, or broken.",
+    "version": "1.0.0",
+    "sdk": "1.x",
+    "entry": "index.html",
+    "server": "server/index.mjs",
+    "thumbnail": "thumbnail.svg",
+    "accent": "#c9a35b",
+    "players": {
+      "min": 1,
+      "max": 6
+    },
+    "roles": [
+      {
+        "id": "player",
+        "name": "Player",
+        "entry": "index.html",
+        "description": "Host an expedition and share the 4-letter code, or join one. Solo play and ghost companions work offline."
+      }
+    ],
+    "multiplayer": {
+      "style": "co-op horror RPG with secret objectives, server-authoritative, room code",
+      "sameDevice": false,
+      "transports": [
+        "server"
+      ],
+      "notes": "Online expeditions run on the game's own Socket.io server (server/index.mjs, loaded by npm start). Every roll, reward and rule is decided on the server; each player is sent only what they may know. Rooms are saved to disk so a restart does not end an expedition. Solo play (with optional AI ghost companions) runs the same engine locally and works offline."
+    },
+    "tags": [
+      "horror",
+      "RPG",
+      "co-op",
+      "roguelite",
+      "dice",
+      "mobile",
+      "audio"
+    ],
+    "requires": [
+      "npm start for online rooms"
+    ],
+    "status": "playable",
+    "path": "games/the-hollow/"
   }
 ];

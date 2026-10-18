@@ -1,3 +1,4 @@
 node_modules/
 .DS_Store
 *.log
+games/the-hollow/server/.data/
