@@ -116,6 +116,17 @@ export class Economy {
     return { ok: true, bet };
   }
 
+  /** Take back one open bet before its round resolves (e.g. "undo" before the wheel spins). */
+  cancelBet(betId, memo = 'Bet taken back') {
+    const b = this.bets.get(betId);
+    if (!b || b.state !== 'open') return { error: 'That bet can\'t be taken back.' };
+    const round = this.rounds.get(b.roundId);
+    if (!round || round.state !== 'open') return { error: 'That bet can\'t be taken back.' };
+    b.state = 'refunded';
+    this.post(b.playerId, 'refund', { reserved: -b.amount, cash: b.amount }, { roundId: b.roundId, game: round.game, tableId: round.tableId, memo });
+    return { ok: true };
+  }
+
   /** Per-player stakes still open in a round. */
   stakes(roundId) {
     const round = this.rounds.get(roundId);

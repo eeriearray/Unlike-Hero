@@ -6,7 +6,7 @@
   var html = htm.bind(R.createElement);
   var Net = window.CasinoNet;
 
-  var VERSION = '0.1.0';
+  var VERSION = '0.4.0';
   var hub = window.Hub ? window.Hub.init({ id: 'casino', version: VERSION, title: 'Neon Casino' }) : null;
   var store = hub ? hub.storage('casino') : {
     get: function (k, d) { try { var v = localStorage.getItem('hub.casino.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },

@@ -10,7 +10,7 @@ browser (games/casino/index.html, React 18 + htm, no build)        hub server (n
   js/net.js  ── Socket.io /games/casino/socket.io ──────────────►   games/casino/server/index.mjs   sockets, seats, rate limits, persistence
                 ◄── 'state' (this player's view only) ───────────     games/casino/server/room.mjs    CasinoRoom: players, host, settings, session, feed, chat
                                                                       games/casino/server/economy.mjs Economy: wallets, ledger, bets, rounds, audit
-                                                                      games/casino/server/games/*.mjs one engine per table game (blackjack.mjs today)
+                                                                      games/casino/server/games/*.mjs one engine per table game (blackjack, roulette, poker, teenpatti; kit.mjs shared)
                                                                       games/casino/server/data/       room snapshots (gitignored, never served)
 ```
 
@@ -113,6 +113,21 @@ Bankrupt players stand up from their table, can't bet, borrow or lend, stay in t
 react. Their wallet, debts and receivables stay on the books and in the final standings, which list every unpaid debt.
 Nothing is forgiven and no chips are created. A host restart gives everyone a fresh, equal wallet.
 
+## Table games
+
+Every engine implements the same interface (`create, sit, leave, command, view, pause, resume, close, disconnected,
+snapshot, restore`), keeps its state as plain JSON saved with the room, and moves money only through the economy.
+
+| Game | Settles as | Key rules | Session ends mid-round |
+| --- | --- | --- | --- |
+| Blackjack | house, ≤ 2.5× stake | 6 decks, dealer peeks, stands on all 17s, 3:2, double, split to 4 hands | dealt hands play out and pay |
+| Roulette | house, ≤ 36× stake | European single zero; straight, split, street, trio, corner, six line, dozens, columns, even money; zero sinks outside bets | a spinning ball lands and pays; unspun chips come back |
+| Texas Hold'em | pool | blinds ½ min / min; up to the table maximum per hand; full-raise rule; side pots; uncalled bets returned | chips in the pot go back |
+| Teen Patti | pool | boot = table min; blind pays the stake, seen pays double; raise doubles the stake; show with two left; pot limit 128 boots; all-in → show with side pots; no side shows | chips in the pot go back |
+
+Disconnected players get a 6-second turn clock instead of 25; standing up folds or packs. Hidden cards (hole cards,
+Teen Patti hands, the deck, the dealer's hole card) are only in the views of the players allowed to see them.
+
 ## Multiplayer state
 
 ```
@@ -144,6 +159,6 @@ CasinoRoom
 1. Rooms, profiles, shared wallet + ledger, lobby, host settings, session lifecycle, reconnection, persistence. ✅
 2. Blackjack, fully playable, on the shared wallet: curved table scene, seated character silhouettes, dealer peek, S17, 3:2, double, split to four hands, turn timers. ✅
 3. Loans, interest, repayments, debt limits, player loans, bankruptcy, spectator mode. ✅
-4. Texas Hold'em (side pots), Teen Patti (blind/seen), roulette.
+4. Texas Hold'em (side pots), Teen Patti (blind/seen), roulette. ✅
 5. Leaderboards polish, profiles, achievements, challenges, reactions, animations.
 6. Edge-case and security testing, balancing, polish.

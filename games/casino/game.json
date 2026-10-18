@@ -1,24 +1,42 @@
 {
   "id": "casino",
   "title": "Neon Casino",
-  "tagline": "A private casino night for friends: one shared wallet across every table, loans, bankruptcies and a final reckoning. Play money only.",
-  "version": "0.1.0",
+  "tagline": "A private casino night for friends: blackjack, roulette, Texas Hold'em and Teen Patti on one shared wallet, with loans, bankruptcies and a final reckoning. Play money only.",
+  "version": "0.4.0",
   "sdk": "1.x",
   "entry": "index.html",
   "server": "server/index.mjs",
   "thumbnail": "thumbnail.svg",
   "accent": "#f5c451",
-  "players": { "min": 1, "max": 12 },
+  "players": {
+    "min": 1,
+    "max": 12
+  },
   "roles": [
-    { "id": "player", "name": "Player", "entry": "index.html", "description": "Host a room and share the 5-character code, or join one. Everyone starts with the same play-money wallet." }
+    {
+      "id": "player",
+      "name": "Player",
+      "entry": "index.html",
+      "description": "Host a room and share the 5-character code, or join one. Everyone starts with the same play-money wallet."
+    }
   ],
   "multiplayer": {
     "style": "casino, server-authoritative, shared economy, room code",
     "sameDevice": false,
-    "transports": ["server"],
+    "transports": [
+      "server"
+    ],
     "notes": "Rooms run on the game's own Socket.io server (server/index.mjs, loaded by npm start). The server holds every wallet, the ledger, the decks and the wheel; browsers only send intents. Rooms are saved to server/data/ and survive a restart. Design: games/casino/docs/DESIGN.md."
   },
-  "tags": ["casino", "party", "pvp", "economy", "cards"],
-  "requires": ["npm start (the server is the bank)"],
-  "status": "in development"
+  "tags": [
+    "casino",
+    "party",
+    "pvp",
+    "economy",
+    "cards"
+  ],
+  "requires": [
+    "npm start (the server is the bank)"
+  ],
+  "status": "playable"
 }

@@ -4,6 +4,9 @@
 import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 import { Economy, netWorth } from './economy.mjs';
 import { blackjack } from './games/blackjack.mjs';
+import { roulette } from './games/roulette.mjs';
+import { poker } from './games/poker.mjs';
+import { teenpatti } from './games/teenpatti.mjs';
 import * as bank from './bank.mjs';
 
 export const MAX_PLAYERS = 12;
@@ -19,7 +22,7 @@ export const GAMES = {
 };
 // Table engines, by game. A table whose game has no engine yet is listed but closed.
 // Engine interface: create(), sit(), leave(), command(), view(), pause(), resume(), close(), disconnected(), snapshot(), restore().
-export const ENGINES = { blackjack };
+export const ENGINES = { blackjack, roulette, poker, teenpatti };
 
 export const DEFAULT_SETTINGS = {
   startingCash: 10_000,

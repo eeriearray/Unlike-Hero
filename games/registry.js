@@ -3,8 +3,8 @@ window.GAME_REGISTRY = [
   {
     "id": "casino",
     "title": "Neon Casino",
-    "tagline": "A private casino night for friends: one shared wallet across every table, loans, bankruptcies and a final reckoning. Play money only.",
-    "version": "0.1.0",
+    "tagline": "A private casino night for friends: blackjack, roulette, Texas Hold'em and Teen Patti on one shared wallet, with loans, bankruptcies and a final reckoning. Play money only.",
+    "version": "0.4.0",
     "sdk": "1.x",
     "entry": "index.html",
     "server": "server/index.mjs",
@@ -40,7 +40,7 @@ window.GAME_REGISTRY = [
     "requires": [
       "npm start (the server is the bank)"
     ],
-    "status": "in development",
+    "status": "playable",
     "path": "games/casino/"
   },
   {
