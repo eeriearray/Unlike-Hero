@@ -42,7 +42,7 @@
   }
 
   // ───────────── the engine ─────────────
-  function Engine(el, kind) {
+  function Engine(el, kind, onLost) {
     var self = this; GL.last = this; GL.live = (GL.live || 0) + 1;
     this.el = el; this.kind = kind; this.table = TABLES[kind];
     this.coarse = !!(global.matchMedia && global.matchMedia('(pointer: coarse)').matches);
@@ -76,10 +76,15 @@
     if (global.ResizeObserver) { this.ro = new ResizeObserver(function () { self.resize(); }); this.ro.observe(el); }
     else { this.onResize = function () { self.resize(); }; global.addEventListener('resize', this.onResize); }
     if (global.IntersectionObserver) { this.io = new IntersectionObserver(function (e) { self.visible = e[0].isIntersecting; }); this.io.observe(el); }
-    this.onVis = function () { if (!document.hidden) self.clock.getDelta(); };
+    this.onLostCb = onLost;
+    this.onVis = function () { if (document.hidden) return; self.clock.getDelta(); if (self.renderer.getContext().isContextLost() && self.onLostCb) self.onLostCb(); };
     document.addEventListener('visibilitychange', this.onVis);
-    this.onLost = function (e) { e.preventDefault(); self.lost = true; };
-    this.onRestored = function () { self.lost = false; };
+    this.onLost = function (e) {
+      e.preventDefault(); self.lost = true;
+      // three.js restores the context by itself; if the browser doesn't give it back soon, build a fresh scene instead of leaving a black or white box
+      setTimeout(function () { if (self.lost && self.alive && self.onLostCb) self.onLostCb(); }, 1200);
+    };
+    this.onRestored = function () { self.lost = false; self.clock.getDelta(); };
     // Look around by dragging (mouse or finger); wheel or pinch to zoom; double-click or double-tap to reset.
     var ptrs = {}, drag = null, pinch = null, lastTap = 0;
     function count() { return Object.keys(ptrs).length; }
@@ -642,15 +647,15 @@
   if (!R || !html) return;
   /** <Stage kind model fallback>children = HUD drawn over the canvas</Stage>. Falls back to `fallback` when WebGL can't start. */
   function Stage(props) {
-    var ref = R.useRef(null), eng = R.useRef(null), st = R.useState(false), failed = st[0], setFailed = st[1];
+    var ref = R.useRef(null), eng = R.useRef(null), st = R.useState(false), failed = st[0], setFailed = st[1], ep = R.useState(0), epoch = ep[0], setEpoch = ep[1];
     R.useEffect(function () {
       if (!ref.current) return;
-      try { eng.current = new Engine(ref.current, props.kind); eng.current.update(props.model); }
+      try { eng.current = new Engine(ref.current, props.kind, function () { setEpoch(function (n) { return n + 1; }); }); eng.current.update(props.model); }
       catch (e) { if (global.console) console.warn('3D table unavailable, using the flat table:', e); if (eng.current) { try { eng.current.destroy(); } catch (x) {} eng.current = null; } setFailed(true); return; }
       var click = function (ev) { var b = ev.target.closest && ev.target.closest('.gl-sit'); if (b && eng.current && eng.current.onSit) { ev.preventDefault(); eng.current.onSit(+b.getAttribute('data-seat')); } };
       ref.current.addEventListener('click', click);
       return function () { if (ref.current) ref.current.removeEventListener('click', click); if (eng.current) { eng.current.destroy(); eng.current = null; } };
-    }, [props.kind]);
+    }, [props.kind, epoch]);
     R.useEffect(function () { if (eng.current) eng.current.update(props.model); });
     if (failed) return props.fallback || null;
     var ms = R.useState(GL.audio ? GL.audio.isMuted() : true), muted = ms[0], setMuted = ms[1];

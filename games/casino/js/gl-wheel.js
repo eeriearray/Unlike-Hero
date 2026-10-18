@@ -157,7 +157,7 @@
 
   var SEATS = [[-0.35, 1.72, Math.PI], [0.35, 1.72, Math.PI], [-1.05, 1.72, Math.PI], [1.05, 1.72, Math.PI], [-2.2, 0.55, Math.PI / 2], [2.2, 0.55, -Math.PI / 2], [-2.2, -0.5, Math.PI / 2], [2.2, -0.5, -Math.PI / 2]];
   var RT = GL.TABLES.roulette = {
-    hideSelf: function () { return true; },                                     // the fixed camera sits where your chair is
+    hideSelf: function () { return false; },
     build: function (E) {
       var hw = HW, hd = HD, cz = -CZ;                                                    // shape y is -world z
       function rr(a, b) { return H.roundRect(hw + a, hd + b, 0.55, cz); }
@@ -199,7 +199,7 @@
     camera: function (E, m) {
       var tight = m.wheel && (m.wheel.phase === 'spinning' || m.wheel.phase === 'results');
       if (E.portrait) return tight ? GL.rig(E, [0, 0.85, -0.62], 1.55, 1.5, 1.15, 0, 56) : GL.rig(E, [0, 0.8, 0.12], 3.5, 3.0, 0.95, 0, 56);
-      return tight ? GL.rig(E, [0, 0.86, -0.55], 1.9, 1.15, 0.72, 0, 46) : GL.rig(E, [0, 0.82, -0.1], 3.5, 2.2, 0.62, 0, 50);
+      return tight ? GL.rig(E, [0, 0.86, -0.55], 1.9, 1.15, 0.72, 0, 46) : GL.rig(E, [m.mySeat >= 0 ? Math.max(-0.6, Math.min(0.6, E.seatPose(m.mySeat).x * 0.4)) : 0, 0.8, 0.05], 3.6, 3.3, 0.66, 0, 50);
     }
   };
 })(window);
