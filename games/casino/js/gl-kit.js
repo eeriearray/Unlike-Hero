@@ -349,11 +349,11 @@
     },
     octopus: function (h, S) {
       h.sph(S.fur, 0, 0.12, -0.02, 0.17, 0.17, 0.17); h.sph(S.light, 0.07, 0.17, 0.12, 0.035); h.sph(S.light, -0.05, 0.2, 0.1, 0.03);
-      var ang = [-0.5, -0.17, 0.17, 0.5];
-      ang.forEach(function (a, i) {
-        var x = Math.sin(a) * 0.17, z0 = 0.15;
-        h.b.add(G.cone, S.fur, M(x, -0.3, z0 + 0.18 + (i % 2) * 0.04, 0.35 + (i % 2) * 0.2, 0, -a * 0.6, 0.065, 0.42, 0.065));
-        h.sph(S.light, x * 1.15, -0.45, 0.27 + (i % 2) * 0.04, 0.03);
+      [-0.13, -0.045, 0.045, 0.13].forEach(function (x, i) {              // four tentacles drape down over the coat
+        var s2 = i % 2 ? 1 : -1;
+        h.limb(S.fur, [x, -0.1, 0.16], [x * 1.4, -0.3, 0.27], 0.05, 0.04);
+        h.limb(S.fur, [x * 1.4, -0.3, 0.27], [x * 1.7 + s2 * 0.02, -0.5, 0.25], 0.04, 0.022);
+        h.sph(S.light, x * 1.4, -0.3, 0.3, 0.018);
       });
     },
     unicorn: function (h, S) {

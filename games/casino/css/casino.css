@@ -1262,3 +1262,6 @@ button.seat-orb:hover .orb-glass { box-shadow: inset 0 -.5cqw 1cqw rgba(0, 0, 0,
 .rl-sheet { display: grid; gap: 8px; padding: 10px; border-radius: 14px; background: rgba(12, 8, 5, .6); border: 1px solid rgba(201, 164, 92, .22); }
 .rl-sheet .rl-sheet-toggle { justify-self: end; }
 .rl-sheet .rl-table { width: 100%; }
+.gl-mute { position: absolute; left: 10px; top: 10px; width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(201, 164, 92, .4); background: rgba(10, 6, 3, .75); font-size: 18px; line-height: 1; cursor: pointer; }
+.gl-mute:hover { background: rgba(60, 40, 16, .9); }
+.gl-myhand { display: flex; gap: 10px; }

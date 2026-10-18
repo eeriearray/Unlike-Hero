@@ -64,10 +64,9 @@
       var th = (i - 0.5) * STEP * Math.PI / 180, rm = (POCKET_IN + POCKET_OUT) / 2;
       fb.add(K.G.box, '#e6c97a', K.M(Math.sin(th) * rm, 0.037, -Math.cos(th) * rm, 0, Math.PI - th, 0, 0.004, 0.013, POCKET_OUT - POCKET_IN), true);
     }
-    var turret = [[0.0, 0.3], [0.012, 0.27], [0.03, 0.2], [0.07, 0.11], [0.12, 0.062], [0.165, 0.034], [0.0, 0.034]];
-    rot.add(new T.Mesh(new T.LatheGeometry(turret.map(function (p) { return new T.Vector2(p[0], p[1] * 0.78); }), 20), new T.MeshStandardMaterial({ color: 0xd8b25a, roughness: 0.3, metalness: 0.85, emissive: 0x2a1c06 })));
-    for (var k = 0; k < 4; k++) { fb.add(K.G.box, '#e6c97a', K.M(Math.cos(k * Math.PI / 2 + 0.4) * 0.07, 0.17, Math.sin(k * Math.PI / 2 + 0.4) * 0.07, 0, -(k * Math.PI / 2 + 0.4), 0.2, 0.14, 0.008, 0.008), true); fb.add(K.G.sph, '#e6c97a', K.M(Math.cos(k * Math.PI / 2 + 0.4) * 0.14, 0.2, Math.sin(k * Math.PI / 2 + 0.4) * 0.14, 0, 0, 0, 0.014), true); }
-    fb.add(K.G.sph, '#f0d68a', K.M(0, 0.245, 0, 0, 0, 0, 0.022), true);
+    var turret = [[0.0, 0.2], [0.01, 0.19], [0.04, 0.15], [0.09, 0.085], [0.14, 0.05], [0.165, 0.034], [0.0, 0.034]];
+    rot.add(new T.Mesh(new T.LatheGeometry(turret.map(function (p) { return new T.Vector2(p[0], p[1] * 0.62); }), 20), new T.MeshStandardMaterial({ color: 0xd8b25a, roughness: 0.3, metalness: 0.85, emissive: 0x2a1c06 })));
+    fb.add(K.G.sph, '#f0d68a', K.M(0, 0.128, 0, 0, 0, 0, 0.018), true);
     rot.add(new T.Mesh(fb.build(), new T.MeshStandardMaterial({ vertexColors: true, roughness: 0.28, metalness: 0.8, emissive: 0x1a1204 })));
     this.ball = new T.Mesh(new T.SphereGeometry(BALL_R, 14, 10), new T.MeshStandardMaterial({ color: 0xf6f3ea, roughness: 0.15, metalness: 0.15, emissive: 0x25231c })); this.ball.visible = false; this.ball.castShadow = !E.coarse; this.g.add(this.ball);
     this.wheelAt = 0; this.seen = null; this.anim = null; this.ride = null; this.state = 'idle'; this.last = performance.now();
@@ -89,7 +88,7 @@
     var pocket = WHEEL.indexOf(round.result) * STEP, w0 = this.wheelAt, land = ((-pocket - w0) % 360 + 360) % 360, wf = w0 + 360 * 3 + land;
     var reduce = global.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (phase !== 'spinning' || reduce) { this.wheelAt = wf; this.anim = null; this.ride = { pocket: pocket }; this.state = 'ride'; this.place(wf, wf + pocket, 73, true); return; }
-    this.state = 'spin';
+    this.state = 'spin'; this.lastIdx = null; if (GL.audio) GL.audio.spin();
     var D = Math.max(2.5, (spinSec || 7) - 0.4) * 1000, t0 = performance.now(), b0 = Math.random() * 360, turns = 7 + Math.random() * 2, Kd = 3.4, norm = 1 - Math.exp(-Kd), A = 360 * turns;
     var wheel = function (u) { return w0 + (wf - w0) * (1 - Math.pow(1 - u, 2.2)); };
     var free = function (u) { return b0 - A * (1 - Math.exp(-Kd * u)) / norm; };
@@ -109,7 +108,8 @@
         rad = Math.min(94.5, 73 + (94.5 - 73) * (1 - e) + Math.abs(Math.sin(p * Math.PI * 4.5)) * 7 * damp);
       } else { ang = inPocket(u); rad = 73 + Math.abs(Math.sin((u - LOCK) * 40)) * 0.6 * (1 - u); }
       this.place(a.wheel(u), ang, rad, true);
-      if (u >= 1) { this.wheelAt = a.wf; this.anim = null; this.ride = { pocket: a.pocket }; this.state = 'ride'; }
+      if (u > DROP * 0.85 && GL.audio) { var idx = Math.floor((ang - a.wheel(u)) / STEP); if (idx !== this.lastIdx) { if (this.lastIdx != null) GL.audio.tick(Math.max(0.25, 1 - u * 0.8)); this.lastIdx = idx; } }
+      if (u >= 1) { if (GL.audio) GL.audio.thud(); this.wheelAt = a.wf; this.anim = null; this.ride = { pocket: a.pocket }; this.state = 'ride'; }
       return;
     }
     this.wheelAt += dt * 6;                                                  // idle: the rotor coasts on, with the ball riding it

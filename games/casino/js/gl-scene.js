@@ -177,7 +177,9 @@
 
   // ───────────── syncing the model ─────────────
   E.update = function (m) {
+    var wasMine = this.model && this.model.turnSeat === this.model.mySeat && this.model.mySeat >= 0;
     this.model = m;
+    if (m.turnSeat >= 0 && m.turnSeat === m.mySeat && !wasMine && GL.audio) GL.audio.turn();
     if (m.onSit) this.onSit = m.onSit;
     var L = this.table.layout(this, m);
     this.syncSeats(m, L);
@@ -203,7 +205,7 @@
         st.avKey = wantKey;
       }
       // reactions fire when the result first appears
-      if (st.animal && s.result !== st.lastResult) { if (s.result === 'win') { st.react = 1; st.reactKind = 'win'; } else if (s.result === 'lose') { st.react = 1; st.reactKind = 'lose'; } st.lastResult = s.result; }
+      if (st.animal && s.result !== st.lastResult) { if (s.result === 'win') { st.react = 1; st.reactKind = 'win'; if (s.me && GL.audio) GL.audio.win(); } else if (s.result === 'lose') { st.react = 1; st.reactKind = 'lose'; if (s.me && GL.audio) GL.audio.lose(); } st.lastResult = s.result; }
       if (!st.snapped) { st.root.position.set(pose.x, 0, pose.z); st.root.rotation.y = pose.ry; st.snapped = true; }
     });
     Object.keys(this.seats).forEach(function (k) {
@@ -227,7 +229,7 @@
         mesh.position.set(from.x, from.y, from.z); mesh.scale.setScalar(0.8); mesh.visible = !!c.instant;
         e.born = c.instant; self.scene.add(mesh);
       }
-      if ((c.face || null) !== e.face) { e.face = c.face || null; e.mesh.geometry = K.cardGeo(e.face); }
+      if ((c.face || null) !== e.face) { e.face = c.face || null; e.mesh.geometry = K.cardGeo(e.face); if (GL.audio && e.born !== undefined) GL.audio.card(true); }
       e.t = c; e.flipTo = c.face ? 0 : Math.PI;
     });
     Object.keys(this.cards).forEach(function (id) {
@@ -239,7 +241,7 @@
     Object.keys(this.cards).forEach(function (id) {
       var e = self.cards[id], m = e.mesh, t = e.t;
       if (!t) return;
-      if (e.delay > 0) { e.delay -= dt; if (e.delay > 0) return; m.visible = true; }
+      if (e.delay > 0) { e.delay -= dt; if (e.delay > 0) return; m.visible = true; if (GL.audio) GL.audio.card(); }
       if (e.dying) { e.dyingT += dt; if (e.dyingT > 0.7) { self.scene.remove(m); delete self.cards[id]; return; } }
       var tilt = t.tilt || 0, lift = Math.sin(clamp(Math.abs(wrapPi(m.rotation.z - e.flipTo)) / Math.PI, 0, 1) * Math.PI) * 0.09 + Math.sin(tilt) * 0.046 * (t.scale || 1);
       m.position.x = lerp(m.position.x, t.x, k); m.position.z = lerp(m.position.z, t.z, k); m.position.y = lerp(m.position.y, t.y + lift, k);
@@ -264,8 +266,8 @@
       if (!e) {
         e = self.chips[c.id] = { mesh: new T.Mesh(K.chipStackGeo(chipValues(c.amount)), self.m.vc), amount: c.amount };
         e.mesh.material = self.m.vcSmooth; e.mesh.castShadow = !self.coarse;
-        var f = c.from || { x: c.x, z: c.z }; e.mesh.position.set(f.x, c.y == null ? TOP + 0.01 : c.y, f.z); self.scene.add(e.mesh);
-      } else if (e.amount !== c.amount) { e.mesh.geometry = K.chipStackGeo(chipValues(c.amount)); e.amount = c.amount; }
+        var f = c.from || { x: c.x, z: c.z }; e.mesh.position.set(f.x, c.y == null ? TOP + 0.01 : c.y, f.z); self.scene.add(e.mesh); if (GL.audio) GL.audio.chip(2);
+      } else if (e.amount !== c.amount) { if (GL.audio && c.amount > e.amount) GL.audio.chip(1); e.mesh.geometry = K.chipStackGeo(chipValues(c.amount)); e.amount = c.amount; }
       e.t = c;
     });
     Object.keys(this.chips).forEach(function (id) { if (!seen[id]) { self.scene.remove(self.chips[id].mesh); delete self.chips[id]; } });
@@ -325,7 +327,7 @@
       this.camPos.x = lerp(this.camPos.x, cam.pos[0], kk); this.camPos.y = lerp(this.camPos.y, cam.pos[1], kk); this.camPos.z = lerp(this.camPos.z, cam.pos[2], kk);
       this.camLook.x = lerp(this.camLook.x, cam.look[0], kk); this.camLook.y = lerp(this.camLook.y, cam.look[1], kk); this.camLook.z = lerp(this.camLook.z, cam.look[2], kk);
     }
-    var sway = this.portrait ? 0.5 : 1;
+    var sway = this.portrait ? 0.5 : 1; if (this.model && this.model.seats && this.model.seats.some(function (q) { return q.canSit; })) sway = 0;   // hold still so the sit buttons are easy to hit
     this.camera.position.set(this.camPos.x + Math.sin(t * 0.37) * 0.035 * sway, this.camPos.y + Math.sin(t * 0.53) * 0.02 * sway, this.camPos.z + Math.cos(t * 0.29) * 0.02 * sway);
     this.camera.lookAt(this.camLook); this.camera.updateMatrixWorld();
     this.animals(dt, t);
@@ -413,14 +415,14 @@
       var pose = self.seatPose(i);
       if (s.pid && s.me && !self.portrait && self.table.hideSelf(self)) return;           // first person: your wallet and clock are in the HUD
       if (s.pid) out.push(seatTag(self, i, s, pose, { turn: m.turnSeat === i, timer: m.turnSeat === i ? m.timer : null }));
-      else if (s.canSit) out.push({ id: 'seat' + i, x: pose.x, y: 1.0, z: pose.z, html: '<button type="button" class="gl-sit" data-seat="' + i + '">Sit here</button>', cls: 'gl-sitwrap', prio: 3 });
+      else if (s.canSit) out.push({ id: 'seat' + i, x: pose.x, y: 1.0, z: pose.z, html: '<button type="button" class="gl-sit" data-seat="' + i + '">Sit here</button>', cls: 'gl-sitwrap', prio: 900 });
     });
   };
 
   // ───────────── the tables ─────────────
   var TABLES = {};
-  var CARD_S = 1.9;
-  function cardTilt(E) { return E.portrait ? 0.3 : 0.62; }
+  var CARD_S = 2.5;
+  function cardTilt(E) { return E.portrait ? 0.45 : 0.85; }
   function feltMat(E, tex) { return new T.MeshStandardMaterial({ map: tex, roughness: 0.95 }); }
   /** Wood slab + padded leather rail + brass trim + felt for any outline. shapes: { slab, rail:[outer,inner], felt, trim } */
   function tableBody(E, shapes, feltTex, bbox, pedestal) {
@@ -488,14 +490,14 @@
       var out = { cards: [], chips: [], labels: [] }, n = (m.seats || []).length, tilt = cardTilt(E);
       (m.hands || []).forEach(function (h) {
         var pose = E.seatPose(h.seat), s = m.seats[h.seat], me = s && s.me, cnt = h.cards.length, base = { x: pose.x * 0.58, z: pose.z * 0.56 };
-        var sp = me ? 0.135 : 0.1;
+        var sp = me ? 0.17 : 0.125;
         h.cards.forEach(function (c, j) {
           out.cards.push({ id: h.id + ':' + j, face: c, x: base.x + (j - (cnt - 1) / 2) * sp, y: TOP + 0.004 + j * 0.0012, z: base.z + (me ? 0.06 : 0), ry: (me ? 0 : (pose.slot % 2 ? 0.1 : -0.1)) + (j - (cnt - 1) / 2) * 0.05, tilt: me ? tilt : tilt * 0.5, scale: me ? CARD_S * 1.12 : CARD_S * 0.9, from: h.from });
         });
         if (h.bet) out.chips.push({ id: 'bet' + h.seat, amount: h.bet, x: pose.x * 0.4, z: pose.z * 0.38, from: { x: pose.x, z: pose.z } });
         if (h.note) out.labels.push({ id: 'note' + h.seat, x: base.x, y: TOP + 0.2, z: base.z, html: esc(h.note), cls: 'gl-note ' + (h.noteCls || ''), prio: 2 });
       });
-      (m.board || []).forEach(function (c, j) { out.cards.push({ id: 'board:' + j, face: c, x: (j - 2) * 0.152, y: TOP + 0.004, z: -0.03, ry: 0, tilt: tilt * 0.8, scale: CARD_S * 1.1 }); });
+      (m.board || []).forEach(function (c, j) { out.cards.push({ id: 'board:' + j, face: c, x: (j - 2) * 0.19, y: TOP + 0.004, z: -0.03, ry: 0, tilt: tilt * 0.8, scale: CARD_S * 1.1 }); });
       if (m.pot) out.chips.push({ id: 'pot', amount: m.pot, x: 0, z: 0.3, from: { x: 0, z: 0.5 } });
       if (m.potLabel) out.labels.push({ id: 'pot', x: 0, y: TOP + 0.3, z: 0.18, html: m.potLabel, cls: 'gl-pot', prio: 4 });
       if (m.button != null && m.button >= 0 && E.ctx.dealerBtn !== false) {
@@ -565,15 +567,15 @@
       var out = { cards: [], chips: [], labels: [] }, tilt = cardTilt(E);
       var shoe = { x: -0.9, y: TOP + 0.12, z: BJ.zd + 0.22 }; E.deck.set(shoe.x, shoe.y, shoe.z);
       var dl = m.dealer || { cards: [] };
-      dl.cards.forEach(function (c, j) { out.cards.push({ id: 'dealer:' + j, face: c, x: (j - Math.max(0, dl.cards.length - 1) / 2) * 0.13, y: TOP + 0.004 + j * 0.001, z: BJ.zd + 0.4, ry: 0, tilt: tilt * 0.6, scale: CARD_S }); });
+      dl.cards.forEach(function (c, j) { out.cards.push({ id: 'dealer:' + j, face: c, x: (j - Math.max(0, dl.cards.length - 1) / 2) * 0.17, y: TOP + 0.004 + j * 0.001, z: BJ.zd + 0.42, ry: 0, tilt: tilt * 0.6, scale: CARD_S }); });
       if (dl.total != null) out.labels.push({ id: 'dtotal', x: 0, y: TOP + 0.24, z: BJ.zd + 0.4, html: '<b>' + dl.total + '</b>', cls: 'gl-total ' + (dl.totalCls || ''), prio: 4 });
       var perSeat = {};
       (m.hands || []).forEach(function (h) { (perSeat[h.seat] = perSeat[h.seat] || []).push(h); });
       Object.keys(perSeat).forEach(function (k) {
         var hs = perSeat[k], seat = +k;
         hs.forEach(function (h, hi) {
-          var sp = TABLES.moon.spot(seat, hi, hs.length), cnt = h.cards.length, w = hs.length > 1 ? 0.066 : 0.085, mine = m.seats[seat] && m.seats[seat].me;
-          h.cards.forEach(function (c, j) { out.cards.push({ id: h.id + ':' + j, face: c, x: sp.x + (j - (cnt - 1) / 2) * w, y: TOP + 0.004 + j * 0.0012, z: sp.z + j * -0.012, ry: (j - (cnt - 1) / 2) * 0.06, tilt: tilt * (mine ? 1 : 0.7), scale: CARD_S * (hs.length > 1 ? 0.88 : 1) }); });
+          var sp = TABLES.moon.spot(seat, hi, hs.length), cnt = h.cards.length, w = hs.length > 1 ? 0.085 : 0.11, mine = m.seats[seat] && m.seats[seat].me;
+          h.cards.forEach(function (c, j) { out.cards.push({ id: h.id + ':' + j, face: c, x: sp.x + (j - (cnt - 1) / 2) * w, y: TOP + 0.004 + j * 0.0012, z: sp.z + j * -0.012, ry: (j - (cnt - 1) / 2) * 0.06, tilt: tilt * (mine ? 1 : 0.7), scale: CARD_S * (hs.length > 1 ? 0.8 : 0.95) }); });
           if (h.bet) out.chips.push({ id: 'bet:' + h.id, amount: h.bet, x: sp.x - bjSeat(seat).c * 0.24, z: sp.z - bjSeat(seat).s * 0.24, from: E.seatPose(seat) });
           var html = '';
           if (h.total != null) html += '<b>' + esc(h.total) + '</b>';
@@ -622,7 +624,10 @@
     }, [props.kind]);
     R.useEffect(function () { if (eng.current) eng.current.update(props.model); });
     if (failed) return props.fallback || null;
-    return html`<div className=${'gl-stage gl-' + props.kind}><div className="gl-view" ref=${ref}></div><div className="gl-hud">${props.children}</div></div>`;
+    var ms = R.useState(GL.audio ? GL.audio.isMuted() : true), muted = ms[0], setMuted = ms[1];
+    R.useEffect(function () { return GL.audio ? GL.audio.onChange(setMuted) : undefined; }, []);
+    return html`<div className=${'gl-stage gl-' + props.kind}><div className="gl-view" ref=${ref}></div><div className="gl-hud">${props.children}
+      ${GL.audio ? html`<button type="button" className="gl-mute" aria-pressed=${!muted} aria-label=${muted ? 'Turn sound on' : 'Mute sound'} onClick=${function () { GL.audio.init(); GL.audio.setMuted(!muted); }}>${muted ? '🔇' : '🔊'}</button>` : null}</div></div>`;
   }
   GL.Stage = Stage;
 })(window);

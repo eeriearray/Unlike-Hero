@@ -248,6 +248,7 @@
         </div></div>
         <div className="spotlight" aria-hidden="true"></div>
       </div>`;
+    var myHandCards = (r ? r.hands : st.last ? st.last.hands : []).filter(function (h) { return h.owner === v.you && h.cards.length; }).map(function (h) { return h.cards; });
     var GL = window.CasinoGL, glOn = !!(GL && GL.Stage && GL.supported());
     var glModel = glOn ? bjModel(v, st, table, now, turnSeat, dealerCards, dealerTotal, me, you, props.onSit) : null;
     return html`<section className=${cx('bj', 'game-blackjack', table.highRoller && 'high-roller')} aria-label=${table.name}>
@@ -260,7 +261,8 @@
         </div>
       </div>
       ${showRules ? html`<${Rules} rules=${st.rules} table=${table} />` : null}
-      ${glOn ? html`<${GL.Stage} kind="moon" model=${glModel} fallback=${scene2d}><div className="gl-status-hud" aria-live="polite">${statusLine(v, st, now)}</div></${GL.Stage}>` : scene2d}
+      ${glOn ? html`<${GL.Stage} kind="moon" model=${glModel} fallback=${scene2d}><div className="gl-status-hud" aria-live="polite">${statusLine(v, st, now)}</div>
+        ${myHandCards.length ? html`<div className="gl-myhand" aria-label="Your cards">${myHandCards.map(function (cs, i) { return html`<${Cards} key=${i} cards=${cs} />`; })}</div>` : null}</${GL.Stage}>` : scene2d}
       ${mySummary && st.phase !== 'playing' ? html`<div className=${cx('round-summary', mySummary.net > 0 && 'up', mySummary.net < 0 && 'down')} role="status">
         <span className="eyebrow">Last round</span>
         <span>Bet <b className="num">${money(mySummary.staked)}</b>${myLastHands.some(function (h) { return h.doubled; }) ? ' · doubled' : ''}${myLastHands.length > 1 ? ' · ' + myLastHands.length + ' hands' : ''}</span>
