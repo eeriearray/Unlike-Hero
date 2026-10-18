@@ -119,6 +119,10 @@
     var GL = window.CasinoGL;
     if (!(GL && GL.Stage && GL.supported())) return html`<${OvalScene2D} ...${props} />`;
     return html`<${GL.Stage} kind="oval" model=${glModel(props)} fallback=${html`<${OvalScene2D} ...${props} />`}>
+      ${props.board && props.board.length ? html`<div className="gl-board" aria-label="Community cards"><${K.Cards} cards=${props.board} /></div>` : null}
+      ${props.reveals && props.reveals.length ? html`<div className="gl-reveals" aria-label="Revealed hands">${props.reveals.map(function (r, i) {
+        return html`<div key=${i} className=${cx('gl-reveal', r.won && 'won')}><span className="gl-reveal-name">${r.name}</span><${K.Cards} cards=${r.cards} />${r.note ? html`<small>${r.note}</small>` : null}</div>`;
+      })}</div>` : null}
       ${props.myHand && props.myHand.length ? html`<div className="gl-myhand" aria-label="Your cards"><${K.Cards} cards=${props.myHand} /></div>` : null}
     </${GL.Stage}>`;
   }

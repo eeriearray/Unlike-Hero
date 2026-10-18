@@ -1309,3 +1309,16 @@ button.seat-orb:hover .orb-glass { box-shadow: inset 0 -.5cqw 1cqw rgba(0, 0, 0,
 .gl-myhand .card { --w: 66px; margin-right: 8px; }
 .round-summary { padding: 8px 12px; font-size: 13px; gap: 6px 14px; }
 @media (max-width: 700px) { .gl-myhand .card { --w: 46px; } .gl-tag .n { max-width: 70px; } }
+
+/* community cards and showdown hands in the HUD, so they're readable whatever the camera is doing */
+.gl-board { position: absolute; left: 50%; top: 44px; transform: translateX(-50%); padding: 6px 10px 6px 8px; border-radius: 10px; background: rgba(12, 8, 5, .66); border: 1px solid rgba(201, 164, 92, .25); }
+.gl-board .card { --w: 40px; animation: none; margin-right: 6px; }
+.gl-board .cards, .gl-reveal .cards { padding-right: 0; }
+.gl-reveals { position: absolute; right: 10px; top: 50px; display: grid; gap: 6px; max-height: calc(100% - 70px); overflow: auto; }
+.gl-reveal { display: grid; grid-template-columns: auto auto; gap: 2px 8px; align-items: center; padding: 5px 8px; border-radius: 8px; background: rgba(12, 8, 5, .78); border: 1px solid rgba(201, 164, 92, .25); }
+.gl-reveal.won { border-color: #f5c451; box-shadow: 0 0 16px rgba(245, 196, 81, .35); }
+.gl-reveal-name { grid-column: 1 / -1; font: 700 12px 'Cormorant Garamond', Georgia, serif; color: #f4ead2; }
+.gl-reveal small { grid-column: 1 / -1; font: 700 10px Manrope, system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #d8b46a; }
+.gl-reveal.won small { color: #6fe0a0; }
+.gl-reveal .card { --w: 30px; animation: none; margin-right: 3px; }
+@media (max-width: 700px) { .gl-board .card { --w: 32px; } .gl-reveal .card { --w: 26px; } .gl-reveals { top: 44px; } }
