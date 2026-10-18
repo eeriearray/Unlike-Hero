@@ -14,6 +14,10 @@
   if (!T || !K) return;
   var R = global.React, html = global.CasinoUI && global.CasinoUI.html;
 
+  // Graphics quality: 0 high (shadows), 1 medium (default), 2 low (no haze/extra lights, 1x pixels, no antialiasing).
+  // It drops a notch by itself whenever the browser loses the GPU context, and the player can set it from the table.
+  GL.getQuality = function () { try { var q = parseInt(localStorage.getItem('hub.casino.quality'), 10); if (q >= 0 && q <= 2) return q; } catch (e) {} return 1; };
+  GL.setQuality = function (q) { try { localStorage.setItem('hub.casino.quality', String(q)); } catch (e) {} };
   var TOP = 0.8;                                         // height of the felt
   var TAU = Math.PI * 2;
   function lerp(a, b, t) { return a + (b - a) * t; }
@@ -46,12 +50,14 @@
     var self = this; GL.last = this; GL.live = (GL.live || 0) + 1;
     this.el = el; this.kind = kind; this.table = TABLES[kind];
     this.coarse = !!(global.matchMedia && global.matchMedia('(pointer: coarse)').matches);
-    this.maxDpr = 1.5;
-    this.renderer = new T.WebGLRenderer({ antialias: !this.coarse, powerPreference: 'high-performance' });
+    this.q = GL.getQuality();
+    this.noShadow = this.coarse || this.q >= 1;
+    this.maxDpr = this.q >= 2 ? 1 : this.q === 1 ? 1.25 : 1.5;
+    this.renderer = new T.WebGLRenderer({ antialias: this.q < 2 && !this.coarse });       // no powerPreference: asking for the discrete GPU can make dual-GPU laptops drop the context
     this.renderer.setPixelRatio(Math.min(global.devicePixelRatio || 1, this.maxDpr));
     this.renderer.outputEncoding = T.sRGBEncoding;
     this.renderer.toneMapping = T.ACESFilmicToneMapping; this.renderer.toneMappingExposure = 1.12;
-    this.renderer.shadowMap.enabled = !this.coarse; this.renderer.shadowMap.type = T.PCFSoftShadowMap;
+    this.renderer.shadowMap.enabled = !this.noShadow; this.renderer.shadowMap.type = T.PCFSoftShadowMap;
     this.renderer.setClearColor(0x050302);
     this.canvas = this.renderer.domElement; this.canvas.className = 'gl-canvas'; this.canvas.setAttribute('role', 'img'); this.canvas.setAttribute('aria-label', 'The table, in 3D. Everything you can do is in the controls below it.');
     el.appendChild(this.canvas);
@@ -68,6 +74,7 @@
     this.room();
     this.lamp();
     this.dust();
+    if (this.q >= 2) { this.back.visible = false; this.fill.visible = false; this.motes.visible = false; }       // low: fewer lights and no dust
     this.ctx = this.table.build(this) || {};
     this.deck = new T.Vector3(0, TOP + 0.02, 0);
     if (this.ctx.deck) this.deck.set(this.ctx.deck.position.x, TOP + 0.06, this.ctx.deck.position.z);
@@ -177,7 +184,7 @@
     var bulb = new T.Mesh(new T.SphereGeometry(0.07, 10, 8), M.glow); bulb.position.y = -0.14; arm.add(bulb);
     var spot = this.spot = new T.SpotLight(0xffc27a, 2.7, 9, 0.62, 0.9, 1.1);
     spot.position.set(0, -0.1, 0); arm.add(spot); var tgt = new T.Object3D(); tgt.position.set(0, -3, 0); arm.add(tgt); spot.target = tgt;
-    spot.castShadow = !this.coarse; spot.shadow.mapSize.set(this.coarse ? 512 : 1024, this.coarse ? 512 : 1024); spot.shadow.bias = -0.0005; spot.shadow.camera.near = 0.5; spot.shadow.camera.far = 6;
+    spot.castShadow = !this.noShadow; spot.shadow.mapSize.set(1024, 1024); spot.shadow.bias = -0.0005; spot.shadow.camera.near = 0.5; spot.shadow.camera.far = 6;
     var glow = this.bulbLight = new T.PointLight(0xffb868, 0.9, 5, 1.3); glow.position.set(0, -0.35, 0); arm.add(glow);
     // haze cone: brighter at the shade, fading with distance
     var c = document.createElement('canvas'); c.width = 4; c.height = 64; var cg = c.getContext('2d'), gr = cg.createLinearGradient(0, 0, 0, 64);
@@ -186,6 +193,7 @@
     var haze = new T.Mesh(new T.CylinderGeometry(0.4, 1.5, 2.6, 24, 1, true), new T.MeshBasicMaterial({ map: ht, transparent: true, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide, fog: false }));
     haze.position.y = -1.45; arm.add(haze);
     this.lampMeshes = [shade, inner, bulb, haze, cord];
+    if (this.q >= 2) haze.visible = false;
     this.scene.add(g);
   };
 
@@ -231,7 +239,7 @@
     (m.seats || []).forEach(function (s, i) {
       seen[i] = true;
       var pose = self.seatPose(i), st = self.seats[i];
-      if (!st) { st = self.seats[i] = { i: i, root: new T.Group(), phase: Math.random() * 6, look: 0, lean: 0, react: 0, kind: '' }; self.scene.add(st.root); st.chair = new T.Mesh(self.chairGeo(), self.m.woodDark); st.chair.castShadow = !self.coarse; st.chair.receiveShadow = true; st.root.add(st.chair); }
+      if (!st) { st = self.seats[i] = { i: i, root: new T.Group(), phase: Math.random() * 6, look: 0, lean: 0, react: 0, kind: '' }; self.scene.add(st.root); st.chair = new T.Mesh(self.chairGeo(), self.m.woodDark); st.chair.castShadow = !self.noShadow; st.chair.receiveShadow = true; st.root.add(st.chair); }
       st.pose = pose; st.data = s;
       var wantKey = s.pid ? s.avatar : '';
       if (st.avKey !== wantKey) {
@@ -249,7 +257,7 @@
   };
   function disposeAnimal(a) { a.body.geometry.dispose(); a.head.children.forEach(function (c) { c.geometry.dispose(); }); }
   E.chairGeo = function () { return this._chair || (this._chair = K.chairGeo()); };
-  E.shadowize = function (o) { if (this.coarse) return; o.traverse(function (c) { if (c.isMesh) c.castShadow = true; }); };
+  E.shadowize = function (o) { if (this.noShadow) return; o.traverse(function (c) { if (c.isMesh) c.castShadow = true; }); };
 
   /** Cards: a mesh each, keyed by id. New cards slide out of the deck (staggered), a changed face flips over. */
   E.syncCards = function (list) {
@@ -258,7 +266,7 @@
       seen[c.id] = true;
       var e = self.cards[c.id];
       if (!e) {
-        var mesh = new T.Mesh(K.cardGeo(c.face), self.m.card); mesh.castShadow = !self.coarse; mesh.rotation.z = Math.PI;
+        var mesh = new T.Mesh(K.cardGeo(c.face), self.m.card); mesh.castShadow = !self.noShadow; mesh.rotation.z = Math.PI;
         e = self.cards[c.id] = { mesh: mesh, face: c.face || null, delay: (c.instant ? 0 : (spawn++) * 0.16 + 0.05), flip: Math.PI, key: c.face || 'x' };
         var from = c.from || self.deck;
         mesh.position.set(from.x, from.y, from.z); mesh.scale.setScalar(0.8); mesh.visible = !!c.instant;
@@ -300,7 +308,7 @@
       var e = self.chips[c.id];
       if (!e) {
         e = self.chips[c.id] = { mesh: new T.Mesh(K.chipStackGeo(chipValues(c.amount)), self.m.vc), amount: c.amount };
-        e.mesh.material = self.m.vcSmooth; e.mesh.castShadow = !self.coarse;
+        e.mesh.material = self.m.vcSmooth; e.mesh.castShadow = !self.noShadow;
         var f = c.from || { x: c.x, z: c.z }; e.mesh.position.set(f.x, c.y == null ? TOP + 0.01 : c.y, f.z); self.scene.add(e.mesh); if (GL.audio) GL.audio.chip(2);
       } else if (e.amount !== c.amount) { if (GL.audio && c.amount > e.amount) GL.audio.chip(1); e.mesh.geometry = K.chipStackGeo(chipValues(c.amount)); e.amount = c.amount; }
       e.t = c;
@@ -475,7 +483,7 @@
     var g = new T.Group(), M = E.m;
     function ext(shape, depth, bevel, mat, y) {
       var geo = new T.ExtrudeGeometry(shape, { depth: depth, bevelEnabled: bevel > 0, bevelSize: bevel, bevelThickness: bevel, bevelSegments: 3, curveSegments: 48 });
-      var m = new T.Mesh(geo, mat); m.rotation.x = -Math.PI / 2; m.position.y = y; m.castShadow = !E.coarse; m.receiveShadow = true; g.add(m); return m;
+      var m = new T.Mesh(geo, mat); m.rotation.x = -Math.PI / 2; m.position.y = y; m.castShadow = !E.noShadow; m.receiveShadow = true; g.add(m); return m;
     }
     ext(shapes.slab, 0.1, 0.012, M.wood, 0.62);                                  // underside apron: 0.62–0.72
     ext(shapes.railRing, 0.05, 0.03, M.leather, 0.76);                           // the padded rail, 0.76–0.84 with its bevel
@@ -662,7 +670,7 @@
     var ref = R.useRef(null), eng = R.useRef(null), st = R.useState(false), failed = st[0], setFailed = st[1], ep = R.useState(0), epoch = ep[0], setEpoch = ep[1];
     R.useEffect(function () {
       if (!ref.current) return;
-      try { eng.current = new Engine(ref.current, props.kind, function () { setEpoch(function (n) { return n + 1; }); }); safeUpdate(eng.current, props.model); }
+      try { eng.current = new Engine(ref.current, props.kind, function () { GL.setQuality(Math.min(2, GL.getQuality() + 1)); setEpoch(function (n) { return n + 1; }); }); safeUpdate(eng.current, props.model); }
       catch (e) { if (global.console) console.warn('3D table unavailable, using the flat table:', e); if (eng.current) { try { eng.current.destroy(); } catch (x) {} eng.current = null; } setFailed(true); return; }
       var click = function (ev) { var b = ev.target.closest && ev.target.closest('.gl-sit'); if (b && eng.current && eng.current.onSit) { ev.preventDefault(); eng.current.onSit(+b.getAttribute('data-seat')); } };
       ref.current.addEventListener('click', click);
@@ -674,6 +682,7 @@
     R.useEffect(function () { return GL.audio ? GL.audio.onChange(setMuted) : undefined; }, []);
     return html`<div className=${'gl-stage gl-' + props.kind}><div className="gl-view" ref=${ref}></div><div className="gl-hud">${props.children}
       
+<button type="button" className="gl-quality" title="Graphics quality: change if the picture flickers or goes blank" onClick=${function () { GL.setQuality((GL.getQuality() + 1) % 3); setEpoch(function (n) { return n + 1; }); }}>${['High', 'Medium', 'Low'][GL.getQuality()]}</button>
       ${GL.audio ? html`<button type="button" className="gl-mute" aria-pressed=${!muted} aria-label=${muted ? 'Turn sound on' : 'Mute sound'} onClick=${function () { GL.audio.init(); GL.audio.setMuted(!muted); }}>${muted ? '🔇' : '🔊'}</button>` : null}</div></div>`;
   }
   GL.Stage = Stage;

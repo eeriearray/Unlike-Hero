@@ -47,7 +47,7 @@
     var self = this, M = E.m;
     this.E = E; this.g = new T.Group(); this.g.position.set(cx, TOP, cz); E.scene.add(this.g);
     var wood2 = M.wood.clone(); wood2.side = T.DoubleSide;
-    function lathe(pts, mat) { var m = new T.Mesh(new T.LatheGeometry(pts.map(function (p) { return new T.Vector2(p[0], p[1]); }), 56), mat); m.castShadow = !E.coarse; m.receiveShadow = true; self.g.add(m); return m; }
+    function lathe(pts, mat) { var m = new T.Mesh(new T.LatheGeometry(pts.map(function (p) { return new T.Vector2(p[0], p[1]); }), 56), mat); m.castShadow = !E.noShadow; m.receiveShadow = true; self.g.add(m); return m; }
     lathe([[0.0, 0.0], [0.52, 0.0], [0.52, 0.07], [0.5, 0.09], [0.43, 0.095], [0.40, 0.08]], wood2);                 // the wooden bowl
     var lac = new T.MeshStandardMaterial({ map: K.woodTex('#4a2410', '#150a04', 6, 33, [4, 1], 6), roughness: 0.28, metalness: 0.1, side: T.DoubleSide });
     this.lac = lac;
@@ -68,7 +68,7 @@
     rot.add(new T.Mesh(new T.LatheGeometry(turret.map(function (p) { return new T.Vector2(p[0], p[1] * 0.62); }), 20), new T.MeshStandardMaterial({ color: 0xd8b25a, roughness: 0.3, metalness: 0.85, emissive: 0x2a1c06 })));
     fb.add(K.G.sph, '#f0d68a', K.M(0, 0.128, 0, 0, 0, 0, 0.018), true);
     rot.add(new T.Mesh(fb.build(), new T.MeshStandardMaterial({ vertexColors: true, roughness: 0.28, metalness: 0.8, emissive: 0x1a1204 })));
-    this.ball = new T.Mesh(new T.SphereGeometry(BALL_R, 14, 10), new T.MeshStandardMaterial({ color: 0xf6f3ea, roughness: 0.15, metalness: 0.15, emissive: 0x25231c })); this.ball.visible = false; this.ball.castShadow = !E.coarse; this.g.add(this.ball);
+    this.ball = new T.Mesh(new T.SphereGeometry(BALL_R, 14, 10), new T.MeshStandardMaterial({ color: 0xf6f3ea, roughness: 0.15, metalness: 0.15, emissive: 0x25231c })); this.ball.visible = false; this.ball.castShadow = !E.noShadow; this.g.add(this.ball);
     this.wheelAt = 0; this.seen = null; this.anim = null; this.ride = null; this.state = 'idle'; this.last = performance.now();
   }
   var W = Wheel3D.prototype;

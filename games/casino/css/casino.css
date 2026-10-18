@@ -1278,3 +1278,4 @@ button.seat-orb:hover .orb-glass { box-shadow: inset 0 -.5cqw 1cqw rgba(0, 0, 0,
 .bot-game { display: block; margin-top: 4px; max-width: 100%; }
 .bot-game { position: relative; z-index: 3; pointer-events: auto; }
 .bot-game { width: fit-content; max-width: 220px; }
+.gl-quality { position: absolute; left: 58px; top: 10px; height: 40px; padding: 0 12px; border-radius: 20px; border: 1px solid rgba(201, 164, 92, .4); background: rgba(10, 6, 3, .75); color: #e8d5a0; font: 700 12px Manrope, system-ui, sans-serif; letter-spacing: .04em; cursor: pointer; }
