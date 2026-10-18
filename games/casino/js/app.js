@@ -48,8 +48,10 @@
     return now + offset.current;
   }
 
+  /** A player's portrait (drawn in js/table-kit.js, which has loaded by the time anything renders). */
   function Avatar(props) {
-    return html`<span className=${cx('avatar', props.size && 'avatar-' + props.size)} aria-hidden="true">${AVATARS[props.id] || '🙂'}</span>`;
+    var P = window.CasinoKit && window.CasinoKit.Portrait;
+    return html`<span className=${cx('avatar', props.size && 'avatar-' + props.size, props.className)} aria-hidden="true">${P ? html`<${P} id=${props.id} tag=${props.tag} />` : null}</span>`;
   }
 
   function Button(props) {
@@ -106,7 +108,7 @@
           <legend>Avatar</legend>
           <div className="avatar-grid" role="radiogroup">
             ${Object.keys(AVATARS).map(function (id) {
-              return html`<button key=${id} type="button" role="radio" aria-checked=${avatar === id} aria-label=${id} className=${cx('avatar-pick', avatar === id && 'on')} onClick=${function () { setAvatar(id); }}>${AVATARS[id]}</button>`;
+              return html`<button key=${id} type="button" role="radio" aria-checked=${avatar === id} aria-label=${id} className=${cx('avatar-pick', avatar === id && 'on')} onClick=${function () { setAvatar(id); }}><${Avatar} id=${id} tag="pick" /></button>`;
             })}
           </div>
         </fieldset>
@@ -219,8 +221,19 @@
       FIELDS.forEach(function (g) { g.items.forEach(function (f) { var a = getPath(draft, f.path); if (a !== getPath(v.settings, f.path)) setPath(patch, f.path, a); }); });
       return props.send({ type: 'settings', settings: patch }).then(function (res) { if (res.error) setErr(res.error); else setDraft(null); });
     }
-    return html`<section className="panel settings" aria-labelledby="settings-h">
-      <div className="panel-head"><h2 id="settings-h">House rules</h2>${!canEdit ? html`<span className="muted small">Set by the host</span>` : null}</div>
+    var o = useState(false), open = o[0], setOpen = o[1];
+    var st = v.settings;
+    var summary = [money(st.startingCash) + ' to start', money(st.minBet) + '–' + money(st.maxBet) + ' bets',
+      st.loans && st.loans.casino ? 'loans at ' + st.loans.interestPct + '%' : 'no loans',
+      st.session.mode === 'time' ? st.session.minutes + ' min' : st.session.mode === 'rounds' ? st.session.rounds + ' rounds' : 'no time limit'].join(' · ');
+    return html`<section className=${cx('settings', open && 'open')} aria-labelledby="settings-h">
+      <button type="button" className="settings-toggle" aria-expanded=${open} onClick=${function () { setOpen(!open); }}>
+        <span id="settings-h" className="eyebrow">House rules</span>
+        <span className="settings-summary num">${summary}</span>
+        <span className="settings-action">${open ? 'Close' : canEdit ? 'Edit' : 'View'}</span>
+      </button>
+      ${open ? html`<div className="settings-body">
+      ${!canEdit ? html`<p className="muted small">Set by the host.</p>` : null}
       <div className="settings-grid">
         ${FIELDS.map(function (g) {
           return html`<fieldset key=${g.group} className="settings-group">
@@ -246,6 +259,7 @@
       ${canEdit && live ? html`<p className="muted small">Starting cash and session length are fixed until this session ends.</p>` : null}
       ${err ? html`<p className="form-error" role="alert">${err}</p>` : null}
       ${canEdit && draft ? html`<div className="row end"><${Button} kind="ghost" onClick=${function () { setDraft(null); setErr(''); }}>Discard</${Button}><${Button} kind="primary" onClick=${save}>Save rules</${Button}></div>` : null}
+      </div>` : null}
     </section>`;
   }
 
@@ -265,7 +279,7 @@
           <p className="muted">One wallet follows you to every table. When the host deals in, the casino opens and betting starts.</p>
         </div>
         <div className="ready-meter" aria-label=${ready.length + ' of ' + present.length + ' ready'}>
-          ${present.map(function (p) { return html`<span key=${p.id} className=${cx('ready-dot', (p.ready || p.isHost) && 'on')} title=${p.name}>${AVATARS[p.avatar]}</span>`; })}
+          ${present.map(function (p) { return html`<span key=${p.id} className=${cx('ready-dot', (p.ready || p.isHost) && 'on')} title=${p.name}><${Avatar} id=${p.avatar} /></span>`; })}
           <span className="muted small">${ready.length}/${present.length} ready</span>
         </div>
         <div className="row">
@@ -324,7 +338,7 @@
               <div className="table-meta">
                 <span className="num">${money(t.minBet)} – ${money(t.maxBet)}</span>
                 ${!t.open ? html`<span className="tag">Opening soon</span>`
-                  : html`<span className="seated-avatars" title=${t.seated.length + ' seated'}>${t.seated.length ? t.seated.map(function (id) { var p = byId(v, id); return p ? html`<span key=${id}>${AVATARS[p.avatar]}</span>` : null; }) : html`<span className="muted">Empty</span>`}</span>`}
+                  : html`<span className="seated-avatars" title=${t.seated.length + ' seated'}>${t.seated.length ? t.seated.map(function (id) { var p = byId(v, id); return p ? html`<${Avatar} key=${id} id=${p.avatar} className="mini" />` : null; }) : html`<span className="muted">Empty</span>`}</span>`}
               </div>
               ${t.open ? html`<button type="button" className="btn table-open" disabled=${!canOpen} onClick=${function () { props.onOpen(t.id); }}>${canOpen ? (byId(v, v.you) && byId(v, v.you).tableId === t.id ? 'Back to your seat' : 'Open table') : 'Opens when the session starts'}</button>` : null}
             </div>
@@ -374,21 +388,19 @@
           <span className="player-tags">${tags}</span>
           ${p.hasWallet ? html`<span className="player-money small">
             <span title="Cash">${money(p.cash)}</span>${p.debt + p.owes > 0 ? html` · <span className="red" title="Debt">debt ${money(p.debt + p.owes)}</span>` : null}
-            ${p.streak >= 3 ? html` · <span title=${p.streak + ' wins in a row'}>🔥${p.streak}</span>` : p.streak <= -3 ? html` · <span title=${-p.streak + ' losses in a row'}>🧊${-p.streak}</span>` : null}
-            ${count ? html` · <span title=${count + ' achievements'}>🏅${count}</span>` : null}
+            ${p.streak >= 3 ? html` · <span className="green" title=${p.streak + ' wins in a row'}>${p.streak}W</span>` : p.streak <= -3 ? html` · <span className="red" title=${-p.streak + ' losses in a row'}>${-p.streak}L</span>` : null}
+            ${count ? html` · <span title=${count + ' achievements'}>★ ${count}</span>` : null}
           </span>` : null}
         </span>
         ${p.hasWallet ? html`<span className="player-worth num" title="Net worth">${money(p.netWorth)}<small className=${cx('profit', p.profit > 0 ? 'green' : p.profit < 0 ? 'red' : 'muted')}>${signed(p.profit)}</small></span>` : null}
       </li>`;
     }
-    return html`<section className="panel players" aria-labelledby="players-h">
-      <div className="panel-head"><h2 id="players-h">${v.session.phase === 'lobby' ? 'Players' : 'Leaderboard'}</h2>
-        <span className="row"><span className="muted small">${v.players.filter(function (p) { return p.connected; }).length}/${v.players.length} online</span>
-        ${v.session.startedAt ? html`<button type="button" className="btn btn-ghost" onClick=${props.onHistory}>History</button>` : null}</span></div>
-      ${ranked.length ? html`<div className="lb-head small muted"><span>Player</span><span>Net worth</span></div>` : null}
+    return html`<div className="rail-pane players">
+      <div className="pane-tools"><span className="muted small">${v.players.filter(function (p) { return p.connected; }).length} of ${v.players.length} online</span>
+        ${v.session.startedAt ? html`<button type="button" className="link" onClick=${props.onHistory}>Session story</button>` : null}</div>
       <ol className="player-list">${ranked.map(function (p, i) { return row(p, i + 1); })}${rest.map(function (p) { return row(p, null); })}</ol>
       ${window.CasinoBank ? html`<${window.CasinoBank.DebtBoard} view=${v} />` : null}
-    </section>`;
+    </div>`;
   }
 
   function BrokeTag(props) {
@@ -401,14 +413,13 @@
   function Feed(props) {
     var v = props.view, now = useNow(v, 15000);
     var items = v.feed.slice().reverse();
-    return html`<section className="panel feed" aria-labelledby="feed-h">
-      <div className="panel-head"><h2 id="feed-h">Activity</h2></div>
+    return html`<div className="rail-pane feed">
       <ul className="feed-list" aria-live="polite">
         ${items.length ? items.map(function (f) {
           return html`<li key=${f.id} className=${'feed-' + f.kind}><span className="feed-text">${f.text}</span><time className="muted small">${timeAgo(f.at, now)}</time></li>`;
         }) : html`<li className="muted small">Nothing yet.</li>`}
       </ul>
-    </section>`;
+    </div>`;
   }
 
   function Chat(props) {
@@ -423,13 +434,12 @@
       setText('');
       props.send({ type: 'chat', text: msg }).then(function (res) { if (res.error) { setText(msg); props.toast(res.error); } });
     }
-    return html`<section className="panel chat" aria-labelledby="chat-h">
-      <div className="panel-head"><h2 id="chat-h">Table talk</h2></div>
+    return html`<div className="rail-pane chat">
       <ul className="chat-list" ref=${listRef}>
         ${v.chat.length ? v.chat.map(function (m) {
           var p = byId(v, m.from);
-          return html`<li key=${m.id}><b>${p ? p.name : 'Someone'}</b> ${m.text}</li>`;
-        }) : html`<li className="muted small">Say hi. Trash talk is encouraged.</li>`}
+          return html`<li key=${m.id} className=${cx(m.from === v.you && 'mine')}>${p ? html`<${Avatar} id=${p.avatar} className="mini" />` : null}<span><b>${p ? p.name : 'Someone'}</b>${m.text}</span></li>`;
+        }) : html`<li className="muted small empty">No messages yet.</li>`}
       </ul>
       <div className="emotes" role="group" aria-label="Reactions">
         ${Object.keys(EMOTES).map(function (k) { return html`<button key=${k} type="button" className="emote" aria-label=${k} onClick=${function () { props.send({ type: 'emote', emote: k }); }}>${EMOTES[k]}</button>`; })}
@@ -438,7 +448,36 @@
         <input value=${text} maxLength="240" placeholder="Message the room" aria-label="Message" onInput=${function (ev) { setText(ev.target.value); }} />
         <button type="submit" className="btn" disabled=${!text.trim()}>Send</button>
       </form>
-    </section>`;
+    </div>`;
+  }
+
+  /**
+   * The side rail: players, activity and chat share one panel behind tabs, and the whole rail folds away so the
+   * table gets the room. Tabs you aren't looking at show a dot when something new arrives.
+   */
+  var RAIL_TABS = [['players', 'Players'], ['feed', 'Activity'], ['chat', 'Chat']];
+  function Rail(props) {
+    var v = props.view;
+    var t = useState(store.get('rail.tab', 'players')), tab = t[0], setTab = t[1];
+    var counts = { players: 0, feed: v.feed.length, chat: v.chat.length };
+    var seen = useRef({ feed: counts.feed, chat: counts.chat });
+    seen.current[tab] = counts[tab];
+    function pick(id) { setTab(id); store.set('rail.tab', id); if (!props.open) props.setOpen(true); }
+    var fresh = { feed: counts.feed > seen.current.feed, chat: counts.chat > seen.current.chat };
+    return html`<aside className=${cx('rail', !props.open && 'folded')} aria-label="Players, activity and chat">
+      <div className="rail-tabs" role="tablist">
+        ${RAIL_TABS.map(function (x) {
+          return html`<button key=${x[0]} type="button" role="tab" aria-selected=${props.open && tab === x[0]} className=${cx('rail-tab', props.open && tab === x[0] && 'on')} onClick=${function () { pick(x[0]); }}>
+            ${x[1]}${fresh[x[0]] ? html`<i className="rail-dot" aria-label="new"></i>` : null}</button>`;
+        })}
+        <button type="button" className="rail-fold" onClick=${function () { props.setOpen(!props.open); }} aria-label=${props.open ? 'Hide panel' : 'Show panel'} title=${props.open ? 'Hide panel' : 'Show panel'}>${props.open ? '›' : '‹'}</button>
+      </div>
+      ${props.open ? html`<div className="rail-body" role="tabpanel">
+        ${tab === 'players' ? html`<${Players} view=${v} onProfile=${props.onProfile} onHistory=${props.onHistory} />`
+          : tab === 'feed' ? html`<${Feed} view=${v} />`
+          : html`<${Chat} view=${v} send=${props.send} toast=${props.toast} />`}
+      </div>` : null}
+    </aside>`;
   }
 
   // ───────────────────────── ledger drawer ─────────────────────────
@@ -546,26 +585,23 @@
     useEffect(function () { props.send({ type: 'watch', tableId: watched }); }, [watched]);
     var S = window.CasinoSocial;
     function standUp() { return props.send({ type: 'stand-up' }); }
+    var ro = useState(store.get('rail.open', true)), railOpen = ro[0];
+    function setRail(open) { ro[1](open); store.set('rail.open', open); }
     return html`<div className=${cx('room', 'phase-' + s.phase)}>
       <${TopBar} view=${v} status=${props.status} onLedger=${props.onLedger} onBank=${props.onBank} onLeave=${props.onLeave} />
-      <div className="room-grid">
+      <div className=${cx('room-grid', !railOpen && 'rail-folded')}>
         <main className="room-main">
           ${window.CasinoBank && (s.phase === 'live' || s.phase === 'paused') ? html`<${window.CasinoBank.MoneyBanner} view=${v} onBank=${props.onBank} />` : null}
           ${S ? html`<${S.ChallengeBanner} view=${v} send=${props.send} />` : null}
           ${showNotice ? html`<div className="banner" role="status"><span>${s.notice.text}</span><button type="button" className="btn btn-ghost" onClick=${function () { store.set('noticeSeen', s.notice.id); setSeen(s.notice.id); }}>Got it</button></div>` : null}
-          ${TableView ? html`<${R.Fragment}><${TableView} view=${v} table=${table} send=${props.send} onBack=${function () { open(null); }} onSit=${sit} onStand=${standUp} />
-              ${S ? html`<${S.ReactionBar} table=${table} send=${props.send} />` : null}</${R.Fragment}>`
+          ${TableView ? html`<${TableView} view=${v} table=${table} send=${props.send} onBack=${function () { open(null); }} onSit=${sit} onStand=${standUp} />`
             : html`<${R.Fragment}>
               ${s.phase === 'ended' ? html`<${Results} view=${v} send=${props.send} onHistory=${props.onHistory} />` : html`<${SessionPanel} view=${v} send=${props.send} />`}
               <${Floor} view=${v} onOpen=${open} />
               <${SettingsPanel} view=${v} send=${props.send} />
             </${R.Fragment}>`}
         </main>
-        <aside className="room-rail">
-          <${Players} view=${v} onProfile=${props.onProfile} onHistory=${props.onHistory} />
-          <${Feed} view=${v} />
-          <${Chat} view=${v} send=${props.send} toast=${props.toast} />
-        </aside>
+        <${Rail} view=${v} open=${railOpen} setOpen=${setRail} send=${props.send} toast=${props.toast} onProfile=${props.onProfile} onHistory=${props.onHistory} />
       </div>
     </div>`;
   }

@@ -110,7 +110,7 @@
     return html`<div className=${cx('figure', 'billboard', pid === v.you && 'me', onTurn && 'on-turn', !p.connected && 'offline')} style=${pos}>
       <div className="figure-body" style=${{ transform: 'rotate(' + tilt + 'deg)' }}><${Character} avatar=${p.avatar} seat=${i} /></div>
       <div className="plaque">
-        <span className="plaque-name"><span aria-hidden="true">${UI.AVATARS[p.avatar]}</span> ${p.name}${pid === v.you ? html` <em>you</em>` : null}</span>
+        <span className="plaque-name">${p.name}${pid === v.you ? html` <em>you</em>` : null}</span>
         <span className="plaque-cash num">${money(p.cash)}</span>
         ${onTurn ? html`<${TimerBar} timer=${st.timer} now=${props.now} />` : null}
       </div>

@@ -4,7 +4,7 @@
   'use strict';
   var R = React, useState = R.useState, useEffect = R.useEffect, useRef = R.useRef;
   var UI = window.CasinoUI, html = UI.html, cx = UI.cx, money = UI.money, signed = UI.signed, Button = UI.Button, useNow = UI.useNow;
-  var K = window.CasinoKit, Chip = K.Chip, TimerBar = K.TimerBar, Character = K.Character;
+  var K = window.CasinoKit, Chip = K.Chip, TimerBar = K.TimerBar;
 
   var WHEEL = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
   var RED = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
@@ -291,8 +291,8 @@
               var total = r ? r.bets.filter(function (b) { return b.owner === pid; }).reduce(function (s, b) { return s + b.amount; }, 0) : 0;
               var res = st.last && st.phase === 'results' ? st.last.players[pid] : null;
               return html`<div key=${pid} className=${cx('rl-player', pid === v.you && 'me', r && r.done[pid] && 'done')}>
-                <div className="rl-figure"><${Character} avatar=${p.avatar} seat=${'r' + i} /></div>
-                <span className="plaque-name">${UI.AVATARS[p.avatar]} ${p.name}</span>
+                <${UI.Avatar} id=${p.avatar} className="rl-face" tag=${'r' + i} />
+                <span className="plaque-name">${p.name}</span>
                 <span className="num small">${res ? html`<b className=${res.net > 0 ? 'green' : res.net < 0 ? 'red' : ''}>${signed(res.net)}</b>` : total ? money(total) + ' bet' : html`<span className="muted">${money(p.cash)}</span>`}</span>
               </div>`;
             })}

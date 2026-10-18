@@ -65,7 +65,7 @@
       return html`<div key=${'f' + s.seat} className=${cx('cr-figure', 'billboard', far(s.slot) && 'far', s.pid === v.you && 'me', onTurn && 'on-turn', !p.connected && 'offline', props.dim && props.dim(s.pid) && 'dim')} style=${pos}>
         <div className="figure-body" style=${{ transform: 'rotate(' + tilt + 'deg)' }}><${Character} avatar=${p.avatar} seat=${'c' + s.seat} /></div>
         <div className="plaque">
-          <span className="plaque-name"><span aria-hidden="true">${UI.AVATARS[p.avatar]}</span> ${p.name}${s.pid === v.you ? html` <em>you</em>` : null}</span>
+          <span className="plaque-name">${p.name}${s.pid === v.you ? html` <em>you</em>` : null}</span>
           <span className="plaque-cash num">${money(p.cash)}</span>
           ${props.plaqueExtra ? props.plaqueExtra(s.pid) : null}
           ${onTurn ? html`<${TimerBar} timer=${st.timer} now=${props.now} />` : null}

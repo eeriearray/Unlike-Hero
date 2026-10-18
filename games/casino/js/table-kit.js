@@ -73,6 +73,76 @@
     antenna: 'M69 30 L69 14 L71 14 L71 30 Z M64 12 a6 6 0 1 0 12 0 a6 6 0 1 0 -12 0'
   };
 
+  // ───────────── portraits: the same sixteen regulars, seen from the front ─────────────
+  // Each keeps the colour and hair of their seated figure. Flat shapes, two tones of shading, one accent each.
+  var SKIN = ['#f0c8a6', '#d9a07a', '#b07650', '#7e4e32'];
+  var FACE = {
+    fox: { skin: 0, extra: 'freckles' }, tiger: { skin: 2 }, panda: { skin: 0, extra: 'glasses' }, owl: { skin: 1, extra: 'monocle' },
+    frog: { skin: 1 }, octopus: { skin: 3, extra: 'earring' }, unicorn: { skin: 0, extra: 'earring' }, dragon: { skin: 2, extra: 'shades' },
+    cat: { skin: 1, extra: 'earring' }, wolf: { skin: 0, extra: 'stubble' }, koala: { skin: 3 }, shark: { skin: 2, extra: 'shades' },
+    monkey: { skin: 3, extra: 'stubble' }, penguin: { skin: 0, extra: 'moustache' }, lion: { skin: 2, extra: 'stubble' }, robot: { robot: true }
+  };
+  var FRONT_HAIR = {
+    short: 'M19 27 C18 15 25 10 32 10 C39 10 46 15 45 27 C43 21 39 18.5 32 18.5 C25 18.5 21 21 19 27 Z',
+    quiff: 'M19 27 C17 14 25 7 34 7.5 C41 8 47 13 45 27 C43 20 40 17 35 16 C31 15.5 27 17 24 19 C21 21 20 24 19 27 Z',
+    bun: 'M19 27 C18 15 25 11 32 11 C39 11 46 15 45 27 C43 21 39 19 32 19 C25 19 21 21 19 27 Z M27 8 a5 5 0 1 0 10 0 a5 5 0 1 0 -10 0',
+    curly: 'M18 29 C15 24 17 18 21 16 C21 11 26 8 30 10 C33 7 38 8 40 11 C44 11 47 15 46 19 C49 22 48 27 46 29 C44 23 40 19.5 32 19.5 C24 19.5 20 23 18 29 Z',
+    pony: 'M19 27 C18 15 25 11 32 11 C39 11 46 15 45 27 C43 21 39 19 32 19 C25 19 21 21 19 27 Z M44 20 C51 25 51 38 47 46 C46 38 45 31 43 26 Z',
+    mohawk: 'M29 19 C28.5 11 30.5 5 32 3 C33.5 5 35.5 11 35 19 Z',
+    bob: 'M18 37 C15 20 22 10 32 10 C42 10 49 20 46 37 C44.5 30 44 23 39 20 C35 18.5 29 18.5 25 20 C20 23 19.5 30 18 37 Z',
+    cap: 'M19 22 C19 13 25 9 32 9 C39 9 45 13 45 22 Z',
+    beanie: 'M19 23 C19 11 25 7 32 7 C39 7 45 11 45 23 Z',
+    tophat: '',
+    antenna: ''
+  };
+
+  function Portrait(props) {
+    var id = props.id, look = LOOKS[id] || ['#c9c3dc', 'short'], color = look[0], hairKey = look[1], face = FACE[id] || { skin: 1 };
+    var skin = SKIN[face.skin || 0], uid = 'pt-' + id + (props.tag || '');
+    var hair = '#1d1714';
+    var eyes = html`<g fill="#24180f"><ellipse cx="27.6" cy="29.5" rx="1.25" ry="1.45" /><ellipse cx="36.4" cy="29.5" rx="1.25" ry="1.45" /></g>
+      <path d="M25.6 26.4 Q27.6 25.4 29.6 26.2 M34.4 26.2 Q36.4 25.4 38.4 26.4" stroke="#24180f" strokeWidth=".9" strokeLinecap="round" fill="none" opacity=".75" />
+      <path d="M29.8 35.4 Q32 36.8 34.2 35.4" stroke="#7a3b2c" strokeWidth="1" strokeLinecap="round" fill="none" />`;
+    var extra = null;
+    if (face.extra === 'shades') extra = html`<g><rect x="23.6" y="27.2" width="7.4" height="4.4" rx="1.6" fill="#0d0d10" /><rect x="33" y="27.2" width="7.4" height="4.4" rx="1.6" fill="#0d0d10" /><path d="M31 28.6 H33" stroke="#0d0d10" strokeWidth="1.2" /><path d="M25 28.2 L27.5 28.2" stroke="#fff" strokeOpacity=".35" strokeWidth=".7" /></g>`;
+    if (face.extra === 'glasses') extra = html`<g fill="none" stroke="#2a2420" strokeWidth=".9"><circle cx="27.6" cy="29.5" r="3.2" /><circle cx="36.4" cy="29.5" r="3.2" /><path d="M30.8 29.3 H33.2" /></g>`;
+    if (face.extra === 'monocle') extra = html`<g fill="none" stroke=${color} strokeWidth=".9"><circle cx="36.4" cy="29.5" r="3.3" /><path d="M39.6 30.5 C41 35 40 40 38 44" strokeWidth=".5" /></g>`;
+    if (face.extra === 'earring') extra = html`<circle cx="44.2" cy="33.6" r="1.3" fill=${color} stroke="#fff" strokeOpacity=".4" strokeWidth=".3" />`;
+    if (face.extra === 'stubble') extra = html`<path d="M23.5 33 C24.5 39 28 41.5 32 41.5 C36 41.5 39.5 39 40.5 33 C38 37 35 38.4 32 38.4 C29 38.4 26 37 23.5 33 Z" fill=${hair} opacity=".28" />`;
+    if (face.extra === 'moustache') extra = html`<path d="M27.6 34.4 C29.4 33 31 33.4 32 34.2 C33 33.4 34.6 33 36.4 34.4 C34.8 35.2 33.2 35 32 34.6 C30.8 35 29.2 35.2 27.6 34.4 Z" fill=${hair} />`;
+    if (face.extra === 'freckles') extra = html`<g fill="#b8673f" opacity=".45"><circle cx="25.8" cy="33" r=".5" /><circle cx="27.4" cy="33.8" r=".5" /><circle cx="36.6" cy="33.8" r=".5" /><circle cx="38.2" cy="33" r=".5" /></g>`;
+
+    var head = face.robot
+      ? html`<g><rect x="21" y="15" width="22" height="25" rx="6" fill=${'url(#' + uid + 'm)'} /><rect x="24" y="24" width="16" height="7" rx="3.5" fill="#0e1414" />
+          <rect x="26" y="26.2" width="4.4" height="2.6" rx="1.3" fill=${color} /><rect x="33.6" y="26.2" width="4.4" height="2.6" rx="1.3" fill=${color} />
+          <path d="M28 35.5 H36" stroke="#0e1414" strokeWidth="1.2" strokeLinecap="round" /><path d="M32 15 V8" stroke="#9aa4a6" strokeWidth="1.4" /><circle cx="32" cy="7" r="2.2" fill=${color} />
+          <rect x="18.6" y="24" width="2.6" height="7" rx="1" fill="#6c7678" /><rect x="42.8" y="24" width="2.6" height="7" rx="1" fill="#6c7678" /></g>`
+      : html`<g>
+          <ellipse cx="20.6" cy="30.5" rx="2.2" ry="3" fill=${skin} /><ellipse cx="43.4" cy="30.5" rx="2.2" ry="3" fill=${skin} />
+          <path d="M20.5 27 C20.5 16 25.5 11.5 32 11.5 C38.5 11.5 43.5 16 43.5 27 C43.5 36 38.5 42 32 42 C25.5 42 20.5 36 20.5 27 Z" fill=${skin} />
+          <path d="M32 11.5 C38.5 11.5 43.5 16 43.5 27 C43.5 36 38.5 42 32 42 C36 39 38.5 34 38.5 27 C38.5 19 36 14 32 11.5 Z" fill="#000" opacity=".08" />
+          ${eyes}${extra}
+          ${hairKey === 'tophat' ? html`<g><rect x="23" y="2.5" width="18" height="13.5" rx="1.2" fill="#121014" /><rect x="23" y="12" width="18" height="2.6" fill=${color} /><ellipse cx="32" cy="16.2" rx="14" ry="2.6" fill="#121014" /></g>`
+            : hairKey === 'cap' ? html`<g><path d=${FRONT_HAIR.cap} fill=${color} /><path d="M17 22.5 Q32 19.5 47 22.5 L46 25 Q32 22.6 18 25 Z" fill=${color} /><path d="M17 22.5 Q32 19.5 47 22.5 L46 25 Q32 22.6 18 25 Z" fill="#000" opacity=".25" /><circle cx="32" cy="9.3" r="1.2" fill="#000" opacity=".3" /></g>`
+            : hairKey === 'beanie' ? html`<g><path d=${FRONT_HAIR.beanie} fill=${color} /><rect x="18.6" y="19" width="26.8" height="5.4" rx="2" fill=${color} /><rect x="18.6" y="19" width="26.8" height="5.4" rx="2" fill="#000" opacity=".22" /><circle cx="32" cy="6" r="2.8" fill=${color} /></g>`
+            : html`<path d=${FRONT_HAIR[hairKey] || FRONT_HAIR.short} fill=${hair} />`}
+        </g>`;
+    return html`<svg className="portrait" viewBox="0 0 64 64" aria-hidden="true">
+      <defs>
+        <radialGradient id=${uid + 'bg'} cx="50%" cy="30%" r="80%"><stop offset="0" stopColor=${color} stopOpacity=".42" /><stop offset="1" stopColor="#0d0b09" stopOpacity="1" /></radialGradient>
+        <linearGradient id=${uid + 'm'} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#e6ecee" /><stop offset="1" stopColor="#7d878a" /></linearGradient>
+      </defs>
+      <rect width="64" height="64" fill=${'url(#' + uid + 'bg)'} />
+      <path d="M27.5 38 H36.5 V46 H27.5 Z" fill=${face.robot ? '#5b6567' : skin} />
+      <path d="M27.5 41 Q32 44 36.5 41 V43 Q32 46 27.5 43 Z" fill="#000" opacity=".15" />
+      <path d="M5 64 C6 52 14 45.5 27 44.5 L32 53 L37 44.5 C50 45.5 58 52 59 64 Z" fill="#17130f" />
+      <path d="M27 44.5 L32 53 L37 44.5 L35 44 L32 49 L29 44 Z" fill="#efe9de" />
+      <path d="M27 44.5 L24 47 L29.5 64 L32 53 Z M37 44.5 L40 47 L34.5 64 L32 53 Z" fill="#241d17" />
+      <path d="M28.6 45.6 L32 47.6 L35.4 45.6 L35.4 49 L32 47.6 L28.6 49 Z" fill=${color} />
+      ${head}
+    </svg>`;
+  }
+
   /** A seated player seen from behind: shaded bust, rim-lit by the table lamp in their colour, on a leather stool. */
   function Character(props) {
     var look = LOOKS[props.avatar] || ['#c9c3dc', 'short'], color = look[0], hair = HAIR[look[1]];
@@ -165,5 +235,5 @@
   /** The table itself: shadow, padded leather rail, felt, printed arcs, betting spots, chip tray, shoe and discard. */
 
   window.CasinoKit = { SUIT: SUIT, RANK: RANK, CHIP_VALUES: CHIP_VALUES, Card: Card, Cards: Cards, Chip: Chip, chipStack: chipStack, Stack: Stack, TimerBar: TimerBar,
-    LOOKS: LOOKS, Character: Character, SeatOrb: SeatOrb, TextureDefs: TextureDefs, lightFrom: lightFrom, Dealer: Dealer };
+    LOOKS: LOOKS, Portrait: Portrait, Character: Character, SeatOrb: SeatOrb, TextureDefs: TextureDefs, lightFrom: lightFrom, Dealer: Dealer };
 })();
