@@ -4,7 +4,7 @@
   'use strict';
   var R = React, useState = R.useState, useEffect = R.useEffect, useRef = R.useRef;
   var UI = window.CasinoUI, html = UI.html, cx = UI.cx, money = UI.money, signed = UI.signed, Button = UI.Button, Avatar = UI.Avatar, useNow = UI.useNow;
-  var K = window.CasinoKit, CHIP_VALUES = K.CHIP_VALUES, Cards = K.Cards, Chip = K.Chip, Stack = K.Stack, TimerBar = K.TimerBar, Character = K.Character, EmptyStool = K.EmptyStool, Dealer = K.Dealer;
+  var K = window.CasinoKit, CHIP_VALUES = K.CHIP_VALUES, Cards = K.Cards, Chip = K.Chip, Stack = K.Stack, TimerBar = K.TimerBar, Character = K.Character, SeatOrb = K.SeatOrb, Dealer = K.Dealer;
 
   var RESULT = { blackjack: 'Blackjack', win: 'Win', push: 'Push', lose: 'Lose', bust: 'Bust' };
 
@@ -42,17 +42,28 @@
     return html`<svg className="bj-svg" viewBox=${'0 0 ' + W + ' ' + H} aria-hidden="true">
       <defs>
         <radialGradient id="bj-felt" cx="50%" cy="10%" r="95%"><stop offset="0" style=${{ stopColor: 'var(--felt-hi)' }} /><stop offset=".55" style=${{ stopColor: 'var(--felt)' }} /><stop offset="1" style=${{ stopColor: 'var(--felt-lo)' }} /></radialGradient>
-        <linearGradient id="bj-rail" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#4a2a19" /><stop offset=".5" stopColor="#2b170d" /><stop offset="1" stopColor="#140a05" /></linearGradient>
+        <radialGradient id="bj-rail" cx="50%" cy="17%" r="85%"><stop offset=".78" stopColor="#4a2d1b" /><stop offset=".86" stopColor="#3a2215" /><stop offset=".93" stopColor="#24150c" /><stop offset="1" stopColor="#120904" /></radialGradient>
         <radialGradient id="bj-lamp" cx="50%" cy="0%" r="75%"><stop offset="0" stopColor="#fff3d6" stopOpacity=".16" /><stop offset="1" stopColor="#fff3d6" stopOpacity="0" /></radialGradient>
-        <filter id="bj-shadow" x="-10%" y="-10%" width="120%" height="140%"><feDropShadow dx="0" dy="18" stdDeviation="16" floodColor="#000" floodOpacity=".7" /></filter>
+        <filter id="bj-soft" x="-20%" y="-20%" width="140%" height="160%"><feGaussianBlur stdDeviation="18" /></filter>
+        <filter id="bj-blur" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="9" /></filter>
+        <${K.TextureDefs} id="bj" />
+        <clipPath id="bj-felt-clip"><path d=${dShape(RIM - 4, 3)} /></clipPath>
       </defs>
       <ellipse cx=${CX} cy="40" rx="560" ry="420" fill="url(#bj-lamp)" />
-      <path d=${dShape(RIM + 34, 18)} fill="url(#bj-rail)" filter="url(#bj-shadow)" />
-      <path d=${dShape(RIM + 34, 18)} fill="none" stroke="#6b4128" strokeWidth="2" strokeOpacity=".7" />
-      <path d=${dShape(RIM + 20, 12)} fill="none" stroke="#000" strokeOpacity=".35" strokeWidth="6" />
-      <path d=${dShape(RIM, 6)} fill="#c9a45c" />
-      <path d=${dShape(RIM - 4, 3)} fill="url(#bj-felt)" />
+      <path d=${dShape(RIM + 44, 18)} transform="translate(0 34)" fill="#000" opacity=".75" filter="url(#bj-soft)" />
+      <path d=${dShape(RIM + 34, 18)} transform="translate(0 22)" fill="#2a170c" filter="url(#bj-tex-wood)" />
+      <path d=${dShape(RIM + 34, 18)} transform="translate(0 22)" fill="#000" opacity=".35" />
+      <path d=${dShape(RIM + 34, 18)} transform="translate(0 11)" fill="#6a3c20" filter="url(#bj-tex-wood)" />
+      <path d=${dShape(RIM + 35, 18)} transform="translate(0 4)" fill="none" stroke="url(#bj-brass)" strokeWidth="2.5" />
+      <path d=${dShape(RIM + 34, 18)} fill="url(#bj-rail)" filter="url(#bj-tex-leather)" />
+      <path d=${dShape(RIM + 21, 12)} fill="none" stroke="#fff" strokeOpacity=".13" strokeWidth="12" filter="url(#bj-blur)" />
+      <path d=${dShape(RIM + 28, 15)} fill="none" stroke="#e8cfa0" strokeOpacity=".4" strokeWidth="1.3" strokeDasharray="7 5" />
+      <path d=${dShape(RIM + 10, 9)} fill="none" stroke="#e8cfa0" strokeOpacity=".28" strokeWidth="1.3" strokeDasharray="7 5" />
+      <path d=${dShape(RIM + 33, 18)} fill="none" stroke="#a87048" strokeWidth="1.5" strokeOpacity=".6" />
+      <path d=${dShape(RIM + 1, 6)} fill="url(#bj-brass)" />
+      <path d=${dShape(RIM - 4, 3)} fill="url(#bj-felt)" filter="url(#bj-tex-felt)" />
       <path d=${dShape(RIM - 4, 3)} fill="url(#bj-lamp)" />
+      <g clipPath="url(#bj-felt-clip)"><path d=${dShape(RIM - 4, 3)} fill="none" stroke="#000" strokeOpacity=".6" strokeWidth="46" filter="url(#bj-blur)" /></g>
       <path id="bj-arc1" d=${arcPath(205, 152, 28)} fill="none" />
       <path id="bj-arc2" d=${arcPath(172, 146, 34)} fill="none" />
       <path d=${arcPath(232, 150, 30)} fill="none" stroke="var(--felt-ink)" strokeOpacity=".5" strokeWidth="1.5" />
@@ -79,7 +90,8 @@
     var lastHands = !r && st.last ? st.last.hands.filter(function (h) { return h.owner === pid; }).map(function (h, i) { return { h: h, i: 'l' + i }; }) : [];
     var list = hands.length ? hands : lastHands;
     var bet = r && r.bets[pid];
-    return html`<div className=${cx('spot', list.length > 1 && 'multi')} style=${at(polar(SPOT_R, SEAT_DEG[props.seat]))}>
+    var pt = polar(SPOT_R, SEAT_DEG[props.seat]);
+    return html`<div className=${cx('spot', list.length > 1 && 'multi')} style=${Object.assign(at(pt), K.lightFrom(pt, CX, CY + 160, 300))}>
       ${list.length ? list.map(function (x) { return html`<${Hand} key=${x.i} hand=${x.h} active=${r && r.turn === x.i} />`; })
         : bet ? html`<${Stack} amount=${bet} />` : null}
     </div>`;
@@ -93,12 +105,9 @@
     var pos = at(polar(CHAR_R, deg));
     var onTurn = p && r && r.turn != null && r.hands[r.turn] && r.hands[r.turn].owner === pid;
     if (!p) {
-      return html`<div className="figure empty" style=${pos}>
-        <div className="figure-body" style=${{ transform: 'rotate(' + tilt + 'deg)' }}><${EmptyStool} /></div>
-        ${props.canSit ? html`<button type="button" className="seat-sit" onClick=${props.onSit}>Sit here</button>` : null}
-      </div>`;
+      return html`<div className="figure empty billboard" style=${pos}><${SeatOrb} canSit=${props.canSit} onSit=${props.onSit} /></div>`;
     }
-    return html`<div className=${cx('figure', pid === v.you && 'me', onTurn && 'on-turn', !p.connected && 'offline')} style=${pos}>
+    return html`<div className=${cx('figure', 'billboard', pid === v.you && 'me', onTurn && 'on-turn', !p.connected && 'offline')} style=${pos}>
       <div className="figure-body" style=${{ transform: 'rotate(' + tilt + 'deg)' }}><${Character} avatar=${p.avatar} seat=${i} /></div>
       <div className="plaque">
         <span className="plaque-name"><span aria-hidden="true">${UI.AVATARS[p.avatar]}</span> ${p.name}${pid === v.you ? html` <em>you</em>` : null}</span>
@@ -206,19 +215,22 @@
         </div>
       </div>
       ${showRules ? html`<${Rules} rules=${st.rules} table=${table} />` : null}
-      <div className="bj-scene">
-        <div className="bj-dealer" style=${at({ x: CX, y: 60 })}><${Dealer} /></div>
+      <div className="bj-scene scene3d">
+        <div className="stage3d"><div className="plane3d"><div className="floor3d" aria-hidden="true"></div>
+        <div className="bj-dealer billboard" style=${at({ x: CX, y: 12 })}><${Dealer} /></div>
         <${TableSvg} seats=${st.seats} you=${v.you} turnSeat=${turnSeat} />
         <div className="dealer-hand" style=${at({ x: CX, y: 200 })}>
           <${Cards} cards=${dealerCards} />
           ${dealerTotal != null ? html`<span className=${cx('total', dealerTotal > 21 && 'bust')}>${dealerTotal}</span>` : null}
         </div>
         <div className="shoe-tag" style=${at({ x: 851, y: 214 })} title="Cards left in the shoe">Shoe ${Math.round((st.shoe.remaining / st.shoe.size) * 100) || 100}%</div>
-        <p className="felt-status" style=${at({ x: CX, y: 342 })} aria-live="polite">${statusLine(v, st, now)}</p>
+        <p className="felt-status billboard" style=${at({ x: CX, y: 342 })} aria-live="polite">${statusLine(v, st, now)}</p>
         ${st.seats.map(function (pid, i) { return html`<${SpotHands} key=${'h' + i} seat=${i} state=${st} playerId=${pid} />`; })}
         ${st.seats.map(function (pid, i) {
           return html`<${SeatFigure} key=${'f' + i} seat=${i} view=${v} state=${st} playerId=${pid} now=${now} canSit=${!you.seated && me && me.status === 'active'} onSit=${props.onSit} />`;
         })}
+        </div></div>
+        <div className="spotlight" aria-hidden="true"></div>
       </div>
       ${mySummary && st.phase !== 'playing' ? html`<div className=${cx('round-summary', mySummary.net > 0 && 'up', mySummary.net < 0 && 'down')} role="status">
         <span className="eyebrow">Last round</span>

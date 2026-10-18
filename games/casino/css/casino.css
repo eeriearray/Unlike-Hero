@@ -294,8 +294,6 @@ input:disabled, select:disabled { opacity: .6; }
 .seat.me { background: rgba(0, 0, 0, .18); }
 .seat.on-turn { background: rgba(0, 0, 0, .25); border: 1px solid color-mix(in srgb, var(--gold) 60%, transparent); box-shadow: 0 0 24px rgba(245, 196, 81, .18); }
 .seat.offline .seat-player { opacity: .5; }
-.seat-sit { background: rgba(0, 0, 0, .25); border: 1px solid rgba(255, 255, 255, .2); color: var(--ink); border-radius: 999px; padding: 8px 14px; font-weight: 600; font-size: 13px; }
-.seat-sit:hover { border-color: var(--gold); color: var(--gold); }
 .seat-hands { display: grid; gap: 10px; justify-items: center; }
 .seat-wait { padding: 20px 0; }
 .seat-player { display: grid; justify-items: center; gap: 2px; text-align: center; max-width: 100%; }
@@ -331,7 +329,7 @@ input:disabled, select:disabled { opacity: .6; }
 /* chips */
 .chip { --chip: #3a3548; width: 34px; height: 34px; border-radius: 50%; display: inline-grid; place-items: center; font: 800 10.5px var(--f-ui); color: #fff;
   background: radial-gradient(circle at 50% 50%, var(--chip) 0 52%, transparent 53%), repeating-conic-gradient(var(--chip) 0 30deg, #fff 30deg 45deg);
-  border: 2px solid var(--chip); box-shadow: 0 2px 0 rgba(0, 0, 0, .45), 0 4px 8px rgba(0, 0, 0, .35); text-shadow: 0 1px 1px rgba(0, 0, 0, .5); }
+  border: 2px solid var(--chip); text-shadow: 0 1px 1px rgba(0, 0, 0, .5); }
 .chip-25 { --chip: #23a35d; } .chip-100 { --chip: #2c2a36; } .chip-500 { --chip: #8b3fd1; } .chip-1000 { --chip: #c9971c; }
 .chip-5000 { --chip: #d6323f; } .chip-25000 { --chip: #2f6fe0; } .chip-100000 { --chip: #13a89a; }
 .stack { display: grid; justify-items: center; gap: 3px; }
@@ -400,11 +398,10 @@ input:disabled, select:disabled { opacity: .6; }
   background: radial-gradient(ellipse 60% 55% at 50% 0%, #2c2340 0%, #120f1b 55%, #06050a 100%); }
 .bj-scene::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 85% 80% at 50% 45%, transparent 60%, rgba(0, 0, 0, .55)); }
 .bj-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.bj-scene > :not(.bj-svg) { position: absolute; transform: translate(-50%, -50%); }
 .felt-print { font: 700 15px var(--f-display); letter-spacing: .16em; fill: var(--felt-ink); opacity: .5; }
 .felt-print.big { font-size: 22px; letter-spacing: .12em; fill: #f5d58a; opacity: .85; }
 
-.bj-dealer { width: 24cqw; z-index: 0; }
+.bj-dealer { width: 30cqw; z-index: 0; }
 .bj-dealer svg, .figure-body svg { display: block; width: 100%; height: auto; }
 .dealer-hand { display: grid; justify-items: center; gap: .7cqw; z-index: 2; }
 .shoe-tag { font-size: clamp(9px, 1.2cqw, 12px); color: rgba(255, 255, 255, .6); background: rgba(0, 0, 0, .35); padding: .2cqw .9cqw; border-radius: 999px; white-space: nowrap; z-index: 2; }
@@ -447,7 +444,6 @@ input:disabled, select:disabled { opacity: .6; }
 .figure.on-turn .plaque { border-color: var(--gold); }
 .plaque .timerbar { height: 4px; margin-top: .2cqw; }
 .plaque .timerbar b { display: none; }
-.figure .seat-sit { position: absolute; left: 50%; top: 55%; transform: translate(-50%, -50%); font-size: clamp(10px, 1.3cqw, 13px); padding: .5cqw 1.3cqw; white-space: nowrap; }
 
 @media (max-width: 600px) {
   .bj-scene { border-radius: 16px; }
@@ -499,11 +495,8 @@ input:disabled, select:disabled { opacity: .6; }
 .rl-scene { display: grid; grid-template-columns: minmax(220px, 34%) minmax(0, 1fr); gap: 18px; align-items: start; padding: 18px; border-radius: 24px; border: 1px solid var(--line);
   background: radial-gradient(ellipse 60% 70% at 30% 0%, #3a1a22 0%, #160c12 55%, #07050a 100%); }
 .rl-wheel-col { display: grid; justify-items: center; gap: 12px; }
-.wheel-wrap { position: relative; width: 100%; max-width: 340px; aspect-ratio: 1; }
-.wheel { width: 100%; height: 100%; filter: drop-shadow(0 18px 30px rgba(0, 0, 0, .6)); }
 .wheel-rotor, .wheel-ball { transform-origin: 100px 100px; transform-box: view-box; }
-.wheel-num { font: 700 7px var(--f-ui); fill: #fff; text-anchor: middle; dominant-baseline: middle; }
-.wheel-pointer { position: absolute; left: 50%; top: -4px; transform: translateX(-50%); width: 0; height: 0; border-left: 9px solid transparent; border-right: 9px solid transparent; border-top: 16px solid var(--gold); z-index: 2; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .6)); }
+.wheel-num { font: 700 6.2px var(--f-ui); fill: #fff; text-anchor: middle; dominant-baseline: middle; }
 .wheel-result { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: grid; justify-items: center; width: 34%; aspect-ratio: 1; place-content: center; border-radius: 50%;
   background: rgba(10, 8, 12, .85); border: 2px solid var(--gold); box-shadow: 0 0 30px rgba(245, 196, 81, .35); animation: pop .4s cubic-bezier(.2, 1.4, .4, 1) both; }
 .wheel-result b { font: 800 clamp(26px, 4vw, 40px)/1 var(--f-display); }
@@ -516,7 +509,7 @@ input:disabled, select:disabled { opacity: .6; }
 .hist.latest { outline: 2px solid var(--gold); }
 
 .layout { position: relative; display: grid; grid-template-columns: 1.1fr repeat(12, 1fr) 1.1fr; grid-template-rows: repeat(3, minmax(44px, auto)) 40px 40px; gap: 0;
-  border: 2px solid rgba(255, 255, 255, .55); border-radius: 10px; overflow: hidden; background: #0d5c37; user-select: none; }
+  border: 2px solid rgba(255, 255, 255, .55); border-radius: 4px; background: transparent; user-select: none; }
 .spot-hit { position: relative; border: 1px solid rgba(255, 255, 255, .45); background: transparent; color: #fff; padding: 0; font: 700 15px var(--f-display); display: grid; place-items: center; min-width: 0; }
 .spot-hit:disabled { opacity: 1; cursor: default; }
 .spot-hit:not(:disabled):hover { background: rgba(255, 255, 255, .12); }
@@ -537,9 +530,6 @@ input:disabled, select:disabled { opacity: .6; }
 .c-top-left { left: -9px; top: -9px; width: 18px; height: 18px; border-radius: 50% !important; }
 .c-bottom-right { right: -9px; bottom: -9px; width: 18px; height: 18px; border-radius: 50% !important; }
 .spot-chip { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: grid; justify-items: center; pointer-events: none; z-index: 3; }
-.spot-chip .chip { width: 26px; height: 26px; font-size: 0; box-shadow: 0 3px 6px rgba(0, 0, 0, .6); }
-.spot-chip b { position: absolute; top: 50%; transform: translateY(-50%); font: 800 10px var(--f-ui); color: #fff; text-shadow: 0 1px 2px #000; }
-.spot-hit.edge .spot-chip .chip { width: 20px; height: 20px; }
 .spot-others { position: absolute; right: 3px; top: 3px; width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 255, 255, .7); pointer-events: none; }
 .spot-hit.won .spot-chip .chip { box-shadow: 0 0 0 3px var(--gold), 0 0 16px rgba(245, 196, 81, .8); }
 .spot-hit.lost .spot-chip { opacity: .45; }
@@ -567,7 +557,6 @@ input:disabled, select:disabled { opacity: .6; }
   container-type: inline-size; border-radius: 24px; border: 1px solid var(--line); overflow: hidden;
   background: radial-gradient(ellipse 60% 55% at 50% 30%, #262038 0%, #110e1a 60%, #06050a 100%); }
 .cr-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.cr-scene > :not(.cr-svg) { position: absolute; transform: translate(-50%, -50%); }
 .cr-figure { width: 14cqw; z-index: 4; display: grid; justify-items: center; }
 .cr-figure.far { z-index: 0; }
 .cr-figure.far .plaque { bottom: auto; top: -1cqw; }
@@ -576,7 +565,6 @@ input:disabled, select:disabled { opacity: .6; }
 .cr-figure.dim .figure-body { opacity: .5; }
 .cr-figure.me .plaque { border-color: rgba(245, 196, 81, .8); }
 .cr-figure.on-turn .plaque { border-color: var(--gold); }
-.cr-figure .seat-sit { position: absolute; left: 50%; top: 55%; transform: translate(-50%, -50%); font-size: clamp(10px, 1.3cqw, 13px); padding: .5cqw 1.3cqw; white-space: nowrap; }
 .plaque-status { font-size: .9em; font-weight: 600; color: var(--ink-2); }
 .plaque-status.blind { color: #c9b8ff; } .plaque-status.seen { color: #8fe3ff; }
 .cr-seat { z-index: 3; }
@@ -615,7 +603,7 @@ input:disabled, select:disabled { opacity: .6; }
 
 @media (max-width: 900px) {
   .rl-scene { grid-template-columns: 1fr; padding: 12px; }
-  .wheel-wrap { max-width: 240px; }
+  .wheel-wrap { max-width: 260px; }
   .layout { grid-template-rows: repeat(3, 34px) 34px 34px; }
   .spot-hit { font-size: 11px; }
   .spot-hit.num .num-label { width: 22px; height: 22px; }
@@ -733,3 +721,382 @@ input:disabled, select:disabled { opacity: .6; }
   .ready-meter { justify-content: flex-start; }
   .session .btn.big { width: 100%; }
 }
+
+/* ═════════════ 3D casino: you're in the chair ═════════════
+   Each table is a plane (.plane3d) tilted away from you inside a perspective stage, so the near rail is close and the
+   felt runs back to the dealer. Everything on the felt — SVG table, cards, chip stacks — lives in that one plane and
+   keeps the table's 1000-unit coordinates. People, seats and the status line are billboards: they stand up off the
+   plane to face you. One lamp hangs over the middle of each table; shadows fall away from it. */
+.scene3d { --tilt: 34deg; --ct: .55cqw; isolation: isolate; }
+/* the scene is shorter than the table plane: tilted back, the plane's far end lands inside it */
+.bj-scene.scene3d { --plane-ar: 1000 / 700; aspect-ratio: 1000 / 650; width: min(100%, calc((100vh - 250px) * 1000 / 650)); }
+.cr-scene.scene3d { --plane-ar: 1000 / 720; aspect-ratio: 1000 / 640; width: min(100%, calc((100vh - 250px) * 1000 / 640)); }
+.scene3d::after { z-index: 5; }
+.stage3d { position: absolute; inset: 0; perspective: 150cqw; perspective-origin: 50% 0%; transform-style: preserve-3d; }
+.plane3d { position: absolute; inset: auto 0 0; aspect-ratio: var(--plane-ar); transform-style: preserve-3d; transform-origin: 50% 100%; transform: translateY(var(--plane-y, -1%)) rotateX(var(--tilt)); }
+.plane3d > :not(svg):not(.floor3d) { position: absolute; transform: translate(-50%, -50%) translateZ(.15cqw); transform-style: preserve-3d; }
+.plane3d > .billboard { transform: translate(-50%, -50%) rotateX(calc(var(--tilt) * -1)); transform-origin: 50% 100%; }
+.plane3d > svg { transform: translateZ(0); }
+/* the casino carpet the table stands on, fading into the dark */
+.floor3d { position: absolute; inset: -60% -70% -12%; transform: translateZ(-1px); pointer-events: none;
+  background:
+    radial-gradient(ellipse 46% 42% at 50% 62%, transparent 35%, #07060b 80%),
+    repeating-conic-gradient(from 45deg, rgba(245, 196, 81, .035) 0 25%, transparent 0 50%) 0 0 / 5cqw 5cqw,
+    radial-gradient(circle at 50% 60%, #2a1322 0%, #160b14 60%, #0a070c 100%); }
+/* the lamp over the table: a shade at the top and a soft cone of light */
+.spotlight { position: absolute; inset: 0; pointer-events: none; z-index: 6; mix-blend-mode: screen;
+  background:
+    conic-gradient(at 50% -12%, transparent 0 158deg, rgba(255, 236, 196, .05) 166deg, rgba(255, 236, 196, .09) 180deg, rgba(255, 236, 196, .05) 194deg, transparent 202deg),
+    radial-gradient(ellipse 40% 26% at 50% 0%, rgba(255, 230, 180, .16), transparent 70%); }
+.spotlight::before { content: ''; position: absolute; left: 50%; top: 0; width: 14%; height: 3.2%; translate: -50% 0; mix-blend-mode: normal;
+  border-radius: 0 0 50% 50% / 0 0 100% 100%; background: linear-gradient(#2a2330, #0c0a10); box-shadow: 0 6px 30px 6px rgba(255, 226, 160, .35); }
+.bj-scene, .cr-scene { box-shadow: 0 30px 80px -30px rgba(0, 0, 0, .9), inset 0 1px 0 rgba(255, 255, 255, .05); }
+
+/* things that sit on the felt keep their 3D so chip stacks can rise out of it */
+.plane3d :is(.spot, .hand, .stack, .cr-hand, .cr-middle, .cr-center, .cr-seat, .dealer-hand) { transform-style: preserve-3d; }
+.plane3d .cards { transform-style: preserve-3d; transform: translateZ(.1cqw); }
+.plane3d .card { translate: 0 0 calc(var(--i, 0) * .12cqw);
+  box-shadow: calc(var(--lx, 0) * .8cqw) calc(var(--ly, -.3) * .8cqw + .3cqw) 1cqw rgba(0, 0, 0, .55), inset 0 0 0 1px rgba(255, 255, 255, .6); }
+.plane3d .card-back { box-shadow: calc(var(--lx, 0) * .8cqw) calc(var(--ly, -.3) * .8cqw + .3cqw) 1cqw rgba(0, 0, 0, .55); }
+.plane3d .spot .hand.active { box-shadow: 0 0 2.4cqw rgba(245, 196, 81, .35); }
+.plane3d .total, .plane3d .hand-meta .tag, .plane3d .stack b, .plane3d .pot-tag { box-shadow: 0 .3cqw .8cqw rgba(0, 0, 0, .5); }
+
+/* chips: a real stack, one chip-thickness (--ct) per chip, with an edge and a shadow on the felt */
+.plane3d .stack-chips { --cw: clamp(14px, 2.9cqw, 30px); position: relative; display: block; width: var(--cw); height: var(--cw); transform-style: preserve-3d; }
+.cr-scene .plane3d .stack-chips { --cw: clamp(14px, 2.6cqw, 28px); }
+.plane3d .stack-chips .chip { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; transform-style: preserve-3d;
+  transform: translateZ(calc(var(--z, 0) * var(--ct) + var(--ct))); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .25); }
+.plane3d .stack-chips .chip::before, .layout .spot-chip .chip::before { content: ''; position: absolute; inset: -2px; border-radius: 50%;
+  background: repeating-conic-gradient(color-mix(in srgb, var(--chip) 70%, #000) 0 30deg, #bdb8c8 30deg 45deg); transform: translateZ(calc(var(--ct) * -.5)); }
+.plane3d .stack-chips::after { content: ''; position: absolute; inset: -18%; border-radius: 50%; background: radial-gradient(closest-side, rgba(0, 0, 0, .6), transparent);
+  transform: translate(calc(var(--lx, 0) * var(--n, 1) * .3cqw), calc(var(--ly, 0) * var(--n, 1) * .3cqw + .3cqw)); }
+.plane3d .stack b { transform: translateZ(.2cqw); }
+
+/* chips everywhere else: a coin with a visible edge */
+.chip { box-shadow: inset 0 1px 1px rgba(255, 255, 255, .35), 0 1px 0 color-mix(in srgb, var(--chip) 60%, #000), 0 2px 0 color-mix(in srgb, var(--chip) 48%, #000),
+  0 3px 0 color-mix(in srgb, var(--chip) 36%, #000), 0 6px 10px rgba(0, 0, 0, .45); }
+.chip-btn { transition: transform .12s; }
+.chip-btn:active:not(:disabled) { transform: translateY(2px) !important; }
+.chip-btn:active:not(:disabled) .chip { box-shadow: inset 0 1px 1px rgba(255, 255, 255, .35), 0 1px 0 color-mix(in srgb, var(--chip) 40%, #000), 0 2px 4px rgba(0, 0, 0, .45); }
+
+/* people stand up off the floor; the dealer rises from behind the table's straight edge */
+.plane3d .figure-body { filter: drop-shadow(0 .8cqw 1cqw rgba(0, 0, 0, .55)); }
+.bj-scene .felt-status { box-shadow: 0 .6cqw 1.6cqw rgba(0, 0, 0, .5); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); border: 1px solid rgba(255, 255, 255, .12); }
+.bj-scene .bj-dealer .dealer-svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 -.4cqw 1.6cqw rgba(255, 220, 150, .15)); }
+
+/* open seats: a beveled glass puck hovering over the carpet; pressing it pushes it down into the floor */
+.figure.empty, .cr-figure.empty { width: 14cqw; height: 10cqw; }
+.seat-orb { position: absolute; left: 50%; bottom: 0; translate: -50% 0; width: 12cqw; min-width: 64px; aspect-ratio: 1 / .62; padding: 0; border: 0; background: none; border-radius: 50%;
+  display: grid; place-items: center; color: #fff; animation: orb-float 2.6s ease-in-out infinite alternate; }
+.seat-orb::before { content: ''; position: absolute; left: -16%; right: -16%; bottom: -28%; height: 50%; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(245, 196, 81, .4), rgba(245, 196, 81, .08) 60%, transparent); transition: opacity .15s; }
+.orb-glass { position: relative; width: 100%; height: 100%; border-radius: 50%; display: grid; place-items: center; transition: transform .12s ease-out, box-shadow .12s ease-out;
+  background:
+    radial-gradient(ellipse 60% 40% at 38% 26%, rgba(255, 255, 255, .7), rgba(255, 255, 255, .1) 55%, transparent 70%),
+    radial-gradient(ellipse at 50% 70%, rgba(255, 214, 120, .65), rgba(170, 110, 20, .45) 50%, rgba(30, 18, 6, .85) 100%);
+  box-shadow: inset 0 -.5cqw 1cqw rgba(0, 0, 0, .5), inset 0 .25cqw .4cqw rgba(255, 255, 255, .45), 0 0 0 1px rgba(255, 226, 160, .55),
+    0 .35cqw 0 #8a5d16, 0 .7cqw 0 #5a3a0c, 0 1.2cqw 1.6cqw rgba(0, 0, 0, .6), 0 0 2.6cqw rgba(245, 196, 81, .4); }
+.orb-label { font: 800 clamp(9px, 1.25cqw, 13px)/1 var(--f-ui); letter-spacing: .08em; text-transform: uppercase; text-shadow: 0 1px 2px rgba(0, 0, 0, .8); white-space: nowrap; }
+button.seat-orb:hover .orb-glass { transform: translateY(-.25cqw); box-shadow: inset 0 -.5cqw 1cqw rgba(0, 0, 0, .45), inset 0 .25cqw .4cqw rgba(255, 255, 255, .55), 0 0 0 1px rgba(255, 236, 190, .8),
+    0 .35cqw 0 #8a5d16, 0 .7cqw 0 #5a3a0c, 0 1.6cqw 2cqw rgba(0, 0, 0, .6), 0 0 4cqw rgba(245, 196, 81, .65); }
+button.seat-orb:active .orb-glass { transform: translateY(.6cqw); box-shadow: inset 0 -.2cqw .6cqw rgba(0, 0, 0, .5), inset 0 .25cqw .4cqw rgba(255, 255, 255, .35), 0 0 0 1px rgba(255, 226, 160, .55),
+    0 .1cqw 0 #5a3a0c, 0 .3cqw .6cqw rgba(0, 0, 0, .7), 0 0 1.4cqw rgba(245, 196, 81, .3); }
+button.seat-orb:active::before { opacity: .5; }
+button.seat-orb:focus-visible { outline: none; }
+button.seat-orb:focus-visible .orb-glass { outline: 2px solid var(--gold); outline-offset: 3px; }
+.seat-orb.idle { animation: none; opacity: .55; }
+.seat-orb.idle .orb-glass { background:
+    radial-gradient(ellipse 60% 40% at 38% 26%, rgba(255, 255, 255, .45), transparent 70%),
+    radial-gradient(ellipse at 50% 70%, rgba(160, 150, 200, .35), rgba(20, 18, 30, .85) 100%);
+  box-shadow: inset 0 -.5cqw 1cqw rgba(0, 0, 0, .5), 0 0 0 1px rgba(255, 255, 255, .2), 0 .35cqw 0 #2a2636, 0 .7cqw 0 #18161f, 0 1.2cqw 1.6cqw rgba(0, 0, 0, .6); }
+.seat-orb.idle::before { background: radial-gradient(closest-side, rgba(160, 150, 220, .2), transparent); }
+@keyframes orb-float { from { translate: -50% 0; } to { translate: -50% -.6cqw; } }
+
+/* ───────────── floating HUD ───────────── */
+.topbar { background: linear-gradient(180deg, rgba(11, 10, 18, .82), rgba(11, 10, 18, .45)); border-bottom-color: rgba(255, 255, 255, .05); }
+.wallet { position: relative; border-radius: 16px; padding: 5px 6px 5px 8px; border: 1px solid rgba(255, 255, 255, .16);
+  background: linear-gradient(135deg, rgba(255, 255, 255, .13), rgba(255, 255, 255, .03) 55%, rgba(245, 196, 81, .06));
+  backdrop-filter: blur(18px) saturate(170%); -webkit-backdrop-filter: blur(18px) saturate(170%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), inset 0 -1px 0 rgba(0, 0, 0, .35), 0 16px 30px -12px rgba(0, 0, 0, .85), 0 30px 60px -30px rgba(245, 196, 81, .35);
+  transform: perspective(900px) translateZ(12px) rotateX(8deg); transform-origin: 50% 0; transition: transform .25s, box-shadow .25s; }
+.wallet:hover { transform: perspective(900px) translateZ(20px) rotateX(4deg); }
+.wallet::after { content: ''; position: absolute; inset: 1px 12% auto; height: 40%; border-radius: 14px 14px 50% 50%; pointer-events: none;
+  background: linear-gradient(rgba(255, 255, 255, .12), transparent); }
+.wallet-item { border-right-color: rgba(255, 255, 255, .1); }
+.wallet-item b { text-shadow: 0 1px 0 rgba(0, 0, 0, .6); }
+.wallet-item.cash b { text-shadow: 0 0 14px rgba(245, 196, 81, .55), 0 1px 0 rgba(0, 0, 0, .6); }
+.wallet-item.debt b { text-shadow: 0 0 14px rgba(255, 93, 108, .5), 0 1px 0 rgba(0, 0, 0, .6); }
+
+/* ───────────── roulette: a sunken wheel and a tilted layout ───────────── */
+.rl-scene { position: relative; overflow: hidden; isolation: isolate; box-shadow: 0 30px 80px -30px rgba(0, 0, 0, .9);
+  background: radial-gradient(ellipse 70% 50% at 50% 0%, #3a1a22 0%, #160c12 55%, #07050a 100%); }
+.rl-scene > :not(.spotlight) { position: relative; z-index: 1; }
+.rl-scene .spotlight { z-index: 2; }
+.wheel-wrap { --wt: 50deg; position: relative; width: 100%; max-width: 360px; aspect-ratio: 1 / .78; container-type: inline-size; perspective: 160cqw; perspective-origin: 50% -30%; }
+.wheel-3d { position: absolute; left: 4%; right: 4%; top: 50%; aspect-ratio: 1; transform-style: preserve-3d; transform: translateY(-52%) rotateX(var(--wt)); }
+.wheel-3d > * { position: absolute; border-radius: 50%; }
+/* the wheel's rim and its cabinet sides, stacked down from the top surface */
+.wheel-rim { inset: 0; transform-style: preserve-3d;
+  background: radial-gradient(circle closest-side, transparent 0 86%, #f0cf7a 86.5%, #a87a2a 88%, #6b3d22 89%, #4a2814 94%, #2a160a 99%, #e0b866 99.5%); }
+.wheel-rim::before, .wheel-rim::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle closest-side, transparent 0 86%, #2a160a 87%, #160b05 100%); }
+.wheel-rim::before { transform: translateZ(-2.5cqw); }
+.wheel-rim::after { transform: translateZ(-5cqw); background: radial-gradient(circle closest-side, transparent 0 86%, #1a0d06 87%, #0b0603 100%); }
+/* the bowl wall sloping down to the rotor */
+.wheel-wall { background: radial-gradient(circle closest-side, transparent 0 88%, var(--wc) 89%, color-mix(in srgb, var(--wc) 60%, #000) 100%); }
+.wheel-wall.w1 { --wc: #5a3520; inset: 2.5%; transform: translateZ(-1.6cqw); }
+.wheel-wall.w2 { --wc: #452816; inset: 4.5%; transform: translateZ(-3.2cqw); }
+.wheel-wall.w3 { --wc: #331c0e; inset: 6.5%; transform: translateZ(-4.8cqw); }
+.wheel { inset: 7%; width: 86%; height: 86%; transform: translateZ(-6cqw); }
+.wheel-shadow { inset: -6%; transform: translateZ(-9cqw) translateY(5cqw); background: radial-gradient(closest-side, rgba(0, 0, 0, .75), rgba(0, 0, 0, .3) 70%, transparent); }
+/* the turret rising out of the rotor */
+.wheel-turret { left: 50%; top: 50%; width: 0; height: 0; transform-style: preserve-3d; transform: translateZ(-6cqw); }
+.wheel-turret > span { position: absolute; left: 0; top: 0; border-radius: 50%; }
+.turret-dome { width: 24cqw; height: 24cqw; transform: translate(-50%, -50%) translateZ(2cqw);
+  background: radial-gradient(circle at 42% 34%, #fff6cf 0, #f3d27a 18%, #b8862e 52%, #5a3a12 85%, #2a1a08 100%);
+  box-shadow: 0 0 0 .5cqw rgba(0, 0, 0, .35), 0 0 3cqw rgba(0, 0, 0, .6); }
+.turret-post { width: 2.6cqw; height: 9cqw; border-radius: 1.3cqw !important; transform-origin: 50% 100%; transform: translate(-50%, -100%) translateZ(2.4cqw) rotateX(calc(var(--wt) * -1));
+  background: linear-gradient(90deg, #6b4a18, #f7e09a 35%, #fff8dc 45%, #c9a04a 70%, #5a3a12); }
+.turret-knob { width: 5.4cqw; height: 5.4cqw; transform: translate(-50%, -50%) translateZ(11.2cqw) rotateX(calc(var(--wt) * -1));
+  background: radial-gradient(circle at 36% 32%, #fffbe8, #f3d27a 35%, #9a6c22 75%, #3a2408); box-shadow: 0 .8cqw 1.4cqw rgba(0, 0, 0, .5); }
+/* the pointer stands on the far rim, over the pocket the ball lands in */
+.wheel-pointer { left: 50%; top: 1%; width: 0; height: 0; border-radius: 0 !important; transform-origin: 50% 100%; transform: translate(-50%, -100%) rotateX(calc(var(--wt) * -1));
+  border-left: 2.6cqw solid transparent; border-right: 2.6cqw solid transparent; border-top: 4.4cqw solid var(--gold); filter: drop-shadow(0 .6cqw .6cqw rgba(0, 0, 0, .6)); }
+.wheel-result { top: 46%; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); background: rgba(10, 8, 12, .7); box-shadow: 0 0 30px rgba(245, 196, 81, .35), 0 18px 30px rgba(0, 0, 0, .55); z-index: 3; }
+
+/* the betting layout, printed on felt that tilts away from you, inside a padded rail */
+.rl-table { perspective: 1200px; perspective-origin: 50% -40%; padding: 4px 4px 22px; }
+.rl-felt { --gt: 24deg; --ct: 4px; position: relative; padding: clamp(10px, 2vw, 18px); border-radius: 26px; transform-origin: 50% 100%; transform: rotateX(var(--gt)); transform-style: preserve-3d;
+  background: radial-gradient(ellipse 70% 80% at 50% 25%, #1f9a5e 0%, #0f6b3f 55%, #063a22 100%);
+  border: clamp(8px, 1.4vw, 14px) solid #2b170d;
+  box-shadow: inset 0 0 0 2px rgba(201, 164, 92, .8), inset 0 0 40px rgba(0, 0, 0, .65), inset 0 0 0 1px #000,
+    0 0 0 1px #6b4128, 0 8px 0 #160b05, 0 14px 0 #0b0604, 0 40px 50px -10px rgba(0, 0, 0, .85); }
+.rl-felt::before { content: ''; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none; background: radial-gradient(ellipse 50% 60% at 50% 0%, rgba(255, 243, 214, .14), transparent 70%); }
+.layout, .layout .spot-hit, .layout .hot-cell { transform-style: preserve-3d; }
+.layout { box-shadow: 0 0 0 1px rgba(0, 0, 0, .25); }
+.spot-hit { text-shadow: 0 1px 0 rgba(0, 0, 0, .35); }
+.spot-hit.num .num-label { box-shadow: inset 0 -1px 2px rgba(0, 0, 0, .4), inset 0 1px 1px rgba(255, 255, 255, .15); }
+.spot-hit.zero { background: rgba(23, 138, 82, .75); }
+/* chips you place stack up off the layout; your total floats on top of the stack */
+.layout .spot-chip { --cw: 26px; width: var(--cw); height: var(--cw); transform-style: preserve-3d; }
+.spot-hit.edge .spot-chip { --cw: 20px; }
+.layout .spot-chip .chip { position: absolute; inset: 0; width: 100%; height: 100%; font-size: 0; transform-style: preserve-3d;
+  transform: translateZ(calc(var(--z, 0) * var(--ct) + var(--ct))); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .25); }
+.layout .spot-chip::after { content: ''; position: absolute; inset: -20%; border-radius: 50%; background: radial-gradient(closest-side, rgba(0, 0, 0, .55), transparent); transform: translateY(calc(var(--n, 1) * 1.2px + 2px)); }
+.spot-chip b { position: absolute; left: 50%; bottom: 50%; white-space: nowrap; font: 800 10px var(--f-ui); color: #fff; padding: 1px 5px; border-radius: 999px; background: rgba(0, 0, 0, .65);
+  transform-origin: 50% 100%; transform: translateX(-50%) translateZ(calc(var(--n, 1) * var(--ct) + 6px)) rotateX(calc(var(--gt) * -1)); }
+.spot-hit.won .spot-chip .chip { box-shadow: 0 0 0 2px var(--gold), 0 0 14px rgba(245, 196, 81, .8); }
+
+@media (max-width: 900px) {
+  .scene3d { --tilt: 28deg; }
+  .rl-felt { --gt: 18deg; }
+}
+@media (max-width: 600px) {
+  .scene3d { --tilt: 22deg; }
+  .rl-felt { --gt: 12deg; border-radius: 16px; }
+  .wheel-wrap { --wt: 44deg; }
+  .wallet { transform: none; }
+  .wallet:hover { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .seat-orb { animation: none; }
+}
+
+/* ───────────── surface textures (CSS side; the SVG tables use CasinoKit.TextureDefs) ───────────── */
+:root {
+  /* fine dark speckle for felt nap */
+  --tex-nap: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1.2 .95'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* long streaky grain for wood */
+  --tex-wood: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='240'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.004 .12' numOctaves='4' seed='12' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .08 0 0 0 0 .04 0 0 0 0 .01 0 0 0 -2.2 1.35'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23w)'/%3E%3C/svg%3E");
+}
+/* roulette: felt with a nap, framed in grained walnut with a brass inlay */
+.rl-felt { border-color: transparent;
+  background:
+    radial-gradient(ellipse 50% 60% at 50% 0%, rgba(255, 243, 214, .12), transparent 70%) padding-box,
+    var(--tex-nap) padding-box,
+    radial-gradient(ellipse 70% 80% at 50% 25%, #1f9a5e 0%, #0f6b3f 55%, #063a22 100%) padding-box,
+    var(--tex-wood) border-box,
+    linear-gradient(100deg, #5e351d, #3a1f10 30%, #6e4226 55%, #331a0c 80%, #5a321b) border-box;
+  background-size: auto, 180px 180px, auto, 600px 240px, auto; }
+.rl-felt::before { display: none; }
+.spot-hit.num .num-label { background-image: radial-gradient(circle at 40% 30%, rgba(255, 255, 255, .22), transparent 60%); }
+/* the wheel: walnut rim with a lacquered sheen, cut out over the bowl */
+.wheel-rim { -webkit-mask: radial-gradient(circle closest-side, transparent 85.8%, #000 86%); mask: radial-gradient(circle closest-side, transparent 85.8%, #000 86%);
+  background:
+    radial-gradient(circle closest-side, transparent 0 86%, #f0cf7a 86.5%, #a87a2a 88%, transparent 89%, transparent 98.6%, #e0b866 99.2%),
+    conic-gradient(from 200deg, rgba(255, 255, 255, .18), transparent 20%, rgba(255, 255, 255, .1) 45%, transparent 65%, rgba(255, 255, 255, .16) 85%, rgba(255, 255, 255, .18)),
+    var(--tex-wood) 0 0 / 300px 120px,
+    radial-gradient(circle closest-side, #6b3d22 86%, #4a2814 94%, #2a160a 100%); }
+.wheel-wall { background-image: radial-gradient(circle closest-side, transparent 0 88%, var(--wc) 89%, color-mix(in srgb, var(--wc) 60%, #000) 100%); }
+/* carpet: a real repeating pattern with pile, fading off into the dark */
+.floor3d { background:
+    radial-gradient(ellipse 46% 42% at 50% 62%, transparent 30%, #07060b 82%),
+    var(--tex-nap) 0 0 / 120px 120px,
+    radial-gradient(circle at 50% 50%, rgba(245, 196, 81, .14) 0 .5cqw, transparent .6cqw) 0 0 / 5cqw 5cqw,
+    repeating-conic-gradient(from 45deg, #3a1428 0 25%, #2a0f1e 0 50%) 0 0 / 5cqw 5cqw; }
+/* the player dock and HUD get the same felt nap so nothing reads as flat plastic */
+.dock { background: var(--tex-nap) 0 0 / 180px 180px, rgba(22, 19, 31, .95); box-shadow: 0 -10px 30px -12px rgba(0, 0, 0, .7), inset 0 1px 0 rgba(255, 255, 255, .06); }
+
+/* ═════════════ house style: quiet luxury ═════════════
+   Warm black, ivory and one brass accent. A serif for names and money, a plain sans for everything else. Hairline
+   rules instead of boxes, shadows instead of glows; colour is kept for the felt, the chips and what you won or owe. */
+:root {
+  --bg: #0c0a08; --bg-2: #110f0c; --panel: #14110e; --panel-2: #1b1713;
+  --line: rgba(236, 222, 196, .08); --line-2: rgba(236, 222, 196, .16);
+  --ink: #f1ebdf; --ink-2: #cdc4b3; --muted: #8e8576;
+  --gold: #d2ad66; --gold-ink: #1c1407;
+  --pink: #c9707f; --red: #e0707a; --green: #7fbf8e;
+  --radius: 12px;
+  --f-ui: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --f-display: 'Cormorant Garamond', 'Times New Roman', serif;
+}
+body { background: var(--bg); background-image: radial-gradient(ellipse 90% 60% at 50% -20%, rgba(210, 173, 102, .07), transparent 60%); font-size: 14.5px; letter-spacing: .005em; }
+h1, h2, h3 { font-weight: 600; letter-spacing: 0; }
+h2 { font-size: 22px; }
+h3 { font-size: 18px; }
+.num { font-variant-numeric: lining-nums tabular-nums; }
+.eyebrow { font: 600 10.5px/1.2 var(--f-ui); letter-spacing: .18em; }
+
+/* buttons: flat, small radius, no glow */
+.btn { border-radius: 8px; min-height: 38px; font-weight: 600; font-size: 13.5px; background: transparent; border-color: var(--line-2); transition: background .15s, border-color .15s, color .15s, transform .1s; }
+.btn:hover:not(:disabled) { background: rgba(236, 222, 196, .05); border-color: rgba(236, 222, 196, .3); }
+.btn-primary { background: linear-gradient(180deg, #ddbb77, #c39c55); border-color: #c39c55; color: var(--gold-ink); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 1px 2px rgba(0, 0, 0, .4); }
+.btn-primary:hover:not(:disabled) { background: linear-gradient(180deg, #e6c789, #cba65f); border-color: #cba65f; }
+.btn-ghost { border-color: transparent; color: var(--ink-2); }
+.btn-ghost:hover:not(:disabled) { color: var(--ink); border-color: var(--line-2); }
+.btn-danger { border-color: rgba(224, 112, 122, .35); color: var(--red); }
+input:not([type=checkbox]), select { background: #0f0d0a; border-color: var(--line-2); border-radius: 8px; }
+
+/* panels, tags, pills */
+.panel { background: var(--panel); border-color: var(--line); box-shadow: 0 1px 0 rgba(255, 255, 255, .02) inset; }
+.tag { border-radius: 4px; padding: 3px 6px; font-size: 10px; letter-spacing: .1em; }
+.banner { background: rgba(201, 112, 127, .07); border-color: rgba(201, 112, 127, .3); color: var(--ink); }
+
+/* entrance */
+.logo { font-weight: 600; letter-spacing: -.01em; }
+.logo em { font-style: italic; text-shadow: none; }
+.logo-mark span { border-radius: 50%; background: transparent; border-color: var(--line-2); }
+.logo-mark span:nth-child(even) { color: var(--gold); }
+.avatar-pick.on { background: rgba(210, 173, 102, .08); transform: none; }
+
+/* ───────────── top bar and HUD ───────────── */
+.topbar { padding: 12px 24px; background: rgba(12, 10, 8, .72); border-bottom: 1px solid var(--line); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+.logo.small { font-size: 22px; }
+.room-code { background: transparent; border: 0; padding: 4px 0; gap: 10px; }
+.room-code b { font: 600 18px var(--f-display); letter-spacing: .2em; color: var(--ink); }
+.room-code .copy-hint { color: var(--muted); border-left: 1px solid var(--line-2); padding-left: 10px; }
+.room-code:hover .copy-hint { color: var(--gold); }
+.phase-pill { border: 0; padding: 0; font-size: 12.5px; color: var(--ink-2); display: inline-flex; align-items: center; gap: 6px; box-shadow: none !important; }
+.phase-pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+.phase-pill.phase-live::before { background: var(--green); box-shadow: 0 0 0 3px rgba(127, 191, 142, .15); }
+.phase-pill.phase-paused::before { background: var(--gold); }
+.phase-pill.phase-ended::before { background: var(--pink); }
+.phase-pill.phase-live, .phase-pill.phase-paused, .phase-pill.phase-ended { color: var(--ink-2); }
+/* the wallet floats a little above everything: frosted, hairline-edged, money set in the serif */
+.wallet { gap: 0; padding: 6px 6px 6px 4px; border-radius: 14px; border: 1px solid rgba(236, 222, 196, .14);
+  background: linear-gradient(180deg, rgba(255, 248, 235, .07), rgba(255, 248, 235, .025));
+  backdrop-filter: blur(20px) saturate(140%); -webkit-backdrop-filter: blur(20px) saturate(140%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), 0 10px 30px -10px rgba(0, 0, 0, .8), 0 2px 6px rgba(0, 0, 0, .35);
+  transform: translateY(2px); }
+.wallet:hover { transform: translateY(1px); }
+.wallet::after { display: none; }
+.wallet-item { padding: 0 16px; gap: 1px; border-right: 1px solid var(--line); }
+.wallet-item span { font-size: 9.5px; letter-spacing: .18em; font-weight: 600; }
+.wallet-item b { font: 600 21px/1.05 var(--f-display); color: var(--ink); text-shadow: none !important; }
+.wallet-item.cash b { color: var(--gold); }
+.wallet-item.debt b { color: var(--red); }
+.wallet-item.worth { border-right: 1px solid var(--line); }
+.wallet .btn-ghost { min-height: 34px; padding: 6px 12px; color: var(--ink-2); }
+.badge { background: var(--gold); color: var(--gold-ink); }
+.conn::before { width: 6px; height: 6px; }
+
+/* ───────────── casino floor ───────────── */
+.section-head h2, .panel-head h2 { font-size: 24px; }
+.table-card { grid-template-rows: 110px auto; background: var(--panel); border-color: var(--line); }
+.table-card:not(.closed):hover { transform: translateY(-2px); border-color: rgba(210, 173, 102, .35); box-shadow: 0 18px 40px -20px rgba(0, 0, 0, .9); }
+.table-felt { border-bottom: 1px solid rgba(0, 0, 0, .6);
+  background:
+    radial-gradient(ellipse 70% 120% at 50% 0%, rgba(255, 240, 210, .12), transparent 60%),
+    var(--tex-nap) 0 0 / 180px 180px,
+    radial-gradient(ellipse 120% 100% at 50% 30%, color-mix(in srgb, var(--c) 46%, #0a0806), color-mix(in srgb, var(--c) 18%, #080605));
+  box-shadow: inset 0 -12px 18px -10px rgba(0, 0, 0, .6); }
+.table-card.game-blackjack { --c: #1f7a4a; } .table-card.game-roulette { --c: #8a2a33; } .table-card.game-poker { --c: #23477e; } .table-card.game-teenpatti { --c: #5d2a6e; }
+.table-card.high-roller { --c: #6a4a1c; }
+.table-icon { font-size: 30px; color: rgba(241, 235, 223, .85); text-shadow: 0 2px 6px rgba(0, 0, 0, .5); }
+.table-title h3 { font-size: 20px; }
+.table-open { border-color: var(--line-2) !important; }
+.table-open:hover:not(:disabled) { background: rgba(210, 173, 102, .08) !important; border-color: rgba(210, 173, 102, .5) !important; color: var(--gold); }
+.table-card.is-hot { box-shadow: none; border-color: rgba(210, 173, 102, .35); }
+
+/* ───────────── at the table ───────────── */
+.table-bar-title h2 { font-size: 28px; }
+.bj-scene, .cr-scene, .rl-scene { border-color: rgba(236, 222, 196, .06); border-radius: 18px; }
+.bj-scene .felt-status { font: 600 clamp(12px, 2.2cqw, 22px) var(--f-display); letter-spacing: .02em; background: rgba(12, 10, 8, .55); border-color: rgba(236, 222, 196, .14); }
+.felt-print { font-family: var(--f-display); font-weight: 600; }
+.felt-print.big { fill: #e7cf93; }
+.plaque { background: rgba(12, 10, 8, .86); border-color: rgba(236, 222, 196, .14); border-radius: .7cqw; }
+.plaque-name { font-weight: 600; }
+.plaque-cash { font-family: var(--f-display); font-size: 1.15em; }
+.total { background: rgba(12, 10, 8, .8); border-color: rgba(236, 222, 196, .2); font-family: var(--f-ui); font-weight: 700; }
+.shoe-tag, .pot-tag { background: rgba(12, 10, 8, .6) !important; }
+.pot-tag.big { font-family: var(--f-display); }
+.rl-status { font: 600 22px var(--f-display); }
+.hist { border-radius: 4px; font-weight: 600; }
+.hist.latest { outline-color: var(--gold); outline-offset: 1px; }
+/* seat pucks: brass and smoked glass, a soft light under them rather than a halo */
+.orb-glass { background:
+    radial-gradient(ellipse 55% 35% at 40% 24%, rgba(255, 255, 255, .5), rgba(255, 255, 255, .06) 60%, transparent 72%),
+    radial-gradient(ellipse at 50% 72%, rgba(222, 190, 128, .45), rgba(110, 80, 30, .45) 52%, rgba(18, 14, 8, .9) 100%);
+  box-shadow: inset 0 -.5cqw 1cqw rgba(0, 0, 0, .5), inset 0 .2cqw .3cqw rgba(255, 255, 255, .35), 0 0 0 1px rgba(226, 200, 150, .55),
+    0 .35cqw 0 #7a5a24, 0 .7cqw 0 #3e2c10, 0 1.2cqw 1.6cqw rgba(0, 0, 0, .65); }
+.seat-orb::before { background: radial-gradient(closest-side, rgba(226, 196, 140, .22), transparent); }
+.orb-label { font: 700 clamp(8px, 1.1cqw, 11px)/1 var(--f-ui); letter-spacing: .14em; color: #fbf3e2; }
+button.seat-orb:hover .orb-glass { box-shadow: inset 0 -.5cqw 1cqw rgba(0, 0, 0, .45), inset 0 .2cqw .3cqw rgba(255, 255, 255, .45), 0 0 0 1px rgba(240, 220, 175, .85),
+    0 .35cqw 0 #7a5a24, 0 .7cqw 0 #3e2c10, 0 1.6cqw 2cqw rgba(0, 0, 0, .65), 0 0 2cqw rgba(226, 196, 140, .3); }
+.seat-orb { animation-duration: 3.4s; }
+
+/* the dock: one calm strip under the table */
+.dock { border-radius: 14px; border-color: var(--line-2); padding: 14px 18px; }
+.dock-actions .act { min-height: 52px; font-size: 16px; border-radius: 10px; }
+.bet-amount b { font: 600 30px/1 var(--f-display); }
+.bet-amount .eyebrow { margin-bottom: 4px; }
+.timerbar { height: 4px; background: rgba(236, 222, 196, .08); }
+.timerbar b { display: none; }
+.timerbar span { background: var(--gold); }
+.timerbar.urgent span { background: var(--red); }
+.round-summary { background: transparent; border-color: var(--line); }
+.round-summary > b { font: 600 24px var(--f-display); }
+.round-summary.up > b { color: var(--gold); }
+.round-summary.down > b { color: var(--red); }
+.rules-card { background: var(--panel); }
+
+/* reactions: a slim rail that stays out of the way until you reach for it */
+.reaction-bar { right: 10px; gap: 2px; padding: 6px 4px; border-radius: 12px; background: rgba(12, 10, 8, .7); border-color: var(--line); opacity: .55; transition: opacity .2s; }
+.reaction-bar:hover, .reaction-bar:focus-within { opacity: 1; }
+.reaction-bar .emote { width: 32px; height: 32px; border: 0; background: transparent; font-size: 17px; }
+.reaction-bar .emote:hover { background: rgba(236, 222, 196, .08); transform: none; }
+.reaction-bar.hot { box-shadow: none; border-color: rgba(210, 173, 102, .4); opacity: 1; }
+.hot-label { color: var(--gold); font-size: 9.5px; letter-spacing: .2em; }
+.emote { border-radius: 8px; background: transparent; }
+
+/* rail: leaderboard, activity, chat */
+.player.me { background: rgba(210, 173, 102, .05); }
+.player-worth { font: 600 18px var(--f-display); }
+.avatar { background: #0f0d0a; border-color: var(--line-2); }
+.feed-list li { border-left-width: 1px; }
+.chat-list b { color: var(--gold); }
+
+/* big moments stay big, but lit, not neon */
+.moment { background: radial-gradient(circle, rgba(210, 173, 102, .1), rgba(8, 6, 4, .7) 60%); }
+.moment-card { background: rgba(14, 12, 9, .94); border-color: rgba(210, 173, 102, .4); box-shadow: 0 30px 80px rgba(0, 0, 0, .7); }
+.moment-card b { font-weight: 600; text-shadow: none; }
+.results-head .gold { text-shadow: none; }
+.wheel-result { background: rgba(12, 10, 8, .78); border-width: 1px; box-shadow: 0 18px 30px rgba(0, 0, 0, .55); }
+.wheel-result b { font-family: var(--f-display); font-weight: 600; }
+
+@media (max-width: 720px) {
+  .topbar { padding: 8px 16px; }
+  .wallet { transform: none; justify-content: space-between; }
+  .wallet-item { padding: 0 8px; }
+  .wallet-item b { font-size: 17px; }
+}
+.bj-scene .spotlight::before, .cr-scene .spotlight::before { display: none; }

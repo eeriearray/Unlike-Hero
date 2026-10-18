@@ -23,8 +23,9 @@
     return html`<div className="cards">${props.cards.map(function (c, i) { return html`<${Card} key=${i + ':' + (c || 'back')} card=${c} i=${i} />`; })}</div>`;
   }
 
+  // --z is the chip's place in its stack; on a 3D table each chip sits that many chip-thicknesses above the felt.
   function Chip(props) {
-    return html`<span className=${'chip chip-' + props.value} aria-hidden="true">${props.value >= 1000 ? props.value / 1000 + 'K' : props.value}</span>`;
+    return html`<span className=${'chip chip-' + props.value} style=${props.z != null ? { '--z': props.z } : null} aria-hidden="true">${props.value >= 1000 ? props.value / 1000 + 'K' : props.value}</span>`;
   }
 
   /** The chips that make up an amount, biggest first (at most 6 drawn). */
@@ -36,7 +37,7 @@
   function Stack(props) {
     if (!props.amount) return null;
     return html`<div className="stack" title=${money(props.amount)}>
-      <span className="stack-chips">${chipStack(props.amount).map(function (v, i) { return html`<${Chip} key=${i} value=${v} />`; })}</span>
+      <span className="stack-chips" style=${{ '--n': chipStack(props.amount).length }}>${chipStack(props.amount).map(function (v, i) { return html`<${Chip} key=${i} value=${v} z=${i} />`; })}</span>
       <b className="num">${money(props.amount)}</b>
     </div>`;
   }
@@ -95,19 +96,51 @@
         <ellipse cx="70" cy="52" rx="24" ry="27" />
         ${hair ? html`<path d=${hair} />` : null}
       </g>
-      <path d="M28 160 C28 138 42 128 70 128 C98 128 112 138 112 160 Z" fill="#6a3a22" />
-      <path d="M28 160 C28 138 42 128 70 128 C98 128 112 138 112 160" fill="none" stroke="#e0b866" strokeOpacity=".8" strokeWidth="2" />
-      <path d="M40 140 C48 134 58 132 70 132" fill="none" stroke="#fff" strokeOpacity=".18" strokeWidth="3" strokeLinecap="round" />
+      <path d="M28 160 C28 138 42 128 70 128 C98 128 112 138 112 160 Z" fill="#14121d" />
+      <path d="M28 160 C28 138 42 128 70 128 C98 128 112 138 112 160 Z" fill=${color} opacity=".22" />
+      <path d="M28 160 C28 138 42 128 70 128 C98 128 112 138 112 160" fill="none" stroke=${color} strokeOpacity=".9" strokeWidth="2.5" />
+      <path d="M40 140 C48 134 58 132 70 132" fill="none" stroke="#fff" strokeOpacity=".3" strokeWidth="3" strokeLinecap="round" />
     </svg>`;
   }
 
-  function EmptyStool() {
-    return html`<svg className="character-svg empty" viewBox="0 0 140 160" aria-hidden="true">
-      <ellipse cx="70" cy="154" rx="50" ry="6" fill="#000" opacity=".5" />
-      <rect x="66" y="128" width="8" height="30" fill="#3a2a1a" />
-      <ellipse cx="70" cy="128" rx="40" ry="12" fill="#6a3a22" stroke="#e0b866" strokeOpacity=".7" strokeWidth="2" />
-      <ellipse cx="64" cy="124" rx="22" ry="4" fill="#fff" opacity=".12" />
-    </svg>`;
+  /**
+   * Surface textures for a table SVG, as filters that grain whatever shape they're applied to: felt (a fine woven
+   * nap), leather (the padded rail), wood (the apron and edges) and brass (the trim). Each is noise multiplied into
+   * the shape's own fill and clipped to it, so the colours stay the theme's. `id` prefixes the ids (one per table).
+   */
+  function grain(id, freq, octaves, seed, a, b) {
+    return html`<filter id=${id} x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency=${freq} numOctaves=${octaves} seed=${seed} result="n" />
+      <feColorMatrix in="n" type="matrix" values=${a + ' 0 0 0 ' + b + ' ' + a + ' 0 0 0 ' + b + ' ' + a + ' 0 0 0 ' + b + ' 0 0 0 0 1'} result="g" />
+      <feBlend in="SourceGraphic" in2="g" mode="multiply" result="m" />
+      <feComposite in="m" in2="SourceGraphic" operator="in" />
+    </filter>`;
+  }
+  function TextureDefs(props) {
+    var p = props.id;
+    return html`<g>
+      ${grain(p + '-tex-felt', '.75', 3, 4, 1.15, .42)}
+      ${grain(p + '-tex-leather', '.22 .26', 4, 9, 1.1, .38)}
+      ${grain(p + '-tex-wood', '.0035 .11', 4, 12, 1.5, .12)}
+      <linearGradient id=${p + '-brass'} x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stopColor="#f6e1a0" /><stop offset=".22" stopColor="#b8892f" /><stop offset=".45" stopColor="#fff1c2" />
+        <stop offset=".62" stopColor="#a8792a" /><stop offset=".82" stopColor="#e8c873" /><stop offset="1" stopColor="#8a6220" />
+      </linearGradient>
+    </g>`;
+  }
+
+  /** An open seat: a beveled glass puck hovering over the floor. As a button it presses down when you take the seat. */
+  function SeatOrb(props) {
+    var inner = html`<span className="orb-glass"><span className="orb-label">${props.canSit ? 'Sit here' : 'Open seat'}</span></span>`;
+    return props.canSit
+      ? html`<button type="button" className="seat-orb" onClick=${props.onSit}>${inner}</button>`
+      : html`<span className="seat-orb idle">${inner}</span>`;
+  }
+
+  /** Shadow direction for something on the felt: away from the lamp hanging over the table's centre (cx, cy). */
+  function lightFrom(pt, cx, cy, reach) {
+    var dx = (pt.x - cx) / reach, dy = (pt.y - cy) / reach;
+    return { '--lx': Math.max(-1, Math.min(1, dx)).toFixed(2), '--ly': Math.max(-1, Math.min(1, dy)).toFixed(2) };
   }
 
   /** The dealer, facing us across the table: vest, white shirt, gold bow tie, lit warm from the lamp above. */
@@ -132,5 +165,5 @@
   /** The table itself: shadow, padded leather rail, felt, printed arcs, betting spots, chip tray, shoe and discard. */
 
   window.CasinoKit = { SUIT: SUIT, RANK: RANK, CHIP_VALUES: CHIP_VALUES, Card: Card, Cards: Cards, Chip: Chip, chipStack: chipStack, Stack: Stack, TimerBar: TimerBar,
-    LOOKS: LOOKS, Character: Character, EmptyStool: EmptyStool, Dealer: Dealer };
+    LOOKS: LOOKS, Character: Character, SeatOrb: SeatOrb, TextureDefs: TextureDefs, lightFrom: lightFrom, Dealer: Dealer };
 })();

@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   var UI = window.CasinoUI, html = UI.html, cx = UI.cx, money = UI.money;
-  var K = window.CasinoKit, Character = K.Character, EmptyStool = K.EmptyStool, TimerBar = K.TimerBar;
+  var K = window.CasinoKit, Character = K.Character, SeatOrb = K.SeatOrb, TimerBar = K.TimerBar;
 
   var W = 1000, H = 720, CX = 500, CY = 350, RX = 400, RY = 196;
   // Display slots, clockwise from the bottom centre (where you sit).
@@ -19,15 +19,27 @@
     return html`<svg className="cr-svg" viewBox=${'0 0 ' + W + ' ' + H} aria-hidden="true">
       <defs>
         <radialGradient id="cr-felt" cx="50%" cy="40%" r="70%"><stop offset="0" style=${{ stopColor: 'var(--felt-hi)' }} /><stop offset=".6" style=${{ stopColor: 'var(--felt)' }} /><stop offset="1" style=${{ stopColor: 'var(--felt-lo)' }} /></radialGradient>
-        <linearGradient id="cr-rail" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#4a2a19" /><stop offset=".5" stopColor="#2b170d" /><stop offset="1" stopColor="#140a05" /></linearGradient>
+        <radialGradient id="cr-rail" cx="50%" cy="50%" r="50%"><stop offset=".86" stopColor="#4a2d1b" /><stop offset=".92" stopColor="#3a2215" /><stop offset=".97" stopColor="#24150c" /><stop offset="1" stopColor="#120904" /></radialGradient>
         <radialGradient id="cr-lamp" cx="50%" cy="30%" r="70%"><stop offset="0" stopColor="#fff3d6" stopOpacity=".14" /><stop offset="1" stopColor="#fff3d6" stopOpacity="0" /></radialGradient>
-        <filter id="cr-shadow" x="-10%" y="-10%" width="120%" height="140%"><feDropShadow dx="0" dy="16" stdDeviation="14" floodColor="#000" floodOpacity=".7" /></filter>
+        <filter id="cr-soft" x="-20%" y="-20%" width="140%" height="160%"><feGaussianBlur stdDeviation="18" /></filter>
+        <filter id="cr-blur" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="9" /></filter>
+        <${K.TextureDefs} id="cr" />
+        <clipPath id="cr-felt-clip"><ellipse cx=${CX} cy=${CY} rx=${RX} ry=${RY} /></clipPath>
       </defs>
-      <ellipse cx=${CX} cy=${CY} rx=${RX + 34} ry=${RY + 30} fill="url(#cr-rail)" filter="url(#cr-shadow)" />
-      <ellipse cx=${CX} cy=${CY} rx=${RX + 34} ry=${RY + 30} fill="none" stroke="#6b4128" strokeOpacity=".7" strokeWidth="2" />
-      <ellipse cx=${CX} cy=${CY} rx=${RX + 4} ry=${RY + 4} fill="#c9a45c" />
-      <ellipse cx=${CX} cy=${CY} rx=${RX} ry=${RY} fill="url(#cr-felt)" />
+      <ellipse cx=${CX} cy=${CY + 34} rx=${RX + 44} ry=${RY + 38} fill="#000" opacity=".75" filter="url(#cr-soft)" />
+      <ellipse cx=${CX} cy=${CY + 22} rx=${RX + 34} ry=${RY + 30} fill="#2a170c" filter="url(#cr-tex-wood)" />
+      <ellipse cx=${CX} cy=${CY + 22} rx=${RX + 34} ry=${RY + 30} fill="#000" opacity=".35" />
+      <ellipse cx=${CX} cy=${CY + 11} rx=${RX + 34} ry=${RY + 30} fill="#6a3c20" filter="url(#cr-tex-wood)" />
+      <ellipse cx=${CX} cy=${CY + 4} rx=${RX + 35} ry=${RY + 31} fill="none" stroke="url(#cr-brass)" strokeWidth="2.5" />
+      <ellipse cx=${CX} cy=${CY} rx=${RX + 34} ry=${RY + 30} fill="url(#cr-rail)" filter="url(#cr-tex-leather)" />
+      <ellipse cx=${CX} cy=${CY} rx=${RX + 20} ry=${RY + 18} fill="none" stroke="#fff" strokeOpacity=".13" strokeWidth="12" filter="url(#cr-blur)" />
+      <ellipse cx=${CX} cy=${CY} rx=${RX + 27} ry=${RY + 24} fill="none" stroke="#e8cfa0" strokeOpacity=".4" strokeWidth="1.3" strokeDasharray="7 5" />
+      <ellipse cx=${CX} cy=${CY} rx=${RX + 11} ry=${RY + 10} fill="none" stroke="#e8cfa0" strokeOpacity=".28" strokeWidth="1.3" strokeDasharray="7 5" />
+      <ellipse cx=${CX} cy=${CY} rx=${RX + 33} ry=${RY + 29} fill="none" stroke="#a87048" strokeOpacity=".6" strokeWidth="1.5" />
+      <ellipse cx=${CX} cy=${CY} rx=${RX + 5} ry=${RY + 5} fill="url(#cr-brass)" />
+      <ellipse cx=${CX} cy=${CY} rx=${RX} ry=${RY} fill="url(#cr-felt)" filter="url(#cr-tex-felt)" />
       <ellipse cx=${CX} cy=${CY} rx=${RX} ry=${RY} fill="url(#cr-lamp)" />
+      <g clipPath="url(#cr-felt-clip)"><ellipse cx=${CX} cy=${CY} rx=${RX} ry=${RY} fill="none" stroke="#000" strokeOpacity=".6" strokeWidth="46" filter="url(#cr-blur)" /></g>
       <ellipse cx=${CX} cy=${CY} rx=${RX - 70} ry=${RY - 50} fill="none" stroke="var(--felt-ink)" strokeOpacity=".22" strokeWidth="1.5" />
       <text x=${CX} y=${CY + 52} textAnchor="middle" className="felt-print">${props.print}</text>
     </svg>`;
@@ -47,13 +59,10 @@
       var pos = at(far(s.slot) ? polar(RX + 44, RY + 64, deg) : polar(RX + 64, RY + 84, deg));
       var tilt = far(s.slot) ? 0 : (deg - 90) * 0.35;
       if (!p) {
-        return html`<div key=${'f' + s.seat} className=${cx('cr-figure', 'empty', far(s.slot) && 'far')} style=${pos}>
-          <div className="figure-body" style=${{ transform: 'rotate(' + tilt + 'deg)' }}><${EmptyStool} /></div>
-          ${props.canSit ? html`<button type="button" className="seat-sit" onClick=${props.onSit}>Sit here</button>` : null}
-        </div>`;
+        return html`<div key=${'f' + s.seat} className=${cx('cr-figure', 'billboard', 'empty', far(s.slot) && 'far')} style=${pos}><${SeatOrb} canSit=${props.canSit} onSit=${props.onSit} /></div>`;
       }
       var onTurn = props.turnPid === s.pid;
-      return html`<div key=${'f' + s.seat} className=${cx('cr-figure', far(s.slot) && 'far', s.pid === v.you && 'me', onTurn && 'on-turn', !p.connected && 'offline', props.dim && props.dim(s.pid) && 'dim')} style=${pos}>
+      return html`<div key=${'f' + s.seat} className=${cx('cr-figure', 'billboard', far(s.slot) && 'far', s.pid === v.you && 'me', onTurn && 'on-turn', !p.connected && 'offline', props.dim && props.dim(s.pid) && 'dim')} style=${pos}>
         <div className="figure-body" style=${{ transform: 'rotate(' + tilt + 'deg)' }}><${Character} avatar=${p.avatar} seat=${'c' + s.seat} /></div>
         <div className="plaque">
           <span className="plaque-name"><span aria-hidden="true">${UI.AVATARS[p.avatar]}</span> ${p.name}${s.pid === v.you ? html` <em>you</em>` : null}</span>
@@ -65,17 +74,21 @@
     }
     var back = seats.filter(function (s) { return far(s.slot); });
     var front = seats.filter(function (s) { return !far(s.slot); });
-    return html`<div className="cr-scene">
+    return html`<div className="cr-scene scene3d">
+      <div className="stage3d"><div className="plane3d"><div className="floor3d" aria-hidden="true"></div>
       ${back.map(figure)}
       <${Felt} print=${props.print} />
       ${seats.map(function (s) {
         if (!s.pid) return null;
         var body = props.seatBody(s.pid, s.slot);
-        return body ? html`<div key=${'b' + s.seat} className=${cx('cr-seat', far(s.slot) && 'far')} style=${at(polar(RX * 0.64, RY * 0.66, SLOT_DEG[s.slot]))}>${body}</div>` : null;
+        var pt = polar(RX * 0.64, RY * 0.66, SLOT_DEG[s.slot]);
+        return body ? html`<div key=${'b' + s.seat} className=${cx('cr-seat', far(s.slot) && 'far')} style=${Object.assign(at(pt), K.lightFrom(pt, CX, CY, 260))}>${body}</div>` : null;
       })}
       ${props.buttonSeat != null && props.buttonSeat >= 0 ? html`<div className="dealer-button" style=${at(polar(RX * 0.86, RY * 0.8, SLOT_DEG[slotOf(props.buttonSeat, props.mySeat, n)] + 14))} title="Dealer">${props.buttonLabel || 'D'}</div>` : null}
       <div className="cr-center" style=${at({ x: CX, y: CY - 28 })}>${props.center}</div>
       ${front.map(figure)}
+      </div></div>
+      <div className="spotlight" aria-hidden="true"></div>
     </div>`;
   }
 

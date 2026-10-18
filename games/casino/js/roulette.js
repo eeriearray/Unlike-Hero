@@ -14,54 +14,116 @@
   var NAMES = { straight: 'Straight up', split: 'Split', street: 'Street', trio: 'Trio (0-1-2 / 0-2-3)', corner: 'Corner', sixline: 'Six line', dozen: 'Dozen', column: 'Column', red: 'Red / Black', odd: 'Odd / Even', low: '1–18 / 19–36' };
 
   // ───────────── the wheel ─────────────
+  // The rotor (numbers ring, frets and pockets) spins clockwise; the ball is launched the other way round the track
+  // on the bowl. Rolling friction bleeds its speed off exponentially until it can't hold the track, it drops, rattles
+  // across the deflectors and the pocket frets, then sits in the winning pocket and rides the rotor as that slows too.
+  // The server has already picked the number; the physics only decides how the ball gets there.
+  var TRACK_R = 94.5, POCKET_R = 73, BALL_R = 3.4;
+  var DROP = .6, LOCK = .86;                                  // fractions of the spin: ball leaves the track / sits in the pocket
+  function smooth(x) { return x * x * (3 - 2 * x); }
+
   function Wheel(props) {
     var r = props.round, spinning = props.phase === 'spinning';
-    var rot = useRef(0), seen = useRef(null);
-    var s = useState({ wheel: 0, ball: 0, animate: false }), pose = s[0], setPose = s[1];
+    var rotorEl = useRef(null), ballEl = useRef(null), raf = useRef(0);
+    var wheelAt = useRef(0), seen = useRef(null);
+    var st = useState(true), settled = st[0], setSettled = st[1];
+
+    function place(w, angle, rad, show) {
+      if (rotorEl.current) rotorEl.current.style.transform = 'rotate(' + w.toFixed(2) + 'deg)';
+      var b = ballEl.current; if (!b) return;
+      var a = angle * Math.PI / 180;
+      b.setAttribute('transform', 'translate(' + (100 + rad * Math.sin(a)).toFixed(2) + ' ' + (100 - rad * Math.cos(a)).toFixed(2) + ')');
+      b.style.opacity = show ? 1 : 0;
+    }
+
     useEffect(function () {
-      if (!r || r.result == null) return;
-      var id = r.id;
-      if (seen.current === id) return;
-      seen.current = id;
-      var i = WHEEL.indexOf(r.result);
-      var land = ((-i * STEP) % 360 + 360) % 360;                    // wheel angle that puts the result under the pointer
-      var base = rot.current - (rot.current % 360);
-      var target = base + 360 * 5 + land;
-      rot.current = target;
-      setPose({ wheel: target, ball: -360 * 7, animate: spinning });   // a ball arriving mid-results just shows where it landed
+      if (!r) { place(wheelAt.current, 0, TRACK_R, false); return; }
+      if (r.result == null || seen.current === r.id) return;
+      seen.current = r.id;
+      var pocket = WHEEL.indexOf(r.result) * STEP;                // the pocket's angle on the rotor
+      var w0 = wheelAt.current;
+      var land = ((-pocket - w0) % 360 + 360) % 360;              // extra turn that brings that pocket to the top
+      var wf = w0 + 360 * 3 + land;
+      wheelAt.current = wf;
+      var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!spinning || reduce) { place(wf, wf + pocket, POCKET_R, true); setSettled(true); return; }   // arrived mid-results: show where it landed
+
+      setSettled(false);
+      var D = Math.max(2.5, (props.spinSec || 7) - 0.4) * 1000, t0 = performance.now();
+      var b0 = Math.random() * 360, turns = 7 + Math.random() * 2;
+      var K = 3.4, norm = 1 - Math.exp(-K), A = 360 * turns;
+      // rotor: launched by the croupier, then a long, slow coast down
+      function wheel(u) { return w0 + (wf - w0) * (1 - Math.pow(1 - u, 2.2)); }
+      // ball on the track: v(t) = v0·e^(−Kt), so angle = v0/K·(1 − e^(−Kt)); it travels anticlockwise
+      function free(u) { return b0 - A * (1 - Math.exp(-K * u)) / norm; }
+      // the winning pocket, counted to the turn nearest the ball when it drops so it never whips round to get there
+      var wrap = Math.round((free(DROP) - (wheel(DROP) + pocket)) / 360) * 360;
+      function inPocket(u) { return wheel(u) + pocket + wrap; }
+
+      function frame(now) {
+        var u = Math.min(1, (now - t0) / D), ang, rad;
+        if (u < DROP) { ang = free(u); rad = TRACK_R; }
+        else if (u < LOCK) {
+          var p = (u - DROP) / (LOCK - DROP), e = smooth(p), damp = (1 - p) * (1 - p);
+          ang = free(u) * (1 - e) + inPocket(u) * e + Math.sin(p * Math.PI * 4) * 7 * damp;      // knocked sideways by deflectors and frets
+          rad = Math.min(TRACK_R, POCKET_R + (TRACK_R - POCKET_R) * (1 - e) + Math.abs(Math.sin(p * Math.PI * 4.5)) * 7 * damp);   // hops that die away
+        } else { ang = inPocket(u); rad = POCKET_R + Math.abs(Math.sin((u - LOCK) * 40)) * .6 * (1 - u); }
+        place(wheel(u), ang, rad, true);
+        if (u < 1) raf.current = requestAnimationFrame(frame); else setSettled(true);
+      }
+      place(w0, b0, TRACK_R, true);
+      raf.current = requestAnimationFrame(frame);
+      return function () { cancelAnimationFrame(raf.current); };
     }, [r && r.id, r && r.result]);
-    useEffect(function () { if (!r) setPose(function (p) { return { wheel: p.wheel, ball: 0, animate: false }; }); }, [!!r]);
-    var dur = (props.spinSec || 7) - 0.4;
+
     var pockets = WHEEL.map(function (n, i) {
       var a0 = (i - 0.5) * STEP, a1 = (i + 0.5) * STEP;
       var p = function (a, rad) { var t = (a - 90) * Math.PI / 180; return (100 + rad * Math.cos(t)).toFixed(2) + ' ' + (100 + rad * Math.sin(t)).toFixed(2); };
-      var fill = n === 0 ? '#1f9a5e' : color(n) === 'red' ? '#c8283c' : '#15131c';
-      var tp = (i * STEP - 90) * Math.PI / 180;
+      var fill = n === 0 ? '#1f8a55' : color(n) === 'red' ? '#b3243a' : '#16130f';
+      var tp = (i * STEP - 90) * Math.PI / 180, tx = 100 + 85 * Math.cos(tp), ty = 100 + 85 * Math.sin(tp);
       return html`<g key=${n}>
-        <path d=${'M' + p(a0, 96) + ' A96 96 0 0 1 ' + p(a1, 96) + ' L' + p(a1, 70) + ' A70 70 0 0 0 ' + p(a0, 70) + ' Z'} fill=${fill} stroke="#c9a45c" strokeWidth=".6" />
-        <text x=${100 + 84 * Math.cos(tp)} y=${100 + 84 * Math.sin(tp)} transform=${'rotate(' + i * STEP + ' ' + (100 + 84 * Math.cos(tp)) + ' ' + (100 + 84 * Math.sin(tp)) + ')'} className="wheel-num">${n}</text>
+        <path d=${'M' + p(a0, 90) + ' A90 90 0 0 1 ' + p(a1, 90) + ' L' + p(a1, 80) + ' A80 80 0 0 0 ' + p(a0, 80) + ' Z'} fill=${fill} stroke="#d8b46a" strokeWidth=".5" />
+        <path d=${'M' + p(a0, 80) + ' A80 80 0 0 1 ' + p(a1, 80) + ' L' + p(a1, 66) + ' A66 66 0 0 0 ' + p(a0, 66) + ' Z'} fill=${fill} />
+        <path d=${'M' + p(a0, 80) + ' L' + p(a0, 66)} stroke="#e6c47a" strokeWidth="1.1" />
+        <text x=${tx} y=${ty} transform=${'rotate(' + i * STEP + ' ' + tx + ' ' + ty + ')'} className="wheel-num">${n}</text>
       </g>`;
     });
-    var landed = r && r.result != null && (props.phase === 'results' || !pose.animate);
+    var landed = r && r.result != null && (props.phase === 'results' || settled);
+    // A sunken bowl seen from the player's chair: the wooden rim on top, the bowl wall stepping down to the spinning
+    // rotor, and the turret rising out of its centre. The rotor SVG still does all the spinning.
     return html`<div className="wheel-wrap">
-      <div className="wheel-pointer" aria-hidden="true"></div>
+      <div className="wheel-3d">
+        <div className="wheel-shadow" aria-hidden="true"></div>
+        <div className="wheel-wall w3" aria-hidden="true"></div>
+        <div className="wheel-wall w2" aria-hidden="true"></div>
+        <div className="wheel-wall w1" aria-hidden="true"></div>
+        <div className="wheel-rim" aria-hidden="true"></div>
+        <div className="wheel-pointer" aria-hidden="true"></div>
       <svg className="wheel" viewBox="0 0 200 200" role="img" aria-label=${landed ? 'The ball landed on ' + r.result : 'Roulette wheel'}>
         <defs>
-          <radialGradient id="rw-bowl" cx="50%" cy="40%" r="60%"><stop offset="0" stopColor="#5a3a22" /><stop offset="1" stopColor="#1c0f08" /></radialGradient>
+          <radialGradient id="rw-bowl" cx="50%" cy="40%" r="60%"><stop offset="0" stopColor="#5a3a22" /><stop offset=".8" stopColor="#3a2414" /><stop offset="1" stopColor="#1c0f08" /></radialGradient>
+          <radialGradient id="rw-track" cx="50%" cy="50%" r="50%"><stop offset=".88" stopColor="#2a1910" /><stop offset=".95" stopColor="#6e4a2c" /><stop offset="1" stopColor="#2a1910" /></radialGradient>
           <radialGradient id="rw-cone" cx="45%" cy="35%" r="70%"><stop offset="0" stopColor="#f3d27a" /><stop offset=".5" stopColor="#a87a2a" /><stop offset="1" stopColor="#3a2610" /></radialGradient>
+          <radialGradient id="rw-ball" cx="35%" cy="30%" r="70%"><stop offset="0" stopColor="#ffffff" /><stop offset=".55" stopColor="#e9e6ee" /><stop offset="1" stopColor="#8d899a" /></radialGradient>
         </defs>
-        <circle cx="100" cy="100" r="99" fill="url(#rw-bowl)" />
-        <g className="wheel-rotor" style=${{ transform: 'rotate(' + pose.wheel + 'deg)', transition: pose.animate ? 'transform ' + dur + 's cubic-bezier(.12,.62,.08,1)' : 'none' }}>
+        <circle cx="100" cy="100" r="99" fill="url(#rw-track)" />
+        <circle cx="100" cy="100" r="98" fill="none" stroke="#000" strokeOpacity=".5" strokeWidth="3" />
+        <circle cx="100" cy="100" r="91" fill="#1a0f08" />
+        ${[0, 1, 2, 3, 4, 5, 6, 7].map(function (k) { return html`<rect key=${'d' + k} x="97.2" y="7.5" width="5.6" height="2.6" rx="1" fill="#e6c47a" opacity=".85" transform=${'rotate(' + (k * 45 + 22.5) + ' 100 100)'} />`; })}
+        <g className="wheel-rotor" ref=${rotorEl}>
           ${pockets}
-          <circle cx="100" cy="100" r="70" fill="#2a1a10" stroke="#c9a45c" strokeWidth="1" />
+          <circle cx="100" cy="100" r="66" fill="#2a1a10" stroke="#d8b46a" strokeWidth="1" />
           <circle cx="100" cy="100" r="44" fill="url(#rw-cone)" />
           ${[0, 1, 2, 3].map(function (k) { return html`<rect key=${k} x="97" y="58" width="6" height="84" rx="3" fill="#e9c66e" transform=${'rotate(' + k * 45 + ' 100 100)'} />`; })}
           <circle cx="100" cy="100" r="9" fill="#f6dc8e" stroke="#7a5420" />
         </g>
-        <g className="wheel-ball" style=${{ transform: 'rotate(' + pose.ball + 'deg)', transition: pose.animate ? 'transform ' + dur + 's cubic-bezier(.2,.7,.25,1)' : 'none' }}>
-          <circle cx="100" cy="21" r="4.2" fill="#fbfbff" stroke="#b9b6c8" strokeWidth=".6" style=${{ opacity: r && r.result != null ? 1 : 0 }} />
+        <g className="wheel-ball" ref=${ballEl} style=${{ opacity: 0 }}>
+          <ellipse cx="1" cy="1.6" rx=${BALL_R} ry=${BALL_R * .8} fill="#000" opacity=".45" />
+          <circle r=${BALL_R} fill="url(#rw-ball)" />
         </g>
       </svg>
+        <div className="wheel-turret" aria-hidden="true"><span className="turret-dome"></span><span className="turret-post"></span><span className="turret-knob"></span></div>
+      </div>
       ${landed ? html`<div className=${'wheel-result ' + color(r.result)}><b className="num">${r.result}</b><span>${color(r.result)}</span></div>` : null}
     </div>`;
   }
@@ -74,12 +136,13 @@
       style=${props.style} disabled=${!props.canBet} onClick=${function () { props.onBet(props.spot); }} aria-label=${props.label}
       title=${props.label + (mine ? ' — ' + money(mine.mine || mine.others) : '')}>
       ${props.children}
-      ${mine && mine.mine ? html`<span className="spot-chip"><${Chip} value=${chipFace(mine.mine)} /><b className="num">${short(mine.mine)}</b></span>`
+      ${mine && mine.mine ? html`<span className="spot-chip" style=${{ '--n': spotStack(mine.mine).length }}>${spotStack(mine.mine).map(function (c, i) { return html`<${Chip} key=${i} value=${c} z=${i} />`; })}<b className="num">${short(mine.mine)}</b></span>`
         : mine && mine.others ? html`<span className="spot-others" aria-hidden="true"></span>` : null}
       ${win ? html`<span className="spot-win" aria-hidden="true"></span>` : null}
     </button>`;
   }
   function short(n) { return n >= 1000 ? (n / 1000).toFixed(n % 1000 ? 1 : 0) + 'K' : String(n); }
+  function spotStack(n) { var s = K.chipStack(n); return s.length ? s : [chipFace(n)]; }
   function chipFace(n) { var v = K.CHIP_VALUES.filter(function (c) { return c <= n; }); return v.length ? v[v.length - 1] : K.CHIP_VALUES[0]; }
 
   function Layout(props) {
@@ -212,13 +275,16 @@
       </div>
       ${showRules ? html`<${Rules} rules=${st.rules} table=${table} />` : null}
       <div className="rl-scene">
+        <div className="spotlight" aria-hidden="true"></div>
         <div className="rl-wheel-col">
           <${Wheel} round=${r} phase=${st.phase} spinSec=${st.rules.spinSec} />
           <p className="felt-status rl-status" aria-live="polite">${status}</p>
           <div className="history" aria-label="Recent numbers">${st.history.map(function (n, i) { return html`<span key=${i} className=${'hist ' + color(n) + (i === 0 ? ' latest' : '')}>${n}</span>`; })}</div>
         </div>
         <div className="rl-board-col">
-          <${Layout} chips=${chipsBySpot} canBet=${you.canBet} onBet=${bet} winning=${st.phase === 'results' && r ? r.result : null} resultPhase=${st.phase === 'results'} />
+          <div className="rl-table"><div className="rl-felt">
+            <${Layout} chips=${chipsBySpot} canBet=${you.canBet} onBet=${bet} winning=${st.phase === 'results' && r ? r.result : null} resultPhase=${st.phase === 'results'} />
+          </div></div>
           <div className="rl-players">
             ${seated.map(function (pid, i) {
               var p = UI.byId(v, pid); if (!p) return null;
