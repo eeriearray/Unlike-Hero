@@ -82,6 +82,8 @@ function act(room, p) {
     case 'roulette': return roulette(room, t, v, you, cash, play);
     case 'poker': return poker(room, v, you, play);
     case 'teenpatti': return teenpatti(room, v, you, play);
+    case 'slots': return slots(room, p, t, you, cash, play);
+    case 'videopoker': return videopoker(room, p, t, v, you, cash, play);
   }
   return false;
 }
@@ -131,4 +133,30 @@ function teenpatti(room, v, you, play) {
   if (m.includes('raise') && roll < 15) return play('raise');
   if (m.includes('chaal')) return roll > 92 && you.seen ? play('pack') : play('chaal');
   return m.includes('allin') ? play('allin') : play('pack');
+}
+
+function slots(room, p, t, you, cash, play) {
+  if (!you.canSpin) return false;
+  const step = 5, want = Math.ceil(t.minBet * (1 + room.rng(3)) / step) * step;
+  const amount = Math.min(want, Math.floor(Math.min(cash, t.maxBet) / step) * step);
+  return amount >= t.minBet ? play('spin', { amount }) : false;
+}
+
+const RANK_ORDER = '23456789TJQKA';
+function videopoker(room, p, t, v, you, cash, play) {
+  const h = v.hands[p.id];
+  if (you.holding && h) {
+    // Keep pairs and better, otherwise the high cards (jacks and up); draw the rest.
+    const counts = {};
+    h.cards.forEach((c) => { counts[c[0]] = (counts[c[0]] || 0) + 1; });
+    const keep = h.cards.map((c) => counts[c[0]] > 1 || RANK_ORDER.indexOf(c[0]) >= 9);
+    const flush = h.cards.every((c) => c[1] === h.cards[0][1]);
+    const i = keep.findIndex((k, idx) => k !== h.held[idx]);
+    if (flush) { const j = h.held.findIndex((x) => !x); if (j >= 0) return play('hold', { index: j, hold: true }); }
+    else if (i >= 0) return play('hold', { index: i, hold: keep[i] });
+    return play('draw');
+  }
+  if (!you.canDeal) return false;
+  const amount = Math.max(t.minBet, Math.min(t.maxBet, cash, t.minBet * (1 + room.rng(3))));
+  return cash >= t.minBet ? play('deal', { amount }) : false;
 }

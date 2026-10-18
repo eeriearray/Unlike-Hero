@@ -7,6 +7,8 @@ import { blackjack } from './games/blackjack.mjs';
 import { roulette } from './games/roulette.mjs';
 import { poker } from './games/poker.mjs';
 import { teenpatti } from './games/teenpatti.mjs';
+import { slots } from './games/slots.mjs';
+import { videopoker } from './games/videopoker.mjs';
 import * as bank from './bank.mjs';
 import * as social from './social.mjs';
 
@@ -21,10 +23,12 @@ export const GAMES = {
   roulette: { name: 'Roulette' },
   poker: { name: "Texas Hold'em" },
   teenpatti: { name: 'Teen Patti' },
+  slots: { name: 'Lucky Sevens Slots' },
+  videopoker: { name: 'Video Poker' },
 };
 // Table engines, by game. A table whose game has no engine yet is listed but closed.
 // Engine interface: create(), sit(), leave(), command(), view(), pause(), resume(), close(), disconnected(), snapshot(), restore().
-export const ENGINES = { blackjack, roulette, poker, teenpatti };
+export const ENGINES = { blackjack, roulette, poker, teenpatti, slots, videopoker };
 
 export const DEFAULT_SETTINGS = {
   startingCash: 10_000,
@@ -106,6 +110,8 @@ export function tablesFor(settings) {
     { id: 'roulette', game: 'roulette', name: 'Roulette', minBet, maxBet, highRoller: false },
     { id: 'poker', game: 'poker', name: "Texas Hold'em", minBet, maxBet, highRoller: false },
     { id: 'teenpatti', game: 'teenpatti', name: 'Teen Patti', minBet, maxBet, highRoller: false },
+    { id: 'slots', game: 'slots', name: 'Lucky Sevens Slots', minBet, maxBet, highRoller: false },
+    { id: 'videopoker', game: 'videopoker', name: 'Video Poker', minBet, maxBet, highRoller: false },
     { id: 'blackjack-vip', game: 'blackjack', name: 'High Roller Blackjack', minBet: highRollerMin, maxBet, highRoller: true },
   ];
 }

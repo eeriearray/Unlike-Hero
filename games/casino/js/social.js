@@ -8,7 +8,7 @@
 
   var ACH = {
     'first-win': ['🎯', 'First blood', 'Win your first round.'], jackpot: ['💰', 'Jackpot', 'Win half your starting cash or more in one round.'],
-    natural: ['🂡', 'Natural', 'Hit a blackjack.'], 'straight-up': ['🎡', 'Bullseye', 'Hit a straight-up number at roulette.'],
+    natural: ['🂡', 'Natural', 'Hit a blackjack.'], 'straight-up': ['🎡', 'Bullseye', 'Hit a straight-up number at roulette.'], 'triple-seven': ['7️⃣', 'Lucky Sevens', 'Line up three sevens on the slots.'], royal: ['👑', 'Royal', 'Draw a royal flush at video poker.'],
     monster: ['🃏', 'Monster hand', 'Win a poker pot with four of a kind or better.'], trail: ['🔥', 'Trail blazer', 'Win a Teen Patti pot with a trail.'],
     'on-fire': ['⚡', 'On fire', 'Win five rounds in a row.'], whale: ['🐋', 'Whale', 'Put the table maximum into one round.'],
     'high-roller': ['👑', 'High roller', 'Win at the high-roller table.'], 'grand-tour': ['🧭', 'Grand tour', 'Play every casino game.'],
@@ -18,7 +18,7 @@
     champion: ['🏆', 'Champion', 'Win the session.']
   };
   var DUELS = { highcard: ['High card', 'Each draws a card; higher wins.'], dice: ['Dice', 'Each rolls two dice; higher total wins.'], coin: ['Coin flip', 'Heads, the challenger wins.'] };
-  var GAME_NAMES = { blackjack: 'Blackjack', roulette: 'Roulette', poker: 'Hold\'em', teenpatti: 'Teen Patti', duel: 'Challenges' };
+  var GAME_NAMES = { blackjack: 'Blackjack', roulette: 'Roulette', poker: 'Hold\'em', teenpatti: 'Teen Patti', slots: 'Slots', videopoker: 'Video Poker', duel: 'Challenges' };
   var COLORS = ['#f5c451', '#3de0d0', '#ff4d8d', '#8fb3ff', '#5fd068', '#ff8a3d', '#d38cff', '#ff5d6c', '#9be7ff', '#e2a46a', '#c9c3dc', '#ffd36e'];
   function name(v, id) { var p = UI.byId(v, id); return p ? p.name : 'Someone'; }
   function useEsc(fn) { useEffect(function () { function k(e) { if (e.key === 'Escape') fn(); } addEventListener('keydown', k); return function () { removeEventListener('keydown', k); }; }, []); }

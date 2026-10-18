@@ -19,7 +19,9 @@
     blackjack: { blurb: 'Beat the dealer to 21. Blackjack pays 3:2.', icon: '♠' },
     roulette: { blurb: 'European wheel, one zero. Straight up pays 35:1.', icon: '◎' },
     poker: { blurb: 'No-limit Texas Hold\'em against your friends.', icon: '♦' },
-    teenpatti: { blurb: 'Three cards, blind or seen. Trail beats all.', icon: '♥' }
+    teenpatti: { blurb: 'Three cards, blind or seen. Trail beats all.', icon: '♥' },
+    slots: { blurb: 'Three reels, five lines. Three sevens pay 300×.', icon: '7' },
+    videopoker: { blurb: 'Jacks or Better. Hold, draw, a royal pays 800×.', icon: '♣' }
   };
   var ENTRY_LABEL = { stake: 'Starting cash', bet: 'Bet placed', refund: 'Bet refunded', settle: 'Round result', loan: 'Casino loan', repay: 'Loan repayment', interest: 'Interest', 'p2p-lend': 'Lent to a player', 'p2p-borrow': 'Borrowed from a player', 'p2p-repay': 'You repaid a player', 'p2p-repaid': 'A player repaid you', fee: 'Fee' };
   var PHASE_LABEL = { lobby: 'Lobby', live: 'Live', paused: 'Paused', ended: 'Session over' };
@@ -548,7 +550,7 @@
     if (!s) return null;
     function name(id) { var p = byId(v, id); return p ? p.name : 'Someone'; }
     var winners = s.winners.map(name);
-    var GAME_NAMES = { blackjack: 'Blackjack', roulette: 'Roulette', poker: 'Texas Hold\'em', teenpatti: 'Teen Patti', duel: 'Challenges' };
+    var GAME_NAMES = { blackjack: 'Blackjack', roulette: 'Roulette', poker: 'Texas Hold\'em', teenpatti: 'Teen Patti', slots: 'Slots', videopoker: 'Video Poker', duel: 'Challenges' };
     return html`<section className="panel results" aria-labelledby="results-h">
       <div className="results-head">
         <span className="eyebrow">${v.session.endReason || 'Session over'}</span>

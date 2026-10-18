@@ -8,6 +8,8 @@ export const ACHIEVEMENTS = {
   'first-win': { name: 'First blood', desc: 'Win your first round.', icon: '🎯' },
   jackpot: { name: 'Jackpot', desc: 'Win half your starting cash or more in a single round.', icon: '💰' },
   natural: { name: 'Natural', desc: 'Hit a blackjack.', icon: '🂡' },
+  'triple-seven': { name: 'Lucky Sevens', desc: 'Line up three sevens on the slots.', icon: '7️⃣' },
+  royal: { name: 'Royal', desc: 'Draw a royal flush at video poker.', icon: '👑' },
   'straight-up': { name: 'Bullseye', desc: 'Hit a straight-up number at roulette.', icon: '🎡' },
   monster: { name: 'Monster hand', desc: 'Win a poker pot with four of a kind or better.', icon: '🃏' },
   trail: { name: 'Trail blazer', desc: 'Win a Teen Patti pot with a trail.', icon: '🔥' },
@@ -29,7 +31,7 @@ export const DUELS = {
   coin: { name: 'Coin flip', desc: 'The challenger calls heads; the coin decides.' },
 };
 const CHALLENGE_TTL_MS = 60_000;
-const GAMES = ['blackjack', 'roulette', 'poker', 'teenpatti'];
+const GAMES = ['blackjack', 'roulette', 'poker', 'teenpatti'];     // the grand tour is the four table games; the machines are extras
 
 export const bigAmount = (room) => Math.max(2_000, Math.round(room.settings.startingCash * 0.2));
 

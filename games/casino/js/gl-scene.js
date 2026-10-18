@@ -698,11 +698,13 @@
     }, [props.kind, epoch]);
     R.useEffect(function () { if (eng.current) safeUpdate(eng.current, props.model); });
     if (failed) return props.fallback || null;
-    var ms = R.useState(GL.audio ? GL.audio.isMuted() : true), muted = ms[0], setMuted = ms[1];
+    var ms = R.useState(GL.audio ? GL.audio.isMuted() : true), muted = ms[0], setMuted = ms[1], tn = R.useState(''), trackToast = tn[0], setTrackToast = tn[1];
     R.useEffect(function () { return GL.audio ? GL.audio.onChange(setMuted) : undefined; }, []);
     return html`<div className=${'gl-stage gl-' + props.kind}><div className="gl-view" ref=${ref}></div><div className="gl-hud">${props.children}
       
 <button type="button" className="gl-quality" title=${'Graphics quality: ' + ['High', 'Medium', 'Low'][GL.getQuality()] + '. Click to change if the picture flickers or goes blank.'} aria-label="Graphics quality" onClick=${function () { GL.setQuality((GL.getQuality() + 1) % 3); setEpoch(function (n) { return n + 1; }); }}>⚙ ${['H', 'M', 'L'][GL.getQuality()]}</button>
+      ${GL.audio ? html`<button type="button" className="gl-track" title="Next song" aria-label="Next song" onClick=${function () { GL.audio.init(); GL.audio.setMuted(false); var n = GL.audio.nextTrack(); setTrackToast('♪ ' + n); setTimeout(function () { setTrackToast(''); }, 2600); }}>♪</button>` : null}
+      ${trackToast ? html`<span className="gl-track-toast" role="status">${trackToast}</span>` : null}
       ${GL.audio ? html`<button type="button" className="gl-mute" aria-pressed=${!muted} aria-label=${muted ? 'Turn sound on' : 'Mute sound'} onClick=${function () { GL.audio.init(); GL.audio.setMuted(!muted); }}>${muted ? '🔇' : '🔊'}</button>` : null}</div></div>`;
   }
   GL.Stage = Stage;
