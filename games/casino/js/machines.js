@@ -74,6 +74,14 @@
     return html`<div className=${'win-banner tier-' + show.tier} role="status"><span className="win-rays" aria-hidden="true"></span><b className="win-label">${TIER_LABEL[show.tier]}</b><b className="win-amount num">+${money(val)}</b></div>`;
   }
 
+  /** A line drawn through the winning cells of the result grid (rows = the row each reel contributes to the line). */
+  function PayLine(props) {
+    var C = [15.8, 50, 84.2], pts = props.rows.map(function (row, reel) { return [C[reel], C[row]]; });
+    var dx = pts[2][0] - pts[0][0], dy = pts[2][1] - pts[0][1], len = Math.hypot(dx, dy), ex = dx / len * 10, ey = dy / len * 10;
+    var x1 = pts[0][0] - ex, y1 = pts[0][1] - ey, x2 = pts[2][0] + ex, y2 = pts[2][1] + ey;
+    return html`<svg className="payline" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><line x1=${x1} y1=${y1} x2=${x2} y2=${y2} pathLength="100" style=${{ animationDelay: props.delay + 's' }} /></svg>`;
+  }
+
   // ───────────── slots ─────────────
   function SlotsRules(props) {
     var pays = props.rules.pays;
@@ -114,7 +122,7 @@
     var msg = !you.seated ? '' : !my ? 'Pick a bet and pull the lever' : my.state === 'spinning' ? 'Spinning…' : my.payout ? 'You won ' + money(my.payout) + '!' : 'No win. Spin again.';
     var hud = html`<div className="mach-hud">
       <div className=${cx('mach-readout', my && my.state === 'done' && my.payout && 'won')} aria-live="polite">
-        ${grid ? html`<div className="mach-grid">${[0, 1, 2].map(function (row) { return grid.map(function (reel, ri) { var win = my.wins && my.wins.some(function (w) { return st.rules.lines[w.line][ri] === row && w.pay; }); return html`<span key=${row + '-' + ri} className=${cx('mach-sym', win && 'hit', reel[row] === 'BAR' && 'bar')}>${GLYPH[reel[row]]}</span>`; }); })}</div>` : null}
+        ${grid ? html`<div className="mach-grid">${[0, 1, 2].map(function (row) { return grid.map(function (reel, ri) { var win = my.wins && my.wins.some(function (w) { return st.rules.lines[w.line][ri] === row && w.pay; }); return html`<span key=${row + '-' + ri} className=${cx('mach-sym', win && 'hit', reel[row] === 'BAR' && 'bar')}>${GLYPH[reel[row]]}</span>`; }); })}${(my.wins || []).map(function (w, k) { return html`<${PayLine} key=${k} rows=${st.rules.lines[w.line]} delay=${k * 0.25} />`; })}</div>` : null}
         <div className="mach-msg">${msg}</div>
       </div><${WinBanner} win=${win} /></div>`;
     var flat = html`<div className="mach-flat">${hud}</div>`;
