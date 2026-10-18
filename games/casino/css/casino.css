@@ -1388,3 +1388,16 @@ button.seat-orb:hover .orb-glass { box-shadow: inset 0 -.5cqw 1cqw rgba(0, 0, 0,
 @keyframes winshake { 25% { transform: translate(2px, -1px); } 75% { transform: translate(-2px, 1px); } }
 @keyframes winflash { to { text-shadow: 0 0 40px rgba(255, 90, 60, 1), 0 3px 0 #5a3004; } }
 @media (prefers-reduced-motion: reduce) { .win-banner, .win-rays, .win-label, .win-amount { animation: none !important; } }
+
+/* the 3×3 result grid sits in the middle of the screen; the banner above it, the one-line message below */
+.mach-readout { display: contents; }
+.mach-grid { position: absolute; left: 50%; top: 52%; transform: translate(-50%, -50%); grid-template-columns: repeat(3, clamp(46px, 8vw, 72px)); gap: 5px; padding: 10px; border-radius: 14px; background: rgba(12, 8, 5, .88);
+  border: 2px solid rgba(201, 164, 92, .55); box-shadow: 0 10px 40px rgba(0, 0, 0, .7); animation: gridpop .35s cubic-bezier(.2, 1.4, .4, 1) both; z-index: 2; }
+.mach-readout.won .mach-grid { border-color: #f5c451; box-shadow: 0 0 30px rgba(245, 196, 81, .6), 0 10px 40px rgba(0, 0, 0, .7); }
+.mach-grid .mach-sym { height: clamp(42px, 7vw, 64px); font-size: clamp(24px, 4vw, 38px); }
+.mach-grid .mach-sym.bar { font-size: clamp(13px, 2vw, 18px); }
+.mach-readout .mach-msg { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); white-space: nowrap; }
+.win-banner { top: 22%; } .win-banner.tier-4 { top: 24%; }
+.mach-flat .mach-grid { position: static; transform: none; animation: none; } .mach-flat .mach-readout { display: grid; justify-items: center; gap: 10px; } .mach-flat .mach-readout .mach-msg { position: static; transform: none; }
+@keyframes gridpop { from { transform: translate(-50%, -50%) scale(.5); opacity: 0; } }
+@media (max-width: 700px) { .mach-grid { grid-template-columns: repeat(3, 44px); } .mach-grid .mach-sym { height: 40px; font-size: 22px; } }

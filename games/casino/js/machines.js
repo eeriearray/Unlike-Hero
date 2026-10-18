@@ -101,7 +101,15 @@
     var model = glOn ? { n: st.seats.length, mySeat: mySeat, strips: st.rules.strips, spins: spins, onSit: props.onSit,
       seats: seatsModel(v, st, function (pid, i) { var s = st.spins[pid]; return { canSit: false, status: s && s.state === 'done' && s.payout ? '+' + money(s.payout) : '', statusCls: 'green', result: s && s.state === 'done' ? (s.net > 0 ? 'win' : 'lose') : null }; }).map(function (s) { return s.pid ? s : { pid: null, canSit: !you.seated && !!UI.byId(v, v.you) && UI.byId(v, v.you).status === 'active' }; }) } : null;
 
-    var grid = !glOn && my && my.grid && my.state === 'done' ? my.grid : null;
+    // the result grid pops up in the middle of the screen when the reels stop, then fades (it stays in the flat fallback)
+    var gs = useState(0), gridShownNo = gs[0], setGridShown = gs[1];
+    useEffect(function () {
+      if (!my || my.state !== 'done' || !my.grid) return;
+      setGridShown(my.no);
+      var t = setTimeout(function () { setGridShown(0); }, my.payout > 0 ? 4200 : 2400);
+      return function () { clearTimeout(t); };
+    }, [my && my.state === 'done' ? my.no : 0]);
+    var grid = my && my.grid && my.state === 'done' && (!glOn || gridShownNo === my.no) ? my.grid : null;
     var win = my && my.state === 'done' && my.payout > 0 ? { no: my.no, amount: my.payout, bet: my.bet } : null;
     var msg = !you.seated ? '' : !my ? 'Pick a bet and pull the lever' : my.state === 'spinning' ? 'Spinning…' : my.payout ? 'You won ' + money(my.payout) + '!' : 'No win. Spin again.';
     var hud = html`<div className="mach-hud">
