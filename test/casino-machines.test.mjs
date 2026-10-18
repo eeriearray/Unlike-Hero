@@ -57,7 +57,7 @@ test('a spin holds the bet, then pays when the reels stop, and the books balance
   assert.ok(play(room, id, 'slots', 'spin', { amount: 500 }).error, 'reels still turning');
   const mid = room.viewFor(id).tables.find((x) => x.id === 'slots').state;
   assert.equal(mid.spins[id].state, 'spinning');
-  c.advance(3_000);
+  c.advance(4_100);
   const view = room.viewFor(id).tables.find((x) => x.id === 'slots').state;
   assert.equal(view.spins[id].state, 'done');
   assert.equal(e.account(id).reserved, 0);

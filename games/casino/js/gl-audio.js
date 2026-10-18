@@ -44,6 +44,25 @@
     lose: function () { if (!ok()) return; var t = ctx.currentTime; tone(t, 311.1, 0.5, 0.16, 'triangle', sfx, 296); tone(t + 0.22, 233.1, 0.8, 0.16, 'triangle', sfx, 208); },
     coins: function (n) { if (!ok()) return; var t = ctx.currentTime; n = Math.min(14, n || 8); for (var i = 0; i < n; i++) { var tt = t + i * 0.07 + Math.random() * 0.03; tone(tt, 1800 + Math.random() * 1600, 0.09, 0.14, 'triangle'); tone(tt + 0.02, 3600 + Math.random() * 800, 0.06, 0.06, 'sine'); noise(tt, 0.03, 5000, 3000, 2, 0.08); } },
     turn: function () { if (!ok()) return; var t = ctx.currentTime; tone(t, 880, 0.18, 0.1, 'sine'); tone(t + 0.12, 1318.5, 0.3, 0.1, 'sine'); },
+    lever: function () { if (!ok()) return; var t = ctx.currentTime; for (var i = 0; i < 6; i++) tone(t + i * 0.035, 900 - i * 90, 0.03, 0.08, 'square'); tone(t + 0.25, 110, 0.2, 0.3, 'sine', sfx, 55); noise(t + 0.25, 0.08, 800, 300, 1, 0.2, 'lowpass'); },
+    reelStop: function (i) { if (!ok()) return; var t = ctx.currentTime; tone(t, 150 + i * 30, 0.16, 0.34, 'sine', sfx, 70); noise(t, 0.04, 2500, 900, 1, 0.18, 'bandpass'); tone(t + 0.01, 1200 + i * 250, 0.05, 0.1, 'triangle'); },
+    tease: function () { if (!ok()) return; var t = ctx.currentTime; var o = ctx.createOscillator(), lfo = ctx.createOscillator(), lg = ctx.createGain(), g = ctx.createGain(); o.type = 'sawtooth'; o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(880, t + 1.0); lfo.frequency.value = 11; lg.gain.value = 0.05; lfo.connect(lg); lg.connect(g.gain); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.09, t + 0.15); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.05); var f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 1800; o.connect(f); f.connect(g); g.connect(sfx); o.start(t); lfo.start(t); o.stop(t + 1.1); lfo.stop(t + 1.1); },
+    countTick: function (p) { if (!ok()) return; var t = ctx.currentTime; tone(t, 900 + (p || 0) * 1100, 0.04, 0.07, 'triangle'); },
+    /** tier 1 win, 2 big win, 3 mega win, 4 jackpot: more of everything each step. */
+    fanfare: function (tier) {
+      if (!ok()) return; var t = ctx.currentTime;
+      var chord = function (at, notes, dur, peak) { notes.forEach(function (n) { tone(at, mtof(n), dur, peak, 'sawtooth', sfx); tone(at, mtof(n) * 2, dur * 0.7, peak * 0.4, 'square', sfx); }); };
+      if (tier <= 1) { A.win(); A.coins(6); return; }
+      var seq = tier === 2 ? [[60, 64, 67], [65, 69, 72], [67, 71, 74], [72, 76, 79]] : [[60, 64, 67], [64, 67, 72], [67, 72, 76], [72, 76, 79], [76, 79, 84], [79, 84, 88]];
+      seq.forEach(function (c, i) { chord(t + i * 0.16, c, 0.5, 0.045); });
+      var coins = tier === 2 ? 12 : 14, reps = tier === 2 ? 2 : tier === 3 ? 3 : 5;
+      for (var r = 0; r < reps; r++) setTimeout(function () { A.coins(coins); }, 300 + r * 650);
+      if (tier >= 3) for (var b = 0; b < 8; b++) tone(t + 0.1 + b * 0.11, 1568 + (b % 4) * 220, 0.5, 0.07, 'sine');
+      if (tier >= 4) {                                                                       // the jackpot siren
+        for (var k = 0; k < 4; k++) { var o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sawtooth'; o.frequency.setValueAtTime(500, t + k * 0.9); o.frequency.exponentialRampToValueAtTime(1100, t + k * 0.9 + 0.45); o.frequency.exponentialRampToValueAtTime(500, t + k * 0.9 + 0.9);
+          var f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 2200; g.gain.setValueAtTime(0.0001, t + k * 0.9); g.gain.exponentialRampToValueAtTime(0.06, t + k * 0.9 + 0.1); g.gain.exponentialRampToValueAtTime(0.0001, t + k * 0.9 + 0.9); o.connect(f); f.connect(g); g.connect(sfx); o.start(t + k * 0.9); o.stop(t + k * 0.9 + 0.95); }
+      }
+    },
     isMuted: function () { return muted; },
     setMuted: function (m) {
       muted = !!m; try { localStorage.setItem('hub.casino.muted', String(muted)); } catch (e) {}

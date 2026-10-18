@@ -1370,3 +1370,21 @@ button.seat-orb:hover .orb-glass { box-shadow: inset 0 -.5cqw 1cqw rgba(0, 0, 0,
 .gl-track:hover { opacity: 1; background: rgba(60, 40, 16, .9); }
 .gl-track-toast { position: absolute; left: 148px; top: 14px; font: 700 14px 'Cormorant Garamond', Georgia, serif; letter-spacing: .04em; color: #f4ead2; background: rgba(10, 6, 3, .75); padding: 4px 12px; border-radius: 999px; border: 1px solid rgba(201, 164, 92, .3); animation: glpop2 .3s ease both; }
 @keyframes glpop2 { from { opacity: 0; transform: translateX(-6px); } }
+
+/* the win celebration, centred */
+.mach-readout { left: 50%; top: auto; bottom: 12px; transform: translateX(-50%); justify-items: center; }
+.mach-flat .mach-readout { transform: none; }
+.win-banner { position: absolute; left: 50%; top: 30%; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: 2px; text-align: center; pointer-events: none; animation: winpop .45s cubic-bezier(.2, 1.5, .4, 1) both; z-index: 3; }
+.win-label { font: 900 clamp(28px, 6vw, 56px)/1 'Cormorant Garamond', Georgia, serif; letter-spacing: .08em; background: linear-gradient(#fff6c0, #f0b830 55%, #b87810); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 3px 0 #5a3004) drop-shadow(0 0 18px rgba(255, 190, 60, .8)); }
+.win-amount { font: 800 clamp(30px, 7vw, 64px)/1 Manrope, system-ui, sans-serif; color: #fff7d6; text-shadow: 0 0 22px rgba(255, 200, 80, .9), 0 3px 0 #5a3004; font-variant-numeric: tabular-nums; }
+.win-rays { position: absolute; left: 50%; top: 50%; width: 120%; aspect-ratio: 1; transform: translate(-50%, -50%); z-index: -1; border-radius: 50%; opacity: .0;
+  background: repeating-conic-gradient(rgba(255, 214, 110, .5) 0 8deg, transparent 8deg 20deg); -webkit-mask-image: radial-gradient(circle, #000 5%, transparent 68%); mask-image: radial-gradient(circle, #000 5%, transparent 68%); }
+.win-banner.tier-2 .win-rays, .win-banner.tier-3 .win-rays, .win-banner.tier-4 .win-rays { opacity: .85; animation: winspin 6s linear infinite; }
+.win-banner.tier-3 .win-label, .win-banner.tier-4 .win-label { animation: winshake .12s linear infinite; }
+.win-banner.tier-4 .win-amount { color: #fff; animation: winflash .35s ease-in-out infinite alternate; }
+.win-banner.tier-4 { top: 34%; }
+@keyframes winpop { from { transform: translate(-50%, -50%) scale(.3); opacity: 0; } }
+@keyframes winspin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+@keyframes winshake { 25% { transform: translate(2px, -1px); } 75% { transform: translate(-2px, 1px); } }
+@keyframes winflash { to { text-shadow: 0 0 40px rgba(255, 90, 60, 1), 0 3px 0 #5a3004; } }
+@media (prefers-reduced-motion: reduce) { .win-banner, .win-rays, .win-label, .win-amount { animation: none !important; } }

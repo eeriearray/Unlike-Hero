@@ -52,6 +52,28 @@
     </div>`;
   }
 
+  /** The celebration: a big number that counts up, and a label that grows with the win (WIN, BIG WIN, MEGA WIN, JACKPOT). */
+  var TIER_LABEL = ['', 'WIN', 'BIG WIN', 'MEGA WIN', 'JACKPOT'];
+  function WinBanner(props) {
+    var w = props.win, seen = useRef(w ? w.no : 0), sv = useState(null), show = sv[0], setShow = sv[1], vs = useState(0), val = vs[0], setVal = vs[1];
+    useEffect(function () {
+      if (!w || seen.current === w.no) return;
+      seen.current = w.no;
+      var tier = window.CasinoGL && CasinoGL.winTier ? CasinoGL.winTier(w.amount, w.bet) : 1, dur = [0, 900, 1500, 2300, 3400][tier], t0 = performance.now(), raf = 0, lastTick = 0;
+      setShow({ tier: tier, amount: w.amount, no: w.no });
+      (function frame(now) {
+        var u = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - u, 3);
+        setVal(Math.round(w.amount * e));
+        if (now - lastTick > 70 && u < 1 && window.CasinoGL && CasinoGL.audio) { lastTick = now; CasinoGL.audio.countTick(u); }
+        if (u < 1) raf = requestAnimationFrame(frame);
+      })(t0);
+      var hide = setTimeout(function () { setShow(null); }, dur + 1800);
+      return function () { cancelAnimationFrame(raf); clearTimeout(hide); };
+    }, [w && w.no]);
+    if (!show) return null;
+    return html`<div className=${'win-banner tier-' + show.tier} role="status"><span className="win-rays" aria-hidden="true"></span><b className="win-label">${TIER_LABEL[show.tier]}</b><b className="win-amount num">+${money(val)}</b></div>`;
+  }
+
   // ───────────── slots ─────────────
   function SlotsRules(props) {
     var pays = props.rules.pays;
@@ -79,13 +101,14 @@
     var model = glOn ? { n: st.seats.length, mySeat: mySeat, strips: st.rules.strips, spins: spins, onSit: props.onSit,
       seats: seatsModel(v, st, function (pid, i) { var s = st.spins[pid]; return { canSit: false, status: s && s.state === 'done' && s.payout ? '+' + money(s.payout) : '', statusCls: 'green', result: s && s.state === 'done' ? (s.net > 0 ? 'win' : 'lose') : null }; }).map(function (s) { return s.pid ? s : { pid: null, canSit: !you.seated && !!UI.byId(v, v.you) && UI.byId(v, v.you).status === 'active' }; }) } : null;
 
-    var grid = my && my.grid && (my.state === 'done' || false) ? my.grid : null;
+    var grid = !glOn && my && my.grid && my.state === 'done' ? my.grid : null;
+    var win = my && my.state === 'done' && my.payout > 0 ? { no: my.no, amount: my.payout, bet: my.bet } : null;
     var msg = !you.seated ? '' : !my ? 'Pick a bet and pull the lever' : my.state === 'spinning' ? 'Spinning…' : my.payout ? 'You won ' + money(my.payout) + '!' : 'No win. Spin again.';
     var hud = html`<div className="mach-hud">
       <div className=${cx('mach-readout', my && my.state === 'done' && my.payout && 'won')} aria-live="polite">
         ${grid ? html`<div className="mach-grid">${[0, 1, 2].map(function (row) { return grid.map(function (reel, ri) { var win = my.wins && my.wins.some(function (w) { return st.rules.lines[w.line][ri] === row && w.pay; }); return html`<span key=${row + '-' + ri} className=${cx('mach-sym', win && 'hit', reel[row] === 'BAR' && 'bar')}>${GLYPH[reel[row]]}</span>`; }); })}</div>` : null}
         <div className="mach-msg">${msg}</div>
-      </div></div>`;
+      </div><${WinBanner} win=${win} /></div>`;
     var flat = html`<div className="mach-flat">${hud}</div>`;
 
     var dock;
@@ -129,7 +152,9 @@
       seats: seatsModel(v, st, function (pid) { var h = st.hands[pid]; return { bet: h ? h.bet : 0, status: h && h.phase === 'done' && h.payout ? h.name : '', statusCls: 'green', result: h && h.phase === 'done' ? (h.net > 0 ? 'win' : 'lose') : null }; }).map(function (s) { return s.pid ? s : { pid: null, canSit: !you.seated && !!UI.byId(v, v.you) && UI.byId(v, v.you).status === 'active' }; }) } : null;
 
     var msg = !you.seated ? '' : !hand ? 'Place your bet and deal' : hand.phase === 'hold' ? 'Tap the cards to hold, then draw' : hand.payout ? hand.name + ' — you won ' + money(hand.payout) : 'No win';
+    var vwin = hand && hand.phase === 'done' && hand.payout > 0 ? { no: hand.no, amount: hand.payout, bet: hand.bet } : null;
     var hud = html`<div className="mach-hud">
+      <${WinBanner} win=${vwin} />
       <div className="vp-hand" aria-label="Your hand">
         ${hand ? hand.cards.map(function (c, i) {
           return html`<button key=${i + ':' + (c || 'x')} type="button" className=${cx('vp-card', hand.held && hand.held[i] && hand.phase === 'hold' && 'held')} disabled=${hand.phase !== 'hold'} onClick=${function () { act('hold', { index: i }); }} aria-pressed=${!!(hand.held && hand.held[i])} aria-label=${'Card ' + (i + 1) + (hand.held && hand.held[i] ? ', held' : '')}>

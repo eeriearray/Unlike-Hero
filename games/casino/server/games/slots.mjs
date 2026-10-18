@@ -5,7 +5,7 @@
 // bet is held when the reels start and settled once, when they stop (the wallet moves then, not before).
 import { fmt } from './kit.mjs';
 
-export const RULES = { seats: 6, spinMs: 2_800, resultsMs: 1_500, history: 12 };
+export const RULES = { seats: 6, spinMs: 4_000, resultsMs: 1_500, history: 12 };
 export const SYMBOLS = ['S7', 'GEM', 'BELL', 'BAR', 'LEM', 'CHR'];
 // One strip per reel (20 stops each). Every stop shows its symbol and the ones above and below it.
 export const STRIPS = [

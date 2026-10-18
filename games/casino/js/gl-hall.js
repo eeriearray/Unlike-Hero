@@ -51,9 +51,24 @@
       var gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, c1); gr.addColorStop(1, c2); g.fillStyle = gr; g.fillRect(0, 0, w, h);
       g.strokeStyle = '#f0d68a'; g.lineWidth = 8; g.strokeRect(8, 8, w - 16, h - 16);
       for (var i = 0; i < 16; i++) { g.fillStyle = i % 2 ? '#fff3c0' : '#d8a040'; g.beginPath(); g.arc(24 + i * 31, 20, 5, 0, TAU); g.fill(); g.beginPath(); g.arc(24 + i * 31, h - 20, 5, 0, TAU); g.fill(); }
-      g.fillStyle = '#fff1c8'; g.shadowColor = '#ffb040'; g.shadowBlur = 18; g.font = '900 64px "Cormorant Garamond", Georgia, serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, w / 2, h / 2 + 4);
+      g.fillStyle = '#fff1c8'; g.shadowColor = '#ffb040'; g.shadowBlur = 18; g.textAlign = 'center'; g.textBaseline = 'middle';
+      var size = 64; g.font = '900 ' + size + 'px "Cormorant Garamond", Georgia, serif';
+      while (g.measureText(text).width > w - 70 && size > 24) { size -= 2; g.font = '900 ' + size + 'px "Cormorant Garamond", Georgia, serif'; }       // shrink long titles to fit inside the bulbs
+      g.fillText(text, w / 2, h / 2 + 4);
     });
   }
+
+  /** 1 win, 2 big win, 3 mega win, 4 jackpot, by payout against the bet. */
+  GL.winTier = function (payout, bet) { var r = payout / Math.max(1, bet); return r >= 50 ? 4 : r >= 20 ? 3 : r >= 5 ? 2 : 1; };
+  var coinTex = null;
+  function coinTexture() {
+    if (coinTex) return coinTex;
+    return (coinTex = K.canvasTex(64, 64, function (g) {
+      var gr = g.createRadialGradient(24, 22, 4, 32, 32, 30); gr.addColorStop(0, '#fff6c0'); gr.addColorStop(0.5, '#f0b830'); gr.addColorStop(1, '#8a5a10');
+      g.beginPath(); g.arc(32, 32, 28, 0, TAU); g.fillStyle = gr; g.fill(); g.lineWidth = 4; g.strokeStyle = '#7a4a08'; g.stroke(); g.beginPath(); g.arc(32, 32, 19, 0, TAU); g.strokeStyle = 'rgba(120,70,8,.7)'; g.lineWidth = 2; g.stroke();
+    }));
+  }
+  var LINE_Y = [1.533, 1.4, 1.267], LINE_DEF = [[0, 0], [1, 0], [2, 0], [0, -0.307], [0, 0.307]];
 
   // ───────────── cabinets ─────────────
   function cabinetGeo(forSlots) {
@@ -84,7 +99,18 @@
       var g = new T.Group(); g.position.set(mx(i), 0, MZ); E.scene.add(g);
       var body = new T.Mesh(geo, M.vcSmooth); body.castShadow = !E.noShadow; g.add(body);
       var sign = new T.Mesh(new T.PlaneGeometry(1.0, 0.25), signMat.clone()); sign.position.set(0, 2.17, 0.385); g.add(sign);
-      var mach = { g: g, sign: sign, glow: 0.6 };
+      var mach = { g: g, sign: sign, glow: 0.6, fx: null };
+      // winning payline highlights and a coin shower, both dormant until a win
+      mach.lines = [0, 1, 2, 3, 4].map(function (li) {
+        var d = LINE_DEF[li], diag = li >= 3, len = diag ? 0.9 : 0.92;
+        var mesh = new T.Mesh(new T.PlaneGeometry(len, 0.03), new T.MeshBasicMaterial({ color: 0xffe070, transparent: true, opacity: 0.95, blending: T.AdditiveBlending, depthWrite: false, fog: false }));
+        mesh.position.set(0, diag ? 1.4 : LINE_Y[li], 0.48); mesh.rotation.z = d[1]; mesh.visible = false; g.add(mesh); return mesh;
+      });
+      var cn = 70, cpos = new Float32Array(cn * 3); for (var q = 0; q < cn; q++) cpos[q * 3 + 1] = -10;
+      var cgeo = new T.BufferGeometry(); cgeo.setAttribute('position', new T.BufferAttribute(cpos, 3));
+      mach.coinPts = new T.Points(cgeo, new T.PointsMaterial({ map: coinTexture(), size: 0.075, transparent: true, depthWrite: false, alphaTest: 0.1, fog: false }));
+      mach.coinPts.frustumCulled = false; g.add(mach.coinPts);
+      mach.coins = { n: cn, vel: new Float32Array(cn * 3), start: new Float32Array(cn), live: new Float32Array(cn) };
       if (forSlots) {
         mach.reels = []; mach.drums = [];
       } else {
@@ -145,6 +171,38 @@
     mach.tex.needsUpdate = true;
   }
 
+  /** A win: coins out of the tray, winning lines flash, the marquee goes wild, the camera shakes a little (and the sound, if it's yours). */
+  function startWin(E, mach, s, no, payout, bet, lines) {
+    var tier = GL.winTier(payout, bet);
+    mach.paidNo = no;
+    mach.fx = { t: 0, dur: 2.2 + tier * 0.9, tier: tier, lines: lines };
+    var c = mach.coins, count = Math.min(c.n, 14 + tier * 14);
+    for (var i = 0; i < c.n; i++) {
+      c.live[i] = i < count ? 1 : 0; c.start[i] = Math.random() * mach.fx.dur * 0.55;
+      c.vel[i * 3] = (Math.random() - 0.5) * 0.9; c.vel[i * 3 + 1] = 1.7 + Math.random() * 1.8; c.vel[i * 3 + 2] = 0.5 + Math.random() * 1.0;
+    }
+    if (s.me) { E.shake = Math.max(E.shake, tier >= 2 ? 0.7 + tier * 0.45 : 0); if (GL.audio) GL.audio.fanfare(tier); }
+  }
+  function stepFx(E, mach, dt, t, mine) {
+    var fx = mach.fx;
+    if (!fx) { mach.lines.forEach(function (l) { l.visible = false; }); return; }
+    fx.t += dt;
+    var on = fx.t < fx.dur + 0.8 && Math.floor(fx.t * 6) % 2 === 0;
+    mach.lines.forEach(function (l, i) { l.visible = on && fx.lines.indexOf(i) >= 0; });
+    var c = mach.coins, pos = mach.coinPts.geometry.attributes.position.array, any = false;
+    for (var i = 0; i < c.n; i++) {
+      if (!c.live[i]) { pos[i * 3 + 1] = -10; continue; }
+      var age = fx.t - c.start[i];
+      if (age < 0) { pos[i * 3 + 1] = -10; any = true; continue; }
+      var x = (c.vel[i * 3]) * age + (i % 7 - 3) * 0.02, y = 0.4 + c.vel[i * 3 + 1] * age - 3.4 * age * age, z = 0.5 + c.vel[i * 3 + 2] * age;
+      if (y < 0.02) { c.live[i] = 0; pos[i * 3 + 1] = -10; continue; }
+      pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z; any = true;
+    }
+    mach.coinPts.geometry.attributes.position.needsUpdate = true;
+    if (mine && E.hallGlow) E.hallGlow.intensity = 1.8 + (fx.t < fx.dur ? 2.2 * (0.5 + 0.5 * Math.sin(t * 18)) : 0);
+    if (fx.t > fx.dur + 1.2 && !any) { mach.fx = null; if (mine && E.hallGlow) E.hallGlow.intensity = 1.8; }
+  }
+
   // ───────────── the tables ─────────────
   function hallDef(forSlots) {
     return {
@@ -165,7 +223,7 @@
           else if (s.pid && s.me) { /* first person: your wallet is in the HUD */ }
           else if (s.canSit) out.labels.push({ id: 'seat' + i, x: pose.x, y: 1.1, z: pose.z, html: '<button type="button" class="gl-sit" data-seat="' + i + '">Play here</button>', cls: 'gl-sitwrap', prio: 900 });
           var sp = forSlots ? (m.spins || {})[i] : (m.hands || {})[i];
-          if (sp && (sp.payout || sp.name) && (forSlots ? sp.state === 'done' : sp.phase === 'done') && sp.payout) {
+          if (sp && !s.me && (sp.payout || sp.name) && (forSlots ? sp.state === 'done' : sp.phase === 'done') && sp.payout) {
             out.labels.push({ id: 'win' + i, x: mx(i), y: 2.5, z: MZ + 0.4, html: '<b>+' + esc(sp.payout) + '</b>' + (sp.name ? '<small>' + esc(sp.name) + '</small>' : ''), cls: 'gl-total active', prio: 10 });
           }
         });
@@ -178,9 +236,9 @@
           if (forSlots) {
             reelsFor(E, mach, m.strips);
             var sp = (m.spins || {})[i]; if (!sp) return;
-            if (sp.state === 'done' && sp.payout > 0 && mach.paidNo !== sp.no) { mach.paidNo = sp.no; if (GL.audio && s.me) GL.audio.coins(Math.min(14, 4 + Math.round(sp.payout / Math.max(1, sp.bet) * 2))); }
+            if (sp.state === 'done' && sp.payout > 0 && mach.paidNo !== sp.no) startWin(E, mach, s, sp.no, sp.payout, sp.bet, (sp.wins || []).map(function (w) { return w.line; }));
             mach.reels.forEach(function (r, ri) {
-              if (sp.no !== r.no && sp.state === 'spinning') { r.no = sp.no; r.mode = 'spin'; r.vel = 13 + ri * 1.5; r.stopAt = performance.now() + 1500 + ri * 520; r.target = null; mach.leverT = 1; if (GL.audio && s.me && ri === 0) GL.audio.spin(); }
+              if (sp.no !== r.no && sp.state === 'spinning') { r.no = sp.no; r.mode = 'spin'; r.vel = 13 + ri * 1.5; r.stopAt = performance.now() + 1500 + ri * 520; r.target = null; mach.leverT = 1; mach.tease = false; r.teased = null; if (GL.audio && s.me && ri === 0) { GL.audio.lever(); GL.audio.spin(); } }
               var grid = sp.grid;
               if (grid && m.strips && (r.target == null || r.targetNo !== sp.no)) {
                 var strip = m.strips[ri], mid = grid[ri][1], idx = -1;
@@ -188,12 +246,17 @@
                 if (idx < 0) idx = strip.indexOf(mid);
                 r.stopIdx = idx; r.targetNo = sp.no; r.target = -idx * (TAU / strip.length);
                 if (r.mode === 'idle') { r.ang = r.target; }                      // a result we only just heard of: show it, no spin
+                if (ri === 2 && r.mode === 'spin' && s.me && sp.state === 'spinning') {                   // anticipation: reels 1 and 2 agree on a line, so the last one takes its time
+                  var VAL = { S7: 1, GEM: 1, BELL: 1, BAR: 1 }, g2 = sp.grid;
+                  mach.tease = m.lines.some(function (l) { var a1 = g2[0][l[0]], b1 = g2[1][l[1]]; return a1 === b1 && VAL[a1]; });
+                  if (mach.tease && r.teased !== sp.no) { r.teased = sp.no; r.stopAt += 900; }
+                }
               }
               if (sp.state === 'done' && r.mode === 'spin' && r.target != null && r.stopAt > performance.now() + 700) r.stopAt = performance.now() + 150 + ri * 260;
             });
           } else {
             var h = (m.hands || {})[i], bet = h ? h.bet : (s.bet || 0);
-            if (h && h.phase === 'done' && h.payout > 0 && mach.paidNo !== h.no) { mach.paidNo = h.no; if (GL.audio && s.me) GL.audio.coins(Math.min(14, 4 + Math.round(h.payout / Math.max(1, h.bet) * 2))); }
+            if (h && h.phase === 'done' && h.payout > 0 && mach.paidNo !== h.no) startWin(E, mach, s, h.no, h.payout, h.bet, []);
             var sig = JSON.stringify([h && h.cards, h && h.held, h && h.phase, h && h.payout, bet]);
             if (sig !== mach.sig) { mach.sig = sig; drawScreen(E, mach, h, bet); }
           }
@@ -205,10 +268,10 @@
         var now = performance.now(), m = E.model; if (!m) return;
         E.machines.forEach(function (mach, i) {
           var spinning = false;
-          if (forSlots && mach.reels) mach.reels.forEach(function (r) {
+          if (forSlots && mach.reels) mach.reels.forEach(function (r, ri) {
             if (r.mode === 'spin') {
               spinning = true;
-              if (r.target != null && now >= r.stopAt) { r.mode = 'stop'; r.stopT = 0; r.from = r.ang; var nn = Math.floor((r.from - r.target) / TAU); r.to = r.target + nn * TAU; if (r.from - r.to < 1.2) r.to -= TAU; if (GL.audio && m.seats[i] && m.seats[i].me) GL.audio.thud(); }
+              if (r.target != null && now >= r.stopAt) { r.mode = 'stop'; r.stopT = 0; r.from = r.ang; var nn = Math.floor((r.from - r.target) / TAU); r.to = r.target + nn * TAU; if (r.from - r.to < 1.2) r.to -= TAU; if (GL.audio && m.seats[i] && m.seats[i].me) { GL.audio.reelStop(ri); if (ri === 1 && mach.tease) GL.audio.tease(); } }
               else r.ang -= r.vel * dt;
             } else if (r.mode === 'stop') {
               spinning = true; r.stopT += dt / 0.55; var u = Math.min(1, r.stopT), e = 1 - Math.pow(1 - u, 3);
@@ -220,7 +283,8 @@
           // lever pull and the marquee
           if (mach.leverT > 0) { mach.leverT = Math.max(0, mach.leverT - dt * 1.6); mach.lever.rotation.x = Math.sin(mach.leverT * Math.PI) * 0.9; }
           var sp = forSlots ? (m.spins || {})[i] : (m.hands || {})[i], won = sp && sp.payout > 0 && (forSlots ? sp.state === 'done' : sp.phase === 'done');
-          var flash = won ? 0.7 + Math.sin(t * 14) * 0.3 : spinning ? 0.8 : 0.6;
+          stepFx(E, mach, dt, t, !!(m.seats[i] && m.seats[i].me));
+          var flash = mach.fx ? 0.55 + 0.45 * Math.sin(t * 16 + i) : won ? 0.7 + Math.sin(t * 14) * 0.3 : spinning ? 0.8 : 0.6;
           mach.sign.material.color.setScalar(lerp(mach.sign.material.color.r, flash, 0.2));
         });
       },

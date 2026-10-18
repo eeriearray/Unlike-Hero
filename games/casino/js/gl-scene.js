@@ -69,7 +69,7 @@
     this.camPos = new T.Vector3(0, 2, 4); this.camLook = new T.Vector3(0, 0.8, 0); this.camInit = false; this.orbit = { yaw: 0, pitch: 0, zoom: 1, ty: 0, tp: 0, tz: 1 };
     this.clock = new T.Clock();
     this.seats = {}; this.cards = {}; this.chips = {}; this.lbl = {};
-    this.model = null; this.dealCount = 0; this.sceneT = 0;
+    this.model = null; this.shake = 0; this.dealCount = 0; this.sceneT = 0;
     this.mats();
     this.room();
     this.lamp();
@@ -401,6 +401,7 @@
     var dxl = cp.x - lx, dzl = cp.z - lz, dl = Math.hypot(dxl, dzl);
     if (cp.y > 1.7 && cp.y < 2.8 && dl < 0.75) { var kpush = (0.75 / (dl || 0.001)); cp.x = lx + dxl * kpush; cp.z = lz + dzl * kpush; }
     cp.x = clamp(cp.x, -5.5, 5.5); cp.z = clamp(cp.z, -5.5, 5.5); cp.y = clamp(cp.y, 0.45, 4.2);
+    if (this.shake > 0.01) { this.camera.position.x += (Math.random() - 0.5) * this.shake * 0.05; this.camera.position.y += (Math.random() - 0.5) * this.shake * 0.05; this.shake *= Math.pow(0.04, dt); }
     this.camera.lookAt(this.camLook); this.camera.updateMatrixWorld();
     this.animals(dt, t);
     this.stepCards(dt); this.stepChips(dt);
