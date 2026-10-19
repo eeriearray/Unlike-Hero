@@ -3,7 +3,7 @@
  * (the shared log) to sound, effects and announcements. */
 (function (g) {
   'use strict';
-  var A = g.HollowArt, AU = g.HollowAudio, FX = g.HollowFx, Net = g.HollowNet, UI = g.HollowUI, MAP = g.HollowMap, Story = g.HollowStory, Heroes = g.HollowHeroes, S = UI.S;
+  var A = g.HollowArt, AU = g.HollowAudio, FX = g.HollowFx, Net = g.HollowNet, UI = g.HollowUI, MAP = g.HollowMap, Story = g.HollowStory, Heroes = g.HollowHeroes, St = g.HollowStage, EV = g.HollowEvents, S = UI.S;
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var esc = A.esc;
   var hub = null;
@@ -12,6 +12,8 @@
   var htmlOf = {};               // last html per region, so unchanged regions are not touched
   var started = false, reported = false, lastActive = null, lastRegion = null, lastEncId = null;
   UI.setAudio(AU);
+  EV.onBeat = function () { if (S.view && S.view.phase === 'playing' && $('#hdr')) patch('hdr', Story.bar()); };
+  EV.onIdle = function () { if (S.view) render(); };
 
   // ───────────────────────────── boot ─────────────────────────────
   FX.apply(); FX.startDust();
@@ -112,7 +114,7 @@
     if (v.phase === 'lobby') { setScreen('lobby'); renderLobby(); return; }
     setScreen('game');
     ensureGameShell();
-    patch('hdr', Story.bar());
+    if (!(EV.busy() && htmlOf.hdr)) patch('hdr', Story.bar());   // during a scene event the HUD follows its beats
     if (v.me && v.me.status !== undefined) {
       if (S.ui.coach == null) S.ui.coach = (function () { try { return localStorage.getItem('hollow.tut') ? 'done' : (v.game.round <= 1 ? 0 : 'done'); } catch (e) { return 0; } })();
       if (S.ui.coach === 1 && v.enc && v.enc.result) S.ui.coach = 2;
@@ -120,13 +122,14 @@
       if (S.ui.prep && (!v.enc || v.game.active !== v.you || v.enc.hold)) S.ui.prep = null;
       patch('left', UI.left());
       patch('right', UI.right());
-      patch('adv', Story.adventure());
-      patch('side', Story.side());
-      var sk = (v.me.loc || '') + '|' + (v.enc ? v.enc.id : '');
-      if (S.ui.sceneKey !== sk) { S.ui.sceneKey = sk; var sc = $('#adv .scene'); if (sc) { sc.classList.add('enter'); setTimeout(function () { sc.classList.remove('enter'); }, 1100); } var ad = $('#adv'); if (ad) ad.scrollTop = 0; }
-      // new story beats fade in once (not on every refresh)
-      var beatKey = [].map.call(document.querySelectorAll('#adv .story, #adv .outcome'), function (e) { return e.textContent.slice(0, 60); }).join('|');
-      if (S.ui.beatKey !== beatKey) { var prevB = (S.ui.beatKey || '').split('|'); S.ui.beatKey = beatKey; document.querySelectorAll('#adv .story, #adv .outcome').forEach(function (e) { if (prevB.indexOf(e.textContent.slice(0, 60)) < 0) { e.classList.add('beat'); setTimeout(function () { e.classList.remove('beat'); }, 1000); } }); }
+      St.mount($('#stagehost'));
+      if (S.ui.icardLoc && S.ui.icardLoc !== v.me.loc) { S.ui.icard = null; S.ui.icardLoc = null; }
+      if (S.ui.icard && (v.game.active !== v.you || (v.enc && v.enc.hold))) { S.ui.icard = null; if (!EV.busy()) St.unfocus(); }
+      St.sync(v);
+      if (S.ui.icard && S.ui.icard.waiting && v.enc && v.enc.options) { S.ui.icard.waiting = false; }
+      patch('advui', Story.adventure());
+      var capKey = ($('#advui .cap') || {}).textContent || '';
+      if (S.ui.capKey !== capKey) { S.ui.capKey = capKey; var cp = $('#advui .cap'); if (cp) { cp.classList.add('beat'); setTimeout(function () { cp.classList.remove('beat'); }, 1000); } }
       if (S.ui.map || S.ui.tab === 'map') {
         MAP.ensureFit(v.me.loc); MAP.ensureVisible(v.me.loc);
         var mh = MAP.render();
@@ -136,7 +139,6 @@
       patch('nav', navHtml());
       var gm = $('.game2'); if (gm) { gm.setAttribute('data-drawer', S.ui.drawer || ''); gm.setAttribute('data-map', S.ui.map ? 'open' : ''); gm.setAttribute('data-tab', S.ui.tab); gm.setAttribute('data-phase', v.game.haunt); gm.style.setProperty('--ph', v.game.haunt); }
       markInventory(v);
-      animateDie();
     }
     // the ending
     var endEl = $('#endlayer');
@@ -152,7 +154,7 @@
     var app = $('#app');
     if ($('.game2', app)) return;
     htmlOf = {};
-    app.innerHTML = '<div class="game2" data-tab="' + S.ui.tab + '" data-drawer="" data-map=""><div id="hdr" class="hdrwrap"></div><main class="adv" id="adv" aria-live="polite" aria-label="The adventure"></main><aside class="side" id="side" aria-label="You and the map"></aside><section class="mapview" id="mapview" aria-label="Map of the Hollow"><div class="mapwrap"><div id="mapsvg"></div><div class="mapctl"><button class="btn" data-act="closemap" aria-label="Close the map">✕</button><button class="btn" data-act="zin" aria-label="Zoom in">+</button><button class="btn" data-act="zout" aria-label="Zoom out">−</button><button class="btn" data-act="zme" aria-label="Centre on me">' + A.glyph('circle', 18) + '</button><button class="btn" data-act="zall" aria-label="Show everything discovered">' + A.glyph('maze', 18) + '</button></div><div class="maplegend"><span class="l here">you</span><span class="l go">you can go</span><span class="l danger">danger</span><span class="l seen">visited</span><span class="l new">unexplored</span></div><div id="maptip" class="maptip" role="tooltip"></div><div id="mapsheet" class="mapsheet"></div></div></section><aside class="drawer dleft" id="left" aria-label="Your character"></aside><aside class="drawer dright" id="right" aria-label="The journal"></aside><nav class="nav" id="nav" aria-label="Sections"></nav></div>';
+    app.innerHTML = '<div class="game2" data-tab="' + S.ui.tab + '" data-drawer="" data-map=""><div id="hdr" class="hdrwrap"></div><main class="adv" id="adv" aria-label="The adventure"><div id="stagehost" class="stg"></div><div id="advui" class="advui" aria-live="polite"></div></main><section class="mapview" id="mapview" aria-label="Map of the Hollow"><div class="mapwrap"><div id="mapsvg"></div><div class="mapctl"><button class="btn" data-act="closemap" aria-label="Close the map">✕</button><button class="btn" data-act="zin" aria-label="Zoom in">+</button><button class="btn" data-act="zout" aria-label="Zoom out">−</button><button class="btn" data-act="zme" aria-label="Centre on me">' + A.glyph('circle', 18) + '</button><button class="btn" data-act="zall" aria-label="Show everything discovered">' + A.glyph('maze', 18) + '</button></div><div class="maplegend"><span class="l here">you</span><span class="l go">you can go</span><span class="l danger">danger</span><span class="l seen">visited</span><span class="l new">unexplored</span></div><div id="maptip" class="maptip" role="tooltip"></div><div id="mapsheet" class="mapsheet"></div></div></section><aside class="drawer dleft" id="left" aria-label="Your character"></aside><aside class="drawer dright" id="right" aria-label="The journal"></aside><nav class="nav" id="nav" aria-label="Sections"></nav></div>';
     MAP.attach($('.mapwrap'));
   }
 
@@ -223,10 +225,10 @@
     if (!prev || S.ui.invOwner !== v.you) { S.ui.invOwner = v.you; return; }
     Object.keys(now).forEach(function (id) {
       var nm = S.cat.items[id].name, o = prev[id];
-      if (!o || now[id].n > o.n) { toast('Acquired: ' + nm, 'good'); AU.sfx('pickup'); flashSlot(id, 'new'); }
+      if (!o || now[id].n > o.n) { if (!EV.busy() && !S.ui.evItem) EV.gain(id); flashSlot(id, 'new'); }
       else if (now[id].eq !== o.eq) { toast((now[id].eq ? 'Equipped: ' : 'Put away: ') + nm); flashSlot(id, 'eqd'); }
     });
-    Object.keys(prev).forEach(function (id) { if (!now[id] || now[id].n < prev[id].n) toast('Used or lost: ' + S.cat.items[id].name, 'bad'); });
+    Object.keys(prev).forEach(function (id) { if (!now[id] || now[id].n < prev[id].n) EV.after(function () { toast('Used or lost: ' + S.cat.items[id].name, 'bad'); }); });
   }
   function flashSlot(id, cls) { var el = $('.slot[data-slot="' + id + '"]'); var hb = $('.hud-b'); if (el) { el.classList.add(cls); setTimeout(function () { el.classList.remove(cls); }, 1500); } if (hb) FX.sparkle($('.hud-b'), 'gold'); }
   function navHtml() {
@@ -279,46 +281,51 @@
     var fresh = log.filter(function (e) { return e.n > seen.n; });
     if (!fresh.length) return;
     seen.n = fresh[fresh.length - 1].n;
-    var you = v.you, spoke = [];
+    var you = v.you, spoke = [], here = v.me && v.me.loc;
+    var nameOf = function (id) { return ((v.players.find(function (p) { return p.id === id; }) || {}).name || '').replace(' (ghost)', ''); };
+    // Results at my place are shown in the scene (js/events.js). Their chips already carry the clue, the item, the
+    // Sanity lost and the Haunting's advance, so the separate log lines for those are not shown a second time.
+    var shown = fresh.filter(function (e) { return e.k === 'result' && e.d && e.d.result && !e.d.result.finale && (e.loc || e.d.result.loc) === here && v.phase === 'playing'; });
+    var covered = { clue: {}, hint: false, clock: false, dmg: {}, heal: {} };
+    shown.forEach(function (e) { (e.d.result.chips || []).forEach(function (c) { if (c.k === 'clue') covered.clue[c.label.replace(/^Clue: /, '')] = true; if (c.k === 'hint') covered.hint = true; if (c.k === 'clock') covered.clock = true; if ((c.k === 'san' || c.k === 'vit') && e.d.result.by === you) covered[c.n < 0 ? 'dmg' : 'heal'][c.k] = true; }); });
+    var deferred = shown.length > 0;
+    var post = [], later = function (fn) { if (deferred) post.push(fn); else fn(); };
     fresh.forEach(function (e) {
       var mine = e.p === you, k = e.k, d = e.d || {};
       if (k === 'result' && d.result) {
         var r = d.result;
-        if (r.roll) {
-          var who = (v.players.find(function (p) { return p.id === r.by; }) || {}).name || (r.finale ? 'The party' : '');
-          // only dramatic moments get the full-screen die: criticals, bosses, the finale. Your ordinary rolls reveal inline.
-          var big = r.finale || r.roll.tier === 'crit' || r.roll.tier === 'fumble' || (v.enc && v.enc.kind === 'boss');
-          if (big && (r.by === you || r.finale)) FX.dice({ roll: r.roll, who: who, label: r.opt, stakes: r.stakes, chips: r.chips, lines: r.lines }, AU.sfx);
-          else if (r.by === you) { AU.sfx('dice'); setTimeout(function () { AU.sfx(r.roll.tier === 'ok' ? 'success' : 'fail'); }, 780); }
-          else if (big) FX.dice({ roll: r.roll, who: who, label: r.opt, stakes: r.stakes, chips: r.chips, lines: r.lines }, AU.sfx);
-          else { var good = r.roll.tier === 'ok'; toast(who + ' — ' + r.opt + ': ' + r.roll.total + ' vs ' + r.roll.dc + ' · ' + (good ? 'success' : 'failure'), good ? 'good' : 'bad'); AU.sfx(good ? 'success' : 'fail'); }
-        }
-        else AU.sfx(r.tier === 'ok' || r.tier === 'crit' || r.tier === 'auto' ? 'success' : 'fail');
-        if (r.chips) r.chips.forEach(function (c) { if (c.k === 'clue') { AU.sfx('clue'); AU.hush(500); } if (c.k === 'item' && c.n > 0) AU.sfx('pickup'); if (c.k === 'ally') AU.sfx('ally'); });
-      } else if (k === 'dmg' && mine) {
-        if (d.k === 'san') { FX.flash('san'); AU.sfx('sanity'); } else { FX.flash('dmg'); AU.sfx('damage'); }
-        FX.floatText($('.me') || $('.sheet'), d.n + (d.k === 'san' ? ' Sanity' : ' Vitality'), d.k === 'san' ? 'viol' : 'bad');
-      } else if (k === 'heal' && mine) { FX.flash('heal'); AU.sfx('heal'); FX.floatText($('.me') || $('.sheet'), '+' + d.n, 'good'); }
-      else if (k === 'clue') { if (!d.priv || mine) g.HollowCine.play('clue', { title: (S.cat.clues[d.id] || {}).title || 'A discovery', text: e.t.replace(/^.*?(uncovers "[^"]*"\.|discovery: [^—]*—)\s*/, ''), pillar: (S.cat.clues[d.id] || {}).pillar, mine: mine, by: (v.players.find(function (p) { return p.id === e.p; }) || {}).name }); if (S.ui.drawer !== 'right') S.ui.newClue = true; setTimeout(function () { FX.sparkle($('.hud-b:last-of-type') || $('.hud'), 'gold'); }, 50); AU.sfx('clue'); AU.hush(700); toast('Clue: ' + e.t.split('. ')[0].replace(/^.* uncovers /, ''), 'good'); }
-      else if (k === 'clock') { if (d.n > 0) { AU.sfx('toll'); var tp = $('.top'); if (tp) { tp.classList.remove('toll'); void tp.offsetWidth; tp.classList.add('toll'); } } }
-      else if (k === 'phase') { g.HollowCine.play('phase', { phase: d.phase, name: S.cat.phaseName[d.phase - 1], text: S.cat.phaseText[d.phase - 1] }); }
-      else if (k === 'omen') { var oi = e.t.indexOf('. '); g.HollowCine.play('spirit', { title: oi > 0 ? e.t.slice(0, oi) : 'An omen', text: oi > 0 ? e.t.slice(oi + 2) : e.t }); }
-      else if (k === 'move') { if (mine) { AU.sfx(d.mode === 'sprint' ? 'sprint' : 'step'); var L = S.cat.locations[e.loc]; if (L && d.from !== e.loc) g.HollowCine.play('arrive', { title: L.name, region: S.cat.regions[L.region].name, color: S.cat.regions[L.region].color, hook: (L.desc.match(/^[^.!?]+[.!?]/) || [''])[0] }); } }
-      else if (k === 'enemy') { if (d.k === 'enemy' || d.k === 'spawn' || d.k === 'toll') AU.sfx('enemy'); toast(e.t, 'bad'); }
-      else if (k === 'boss') { AU.sfx('boss'); if (d.k === 'bossdown') toast(e.t, 'good'); }
-      else if (k === 'fall') { AU.sfx('fall'); FX.flash('dmg'); toast(e.t, 'bad'); }
-      else if (k === 'level') { AU.sfx('level'); if (mine) toast(e.t, 'good'); }
-      else if (k === 'turn') { if (mine) { AU.sfx('turn'); toast('Your turn.', 'good'); if (S.ui.tab !== 'act' && innerWidth <= 960) S.ui.tab = 'act'; MAP.center(v.me.loc); } }
-      else if (k === 'item' && mine) AU.sfx('pickup');
-      else if (k === 'ally') { AU.sfx('ally'); toast(e.t, 'good'); }
+        if (shown.indexOf(e) >= 0) EV.play(r, { mine: r.by === you, who: nameOf(r.by) });
+        else if (r.finale) FX.dice({ roll: r.roll, who: nameOf(r.by) || 'The party', label: r.opt, stakes: r.stakes, chips: r.chips, lines: r.lines }, AU.sfx);
+        else if (r.roll) { var good = r.roll.tier === 'ok' || r.roll.tier === 'crit'; later(function () { toast(nameOf(r.by) + ' — ' + r.opt + ': ' + (good ? 'success' : 'failure'), good ? 'good' : 'bad'); AU.sfx(good ? 'success' : 'fail'); }); }
+      } else if (k === 'roll' && d.hold && (e.loc === here || mine)) { EV.holdRoll(d.roll, d.oid, d.opt, { mine: mine, who: nameOf(e.p) }); }
+      else if (k === 'dmg' && mine) {
+        if (covered.dmg[d.k]) { covered.dmg[d.k] = false; }
+        else later(function () { if (d.k === 'san') { St.flash('fx-san', 1400); AU.sfx('sanity'); } else { St.flash('fx-hurt', 900); AU.sfx('damage'); } FX.floatText($('#hud-me'), d.n + (d.k === 'san' ? ' Sanity' : ' Vitality'), d.k === 'san' ? 'viol' : 'bad'); });
+      } else if (k === 'heal' && mine) { if (covered.heal[d.k]) covered.heal[d.k] = false; else later(function () { St.flash('fx-heal', 1000); AU.sfx('heal'); FX.floatText($('#hud-me'), '+' + d.n, 'good'); }); }
+      else if (k === 'clue') {
+        var ct = (S.cat.clues[d.id] || {}).title;
+        if (S.ui.drawer !== 'right') S.ui.newClue = true;
+        if (!covered.clue[ct] && (!d.priv || mine)) later(function () { g.HollowCine.play('clue', { title: ct || 'A discovery', text: e.t.replace(/^.*?(uncovers "[^"]*"\.|discovery: [^—]*—)\s*/, ''), pillar: (S.cat.clues[d.id] || {}).pillar, mine: mine, by: nameOf(e.p) }); });
+      }
+      else if (k === 'clock') { if (d.n > 0 && !covered.clock) later(function () { AU.sfx('toll'); var hc = $('#hud-clock'); if (hc) { hc.classList.remove('toll'); void hc.offsetWidth; hc.classList.add('toll'); } }); }
+      else if (k === 'phase') { later(function () { g.HollowCine.play('phase', { phase: d.phase, name: S.cat.phaseName[d.phase - 1], text: S.cat.phaseText[d.phase - 1] }); }); }
+      else if (k === 'omen') { var oi = e.t.indexOf('. '); later(function () { g.HollowCine.play('spirit', { title: oi > 0 ? e.t.slice(0, oi) : 'An omen', text: oi > 0 ? e.t.slice(oi + 2) : e.t }); }); }
+      else if (k === 'move') { if (mine) { AU.sfx(d.mode === 'sprint' ? 'sprint' : 'step'); var L = S.cat.locations[e.loc]; if (L && d.from !== e.loc) later(function () { g.HollowCine.play('arrive', { title: L.name, region: S.cat.regions[L.region].name, color: S.cat.regions[L.region].color, hook: (L.desc.match(/^[^.!?]+[.!?]/) || [''])[0] }); }); } }
+      else if (k === 'enemy') { later(function () { if (d.k === 'enemy' || d.k === 'spawn' || d.k === 'toll') AU.sfx('enemy'); toast(e.t, 'bad'); }); }
+      else if (k === 'boss') { later(function () { AU.sfx('boss'); if (d.k === 'bossdown') toast(e.t, 'good'); }); }
+      else if (k === 'fall') { later(function () { AU.sfx('fall'); St.flash('fx-hurt', 1200); toast(e.t, 'bad'); }); }
+      else if (k === 'level') { later(function () { AU.sfx('level'); if (mine) toast(e.t, 'good'); }); }
+      else if (k === 'turn') { var tp = v.players.find(function (p) { return p.id === e.p; }); if (tp && v.players.length > 1) EV.turn(tp, tp.cls, mine); if (mine) { later(function () { AU.sfx('turn'); }); if (S.ui.tab !== 'act' && innerWidth <= 960) S.ui.tab = 'act'; MAP.center(v.me.loc); } }
+      else if (k === 'ally') { later(function () { AU.sfx('ally'); toast(e.t, 'good'); }); }
       else if (k === 'vote') { if (d.k === 'vote') AU.sfx('vote'); }
-      else if (k === 'trap') { if (mine) { AU.sfx('trap'); toast(e.t, 'bad'); } }
-      else if (k === 'world') { if (d.k === 'route') AU.sfx('lock'); else if (d.k === 'reveal') AU.sfx('door'); else if (d.k === 'corrupt') toast(e.t, 'bad'); else if (d.k === 'gate') toast(e.t, 'good'); }
-      else if (k === 'story') { if (d.k === 'revive') AU.sfx('revive'); if (d.k === 'cleanse') toast(e.t, 'good'); if (d.k === 'pillar') { toast(e.t, 'good'); AU.sfx('clue'); } }
-      else if (k === 'hint') { toast(e.t, 'good'); AU.sfx('pickup'); }
+      else if (k === 'trap') { if (mine) later(function () { AU.sfx('trap'); St.flash('fx-hurt', 900); toast(e.t, 'bad'); }); }
+      else if (k === 'world') { if (d.k === 'route') AU.sfx('lock'); else if (d.k === 'reveal') AU.sfx('door'); else if (d.k === 'corrupt') later(function () { toast(e.t, 'bad'); }); else if (d.k === 'gate') later(function () { toast(e.t, 'good'); }); else if (d.k === 'investigate' && mine) later(function () { toast(e.t.replace(/^[^.]*\.\s*/, '') || 'Nothing hidden here.', ''); }); }
+      else if (k === 'story') { if (d.k === 'revive') AU.sfx('revive'); if (d.k === 'cleanse') later(function () { toast(e.t, 'good'); }); if (d.k === 'pillar') later(function () { toast(e.t, 'good'); AU.sfx('clue'); }); }
+      else if (k === 'hint') { if (!covered.hint) later(function () { toast(e.t, 'good'); AU.sfx('pickup'); }); }
       else if (k === 'ending') { var o = d.outcome; AU.sfx(o === 'success' ? 'end_success' : o === 'failure' ? 'end_failure' : 'end_partial'); }
       if (k !== 'turn' && k !== 'round' && k !== 'move') spoke.push(e.t);
     });
+    post.forEach(function (fn) { EV.after(fn); });     // after the scene has shown what happened
     if (spoke.length) announce(spoke.slice(-2).join(' '));
   }
 
@@ -337,6 +344,7 @@
     var me = UI.me(); if (!me) return;
     var region = S.cat.locations[me.loc] && S.cat.locations[me.loc].region;
     if (region) AU.setRegion(region);
+    AU.setPlace(me.loc);
     AU.setLevel(v.game.clock / v.game.clockMax * 0.8 + (v.game.haunt - 1) * 0.1);
     var enc = v.enc, mood = 'explore';
     if (enc && enc.kind === 'boss') mood = 'boss';
@@ -387,6 +395,41 @@
     toTitle();
   }
 
+  // ───────────── the object card and what it can do ─────────────
+  function openCard(ic) {
+    S.ui.icard = ic; S.ui.icardLoc = S.view.me.loc;
+    if (ic.obj) St.focus(ic.obj);
+    htmlOf.advui = null;
+    setTimeout(function () { render(); }, FX.reduced() ? 0 : 380);   // let the camera arrive first
+  }
+  function closeCard(keepCam) { var had = !!S.ui.icard; S.ui.icard = null; S.ui.prep = null; if (!keepCam && !EV.busy()) St.unfocus(); if (had) { htmlOf.advui = null; render(); } }
+  // choosing an option: risky ones show their odds first (in the card), safe ones happen at once
+  function pickOption(id, obj) {
+    var v = S.view, enc = v.enc, o = enc && enc.options ? enc.options.find(function (x) { return x.id === id; }) : null;
+    if (!o) {
+      // the place's encounter is closed (it is free to open): open it, then come back to this option
+      if (!enc && v.act && v.act.interact.ok) { send({ t: 'interact' }); openCard({ obj: obj, opt: id, waiting: true }); }
+      return;
+    }
+    if (o.state !== 'ok') { toast(o.why || 'Not now.'); return; }
+    AU.sfx('click');
+    if (o.kind === 'check' || o.kind === 'puzzle' || o.needsTarget) { openCard({ obj: obj, opt: id }); return; }
+    if (obj) St.focus(obj);
+    S.ui.icard = null; htmlOf.advui = null;
+    ACTIONS.choose({ dataset: { opt: o.id, confirm: o.confirm || '' } });
+  }
+  // searching a place is a standing action; the place's encounter (free to open) is closed first and reopened after
+  function search(obj) {
+    var v = S.view, enc = v.enc, seq = [];
+    if (enc && enc.kind === 'loc' && !enc.hold) seq.push({ t: 'leave' });
+    seq.push({ t: 'investigate' });
+    closeCard(true);
+    if (obj) EV.intent(obj, 'search');
+    AU.sfx('paper');
+    var step = function (i) { if (i >= seq.length) { if (S.view && !S.view.enc && S.view.act && S.view.act.interact.ok) send({ t: 'interact' }); setTimeout(function () { if (!EV.busy()) St.unfocus(); }, 1400); return; } S.net.send(seq[i]).then(function (res) { if (res && res.error) { toast(res.error, 'bad'); St.unfocus(); return; } step(i + 1); }); };
+    step(0);
+  }
+
   var ACTIONS = {
     host: function () { var n = nameVal(); startOnline(function (net) { return net.create({ name: n }); }); },
     join: function () {
@@ -422,31 +465,44 @@
     addbot: function () { send({ t: 'addbot' }); }, kickbot: function (el) { send({ t: 'kickbot', id: el.dataset.id }); },
     setafk: function (el) { send({ t: 'settings', afk: el.value }); }, setturn: function (el) { send({ t: 'settings', turnSec: +el.value }); },
     // layout
-    choice: function (el) {
-      var enc = S.view.enc; if (!enc || !enc.options) return;
-      var o = enc.options.find(function (x) { return x.id === el.dataset.opt; }); if (!o || o.state !== 'ok') return;
-      S.ui.focus = null;
-      if (o.kind === 'check' || o.kind === 'puzzle' || o.needsTarget) { S.ui.prep = { id: o.id }; htmlOf.adv = null; render(); AU.sfx('click'); return; }
-      ACTIONS.choose({ dataset: { opt: o.id, confirm: o.confirm || '' } });
+    choice: function (el) { ACTIONS.card({ dataset: { k: 'opt', v: el.dataset.opt } }); },
+    // touching an object in the scene: the camera finds it and its card opens
+    obj: function (el) {
+      var id = el.getAttribute('data-obj'); if (!id || EV.busy()) return;
+      var av = St.avail(id, S.view);
+      if (av.acts.length === 1 && av.acts[0].k === 'act' && av.acts[0].id === 'travel' && av.acts[0].ok) { AU.sfx('step'); St.focus(id); setTimeout(function () { St.unfocus(); ACTIONS.travel(); }, 420); return; }
+      AU.sfx('zoom'); S.ui.more = false; S.ui.soundpop = false;
+      openCard({ obj: id });
     },
-    hot: function (el) {
-      var id = el.dataset.opt, sc = $('.scene'), svg = sc && sc.querySelector('.art svg'); AU.sfx('click');
-      if (!sc || !svg) return;
-      var cw = sc.clientWidth, ch = sc.clientHeight, k = Math.max(cw / 640, ch / 260), vw = cw / k, vh = ch / k, ox = (640 - vw) / 2, oy = (260 - vh) / 2;
-      var fx = Math.max(10, Math.min(90, (+el.dataset.x - ox) / vw * 100)), fy = Math.max(10, Math.min(90, (+el.dataset.y - oy) / vh * 100));
-      S.ui.focus = id; S.ui.focusAt = { fx: fx.toFixed(1), fy: fy.toFixed(1) };
-      sc.style.setProperty('--fx', fx + '%'); sc.style.setProperty('--fy', fy + '%'); sc.classList.add('focus');
-      // add the prompt without re-rendering so the camera glide animates
-      setTimeout(function () { render(); }, 520);
+    // a choice inside the object's card
+    icopt: function (el) {
+      if (el.getAttribute('aria-disabled') === 'true' || EV.busy()) return;
+      var k = el.dataset.k, id = el.dataset.v, ic = S.ui.icard || {};
+      if (k === 'opt') return pickOption(id, ic.obj);
+      if (id === 'investigate') return search(ic.obj);
+      if (id === 'travel') { closeCard(); ACTIONS.travel(); return; }
+      if (k === 'move') { closeCard(true); EV.intent(ic.obj, 'act'); send({ t: 'move', mode: 'step', to: id }); }
     },
-    hotoff: function () { S.ui.focus = null; var sc = $('.scene'); if (sc) sc.classList.remove('focus'); htmlOf.adv = null; render(); },
-    unprep: function () { S.ui.prep = null; htmlOf.adv = null; render(); },
-    travel: function () { if (S.view.act) { S.ui.travel = true; htmlOf.adv = null; render(); } AU.sfx('click'); },
-    untravel: function () { S.ui.travel = false; htmlOf.adv = null; render(); },
+    icclose: function () { closeCard(); },
+    // an action card in the tray
+    card: function (el) {
+      if (el.getAttribute && el.getAttribute('aria-disabled') === 'true') { var t = el.getAttribute('title'); if (t) toast(t); return; }
+      if (EV.busy()) return;
+      var k = el.dataset.k, id = el.dataset.v; S.ui.more = false;
+      if (k === 'opt') { var obj = St.objectFor(id); return pickOption(id, obj); }
+      if (id === 'investigate') return search(St.objectFor('investigate'));
+      if (id === 'travel') return ACTIONS.travel();
+      if (ACTIONS[id]) { closeCard(); return ACTIONS[id](el); }
+    },
+    morecards: function () { S.ui.more = !S.ui.more; htmlOf.advui = null; render(); AU.sfx('click'); },
+    soundpop: function () { S.ui.soundpop = !S.ui.soundpop; htmlOf.hdr = null; render(); },
+    unprep: function () { S.ui.prep = null; if (S.ui.icard && S.ui.icard.obj) { S.ui.icard.opt = null; } else closeCard(); htmlOf.advui = null; render(); },
+    travel: function () { closeCard(); if (S.view.act) { S.ui.travel = true; htmlOf.advui = null; render(); } AU.sfx('click'); },
+    untravel: function () { S.ui.travel = false; htmlOf.advui = null; render(); },
     map: function () { closeModal(); S.ui.map = true; S.ui.tab = innerWidth <= 960 ? 'map' : S.ui.tab; htmlOf.mapsvg = null; MAP.reset(); render(); setTimeout(function () { MAP.fitAll(); }, 60); },
     closemap: function () { S.ui.map = false; if (S.ui.tab === 'map') S.ui.tab = 'act'; S.ui.sel = null; render(); },
     more: function (el) { S.ui.more = !S.ui.more; var d = el.closest('details'); if (d) d.open = S.ui.more; return true; },
-    coach: function (el) { var st = el.dataset.s; S.ui.coach = st === 'done' ? 'done' : +st; if (st === 'done') { try { localStorage.setItem('hollow.tut', '1'); } catch (e) { /* ignore */ } } htmlOf.adv = null; render(); },
+    coach: function (el) { var st = el.dataset.s; S.ui.coach = st === 'done' ? 'done' : +st; if (st === 'done') { try { localStorage.setItem('hollow.tut', '1'); } catch (e) { /* ignore */ } } htmlOf.advui = null; render(); },
     hero: function (el) { S.ui.hero = el.dataset.cls; S.ui.heroAlt = false; AU.sfx('hero'); renderLobby(); },
     heroalt: function () { S.ui.heroAlt = !S.ui.heroAlt; renderLobby(); },
     rules: function () { S.ui.rules = !S.ui.rules; htmlOf.l2rules = null; renderLobby(); },
@@ -462,18 +518,18 @@
     selnode: function (el) { if (MAP.isDragging()) return; var id = el.dataset.loc; S.ui.sel = S.ui.sel === id ? null : id; AU.sfx('click'); htmlOf.stage = null; htmlOf.mapsvg = null; htmlOf.mapsheet = null; render(); },
     desel: function () { S.ui.sel = null; htmlOf.stage = null; htmlOf.mapsvg = null; htmlOf.mapsheet = null; render(); },
     // turn
-    interact: function () { send({ t: 'interact' }); }, investigate: function () { send({ t: 'investigate' }); AU.sfx('door'); },
+    interact: function () { send({ t: 'interact' }); }, investigate: function () { search(St.objectFor('investigate')); },
     explore: function () { send({ t: 'explore' }); }, echo: function () { send({ t: 'echo' }); },
     'rest-ui': function () { openModal({ type: 'rest' }); },
     rest: function (el) { closeModal(); send({ t: 'rest', stat: el.dataset.stat }); AU.sfx('heal'); },
     endturn: function () { send({ t: 'endturn' }); }, leaveenc: function () { send({ t: 'leave' }); }, leave_: function () { send({ t: 'leave' }); },
-    move: function (el) { var mode = el.dataset.mode; var sc0 = $('.scene'); if (sc0) sc0.classList.add('leaving'); S.ui.focus = null; closeModal(); S.ui.travel = false; send({ t: 'move', mode: mode, to: el.dataset.to }); },
+    move: function (el) { var mode = el.dataset.mode; var sc0 = $('#stagehost'); if (sc0) sc0.classList.add('leaving'); setTimeout(function () { if (sc0) sc0.classList.remove('leaving'); }, 900); closeCard(true); closeModal(); S.ui.travel = false; send({ t: 'move', mode: mode, to: el.dataset.to }); },
     follow: function (el) { closeModal(); S.ui.travel = false; send({ t: 'move', mode: 'follow', target: el.dataset.to }); },
     unlock: function (el) { closeModal(); S.ui.travel = false; send({ t: 'unlock', edge: el.dataset.edge, way: el.dataset.way }); AU.sfx('lock'); },
     choose: function (el) {
       var enc = S.view.enc; if (!enc) return;
-      if (FX.rolling() || S.ui.sending) return;          // never double-roll while the die is on the table
-      S.ui.prep = null;
+      if (FX.rolling() || S.ui.sending || EV.busy()) return;          // never double-roll while the die is on the table
+      S.ui.prep = null; S.ui.icard = null; htmlOf.advui = null;
       var cmd = { t: 'choose', enc: enc.id, opt: el.dataset.opt };
       if (el.dataset.val != null && el.dataset.val !== '') cmd.val = el.dataset.val;
       if (el.dataset.target) cmd.target = el.dataset.target;
@@ -531,7 +587,7 @@
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') { if (S.ui.modal) closeModal(); else if (S.ui.map) ACTIONS.closemap(); else if (S.ui.drawer) ACTIONS.drawer({ dataset: { d: S.ui.drawer } }); else if (S.ui.sel) ACTIONS.desel(); }
     if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.node[data-act]')) { e.preventDefault(); ACTIONS.selnode(e.target); }
-    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.hs[data-act]')) { e.preventDefault(); ACTIONS.hot(e.target); }
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.obj[data-act]')) { e.preventDefault(); ACTIONS.obj(e.target); }
     if (e.key === 'Enter' && e.target.id === 'f-code') ACTIONS.join();
   });
   document.addEventListener('submit', function (e) { e.preventDefault(); });

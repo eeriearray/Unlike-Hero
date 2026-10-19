@@ -26,6 +26,13 @@
     crypt:   { root: 41, wind: 0.12, filt: 260, flavor: ['drip', 'drip', 'whisper', 'creak'], rate: 8, wet: 1 },
     heart:   { root: 36, wind: 0.2,  filt: 220, flavor: ['heartbeat', 'whisper', 'bellFar'], rate: 7, heart: true }
   };
+  // A place can add its own sounds to the region's ambience (the Silent Square: water falling upward, the lantern
+  // string creaking, the empty tower's bell). Add a place: list FLAV names here.
+  var PLACES = {
+    square: ['wellUp', 'wellUp', 'lanternCreak', 'bellFar'],
+    chapel: ['creak', 'whisper'], nursery: ['cradle', 'whisper'], belltower: ['bellFar', 'bellFar', 'creak']
+  };
+  var place = null;
   var MOODS = {    // pad, shimmer, tension, drums, brass
     explore: [0.5, 0.18, 0.0, 0.0, 0.0], quiet: [0.2, 0.05, 0.0, 0.0, 0.0], danger: [0.45, 0.06, 0.5, 0.0, 0.0], combat: [0.3, 0.0, 0.45, 0.8, 0.0],
     boss: [0.3, 0.0, 0.5, 1.0, 0.55], victory: [0.6, 0.45, 0.0, 0.0, 0.0], defeat: [0.35, 0.0, 0.3, 0.0, 0.0], silence: [0, 0, 0, 0, 0]
@@ -145,6 +152,7 @@
     clearTimeout(ambTimer); scheduleFlavor();
   }
 
+  function setPlace(p) { place = p || null; }
   function setLevel(l) { level = Math.max(0, Math.min(1, l)); applyLevel(); }
   function applyLevel() {
     if (!ctx || !amb) return;
@@ -159,7 +167,7 @@
     var P = amb.P, gap = (P.rate * (1.4 - level * 0.7)) * (0.6 + Math.random() * 0.9) * 1000;
     ambTimer = setTimeout(function () {
       if (!ctx || document.hidden) { scheduleFlavor(); return; }
-      var which = P.flavor[Math.floor(Math.random() * P.flavor.length)];
+      var spots = place && PLACES[place], which = spots && Math.random() < 0.6 ? spots[Math.floor(Math.random() * spots.length)] : P.flavor[Math.floor(Math.random() * P.flavor.length)];
       if (which === 'whisper' && level < 0.1 && Math.random() < 0.5) which = 'creak';
       if (FLAV[which]) FLAV[which](busA);
       scheduleFlavor();
@@ -174,6 +182,10 @@
     clock: function (d) { var t = ctx.currentTime; for (var i = 0; i < 6; i++) tone(1200, 0.04, 'square', 0.025, t + i * 0.5, null, d); },
     drip: function (d) { var t = ctx.currentTime; tone(900 + Math.random() * 400, 0.12, 'sine', 0.07, t, 400, d, true); if (Math.random() < 0.5) tone(700, 0.14, 'sine', 0.04, t + 0.4, 330, d, true); },
     choir: function (d) { var t = ctx.currentTime; [220, 261.6, 329.6].forEach(function (f, i) { var o = tone(f * (Math.random() < 0.5 ? 1 : 1.5), 4.5, 'triangle', 0.035, t + i * 0.25, null, d, true); }); },
+    // drops that fall the wrong way: short plinks that rise in pitch, a slow upward trickle under them
+    wellUp: function (d) { var t = ctx.currentTime; for (var i = 0; i < 4 + Math.floor(Math.random() * 3); i++) { var f = 520 + i * 90 + Math.random() * 60; tone(f, 0.09, 'sine', 0.05, t + i * (0.16 + Math.random() * 0.12), f * 1.9, d, true); } burst(1.6, 'bandpass', 700, 1800, 0.02, t, 4, d, true); },
+    lanternCreak: function (d) { var t = ctx.currentTime; var o = ctx.createOscillator(), gn = ctx.createGain(), f = ctx.createBiquadFilter(); o.type = 'sawtooth'; o.frequency.setValueAtTime(180, t); o.frequency.linearRampToValueAtTime(240, t + 0.5); o.frequency.linearRampToValueAtTime(170, t + 0.9); f.type = 'bandpass'; f.frequency.value = 1300; f.Q.value = 12; env(gn, t, 0.15, 0.8, 0.03); o.connect(f); f.connect(gn); gn.connect(d); o.start(t); o.stop(t + 1.1); },
+    cradle: function (d) { var t = ctx.currentTime; for (var i = 0; i < 3; i++) { burst(0.3, 'bandpass', 300, 260, 0.05, t + i * 0.9, 6, d); } },
     heartbeat: function (d) { var t = ctx.currentTime; for (var i = 0; i < 4; i++) { tone(52, 0.18, 'sine', 0.22, t + i * 1.0, 38, d, false); tone(48, 0.16, 'sine', 0.16, t + i * 1.0 + 0.24, 36, d, false); } }
   };
 
@@ -231,6 +243,16 @@
     hero: { cd: 90, cap: '', f: function () { var t = ctx.currentTime; tone(330, 0.22, 'triangle', 0.1, t, null, null, true); tone(495, 0.4, 'sine', 0.08, t + 0.05, null, null, true); burst(0.18, 'bandpass', 900, 500, 0.05, t, 3); } },
     confirm: { cd: 300, cap: 'Hero chosen.', f: function () { var t = ctx.currentTime; [196, 294, 392, 587].forEach(function (f, i) { tone(f, 1.3, 'triangle', 0.11, t + i * 0.09, null, null, true); }); bellHit(98, 0.12, t + 0.1, null, true); } },
     arrive: { cd: 500, cap: 'You arrive.', f: function () { var t = ctx.currentTime; burst(0.5, 'lowpass', 500, 120, 0.12, t, 1, null, true); tone(165, 1.4, 'sine', 0.09, t, 140, null, true); } },
+    zoom: { cd: 250, cap: '', f: function () { var t = ctx.currentTime; burst(0.5, 'bandpass', 300, 1400, 0.05, t, 1.4, null, true); } },
+    paper: { cd: 250, cap: 'Paper rustles.', f: function () { var t = ctx.currentTime; for (var i = 0; i < 5; i++) burst(0.06 + Math.random() * 0.06, 'highpass', 2500 + Math.random() * 2500, 4000, 0.05 + Math.random() * 0.04, t + i * 0.06 + Math.random() * 0.04, 1); } },
+    water: { cd: 400, cap: 'Water trickles upward.', f: function () { var t = ctx.currentTime; for (var i = 0; i < 7; i++) { var f = 480 + i * 70 + Math.random() * 50; tone(f, 0.08, 'sine', 0.07, t + i * 0.11, f * 2, null, true); } burst(1.2, 'bandpass', 600, 2000, 0.04, t, 3, null, true); } },
+    creak: { cd: 400, cap: 'Old wood creaks.', f: function () { var t = ctx.currentTime; var o = ctx.createOscillator(), gn = ctx.createGain(), f = ctx.createBiquadFilter(); o.type = 'sawtooth'; o.frequency.setValueAtTime(80, t); o.frequency.linearRampToValueAtTime(140, t + 0.6); f.type = 'bandpass'; f.frequency.value = 600; f.Q.value = 9; env(gn, t, 0.08, 0.6, 0.09); o.connect(f); f.connect(gn); gn.connect(busS); o.start(t); o.stop(t + 0.8); } },
+    bell: { cd: 800, cap: 'A bell, far away, from an empty tower.', f: function () { bellHit(196, 0.12, ctx.currentTime, null, true); } },
+    ignite: { cd: 400, cap: 'A flame catches.', f: function () { var t = ctx.currentTime; burst(0.5, 'lowpass', 300, 2400, 0.16, t, 0.8, null, true); for (var i = 0; i < 6; i++) burst(0.03, 'highpass', 3000, 3000, 0.04, t + 0.2 + Math.random() * 0.6, 1); tone(220, 1.2, 'sine', 0.05, t + 0.1, 330, null, true); } },
+    snuff: { cd: 400, cap: 'A lantern gutters out.', f: function () { var t = ctx.currentTime; burst(0.35, 'lowpass', 1600, 200, 0.12, t, 1); tone(140, 0.6, 'sine', 0.05, t, 90, null, true); } },
+    whisper: { cd: 600, cap: 'Something whispers a name.', f: function () { var t = ctx.currentTime; for (var i = 0; i < 5; i++) burst(0.45, 'bandpass', 1500 + Math.random() * 1500, 900, 0.06, t + i * 0.18, 6, null, true); tone(311, 1.4, 'sine', 0.03, t, 293, null, true); } },
+    coin: { cd: 150, cap: 'Coins clink.', f: function () { var t = ctx.currentTime; [2400, 3100, 2700].forEach(function (f, i) { tone(f, 0.18, 'sine', 0.06, t + i * 0.09, f * 0.98, null, true); }); } },
+    stash: { cd: 150, cap: 'Into the pack.', f: function () { var t = ctx.currentTime; burst(0.12, 'lowpass', 900, 300, 0.12, t, 1); tone(520, 0.12, 'triangle', 0.06, t + 0.05); } },
     hover: { cd: 120, cap: '', f: function () { tone(880, 0.05, 'sine', 0.025); } },
     click: { cd: 40, cap: '', f: function () { tone(520, 0.05, 'triangle', 0.05); } },
     dice: { cd: 200, cap: 'The die rattles across the table.', f: function () { var t = ctx.currentTime, n = 9; for (var i = 0; i < n; i++) { var at = t + i * i * 0.012 + i * 0.045; burst(0.035, 'bandpass', 1800 + Math.random() * 1600, 900, 0.16 * (1 - i / (n + 2)) + 0.03, at, 6); tone(180 + Math.random() * 90, 0.05, 'triangle', 0.07, at, 100); } tone(95, 0.22, 'sine', 0.18, t + 0.62, 55); } },
@@ -289,7 +311,7 @@
   function setCaptions(c) { S.captions = !!c; save(); }
 
   g.HollowAudio = {
-    unlock: unlock, sfx: sfx, setRegion: setRegion, setLevel: setLevel, setMood: setMood, hush: hush,
+    unlock: unlock, sfx: sfx, setRegion: setRegion, setPlace: setPlace, setLevel: setLevel, setMood: setMood, hush: hush,
     setVolume: setVolume, setMuted: setMuted, setCaptions: setCaptions,
     settings: function () { return Object.assign({}, S); }, onCaption: function (fn) { capFn = fn; },
     regions: Object.keys(REGIONS), moods: Object.keys(MOODS), sfxNames: Object.keys(SFX), supported: !!(g.AudioContext || g.webkitAudioContext)

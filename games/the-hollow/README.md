@@ -32,11 +32,37 @@ Opening the game with `?dev=1` exposes the live solo engine as `HollowDev.game()
 * `PORT` — hub port (default 8080).
 * `HOLLOW_DATA_DIR` — where online expeditions are saved (default `games/the-hollow/server/.data/`, git-ignored). On a restart the
   server restores every unfinished room, and players reconnect to their seats automatically.
-* The page loads its fonts from Google Fonts when online and falls back to system serif/sans fonts offline. All art and sound is generated in code: there are **no image or audio files** to fetch, license or lose.
+* The page loads its fonts from Google Fonts when online and falls back to system serif/sans fonts offline. All art and sound is generated in code: there are **no image or audio files** to fetch, license or lose. Painted scene layers are optional drop-ins (`art/README.md`).
 
-## Touchable scenes
+## The scene is the game
 
-Some locations (the Silent Square, the Abandoned Chapel, the Bloodstained Nursery) are *playable scenes*: objects in the artwork are hotspots. Hovering names the object, tapping it glides the camera onto it and opens a compact prompt (stat, difficulty, cost, odds), and "Try it" starts the normal roll. A hotspot is only another way to pick an existing option of that location (`HOT` in `js/story.js` maps option ids to positions), so costs, checks, once-rules, clues and multiplayer are exactly the engine's. The list of choices remains under "Or choose from a list" for keyboard and screen-reader play. To make another location playable, add an entry to `HOT` and, optionally, props in `PROPS` in `js/art2.js`.
+The screen is one large illustrated place with a compact HUD over it (you, the Haunting Clock dial, the party, pack,
+purse, journal, map, sound) and a tabletop of action cards below it. Journal, character sheet and pack are drawers.
+
+* **Stage** (`js/stage.js`): renders a place as parallax layers with a camera. Objects in the picture are hotspots:
+  hover names them, a tap glides the camera onto the object, dims the rest and opens an **interaction card** beside it
+  (close-up, one or two big choices, odds and stakes before any roll). Every object maps only to real actions: an
+  option of the place's encounter, a standing action (search, travel) or a road. The Haunting Clock drives the
+  picture: windows go dark, the lantern string and its light pools gutter out, the palette cools, fog thickens, and
+  phase II/III add details (handprints, a watcher in a far window, crows, red dates on the notices).
+* **Scenes** (`js/scenes/*.js`): the Silent Square is hand-made (1600×900 layered vector illustration: the well that
+  drips upward, the notice board, the abandoned lantern and cold camp, scattered postcards, the empty bell tower, the
+  lanes out). Other places use the procedural art in the same stage. Painted raster layers can be dropped in; see
+  `art/README.md`.
+* **Action cards** (`js/cards.js`): two or three primary choices plus Travel, the rest behind "More". Artwork is the
+  object itself framed from the scene. Spent, locked (with the reason) and dangerous choices look different.
+* **Event presentation** (`js/events.js`): every result at your place, yours or a companion's, plays in the scene:
+  camera to the object, the object reacts, a physical D20 tumbles and lands on the server's number, success or
+  failure lighting, then each consequence from the result's chips (nothing else) travels: clues unfold and fly into
+  the journal, items into the pack, coin into the purse, Sanity loss warps the scene, the Haunting snuffs a lantern.
+  The HUD's numbers change as each consequence lands. Click, Space or Esc fast-forwards; a watchdog ends any sequence
+  within seconds; reduced motion shortens everything to fades. Turn changes show a short banner.
+* **Phones**: the world is wider than the screen and can be dragged sideways; the cards scroll; the interaction card
+  becomes a bottom sheet.
+
+To give another place a hand-made scene, copy `js/scenes/square.js`, list its objects with the option ids from
+`engine/data/loc-*.js`, and add its `<script>` to `index.html`. Results carry `oid` (option id) and `loc`, which is how a
+client knows which object to animate.
 
 ## What a turn looks like
 
@@ -86,7 +112,8 @@ games/the-hollow/
     finale.js          boss, vote & endings, objectives & legacies, spirits, the AI ghost-hand
     view.js            viewFor(player): the only way state leaves the engine; catalog() for the client
   server/index.mjs     Socket.io rooms, tokens, reconnect, persistence, heartbeat (loaded by server/relay.mjs)
-  js/                  net (online/solo transports), ui (HTML components), map, fx, art, audio, app (screens & input)
+  js/                  net (online/solo transports), ui (HTML components), map, fx, art, audio, app (screens & input),
+                       stage (the scene and camera), scenes/ (hand-made places), cards (action cards), events (event presentation)
   css/hollow.css
 ```
 

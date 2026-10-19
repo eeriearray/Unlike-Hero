@@ -611,7 +611,7 @@
         var found = hid.filter(function (nb) { return rolled.total >= nb.e.dc || rolled.tier === 'crit'; });
         found.forEach(function (nb) { self.reveal('edge:' + nb.e.key, null); });
         if (!found.length) { lines.push('You find nothing, but the search is noisy.'); this.addNoise(rolled.tier === 'fumble' ? 2 : 1, p); }
-        this.addLog('result', p.name + ' investigates ' + D.locations[p.loc].name + ' — rolled ' + rolled.d + ' (' + rolled.total + ' vs hidden ways) — ' + (found.length ? 'finds ' + found.length + '.' : 'nothing.'), { p: p.id, d: { result: { opt: 'Investigate', tier: rolled.tier, roll: rolled, lines: [], chips: [], n: this.n + 1, by: p.id } } });
+        this.addLog('result', p.name + ' investigates ' + D.locations[p.loc].name + ' — rolled ' + rolled.d + ' (' + rolled.total + ' vs hidden ways) — ' + (found.length ? 'finds ' + found.length + '.' : 'nothing.'), { p: p.id, loc: p.loc, d: { result: { opt: 'Investigate', oid: 'investigate', loc: p.loc, tier: rolled.tier, roll: rolled, lines: [], chips: [], n: this.n + 1, by: p.id } } });
       }
     } else lines.push('No hidden ways here.');
     var loc = D.locations[p.loc];

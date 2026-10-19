@@ -842,3 +842,17 @@ test('a region event is a single choice: once chosen it is over', () => {
   const seen = new Set([enc.event]);
   for (let i = 0; i < 6; i++) { g.turn.ap = 3; const r = g.command('p0', { t: 'explore' }); if (r.error) break; assert.ok(!seen.has(g.turn.enc.event)); seen.add(g.turn.enc.event); g.turn.enc = null; }
 });
+
+test('a result names its option and place, so every client can show it on the right object', () => {
+  const { g } = make(2);
+  toTurn(g, 'p0');
+  open(g, 'p0');
+  roll(g, 15);
+  const r = pick(g, 'p0', 'well');
+  assert.ok(!r.error, r.error);
+  assert.equal(r.result.oid, 'well');
+  assert.equal(r.result.loc, 'square');
+  const seen = g.viewFor('p1').log.filter((e) => e.k === 'result').pop();
+  assert.equal(seen.d.result.oid, 'well', 'the other player receives the same result');
+  assert.equal(seen.d.result.roll.d, r.result.roll.d, 'with the same die');
+});

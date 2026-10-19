@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="css/redesign.css">
 <link rel="stylesheet" href="css/story.css">
 <link rel="stylesheet" href="css/game.css">
+<link rel="stylesheet" href="css/stage.css">
 </head>
 <body data-screen="title">
 <a class="skip" href="#app">Skip to the game</a>
@@ -29,7 +30,7 @@
 <script src="../../shared/sdk/hub-sdk.js"></script>
 <!-- Socket.io client, served by the game server when the hub server runs. Missing = solo play only. -->
 <script src="socket.io/socket.io.min.js" onerror="this.remove()"></script>
-<!-- Artwork, sound and transports (all generated in code; no asset files). The rules engine is only sent to the
+<!-- Artwork, sound and transports (generated in code; optional raster art for scenes, see art/README.md). The rules engine is only sent to the
      browser for solo play (js/net.js loads engine/*.js on demand): online, it stays on the server. -->
 <script src="js/art.js"></script>
 <script src="js/art2.js"></script>
@@ -40,6 +41,11 @@
 <script src="js/ui.js"></script>
 <script src="js/heroes.js"></script>
 <script src="js/map.js"></script>
+<script src="js/scenes/assets.js"></script>
+<script src="js/scenes/square.js"></script>
+<script src="js/stage.js"></script>
+<script src="js/events.js"></script>
+<script src="js/cards.js"></script>
 <script src="js/story.js"></script>
 <script src="js/app.js"></script>
 </body>

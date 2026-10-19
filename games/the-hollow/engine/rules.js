@@ -304,7 +304,7 @@
         var src = this.rerollSources(p);
         if (src.length) {
           enc.hold = { optId: o.id, roll: roll, sources: src, x: { val: x.val, target: x.target && x.target.id }, deadline: this.now() + C.holdSec * 1000, ap: ev.ap };
-          this.addLog('roll', p.name + ' rolled ' + roll.d + ' (' + roll.total + ' vs ' + roll.dc + '). Fate hangs in the balance.', { p: p.id, d: { roll: roll, hold: true } });
+          this.addLog('roll', p.name + ' rolled ' + roll.d + ' (' + roll.total + ' vs ' + roll.dc + '). Fate hangs in the balance.', { p: p.id, loc: enc.loc, d: { roll: roll, hold: true, oid: o.id, opt: o.label } });
           return { ok: true, hold: true };
         }
       }
@@ -345,7 +345,7 @@
       if ((tier === 'fail' || tier === 'fumble') && !ctx.enemy.known) { ctx.enemy.known = true; ctx.lines.push({ t: 'You learn its weakness.', k: 'info' }); }
     }
     if (ctx.enemy && ctx.enemy.hp <= 0 && !ctx.enemy.dead) this.defeatEnemy(ctx.enemy, p, ctx);
-    var result = { opt: o.label, tier: tier, roll: roll, lines: ctx.lines, chips: ctx.chips, n: this.n + 1, by: p.id, stakes: o.stakes || '' };
+    var result = { opt: o.label, oid: o.id, loc: loc, tier: tier, roll: roll, lines: ctx.lines, chips: ctx.chips, n: this.n + 1, by: p.id, stakes: o.stakes || '' };
     enc.result = result;
     var summary = p.name + ': ' + o.label + (roll ? ' — rolled ' + roll.d + ' (' + roll.total + ' vs ' + roll.dc + ') — ' + ({ crit: 'critical success', ok: 'success', fail: 'failure', fumble: 'critical failure' })[tier] : '');
     this.addLog('result', summary, { p: p.id, loc: loc, d: { result: result } });
