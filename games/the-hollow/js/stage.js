@@ -57,7 +57,7 @@
     var html = '';
     def.layers({}).forEach(function (L) {
       var src = L.src && SC.assets[L.src] ? '<img class="raster" src="' + L.src + '" alt="" onerror="this.remove()" onload="this.parentNode.classList.add(\'has-raster\')">' : '';
-      html += '<div class="lyr lyr-' + L.id + (L.cls ? ' ' + L.cls : '') + '" style="--d:' + L.depth + '">' + src +
+      html += '<div class="lyr lyr-' + L.id + (L.cls ? ' ' + L.cls : '') + '" data-d="' + L.depth + '">' + src +
         (L.objects ? objectsSvg(def) : (L.raw ? L.svg.replace('<svg ', '<svg preserveAspectRatio="xMidYMid slice" ') : svgOpen(def) + (def.defs || '') + L.svg + '</svg>')) + '</div>';
     });
     world.innerHTML = html;
@@ -260,7 +260,13 @@
   var pxT = 0;
   addEventListener('pointermove', function (e) {
     if (!host || pxT || FX.reduced() || e.pointerType === 'touch') return;
-    pxT = requestAnimationFrame(function () { pxT = 0; if (!host) return; var r = host.getBoundingClientRect(); host.style.setProperty('--px', ((e.clientX - r.left) / r.width * 2 - 1).toFixed(3)); host.style.setProperty('--py', ((e.clientY - r.top) / r.height * 2 - 1).toFixed(3)); });
+    // each layer's transform is written directly: a CSS variable on the stage would be inherited by every SVG node in
+    // the scene, so every mouse move restyled and repainted all of them and parts of the picture blinked in Chrome
+    pxT = requestAnimationFrame(function () {
+      pxT = 0; if (!host || !world) return;
+      var r = host.getBoundingClientRect(), px = (e.clientX - r.left) / r.width * 2 - 1, py = (e.clientY - r.top) / r.height * 2 - 1;
+      world.querySelectorAll('.lyr').forEach(function (l) { var d = +l.getAttribute('data-d') || 0; l.style.transform = 'translate3d(' + (px * d * -22).toFixed(1) + 'px,' + (py * d * -11).toFixed(1) + 'px,0)'; });
+    });
   }, { passive: true });
 
   // ───────────── small framed views of objects (interaction cards, action cards) ─────────────

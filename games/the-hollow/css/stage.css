@@ -18,11 +18,11 @@
 
 /* ───────────── the stage ───────────── */
 .game2 { --trayh: 176px; }
-.stg { position: absolute; left: 0; right: 0; top: 0; bottom: var(--trayh); overflow: hidden; background: #05070b; --k: 0; --px: 0; --py: 0; --fx: 50%; --fy: 50%; }
+.stg { position: absolute; left: 0; right: 0; top: 0; bottom: var(--trayh); overflow: hidden; background: #05070b; --k: 0; --fx: 50%; --fy: 50%; }
 .stg-world { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; transform-origin: 0 0; transition: transform .95s cubic-bezier(.3, .72, .18, 1), filter 2.5s; will-change: transform;
   filter: saturate(calc(1 - var(--k) * .38)) brightness(calc(1 - var(--k) * .2)) contrast(calc(1 + var(--k) * .08)); }
 .stg-world.instant { transition: none; }
-.lyr { position: absolute; inset: -2.5%; transform: translate3d(calc(var(--px) * var(--d) * -22px), calc(var(--py) * var(--d) * -11px), 0); transition: transform .7s cubic-bezier(.2, .7, .3, 1);
+.lyr { position: absolute; inset: -2.5%; transform: translate3d(0, 0, 0);   /* parallax: js/stage.js writes each layer's transform */ transition: transform .7s cubic-bezier(.2, .7, .3, 1);
   /* keep every layer on its own GPU layer: otherwise each mouse move promotes and demotes them, re-rasterising the
      SVG (fog blurs especially) every time, which shows as flicker */
   will-change: transform; backface-visibility: hidden; }
