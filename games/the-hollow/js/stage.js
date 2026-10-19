@@ -42,7 +42,11 @@
       var o = d.objects[id], b = o.box;
       s += '<g class="obj obj-' + id + '" data-obj="' + id + '" data-act="obj" tabindex="0" role="button" aria-label="' + A.esc(o.name) + '">';
       if (o.halo || !o.art) s += '<ellipse class="halo" cx="' + o.at[0] + '" cy="' + o.at[1] + '" rx="' + (b[2] * 0.55) + '" ry="' + (b[3] * 0.5) + '"/>';
+      // effects and soft glows sit outside .oart: the hover glow is a CSS filter on .oart, and blurred or very large
+      // shapes inside a filtered group make the browser repaint a huge surface on every parallax step (flicker)
+      if (o.under) s += '<g class="ofx">' + o.under() + '</g>';
       if (o.art) s += '<g class="oart">' + o.art({}) + '</g>';
+      if (o.over) s += '<g class="ofx">' + o.over() + '</g>';
       s += '<rect class="hit" x="' + b[0] + '" y="' + b[1] + '" width="' + b[2] + '" height="' + b[3] + '" rx="18"/></g>';
     });
     return s + '</svg>';
@@ -267,7 +271,7 @@
     else {
       var want = [].concat(o.layer || 'mid'), layers = d.layers({}), back = layers.filter(function (L) { return L.id === 'sky' || want.indexOf(L.id) >= 0 || (!o.art && L.id === 'far'); });
       if (!o.art) back = layers.filter(function (L) { return L.id === 'sky' || L.id === 'far' || L.id === 'mid'; });
-      body = back.map(function (L) { return L.svg; }).join('') + (o.art ? '<g class="obj obj-' + id + ' ' + St.stateClasses(id) + '">' + o.art({}) + ((d.extra && d.extra[id]) ? d.extra[id]() : '') + '</g>' : '');
+      body = back.map(function (L) { return L.svg; }).join('') + (o.art ? '<g class="obj obj-' + id + ' ' + St.stateClasses(id) + '">' + (o.under ? o.under() : '') + o.art({}) + (o.over ? o.over() : '') + ((d.extra && d.extra[id]) ? d.extra[id]() : '') + '</g>' : '');
     }
     var vb = d.generic ? ' viewBox="' + c.join(' ') + '"' : ' viewBox="' + c.join(' ') + '"';
     return '<svg class="closeup ' + (cls || '') + '"' + vb + ' preserveAspectRatio="xMidYMid slice" aria-hidden="true">' + (d.defs || '') + body + '</svg>';

@@ -260,9 +260,11 @@
     s += '<g class="wl-up"><path class="wl-stream" d="M800 570C792 500 812 450 800 380S796 260 806 180" stroke="url(#sq-stream)" stroke-width="5" fill="none" stroke-linecap="round"/>';
     for (var d = 0; d < 14; d++) s += '<ellipse class="drop" cx="' + (790 + (d * 37 % 22)) + '" cy="572" rx="' + (1.6 + (d % 3) * 0.6) + '" ry="' + (2.4 + (d % 3) * 0.7) + '" fill="#d6f1f7" style="animation-delay:' + f1(-d * 0.42) + 's;--dx:' + ((d % 5) - 2) * 4 + 'px"/>';
     s += '</g>';
-    s += '<g class="wl-fog"><ellipse cx="760" cy="600" rx="90" ry="14" fill="#9aa7b8" opacity=".22" filter="url(#sq-blur6)"/><ellipse cx="860" cy="606" rx="70" ry="10" fill="#9aa7b8" opacity=".18" filter="url(#sq-blur6)"/></g>';
     return s;
   }
+
+  // the rim fog is blurred, so it stays out of the hover-filtered body (see js/stage.js objectsSvg)
+  function wellOver() { return '<g class="wl-fog"><ellipse cx="760" cy="600" rx="90" ry="14" fill="#9aa7b8" opacity=".22" filter="url(#sq-blur6)"/><ellipse cx="860" cy="606" rx="70" ry="10" fill="#9aa7b8" opacity=".18" filter="url(#sq-blur6)"/></g>'; }
 
   function boardArt(st) {
     var s = '<g transform="translate(0 0)">';
@@ -381,7 +383,7 @@
     objects: {
       board: { name: 'Notice Board', art: boardArt, box: [350, 456, 210, 280], at: [450, 560], crop: [338, 468, 244, 136], z: 2.1, sfx: 'paper',
         actions: [{ opt: 'board' }], art2: 'board', blurb: 'Every notice dated the same day.' },
-      well: { name: 'The Wishing Well', art: wellArt, box: [650, 320, 300, 390], at: [800, 540], crop: [620, 440, 360, 200], z: 1.8, sfx: 'water',
+      well: { name: 'The Wishing Well', art: wellArt, over: wellOver, box: [650, 320, 300, 390], at: [800, 540], crop: [620, 440, 360, 200], z: 1.8, sfx: 'water',
         actions: [{ opt: 'well' }], art2: 'well', blurb: 'It drips upward.' },
       lantern: { name: 'Abandoned Lantern', art: campArt, box: [1020, 594, 270, 200], at: [1170, 684], crop: [1040, 560, 250, 140], z: 2.0, sfx: 'creak',
         actions: [{ opt: 'rally' }], art2: 'lantern', blurb: 'Someone left it here. And a flask.' },

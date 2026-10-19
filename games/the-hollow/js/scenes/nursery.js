@@ -169,27 +169,27 @@
     });
     // the list of names, found under a mattress (state "searched")
     s += '<g class="nu-names"><path d="M470 560l50-6 6 48-50 6z" fill="#e0d6b4"/><path d="M478 568h36M478 576h30M478 584h34M478 592h28" stroke="#5c4a30" stroke-width="1.6"/><ellipse cx="500" cy="594" rx="18" ry="6" fill="none" stroke="#8a1f2a" stroke-width="1.6"/><circle class="nu-nameglow" cx="498" cy="580" r="40" fill="url(#nu-warm)"/></g>';
-    s += '<g class="nu-dustup"><ellipse cx="490" cy="580" rx="150" ry="40" fill="#a39a8a" opacity=".35" filter="url(#nu-blur6)"/><ellipse cx="1060" cy="580" rx="110" ry="34" fill="#a39a8a" opacity=".3" filter="url(#nu-blur6)"/></g>';
     return s;
   }
   function rockerArt() {
-    var s = '<circle class="nu-coldlight" cx="850" cy="580" r="160" fill="url(#nu-cold)" opacity=".25"/>';
     // the one that rocks: nearer, bigger, a blanket edge trailing over the side
-    s += crib(850, 712, 1.55, 'nu-rock',
+    var s = crib(850, 712, 1.55, 'nu-rock',
       '<path d="M780 600q-8 30 4 52l10-4q-6-24 2-44z" fill="#c8bcd0" opacity=".85"/>' +
       '<g class="nu-coin-in"><ellipse cx="830" cy="588" rx="8" ry="3" fill="url(#nu-coin)"/></g>' +
       '<g class="nu-char"><path d="M766 588h168l-10 108H776z" fill="#0c0806" opacity=".9"/><path d="M790 600l20 40M860 596l-10 50M900 610l-20 30" stroke="#3a1a0a" stroke-width="3"/></g>' +
       '<g class="nu-frost"><path d="M766 588h168l-10 108H776z" fill="#cfe8ff" opacity=".28"/><path d="M780 600l14 10-6 14M910 604l-12 12 4 14M850 596v18" stroke="#e8f6ff" stroke-width="1.6" fill="none"/></g>');
     // breath from inside the hood
-    s += '<g class="nu-breath"><ellipse cx="900" cy="560" rx="16" ry="8" fill="#d8e4f0" opacity=".3" filter="url(#nu-blur3)"/><ellipse cx="910" cy="540" rx="12" ry="6" fill="#d8e4f0" opacity=".2" filter="url(#nu-blur3)" style="animation-delay:-1.6s"/></g>';
     // a pale wisp that rises when the voice is answered
-    s += '<path class="nu-wisp" d="M880 560c-20-40 20-60 0-110s20-70 0-120" stroke="#cfe8ff" stroke-width="10" fill="none" stroke-linecap="round" opacity="0" filter="url(#nu-blur3)"/>';
     // small cold hands reaching out (fail)
     s += '<g class="nu-grasp" fill="#dfe8f4" opacity="0"><path d="M790 570c-6-14-2-26 4-22 0-8 6-8 6 0 2-6 8-4 6 4l-2 22z"/><path d="M906 566c6-14 2-26-4-22 0-8-6-8-6 0-2-6-8-4-6 4l2 22z"/></g>';
     // blue then white fire, when it is burned
-    s += '<g class="nu-flames" opacity="0"><circle cx="850" cy="600" r="160" fill="url(#nu-blue)"/><path d="M800 640c-20-40 10-70 10-110 20 30 30 60 20 110zM850 640c-24-60 6-110 6-160 30 50 34 100 20 160zM900 640c-14-30 6-60 6-90 16 26 22 50 12 90z" fill="#bfe0ff"/><path d="M850 640c-10-30 2-60 4-90 12 30 14 60 6 90z" fill="#fff"/></g>';
     return s;
   }
+  // glows, blurs and effects kept out of the hover-filtered bodies (see js/stage.js objectsSvg)
+  function cradlesOver() { return '<g class="nu-dustup"><ellipse cx="490" cy="580" rx="150" ry="40" fill="#a39a8a" opacity=".35" filter="url(#nu-blur6)"/><ellipse cx="1060" cy="580" rx="110" ry="34" fill="#a39a8a" opacity=".3" filter="url(#nu-blur6)"/></g>'; }
+  function rockerUnder() { return '<circle class="nu-coldlight" cx="850" cy="580" r="160" fill="url(#nu-cold)" opacity=".25"/>'; }
+  function rockerOver() { return '<g class="nu-breath"><ellipse cx="900" cy="560" rx="16" ry="8" fill="#d8e4f0" opacity=".3" filter="url(#nu-blur3)"/><ellipse cx="910" cy="540" rx="12" ry="6" fill="#d8e4f0" opacity=".2" filter="url(#nu-blur3)" style="animation-delay:-1.6s"/></g>' + '<path class="nu-wisp" d="M880 560c-20-40 20-60 0-110s20-70 0-120" stroke="#cfe8ff" stroke-width="10" fill="none" stroke-linecap="round" opacity="0" filter="url(#nu-blur3)"/>' + '<g class="nu-flames" opacity="0"><circle cx="850" cy="600" r="160" fill="url(#nu-blue)"/><path d="M800 640c-20-40 10-70 10-110 20 30 30 60 20 110zM850 640c-24-60 6-110 6-160 30 50 34 100 20 160zM900 640c-14-30 6-60 6-90 16 26 22 50 12 90z" fill="#bfe0ff"/><path d="M850 640c-10-30 2-60 4-90 12 30 14 60 6 90z" fill="#fff"/></g>'; }
+
   function hearthArt() {
     var s = '<ellipse cx="1200" cy="604" rx="110" ry="10" fill="#000" opacity=".4"/>';
     // the chimney breast, the firebox, the mantel
@@ -201,12 +201,13 @@
     s += '<g transform="translate(1272 572)"><rect width="18" height="26" rx="2" fill="#5a5a3a"/><rect x="5" y="-5" width="8" height="6" fill="#3a3a2a"/><path d="M3 10h12" stroke="#c9a35b" stroke-width="1.6"/></g>';
     // cold ash and kindling; the fire itself, which only shows in its outcomes and once the cradle has burned
     s += '<path d="M1160 596h80l-6-10h-68z" fill="#2a2420"/><path d="M1168 588l30-12M1232 588l-34-14M1182 584l36 2" stroke="#3a2618" stroke-width="5" stroke-linecap="round"/>';
-    s += '<g class="nu-hfire" opacity="0"><circle cx="1200" cy="560" r="120" fill="url(#nu-fire)"/><path class="hf1" d="M1200 590c-24-24-8-50 0-80 10 30 26 50 0 80z" fill="#ff9d3a"/><path class="hf2" d="M1200 590c-12-12-4-28 0-44 5 16 14 28 0 44z" fill="#ffe08a"/></g>';
     s += '<g class="nu-embers"><circle cx="1186" cy="590" r="3" fill="#ff7a2a"/><circle cx="1210" cy="592" r="2.4" fill="#ff7a2a"/><circle cx="1220" cy="588" r="2" fill="#ff9a3a"/></g>';
     // fire climbing the wall (fail)
-    s += '<g class="nu-spread" opacity="0"><path d="M1110 420c-30-60 10-100 0-160 30 50 40 100 20 160zM1290 440c30-70-6-110 4-180-34 60-40 110-24 180zM1160 400c-10-40 20-70 10-110 24 40 26 70 10 110z" fill="#ff7a2a" opacity=".85"/><circle cx="1200" cy="340" r="200" fill="url(#nu-fire)"/></g>';
     return s;
   }
+  function hearthOver() { return '<g class="nu-hfire" opacity="0"><circle cx="1200" cy="560" r="120" fill="url(#nu-fire)"/><path class="hf1" d="M1200 590c-24-24-8-50 0-80 10 30 26 50 0 80z" fill="#ff9d3a"/><path class="hf2" d="M1200 590c-12-12-4-28 0-44 5 16 14 28 0 44z" fill="#ffe08a"/></g>' + '<g class="nu-spread" opacity="0"><path d="M1110 420c-30-60 10-100 0-160 30 50 40 100 20 160zM1290 440c30-70-6-110 4-180-34 60-40 110-24 180zM1160 400c-10-40 20-70 10-110 24 40 26 70 10 110z" fill="#ff7a2a" opacity=".85"/><circle cx="1200" cy="340" r="200" fill="url(#nu-fire)"/></g>'; }
+  function saucerOver() { return '<circle class="nu-gglow" cx="1010" cy="778" r="70" fill="url(#nu-warm)" opacity="0"/><ellipse class="nu-ring" cx="1010" cy="782" rx="40" ry="10" fill="none" stroke="#ffe08a" stroke-width="2" opacity="0"/>'; }
+
   function saucerArt() {
     var s = '<ellipse cx="1010" cy="790" rx="56" ry="11" fill="#000" opacity=".4"/>';
     s += '<ellipse cx="1010" cy="784" rx="48" ry="12" fill="#c8c0b0"/><ellipse cx="1010" cy="782" rx="36" ry="8" fill="#a8a090"/><path d="M964 784a48 12 0 0 0 92 0" stroke="#6a6458" stroke-width="2" fill="none"/>';
@@ -214,7 +215,6 @@
     // the old coins others have left; one more when you give
     s += [[996, 780], [1012, 778], [1024, 782]].map(function (c) { return '<ellipse cx="' + c[0] + '" cy="' + c[1] + '" rx="7" ry="2.6" fill="url(#nu-coin)" stroke="#5a4a24" stroke-width=".6"/>'; }).join('');
     s += '<g class="nu-mycoin"><ellipse cx="1008" cy="774" rx="7" ry="2.6" fill="url(#nu-coin)" stroke="#5a4a24" stroke-width=".6"/></g>';
-    s += '<circle class="nu-gglow" cx="1010" cy="778" r="70" fill="url(#nu-warm)" opacity="0"/><ellipse class="nu-ring" cx="1010" cy="782" rx="40" ry="10" fill="none" stroke="#ffe08a" stroke-width="2" opacity="0"/>';
     return s;
   }
 
@@ -258,13 +258,13 @@
     // drawn back to front: the row of cradles and the hearth stand against the wall, the rocking cradle and the saucer
     // are out in the room
     objects: {
-      cradles: { name: 'Six Cradles', art: cradlesArt, box: [310, 480, 360, 150], at: [490, 560], crop: [300, 440, 420, 236], z: 1.7, sfx: 'creak', layer: ['far', 'ground'],
+      cradles: { name: 'Six Cradles', art: cradlesArt, over: cradlesOver, box: [310, 480, 360, 150], at: [490, 560], crop: [300, 440, 420, 236], z: 1.7, sfx: 'creak', layer: ['far', 'ground'],
         actions: [{ opt: 'inspect' }], blurb: 'All of them face the wall.' },
-      hearth: { name: 'The Cold Hearth', art: hearthArt, box: [1100, 340, 200, 270], at: [1200, 520], crop: [1060, 380, 280, 158], z: 1.9, sfx: 'ignite', layer: ['far', 'ground'],
+      hearth: { name: 'The Cold Hearth', art: hearthArt, over: hearthOver, box: [1100, 340, 200, 270], at: [1200, 520], crop: [1060, 380, 280, 158], z: 1.9, sfx: 'ignite', layer: ['far', 'ground'],
         actions: [{ opt: 'burn' }], blurb: 'Kindling laid, never lit. A tin of lamp oil.' },
-      rocker: { name: 'The Rocking Cradle', art: rockerArt, box: [740, 480, 230, 250], at: [850, 620], crop: [690, 470, 320, 180], z: 1.8, sfx: 'whisper', layer: ['far', 'ground'],
+      rocker: { name: 'The Rocking Cradle', art: rockerArt, under: rockerUnder, over: rockerOver, box: [740, 480, 230, 250], at: [850, 620], crop: [690, 470, 320, 180], z: 1.8, sfx: 'whisper', layer: ['far', 'ground'],
         actions: [{ opt: 'answer' }], blurb: 'It asks whether you have come to collect your child.' },
-      saucer: { name: 'The Coin Saucer', art: saucerArt, box: [950, 750, 120, 70], at: [1010, 782], crop: [930, 730, 160, 90], z: 2.3, sfx: 'coin', layer: ['ground'],
+      saucer: { name: 'The Coin Saucer', art: saucerArt, over: saucerOver, box: [950, 750, 120, 70], at: [1010, 782], crop: [930, 730, 160, 90], z: 2.3, sfx: 'coin', layer: ['ground'],
         actions: [{ opt: 'gift' }], blurb: 'Others have paid. The coins are very old.' }
     },
     extra: EXTRA,

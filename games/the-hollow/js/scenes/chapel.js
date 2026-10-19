@@ -215,13 +215,15 @@
     // the altar cloth, torn, hanging off one end
     s += '<path d="M700 490h170l-6 60-14-10-10 26-12-20-14 30-8-40H700z" fill="url(#ch-cloth)" opacity=".92"/><path d="M700 490h170" stroke="#b0a68a" stroke-width="2"/><path d="M760 498h50" stroke="#8a1f2a" stroke-width="3"/>';
     // the warmth that settles here after someone has prayed (state "done")
-    s += '<ellipse class="ch-kneel" cx="800" cy="610" rx="120" ry="26" fill="url(#ch-warm)" opacity="0"/>';
     // a light column for the blessing outcome
-    s += '<path class="ch-bless" d="M760 0h80l30 600H730z" fill="url(#ch-beam)" opacity="0"/>';
     // the crack that bleeds once the plate is taken (state "cold")
     s += '<path class="ch-crackred" d="M796 500l-10 30 12 30-8 34" stroke="#b02030" stroke-width="3" fill="none" opacity="0"/>';
     return s;
   }
+
+  // glows and effects kept out of the hover-filtered body (see js/stage.js objectsSvg)
+  function altarOver() { return '<ellipse class="ch-kneel" cx="800" cy="610" rx="120" ry="26" fill="url(#ch-warm)" opacity="0"/>' + '<path class="ch-bless" d="M760 0h80l30 600H730z" fill="url(#ch-beam)" opacity="0"/>'; }
+  function vestryOver() { return '<g class="ch-dust" opacity="0"><ellipse cx="300" cy="640" rx="90" ry="34" fill="#a39a8a" filter="url(#ch-blur6)"/><ellipse cx="330" cy="600" rx="60" ry="30" fill="#8a8274" filter="url(#ch-blur6)"/></g>'; }
 
   function vestryArt() {
     // the vestry door in the left wall, in perspective; open state shows shelves and the chasuble
@@ -235,7 +237,6 @@
       '<path d="M240 470L352 456M240 600L352 572" stroke="#3a3c45" stroke-width="6"/><circle cx="334" cy="530" r="5" fill="#8a7a54"/><path d="' + P + '" fill="url(#ch-grain)"/></g>';
     s += '<path d="' + P + '" fill="none" stroke="#3e3a44" stroke-width="8"/>';
     // dust that falls when the shelf comes down
-    s += '<g class="ch-dust" opacity="0"><ellipse cx="300" cy="640" rx="90" ry="34" fill="#a39a8a" filter="url(#ch-blur6)"/><ellipse cx="330" cy="600" rx="60" ry="30" fill="#8a8274" filter="url(#ch-blur6)"/></g>';
     s += '<path class="ch-shelf" d="M248 540l96-22" stroke="#4a3320" stroke-width="7" opacity="0"/>';
     return s;
   }
@@ -305,9 +306,9 @@
       ];
     },
     objects: {
-      vestry: { name: 'The Vestry', art: vestryArt, box: [228, 352, 136, 324], at: [296, 520], crop: [150, 420, 300, 170], z: 1.9, sfx: 'door', layer: 'far',
+      vestry: { name: 'The Vestry', art: vestryArt, over: vestryOver, box: [228, 352, 136, 324], at: [296, 520], crop: [150, 420, 300, 170], z: 1.9, sfx: 'door', layer: 'far',
         actions: [{ opt: 'vestry' }], blurb: 'Moths have been unravelling it for decades.' },
-      altar: { name: 'The Broken Altar', art: altarArt, box: [600, 440, 400, 170], at: [800, 530], crop: [600, 400, 400, 225], z: 1.7, sfx: 'bell', layer: ['far', 'ground'],
+      altar: { name: 'The Broken Altar', art: altarArt, over: altarOver, box: [600, 440, 400, 170], at: [800, 530], crop: [600, 400, 400, 225], z: 1.7, sfx: 'bell', layer: ['far', 'ground'],
         actions: [{ opt: 'pray' }], blurb: 'Broken, but the silence around it is whole.' },
       plate: { name: 'Collection Plate', art: fontArt, box: [1090, 540, 190, 196], at: [1200, 600], crop: [1070, 520, 250, 140], z: 2.0, sfx: 'coin', layer: ['far', 'mid', 'ground'],
         actions: [{ opt: 'plate' }], blurb: 'Old coin on the font, as if for a wake.' },
