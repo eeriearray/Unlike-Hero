@@ -3,7 +3,7 @@
  * (the shared log) to sound, effects and announcements. */
 (function (g) {
   'use strict';
-  var A = g.HollowArt, AU = g.HollowAudio, FX = g.HollowFx, Net = g.HollowNet, UI = g.HollowUI, MAP = g.HollowMap, S = UI.S;
+  var A = g.HollowArt, AU = g.HollowAudio, FX = g.HollowFx, Net = g.HollowNet, UI = g.HollowUI, MAP = g.HollowMap, Story = g.HollowStory, Heroes = g.HollowHeroes, S = UI.S;
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var esc = A.esc;
   var hub = null;
@@ -69,10 +69,11 @@
     onState: function (v) {
       if (!S.net) return;          // a late message from a transport we have already left
       S.view = v;
-      if (v.phase !== 'lobby' && !started) { started = true; reported = false; if (hub) hub.report('session-start', { game: 'the-hollow' }); }
+      if (v.phase !== 'lobby' && !started) { started = true; reported = false; setTimeout(function () { var L = S.view && S.view.me && S.cat.locations[S.view.me.loc]; if (L && S.view.game.round <= 1) g.HollowCine.play('arrive', { title: L.name, region: S.cat.regions[L.region].name, color: S.cat.regions[L.region].color, hook: 'Your expedition begins.' }); }, 600); if (hub) hub.report('session-start', { game: 'the-hollow' }); }
       if (v.phase === 'lobby') { started = false; seen.init = false; }
       handleLog(v);
       render();
+      autoOpen();
       syncAudio();
       if (S.ui.busy) S.ui.busy = false;
     },
@@ -108,30 +109,34 @@
     var stale = $('#endlayer'); if (stale && (!v || v.phase !== 'ended')) { stale.remove(); htmlOf.endlayer = null; }
     if (!v) { setScreen('title'); renderTitle(); return; }
     if (!S.cat) { app.innerHTML = '<div class="title"><p class="tagline">The Hollow stirs…</p></div>'; return; }
-    if (v.phase === 'lobby') { setScreen('lobby'); htmlOf.app = null; patch(app, UI.lobby()); return; }
+    if (v.phase === 'lobby') { setScreen('lobby'); renderLobby(); return; }
     setScreen('game');
     ensureGameShell();
-    var g2 = $('.game', app);
-    patch('hdr', UI.header());
+    patch('hdr', Story.bar());
     if (v.me && v.me.status !== undefined) {
+      if (S.ui.coach == null) S.ui.coach = (function () { try { return localStorage.getItem('hollow.tut') ? 'done' : (v.game.round <= 1 ? 0 : 'done'); } catch (e) { return 0; } })();
+      if (S.ui.coach === 1 && v.enc && v.enc.result) S.ui.coach = 2;
+      if (S.ui.travel && (v.game.active !== v.you || !v.act)) S.ui.travel = false;
+      if (S.ui.prep && (!v.enc || v.game.active !== v.you || v.enc.hold)) S.ui.prep = null;
       patch('left', UI.left());
       patch('right', UI.right());
-      var mapEl = $('#mapsvg');
-      MAP.ensureFit(v.me.loc);
-      MAP.ensureVisible(v.me.loc);
-      var mh = MAP.render();
-      if (!MAP.isDragging()) patch(mapEl, mh);
-      patch('mapsheet', mapSheet());
+      patch('adv', Story.adventure());
+      patch('side', Story.side());
       var sk = (v.me.loc || '') + '|' + (v.enc ? v.enc.id : '');
-      patch('stage', UI.stage());
-      if (S.ui.sceneKey !== sk) { S.ui.sceneKey = sk; var bn = $('#stage .banner'); if (bn) { bn.classList.add('enter'); setTimeout(function () { bn.classList.remove('enter'); }, 1100); } var st0 = $('#stage'); if (st0) st0.scrollTop = 0; }
+      if (S.ui.sceneKey !== sk) { S.ui.sceneKey = sk; var sc = $('#adv .scene'); if (sc) { sc.classList.add('enter'); setTimeout(function () { sc.classList.remove('enter'); }, 1100); } var ad = $('#adv'); if (ad) ad.scrollTop = 0; }
       // new story beats fade in once (not on every refresh)
-      var beatKey = [].map.call(document.querySelectorAll('#stage .narr, #stage .result'), function (e) { return e.textContent.slice(0, 60); }).join('|');
-      if (S.ui.beatKey !== beatKey) { var prevB = (S.ui.beatKey || '').split('|'); S.ui.beatKey = beatKey; document.querySelectorAll('#stage .narr, #stage .result').forEach(function (e) { if (prevB.indexOf(e.textContent.slice(0, 60)) < 0) { e.classList.add('beat'); setTimeout(function () { e.classList.remove('beat'); }, 1000); } }); }
-      patch('hud', UI.hud());
+      var beatKey = [].map.call(document.querySelectorAll('#adv .story, #adv .outcome'), function (e) { return e.textContent.slice(0, 60); }).join('|');
+      if (S.ui.beatKey !== beatKey) { var prevB = (S.ui.beatKey || '').split('|'); S.ui.beatKey = beatKey; document.querySelectorAll('#adv .story, #adv .outcome').forEach(function (e) { if (prevB.indexOf(e.textContent.slice(0, 60)) < 0) { e.classList.add('beat'); setTimeout(function () { e.classList.remove('beat'); }, 1000); } }); }
+      if (S.ui.map || S.ui.tab === 'map') {
+        MAP.ensureFit(v.me.loc); MAP.ensureVisible(v.me.loc);
+        var mh = MAP.render();
+        if (!MAP.isDragging()) patch($('#mapsvg'), mh);
+        patch('mapsheet', mapSheet());
+      }
       patch('nav', navHtml());
-      var gm = $('.game'); if (gm) { gm.setAttribute('data-drawer', S.ui.drawer || ''); gm.setAttribute('data-phase', v.game.haunt); }
+      var gm = $('.game2'); if (gm) { gm.setAttribute('data-drawer', S.ui.drawer || ''); gm.setAttribute('data-map', S.ui.map ? 'open' : ''); gm.setAttribute('data-tab', S.ui.tab); gm.setAttribute('data-phase', v.game.haunt); gm.style.setProperty('--ph', v.game.haunt); }
       markInventory(v);
+      animateDie();
     }
     // the ending
     var endEl = $('#endlayer');
@@ -145,10 +150,58 @@
 
   function ensureGameShell() {
     var app = $('#app');
-    if ($('.game', app)) return;
+    if ($('.game2', app)) return;
     htmlOf = {};
-    app.innerHTML = '<div class="game" data-tab="' + S.ui.tab + '" data-drawer="' + (S.ui.drawer || '') + '"><div id="hdr" class="hdrwrap"></div><section class="mapcol"><div class="mapwrap"><div id="mapsvg"></div><div class="mapctl"><button class="btn" data-act="zin" aria-label="Zoom in">+</button><button class="btn" data-act="zout" aria-label="Zoom out">−</button><button class="btn" data-act="zme" aria-label="Centre on me" title="Centre on me">' + A.glyph('circle', 18) + '</button><button class="btn" data-act="zall" aria-label="Show everything discovered" title="Show all">' + A.glyph('maze', 18) + '</button></div><div class="maplegend"><span><i style="border-color:#8a93ab"></i>road</span><span><i style="border-color:#9a82e0;border-top-style:dashed"></i>hidden</span><span><i style="border-color:#c9a35b;border-top-style:dotted"></i>locked</span><span><i style="border-color:#b24a52;border-top-style:dotted"></i>blocked</span><span><i style="border-color:#7ccfc3;border-top-style:dashed"></i>you can go</span></div><div id="maptip" class="maptip" role="tooltip"></div><div id="mapsheet" class="mapsheet"></div><div id="hud" class="hudwrap"></div></div></section><main class="stage" id="stage" aria-live="polite" aria-label="The encounter"></main><aside class="drawer dleft" id="left" aria-label="Your character"></aside><aside class="drawer dright" id="right" aria-label="The expedition"></aside><nav class="nav" id="nav" aria-label="Sections"></nav></div>';
+    app.innerHTML = '<div class="game2" data-tab="' + S.ui.tab + '" data-drawer="" data-map=""><div id="hdr" class="hdrwrap"></div><main class="adv" id="adv" aria-live="polite" aria-label="The adventure"></main><aside class="side" id="side" aria-label="You and the map"></aside><section class="mapview" id="mapview" aria-label="Map of the Hollow"><div class="mapwrap"><div id="mapsvg"></div><div class="mapctl"><button class="btn" data-act="closemap" aria-label="Close the map">✕</button><button class="btn" data-act="zin" aria-label="Zoom in">+</button><button class="btn" data-act="zout" aria-label="Zoom out">−</button><button class="btn" data-act="zme" aria-label="Centre on me">' + A.glyph('circle', 18) + '</button><button class="btn" data-act="zall" aria-label="Show everything discovered">' + A.glyph('maze', 18) + '</button></div><div class="maplegend"><span class="l here">you</span><span class="l go">you can go</span><span class="l danger">danger</span><span class="l seen">visited</span><span class="l new">unexplored</span></div><div id="maptip" class="maptip" role="tooltip"></div><div id="mapsheet" class="mapsheet"></div></div></section><aside class="drawer dleft" id="left" aria-label="Your character"></aside><aside class="drawer dright" id="right" aria-label="The journal"></aside><nav class="nav" id="nav" aria-label="Sections"></nav></div>';
     MAP.attach($('.mapwrap'));
+  }
+
+  // the dice are rolled by the server; this only reveals the real number, briefly, in place
+  function animateDie() {
+    var el = $('#adv .mdie'); if (!el) return;
+    var n = el.dataset.n; if (S.ui.animN === n) return; S.ui.animN = n;
+    var final = el.dataset.d; if (FX.reduced()) return;
+    var i = 0, t = setInterval(function () { var e2 = $('#adv .mdie'); if (!e2) { clearInterval(t); return; } i++; e2.textContent = i < 9 ? 1 + Math.floor(Math.random() * 20) : final; e2.classList.toggle('roll', i < 9); if (i >= 9) { clearInterval(t); e2.classList.add('landed'); } }, 85);
+  }
+
+  // At the start of your turn the place's choices are simply there: no extra click to "look around".
+  function autoOpen() {
+    var v = S.view; if (!v || v.phase !== 'playing' || !v.me || v.me.status !== 'alive') return;
+    if (v.game.active !== v.you || v.enc || !v.act || !v.act.interact.ok) return;
+    var key = v.game.round + '|' + v.me.loc + '|' + v.game.active;
+    if (S.ui.autoKey === key) return;
+    S.ui.autoKey = key; send({ t: 'interact' });
+  }
+
+
+  // ───────────── the character-select showcase ─────────────
+  function renderLobby() {
+    var app = $('#app'), v = S.view, cat = S.cat, me = UI.me(), host = v.hostId === v.you;
+    if (!$('.lobby2', app)) {
+      htmlOf = {};
+      app.innerHTML = '<div class="lobby2"><header id="l2top" class="l2top"></header><div id="l2rules"></div><section id="l2stage" class="l2stage" aria-live="polite"></section><nav id="l2rail" class="l2rail" aria-label="Choose your hero"></nav><footer id="l2act" class="l2act"></footer></div>';
+    }
+    if (!S.ui.hero || (S.ui.hero !== me.cls && v.players.some(function (p) { return p.cls === S.ui.hero && p.id !== v.you; }))) S.ui.hero = me.cls || Heroes.order.find(function (id) { return !v.players.some(function (p) { return p.cls === id; }); }) || Heroes.order[0];
+    var h = S.ui.hero, c = cat.classes[h], owner = v.players.find(function (p) { return p.cls === h; });
+    var top = '<div class="mk"><span class="mark">The Hollow</span><span class="chap">Choose your hero</span></div><div class="room">' + (S.net && S.net.kind === 'online' ? '<span class="tag">Expedition</span><b>' + esc(v.code) + '</b><button class="btn small" data-act="copylink">Copy invite</button>' : '<span class="tag">Solo expedition</span>') + '</div><div class="roster">' +
+      v.players.map(function (p) { var pc = p.cls ? cat.classes[p.cls] : null; return '<span class="rc' + (p.id === v.you ? ' me' : '') + '" title="' + esc(p.name + (p.cls ? ', ' + pc.name : ', choosing') + (p.ready || p.host ? ', ready' : '')) + '"><span class="rp" style="--ac:' + (pc ? pc.color : '#555') + '">' + (p.cls ? A.portrait(p.cls, pc.color) : '') + '</span><b>' + esc(p.name.replace(' (ghost)', '')) + '</b>' + (p.cls && (p.ready || p.host) ? '<i class="ok">✓</i>' : '') + '</span>'; }).join('') + '</div><div class="bt">' + (host ? '<button class="btn ghost small" data-act="rules">Table</button>' : '') + '<button class="btn ghost small" data-act="howto">How to play</button><button class="btn ghost icon-btn" data-act="settings" aria-label="Settings">' + A.glyph('circle', 20) + '</button><button class="btn ghost small" data-act="leave">Leave</button></div>';
+    patch('l2top', top);
+    // host rules, only when asked for
+    var st = v.settings, rules = '';
+    if (host && S.ui.rules) rules = '<div class="l2rules"><div class="field"><label for="f-afk">If a player goes quiet</label><select id="f-afk" data-act="setafk"><option value="skip"' + (st.afk === 'skip' ? ' selected' : '') + '>Skip their turns</option><option value="ai"' + (st.afk === 'ai' ? ' selected' : '') + '>A ghost-hand plays for them</option><option value="wait"' + (st.afk === 'wait' ? ' selected' : '') + '>Wait up to 5 minutes</option></select></div><div class="field"><label for="f-turn">Turn timer</label><select id="f-turn" data-act="setturn">' + [60, 90, 150, 240, 420].map(function (x) { return '<option value="' + x + '"' + (st.turnSec === x ? ' selected' : '') + '>' + (x < 120 ? x + ' s' : x / 60 + ' min') + '</option>'; }).join('') + '</select></div><button class="btn small" data-act="addbot"' + (v.players.length >= 6 ? ' disabled' : '') + '>+ Ghost companion</button>' + v.players.filter(function (p) { return p.id.indexOf('bot') === 0; }).map(function (p) { return '<button class="btn tiny" data-act="kickbot" data-id="' + esc(p.id) + '">Dismiss ' + esc(p.name.replace(' (ghost)', '')) + '</button>'; }).join('') + '</div>';
+    patch('l2rules', rules);
+    patch('l2stage', Heroes.showcase(cat, h, S.ui));
+    if (S.ui.lastHero !== h) { var first = S.ui.lastHero == null; S.ui.lastHero = h; var art = $('#l2stage .hero-art'), gl = $('#l2stage .glow'), inf = $('#l2stage .hero-info'); [art, gl, inf].forEach(function (e) { if (e) { e.classList.remove('enter'); void e.offsetWidth; e.classList.add('enter'); } }); }
+    patch('l2rail', Heroes.rail(cat, S.ui, v.players, v.you));
+    // the one big button
+    var taken = owner && owner.id !== v.you, mine = me.cls === h, name = c.name.replace('The ', '').toUpperCase();
+    var canStart = me.cls && v.players.every(function (p) { return p.cls && (p.ready || p.host || p.id.indexOf('bot') === 0 || !p.connected); });
+    var act;
+    if (taken) act = '<button class="cta" disabled>TAKEN BY ' + esc(owner.name.toUpperCase().replace(' (GHOST)', '')) + '</button><p class="hint">Choose another hero.</p>';
+    else if (!mine) act = '<button class="cta" data-act="confirmhero">CHOOSE THE ' + esc(name) + '</button><p class="hint">' + (me.cls ? 'You are currently the ' + esc(cat.classes[me.cls].name.replace('The ', '')) + '. Choosing again swaps.' : 'You can change your mind until the expedition sets out.') + '</p>';
+    else if (host) act = '<button class="cta go" data-act="start"' + (canStart ? '' : ' disabled') + '>SET OUT</button><p class="hint">' + (canStart ? (v.players.length === 1 ? 'Alone, or add ghost companions under Table.' : 'Everyone is ready.') : 'Waiting for everyone to choose and be ready.') + '</p>';
+    else act = '<button class="cta' + (me.ready ? '' : ' go') + '" data-act="ready">' + (me.ready ? 'READY ✓  (tap to undo)' : 'READY') + '</button><p class="hint">Waiting for the host to set out.</p>';
+    patch('l2act', act);
   }
 
   function renderTitle() {
@@ -177,10 +230,9 @@
   }
   function flashSlot(id, cls) { var el = $('.slot[data-slot="' + id + '"]'); var hb = $('.hud-b'); if (el) { el.classList.add(cls); setTimeout(function () { el.classList.remove(cls); }, 1500); } if (hb) FX.sparkle($('.hud-b'), 'gold'); }
   function navHtml() {
-    var v = S.view, mine = v.game.active === v.you;
-    var t = S.ui.tab;
-    var b = function (id, lab, glyph, note) { return '<button role="tab" aria-selected="' + (t === id) + '" data-act="tab" data-t="' + id + '">' + A.glyph(glyph, 22) + '<span>' + lab + '</span>' + (note ? '<i class="dotnote"></i>' : '') + '</button>'; };
-    return b('map', 'Map', 'maze', false) + b('act', 'Act', 'sword', mine && t !== 'act') + b('you', 'You', 'skull', !!(v.me.offer)) + b('log', 'Journal', 'book', !!S.ui.newClue);
+    var v = S.view, mine = v.game.active === v.you, t = S.ui.tab;
+    var bt = function (id, lab, glyph, note) { return '<button role="tab" aria-selected="' + (t === id) + '" data-act="tab" data-t="' + id + '">' + A.glyph(glyph, 22) + '<span>' + lab + '</span>' + (note ? '<i class="dotnote"></i>' : '') + '</button>'; };
+    return bt('act', 'Adventure', 'sword', mine && t !== 'act') + bt('map', 'Map', 'maze', false) + bt('you', 'You', 'skull', !!(v.me.offer)) + bt('log', 'Journal', 'book', !!S.ui.newClue);
   }
 
   function mapSheet() {
@@ -208,6 +260,7 @@
       else if (m.type === 'confirm') html = UI.confirmModal(m.text);
       else if (m.type === 'rest') html = UI.restModal();
       else if (m.type === 'menu') html = UI.menuModal();
+      else if (m.type === 'travel') html = g.HollowStory.travelModal();
       else if (m.type === 'targets') html = '<div class="modal" role="dialog" aria-modal="true"><div class="box"><h2>' + esc(m.title) + '</h2><div class="opts">' + m.opts.map(function (o) { return '<button class="btn" data-act="target-pick" data-id="' + esc(o.id) + '">' + esc(o.label) + '</button>'; }).join('') + '<button class="btn ghost" data-act="closemodal">Cancel</button></div></div></div>';
     }
     if (html === '' && !m) { if (htmlOf.modal) { root.innerHTML = ''; htmlOf.modal = ''; } return; }
@@ -233,21 +286,24 @@
         var r = d.result;
         if (r.roll) {
           var who = (v.players.find(function (p) { return p.id === r.by; }) || {}).name || (r.finale ? 'The party' : '');
-          // your own rolls and exceptional ones get the full die; routine rolls by others are a quiet toast
-          if (r.by === you || r.finale || r.roll.tier === 'crit' || r.roll.tier === 'fumble') FX.dice({ roll: r.roll, who: who, label: r.opt, stakes: r.stakes, chips: r.chips, lines: r.lines }, AU.sfx);
-          else { var good = r.roll.tier === 'ok'; toast(who + ' — ' + r.opt + ': d20 ' + r.roll.d + (r.roll.mod >= 0 ? '+' : '−') + Math.abs(r.roll.mod) + ' = ' + r.roll.total + ' vs DC ' + r.roll.dc + ' · ' + (good ? 'success' : 'failure'), good ? 'good' : 'bad'); AU.sfx(good ? 'success' : 'fail'); }
+          // only dramatic moments get the full-screen die: criticals, bosses, the finale. Your ordinary rolls reveal inline.
+          var big = r.finale || r.roll.tier === 'crit' || r.roll.tier === 'fumble' || (v.enc && v.enc.kind === 'boss');
+          if (big && (r.by === you || r.finale)) FX.dice({ roll: r.roll, who: who, label: r.opt, stakes: r.stakes, chips: r.chips, lines: r.lines }, AU.sfx);
+          else if (r.by === you) { AU.sfx('dice'); setTimeout(function () { AU.sfx(r.roll.tier === 'ok' ? 'success' : 'fail'); }, 780); }
+          else if (big) FX.dice({ roll: r.roll, who: who, label: r.opt, stakes: r.stakes, chips: r.chips, lines: r.lines }, AU.sfx);
+          else { var good = r.roll.tier === 'ok'; toast(who + ' — ' + r.opt + ': ' + r.roll.total + ' vs ' + r.roll.dc + ' · ' + (good ? 'success' : 'failure'), good ? 'good' : 'bad'); AU.sfx(good ? 'success' : 'fail'); }
         }
         else AU.sfx(r.tier === 'ok' || r.tier === 'crit' || r.tier === 'auto' ? 'success' : 'fail');
         if (r.chips) r.chips.forEach(function (c) { if (c.k === 'clue') { AU.sfx('clue'); AU.hush(500); } if (c.k === 'item' && c.n > 0) AU.sfx('pickup'); if (c.k === 'ally') AU.sfx('ally'); });
       } else if (k === 'dmg' && mine) {
         if (d.k === 'san') { FX.flash('san'); AU.sfx('sanity'); } else { FX.flash('dmg'); AU.sfx('damage'); }
-        FX.floatText($('.who'), d.n + (d.k === 'san' ? ' Sanity' : ' Vitality'), d.k === 'san' ? 'viol' : 'bad');
-      } else if (k === 'heal' && mine) { FX.flash('heal'); AU.sfx('heal'); FX.floatText($('.who'), '+' + d.n, 'good'); }
-      else if (k === 'clue') { if (S.ui.drawer !== 'right') S.ui.newClue = true; setTimeout(function () { FX.sparkle($('.hud-b:last-of-type') || $('.hud'), 'gold'); }, 50); AU.sfx('clue'); AU.hush(700); toast('Clue: ' + e.t.split('. ')[0].replace(/^.* uncovers /, ''), 'good'); }
+        FX.floatText($('.me') || $('.sheet'), d.n + (d.k === 'san' ? ' Sanity' : ' Vitality'), d.k === 'san' ? 'viol' : 'bad');
+      } else if (k === 'heal' && mine) { FX.flash('heal'); AU.sfx('heal'); FX.floatText($('.me') || $('.sheet'), '+' + d.n, 'good'); }
+      else if (k === 'clue') { if (!d.priv || mine) g.HollowCine.play('clue', { title: (S.cat.clues[d.id] || {}).title || 'A discovery', text: e.t.replace(/^.*?(uncovers "[^"]*"\.|discovery: [^—]*—)\s*/, ''), pillar: (S.cat.clues[d.id] || {}).pillar, mine: mine, by: (v.players.find(function (p) { return p.id === e.p; }) || {}).name }); if (S.ui.drawer !== 'right') S.ui.newClue = true; setTimeout(function () { FX.sparkle($('.hud-b:last-of-type') || $('.hud'), 'gold'); }, 50); AU.sfx('clue'); AU.hush(700); toast('Clue: ' + e.t.split('. ')[0].replace(/^.* uncovers /, ''), 'good'); }
       else if (k === 'clock') { if (d.n > 0) { AU.sfx('toll'); var tp = $('.top'); if (tp) { tp.classList.remove('toll'); void tp.offsetWidth; tp.classList.add('toll'); } } }
-      else if (k === 'phase') { showPhase(d.phase, e.t); AU.sfx('phase'); AU.hush(1400); }
-      else if (k === 'omen') { toast(e.t, 'viol'); AU.sfx('toll'); }
-      else if (k === 'move') { if (mine) AU.sfx(d.mode === 'sprint' ? 'sprint' : 'step'); }
+      else if (k === 'phase') { g.HollowCine.play('phase', { phase: d.phase, name: S.cat.phaseName[d.phase - 1], text: S.cat.phaseText[d.phase - 1] }); }
+      else if (k === 'omen') { var oi = e.t.indexOf('. '); g.HollowCine.play('spirit', { title: oi > 0 ? e.t.slice(0, oi) : 'An omen', text: oi > 0 ? e.t.slice(oi + 2) : e.t }); }
+      else if (k === 'move') { if (mine) { AU.sfx(d.mode === 'sprint' ? 'sprint' : 'step'); var L = S.cat.locations[e.loc]; if (L && d.from !== e.loc) g.HollowCine.play('arrive', { title: L.name, region: S.cat.regions[L.region].name, color: S.cat.regions[L.region].color, hook: (L.desc.match(/^[^.!?]+[.!?]/) || [''])[0] }); } }
       else if (k === 'enemy') { if (d.k === 'enemy' || d.k === 'spawn' || d.k === 'toll') AU.sfx('enemy'); toast(e.t, 'bad'); }
       else if (k === 'boss') { AU.sfx('boss'); if (d.k === 'bossdown') toast(e.t, 'good'); }
       else if (k === 'fall') { AU.sfx('fall'); FX.flash('dmg'); toast(e.t, 'bad'); }
@@ -350,6 +406,7 @@
     mutebox: function (el) { AU.setMuted(el.checked); render(); },
     capbox: function (el) { AU.setCaptions(el.checked); },
     motion: function (el) { FX.prefs.motion = el.value; FX.save(); FX.apply(); },
+    cinebox: function (el) { FX.prefs.cine = el.checked; FX.save(); },
     largebox: function (el) { FX.prefs.large = el.checked; FX.save(); FX.apply(); },
     conbox: function (el) { FX.prefs.contrast = el.checked; FX.save(); FX.apply(); },
     disbox: function (el) { FX.prefs.distort = el.checked; FX.save(); FX.apply(); render(); },
@@ -365,8 +422,41 @@
     addbot: function () { send({ t: 'addbot' }); }, kickbot: function (el) { send({ t: 'kickbot', id: el.dataset.id }); },
     setafk: function (el) { send({ t: 'settings', afk: el.value }); }, setturn: function (el) { send({ t: 'settings', turnSec: +el.value }); },
     // layout
+    choice: function (el) {
+      var enc = S.view.enc; if (!enc || !enc.options) return;
+      var o = enc.options.find(function (x) { return x.id === el.dataset.opt; }); if (!o || o.state !== 'ok') return;
+      S.ui.focus = null;
+      if (o.kind === 'check' || o.kind === 'puzzle' || o.needsTarget) { S.ui.prep = { id: o.id }; htmlOf.adv = null; render(); AU.sfx('click'); return; }
+      ACTIONS.choose({ dataset: { opt: o.id, confirm: o.confirm || '' } });
+    },
+    hot: function (el) {
+      var id = el.dataset.opt, sc = $('.scene'), svg = sc && sc.querySelector('.art svg'); AU.sfx('click');
+      if (!sc || !svg) return;
+      var cw = sc.clientWidth, ch = sc.clientHeight, k = Math.max(cw / 640, ch / 260), vw = cw / k, vh = ch / k, ox = (640 - vw) / 2, oy = (260 - vh) / 2;
+      var fx = Math.max(10, Math.min(90, (+el.dataset.x - ox) / vw * 100)), fy = Math.max(10, Math.min(90, (+el.dataset.y - oy) / vh * 100));
+      S.ui.focus = id; S.ui.focusAt = { fx: fx.toFixed(1), fy: fy.toFixed(1) };
+      sc.style.setProperty('--fx', fx + '%'); sc.style.setProperty('--fy', fy + '%'); sc.classList.add('focus');
+      // add the prompt without re-rendering so the camera glide animates
+      setTimeout(function () { render(); }, 520);
+    },
+    hotoff: function () { S.ui.focus = null; var sc = $('.scene'); if (sc) sc.classList.remove('focus'); htmlOf.adv = null; render(); },
+    unprep: function () { S.ui.prep = null; htmlOf.adv = null; render(); },
+    travel: function () { if (S.view.act) { S.ui.travel = true; htmlOf.adv = null; render(); } AU.sfx('click'); },
+    untravel: function () { S.ui.travel = false; htmlOf.adv = null; render(); },
+    map: function () { closeModal(); S.ui.map = true; S.ui.tab = innerWidth <= 960 ? 'map' : S.ui.tab; htmlOf.mapsvg = null; MAP.reset(); render(); setTimeout(function () { MAP.fitAll(); }, 60); },
+    closemap: function () { S.ui.map = false; if (S.ui.tab === 'map') S.ui.tab = 'act'; S.ui.sel = null; render(); },
+    more: function (el) { S.ui.more = !S.ui.more; var d = el.closest('details'); if (d) d.open = S.ui.more; return true; },
+    coach: function (el) { var st = el.dataset.s; S.ui.coach = st === 'done' ? 'done' : +st; if (st === 'done') { try { localStorage.setItem('hollow.tut', '1'); } catch (e) { /* ignore */ } } htmlOf.adv = null; render(); },
+    hero: function (el) { S.ui.hero = el.dataset.cls; S.ui.heroAlt = false; AU.sfx('hero'); renderLobby(); },
+    heroalt: function () { S.ui.heroAlt = !S.ui.heroAlt; renderLobby(); },
+    rules: function () { S.ui.rules = !S.ui.rules; htmlOf.l2rules = null; renderLobby(); },
+    confirmhero: function () {
+      var h = S.ui.hero, st = $('#l2stage'); AU.sfx('confirm');
+      if (st) { st.classList.remove('confirm'); void st.offsetWidth; st.classList.add('confirm'); }
+      send({ t: 'pick', cls: h });
+    },
     drawer: function (el) { var d = el.dataset.d; S.ui.drawer = S.ui.drawer === d ? null : d; if (d === 'right' && S.ui.drawer) S.ui.newClue = false; var gm = $('.game'); if (gm) gm.setAttribute('data-drawer', S.ui.drawer || ''); htmlOf.hud = null; htmlOf.left = null; htmlOf.right = null; render(); AU.sfx('click'); },
-    tab: function (el) { S.ui.tab = el.dataset.t; var gm = $('.game'); if (gm) gm.setAttribute('data-tab', S.ui.tab); htmlOf.nav = null; render(); },
+    tab: function (el) { S.ui.tab = el.dataset.t; if (S.ui.tab === 'map') setTimeout(function () { MAP.fitAll(); }, 80); var gm = $('.game'); if (gm) gm.setAttribute('data-tab', S.ui.tab); htmlOf.nav = null; render(); },
     jtab: function (el) { S.ui.jtab = el.dataset.t; htmlOf.right = null; render(); },
     zin: function () { MAP.zoomIn(); }, zout: function () { MAP.zoomOut(); }, zme: function () { MAP.center(UI.me().loc); }, zall: function () { MAP.fitAll(); },
     selnode: function (el) { if (MAP.isDragging()) return; var id = el.dataset.loc; S.ui.sel = S.ui.sel === id ? null : id; AU.sfx('click'); htmlOf.stage = null; htmlOf.mapsvg = null; htmlOf.mapsheet = null; render(); },
@@ -377,12 +467,13 @@
     'rest-ui': function () { openModal({ type: 'rest' }); },
     rest: function (el) { closeModal(); send({ t: 'rest', stat: el.dataset.stat }); AU.sfx('heal'); },
     endturn: function () { send({ t: 'endturn' }); }, leaveenc: function () { send({ t: 'leave' }); }, leave_: function () { send({ t: 'leave' }); },
-    move: function (el) { var mode = el.dataset.mode; send({ t: 'move', mode: mode, to: el.dataset.to }); },
-    follow: function (el) { send({ t: 'move', mode: 'follow', target: el.dataset.to }); },
-    unlock: function (el) { send({ t: 'unlock', edge: el.dataset.edge, way: el.dataset.way }); AU.sfx('lock'); },
+    move: function (el) { var mode = el.dataset.mode; var sc0 = $('.scene'); if (sc0) sc0.classList.add('leaving'); S.ui.focus = null; closeModal(); S.ui.travel = false; send({ t: 'move', mode: mode, to: el.dataset.to }); },
+    follow: function (el) { closeModal(); S.ui.travel = false; send({ t: 'move', mode: 'follow', target: el.dataset.to }); },
+    unlock: function (el) { closeModal(); S.ui.travel = false; send({ t: 'unlock', edge: el.dataset.edge, way: el.dataset.way }); AU.sfx('lock'); },
     choose: function (el) {
       var enc = S.view.enc; if (!enc) return;
       if (FX.rolling() || S.ui.sending) return;          // never double-roll while the die is on the table
+      S.ui.prep = null;
       var cmd = { t: 'choose', enc: enc.id, opt: el.dataset.opt };
       if (el.dataset.val != null && el.dataset.val !== '') cmd.val = el.dataset.val;
       if (el.dataset.target) cmd.target = el.dataset.target;
@@ -438,11 +529,21 @@
     if (el.dataset && el.dataset.act === 'vol') ACTIONS.vol(el);
   });
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { if (S.ui.modal) closeModal(); else if (S.ui.drawer) ACTIONS.drawer({ dataset: { d: S.ui.drawer } }); else if (S.ui.sel) ACTIONS.desel(); }
+    if (e.key === 'Escape') { if (S.ui.modal) closeModal(); else if (S.ui.map) ACTIONS.closemap(); else if (S.ui.drawer) ACTIONS.drawer({ dataset: { d: S.ui.drawer } }); else if (S.ui.sel) ACTIONS.desel(); }
     if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.node[data-act]')) { e.preventDefault(); ACTIONS.selnode(e.target); }
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.hs[data-act]')) { e.preventDefault(); ACTIONS.hot(e.target); }
     if (e.key === 'Enter' && e.target.id === 'f-code') ACTIONS.join();
   });
   document.addEventListener('submit', function (e) { e.preventDefault(); });
+
+  // gentle parallax: the scene's layers drift a few pixels against the pointer
+  var pxT = 0;
+  document.addEventListener('pointerover', function (e) { var h = e.target.closest && e.target.closest('.hs.ok'); if (h && h !== lastHs) AU.sfx('hover'); lastHs = h || null; }, { passive: true });
+  var lastHs = null;
+  document.addEventListener('pointermove', function (e) {
+    if (pxT || FX.reduced() || e.pointerType === 'touch') return;
+    pxT = requestAnimationFrame(function () { pxT = 0; var sc = $('.scene'); if (!sc) return; sc.style.setProperty('--px', (e.clientX / innerWidth * 2 - 1).toFixed(2)); sc.style.setProperty('--py', (e.clientY / innerHeight * 2 - 1).toFixed(2)); });
+  }, { passive: true });
 
   // ───────────────────────────── start ─────────────────────────────
   var saved = Net.savedSeat();

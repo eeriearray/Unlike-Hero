@@ -485,6 +485,7 @@
       '<div class="switch"><input id="s-cap" type="checkbox" data-act="capbox"' + (a.captions ? ' checked' : '') + '><label for="s-cap">Show sound captions</label></div>' +
       (g.HollowAudio.supported ? '' : '<div class="note bad small">Your browser cannot play synthesised audio. The game is fully playable without it.</div>') +
       '<hr class="div"><div class="field"><label for="s-motion">Motion</label><select id="s-motion" data-act="motion"><option value="auto"' + (P.motion === 'auto' ? ' selected' : '') + '>Follow my device setting</option><option value="on"' + (P.motion === 'on' ? ' selected' : '') + '>Reduce motion</option><option value="off"' + (P.motion === 'off' ? ' selected' : '') + '>Full animation</option></select></div>' +
+      '<div class="switch"><input id="s-cine" type="checkbox" data-act="cinebox"' + (P.cine !== false ? ' checked' : '') + '><label for="s-cine">Cinematic moments (arrivals, discoveries, the Haunting)</label></div>' +
       '<div class="switch"><input id="s-large" type="checkbox" data-act="largebox"' + (P.large ? ' checked' : '') + '><label for="s-large">Larger text</label></div>' +
       '<div class="switch"><input id="s-con" type="checkbox" data-act="conbox"' + (P.contrast ? ' checked' : '') + '><label for="s-con">High contrast</label></div>' +
       '<div class="switch"><input id="s-dis" type="checkbox" data-act="disbox"' + (P.distort ? ' checked' : '') + '><label for="s-dis">Low Sanity distorts descriptions (numbers and rules never lie)</label></div>' +

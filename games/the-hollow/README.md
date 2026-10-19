@@ -34,6 +34,10 @@ Opening the game with `?dev=1` exposes the live solo engine as `HollowDev.game()
   server restores every unfinished room, and players reconnect to their seats automatically.
 * The page loads its fonts from Google Fonts when online and falls back to system serif/sans fonts offline. All art and sound is generated in code: there are **no image or audio files** to fetch, license or lose.
 
+## Touchable scenes
+
+Some locations (the Silent Square, the Abandoned Chapel, the Bloodstained Nursery) are *playable scenes*: objects in the artwork are hotspots. Hovering names the object, tapping it glides the camera onto it and opens a compact prompt (stat, difficulty, cost, odds), and "Try it" starts the normal roll. A hotspot is only another way to pick an existing option of that location (`HOT` in `js/story.js` maps option ids to positions), so costs, checks, once-rules, clues and multiplayer are exactly the engine's. The list of choices remains under "Or choose from a list" for keyboard and screen-reader play. To make another location playable, add an entry to `HOT` and, optionally, props in `PROPS` in `js/art2.js`.
+
 ## What a turn looks like
 
 1. **The world speaks.** A new round draws an *omen* (a world event) and the Haunting Clock may enter a new phase.

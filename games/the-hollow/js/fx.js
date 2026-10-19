@@ -3,7 +3,7 @@
 (function (g) {
   'use strict';
   var KEY = 'hollow.a11y.v1';
-  var P = { motion: 'auto', large: false, contrast: false, distort: true, captions: false };
+  var P = { motion: 'auto', large: false, contrast: false, distort: true, captions: false, cine: true };
   try { Object.assign(P, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { /* storage blocked */ }
   var mq = g.matchMedia ? g.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
 

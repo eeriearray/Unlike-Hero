@@ -45,7 +45,8 @@
     return out;
   }
 
-  function render() {
+  function render(opts) {
+    opts = opts || {};
     var v = S.view, cat = S.cat, locs = v.map.locs, me = UI.me(), act = v.act, mine = v.game.active === v.you;
     var legal = {};
     if (act && mine) {
@@ -53,7 +54,9 @@
       act.sprint.forEach(function (s) { if (!legal[s.to]) legal[s.to] = 'sprint'; });
     }
     var sel = S.ui.sel;
-    var out = '<svg class="map" viewBox="' + VB.x.toFixed(0) + ' ' + VB.y.toFixed(0) + ' ' + VB.w.toFixed(0) + ' ' + VB.h.toFixed(0) + '" role="group" aria-label="Map of the Hollow">';
+    var vbs = VB.x.toFixed(0) + ' ' + VB.y.toFixed(0) + ' ' + VB.w.toFixed(0) + ' ' + VB.h.toFixed(0);
+    if (opts.mini) { var b = seenBox(), pad = 90, mw = Math.max(420, b.maxX - b.minX + pad * 2), mh = Math.max(300, b.maxY - b.minY + pad * 2); vbs = ((b.minX + b.maxX) / 2 - mw / 2).toFixed(0) + ' ' + ((b.minY + b.maxY) / 2 - mh / 2).toFixed(0) + ' ' + mw.toFixed(0) + ' ' + mh.toFixed(0); }
+    var out = '<svg class="map' + (opts.mini ? ' mini' : '') + '" viewBox="' + vbs + '" role="' + (opts.mini ? 'img' : 'group') + '" aria-label="Map of the Hollow">';
     out += '<defs>' + Object.keys(cat.regions).map(function (r) { return '<radialGradient id="rg-' + r + '"><stop offset="0" stop-color="' + cat.regions[r].color + '" stop-opacity=".34"/><stop offset=".6" stop-color="' + cat.regions[r].color + '" stop-opacity=".14"/><stop offset="1" stop-color="' + cat.regions[r].color + '" stop-opacity="0"/></radialGradient>'; }).join('') +
       '<radialGradient id="disc"><stop offset="0" stop-color="#232b3f"/><stop offset="1" stop-color="#0c1019"/></radialGradient>' +
       '<filter id="rough" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency=".012" numOctaves="3" seed="4"/><feDisplacementMap in="SourceGraphic" scale="60"/></filter>' +
@@ -69,48 +72,31 @@
     // fog of war: the unexplored is dim, drifting and mysterious, but not blank
     out += '<rect x="-500" y="-400" width="2300" height="1700" fill="#070a11" opacity=".82" mask="url(#fogmask)"/>';
     out += '<g mask="url(#fogmask)">' + [0, 1, 2, 3, 4, 5].map(function (i) { return '<ellipse class="mfog" cx="' + (100 + i * 220) + '" cy="' + (120 + (i % 3) * 270) + '" rx="260" ry="48" fill="#a9b4d0" opacity=".10" style="animation-delay:' + (-i * 4) + 's"/>'; }).join('') + '</g>';
-    // routes
+    // routes: quiet lines; only the roads you can take now are bright
     v.map.edges.forEach(function (e) {
-      var a = cat.locations[e.a], b = cat.locations[e.b], hot = sel && (e.a === sel || e.b === sel), here = me && (e.a === me.loc || e.b === me.loc);
-      var isLegal = mine && here && ((e.a === me.loc && legal[e.b] === 'step') || (e.b === me.loc && legal[e.a] === 'step') || (e.a === me.loc && legal[e.b] === 'sneak') || (e.b === me.loc && legal[e.a] === 'sneak')) && (e.state === 'open');
-      var cls = 'edge' + (e.type === 'hidden' ? ' hid' : '') + (e.state === 'locked' ? ' lck' : '') + (e.state === 'closed' || e.state === 'guarded' ? ' clo' : '') + (e.shifting ? ' shift' : '') + (hot ? ' hot' : '') + (isLegal ? ' legal' : '');
-      var col = e.state === 'closed' || e.state === 'guarded' ? '#b24a52' : e.state === 'locked' ? '#c9a35b' : e.type === 'hidden' ? '#9a82e0' : '#8a93ab';
+      var a = cat.locations[e.a], b = cat.locations[e.b], here = me && (e.a === me.loc || e.b === me.loc);
+      var isLegal = mine && here && e.state === 'open' && ((e.a === me.loc && legal[e.b]) || (e.b === me.loc && legal[e.a]));
+      var blocked = e.state === 'closed' || e.state === 'guarded', locked = e.state === 'locked';
+      var col = isLegal ? '#7ccfc3' : blocked ? '#9a4a52' : locked ? '#b8985a' : e.type === 'hidden' ? '#8a76c8' : '#5c6680';
       var d = curve(a, b, e.k);
-      out += '<path d="' + d + '" stroke="#05070b" stroke-width="9" fill="none" opacity=".55" stroke-linecap="round"/>';
-      out += '<path class="' + cls + '" d="' + d + '" stroke="' + (isLegal ? '#7ccfc3' : hot ? '#e3c680' : col) + '" stroke-width="' + (isLegal || hot ? 4.5 : e.type === 'path' && e.state === 'open' ? 3.2 : 2.8) + '" opacity="' + (isLegal || hot ? 1 : .8) + '"' + (e.oneway ? ' marker-end="url(#arr)"' : '') + '><title>' + esc((e.label ? e.label + ': ' : '') + cat.locations[e.a].name + (e.oneway ? ' → ' : ' ↔ ') + cat.locations[e.b].name + (e.why ? ' (' + e.why + ')' : '')) + '</title></path>';
-      if (e.state === 'locked' || e.state === 'guarded' || e.state === 'closed') {
-        var m = mid(a, b, e.k);
-        out += '<g transform="translate(' + m.x.toFixed(0) + ' ' + m.y.toFixed(0) + ')"><circle r="13" fill="#0a0c11" stroke="' + col + '" stroke-width="2"/><svg x="-8" y="-8" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="' + col + '" stroke-width="2.2" stroke-linecap="round"><path d="' + A.path(e.state === 'locked' ? 'keyhole' : 'chain') + '"/></svg></g>';
-      }
+      out += '<path d="' + d + '" stroke="' + col + '" stroke-width="' + (isLegal ? 4 : 2.4) + '" fill="none" stroke-linecap="round"' + (e.type === 'hidden' ? ' stroke-dasharray="6 6"' : blocked || locked ? ' stroke-dasharray="2 7"' : '') + (e.oneway ? ' marker-end="url(#arr)"' : '') + ' opacity="' + (isLegal ? 1 : .75) + '"><title>' + esc((e.label ? e.label + ': ' : '') + a.name + (e.oneway ? ' → ' : ' ↔ ') + b.name + (e.why ? ' (' + e.why + ')' : '')) + '</title></path>';
+      if ((locked || blocked) && !opts.mini) { var m = mid(a, b, e.k); out += '<g transform="translate(' + m.x.toFixed(0) + ' ' + m.y.toFixed(0) + ')"><circle r="11" fill="#0a0c11" stroke="' + col + '" stroke-width="1.5"/><svg x="-7" y="-7" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="' + col + '" stroke-width="2.2" stroke-linecap="round"><path d="' + A.path(locked ? 'keyhole' : 'chain') + '"/></svg></g>'; }
     });
-    // places
+    // places: five clear states: you are here, you can go, dangerous, visited, unexplored
     Object.keys(locs).sort(function (a, b) { return cat.locations[a].y - cat.locations[b].y; }).forEach(function (id) {
-      var l = cat.locations[id], st = locs[id], reg = cat.regions[l.region], isMe = me && me.loc === id, isSel = sel === id;
+      var l = cat.locations[id], st = locs[id], isMe = me && me.loc === id, isSel = sel === id, lg = legal[id];
       var players = v.players.filter(function (p) { return p.loc === id && p.status !== 'escaped' && p.status !== 'lost'; });
       var enemies = v.map.enemies.filter(function (e) { return e.loc === id; });
-      var rumor = v.map.rumors.some(function (r) { return r.loc === id; });
-      var big = l.boss || l.finale || l.kind === 'exit', r = big ? 38 : 32, lg = legal[id];
-      var danger = enemies.length || st.corrupt;
-      var ringCol = danger ? '#d0636b' : st.v ? reg.color : '#5c6580';
-      out += '<g class="node' + (st.v ? '' : ' unvisited') + (isMe ? ' me' : '') + (isSel ? ' sel' : '') + (lg ? ' legal-' + lg : '') + (danger ? ' danger' : '') + '" tabindex="0" role="button" data-act="selnode" data-loc="' + id + '" transform="translate(' + l.x + ' ' + l.y + ')" aria-label="' + esc(l.name + (st.v ? ', visited' : ', unexplored') + (isMe ? ', you are here' : '') + (lg ? ', you can ' + lg + ' there' : '') + (enemies.length ? ', ' + enemies.map(function (e) { return cat.enemies[e.id].name; }).join(', ') : '')) + '">';
-      out += '<circle r="' + (r + 22) + '" fill="transparent"/>';
-      if (danger) out += '<circle class="dg" r="' + (r + 14) + '" fill="#b24a52" opacity=".16"/>';
-      if (isMe) out += '<circle class="pulse" r="' + (r + 10) + '" fill="none" stroke="#e3c680" stroke-width="3"/>';
-      if (lg) out += '<circle class="legalring" r="' + (r + 9) + '" fill="none" stroke="#7ccfc3" stroke-width="3" stroke-dasharray="5 6"/>';
-      if (st.sealed || st.chalk) out += '<circle r="' + (r + 6) + '" fill="none" stroke="#7ccfc3" stroke-width="2"/>';
-      if (l.finale) out += '<circle r="' + (r + 12) + '" fill="none" stroke="#c0556f" stroke-width="1.5" opacity=".7"/>';
-      out += '<circle class="ring" r="' + r + '" fill="url(#disc)" stroke="' + ringCol + '"/><circle r="' + (r - 6) + '" fill="none" stroke="' + ringCol + '" stroke-width="1" opacity=".4"/>';
-      out += '<svg x="-18" y="-18" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="' + (st.v ? '#efe6cf' : '#667090') + '" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="' + A.path(st.v ? l.glyph : 'keyhole') + '"/></svg>';
-      if (l.occult && st.v) out += '<circle cx="' + (r - 6) + '" cy="' + (-r + 8) + '" r="4.5" fill="#8b6fd1" stroke="#0a0c11" stroke-width="1.5"/>';
-      if (enemies.length) out += '<g transform="translate(' + (r - 4) + ' ' + (-r + 4) + ')"><circle r="12" fill="#3a1218" stroke="#e07a82" stroke-width="2"/><svg x="-8" y="-8" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e07a82" stroke-width="2.4" stroke-linecap="round"><path d="' + A.path('skull') + '"/></svg></g>';
-      if (rumor) out += '<g class="rum" transform="translate(' + (-r + 4) + ' ' + (-r + 4) + ')"><circle r="11" fill="#2a2412" stroke="#e3c680" stroke-width="2"/><text y="5" text-anchor="middle" font-size="15" font-weight="700" fill="#e3c680" style="font-family:var(--sans)">!</text></g>';
-      if (st.ground) out += '<g transform="translate(' + (-r + 4) + ' ' + (r - 4) + ')"><circle r="9" fill="#12261f" stroke="#6bbf9a" stroke-width="2"/><text y="4" text-anchor="middle" font-size="11" fill="#6bbf9a">◆</text></g>';
-      out += '<text class="lbl" y="' + (r + 20) + '" text-anchor="middle">' + esc(l.name) + '</text>';
-      if (lg) out += '<text class="lbl legal-tag" y="' + (r + 38) + '" text-anchor="middle">' + ({ step: 'step here', sneak: 'sneak past', sprint: 'sprint here' })[lg] + '</text>';
-      players.forEach(function (p, i) {
-        var n = players.length;
-        out += '<g class="tok' + (p.id === v.game.active ? ' act' : '') + '" transform="translate(' + ((i - (n - 1) / 2) * 24) + ' ' + (-r - 16) + ')"><circle r="11" fill="' + UI.color(p) + '" stroke="' + (p.id === v.game.active ? '#fff' : '#05070b') + '" stroke-width="' + (p.id === v.game.active ? 3 : 2) + '"' + (p.status === 'fallen' ? ' opacity=".4"' : '') + '/><text y="4.5" text-anchor="middle">' + esc(p.name.charAt(0).toUpperCase()) + '</text></g>';
-      });
+      var danger = enemies.length > 0 || st.corrupt, big = l.boss || l.finale || l.kind === 'exit', r = opts.mini ? 30 : (big ? 30 : 26);
+      var state = isMe ? 'here' : danger ? 'danger' : lg ? 'go' : st.v ? 'seen' : 'new';
+      var ring = { here: '#e3c680', danger: '#c4545e', go: '#7ccfc3', seen: '#8a93ab', new: '#4a526a' }[state];
+      out += '<g class="node st-' + state + (isSel ? ' sel' : '') + '" tabindex="0" role="button" data-act="selnode" data-loc="' + id + '" transform="translate(' + l.x + ' ' + l.y + ')" aria-label="' + esc(l.name + ', ' + ({ here: 'you are here', danger: 'dangerous', go: 'you can go there', seen: 'visited', new: 'unexplored' })[state]) + '"><circle r="' + (r + 16) + '" fill="transparent"/>';
+      if (isMe) out += '<circle r="' + (r + 7) + '" fill="none" stroke="#e3c680" stroke-width="2" opacity=".5"/>';
+      out += '<circle class="ring" r="' + r + '" fill="url(#disc)" stroke="' + ring + '" stroke-width="' + (state === 'new' ? 2 : 3.5) + '"/>';
+      out += '<svg x="-16" y="-16" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="' + (st.v ? '#efe6cf' : '#667090') + '" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="' + A.path(st.v ? l.glyph : 'keyhole') + '"/></svg>';
+      if (enemies.length) out += '<g transform="translate(' + (r - 4) + ' ' + (-r + 4) + ')"><circle r="10" fill="#3a1218" stroke="#e07a82" stroke-width="2"/><svg x="-7" y="-7" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e07a82" stroke-width="2.6" stroke-linecap="round"><path d="' + A.path('skull') + '"/></svg></g>';
+      if (!opts.mini) out += '<text class="lbl" y="' + (r + 18) + '" text-anchor="middle">' + esc(l.name) + '</text>';
+      players.forEach(function (p, i) { var n = players.length; out += '<g class="tok" transform="translate(' + ((i - (n - 1) / 2) * 22) + ' ' + (-r - 14) + ')"><circle r="10" fill="' + UI.color(p) + '" stroke="' + (p.id === v.game.active ? '#fff' : '#05070b') + '" stroke-width="2"' + (p.status === 'fallen' ? ' opacity=".4"' : '') + '/><text y="4" text-anchor="middle">' + esc(p.name.charAt(0).toUpperCase()) + '</text></g>'; });
       out += '</g>';
     });
     out += '<rect x="-500" y="-400" width="2300" height="1700" filter="url(#grain)" opacity=".09" style="mix-blend-mode:overlay;pointer-events:none"/>';

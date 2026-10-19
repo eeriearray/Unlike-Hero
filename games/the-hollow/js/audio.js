@@ -228,6 +228,10 @@
 
   // ───────────────────────────── sound effects ─────────────────────────────
   var SFX = {
+    hero: { cd: 90, cap: '', f: function () { var t = ctx.currentTime; tone(330, 0.22, 'triangle', 0.1, t, null, null, true); tone(495, 0.4, 'sine', 0.08, t + 0.05, null, null, true); burst(0.18, 'bandpass', 900, 500, 0.05, t, 3); } },
+    confirm: { cd: 300, cap: 'Hero chosen.', f: function () { var t = ctx.currentTime; [196, 294, 392, 587].forEach(function (f, i) { tone(f, 1.3, 'triangle', 0.11, t + i * 0.09, null, null, true); }); bellHit(98, 0.12, t + 0.1, null, true); } },
+    arrive: { cd: 500, cap: 'You arrive.', f: function () { var t = ctx.currentTime; burst(0.5, 'lowpass', 500, 120, 0.12, t, 1, null, true); tone(165, 1.4, 'sine', 0.09, t, 140, null, true); } },
+    hover: { cd: 120, cap: '', f: function () { tone(880, 0.05, 'sine', 0.025); } },
     click: { cd: 40, cap: '', f: function () { tone(520, 0.05, 'triangle', 0.05); } },
     dice: { cd: 200, cap: 'The die rattles across the table.', f: function () { var t = ctx.currentTime, n = 9; for (var i = 0; i < n; i++) { var at = t + i * i * 0.012 + i * 0.045; burst(0.035, 'bandpass', 1800 + Math.random() * 1600, 900, 0.16 * (1 - i / (n + 2)) + 0.03, at, 6); tone(180 + Math.random() * 90, 0.05, 'triangle', 0.07, at, 100); } tone(95, 0.22, 'sine', 0.18, t + 0.62, 55); } },
     step: { cd: 160, cap: 'Footsteps.', f: function () { var t = ctx.currentTime; burst(0.07, 'lowpass', 500, 160, 0.14, t, 1); burst(0.07, 'lowpass', 440, 140, 0.11, t + 0.2, 1); } },

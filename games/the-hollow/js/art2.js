@@ -7,12 +7,34 @@
 
   // ───────── scenes: add a signature emblem, region atmosphere, light and paper grain ─────────
   var REG = {
-    village: function (r) { var o = ''; for (var i = 0; i < 3; i++) { var x = 70 + i * 230 + r() * 40; o += '<path d="M' + x + ' 250V150" stroke="#06080c" stroke-width="5"/><path d="M' + (x - 10) + ' 150h20l-4 18h-12z" fill="#06080c"/><circle cx="' + x + '" cy="162" r="14" fill="#c9a35b" opacity=".05"/>'; } for (var k = 0; k < 14; k++) o += '<path d="M' + (k * 48 + r() * 10) + ' 258v-' + (16 + r() * 18) + 'm6 ' + (16) + 'v-' + (14 + r() * 12) + '" stroke="#05060a" stroke-width="3"/>'; return o; },
+    village: function (r) { var o = ''; for (var i = 0; i < 3; i++) { var x = 70 + i * 230 + r() * 40; o += '<path d="M' + x + ' 250V150" stroke="#06080c" stroke-width="5"/><g class="lsway" style="transform-origin:' + x + 'px 150px;animation-delay:' + (-i * 1.3).toFixed(1) + 's"><path d="M' + (x - 10) + ' 150h20l-4 18h-12z" fill="#06080c"/><circle cx="' + x + '" cy="162" r="14" fill="#c9a35b" opacity=".12" class="win"/></g>'; } for (var k = 0; k < 14; k++) o += '<path d="M' + (k * 48 + r() * 10) + ' 258v-' + (16 + r() * 18) + 'm6 ' + (16) + 'v-' + (14 + r() * 12) + '" stroke="#05060a" stroke-width="3"/>'; return o; },
     estate: function (r) { var o = ''; for (var i = 0; i < 28; i++) o += '<path d="M' + (i * 24 + 6) + ' 258v-34l-4-10 8 0-4 10" fill="#06070b" stroke="#06070b" stroke-width="2"/>'; o += '<path d="M0 236h640" stroke="#06070b" stroke-width="3"/>'; o += '<path d="M520 70a28 28 0 0 1 56 0v60h-56z" fill="#0a0d16" stroke="#2b3550" stroke-width="2"/><path d="M548 80v50M526 104h44" stroke="#3b4a72" stroke-width="2"/>'; return o; },
     woods: function (r) { var o = ''; for (var i = 0; i < 16; i++) { var x = r() * 640, y = 80 + r() * 150; o += '<circle class="fly" cx="' + x.toFixed(0) + '" cy="' + y.toFixed(0) + '" r="2.4" fill="#b8e6a0" opacity=".8" style="animation-delay:' + (-r() * 8).toFixed(1) + 's"/><circle cx="' + x.toFixed(0) + '" cy="' + y.toFixed(0) + '" r="9" fill="#b8e6a0" opacity=".06"/>'; } for (var k = 0; k < 18; k++) o += '<path d="M' + (k * 38 + r() * 20) + ' 262q8 -' + (22 + r() * 20).toFixed(0) + ' 18 -' + (10 + r() * 10).toFixed(0) + '" stroke="#04080a" stroke-width="3" fill="none"/>'; return o; },
     abbey: function (r) { var segs = ['#7a2f3a', '#2f5a7a', '#c9a35b', '#4a7a5a', '#6a4a8a', '#7a2f3a', '#2f5a7a', '#c9a35b'], o = '<g transform="translate(560 78)" opacity=".5"><circle r="46" fill="#0b0e17" stroke="#3a3322" stroke-width="3"/>'; segs.forEach(function (c, i) { var a = i * Math.PI / 4, b = a + Math.PI / 4; o += '<path d="M0 0L' + (Math.cos(a) * 40).toFixed(1) + ' ' + (Math.sin(a) * 40).toFixed(1) + 'A40 40 0 0 1 ' + (Math.cos(b) * 40).toFixed(1) + ' ' + (Math.sin(b) * 40).toFixed(1) + 'z" fill="' + c + '" opacity=".55"/>'; }); o += '<circle r="9" fill="#0b0e17"/></g><path d="M560 124l-60 126h120z" fill="#c9a35b" opacity=".05"/>'; return o; },
     crypt: function (r) { var o = '<rect y="200" width="640" height="60" fill="#2f8f9a" opacity=".10"/>'; for (var i = 0; i < 10; i++) o += '<circle class="bub" cx="' + (r() * 640).toFixed(0) + '" cy="' + (210 + r() * 40).toFixed(0) + '" r="' + (1.5 + r() * 2).toFixed(1) + '" fill="#9fe8e0" opacity=".4" style="animation-delay:' + (-r() * 6).toFixed(1) + 's"/>'; o += '<path d="M120 0L60 200h120zM470 0l-50 220h100z" fill="#7ad0d6" opacity=".05"/>'; return o; },
     heart: function (r) { var o = ''; for (var i = 0; i < 9; i++) { var x = r() * 640, y = 20 + r() * 150, s = 8 + r() * 22; o += '<path class="shard" d="M' + x.toFixed(0) + ' ' + y.toFixed(0) + 'l' + s.toFixed(0) + ' ' + (s * .4).toFixed(0) + ' -' + (s * .5).toFixed(0) + ' ' + s.toFixed(0) + 'z" fill="#c0556f" opacity=".28" style="animation-delay:' + (-r() * 7).toFixed(1) + 's"/>'; } o += '<path d="M0 250Q320 60 640 250" stroke="#8b6fd1" stroke-width="2" fill="none" opacity=".3"/><path d="M0 250Q320 120 640 250" stroke="#c0556f" stroke-width="1.5" fill="none" opacity=".25"/>'; return o; }
+  };
+
+  // ───────── hand-placed props for scenes that have interactive objects (see js/story.js HOT) ─────────
+  var PROPS = {
+    square: function () {
+      var o = '';
+      // two crooked houses leaning toward the well, one window with a shadow that crosses it
+      o += '<g fill="#080a10"><path d="M20 240V128l44-34 44 34 6 112z"/><path d="M500 240l-4-96 46-30 52 30-6 96z"/></g>';
+      o += '<rect x="48" y="150" width="20" height="24" fill="#e5c273" opacity=".7" class="win"/><rect x="540" y="156" width="20" height="24" fill="#e5c273" opacity=".6" class="win" style="animation-delay:-2s"/><rect x="574" y="156" width="14" height="22" fill="#e5c273" opacity=".25"/>';
+      o += '<rect x="540" y="156" width="20" height="24" fill="#05070b" class="passer"/>';
+      // notice board: two posts, planks, curling papers
+      o += '<g transform="translate(48 0)"><path d="M112 238V158M188 238V158" stroke="#2a1d12" stroke-width="7"/><rect x="104" y="150" width="92" height="58" rx="3" fill="#4a3320" stroke="#1d130b" stroke-width="3"/><path d="M104 168h92M104 190h92" stroke="#2c1e12" stroke-width="2"/>' +
+        '<path d="M114 156h26v22h-26z" fill="#d9ceaa"/><path d="M146 160h22v26h-22z" fill="#cfc29a" transform="rotate(3 157 173)"/><path d="M174 156h18v18h-18z" fill="#e0d6b4"/><path d="M118 186h22v16h-22z" fill="#c9bb92" transform="rotate(-4 129 194)"/><path d="M148 192h40v12h-40z" fill="#d9ceaa"/>' +
+        '<path d="M118 162h16M118 167h12M150 166h14M150 172h12M178 161h10M152 197h30" stroke="#5c4a30" stroke-width="1.2"/><circle cx="127" cy="157" r="2" fill="#7a2f3a"/><path d="M104 150h92l-6-8h-80z" fill="#35261a"/></g>';
+      // the well drips upward: a pale thread of droplets rising from the water
+      o += '<g class="upflow" fill="#cfe6ee"><circle cx="314" cy="186" r="2.2"/><circle cx="322" cy="186" r="1.8"/><circle cx="318" cy="186" r="2.6"/><circle cx="326" cy="186" r="1.6"/><circle cx="311" cy="186" r="1.5"/></g>';
+      o += '<path d="M318 188c-6-30 8-52 0-84" stroke="#cfe6ee" stroke-width="1.6" fill="none" opacity=".35" class="upline"/>';
+      o += '<path d="M290 190c0 0 4 -10 30 -10s30 10 30 10" fill="none" stroke="#7aa8b8" stroke-width="1" opacity=".25"/>';
+      // a small camp fire with a flask
+      o += '<g transform="translate(448 226)"><path d="M-16 6l32-6M-16 0l32 6" stroke="#2a1b10" stroke-width="5" stroke-linecap="round"/><path class="flame" d="M0 2c-9-9-3-17 0-26 3 9 9 17 0 26z" fill="#ffb347"/><path class="flame" d="M0 2c-4-4-1-9 0-14 2 5 4 9 0 14z" fill="#fff2b3"/><circle r="40" cy="-8" fill="#ffb347" opacity=".12" class="aura"/></g>';
+      return o;
+    }
   };
   var TINT = { village: '#5f8a86', estate: '#6a58b0', woods: '#3f7a52', abbey: '#c4a867', crypt: '#2f8f9a', heart: '#b0456a' };
   var baseScene = A.scene;
@@ -22,7 +44,8 @@
     ex += '<defs><filter id="' + id + 'n"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="' + (Math.floor(r() * 90) + 1) + '"/><feColorMatrix values="0 0 0 0 .8  0 0 0 0 .75  0 0 0 0 .6  0 0 0 .5 0"/></filter><linearGradient id="' + id + 'l" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe9b0" stop-opacity=".08"/><stop offset="1" stop-color="#ffe9b0" stop-opacity="0"/></linearGradient></defs>';
     if (TINT[reg]) ex += '<rect width="640" height="260" fill="' + TINT[reg] + '" opacity=".13" style="mix-blend-mode:soft-light"/>';
     if (emblem) ex += '<svg x="' + (220 + Math.floor(r() * 120)) + '" y="14" width="96" height="96" viewBox="0 0 24 24" fill="none" stroke="#e8dcc0" stroke-width=".5" opacity=".13" stroke-linecap="round" stroke-linejoin="round"><path d="' + A.path(emblem) + '"/></svg>';
-    if (REG[reg]) ex += REG[reg](r);
+    if (PROPS[key]) ex += PROPS[key](r);
+    if (REG[reg]) ex += '<g class="fg">' + REG[reg](r) + '</g>';
     // shafts of light and a little foreground dust
     ex += '<path d="M' + (60 + r() * 200) + ' 0l90 0 -150 260h-70z" fill="url(#' + id + 'l)"/><path d="M' + (360 + r() * 200) + ' 0l60 0 -100 260h-50z" fill="url(#' + id + 'l)"/>';
     for (var i = 0; i < 14; i++) ex += '<circle class="mote" cx="' + (r() * 640).toFixed(0) + '" cy="' + (r() * 250).toFixed(0) + '" r="' + (0.6 + r() * 1.2).toFixed(1) + '" fill="#f1e8cf" opacity=".4" style="animation-delay:' + (-r() * 9).toFixed(1) + 's"/>';
