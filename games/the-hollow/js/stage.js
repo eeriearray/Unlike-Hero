@@ -257,17 +257,8 @@
     if (e.type === 'pointerover' && a && a.state === 'ok' && g.HollowAudio) g.HollowAudio.sfx('hover');
   }
   function onOut(e) { var el = e.target.closest && e.target.closest('.obj'); if (el) el.classList.remove('hov'); if (tip) tip.classList.remove('on'); }
-  var pxT = 0;
-  addEventListener('pointermove', function (e) {
-    if (!host || pxT || FX.reduced() || e.pointerType === 'touch') return;
-    // each layer's transform is written directly: a CSS variable on the stage would be inherited by every SVG node in
-    // the scene, so every mouse move restyled and repainted all of them and parts of the picture blinked in Chrome
-    pxT = requestAnimationFrame(function () {
-      pxT = 0; if (!host || !world) return;
-      var r = host.getBoundingClientRect(), px = (e.clientX - r.left) / r.width * 2 - 1, py = (e.clientY - r.top) / r.height * 2 - 1;
-      world.querySelectorAll('.lyr').forEach(function (l) { var d = +l.getAttribute('data-d') || 0; l.style.transform = 'translate3d(' + (px * d * -22).toFixed(1) + 'px,' + (py * d * -11).toFixed(1) + 'px,0)'; });
-    });
-  }, { passive: true });
+  // (no mouse parallax: moving the scene's layers independently needs one GPU texture per layer, which ran past the
+  // browser's GPU memory on large screens and left parts of the page unpainted; see css/stage.css .lyr)
 
   // ───────────── small framed views of objects (interaction cards, action cards) ─────────────
   St.closeup = function (id, cls) {

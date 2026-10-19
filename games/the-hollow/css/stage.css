@@ -22,20 +22,20 @@
 .stg-world { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; transform-origin: 0 0; transition: transform .95s cubic-bezier(.3, .72, .18, 1), filter 2.5s; will-change: transform;
   filter: saturate(calc(1 - var(--k) * .38)) brightness(calc(1 - var(--k) * .2)) contrast(calc(1 + var(--k) * .08)); }
 .stg-world.instant { transition: none; }
-.lyr { position: absolute; inset: -2.5%; transform: translate3d(0, 0, 0);   /* parallax: js/stage.js writes each layer's transform */ transition: transform .7s cubic-bezier(.2, .7, .3, 1);
-  /* keep every layer on its own GPU layer: otherwise each mouse move promotes and demotes them, re-rasterising the
-     SVG (fog blurs especially) every time, which shows as flicker */
-  will-change: transform; backface-visibility: hidden; }
+.lyr { position: absolute; inset: -2.5%; }
+/* The layers are deliberately NOT GPU layers (no 3D transform, no will-change, no per-layer animation): eight
+   full-scene textures, re-rastered at the camera's zoom, ran past the browser's GPU memory and it stopped painting
+   parts of the page (objects, HUD, cards). Only .stg-world is composited, for the camera. */
 .lyr > svg, .lyr > .raster { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .lyr > .raster { object-fit: cover; }
 .lyr.has-raster > svg { display: none; }
 .lyr-objects > svg { overflow: visible; }
 .lyr.fog { opacity: calc(.55 + var(--k) * .65); pointer-events: none; }
 .lyr-fore { pointer-events: none; }
-.stg.arrive .lyr { animation: stgArrive 1.3s cubic-bezier(.2, .7, .2, 1); }
-@keyframes stgArrive { from { opacity: 0; filter: blur(6px) brightness(.6); } }
+.stg.arrive .stg-world { animation: stgArrive 1.3s cubic-bezier(.2, .7, .2, 1); }
+@keyframes stgArrive { from { opacity: 0; } }
 .stg.settle .lyr * { transition: none !important; }
-.stg.leaving .stg-world { opacity: .3; filter: blur(4px); transition: opacity .6s, filter .6s; }
+.stg.leaving .stg-world { opacity: .3; transition: opacity .6s; }
 .stg-dim { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .8s; background: radial-gradient(circle at var(--fx) var(--fy), transparent 12%, rgba(3, 4, 8, .62) 55%); }
 .stg.focused .stg-dim { opacity: 1; }
 .stg-cold { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, #1a3550, #0a1a2c); mix-blend-mode: color; opacity: calc(var(--k) * .42); transition: opacity 3s; }
@@ -257,13 +257,11 @@
 .stg.fx-crit .stg-fx::before { background: radial-gradient(circle at var(--fx) var(--fy), rgba(255, 226, 140, .6), rgba(255, 190, 90, .12) 45%, transparent 70%); animation: fxFade 1.6s ease-out; }
 @keyframes fxFade { 0% { opacity: 0; } 25% { opacity: 1; } 100% { opacity: 0; } }
 .stg.fx-fail .stg-fx::before, .stg.fx-fumble .stg-fx::before { background: radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(40, 70, 110, .55) 100%); animation: fxFade 1.7s ease-out; }
-.stg.fx-fail .lyr-fogf, .stg.fx-fumble .lyr-fogf, .stg.fx-fail .lyr-fogb, .stg.fx-fumble .lyr-fogb { animation: fogRush 1.7s ease-in-out; }
-@keyframes fogRush { 40% { opacity: 1; transform: translate3d(-40px, -10px, 0) scale(1.08); } }
 .stg.fx-fail .stg-world, .stg.fx-fumble .stg-world { animation: edgeWarp 1s ease-in-out; }
-@keyframes edgeWarp { 20% { filter: blur(1.4px) saturate(.6) brightness(.8); } 45% { filter: blur(.4px) hue-rotate(-12deg) brightness(.75); } }
+@keyframes edgeWarp { 20% { filter: saturate(.6) brightness(.8); } 45% { filter: hue-rotate(-12deg) brightness(.75); } }
 .stg.fx-fumble .stg-fx::after { background: radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(120, 20, 30, .45)); animation: fxFade 1.8s ease-out; }
 .stg.fx-fumble .slant:not(.out) .lflame { animation: gutter .9s ease-in-out 1 reverse; }
-.stg.fx-san .stg-world { animation: sanWarp 1.5s ease-in-out; } @keyframes sanWarp { 25% { filter: hue-rotate(40deg) blur(1.2px) saturate(1.6); } 55% { filter: hue-rotate(-30deg) blur(.6px); } }
+.stg.fx-san .stg-world { animation: sanWarp 1.5s ease-in-out; } @keyframes sanWarp { 25% { filter: hue-rotate(40deg) saturate(1.6); } 55% { filter: hue-rotate(-30deg); } }
 .stg.fx-san .stg-fx::after { background: radial-gradient(ellipse at 50% 50%, transparent 35%, rgba(110, 70, 190, .5)); animation: fxFade 1.5s ease-out; }
 .stg.fx-hurt .stg-fx::after { background: radial-gradient(ellipse at 50% 50%, transparent 45%, rgba(170, 30, 40, .55)); animation: fxFade .9s ease-out; }
 .stg.fx-hurt { animation: hurtShake .4s; } @keyframes hurtShake { 25% { transform: translate(-5px, 2px); } 50% { transform: translate(4px, -2px); } 75% { transform: translate(-2px, 1px); } }
