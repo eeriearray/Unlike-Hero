@@ -33,9 +33,37 @@ the watcher in the far window (phase-driven), smoke and clouds.
 Style: dusk-blue night, moonlight from the upper left, warm lantern pools, muted plaster and slate, soft painterly
 edges, no outlines heavier than the vector art's.
 
+## The Abandoned Chapel (`js/scenes/chapel.js`)
+
+| Layer | File | What it holds | Parallax |
+| --- | --- | --- | --- |
+| sky | `art/chapel/sky.webp` | dusk sky (low sun lower right), clouds, seen through the roof hole and broken glass | 0.05 |
+| far | `art/chapel/far.webp` | back wall with three lancets (cut out), apse arch, side walls, ceiling and roof hole (x 930–1300) | 0.2 |
+| mid | `art/chapel/mid.webp` | pillars, banner, remaining pews, the cold chandelier | 0.42 |
+| ground | `art/chapel/ground.webp` | flagstones, aisle runner, rain puddle under the hole | 0.62 |
+| fore | `art/chapel/fore.webp` | the pew barricade at both bottom corners | 1.15 |
+
+Objects: vestry door x 228–364 / y 352–676, altar and dais x 600–1000 / y 440–610, font and plate x 1090–1280 /
+y 540–736, tithe-hatch x 1160–1320 / y 738–818. Animated, so not to be baked in: the stained-glass light shafts and
+the four candles (the Haunting dims and snuffs them), the dust in the roof light, the crows and the word on the wall.
+
+## The Bloodstained Nursery (`js/scenes/nursery.js`)
+
+| Layer | File | What it holds | Parallax |
+| --- | --- | --- | --- |
+| sky | `art/nursery/sky.webp` | the night through the window (x 480–630 / y 150–370), moon, branch | 0.1 |
+| far | `art/nursery/far.webp` | rose wallpaper, wainscot, side walls, window frame and curtain, toy shelf | 0.2 |
+| mid | `art/nursery/mid.webp` | the mobile, dresser, night-stool, mantel candles | 0.42 |
+| ground | `art/nursery/ground.webp` | floorboards, rag rug, the old stain | 0.62 |
+| fore | `art/nursery/fore.webp` | the door ajar at the left edge, the rocking horse | 1.15 |
+
+Objects: the row of cradles x 310–1170 / y 480–630, hearth x 1100–1300 / y 340–610, rocking cradle x 740–970 /
+y 480–730, coin saucer x 950–1070 / y 750–820. Animated: the moonlight, the candles, the stains and handprints
+(they spread with each phase), the scrawl, the child at the window, the mobile and the cradle's rocking.
+
 ## Still to paint (procedural art in use)
 
-Every other place uses the procedural scenes from `js/art.js` inside the same stage, cards and event system. To give
+Every other place (all but the square, the chapel and the nursery) uses the procedural scenes from `js/art.js` inside the same stage, cards and event system. To give
 a place a hand-made scene, copy `js/scenes/square.js`: draw its layers, list its objects with the option ids from
 `engine/data/loc-*.js`, and add a `<script>` for it in `index.html`.
 

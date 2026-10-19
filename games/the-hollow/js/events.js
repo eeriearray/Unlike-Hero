@@ -220,7 +220,7 @@
         if (R.roll) return dice(R.roll, opts.mine ? 'You' : opts.who, R.opt);
       }).then(function () {
         var tier = R.tier, fxn = obj && d.fx && d.fx[obj] ? d.fx[obj](null, tier, R) : null;
-        if (obj && fxn) { St.objFx(obj, fxn, 2600); objSound(fxn); }
+        if (obj && fxn) { St.objFx(obj, fxn, 2600); objSound(fxn, d); }
         tierFx(tier, pointFor(obj));
         return wait(fxn ? 1100 : 700);
       }).then(function () { return consequences(R, obj, opts.mine); })
@@ -228,7 +228,7 @@
         .then(function () { if (E.keepFocus !== obj) St.unfocus(); });
     } });
   };
-  function objSound(n) { var m = { pull: 'paper', crumble: 'whisper', answer: 'water', whisper: 'whisper', ignite: 'ignite', gather: 'paper' }; if (m[n]) sfx(m[n]); }
+  function objSound(n, d) { if (d && d.fxSfx && d.fxSfx[n]) return sfx(d.fxSfx[n]); var m = { pull: 'paper', crumble: 'whisper', answer: 'water', whisper: 'whisper', ignite: 'ignite', gather: 'paper' }; if (m[n]) sfx(m[n]); }
 
   // a roll that is being held for a reroll decision: show the die, leave the decision to the panel
   E.holdRoll = function (roll, oid, label, opts) {

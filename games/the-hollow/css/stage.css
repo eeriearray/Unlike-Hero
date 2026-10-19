@@ -137,6 +137,117 @@
 .obj-postcards.fx-search .pc-scatter g, .obj-postcards.fx-gather .pc-scatter g { animation: shuffle .9s ease-in-out 2; } @keyframes shuffle { 50% { transform: translateY(-8px) rotate(6deg); } }
 .obj.fx-search .halo, .obj.fx-act .halo { animation: none; opacity: 1; }
 
+/* ───────────── the abandoned chapel ───────────── */
+.stg[data-place="chapel"] .slant { animation: none; }   /* candles stand still; the Haunting still snuffs them */
+.ch-clouds .cl { animation: cloudDrift 110s linear infinite alternate; } .ch-clouds .c2 { animation-duration: 140s; animation-direction: alternate-reverse; }
+.ch-crows { opacity: 0; transition: opacity 3s; } .stg[data-phase="3"] .ch-crows { opacity: 1; animation: chCrows 14s ease-in-out infinite; }
+@keyframes chCrows { 50% { transform: translate(-40px, 12px); } }
+.ch-shaft { animation: chShaft 9s ease-in-out infinite; transition: opacity 2s; } @keyframes chShaft { 50% { opacity: .45; } }
+.ch-motes circle { animation: chMote 10s linear infinite; transform-box: fill-box; } @keyframes chMote { 0% { transform: translate(0, 0); opacity: 0; } 20% { opacity: .7; } 100% { transform: translate(-30px, 120px); opacity: 0; } }
+.ch-mote2 { animation: chMote 5s linear infinite; transform-box: fill-box; }
+.ch-hang { animation: sway 7s ease-in-out infinite; } .ch-chand { animation: chChand 9s ease-in-out infinite; } @keyframes chChand { 0%, 100% { transform: rotate(-1.2deg); } 50% { transform: rotate(1.4deg); } }
+.ch-banner { animation: chBanner 6s ease-in-out infinite; } @keyframes chBanner { 50% { transform: skewX(3deg); } }
+.ch-glass .wpanes { transition: opacity 2.5s, filter 2.5s; } .ch-glass.dark .wpanes { opacity: .35; filter: saturate(.4) brightness(.6); }
+.ch-glass .wglow { animation: glowBreath 8s ease-in-out infinite; }
+.ch-words { opacity: 0; transition: opacity 3s; } .stg[data-phase="3"] .ch-words { opacity: .8; }
+.ch-stain { transition: opacity 3s; } .stg[data-phase="2"] .ch-stain { opacity: .5; } .stg[data-phase="3"] .ch-stain { opacity: .85; }
+.stg.ch-robbed .ch-shaft { opacity: .25; } .stg.ch-robbed .ch-bell { opacity: .5; }
+.ch-puddle .pripple { animation-duration: 4.5s; }
+/* the altar: warmth once prayed at, a bleeding crack once the plate is taken */
+.ch-kneel, .ch-crackred, .ch-bless { transition: opacity 1.4s; }
+.obj-altar.done .ch-kneel { opacity: .75; animation: glowBreath 5s ease-in-out infinite; }
+.obj-altar.cold .ch-crackred { opacity: .85; animation: crackPulse 4s ease-in-out infinite; } .obj-altar.cold .ch-kneel { opacity: 0; }
+.obj-altar.fx-bless .ch-bless { animation: chBless 2.6s ease-out; } @keyframes chBless { 0% { opacity: 0; transform: scaleX(.3); } 30% { opacity: 1; transform: scaleX(1); } 100% { opacity: 0; } }
+.ch-bless { transform-box: fill-box; transform-origin: 50% 0; }
+.obj-altar.fx-bless .ch-kneel { animation: bloom 2.4s ease-out; transform-box: fill-box; transform-origin: center; }
+.stg:has(.obj-altar.fx-bless) .ch-cand .lflame { animation: chFlare 2.2s ease-out; } @keyframes chFlare { 30% { transform: scale(1.6, 2); filter: brightness(1.4); } }
+/* the vestry door: ajar once searched; rummaging, or the shelf coming down */
+.ch-door { transition: transform 1.2s cubic-bezier(.3, .7, .2, 1); } .ch-inside, .ch-shelf { transition: opacity 1s; }
+.obj-vestry.opened .ch-door { transform: scaleX(.42); } .obj-vestry.opened .ch-inside { opacity: 1; }
+.obj-vestry.fx-act .ch-door { animation: chKnock .5s ease-in-out 2; } @keyframes chKnock { 50% { transform: scaleX(.94); } }
+.obj-vestry.fx-rummage .ch-door { animation: chSwing 2.4s cubic-bezier(.3, .7, .2, 1) forwards; } @keyframes chSwing { 40% { transform: scaleX(.2); } 100% { transform: scaleX(.42); } }
+.obj-vestry.fx-rummage .ch-inside { opacity: 1; } .obj-vestry.fx-rummage .ch-glint { animation: bloom 1.6s ease-out .6s; transform-box: fill-box; transform-origin: center; }
+.obj-vestry.fx-collapse .ch-door { animation: chSwing 1s ease-out forwards; } .obj-vestry.fx-collapse .ch-inside { opacity: .6; }
+.obj-vestry.fx-collapse .ch-shelf { animation: chShelf 1.4s ease-in forwards; transform-box: fill-box; transform-origin: 0 50%; } @keyframes chShelf { 0% { opacity: 1; } 60% { opacity: 1; transform: rotate(38deg) translateY(40px); } 100% { opacity: 0; transform: rotate(40deg) translateY(80px); } }
+.obj-vestry.fx-collapse .ch-dust { animation: chDust 2.4s ease-out .5s; transform-box: fill-box; transform-origin: 50% 100%; } @keyframes chDust { 0% { opacity: 0; transform: scale(.4); } 30% { opacity: .75; } 100% { opacity: 0; transform: scale(1.6, 1.3); } }
+/* the plate on the font: the coins go, the water darkens, the candles dip */
+.ch-coins, .ch-shine, .ch-water { transition: opacity 1.2s, fill 2s; }
+.obj-plate.taken .ch-coins, .obj-plate.taken .ch-shine { opacity: 0; } .obj-plate.taken .ch-water { fill: #3a0a12; opacity: .6; }
+.ch-shine { animation: glowBreath 4s ease-in-out infinite; }
+.obj-plate.fx-take .ch-coin { animation: chCoin 1.4s ease-in forwards; transform-box: fill-box; transform-origin: center; } @keyframes chCoin { 0% { transform: translateY(0); } 40% { transform: translateY(-18px); opacity: 1; } 100% { transform: translate(30px, -70px) scale(.4); opacity: 0; } }
+.obj-plate.fx-take .ch-water { animation: chDarken 2.4s ease-in forwards; } @keyframes chDarken { to { fill: #3a0a12; opacity: .7; } }
+.stg:has(.obj-plate.fx-take) .ch-cand .lflame { animation: gutter 1.6s ease-in-out; }
+/* the tithe-hatch: a seam in the floor until someone searches, then a lid; open, or biting */
+.ch-seam, .ch-lid { transition: opacity 1.5s, transform 1s cubic-bezier(.3, .7, .2, 1); } .ch-hole, .ch-inkglow, .ch-foot { transition: opacity 1.2s; }
+.obj-hatch .ch-lid { opacity: .18; } .obj-hatch .ch-seam { opacity: .45; }
+.obj-hatch.found .ch-lid, .obj-hatch.can .ch-lid { opacity: 1; }
+.obj-hatch.opened .ch-lid { opacity: 1; transform: scaleY(-.55); } .obj-hatch.opened .ch-hole { opacity: 1; } .obj-hatch.opened .ch-inkglow { opacity: .55; animation: glowBreath 5s ease-in-out infinite; } .obj-hatch.opened .ch-foot { opacity: .7; }
+.obj-hatch.fx-act .ch-lid { opacity: 1; animation: rattle .4s ease-in-out 2; transform-box: fill-box; transform-origin: 50% 0; }
+.obj-hatch.fx-open .ch-lid { opacity: 1; animation: chLid 1.6s cubic-bezier(.3, .7, .2, 1) forwards; } @keyframes chLid { 0% { transform: scaleY(1); } 70% { transform: scaleY(-.7); } 100% { transform: scaleY(-.55); } }
+.obj-hatch.fx-open .ch-hole { opacity: 1; } .obj-hatch.fx-open .ch-inkglow { animation: bloom 2.4s ease-out; transform-box: fill-box; transform-origin: center; }
+.obj-hatch.fx-bite .ch-lid { opacity: 1; animation: chBite .9s cubic-bezier(.5, 0, .9, .4); } @keyframes chBite { 0% { transform: scaleY(1); } 40% { transform: scaleY(-.3); } 55% { transform: scaleY(1.04); } 70% { transform: translateX(-3px); } 85% { transform: translateX(3px); } }
+.obj-hatch.fx-bite .ch-blood { animation: chBlood 2.4s ease-out forwards; } @keyframes chBlood { 30%, 100% { opacity: .85; } }
+
+/* ───────────── the bloodstained nursery ───────────── */
+.stg[data-place="nursery"] .slant { animation: none; }
+.nu-branch { animation: sway 8s ease-in-out infinite; } .nu-curtain { animation: chBanner 7s ease-in-out infinite; }
+.nu-child { opacity: 0; } .stg[data-phase="2"] .nu-child, .stg[data-phase="3"] .nu-child { animation: watcher 19s ease-in-out infinite; }
+.nu-mobile { animation: nuSpin 16s ease-in-out infinite; } .stg[data-phase="3"] .nu-mobile { animation-duration: 6s; animation-direction: reverse; }
+@keyframes nuSpin { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(-1); } }
+.nu-stains path { transition: opacity 4s; } .nu-stains .st2, .nu-stains .st3 { opacity: 0; }
+.stg[data-phase="2"] .nu-stains .st2, .stg[data-phase="3"] .nu-stains .st2 { opacity: .6; } .stg[data-phase="3"] .nu-stains .st3 { opacity: .7; }
+.nu-hands { opacity: 0; transition: opacity 3s; } .stg[data-phase="2"] .nu-hands { opacity: .5; } .stg[data-phase="3"] .nu-hands { opacity: .85; }
+.nu-scrawl { opacity: 0; transition: opacity 3s; } .stg[data-phase="3"] .nu-scrawl { opacity: .8; }
+.nu-fresh { transition: opacity 3s; } .stg[data-phase="3"] .nu-fresh { opacity: .6; animation: crackPulse 6s ease-in-out infinite; }
+.stg[data-phase="3"] .nu-horse { animation: nuHorse 5s ease-in-out infinite; } @keyframes nuHorse { 0%, 100% { transform: rotate(-1.5deg); } 50% { transform: rotate(1.5deg); } }
+/* the rocking cradle: rocks until it is answered, burned, or something has climbed out of it */
+.nu-body { transform-box: fill-box; transform-origin: 50% 100%; }
+.obj-rocker .nu-body { animation: nuRock 2.8s ease-in-out infinite; } @keyframes nuRock { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+.obj-rocker.still .nu-body { animation: none; }
+.nu-breath ellipse { animation: nuBreath 3.2s ease-out infinite; transform-box: fill-box; } .nu-breath2 { animation: nuBreath 2.6s ease-out infinite; transform-box: fill-box; }
+@keyframes nuBreath { 0% { transform: translate(0, 0) scale(.6); opacity: 0; } 30% { opacity: .35; } 100% { transform: translate(10px, -40px) scale(1.6); opacity: 0; } }
+.obj-rocker.still .nu-breath, .obj-rocker.burned .nu-breath { opacity: 0; }
+.nu-coldlight { animation: glowBreath 6s ease-in-out infinite; transition: opacity 2s; } .obj-rocker.burned .nu-coldlight { opacity: 0; animation: none; }
+.nu-char, .nu-frost, .nu-coin-in { opacity: 0; transition: opacity 1.6s; }
+.obj-rocker.burned .nu-char { opacity: 1; } .obj-rocker.attached .nu-frost { opacity: 1; } .obj-rocker.gifted .nu-coin-in { opacity: 1; }
+.obj-rocker.fx-act .nu-body { animation: nuRock .7s ease-in-out 2; }
+.obj-rocker.fx-hush .nu-body { animation: nuHush 2.6s ease-out forwards; } @keyframes nuHush { 0% { transform: rotate(-4deg); } 25% { transform: rotate(3deg); } 50% { transform: rotate(-1.5deg); } 75% { transform: rotate(.6deg); } 100% { transform: rotate(0); } }
+.obj-rocker.fx-hush .nu-wisp { animation: nuWisp 2.6s ease-out; } @keyframes nuWisp { 0% { opacity: 0; stroke-dasharray: 0 600; } 40% { opacity: .7; } 100% { opacity: 0; stroke-dasharray: 600 0; transform: translateY(-40px); } }
+.obj-rocker.fx-hush .nu-coldlight { animation: bloom 2.4s ease-out; transform-box: fill-box; transform-origin: center; }
+.obj-rocker.fx-grasp .nu-body { animation: nuJerk .5s steps(2) 3; } @keyframes nuJerk { 50% { transform: rotate(-7deg) translateX(-4px); } }
+.obj-rocker.fx-grasp .nu-grasp { animation: nuGrasp 2s ease-out; transform-box: fill-box; transform-origin: 50% 100%; } @keyframes nuGrasp { 0% { opacity: 0; transform: translateY(20px) scaleY(.4); } 30% { opacity: .9; transform: none; } 70% { opacity: .9; } 100% { opacity: 0; transform: translateY(-14px); } }
+.obj-rocker.fx-grasp .nu-frost { animation: nuFrost 2.4s ease-out; } @keyframes nuFrost { 30% { opacity: 1; } }
+.obj-rocker.fx-all .nu-body, .objsvg:has(.obj-rocker.fx-all) .nu-crib .nu-body { animation: nuRock .9s ease-in-out 3; }
+.objsvg:has(.obj-rocker.fx-all) .nu-eye { animation: nuEyes 2.6s steps(1); }
+.objsvg:has(.obj-hearth.fx-blaze) .obj-rocker .nu-flames { animation: nuBurn 2.6s ease-in; } @keyframes nuBurn { 0% { opacity: 0; filter: hue-rotate(0); } 25% { opacity: 1; } 60% { opacity: 1; filter: saturate(0) brightness(1.6); } 100% { opacity: 0; } }
+.objsvg:has(.obj-hearth.fx-blaze) .obj-rocker .nu-body { animation: nuJerk .3s steps(2) 4; }
+/* the other cradles: names under a mattress, or all of them turning to face you */
+.nu-names, .nu-dustup { opacity: 0; transition: opacity 1.2s; } .obj-cradles.searched .nu-names { opacity: 1; } .obj-cradles.searched .nu-nameglow { animation: glowBreath 4s ease-in-out infinite; }
+.nu-eye { opacity: 0; }
+.stg[data-phase="3"] .nu-eye { animation: nuEyes 17s steps(1) infinite; } .stg[data-phase="3"] .c2 .nu-eye { animation-delay: -6s; } .stg[data-phase="3"] .c4 .nu-eye { animation-delay: -11s; }
+@keyframes nuEyes { 0%, 92% { opacity: 0; } 93%, 97% { opacity: .9; } }
+.obj-cradles.fx-act .nu-body { animation: rattle .45s ease-in-out 2; }
+.obj-cradles.fx-names .nu-names { animation: nuNames 2.4s ease-out forwards; } @keyframes nuNames { 0% { opacity: 0; transform: translateY(20px); } 50% { opacity: 1; transform: translateY(-14px); } 100% { opacity: 1; transform: none; } }
+.obj-cradles.fx-names .nu-dustup { animation: chDust 2s ease-out; transform-box: fill-box; transform-origin: 50% 100%; }
+.obj-cradles.fx-turn .nu-body { animation: nuTurn 2.4s ease-in-out; } @keyframes nuTurn { 0% { transform: scaleX(1); } 30%, 80% { transform: scaleX(-1); } 100% { transform: scaleX(1); } }
+.obj-cradles.fx-turn .nu-eye { animation: nuEyesOn 2.4s steps(1); } @keyframes nuEyesOn { 0% { opacity: 0; } 30%, 80% { opacity: 1; } 100% { opacity: 0; } }
+.obj-cradles.fx-turn .nu-dustup { animation: chDust 2.4s ease-out; transform-box: fill-box; transform-origin: 50% 100%; }
+/* the hearth: cold until the cradle has burned; blue-white fire, or fire that climbs the walls */
+.nu-hfire, .nu-embers { transition: opacity 1.6s; } .nu-embers { opacity: 0; }
+.obj-hearth.lit .nu-hfire { opacity: .55; } .obj-hearth.lit .nu-embers { opacity: 1; animation: glowBreath 3s ease-in-out infinite; }
+.hf1, .hf2 { transform-box: fill-box; transform-origin: 50% 100%; animation: flick 1.3s ease-in-out infinite; } .hf2 { animation-duration: .9s; }
+.obj-hearth.fx-act .nu-embers { opacity: 1; }
+.obj-hearth.fx-blaze .nu-hfire { animation: nuBlaze 2.6s ease-out; } @keyframes nuBlaze { 0% { opacity: 0; filter: hue-rotate(190deg) saturate(1.6); } 35% { opacity: 1; filter: hue-rotate(190deg) saturate(1.6); transform: scale(1.3); } 70% { opacity: 1; filter: saturate(0) brightness(1.8); } 100% { opacity: .55; } }
+.nu-hfire { transform-box: fill-box; transform-origin: 50% 100%; }
+.obj-hearth.fx-spread .nu-hfire { animation: nuBlaze 2.6s ease-out; } .obj-hearth.fx-spread .nu-spread { animation: nuSpread 2.6s ease-out; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes nuSpread { 0% { opacity: 0; transform: scaleY(.2); } 40% { opacity: 1; transform: scaleY(1.1); } 75% { opacity: .9; } 100% { opacity: 0; transform: scaleY(1.2); } }
+/* the coin saucer: one more coin, and the room stops waiting */
+.nu-mycoin, .nu-gglow { opacity: 0; transition: opacity 1.2s; } .obj-saucer.given .nu-mycoin { opacity: 1; } .obj-saucer.given .nu-gglow { opacity: .35; animation: glowBreath 5s ease-in-out infinite; }
+.obj-saucer.fx-clink .nu-mycoin { animation: nuDrop 1s cubic-bezier(.5, 0, .7, 1.4) forwards; transform-box: fill-box; } @keyframes nuDrop { 0% { opacity: 0; transform: translateY(-60px); } 20% { opacity: 1; } 100% { opacity: 1; transform: none; } }
+.obj-saucer.fx-clink .nu-ring { animation: ripOut 1.2s ease-out .8s 2; transform-box: fill-box; transform-origin: center; }
+.obj-saucer.fx-clink .nu-gglow { animation: bloom 2.2s ease-out .8s; transform-box: fill-box; transform-origin: center; }
+.objsvg:has(.obj-saucer.fx-clink) .obj-rocker .nu-body { animation: nuHush 2.6s ease-out 1s; }
+
 /* ───────────── the scene reacting to outcomes ───────────── */
 .stg-fx::before, .stg-fx::after { content: ""; position: absolute; inset: 0; opacity: 0; pointer-events: none; }
 .stg.fx-ok .stg-fx::before { background: radial-gradient(circle at var(--fx) var(--fy), rgba(255, 210, 120, .35), transparent 50%); animation: fxFade 1.4s ease-out; }

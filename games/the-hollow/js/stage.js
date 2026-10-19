@@ -17,10 +17,8 @@
   SC.assets = SC.assets || {};   // raster files known to exist (see art/README.md); only these are requested
 
   // ───────────── places without a hand-made scene: procedural art and the old hotspot positions ─────────────
-  var HOT = {
-    chapel: { pray: [320, 190, 'Broken Altar'], vestry: [200, 200, 'The Vestry'], plate: [440, 215, 'Collection Plate'], hatch: [400, 232, 'Tithe-hatch'] },
-    nursery: { answer: [320, 205, 'The Rocking Cradle'], inspect: [210, 215, 'Six Cradles'], burn: [430, 205, 'The Hearth'], gift: [390, 232, 'An Offering'] }
-  };
+  // (chapel and nursery now have hand-made scenes in js/scenes/; add a place here only while it has none)
+  var HOT = {};
   function genericDef(id) {
     var cat = St.cat(), l = cat.locations[id], r = cat.regions[l.region];
     var objs = {};
@@ -138,9 +136,10 @@
     if (v.enc && v.enc.kind === 'loc' && v.enc.loc === lid && v.enc.options && v.enc.pid === v.you) v.enc.options.forEach(function (o) { if (o.state === 'done') remember(o.id); else if (o.state === 'ok') delete memo[lid + '|' + o.id]; });
     Object.keys(memo).forEach(function (key) { var p = key.split('|'); if (p[0] === lid) done[p[1]] = true; });
     var clues = {}; (v.world.clues || []).forEach(function (c) { clues[c.id] = true; }); (v.me.cluesPrivate || []).forEach(function (c) { clues[c.id] = true; });
+    var curses = {}; (v.world.curses || []).forEach(function (c) { curses[c.id] = !!c.active; });
     var avail = {};
     Object.keys(def.objects).forEach(function (id) { avail[id] = St.avail(id, v); });
-    return { k: k, phase: G ? G.haunt : 1, done: done, flags: { ledger: !!clues.ledger }, inv: !!(v.map.locs[lid] && v.map.locs[lid].inv), avail: avail, mine: G && G.active === v.you };
+    return { k: k, phase: G ? G.haunt : 1, done: done, flags: { ledger: !!clues.ledger }, wflags: v.world.flags || {}, curses: curses, inv: !!(v.map.locs[lid] && v.map.locs[lid].inv), avail: avail, mine: G && G.active === v.you };
   }
   function apply(st) {
     var root = world, prev = lastSt; lastSt = st;
@@ -266,7 +265,7 @@
     var o = d.objects[id], c = o.crop, body = '';
     if (d.generic) body = d.layers({})[0].svg.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
     else {
-      var layers = d.layers({}), back = layers.filter(function (L) { return L.id === 'sky' || L.id === (o.layer || 'mid') || (!o.art && L.id === 'far'); });
+      var want = [].concat(o.layer || 'mid'), layers = d.layers({}), back = layers.filter(function (L) { return L.id === 'sky' || want.indexOf(L.id) >= 0 || (!o.art && L.id === 'far'); });
       if (!o.art) back = layers.filter(function (L) { return L.id === 'sky' || L.id === 'far' || L.id === 'mid'; });
       body = back.map(function (L) { return L.svg; }).join('') + (o.art ? '<g class="obj obj-' + id + ' ' + St.stateClasses(id) + '">' + o.art({}) + ((d.extra && d.extra[id]) ? d.extra[id]() : '') + '</g>' : '');
     }
@@ -277,7 +276,8 @@
   St.stateClasses = function (id) {
     var cls = []; if (!lastSt || !def) return '';
     var root = world.querySelector('.obj-' + id); if (!root) return '';
-    ['taken', 'done', 'lit', 'stacked'].forEach(function (c) { if (root.classList.contains(c)) cls.push(c); });
+    // every state class a scene's state() set on the object, minus the stage's own bookkeeping
+    Array.prototype.forEach.call(root.classList, function (c) { if (!/^(obj|obj-.*|can|spent|off|hov|foc|fx-.*)$/.test(c)) cls.push(c); });
     return cls.join(' ');
   };
 })(window);
