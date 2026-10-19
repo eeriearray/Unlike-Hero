@@ -41,7 +41,7 @@
     Object.keys(d.objects).forEach(function (id) {
       var o = d.objects[id], b = o.box;
       s += '<g class="obj obj-' + id + '" data-obj="' + id + '" data-act="obj" tabindex="0" role="button" aria-label="' + A.esc(o.name) + '">';
-      if (o.halo || !o.art) s += '<ellipse class="halo" cx="' + o.at[0] + '" cy="' + o.at[1] + '" rx="' + (b[2] * 0.55) + '" ry="' + (b[3] * 0.5) + '"/>';
+      s += '<ellipse class="halo" cx="' + o.at[0] + '" cy="' + o.at[1] + '" rx="' + (b[2] * 0.55) + '" ry="' + (b[3] * 0.5) + '"/>';
       // effects and soft glows sit outside .oart: the hover glow is a CSS filter on .oart, and blurred or very large
       // shapes inside a filtered group make the browser repaint a huge surface on every parallax step (flicker)
       if (o.under) s += '<g class="ofx">' + o.under() + '</g>';

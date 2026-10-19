@@ -51,16 +51,15 @@
 .obj .hit { fill: transparent; }
 .obj .halo { fill: url(#stg-halo); opacity: 0; transition: opacity .4s; }
 .obj.can { cursor: pointer; }
-.obj.can .oart { animation: glint 6s ease-in-out infinite; }
-.obj.can:nth-child(2) .oart { animation-delay: -2s; } .obj.can:nth-child(3) .oart { animation-delay: -4s; }
-@keyframes glint { 0%, 70%, 100% { filter: none; } 82% { filter: drop-shadow(0 0 8px rgba(255, 218, 150, .55)) brightness(1.08); } }
+/* No CSS filter ever goes on an object's art: objects are large SVG groups with constantly moving parts (the well's
+   rising drops make it ~700×1100px), and Chrome re-filters such a group every frame and drops pieces of it when it
+   cannot keep up. Glows are a halo drawn behind the object instead. */
 .obj.can .halo { animation: haloBreath 6s ease-in-out infinite; }
-@keyframes haloBreath { 0%, 100% { opacity: .0; } 50% { opacity: .22; } }
-.obj.can.hov .oart, .obj.can:focus-visible .oart, .obj.foc .oart { animation: none; filter: drop-shadow(0 0 10px rgba(255, 214, 140, .8)) drop-shadow(0 0 2px rgba(255, 240, 200, .9)) brightness(1.14); }
-.obj.can.hov .halo, .obj.can:focus-visible .halo, .obj.foc .halo { animation: none; opacity: .75; }
-.obj.off.hov .oart, .obj.spent.hov .oart { filter: drop-shadow(0 0 6px rgba(160, 170, 190, .45)); }
+.obj.can:nth-child(2) .halo { animation-delay: -2s; } .obj.can:nth-child(3) .halo { animation-delay: -4s; }
+@keyframes haloBreath { 0%, 100% { opacity: .0; } 50% { opacity: .3; } }
+.obj.can.hov .halo, .obj.can:focus-visible .halo, .obj.foc .halo { animation: none; opacity: .9; }
+.obj.off.hov .halo, .obj.spent.hov .halo { animation: none; opacity: .3; }
 .obj.off, .obj.spent { cursor: pointer; }
-.stg.focused .obj:not(.foc) .oart { filter: brightness(.7) saturate(.7); transition: filter .6s; }
 
 /* ───────────── the living square ───────────── */
 .tw { animation: twinkle 4s ease-in-out infinite; } @keyframes twinkle { 50% { opacity: .1; } }
@@ -105,7 +104,7 @@
 .wl-light { animation: deepLight 12s ease-in-out infinite; } @keyframes deepLight { 0%, 70%, 100% { opacity: .25; } 78% { opacity: .9; } 84% { opacity: .35; } }
 .wl-fog ellipse { animation: rimFog 9s ease-in-out infinite alternate; } @keyframes rimFog { to { transform: translateX(26px); opacity: .1; } }
 .bucket, .rope { animation: bucket 6s ease-in-out infinite; transform-origin: 800px 472px; } @keyframes bucket { 50% { transform: rotate(1.6deg); } }
-.stg[data-phase="2"] .wl-up, .stg[data-phase="3"] .wl-up { filter: hue-rotate(-160deg) saturate(1.6); }
+.stg[data-phase="2"] .wl-up .drop, .stg[data-phase="3"] .wl-up .drop { fill: #f0b0b8; } .stg[data-phase="2"] .wl-stream, .stg[data-phase="3"] .wl-stream { stroke: #d88a96; }
 .obj-well.done .chalk { opacity: .85; transition: opacity 1s; }
 /* the notice board */
 .paper.flutter { animation: flutter 3.2s ease-in-out infinite; } @keyframes flutter { 0%, 100% { transform: rotate(0); } 40% { transform: rotate(-5deg) skewY(2deg); } 55% { transform: rotate(3deg); } }
@@ -122,7 +121,8 @@
 .pc-scatter, .pc-stack { transition: opacity .8s; } .obj-postcards.stacked .pc-scatter { opacity: 0; } .obj-postcards.stacked .pc-stack { opacity: 1; }
 
 /* ───────────── an object acting out a resolved outcome ───────────── */
-.obj.fx-act .oart { animation: objPulse 1.2s ease-out; } @keyframes objPulse { 30% { filter: drop-shadow(0 0 14px rgba(255, 220, 150, .85)) brightness(1.2); } }
+.obj.fx-act .halo { animation: objPulse 1.2s ease-out; } @keyframes objPulse { 30% { opacity: 1; transform: scale(1.15); } }
+.obj .halo { transform-box: fill-box; transform-origin: center; }
 .obj-board.fx-act .paper { animation: flutter .5s ease-in-out 3; }
 .obj-board.fx-pull .ledger { animation: pull 1.6s cubic-bezier(.3, .6, .2, 1) forwards; transform-box: fill-box; transform-origin: center; }
 @keyframes pull { 0% { transform: none; } 25% { transform: translate(4px, -6px) rotate(-6deg); } 100% { transform: translate(10px, 30px) scale(2.6) rotate(4deg); opacity: 0; } }
@@ -138,7 +138,7 @@
 .obj-lantern.fx-ignite .al-flame { opacity: 1; animation: ignite 1.4s ease-out; } .obj-lantern.fx-ignite .al-glow { opacity: .9; transition: opacity .8s; }
 @keyframes ignite { 0% { transform: scale(0); } 40% { transform: scale(1.8); } 100% { transform: scale(1); } }
 .obj-postcards.fx-search .pc-scatter g, .obj-postcards.fx-gather .pc-scatter g { animation: shuffle .9s ease-in-out 2; } @keyframes shuffle { 50% { transform: translateY(-8px) rotate(6deg); } }
-.obj.fx-search .halo, .obj.fx-act .halo { animation: none; opacity: 1; }
+.obj.fx-search .halo { animation: none; opacity: 1; }
 
 /* ───────────── the abandoned chapel ───────────── */
 .stg[data-place="chapel"] .slant { animation: none; }   /* candles stand still; the Haunting still snuffs them */
