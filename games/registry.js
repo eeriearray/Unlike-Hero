@@ -192,6 +192,50 @@ window.GAME_REGISTRY = [
     "path": "games/putt-club/"
   },
   {
+    "id": "recess",
+    "title": "RECESS",
+    "tagline": "The schoolyard game hub: 13 classroom and playground games for friends on their own phones — Tic-Tac-Toe, Raja Mantri Chor Sipahi, Ludo, Carrom, Pen Fight, Bluff and more.",
+    "version": "2.0.0",
+    "sdk": "1.x",
+    "entry": "index.html",
+    "thumbnail": "thumbnail.svg",
+    "accent": "#ffb347",
+    "server": "server/index.mjs",
+    "players": {
+      "min": 1,
+      "max": 16
+    },
+    "roles": [
+      {
+        "id": "player",
+        "name": "Schoolyard Buddy",
+        "entry": "index.html",
+        "description": "Make or join a room with a 4-letter code, then pick any game; several games run at once in one room."
+      }
+    ],
+    "multiplayer": {
+      "style": "authoritative rooms, simultaneous mini-games",
+      "sameDevice": false,
+      "roomLimit": 16,
+      "transports": [
+        "relay"
+      ],
+      "notes": "Server-authoritative rooms (games/recess/server). Hidden information stays on the server; flick-game shots are simulated there and replayed by everyone. Bots fill empty seats."
+    },
+    "tags": [
+      "recess",
+      "school",
+      "mini-games",
+      "multiplayer",
+      "indian-games",
+      "party",
+      "classic"
+    ],
+    "requires": [],
+    "status": "playable",
+    "path": "games/recess/"
+  },
+  {
     "id": "riftbreak",
     "title": "RIFTBREAK",
     "tagline": "A shedding-card party game where the rules of reality keep changing and a shared Meltdown meter threatens to collapse the table.",

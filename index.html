@@ -6,7 +6,7 @@
 <title>Unlike Hero</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Bungee&family=Chakra+Petch:wght@400;500;600;700&family=DynaPuff:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Michroma&family=Orbitron:wght@500;600;700&family=Pirata+One&family=Racing+Sans+One&family=Saira+Stencil+One&family=Share+Tech+Mono&family=Special+Elite&family=Teko:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Bungee&family=Chakra+Petch:wght@400;500;600;700&family=DynaPuff:wght@400;500;600;700&family=Fredoka:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Michroma&family=Orbitron:wght@500;600;700&family=Pirata+One&family=Racing+Sans+One&family=Saira+Stencil+One&family=Share+Tech+Mono&family=Special+Elite&family=Teko:wght@500;600;700&display=swap">
 <style>
 :root{
   --paper:#10140f; --surface:#1a2018; --surface-2:#252d22; --line:#475141;
@@ -91,6 +91,8 @@ button:focus-visible,input:focus-visible,a:focus-visible,summary:focus-visible,s
 .game-title-putt-club{font-family:'Racing Sans One',var(--f-display);font-size:35px;color:#a2e86f}
 .game-title-riftbreak{font-family:'Orbitron',var(--f-display);font-size:25px;font-weight:700;color:#c7a2ff}
 .game-title-sea-of-chaos{font-family:'Pirata One',var(--f-display);font-size:30px;color:#6fddd5;text-transform:none}
+.game-title-recess{font-family:'Fredoka','DynaPuff',var(--f-display);font-size:34px;font-weight:700;background:linear-gradient(135deg,#ffb347,#ff6b6b,#74b9ff,#55efc4);background-size:300% 300%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:recessGrad 4s ease infinite;filter:drop-shadow(2px 2px 0 rgba(0,0,0,.3))}
+@keyframes recessGrad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
 .game-title-short-fuse{display:inline-flex;align-items:baseline;gap:8px;margin:0 0 8px;font-size:31px;line-height:1;text-transform:uppercase}
 .game-title-short-fuse .fuse-short{font-family:'Black Ops One','Saira Stencil One',var(--f-display);font-size:31px;font-weight:400;color:#ff3326;letter-spacing:.04em;text-shadow:0 0 18px rgba(255,51,38,.5),2px 2px 0 #280805,3px 3px 6px rgba(0,0,0,.75)}
 .game-title-short-fuse .fuse-fuse{font-family:'Share Tech Mono',var(--f-mono);font-size:29px;font-weight:700;color:#ffffff;letter-spacing:.14em;text-shadow:0 0 10px rgba(255,255,255,.6),0 0 20px rgba(255,60,45,.3),2px 2px 0 #0d1215,3px 3px 6px rgba(0,0,0,.75)}
@@ -222,6 +224,8 @@ function renderGames() {
       ? '<span class="party-word party-word-a">PARTY</span><span class="party-word party-word-b">PACK</span>'
       : g.id === 'short-fuse'
       ? '<span class="fuse-short">SHORT</span><span class="fuse-fuse">FUSE</span>'
+      : g.id === 'recess'
+      ? 'RECESS'
       : esc(g.title);
     const players = g.players ? `${g.players.min}${g.players.max !== g.players.min ? '–' + g.players.max : ''} players` : 'Players';
     const roleControl = roles.length > 1 ? `
