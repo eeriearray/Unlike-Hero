@@ -20,38 +20,51 @@ export function board(view, scores, fmt = (v) => v) {
  * onFrame(frameA, frameB, t, index) is called on every animation frame; returns a cancel function.
  */
 export function replay(frames, onFrame, onDone, fps = 30) {
-  let raf;
+  let raf, done = false;
   const start = performance.now();
-  const calm = document.body.classList.contains('calm');
+  const calm = document.body.classList.contains('calm') || document.hidden;
   const total = frames.length - 1;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    cancelAnimationFrame(raf);
+    clearTimeout(guard);
+    onFrame(frames[total], frames[total], 0, total);
+    onDone?.();
+  };
   const tick = (now) => {
+    if (done) return;
     const f = calm ? total : Math.min(total, ((now - start) / 1000) * fps);
     const i = Math.floor(f);
+    if (f >= total) { finish(); return; }
     onFrame(frames[i], frames[Math.min(total, i + 1)], f - i, i);
-    if (f >= total) { onDone?.(); return; }
     raf = requestAnimationFrame(tick);
   };
+  // Animation frames stop in background tabs; never leave a shot half-replayed.
+  const guard = setTimeout(finish, (total / fps) * 1000 + 300);
   raf = requestAnimationFrame(tick);
-  return () => cancelAnimationFrame(raf);
+  return () => { done = true; cancelAnimationFrame(raf); clearTimeout(guard); };
 }
 
 /** Convert a pointer event to coordinates in an SVG's viewBox. */
-export function svgPoint(svg, e) {
-  const pt = svg.createSVGPoint();
+export function svgPoint(el, e) {
+  const root = el.ownerSVGElement || el;
+  const pt = root.createSVGPoint();
   pt.x = e.clientX; pt.y = e.clientY;
-  return pt.matrixTransform(svg.getScreenCTM().inverse());
+  return pt.matrixTransform(el.getScreenCTM().inverse());
 }
 
 /**
  * Pull-back aiming on an SVG: press near `origin()`, drag away, release to shoot in the opposite direction.
- * opts: { origin(): {x,y} | null (null = not allowed), grabRadius, maxPull, onAim({dx,dy,power,from}), onShoot({vx,vy,power,from}), onCancel() }
+ * opts: { space (element whose coordinates to use, default the svg), origin(): {x,y} | null (null = not allowed), grabRadius, maxPull, onAim({dx,dy,power,from}), onShoot({vx,vy,power,from}), onCancel() }
  */
 export function pullAim(svg, opts) {
   let drag = null;
+  const space = opts.space || svg;
   const down = (e) => {
     const o = opts.origin(e);
     if (!o) return;
-    const p = svgPoint(svg, e);
+    const p = svgPoint(space, e);
     if (Math.hypot(p.x - o.x, p.y - o.y) > (opts.grabRadius ?? 12)) return;
     drag = { o, from: p, id: e.pointerId };
     svg.setPointerCapture?.(e.pointerId);
@@ -59,7 +72,7 @@ export function pullAim(svg, opts) {
     move(e);
   };
   const vec = (e) => {
-    const p = svgPoint(svg, e);
+    const p = svgPoint(space, e);
     let dx = drag.o.x - p.x, dy = drag.o.y - p.y; // opposite of the pull
     const len = Math.hypot(dx, dy);
     const max = opts.maxPull ?? 30;

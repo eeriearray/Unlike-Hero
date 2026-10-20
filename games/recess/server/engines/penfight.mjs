@@ -7,7 +7,7 @@ import { simulatePens, flickPen } from '../physics.mjs';
 
 export const DESK = { w: 100, h: 140 };
 const PEN = { len: 30, r: 2.4, m: 1 };
-const MAX_IMPULSE = 100;
+const MAX_IMPULSE = 115;
 const ROUNDS_TO_WIN = 3;
 const STYLES = ['gel-blue', 'ink-red', 'pencil', 'marker-green'];
 
@@ -35,7 +35,7 @@ export class PenFightEngine extends BaseEngine {
     this.pens = this.players.map((p, i) => ({
       id: p.id, ...PEN,
       x: DESK.w / 2 + jitter() * 8,
-      y: i === 0 ? DESK.h * 0.7 : DESK.h * 0.3,
+      y: i === 0 ? DESK.h * 0.63 : DESK.h * 0.37,
       a: (BaseEngine.rand(60) - 30) * Math.PI / 180 + (i === 0 ? 0 : Math.PI),
       vx: 0, vy: 0, w: 0, gone: null
     }));
