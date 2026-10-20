@@ -1,610 +1,109 @@
-/* ─────────── RECESS: Game Boards & In-Game Screens ─────────── */
-#game-screen {
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
-  overflow-y: auto;
-  padding: 16px;
-  max-width: 1100px;
-  margin: 0 auto;
-  gap: 16px;
-}
+/* RECESS — per-game boards. Each game gets its own surface, but shares the ink, paper and pencil language. */
 
-/* Common Game Header */
-.game-top-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--notebook-paper);
-  border-radius: 14px;
-  padding: 12px 20px;
-  box-shadow: var(--shadow-paper);
-  border-bottom: 4px solid var(--brass-gold);
-}
+#boot.active { display: grid; }
 
-.game-top-left {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
+/* pencil stroke drawing */
+@keyframes draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+.pencil-line { fill: none; stroke: #4a4f5c; stroke-width: 4.5; stroke-linecap: round; stroke-dasharray: 1; pathLength: 1; animation: draw .5s var(--ease) both; }
 
-.btn-back-lobby {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: #f1f5f9;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 8px;
-  padding: 6px 14px;
-  font-family: var(--font-fun);
-  font-size: 14px;
-  font-weight: 600;
-  color: #334155;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
+/* ─── Tic-Tac-Toe ─── */
+.ttt-sheet { width: min(420px, 92vw); aspect-ratio: 1; padding: 16px; border-radius: 4px; box-shadow: var(--shadow-2); transform: rotate(-1deg); }
+.ttt-svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.ttt-grid path { stroke-dasharray: 1; }
+.ttt-grid path { stroke-dashoffset: 0; }
+.ttt-cell { fill: transparent; cursor: default; outline: none; }
+.ttt-cell.open { cursor: pointer; }
+.ttt-cell.open:hover, .ttt-cell.open:focus-visible { fill: rgba(255, 225, 90, .35); }
+.mark path { fill: none; stroke-width: 9; stroke-linecap: round; stroke-dasharray: 1; animation: draw .28s var(--ease) both; }
+.mark.x path { stroke: var(--red); }
+.mark.o path { stroke: var(--blue); animation-duration: .4s; }
+.win-line { fill: none; stroke: #ffcf33; stroke-width: 16; stroke-linecap: round; opacity: .8; stroke-dasharray: 1; animation: draw .5s .1s var(--ease) both; mix-blend-mode: multiply; }
+.tally { font: 600 22px var(--f-note); color: #fff; text-shadow: 0 1px 0 rgba(0,0,0,.3); }
 
-.btn-back-lobby:hover {
-  background: #e2e8f0;
-  transform: translateX(-2px);
-}
+/* ─── Stone Paper Scissors ─── */
+.sps-arena { display: flex; align-items: center; gap: clamp(10px, 4vw, 40px); }
+.sps-side { text-align: center; }
+.sps-hand { width: clamp(110px, 28vw, 170px); aspect-ratio: 1; padding: 12px; border-radius: 50%; background: var(--paper); border: 3px solid var(--ink); box-shadow: 4px 4px 0 rgba(0,0,0,.25); transition: transform .3s var(--ease-pop), opacity .3s; }
+.sps-hand svg { width: 100%; height: 100%; display: block; }
+.sps-hand.shake { animation: shakeFist .62s ease-in-out infinite; }
+@keyframes shakeFist { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-22px) rotate(-6deg); } }
+.sps-hand.pop { animation: pop .35s var(--ease-pop); }
+.sps-hand.won { transform: scale(1.12); box-shadow: 0 0 0 6px var(--mint), 4px 4px 0 rgba(0,0,0,.25); }
+.sps-hand.lost { transform: scale(.88) rotate(-6deg); opacity: .55; }
+.sps-name { margin-top: 8px; font: 700 26px var(--f-hand); color: #fff; text-shadow: 0 2px 0 rgba(0,0,0,.3); }
+.sps-vs { font-size: 46px; color: var(--yellow); text-shadow: 0 3px 0 rgba(0,0,0,.35); }
+.sps-shout { min-height: 56px; font-size: clamp(34px, 7vw, 54px); color: #fff; text-shadow: 0 3px 0 rgba(0,0,0,.35); text-align: center; }
+.sps-choices { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+.sps-choice { width: 112px; padding: 10px 8px 6px; border: 3px solid var(--ink); border-radius: 14px; background: var(--paper); box-shadow: 4px 4px 0 var(--ink); transition: transform .15s var(--ease-pop); }
+.sps-choice svg { width: 76px; height: 76px; display: block; margin: 0 auto; }
+.sps-choice span { font: 700 22px var(--f-hand); }
+.sps-choice:hover { transform: translateY(-6px) rotate(-3deg); }
+.sps-choice:active { transform: translateY(2px) scale(.95); }
+.sps-bestof { display: flex; gap: 8px; align-items: center; color: #fff; font: 600 20px var(--f-note); }
+.sps-history { display: flex; gap: 6px; }
 
-.game-title-info h2 {
-  font-family: var(--font-fun);
-  font-size: 22px;
-  font-weight: 700;
-  color: #1e293b;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+/* ─── Dots & Boxes ─── */
+.dots-sheet { width: min(480px, 94vw); aspect-ratio: 1; padding: 10px; border-radius: 4px; box-shadow: var(--shadow-2); transform: rotate(.6deg); }
+.dots-svg { width: 100%; height: 100%; display: block; }
+.dot { fill: var(--ink); }
+.dots-hit { stroke: transparent; stroke-width: 22; stroke-linecap: round; outline: none; }
+.dots-svg.my-turn .dots-hit { cursor: pointer; }
+.dots-ghost { stroke-width: 5; stroke-linecap: round; opacity: 0; stroke-dasharray: 3 6; transition: opacity .1s; pointer-events: none; }
+.dots-svg.my-turn .dots-ghost.show { opacity: .7; }
+.dots-svg.my-turn .dots-hit:focus-visible { stroke: rgba(36, 99, 214, .25); }
+.dots-line { fill: none; stroke-width: 6; stroke-linecap: round; stroke-dasharray: 1; }
+.dots-line.new { animation: draw .3s var(--ease) both; }
+.dots-box.new { animation: boxIn .4s var(--ease-pop) both; transform-box: fill-box; transform-origin: center; }
+@keyframes boxIn { from { transform: scale(.2); opacity: 0; } }
+.dots-initial { font: 700 30px var(--f-hand); }
 
-.game-round-tag {
-  font-family: var(--font-ui);
-  font-size: 11px;
-  font-weight: 700;
-  background: var(--brass-gold);
-  color: #1a1205;
-  padding: 2px 8px;
-  border-radius: 10px;
-  text-transform: uppercase;
+/* ─── Raja Mantri Chor Sipahi ─── */
+.rmcs-table {
+  position: relative; width: min(560px, 96vw); aspect-ratio: 1.25;
+  border-radius: 50% / 46%; background: radial-gradient(ellipse at 50% 40%, #3f9a63, #2b7449 70%);
+  border: 10px solid #8a5a2b; box-shadow: inset 0 0 0 3px rgba(0,0,0,.2), var(--shadow-2);
 }
-
-/* Match Scoreboard */
-.game-scoreboard {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.score-player {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 10px;
-  background: #ffffff;
-  border: 2px solid transparent;
-  transition: all 0.2s ease;
-}
-
-.score-player.active-turn {
-  border-color: var(--ink-blue);
-  box-shadow: 0 0 12px rgba(30, 58, 138, 0.25);
-  transform: scale(1.04);
-}
-
-.score-avatar {
-  font-size: 22px;
-}
-
-.score-details {
-  display: flex;
-  flex-direction: column;
-}
-
-.score-name {
-  font-family: var(--font-fun);
-  font-size: 13px;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.score-val {
-  font-family: var(--font-ui);
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--ink-blue);
-}
-
-/* Main Playing Arena */
-.game-board-area {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 480px;
-  position: relative;
-}
-
-/* ─────────── 1. TIC-TAC-TOE ─────────── */
-.ttt-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-}
-
-.ttt-status-banner {
-  font-family: var(--font-fun);
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--chalk-white);
-  background: rgba(0, 0, 0, 0.45);
-  padding: 6px 20px;
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-.ttt-board {
-  width: 340px;
-  height: 340px;
-  background: var(--notebook-paper);
-  background-image:
-    repeating-linear-gradient(to bottom, transparent 0 24px, var(--ruled-line) 24px 25px);
-  border-radius: 20px;
-  box-shadow: var(--shadow-desk);
-  padding: 16px;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-  position: relative;
-  border: 4px solid #e2e8f0;
-}
-
-/* Grid lines for TTT */
-.ttt-cell {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-hand);
-  font-size: 64px;
-  font-weight: 700;
-  cursor: pointer;
-  position: relative;
-  transition: background 0.15s ease;
-}
-
-.ttt-cell:nth-child(1), .ttt-cell:nth-child(2), .ttt-cell:nth-child(4), .ttt-cell:nth-child(5) {
-  border-right: 3px solid #64748b;
-  border-bottom: 3px solid #64748b;
-}
-
-.ttt-cell:nth-child(3), .ttt-cell:nth-child(6) {
-  border-bottom: 3px solid #64748b;
-}
-
-.ttt-cell:nth-child(7), .ttt-cell:nth-child(8) {
-  border-right: 3px solid #64748b;
-}
-
-.ttt-cell:hover:empty {
-  background: rgba(59, 130, 246, 0.08);
-}
-
-.ttt-cell.x-mark {
-  color: var(--ink-blue);
-  animation: drawMark 0.2s var(--ease-spring);
-}
-
-.ttt-cell.o-mark {
-  color: var(--ink-red);
-  animation: drawMark 0.2s var(--ease-spring);
-}
-
-.ttt-cell.win-highlight {
-  background: #fef08a !important;
-  border-radius: 8px;
-}
-
-@keyframes drawMark {
-  from { transform: scale(0.4) rotate(-10deg); opacity: 0; }
-  to { transform: scale(1) rotate(0deg); opacity: 1; }
-}
-
-/* ─────────── 2. STONE PAPER SCISSORS ─────────── */
-.sps-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 24px;
-  width: 100%;
-  max-width: 650px;
-}
-
-.sps-arena {
-  width: 100%;
-  background: var(--notebook-paper);
-  border-radius: 20px;
-  padding: 28px;
-  box-shadow: var(--shadow-desk);
-  border: 4px solid #e2e8f0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-}
-
-.sps-banner {
-  font-family: var(--font-fun);
-  font-size: 26px;
-  font-weight: 700;
-  color: var(--ink-blue);
-  text-align: center;
-  letter-spacing: 0.05em;
-}
-
-.sps-fighters {
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  width: 100%;
-  margin: 12px 0;
-}
-
-.sps-fighter-box {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
-
-.sps-hand-display {
-  width: 110px;
-  height: 110px;
-  background: #ffffff;
-  border-radius: 50%;
-  border: 4px solid #cbd5e1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 54px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s var(--ease-spring);
-}
-
-.sps-hand-display.revealed {
-  animation: popHand 0.4s var(--ease-spring);
-}
-
-@keyframes popHand {
-  0% { transform: scale(0.6) rotate(-20deg); }
-  50% { transform: scale(1.25) rotate(15deg); }
-  100% { transform: scale(1) rotate(0deg); }
-}
-
-.sps-vs-tag {
-  font-family: var(--font-ui);
-  font-size: 28px;
-  font-weight: 800;
-  color: var(--brass-gold);
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.sps-choices-bar {
-  display: flex;
-  gap: 16px;
-  justify-content: center;
-  width: 100%;
-}
-
-.sps-choice-btn {
-  flex: 1;
-  max-width: 160px;
-  background: #ffffff;
-  border: 2px solid #cbd5e1;
-  border-radius: 14px;
-  padding: 14px 10px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  transition: all 0.2s var(--ease-spring);
-  font-family: var(--font-fun);
-  font-size: 16px;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.sps-choice-btn .emoji {
-  font-size: 38px;
-}
-
-.sps-choice-btn:hover:not(:disabled) {
-  transform: translateY(-4px) scale(1.05);
-  border-color: var(--ink-blue);
-  box-shadow: 0 8px 20px rgba(30, 58, 138, 0.2);
-}
-
-.sps-choice-btn.selected {
-  background: #eff6ff;
-  border-color: var(--ink-blue);
-  box-shadow: 0 0 14px rgba(30, 58, 138, 0.35);
-  transform: scale(1.06);
-}
-
-.sps-choice-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* ─────────── 3. DOTS AND BOXES ─────────── */
-.dots-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-}
-
-.dots-board {
-  background: var(--notebook-paper);
-  border-radius: 20px;
-  padding: 24px;
-  box-shadow: var(--shadow-desk);
-  border: 4px solid #e2e8f0;
-  position: relative;
-}
-
-.dots-grid {
-  display: grid;
-  position: relative;
-  width: 320px;
-  height: 320px;
-}
-
-/* Dot node */
-.dot-node {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  background: #1e293b;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 5;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-/* Horizontal line segment */
-.line-seg-h {
-  position: absolute;
-  height: 10px;
-  transform: translateY(-50%);
-  cursor: pointer;
-  border-radius: 5px;
-  transition: background 0.15s ease;
-  z-index: 3;
-}
-
-.line-seg-h:hover:not(.claimed) {
-  background: rgba(59, 130, 246, 0.3);
-}
-
-/* Vertical line segment */
-.line-seg-v {
-  position: absolute;
-  width: 10px;
-  transform: translateX(-50%);
-  cursor: pointer;
-  border-radius: 5px;
-  transition: background 0.15s ease;
-  z-index: 3;
-}
-
-.line-seg-v:hover:not(.claimed) {
-  background: rgba(59, 130, 246, 0.3);
-}
-
-.line-seg-h.claimed, .line-seg-v.claimed {
-  cursor: default;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
-  animation: drawLine 0.2s ease-out;
-}
-
-@keyframes drawLine {
-  from { opacity: 0; transform: scale(0.8); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-/* Claimed Box */
-.dots-box {
-  position: absolute;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-hand);
-  font-size: 32px;
-  font-weight: 700;
-  border-radius: 8px;
-  animation: boxClaim 0.3s var(--ease-spring);
-  z-index: 2;
-}
-
-@keyframes boxClaim {
-  from { transform: scale(0.3) rotate(-15deg); opacity: 0; }
-  to { transform: scale(1) rotate(0deg); opacity: 1; }
-}
-
-/* ─────────── 4. RAJA MANTRI CHOR SIPAHI ─────────── */
-.rmcs-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 18px;
-  width: 100%;
-  max-width: 820px;
-}
-
-.rmcs-dialogue-banner {
-  width: 100%;
-  background: var(--chalk-board);
-  border: 4px solid var(--chalk-frame);
-  border-radius: 14px;
-  padding: 14px 20px;
-  text-align: center;
-  box-shadow: var(--shadow-paper);
-}
-
-.rmcs-dialogue-banner h3 {
-  font-family: var(--font-fun);
-  font-size: 20px;
-  color: var(--chalk-yellow);
-}
-
-.rmcs-dialogue-banner p {
-  font-family: var(--font-hand);
-  font-size: 18px;
-  color: var(--chalk-white);
-  margin-top: 4px;
-}
-
-/* 4 Chits Court Table */
-.rmcs-court {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  width: 100%;
-}
-
-@media (max-width: 768px) {
-  .rmcs-court {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
 .rmcs-seat {
-  background: var(--notebook-paper);
-  border-radius: 16px;
-  padding: 16px 12px;
-  box-shadow: var(--shadow-desk);
-  border: 2px solid #e2e8f0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  position: relative;
-  transition: all 0.25s var(--ease-spring);
+  position: absolute; width: 132px; padding: 0; border: none; background: none; text-align: center;
+  transform: translate(-50%, -50%); transition: transform .25s var(--ease-pop);
 }
+.rmcs-seat.bottom { left: 50%; top: 88%; }
+.rmcs-seat.top { left: 50%; top: 14%; }
+.rmcs-seat.left { left: 14%; top: 50%; }
+.rmcs-seat.right { left: 86%; top: 50%; }
+.rmcs-who { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px 2px 2px; border-radius: 20px; background: var(--paper); border: 2px solid var(--ink); font: 800 13px var(--f-ui); max-width: 130px; }
+.rmcs-who b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rmcs-who .ava { width: 28px; height: 28px; }
+.rmcs-chit { width: 74px; margin: 4px auto 0; filter: drop-shadow(2px 3px 0 rgba(0,0,0,.25)); }
+.chit-svg { width: 100%; display: block; }
+.rmcs-seat.flip .rmcs-chit { animation: flipIn .6s var(--ease) both; }
+@keyframes flipIn { 0% { transform: rotateY(90deg) scale(.8); } 100% { transform: none; } }
+.rmcs-seat.suspect { cursor: pointer; animation: suspectPulse 1.1s ease-in-out infinite; }
+.rmcs-seat.suspect:hover { transform: translate(-50%, -50%) scale(1.1); }
+@keyframes suspectPulse { 50% { filter: drop-shadow(0 0 10px #ffe15a); } }
+.rmcs-seat.guessed .rmcs-chit { outline: 4px solid var(--yellow); outline-offset: 2px; border-radius: 4px; }
+.rmcs-point { position: absolute; left: 50%; top: -26px; transform: translateX(-50%) rotate(-4deg); white-space: nowrap; background: var(--yellow); border: 2px solid var(--ink); border-radius: 6px; padding: 0 8px; font-size: 20px; }
+.rmcs-pts { position: absolute; right: 2px; top: 34px; font: 700 26px var(--f-hand); color: #fff; text-shadow: 0 2px 0 rgba(0,0,0,.5); animation: pop .4s .5s var(--ease-pop) both; }
+.rmcs-pts.plus { color: #fff36b; }
+.rmcs-center { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; }
+.rmcs-round { color: #fff; font-size: 40px; text-shadow: 0 2px 0 rgba(0,0,0,.3); }
+.rmcs-round small { display: block; font-size: 22px; opacity: .8; }
+.rmcs-pile { position: relative; width: 60px; height: 76px; }
+.rmcs-fly { position: absolute; inset: 0; animation: chitToss 1.1s var(--ease) both; animation-delay: calc(var(--i) * .08s); }
+@keyframes chitToss { 0% { transform: translateY(-80px) rotate(0); opacity: 0; } 60% { transform: translate(calc((var(--i) - 1.5) * 30px), 8px) rotate(calc(var(--i) * 70deg)); opacity: 1; } 100% { transform: translate(calc((var(--i) - 1.5) * 18px), 0) rotate(calc(var(--i) * 25deg - 30deg)); } }
+.rmcs-mine { display: flex; align-items: center; gap: 14px; max-width: 520px; padding: 10px 16px; background: var(--paper); border: 2px solid var(--ink); border-radius: 6px; box-shadow: 3px 3px 0 rgba(0,0,0,.25); }
+.rmcs-mychit { width: 84px; flex: none; }
+.rmcs-mychit.unfold { animation: unfold .7s var(--ease-pop) both; transform-origin: top; }
+@keyframes unfold { from { transform: scaleY(.1) rotate(-8deg); } }
+.rmcs-mytext { font: 600 21px/1.2 var(--f-note); }
+.rmcs-verdict { min-height: 30px; font: 600 24px/1.2 var(--f-note); color: #fff; text-align: center; text-shadow: 0 1px 0 rgba(0,0,0,.4); }
+.rmcs-controls { display: grid; gap: 10px; justify-items: center; }
+.rmcs-rules { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center; padding: 6px 12px; background: var(--paper); border-radius: 6px; font: 600 18px var(--f-note); }
 
-.rmcs-seat.suspect {
-  border: 2px dashed #e11d48;
-  background: #fff1f2;
-}
-
-.rmcs-seat.accused {
-  border: 3px solid #dc2626;
-  box-shadow: 0 0 16px rgba(220, 38, 38, 0.4);
-  transform: scale(1.05);
-}
-
-/* Folded Paper Chit */
-.chit-paper {
-  width: 100px;
-  height: 120px;
-  background: #fdfbf7;
-  border: 2px solid #d4c5a9;
-  border-radius: 8px;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 8px;
-  text-align: center;
-  position: relative;
-  transition: transform 0.3s var(--ease-spring);
-}
-
-.chit-paper.folded {
-  background: repeating-linear-gradient(45deg, #f5ecd7, #f5ecd7 8px, #ede2c7 8px, #ede2c7 16px);
-  border: 2px dashed #bba886;
-}
-
-.chit-seal {
-  font-size: 32px;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-}
-
-.chit-folded-label {
-  font-family: var(--font-hand);
-  font-size: 14px;
-  font-weight: 700;
-  color: #786447;
-  margin-top: 6px;
-}
-
-.chit-revealed-role {
-  font-family: var(--font-fun);
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--ink-blue);
-}
-
-.chit-revealed-pts {
-  font-family: var(--font-ui);
-  font-size: 13px;
-  font-weight: 700;
-  color: #15803d;
-  background: #dcfce7;
-  padding: 2px 6px;
-  border-radius: 6px;
-  margin-top: 4px;
-}
-
-.btn-accuse-suspect {
-  width: 100%;
-  background: #dc2626;
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  padding: 8px;
-  font-family: var(--font-fun);
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 3px 8px rgba(220, 38, 38, 0.3);
-  transition: transform 0.15s ease;
-}
-
-.btn-accuse-suspect:hover {
-  transform: scale(1.05);
-  background: #b91c1c;
-}
-
-/* Verdict / Next Round Bar */
-.game-action-bar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  margin-top: 10px;
-}
-
-.btn-next-round {
-  background: var(--ink-green);
-  color: #ffffff;
-  border: none;
-  border-radius: 12px;
-  padding: 10px 24px;
-  font-family: var(--font-fun);
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.35);
-  transition: transform 0.15s ease;
-}
-
-.btn-next-round:hover {
-  transform: translateY(-2px);
-  background: #15803d;
+@media (max-width: 520px) {
+  .rmcs-seat { width: 96px; }
+  .rmcs-chit { width: 54px; }
+  .rmcs-who { font-size: 11px; }
+  .rmcs-who .ava { width: 22px; height: 22px; }
+  .rmcs-pts { top: 26px; font-size: 22px; }
 }
