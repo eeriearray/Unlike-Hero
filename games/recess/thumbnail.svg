@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400">
+  <defs>
+    <linearGradient id="desk" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2d1f0e"/>
+      <stop offset="100%" stop-color="#1a1208"/>
+    </linearGradient>
+    <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse">
+      <path d="M28 0H0V28" fill="none" stroke="#3a6ea5" stroke-width=".4" opacity=".35"/>
+    </pattern>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <!-- Wooden desk background -->
+  <rect width="640" height="400" fill="url(#desk)"/>
+  <!-- Wood grain lines -->
+  <line x1="0" y1="80" x2="640" y2="78" stroke="#3d2a10" stroke-width=".8" opacity=".3"/>
+  <line x1="0" y1="160" x2="640" y2="162" stroke="#3d2a10" stroke-width=".6" opacity=".25"/>
+  <line x1="0" y1="250" x2="640" y2="248" stroke="#3d2a10" stroke-width=".7" opacity=".2"/>
+  <line x1="0" y1="340" x2="640" y2="342" stroke="#3d2a10" stroke-width=".5" opacity=".15"/>
+  <!-- Notebook paper overlay -->
+  <rect x="50" y="40" width="260" height="160" rx="4" fill="#f5f0e8" opacity=".92"/>
+  <rect x="50" y="40" width="260" height="160" rx="4" fill="url(#grid)"/>
+  <line x1="78" y1="40" x2="78" y2="200" stroke="#e8565b" stroke-width="1.2" opacity=".5"/>
+  <!-- Tic-tac-toe on notebook -->
+  <line x1="134" y1="65" x2="134" y2="175" stroke="#2c3e50" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="186" y1="65" x2="186" y2="175" stroke="#2c3e50" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="94" y1="102" x2="224" y2="102" stroke="#2c3e50" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="94" y1="140" x2="224" y2="140" stroke="#2c3e50" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- X marks -->
+  <g stroke="#e74c3c" stroke-width="3.5" stroke-linecap="round">
+    <line x1="104" y1="73" x2="126" y2="95"/><line x1="126" y1="73" x2="104" y2="95"/>
+    <line x1="156" y1="148" x2="178" y2="170"/><line x1="178" y1="148" x2="156" y2="170"/>
+  </g>
+  <!-- O marks -->
+  <circle cx="160" cy="84" r="13" fill="none" stroke="#3498db" stroke-width="3.5"/>
+  <circle cx="206" cy="120" r="13" fill="none" stroke="#3498db" stroke-width="3.5"/>
+  <!-- Connect Four piece stack -->
+  <g transform="translate(350 45)">
+    <rect width="240" height="155" rx="8" fill="#1a4a8a" opacity=".85"/>
+    <rect x="4" y="4" width="232" height="147" rx="6" fill="none" stroke="#2980b9" stroke-width="1"/>
+    <!-- Grid holes -->
+    <g>
+      <circle cx="38" cy="28" r="14" fill="#0d2847"/><circle cx="76" cy="28" r="14" fill="#0d2847"/>
+      <circle cx="114" cy="28" r="14" fill="#0d2847"/><circle cx="152" cy="28" r="14" fill="#0d2847"/>
+      <circle cx="190" cy="28" r="14" fill="#0d2847"/>
+      <circle cx="38" cy="60" r="14" fill="#0d2847"/><circle cx="76" cy="60" r="14" fill="#0d2847"/>
+      <circle cx="114" cy="60" r="14" fill="#0d2847"/><circle cx="152" cy="60" r="14" fill="#0d2847"/>
+      <circle cx="190" cy="60" r="14" fill="#0d2847"/>
+      <circle cx="38" cy="92" r="14" fill="#0d2847"/><circle cx="76" cy="92" r="14" fill="#0d2847"/>
+      <circle cx="114" cy="92" r="14" fill="#0d2847"/><circle cx="152" cy="92" r="14" fill="#0d2847"/>
+      <circle cx="190" cy="92" r="14" fill="#0d2847"/>
+      <circle cx="38" cy="124" r="14" fill="#0d2847"/><circle cx="76" cy="124" r="14" fill="#0d2847"/>
+      <circle cx="114" cy="124" r="14" fill="#0d2847"/><circle cx="152" cy="124" r="14" fill="#0d2847"/>
+      <circle cx="190" cy="124" r="14" fill="#0d2847"/>
+    </g>
+    <!-- Dropped pieces -->
+    <circle cx="38" cy="124" r="13" fill="#e74c3c"/><circle cx="76" cy="124" r="13" fill="#f1c40f"/>
+    <circle cx="114" cy="124" r="13" fill="#e74c3c"/><circle cx="76" cy="92" r="13" fill="#e74c3c"/>
+    <circle cx="114" cy="92" r="13" fill="#f1c40f"/><circle cx="152" cy="124" r="13" fill="#f1c40f"/>
+    <circle cx="38" cy="92" r="13" fill="#f1c40f"/>
+  </g>
+  <!-- RPS icons -->
+  <g transform="translate(80 230)" filter="url(#glow)">
+    <circle cx="0" cy="0" r="32" fill="#e67e22" opacity=".15"/>
+    <text x="0" y="12" text-anchor="middle" font-size="38">✊</text>
+  </g>
+  <g transform="translate(180 260)" filter="url(#glow)">
+    <circle cx="0" cy="0" r="32" fill="#27ae60" opacity=".15"/>
+    <text x="0" y="12" text-anchor="middle" font-size="38">✋</text>
+  </g>
+  <g transform="translate(280 240)" filter="url(#glow)">
+    <circle cx="0" cy="0" r="32" fill="#8e44ad" opacity=".15"/>
+    <text x="0" y="12" text-anchor="middle" font-size="38">✌️</text>
+  </g>
+  <!-- Scattered school items -->
+  <rect x="440" y="250" width="80" height="12" rx="2" fill="#f39c12" transform="rotate(-15 480 256)" opacity=".7"/>
+  <rect x="510" y="290" width="60" height="8" rx="1" fill="#e74c3c" transform="rotate(25 540 294)" opacity=".5"/>
+  <!-- Pencil -->
+  <g transform="translate(380 320) rotate(-25)">
+    <rect x="0" y="-4" width="120" height="8" rx="1" fill="#f4d03f"/>
+    <polygon points="120,-4 120,4 132,0" fill="#d4a017"/>
+    <rect x="-2" y="-5" width="12" height="10" rx="1" fill="#ff8fa3"/>
+  </g>
+  <!-- Bell icon -->
+  <text x="560" y="360" font-size="30" opacity=".6">🔔</text>
+</svg>
