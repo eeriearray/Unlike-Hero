@@ -1,24 +1,35 @@
-// Authoritative RECESS Online Game Server
+// RECESS game server: rooms, matchmaking queues and isolated match sessions.
+//
+// Everything lives in memory. A server restart forgets every room; clients are told so honestly
+// when their resume fails. The server is authoritative: clients send intents, engines validate them,
+// and each player only ever receives the view their engine builds for them.
 import { WebSocketServer } from 'ws';
 import { randomInt, randomBytes } from 'node:crypto';
-import { TttEngine } from './engines/ttt.mjs';
-import { SpsEngine } from './engines/sps.mjs';
-import { DotsEngine } from './engines/dots.mjs';
-import { RmcsEngine } from './engines/rmcs.mjs';
+import { GAMES } from './registry.mjs';
+import { AVATAR_IDS, REACTIONS, MOODS } from '../shared/avatars.js';
 
-const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ';
+const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ'; // no I, L, O: easy to read aloud
 const MAX_ROOMS = 200;
-const ROOM_IDLE_TIMEOUT_MS = 20 * 60_000;
+const MAX_PLAYERS = 16;
+const RECONNECT_GRACE_MS = 30_000;
+const QUEUE_TIMEOUT_MS = 10 * 60_000;
+const EMPTY_ROOM_MS = 10 * 60_000;
+const RATE_WINDOW_MS = 2000;
+const RATE_MAX = 40;
 
-const BOT_NAMES = ['Bunty', 'Chintu', 'Pappu', 'Munna', 'Guddu', 'Pinky', 'Bablu'];
-const BOT_AVATARS = ['👓', '🚀', '✏️', '🍎', '🐱', '⚽', '🎒'];
+const BOT_NAMES = ['Bunty', 'Chintu', 'Pappu', 'Munni', 'Guddu', 'Pinky', 'Bablu', 'Tinku'];
+const BOT_AVATARS = ['spiky', 'plaits', 'cap', 'bow', 'specs', 'bun', 'band', 'curly'];
+
+export const ROOM_CODE = /^[A-HJKMNP-Z]{4}$/;
+
+const id = (prefix) => prefix + randomBytes(5).toString('hex');
+const cleanName = (s, fallback) => (typeof s === 'string' ? s : '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 16) || fallback;
+const cleanAvatar = (a) => (AVATAR_IDS.includes(a) ? a : AVATAR_IDS[randomInt(AVATAR_IDS.length)]);
 
 export default function attach({ httpServer, basePath, log = console.log }) {
   const path = `${basePath}ws`;
   const wss = new WebSocketServer({ noServer: true, maxPayload: 16 * 1024 });
-
-  /** code -> room */
-  const rooms = new Map();
+  const rooms = new Map(); // code -> room
 
   httpServer.on('upgrade', (req, socket, head) => {
     let url;
@@ -27,8 +38,14 @@ export default function attach({ httpServer, basePath, log = console.log }) {
     wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
   });
 
+  // ─── helpers ───────────────────────────────────────────────────────────
+
+  function send(ws, msg) {
+    if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg));
+  }
+
   function generateCode() {
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 100; i++) {
       let code = '';
       for (let k = 0; k < 4; k++) code += CODE_CHARS[randomInt(CODE_CHARS.length)];
       if (!rooms.has(code)) return code;
@@ -36,400 +53,488 @@ export default function attach({ httpServer, basePath, log = console.log }) {
     return null;
   }
 
-  function send(ws, msg) {
-    if (ws && ws.readyState === 1) {
-      ws.send(JSON.stringify(msg));
-    }
+  function feed(room, text, extra = {}) {
+    room.feed.push({ text: String(text).slice(0, 160), time: Date.now(), ...extra });
+    if (room.feed.length > 60) room.feed.shift();
   }
 
-  function broadcastRoom(room) {
-    for (const [playerId, ws] of room.sockets) {
-      const view = getLobbyView(room, playerId);
-      send(ws, { t: 'lobby-state', view });
+  function uniqueName(room, name, exceptId) {
+    const taken = new Set([...room.players.values()].filter(p => p.id !== exceptId).map(p => p.name.toLowerCase()));
+    if (!taken.has(name.toLowerCase())) return name;
+    for (let n = 2; n < 99; n++) {
+      const candidate = `${name.slice(0, 13)} ${n}`;
+      if (!taken.has(candidate.toLowerCase())) return candidate;
     }
+    return name;
   }
 
-  function getLobbyView(room, forPlayerId) {
-    return {
-      code: room.code,
-      hostId: room.hostId,
-      players: Array.from(room.players.values()).map(p => ({
-        id: p.id,
-        name: p.name,
-        avatar: p.avatar,
-        status: p.currentMatchId ? 'in-game' : (isPlayerQueued(room, p.id) ? 'queued' : 'idle'),
-        currentGame: p.currentGame || null
-      })),
-      queues: {
-        ttt: room.queues.ttt.size,
-        sps: room.queues.sps.size,
-        dots: room.queues.dots.size,
-        rmcs: room.queues.rmcs.size
-      },
-      myQueue: getPlayerQueuedGame(room, forPlayerId),
-      chat: room.chat.slice(-20)
-    };
-  }
-
-  function isPlayerQueued(room, playerId) {
-    for (const q of Object.values(room.queues)) {
-      if (q.has(playerId)) return true;
-    }
-    return false;
-  }
-
-  function getPlayerQueuedGame(room, playerId) {
-    for (const [gameType, q] of Object.entries(room.queues)) {
-      if (q.has(playerId)) return gameType;
-    }
+  function queuedGame(room, playerId) {
+    for (const [gameType, q] of room.queues) if (q.has(playerId)) return gameType;
     return null;
   }
 
-  function removePlayerFromAllQueues(room, playerId) {
-    for (const q of Object.values(room.queues)) {
-      q.delete(playerId);
+  function dequeue(room, playerId) {
+    for (const q of room.queues.values()) q.delete(playerId);
+  }
+
+  function lobbyView(room, forId) {
+    const queues = {};
+    const queueMembers = {};
+    for (const [g, q] of room.queues) {
+      queues[g] = q.size;
+      queueMembers[g] = [...q.keys()];
     }
-  }
-
-  function createRoom(hostName, hostAvatar) {
-    const code = generateCode();
-    if (!code || rooms.size >= MAX_ROOMS) return null;
-
-    const hostId = 'p_' + randomBytes(4).toString('hex');
-    const token = randomBytes(8).toString('hex');
-
-    const room = {
-      code,
-      hostId,
-      players: new Map([[hostId, { id: hostId, name: hostName || 'School Kid', avatar: hostAvatar || '✏️', currentMatchId: null, currentGame: null }]]),
-      tokens: new Map([[hostId, token]]),
-      sockets: new Map(),
-      queues: {
-        ttt: new Set(),
-        sps: new Set(),
-        dots: new Set(),
-        rmcs: new Set()
-      },
-      matches: new Map(), // matchId -> engine
-      chat: [{ sender: 'System', text: `🔔 Welcome to RECESS Room ${code}! Choose a game to play.`, time: Date.now() }],
-      idleTimer: null
+    const matches = [...room.matches.values()].map(m => ({
+      matchId: m.matchId,
+      gameType: m.gameType,
+      players: m.engine.players.map(p => ({ id: p.id, name: p.name, isBot: !!p.isBot }))
+    }));
+    return {
+      code: room.code,
+      hostId: room.hostId,
+      me: forId,
+      serverTime: Date.now(),
+      players: [...room.players.values()].map(p => ({
+        id: p.id,
+        name: p.name,
+        avatar: p.avatar,
+        mood: p.mood,
+        online: room.sockets.has(p.id),
+        status: p.currentMatchId ? 'in-game' : (queuedGame(room, p.id) ? 'queued' : 'idle'),
+        currentGame: p.currentGame || queuedGame(room, p.id)
+      })),
+      queues,
+      queueMembers,
+      myQueue: queuedGame(room, forId),
+      matches,
+      feed: room.feed.slice(-25),
+      chat: room.feed.slice(-25) // older clients/tests read `chat`
     };
-
-    rooms.set(code, room);
-    return { room, hostId, token };
   }
 
-  function syncMatch(room, matchId) {
-    const engine = room.matches.get(matchId);
-    if (!engine) return;
+  function broadcastRoom(room) {
+    for (const [playerId, ws] of room.sockets) send(ws, { t: 'lobby-state', view: lobbyView(room, playerId) });
+  }
 
-    for (const p of engine.players) {
-      if (p.isBot) continue;
-      const ws = room.sockets.get(p.id);
-      if (ws) {
-        const view = engine.getView(p.id);
+  function toRoom(room, msg, exceptId) {
+    for (const [pid, ws] of room.sockets) if (pid !== exceptId) send(ws, msg);
+  }
+
+  // Coalesce several state changes in one tick into a single message per player.
+  function syncMatch(room, matchId) {
+    const m = room.matches.get(matchId);
+    if (!m || m.syncQueued) return;
+    m.syncQueued = true;
+    queueMicrotask(() => {
+      m.syncQueued = false;
+      if (!room.matches.has(matchId)) return;
+      const e = m.engine;
+      if (e.announcements?.length) {
+        for (const a of e.announcements.splice(0)) feed(room, a, { kind: 'result', game: m.gameType });
+        broadcastRoom(room);
+      }
+      for (const p of e.players) {
+        if (p.isBot) continue;
+        const pl = room.players.get(p.id);
+        if (!pl || pl.currentMatchId !== matchId) continue; // returned to lobby
+        const ws = room.sockets.get(p.id);
+        if (!ws) continue;
+        const view = e.getView(p.id);
+        view.abandoned = e.abandoned || null;
+        view.serverTime = Date.now();
         send(ws, { t: 'game-state', matchId, view });
       }
-    }
+    });
   }
 
-  function startMatch(room, gameType, players) {
-    const matchId = 'm_' + randomBytes(4).toString('hex');
-    let engine;
-
-    const onUpdate = () => syncMatch(room, matchId);
-
-    if (gameType === 'ttt') {
-      engine = new TttEngine(matchId, players, onUpdate);
-    } else if (gameType === 'sps') {
-      engine = new SpsEngine(matchId, players, onUpdate);
-    } else if (gameType === 'dots') {
-      engine = new DotsEngine(matchId, players, onUpdate);
-    } else if (gameType === 'rmcs') {
-      engine = new RmcsEngine(matchId, players, onUpdate);
+  function startMatch(room, gameType, players, options = {}) {
+    const game = GAMES[gameType];
+    const matchId = id('m_');
+    const entry = { matchId, gameType, engine: null, syncQueued: false };
+    room.matches.set(matchId, entry);
+    try {
+      entry.engine = new game.Engine(matchId, players, () => syncMatch(room, matchId), options || {});
+    } catch (e) {
+      room.matches.delete(matchId);
+      log(`RECESS: could not start ${gameType}:`, e.message);
+      return null;
     }
-
-    if (!engine) return null;
-
-    room.matches.set(matchId, engine);
-
-    // Update player status
     for (const p of players) {
-      if (!p.isBot) {
-        removePlayerFromAllQueues(room, p.id);
-        const playerObj = room.players.get(p.id);
-        if (playerObj) {
-          playerObj.currentMatchId = matchId;
-          playerObj.currentGame = gameType;
-        }
-      }
+      if (p.isBot) continue;
+      dequeue(room, p.id);
+      const pl = room.players.get(p.id);
+      if (pl) { pl.currentMatchId = matchId; pl.currentGame = gameType; }
     }
-
-    // Broadcast update
+    if (!game.solo) {
+      const names = players.map(p => p.name);
+      const list = names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names.at(-1)}` : names[0];
+      feed(room, `${list} started ${game.name}.`, { kind: 'start', game: gameType });
+    }
     broadcastRoom(room);
     syncMatch(room, matchId);
     return matchId;
   }
 
-  function checkQueue(room, gameType) {
-    const q = room.queues[gameType];
-    const needed = (gameType === 'rmcs') ? 4 : 2;
-
-    if (q.size >= needed) {
-      const matchPlayerIds = Array.from(q).slice(0, needed);
-      const matchPlayers = matchPlayerIds.map(id => {
-        const p = room.players.get(id);
-        return { id: p.id, name: p.name, avatar: p.avatar, isBot: false };
-      });
-
-      startMatch(room, gameType, matchPlayers);
-    }
+  function humansFrom(room, ids) {
+    return ids.map(pid => room.players.get(pid)).filter(Boolean)
+      .map(p => ({ id: p.id, name: p.name, avatar: p.avatar, isBot: false }));
   }
 
+  function withBots(players, count) {
+    const out = [...players];
+    const used = new Set(out.map(p => p.name));
+    let i = 0;
+    while (out.length < count) {
+      let name = BOT_NAMES[i % BOT_NAMES.length];
+      if (used.has(name)) name = `${name} ${Math.floor(i / BOT_NAMES.length) + 2}`;
+      used.add(name);
+      out.push({ id: id('bot_'), name, avatar: BOT_AVATARS[i % BOT_AVATARS.length], isBot: true });
+      i++;
+    }
+    return out;
+  }
+
+  // Start as many full matches as the queue allows (auto games only).
+  function checkQueue(room, gameType) {
+    const game = GAMES[gameType];
+    const q = room.queues.get(gameType);
+    if (!game.auto) return;
+    while (q.size >= game.max) {
+      const ids = [...q.keys()].slice(0, game.max);
+      const opts = room.queueOptions.get(gameType);
+      ids.forEach(pid => q.delete(pid));
+      startMatch(room, gameType, humansFrom(room, ids), opts);
+    }
+    if (!q.size) room.queueOptions.delete(gameType);
+  }
+
+  function leaveMatch(room, playerId, matchId) {
+    const pl = room.players.get(playerId);
+    const m = room.matches.get(matchId);
+    if (pl && pl.currentMatchId === matchId) { pl.currentMatchId = null; pl.currentGame = null; }
+    if (!m) return;
+    const stillIn = m.engine.players.filter(p => !p.isBot && room.players.get(p.id)?.currentMatchId === matchId);
+    if (!stillIn.length) {
+      m.engine.dispose();
+      room.matches.delete(matchId);
+      return;
+    }
+    // Others are still playing: tell the engine this seat is gone so it can carry on or end the match.
+    m.engine.playerLeft?.(playerId);
+    syncMatch(room, matchId);
+  }
+
+  function removePlayer(room, playerId) {
+    const p = room.players.get(playerId);
+    if (!p) return;
+    dequeue(room, playerId);
+    if (p.currentMatchId) leaveMatch(room, playerId, p.currentMatchId);
+    room.sockets.delete(playerId);
+    room.players.delete(playerId);
+    room.tokens.delete(playerId);
+    feed(room, `${p.name} went home.`, { kind: 'leave' });
+    if (room.hostId === playerId && room.players.size) {
+      room.hostId = room.players.keys().next().value;
+      feed(room, `${room.players.get(room.hostId).name} is the new class monitor (host).`, { kind: 'info' });
+    }
+    if (!room.players.size) closeRoom(room);
+    else broadcastRoom(room);
+  }
+
+  function closeRoom(room) {
+    for (const m of room.matches.values()) m.engine.dispose();
+    room.matches.clear();
+    rooms.delete(room.code);
+  }
+
+  // Housekeeping: stale queue entries and rooms nobody is connected to.
+  const sweeper = setInterval(() => {
+    const now = Date.now();
+    for (const room of rooms.values()) {
+      let changed = false;
+      for (const q of room.queues.values()) {
+        for (const [pid, since] of q) {
+          if (now - since > QUEUE_TIMEOUT_MS) { q.delete(pid); changed = true; }
+        }
+      }
+      if (room.sockets.size === 0) {
+        room.emptySince ??= now;
+        if (now - room.emptySince > EMPTY_ROOM_MS) { closeRoom(room); continue; }
+      } else room.emptySince = null;
+      if (changed) broadcastRoom(room);
+    }
+  }, 30_000);
+  sweeper.unref?.();
+
+  function newRoom(host) {
+    const code = generateCode();
+    if (!code || rooms.size >= MAX_ROOMS) return null;
+    const room = {
+      code,
+      hostId: host.id,
+      players: new Map([[host.id, host]]),
+      tokens: new Map(),
+      sockets: new Map(),
+      queues: new Map(Object.keys(GAMES).map(g => [g, new Map()])), // gameType -> Map(playerId -> queuedAt)
+      queueOptions: new Map(),
+      matches: new Map(),
+      feed: [],
+      emptySince: null
+    };
+    feed(room, `Room ${code} is open. Share the code and pick a game!`, { kind: 'info' });
+    rooms.set(code, room);
+    return room;
+  }
+
+  function newPlayer(msg) {
+    return {
+      id: id('p_'),
+      name: cleanName(msg.name, 'Desk Buddy'),
+      avatar: cleanAvatar(msg.avatar),
+      mood: MOODS[0],
+      currentMatchId: null,
+      currentGame: null
+    };
+  }
+
+  // ─── connections ───────────────────────────────────────────────────────
+
   wss.on('connection', (ws) => {
-    let currentRoomCode = null;
-    let currentPlayerId = null;
+    let roomCode = null;
+    let playerId = null;
+    let windowStart = Date.now();
+    let windowCount = 0;
+
+    function bind(room, pid) {
+      const old = room.sockets.get(pid);
+      if (old && old !== ws) { send(old, { t: 'kicked', reason: 'This player opened RECESS in another tab.' }); old.close(); }
+      room.sockets.set(pid, ws);
+      roomCode = room.code;
+      playerId = pid;
+    }
 
     ws.on('message', (raw) => {
+      const now = Date.now();
+      if (now - windowStart > RATE_WINDOW_MS) { windowStart = now; windowCount = 0; }
+      if (++windowCount > RATE_MAX) return; // flood: silently drop
+
       let msg;
       try { msg = JSON.parse(raw.toString()); } catch { return; }
-      if (!msg || typeof msg !== 'object') return;
-
+      if (!msg || typeof msg !== 'object' || typeof msg.t !== 'string') return;
       const { t, rid } = msg;
       const reply = (res) => send(ws, { t: 'reply', rid, res });
 
-      // CREATE ROOM
+      if (t === 'ping') return reply({ ok: true, serverTime: now });
+
       if (t === 'create') {
-        const created = createRoom(msg.name, msg.avatar);
-        if (!created) return reply({ ok: false, error: 'Could not create room' });
-
-        currentRoomCode = created.room.code;
-        currentPlayerId = created.hostId;
-        created.room.sockets.set(currentPlayerId, ws);
-
-        reply({ ok: true, code: currentRoomCode, playerId: currentPlayerId, token: created.token });
-        broadcastRoom(created.room);
+        if (roomCode) return reply({ ok: false, error: 'Already in a room' });
+        const host = newPlayer(msg);
+        const room = newRoom(host);
+        if (!room) return reply({ ok: false, error: 'The playground is full right now. Try again in a minute.' });
+        const token = randomBytes(12).toString('hex');
+        room.tokens.set(host.id, token);
+        bind(room, host.id);
+        reply({ ok: true, code: room.code, playerId: host.id, token });
+        broadcastRoom(room);
         return;
       }
 
-      // JOIN ROOM
       if (t === 'join') {
-        const code = (msg.code || '').toUpperCase().trim();
+        if (roomCode) return reply({ ok: false, error: 'Already in a room' });
+        const code = String(msg.code || '').toUpperCase().trim();
+        if (!ROOM_CODE.test(code)) return reply({ ok: false, error: 'Room codes are 4 letters, like KPQR.' });
         const room = rooms.get(code);
-        if (!room) return reply({ ok: false, error: 'Room not found' });
-        if (room.players.size >= 16) return reply({ ok: false, error: 'Room is full (max 16)' });
-
-        const playerId = 'p_' + randomBytes(4).toString('hex');
-        const token = randomBytes(8).toString('hex');
-
-        room.players.set(playerId, {
-          id: playerId,
-          name: msg.name || 'Desk Buddy',
-          avatar: msg.avatar || '🎒',
-          currentMatchId: null,
-          currentGame: null
-        });
-        room.tokens.set(playerId, token);
-        room.sockets.set(playerId, ws);
-
-        currentRoomCode = code;
-        currentPlayerId = playerId;
-
-        room.chat.push({
-          sender: 'System',
-          text: `👋 ${msg.name || 'Desk Buddy'} joined the desk!`,
-          time: Date.now()
-        });
-
-        reply({ ok: true, code, playerId, token });
+        if (!room) return reply({ ok: false, error: 'No room with that code. Check it with whoever made the room.' });
+        if (room.players.size >= MAX_PLAYERS) return reply({ ok: false, error: `That room is full (${MAX_PLAYERS} players).` });
+        const p = newPlayer(msg);
+        p.name = uniqueName(room, p.name);
+        room.players.set(p.id, p);
+        const token = randomBytes(12).toString('hex');
+        room.tokens.set(p.id, token);
+        bind(room, p.id);
+        feed(room, `${p.name} joined the desk.`, { kind: 'join' });
+        reply({ ok: true, code, playerId: p.id, token, name: p.name });
         broadcastRoom(room);
         return;
       }
 
-      // RESUME SESSION
       if (t === 'resume') {
-        const code = (msg.code || '').toUpperCase().trim();
+        const code = String(msg.code || '').toUpperCase().trim();
         const room = rooms.get(code);
-        if (!room) return reply({ ok: false, error: 'Room expired or not found' });
-        const expectedToken = room.tokens.get(msg.playerId);
-        if (!expectedToken || expectedToken !== msg.token) {
-          return reply({ ok: false, error: 'Invalid resume credentials' });
-        }
-
-        currentRoomCode = code;
-        currentPlayerId = msg.playerId;
-        room.sockets.set(currentPlayerId, ws);
-
-        const playerObj = room.players.get(currentPlayerId);
-        reply({ ok: true, code, playerId: currentPlayerId, currentMatchId: playerObj?.currentMatchId || null });
+        if (!room) return reply({ ok: false, error: 'That room has closed. Rooms live in memory, so a server restart or a long break ends them.', gone: true });
+        const expected = room.tokens.get(msg.playerId);
+        if (!expected || expected !== msg.token) return reply({ ok: false, error: 'You are no longer in that room.', gone: true });
+        bind(room, msg.playerId);
+        const p = room.players.get(playerId);
+        reply({ ok: true, code, playerId, name: p.name, currentMatchId: p.currentMatchId || null });
         broadcastRoom(room);
-
-        if (playerObj?.currentMatchId) {
-          syncMatch(room, playerObj.currentMatchId);
-        }
+        if (p.currentMatchId) syncMatch(room, p.currentMatchId);
         return;
       }
 
-      // Verify room & player for room-bound commands
-      const room = rooms.get(currentRoomCode);
-      if (!room || !currentPlayerId) {
-        return reply({ ok: false, error: 'Not in a room' });
-      }
+      const room = rooms.get(roomCode);
+      if (!room || !playerId || !room.players.has(playerId)) return reply({ ok: false, error: 'Not in a room' });
+      const me = room.players.get(playerId);
 
-      // QUEUE FOR GAME (with optional bot fill)
-      if (t === 'queue') {
-        const { gameType, withBots } = msg;
-        if (!['ttt', 'sps', 'dots', 'rmcs'].includes(gameType)) {
-          return reply({ ok: false, error: 'Invalid game type' });
-        }
-
-        removePlayerFromAllQueues(room, currentPlayerId);
-
-        if (withBots) {
-          // Instantly start with smart schoolyard bots!
-          const human = room.players.get(currentPlayerId);
-          const needed = (gameType === 'rmcs') ? 4 : 2;
-          const matchPlayers = [{ id: human.id, name: human.name, avatar: human.avatar, isBot: false }];
-
-          for (let i = 1; i < needed; i++) {
-            const bName = BOT_NAMES[(i - 1) % BOT_NAMES.length];
-            const bAvatar = BOT_AVATARS[(i - 1) % BOT_AVATARS.length];
-            matchPlayers.push({
-              id: `bot_${i}_` + randomBytes(2).toString('hex'),
-              name: bName,
-              avatar: bAvatar,
-              isBot: true
-            });
+      switch (t) {
+        case 'queue': {
+          const game = GAMES[msg.gameType];
+          if (!game) return reply({ ok: false, error: 'Unknown game' });
+          if (me.currentMatchId) return reply({ ok: false, error: 'Finish or leave your current game first' });
+          dequeue(room, playerId);
+          const options = (msg.options && typeof msg.options === 'object') ? msg.options : {};
+          if (game.solo) {
+            const matchId = startMatch(room, game.id, humansFrom(room, [playerId]), options);
+            return reply({ ok: !!matchId, matchId });
           }
-
-          const matchId = startMatch(room, gameType, matchPlayers);
-          return reply({ ok: true, matchId });
-        }
-
-        // Add to multiplayer waiting queue
-        room.queues[gameType].add(currentPlayerId);
-        reply({ ok: true, queued: true });
-        broadcastRoom(room);
-        checkQueue(room, gameType);
-        return;
-      }
-
-      // LEAVE QUEUE
-      if (t === 'leave-queue') {
-        removePlayerFromAllQueues(room, currentPlayerId);
-        reply({ ok: true });
-        broadcastRoom(room);
-        return;
-      }
-
-      // GAME ACTION
-      if (t === 'game-action') {
-        const { matchId, action } = msg;
-        const engine = room.matches.get(matchId);
-        if (!engine) return reply({ ok: false, error: 'Match not found' });
-
-        const res = engine.handleAction(currentPlayerId, action);
-        reply(res);
-        syncMatch(room, matchId);
-        return;
-      }
-
-      // LEAVE MATCH (RETURN TO LOBBY)
-      if (t === 'leave-match') {
-        const { matchId } = msg;
-        const playerObj = room.players.get(currentPlayerId);
-        if (playerObj) {
-          playerObj.currentMatchId = null;
-          playerObj.currentGame = null;
-        }
-
-        // If all human players have left match, clean it up
-        const engine = room.matches.get(matchId);
-        if (engine) {
-          const anyHumanStillPlaying = engine.players.some(p => {
-            if (p.isBot) return false;
-            const po = room.players.get(p.id);
-            return po && po.currentMatchId === matchId;
-          });
-          if (!anyHumanStillPlaying) {
-            room.matches.delete(matchId);
+          if (msg.withBots) {
+            if (!game.bots) return reply({ ok: false, error: `${game.name} needs real classmates` });
+            const seats = Math.max(game.min, Math.min(game.max, Number(msg.seats) || game.min));
+            const matchId = startMatch(room, game.id, withBots(humansFrom(room, [playerId]), seats), options);
+            return reply({ ok: !!matchId, matchId });
           }
-        }
-
-        reply({ ok: true });
-        broadcastRoom(room);
-        return;
-      }
-
-      // CHAT / TAUNT
-      if (t === 'chat') {
-        const playerObj = room.players.get(currentPlayerId);
-        const text = (msg.text || '').slice(0, 120).trim();
-        if (text) {
-          room.chat.push({
-            sender: playerObj ? playerObj.name : 'Unknown',
-            avatar: playerObj ? playerObj.avatar : '💬',
-            text,
-            time: Date.now()
-          });
-          if (room.chat.length > 50) room.chat.shift();
+          const q = room.queues.get(game.id);
+          if (!q.size) room.queueOptions.set(game.id, options);
+          q.set(playerId, Date.now());
+          if (q.size === 1) feed(room, `${me.name} is waiting for ${game.name}. Join them!`, { kind: 'queue', game: game.id });
+          reply({ ok: true, queued: true });
+          checkQueue(room, game.id);
           broadcastRoom(room);
+          return;
         }
-        return reply({ ok: true });
-      }
 
-      // LEAVE ROOM
-      if (t === 'leave') {
-        cleanPlayer(room, currentPlayerId);
-        reply({ ok: true });
-        return;
-      }
+        case 'start-queue': {
+          // Manual start: any waiting player may start once the minimum is reached; optionally fill with bots.
+          const game = GAMES[msg.gameType];
+          if (!game) return reply({ ok: false, error: 'Unknown game' });
+          const q = room.queues.get(game.id);
+          if (!q.has(playerId)) return reply({ ok: false, error: 'Join the waiting list first' });
+          const ids = [...q.keys()].slice(0, game.max);
+          let players = humansFrom(room, ids);
+          if (players.length < game.min) {
+            if (!msg.fillBots || !game.bots) return reply({ ok: false, error: `${game.name} needs at least ${game.min} players` });
+            players = withBots(players, game.min);
+          }
+          if (!game.manual && players.length < game.max && !msg.fillBots) return reply({ ok: false, error: 'This game starts by itself when full' });
+          const opts = room.queueOptions.get(game.id);
+          ids.forEach(pid => q.delete(pid));
+          if (!q.size) room.queueOptions.delete(game.id);
+          const matchId = startMatch(room, game.id, players, opts);
+          return reply({ ok: !!matchId, matchId });
+        }
 
-      reply({ ok: false, error: 'Unknown command' });
+        case 'leave-queue':
+          dequeue(room, playerId);
+          reply({ ok: true });
+          broadcastRoom(room);
+          return;
+
+        case 'challenge': {
+          const game = GAMES[msg.gameType];
+          const target = room.players.get(msg.targetId);
+          if (!game || game.solo || !target || target.id === playerId) return reply({ ok: false, error: 'Cannot challenge that player' });
+          if (me.currentMatchId) return reply({ ok: false, error: 'Finish your current game first' });
+          dequeue(room, playerId);
+          room.queues.get(game.id).set(playerId, Date.now());
+          send(room.sockets.get(target.id), { t: 'challenge', from: { id: me.id, name: me.name, avatar: me.avatar }, gameType: game.id });
+          feed(room, `${me.name} challenged ${target.name} to ${game.name}!`, { kind: 'challenge', game: game.id });
+          reply({ ok: true });
+          checkQueue(room, game.id);
+          broadcastRoom(room);
+          return;
+        }
+
+        case 'accept-challenge': {
+          const game = GAMES[msg.gameType];
+          if (!game) return reply({ ok: false, error: 'Unknown game' });
+          if (me.currentMatchId) return reply({ ok: false, error: 'Finish your current game first' });
+          const q = room.queues.get(game.id);
+          if (!q.has(msg.fromId)) return reply({ ok: false, error: 'That challenge has expired' });
+          dequeue(room, playerId);
+          if (game.max === 2) {
+            q.delete(msg.fromId);
+            const matchId = startMatch(room, game.id, humansFrom(room, [msg.fromId, playerId]), room.queueOptions.get(game.id));
+            if (!q.size) room.queueOptions.delete(game.id);
+            return reply({ ok: !!matchId, matchId });
+          }
+          q.set(playerId, Date.now());
+          reply({ ok: true, queued: true });
+          checkQueue(room, game.id);
+          broadcastRoom(room);
+          return;
+        }
+
+        case 'game-action': {
+          const m = room.matches.get(msg.matchId);
+          if (!m) return reply({ ok: false, error: 'That game has ended' });
+          if (me.currentMatchId !== m.matchId || !m.engine.players.some(p => p.id === playerId)) {
+            return reply({ ok: false, error: 'You are not playing in that game' });
+          }
+          if (m.engine.abandoned) return reply({ ok: false, error: 'This game was abandoned' });
+          const action = msg.action;
+          if (!action || typeof action !== 'object' || typeof action.type !== 'string') return reply({ ok: false, error: 'Bad action' });
+          let res;
+          try {
+            res = m.engine.handleAction(playerId, action) || { ok: false, error: 'No response' };
+          } catch (e) {
+            log(`RECESS ${m.gameType} action error:`, e);
+            res = { ok: false, error: 'That move confused the referee' };
+          }
+          reply(res);
+          syncMatch(room, m.matchId);
+          return;
+        }
+
+        case 'leave-match': {
+          const mid = msg.matchId || me.currentMatchId;
+          leaveMatch(room, playerId, mid);
+          reply({ ok: true });
+          broadcastRoom(room);
+          return;
+        }
+
+        case 'react': {
+          if (!REACTIONS.includes(msg.kind)) return reply({ ok: false, error: 'Unknown reaction' });
+          toRoom(room, { t: 'reaction', playerId, kind: msg.kind, matchId: me.currentMatchId || null });
+          return reply({ ok: true });
+        }
+
+        case 'profile': {
+          if (msg.name !== undefined) me.name = uniqueName(room, cleanName(msg.name, me.name), me.id);
+          if (msg.avatar !== undefined) me.avatar = cleanAvatar(msg.avatar);
+          if (MOODS.includes(msg.mood)) me.mood = msg.mood;
+          reply({ ok: true, name: me.name });
+          broadcastRoom(room);
+          return;
+        }
+
+        case 'chat': {
+          const text = cleanName(String(msg.text || '').slice(0, 120), '').slice(0, 120);
+          if (text) { feed(room, text, { kind: 'chat', from: me.name, avatar: me.avatar }); broadcastRoom(room); }
+          return reply({ ok: true });
+        }
+
+        case 'leave':
+          removePlayer(room, playerId);
+          roomCode = null;
+          playerId = null;
+          return reply({ ok: true });
+
+        default:
+          return reply({ ok: false, error: 'Unknown command' });
+      }
     });
 
-    function cleanPlayer(room, playerId) {
-      if (!room || !playerId) return;
-      removePlayerFromAllQueues(room, playerId);
-      room.sockets.delete(playerId);
-      const p = room.players.get(playerId);
-      room.players.delete(playerId);
-      room.tokens.delete(playerId);
-
-      if (p) {
-        room.chat.push({
-          sender: 'System',
-          text: `🚪 ${p.name} left the room.`,
-          time: Date.now()
-        });
-      }
-
-      // If room is empty, close after idle timeout
-      if (room.players.size === 0) {
-        rooms.delete(room.code);
-      } else {
-        // Reassign host if host left
-        if (room.hostId === playerId) {
-          const nextHost = room.players.keys().next().value;
-          room.hostId = nextHost;
-        }
-        broadcastRoom(room);
-      }
-    }
-
     ws.on('close', () => {
-      if (currentRoomCode && currentPlayerId) {
-        const room = rooms.get(currentRoomCode);
-        if (room) {
-          room.sockets.delete(currentPlayerId);
-          // Grace period for refresh or brief disconnect
-          setTimeout(() => {
-            if (!room.sockets.has(currentPlayerId)) {
-              cleanPlayer(room, currentPlayerId);
-            }
-          }, 15000);
-        }
-      }
+      const room = rooms.get(roomCode);
+      if (!room || !playerId) return;
+      const pid = playerId;
+      if (room.sockets.get(pid) !== ws) return; // replaced by a newer tab
+      room.sockets.delete(pid);
+      broadcastRoom(room); // shows them offline
+      setTimeout(() => {
+        if (rooms.get(room.code) === room && !room.sockets.has(pid)) removePlayer(room, pid);
+      }, RECONNECT_GRACE_MS).unref?.();
     });
 
     ws.on('error', () => ws.close());
@@ -437,9 +542,11 @@ export default function attach({ httpServer, basePath, log = console.log }) {
 
   return {
     paths: [path],
+    rooms,
     close: () => {
+      clearInterval(sweeper);
+      for (const room of rooms.values()) closeRoom(room);
       wss.close();
-      rooms.clear();
     }
   };
 }

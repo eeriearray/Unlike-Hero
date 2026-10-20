@@ -1,58 +1,43 @@
-// Authoritative Dots and Boxes Game Engine for RECESS (4x4 dots = 9 boxes)
-export class DotsEngine {
-  constructor(matchId, players, onUpdate) {
-    this.matchId = matchId;
-    this.players = players; // [{ id, name, avatar, isBot }]
-    this.onUpdate = onUpdate;
-    this.colors = {
-      [players[0].id]: '#3b82f6', // blue ink
-      [players[1].id]: '#ef4444'  // red ink
-    };
-    this.initials = {
-      [players[0].id]: players[0].name.charAt(0).toUpperCase() || 'A',
-      [players[1].id]: players[1].name.charAt(0).toUpperCase() || 'B'
-    };
-    this.scores = {
-      [players[0].id]: 0,
-      [players[1].id]: 0
-    };
+// Authoritative Dots and Boxes engine for RECESS. Board is size x size boxes (3, 4 or 5).
+import { BaseEngine } from './base.mjs';
+
+const COLORS = ['#2f6fde', '#e0563b'];
+const SIZES = [3, 4, 5];
+
+export class DotsEngine extends BaseEngine {
+  constructor(matchId, players, onUpdate, options = {}) {
+    super(matchId, players, onUpdate, options);
+    this.colors = { [players[0].id]: COLORS[0], [players[1].id]: COLORS[1] };
+    this.initials = Object.fromEntries(players.map((p, i) => [p.id, (p.name.charAt(0) || 'AB'[i]).toUpperCase()]));
+    this.wins = { [players[0].id]: 0, [players[1].id]: 0 };
+    this.size = SIZES.includes(options.size) ? options.size : 3;
     this.round = 1;
     this.resetBoard();
   }
 
   resetBoard() {
-    this.rows = 3; // 3x3 boxes (4x4 dots)
-    this.cols = 3;
-    // Horizontal lines: 4 rows of 3 lines = 12
-    this.hLines = Array(4).fill(null).map(() => Array(3).fill(null));
-    // Vertical lines: 3 rows of 4 lines = 12
-    this.vLines = Array(3).fill(null).map(() => Array(4).fill(null));
-    // Boxes: 3 rows of 3 boxes = 9
-    this.boxes = Array(3).fill(null).map(() => Array(3).fill(null));
-
-    this.turn = this.round % 2 === 1 ? this.players[0].id : this.players[1].id;
+    const n = this.size;
+    this.hLines = Array.from({ length: n + 1 }, () => Array(n).fill(null));
+    this.vLines = Array.from({ length: n }, () => Array(n + 1).fill(null));
+    this.boxes = Array.from({ length: n }, () => Array(n).fill(null));
+    this.scores = { [this.players[0].id]: 0, [this.players[1].id]: 0 };
+    this.turn = this.players[(this.round - 1) % 2].id;
     this.status = 'playing'; // 'playing' | 'won' | 'draw'
     this.winner = null;
+    this.lastLine = null;
     this.lastClaimedBoxes = [];
+    this.checkBotTurn();
   }
 
   handleAction(playerId, action) {
-    if (action.type === 'move') {
-      return this.makeMove(playerId, action.lineType, action.r, action.c);
-    }
+    if (action.type === 'move') return this.makeMove(playerId, action.lineType, action.r, action.c);
     if (action.type === 'rematch') {
-      if (this.status !== 'playing') {
-        this.round++;
-        this.scores = {
-          [this.players[0].id]: 0,
-          [this.players[1].id]: 0
-        };
-        this.resetBoard();
-        this.notify();
-        this.checkBotTurn();
-        return { ok: true };
-      }
-      return { ok: false, error: 'Match is still ongoing' };
+      if (this.status === 'playing') return { ok: false, error: 'Match is still ongoing' };
+      if (SIZES.includes(action.size)) this.size = action.size;
+      this.round++;
+      this.resetBoard();
+      this.notify();
+      return { ok: true };
     }
     return { ok: false, error: 'Unknown action' };
   }
@@ -60,184 +45,108 @@ export class DotsEngine {
   makeMove(playerId, lineType, r, c) {
     if (this.status !== 'playing') return { ok: false, error: 'Game is over' };
     if (this.turn !== playerId) return { ok: false, error: 'Not your turn' };
-
-    let lineArray;
+    if (!Number.isInteger(r) || !Number.isInteger(c)) return { ok: false, error: 'Out of bounds' };
+    const n = this.size;
+    let lines;
     if (lineType === 'h') {
-      if (r < 0 || r > 3 || c < 0 || c > 2) return { ok: false, error: 'Out of bounds' };
-      lineArray = this.hLines;
+      if (r < 0 || r > n || c < 0 || c >= n) return { ok: false, error: 'Out of bounds' };
+      lines = this.hLines;
     } else if (lineType === 'v') {
-      if (r < 0 || r > 2 || c < 0 || c > 3) return { ok: false, error: 'Out of bounds' };
-      lineArray = this.vLines;
+      if (r < 0 || r >= n || c < 0 || c > n) return { ok: false, error: 'Out of bounds' };
+      lines = this.vLines;
     } else {
       return { ok: false, error: 'Invalid line type' };
     }
+    if (lines[r][c] !== null) return { ok: false, error: 'Line already drawn' };
 
-    if (lineArray[r][c] !== null) {
-      return { ok: false, error: 'Line already drawn' };
-    }
-
-    lineArray[r][c] = playerId;
-
-    // Check newly completed boxes
-    const completed = this.checkCompletedBoxes(playerId);
+    lines[r][c] = playerId;
+    this.lastLine = { lineType, r, c, by: playerId };
+    const completed = this.claimBoxes(playerId);
     this.lastClaimedBoxes = completed;
+    if (completed.length) this.scores[playerId] += completed.length; // completing a box keeps the turn
+    else this.turn = this.players.find(p => p.id !== playerId).id;
 
-    if (completed.length > 0) {
-      this.scores[playerId] = (this.scores[playerId] || 0) + completed.length;
-      // Bonus turn awarded for completing a box! Turn does not pass.
-    } else {
-      // Pass turn
-      const nextP = this.players.find(p => p.id !== playerId);
-      this.turn = nextP.id;
-    }
-
-    // Check game over (all 9 boxes filled)
-    let totalBoxes = 0;
-    for (let br = 0; br < 3; br++) {
-      for (let bc = 0; bc < 3; bc++) {
-        if (this.boxes[br][bc] !== null) totalBoxes++;
+    if (this.boxes.every(row => row.every(b => b !== null))) {
+      const [a, b] = this.players.map(p => p.id);
+      if (this.scores[a] === this.scores[b]) this.status = 'draw';
+      else {
+        this.status = 'won';
+        this.winner = this.scores[a] > this.scores[b] ? a : b;
+        this.wins[this.winner]++;
       }
     }
-
-    if (totalBoxes === 9) {
-      const p1 = this.players[0].id;
-      const p2 = this.players[1].id;
-      if (this.scores[p1] > this.scores[p2]) {
-        this.status = 'won';
-        this.winner = p1;
-      } else if (this.scores[p2] > this.scores[p1]) {
-        this.status = 'won';
-        this.winner = p2;
-      } else {
-        this.status = 'draw';
-      }
-    }
-
     this.notify();
     this.checkBotTurn();
     return { ok: true, completedBoxes: completed };
   }
 
-  checkCompletedBoxes(playerId) {
-    const newlyCompleted = [];
-    for (let r = 0; r < 3; r++) {
-      for (let c = 0; c < 3; c++) {
-        if (this.boxes[r][c] === null) {
-          const top = this.hLines[r][c] !== null;
-          const bottom = this.hLines[r + 1][c] !== null;
-          const left = this.vLines[r][c] !== null;
-          const right = this.vLines[r][c + 1] !== null;
+  sides(r, c, extra) {
+    const has = (t, rr, cc) => (t === 'h' ? this.hLines : this.vLines)[rr][cc] !== null ||
+      (extra && extra.lineType === t && extra.r === rr && extra.c === cc);
+    return has('h', r, c) + has('h', r + 1, c) + has('v', r, c) + has('v', r, c + 1);
+  }
 
-          if (top && bottom && left && right) {
-            this.boxes[r][c] = {
-              owner: playerId,
-              initial: this.initials[playerId],
-              color: this.colors[playerId]
-            };
-            newlyCompleted.push({ r, c });
-          }
+  claimBoxes(playerId) {
+    const done = [];
+    for (let r = 0; r < this.size; r++) {
+      for (let c = 0; c < this.size; c++) {
+        if (this.boxes[r][c] === null && this.sides(r, c) === 4) {
+          this.boxes[r][c] = { owner: playerId, initial: this.initials[playerId], color: this.colors[playerId] };
+          done.push({ r, c });
         }
       }
     }
-    return newlyCompleted;
+    return done;
+  }
+
+  freeLines() {
+    const out = [];
+    const n = this.size;
+    for (let r = 0; r <= n; r++) for (let c = 0; c < n; c++) if (this.hLines[r][c] === null) out.push({ lineType: 'h', r, c });
+    for (let r = 0; r < n; r++) for (let c = 0; c <= n; c++) if (this.vLines[r][c] === null) out.push({ lineType: 'v', r, c });
+    return out;
+  }
+
+  boxesTouching(line) {
+    const out = [];
+    const n = this.size;
+    if (line.lineType === 'h') {
+      if (line.r > 0) out.push([line.r - 1, line.c]);
+      if (line.r < n) out.push([line.r, line.c]);
+    } else {
+      if (line.c > 0) out.push([line.r, line.c - 1]);
+      if (line.c < n) out.push([line.r, line.c]);
+    }
+    return out;
+  }
+
+  computeBotMove() {
+    const free = this.freeLines();
+    if (!free.length) return null;
+    const completes = free.find(l => this.boxesTouching(l).some(([r, c]) => this.boxes[r][c] === null && this.sides(r, c, l) === 4));
+    if (completes) return completes;
+    const safe = free.filter(l => !this.boxesTouching(l).some(([r, c]) => this.boxes[r][c] === null && this.sides(r, c, l) === 3));
+    const pool = safe.length ? safe : free;
+    return pool[BaseEngine.rand(pool.length)];
   }
 
   checkBotTurn() {
     if (this.status !== 'playing') return;
-    const currentP = this.players.find(p => p.id === this.turn);
-    if (currentP && currentP.isBot) {
-      setTimeout(() => {
-        if (this.status !== 'playing' || this.turn !== currentP.id) return;
-        const move = this.computeBotMove();
-        if (move) {
-          this.makeMove(currentP.id, move.lineType, move.r, move.c);
-        }
-      }, 500);
-    }
-  }
-
-  computeBotMove() {
-    const availableLines = [];
-    // H lines
-    for (let r = 0; r <= 3; r++) {
-      for (let c = 0; c < 3; c++) {
-        if (this.hLines[r][c] === null) availableLines.push({ lineType: 'h', r, c });
-      }
-    }
-    // V lines
-    for (let r = 0; r < 3; r++) {
-      for (let c = 0; c <= 3; c++) {
-        if (this.vLines[r][c] === null) availableLines.push({ lineType: 'v', r, c });
-      }
-    }
-
-    if (availableLines.length === 0) return null;
-
-    // 1. Look for any line that completes a box!
-    for (const line of availableLines) {
-      if (this.wouldCompleteBox(line)) {
-        return line;
-      }
-    }
-
-    // 2. Look for safe lines that do NOT leave 3 sides on any box
-    const safeLines = availableLines.filter(line => !this.wouldCreateThreeSidedBox(line));
-    if (safeLines.length > 0) {
-      return safeLines[Math.floor(Math.random() * safeLines.length)];
-    }
-
-    // 3. Otherwise pick randomly
-    return availableLines[Math.floor(Math.random() * availableLines.length)];
-  }
-
-  countSides(r, c, testLine = null) {
-    let count = 0;
-    const top = this.hLines[r][c] !== null || (testLine && testLine.lineType === 'h' && testLine.r === r && testLine.c === c);
-    const bottom = this.hLines[r + 1][c] !== null || (testLine && testLine.lineType === 'h' && testLine.r === r + 1 && testLine.c === c);
-    const left = this.vLines[r][c] !== null || (testLine && testLine.lineType === 'v' && testLine.r === r && testLine.c === c);
-    const right = this.vLines[r][c + 1] !== null || (testLine && testLine.lineType === 'v' && testLine.r === r && testLine.c === c + 1);
-
-    if (top) count++;
-    if (bottom) count++;
-    if (left) count++;
-    if (right) count++;
-    return count;
-  }
-
-  wouldCompleteBox(line) {
-    for (let r = 0; r < 3; r++) {
-      for (let c = 0; c < 3; c++) {
-        if (this.boxes[r][c] === null && this.countSides(r, c, line) === 4) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  wouldCreateThreeSidedBox(line) {
-    for (let r = 0; r < 3; r++) {
-      for (let c = 0; c < 3; c++) {
-        if (this.boxes[r][c] === null && this.countSides(r, c, line) === 3) {
-          return true;
-        }
-      }
-    }
-    return false;
+    const p = this.player(this.turn);
+    if (!p || !p.isBot) return;
+    this.later(() => {
+      if (this.status !== 'playing' || this.turn !== p.id) return;
+      const m = this.computeBotMove();
+      if (m) this.makeMove(p.id, m.lineType, m.r, m.c);
+    }, 650);
   }
 
   getView(forPlayerId) {
     return {
       gameType: 'dots',
       matchId: this.matchId,
-      players: this.players.map(p => ({
-        id: p.id,
-        name: p.name,
-        avatar: p.avatar,
-        color: this.colors[p.id],
-        initial: this.initials[p.id],
-        isBot: !!p.isBot
-      })),
+      size: this.size,
+      players: this.basePlayers().map(p => ({ ...p, color: this.colors[p.id], initial: this.initials[p.id] })),
       hLines: this.hLines.map(row => [...row]),
       vLines: this.vLines.map(row => [...row]),
       boxes: this.boxes.map(row => [...row]),
@@ -245,12 +154,11 @@ export class DotsEngine {
       status: this.status,
       winner: this.winner,
       scores: { ...this.scores },
+      wins: { ...this.wins },
       round: this.round,
+      lastLine: this.lastLine,
+      lastClaimedBoxes: this.lastClaimedBoxes,
       myColor: this.colors[forPlayerId] || null
     };
-  }
-
-  notify() {
-    if (this.onUpdate) this.onUpdate();
   }
 }

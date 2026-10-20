@@ -1,9 +1,9 @@
 // Authoritative Tic-Tac-Toe Game Engine for RECESS
-export class TttEngine {
-  constructor(matchId, players, onUpdate) {
-    this.matchId = matchId;
-    this.players = players; // [{ id, name, avatar, isBot }]
-    this.onUpdate = onUpdate;
+import { BaseEngine } from './base.mjs';
+
+export class TttEngine extends BaseEngine {
+  constructor(matchId, players, onUpdate, options) {
+    super(matchId, players, onUpdate, options);
     this.symbols = {
       [players[0].id]: 'X',
       [players[1].id]: 'O'
@@ -99,7 +99,7 @@ export class TttEngine {
     if (this.status !== 'playing') return;
     const currentP = this.players.find(p => p.id === this.turn);
     if (currentP && currentP.isBot) {
-      setTimeout(() => {
+      this.later(() => {
         if (this.status !== 'playing' || this.turn !== currentP.id) return;
         const cell = this.computeBotMove(currentP.id);
         if (cell !== null) {
@@ -173,7 +173,4 @@ export class TttEngine {
     };
   }
 
-  notify() {
-    if (this.onUpdate) this.onUpdate();
-  }
 }

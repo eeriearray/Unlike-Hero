@@ -1,15 +1,23 @@
 // Authoritative Raja Mantri Chor Sipahi Game Engine for RECESS (4 players)
-export class RmcsEngine {
-  constructor(matchId, players, onUpdate) {
-    this.matchId = matchId;
-    this.players = players; // Array of 4 players [{ id, name, avatar, isBot }]
-    this.onUpdate = onUpdate;
+import { BaseEngine } from './base.mjs';
+
+export class RmcsEngine extends BaseEngine {
+  constructor(matchId, players, onUpdate, options) {
+    super(matchId, players, onUpdate, options);
     this.scores = {};
     for (const p of players) {
       this.scores[p.id] = 0;
     }
     this.round = 1;
     this.history = []; // Array of round results
+    // House rules differ between schools, so both are configurable from the verdict screen.
+    //   wrongGuess 'swap': a wrong guess hands the Mantri's 800 to the Chor (default)
+    //   wrongGuess 'zero': a wrong guess just scores 0 for both the Mantri and the Chor
+    this.rules = {
+      wrongGuess: options?.wrongGuess === 'zero' ? 'zero' : 'swap',
+      rounds: [3, 5, 10].includes(options?.rounds) ? options.rounds : 5
+    };
+    this.finished = false;
     this.startRound();
   }
 
@@ -29,7 +37,7 @@ export class RmcsEngine {
     this.verdictMessage = '';
 
     // Shuffle roles and assign to players
-    const shuffledRoles = [...RmcsEngine.ROLES].sort(() => Math.random() - 0.5);
+    const shuffledRoles = BaseEngine.shuffle(RmcsEngine.ROLES);
     this.players.forEach((p, idx) => {
       this.roles[p.id] = shuffledRoles[idx].id;
       this.revealed[p.id] = false;
@@ -42,7 +50,7 @@ export class RmcsEngine {
     this.chorId = this.findPlayerByRole('chor');
 
     // Automatically transition dealing -> announcing after paper chit animation
-    setTimeout(() => {
+    this.later(() => {
       if (this.phase !== 'dealing') return;
       this.phase = 'announcing';
       // Raja and Mantri reveal themselves
@@ -51,7 +59,7 @@ export class RmcsEngine {
       this.notify();
 
       // Transition to guessing
-      setTimeout(() => {
+      this.later(() => {
         if (this.phase !== 'announcing') return;
         this.phase = 'guessing';
         this.notify();
@@ -68,7 +76,26 @@ export class RmcsEngine {
     if (action.type === 'guess') {
       return this.makeGuess(playerId, action.suspectId);
     }
+    if (action.type === 'set-rules') {
+      if (this.phase !== 'verdict' && this.round !== 1) return { ok: false, error: 'Change the rules between rounds' };
+      if (['swap', 'zero'].includes(action.wrongGuess)) this.rules.wrongGuess = action.wrongGuess;
+      if ([3, 5, 10].includes(action.rounds) && action.rounds >= this.round) this.rules.rounds = action.rounds;
+      if (this.phase === 'verdict') this.finished = this.round >= this.rules.rounds;
+      this.notify();
+      return { ok: true };
+    }
+    if (action.type === 'rematch') {
+      if (!this.finished) return { ok: false, error: 'Game is still going' };
+      for (const p of this.players) this.scores[p.id] = 0;
+      this.round = 1;
+      this.history = [];
+      this.finished = false;
+      this.startRound();
+      this.notify();
+      return { ok: true };
+    }
     if (action.type === 'next-round') {
+      if (this.finished) return { ok: false, error: 'Game over — start a rematch' };
       if (this.phase === 'verdict') {
         this.round++;
         this.startRound();
@@ -109,12 +136,16 @@ export class RmcsEngine {
       // Mantri caught the Chor!
       this.roundPoints[this.mantriId] = 800;
       this.roundPoints[this.chorId] = 0;
-      this.verdictMessage = '🎯 Sahi Pakde Hain! The Mantri correctly identified the Chor!';
+      this.verdictMessage = 'Sahi pakde hain! The Mantri caught the Chor.';
     } else {
-      // Chor escaped and steals Mantri's points!
       this.roundPoints[this.mantriId] = 0;
-      this.roundPoints[this.chorId] = 800;
-      this.verdictMessage = '💨 Chor Bhaag Gaya! The Chor fooled the Mantri and stole 800 points!';
+      if (this.rules.wrongGuess === 'swap') {
+        this.roundPoints[this.chorId] = 800;
+        this.verdictMessage = 'Chor bhaag gaya! The Chor fooled the Mantri and walked off with 800 points.';
+      } else {
+        this.roundPoints[this.chorId] = 0;
+        this.verdictMessage = 'Wrong chit! The Chor slips away and the Mantri scores nothing.';
+      }
     }
 
     // Accumulate total scores
@@ -124,6 +155,7 @@ export class RmcsEngine {
     }
 
     this.phase = 'verdict';
+    this.finished = this.round >= this.rules.rounds;
     this.history.push({
       round: this.round,
       guess: this.guess,
@@ -138,12 +170,11 @@ export class RmcsEngine {
     if (this.phase !== 'guessing') return;
     const mantriPlayer = this.players.find(p => p.id === this.mantriId);
     if (mantriPlayer && mantriPlayer.isBot) {
-      setTimeout(() => {
+      this.later(() => {
         if (this.phase !== 'guessing') return;
         // Suspects are Sipahi and Chor
-        const suspects = [this.sipahiId, this.chorId];
-        // 55% chance bot guesses correctly
-        const chosen = Math.random() < 0.55 ? this.chorId : this.sipahiId;
+        // A coin flip, like a real Mantri staring at two blank faces.
+        const chosen = BaseEngine.rand(2) ? this.chorId : this.sipahiId;
         this.makeGuess(this.mantriId, chosen);
       }, 1600);
     }
@@ -181,17 +212,17 @@ export class RmcsEngine {
       matchId: this.matchId,
       round: this.round,
       phase: this.phase,
-      players: playerViews,
+      players: playerViews.map(p => ({ ...p, left: this.left.has(p.id) })),
       rajaId: this.phase !== 'dealing' ? this.rajaId : null,
       mantriId: this.phase !== 'dealing' ? this.mantriId : null,
       myRole: myRoleDef ? { id: myRoleDef.id, name: myRoleDef.name, points: myRoleDef.points, description: myRoleDef.description } : null,
       guess: this.guess,
       verdictMessage: this.verdictMessage,
+      rules: { ...this.rules },
+      finished: this.finished,
+      history: this.history,
       scores: { ...this.scores }
     };
   }
 
-  notify() {
-    if (this.onUpdate) this.onUpdate();
-  }
 }

@@ -1,72 +1,73 @@
-// Authoritative Stone Paper Scissors Engine for RECESS
-export class SpsEngine {
-  constructor(matchId, players, onUpdate) {
-    this.matchId = matchId;
-    this.players = players; // [{ id, name, avatar, isBot }]
-    this.onUpdate = onUpdate;
-    this.scores = {
-      [players[0].id]: 0,
-      [players[1].id]: 0,
-      ties: 0
-    };
-    this.round = 1;
-    this.choices = {}; // { [playerId]: 'stone' | 'paper' | 'scissors' }
-    this.status = 'choosing'; // 'choosing' | 'revealed'
-    this.lastResult = null; // { winnerId, p1Choice, p2Choice, outcome: 'p1'|'p2'|'tie' }
+// Authoritative Stone Paper Scissors engine for RECESS.
+// Both choices are held on the server and only included in views once both are locked.
+import { BaseEngine } from './base.mjs';
 
+export class SpsEngine extends BaseEngine {
+  static VALID_CHOICES = ['stone', 'paper', 'scissors'];
+  static BEATS = { stone: 'scissors', scissors: 'paper', paper: 'stone' };
+
+  constructor(matchId, players, onUpdate, options = {}) {
+    super(matchId, players, onUpdate, options);
+    this.bestOf = [3, 5].includes(options.bestOf) ? options.bestOf : 3;
+    this.matchNo = 1;
+    this.resetMatch();
+  }
+
+  resetMatch() {
+    this.scores = { [this.players[0].id]: 0, [this.players[1].id]: 0, ties: 0 };
+    this.round = 1;
+    this.choices = {};
+    this.status = 'choosing'; // 'choosing' | 'revealed' | 'finished'
+    this.lastResult = null;
+    this.matchWinner = null;
+    this.history = [];
     this.checkBotTurn();
   }
 
-  static VALID_CHOICES = ['stone', 'paper', 'scissors'];
-
-  static BEATS = {
-    stone: 'scissors',
-    scissors: 'paper',
-    paper: 'stone'
-  };
+  get toWin() { return Math.ceil(this.bestOf / 2); }
 
   handleAction(playerId, action) {
-    if (action.type === 'choose') {
-      return this.makeChoice(playerId, action.choice);
-    }
+    if (action.type === 'choose') return this.makeChoice(playerId, action.choice);
     if (action.type === 'next-round') {
-      if (this.status === 'revealed') {
-        this.round++;
-        this.choices = {};
-        this.status = 'choosing';
-        this.lastResult = null;
-        this.notify();
-        this.checkBotTurn();
-        return { ok: true };
-      }
-      return { ok: false, error: 'Round not finished' };
+      if (this.status !== 'revealed') return { ok: false, error: 'Round not finished' };
+      this.round++;
+      this.choices = {};
+      this.status = 'choosing';
+      this.lastResult = null;
+      this.notify();
+      this.checkBotTurn();
+      return { ok: true };
+    }
+    if (action.type === 'best-of') {
+      // Either player can change the length before anyone has played in this match.
+      if (![3, 5].includes(action.bestOf)) return { ok: false, error: 'Best of 3 or 5 only' };
+      if (this.history.length || Object.keys(this.choices).length) return { ok: false, error: 'The match has already started' };
+      this.bestOf = action.bestOf;
+      this.notify();
+      return { ok: true };
+    }
+    if (action.type === 'rematch') {
+      if (this.status !== 'finished') return { ok: false, error: 'Match is still going' };
+      if ([3, 5].includes(action.bestOf)) this.bestOf = action.bestOf;
+      this.matchNo++;
+      this.resetMatch();
+      this.notify();
+      return { ok: true };
     }
     return { ok: false, error: 'Unknown action' };
   }
 
   makeChoice(playerId, choice) {
-    if (this.status !== 'choosing') {
-      return { ok: false, error: 'Round already resolved' };
-    }
-    if (!SpsEngine.VALID_CHOICES.includes(choice)) {
-      return { ok: false, error: 'Invalid choice' };
-    }
-    if (this.choices[playerId]) {
-      return { ok: false, error: 'Already chose' };
-    }
+    if (!this.player(playerId)) return { ok: false, error: 'Not in this match' };
+    if (this.status !== 'choosing') return { ok: false, error: 'Round already resolved' };
+    if (!SpsEngine.VALID_CHOICES.includes(choice)) return { ok: false, error: 'Invalid choice' };
+    if (this.choices[playerId]) return { ok: false, error: 'Already chose' };
 
     this.choices[playerId] = choice;
-
-    // Check if both players have chosen
-    const p1 = this.players[0].id;
-    const p2 = this.players[1].id;
-
-    if (this.choices[p1] && this.choices[p2]) {
-      this.resolveRound(p1, p2);
-    }
+    const [p1, p2] = this.players.map(p => p.id);
+    if (this.choices[p1] && this.choices[p2]) this.resolveRound(p1, p2);
 
     this.notify();
-    this.checkBotTurn();
     return { ok: true };
   }
 
@@ -74,83 +75,58 @@ export class SpsEngine {
     const c1 = this.choices[p1Id];
     const c2 = this.choices[p2Id];
     let outcome = 'tie';
-    let roundWinner = null;
-
+    let winnerId = null;
     if (c1 === c2) {
-      outcome = 'tie';
-      this.scores.ties = (this.scores.ties || 0) + 1;
+      this.scores.ties++;
     } else if (SpsEngine.BEATS[c1] === c2) {
-      outcome = 'p1';
-      roundWinner = p1Id;
-      this.scores[p1Id] = (this.scores[p1Id] || 0) + 1;
+      outcome = 'p1'; winnerId = p1Id; this.scores[p1Id]++;
     } else {
-      outcome = 'p2';
-      roundWinner = p2Id;
-      this.scores[p2Id] = (this.scores[p2Id] || 0) + 1;
+      outcome = 'p2'; winnerId = p2Id; this.scores[p2Id]++;
     }
-
+    this.lastResult = { outcome, winnerId, p1Choice: c1, p2Choice: c2, choices: { [p1Id]: c1, [p2Id]: c2 } };
+    this.history.push({ round: this.round, winnerId, choices: { [p1Id]: c1, [p2Id]: c2 } });
     this.status = 'revealed';
-    this.lastResult = {
-      outcome,
-      winnerId: roundWinner,
-      p1Choice: c1,
-      p2Choice: c2,
-      choices: { [p1Id]: c1, [p2Id]: c2 }
-    };
+    for (const id of [p1Id, p2Id]) {
+      if (this.scores[id] >= this.toWin) {
+        this.status = 'finished';
+        this.matchWinner = id;
+      }
+    }
   }
 
   checkBotTurn() {
     if (this.status !== 'choosing') return;
     for (const p of this.players) {
       if (p.isBot && !this.choices[p.id]) {
-        setTimeout(() => {
+        this.later(() => {
           if (this.status !== 'choosing' || this.choices[p.id]) return;
-          const choice = SpsEngine.VALID_CHOICES[Math.floor(Math.random() * 3)];
-          this.makeChoice(p.id, choice);
-        }, 500);
+          this.makeChoice(p.id, SpsEngine.VALID_CHOICES[BaseEngine.rand(3)]);
+        }, 700 + BaseEngine.rand(900));
       }
     }
   }
 
   getView(forPlayerId) {
-    const p1Id = this.players[0].id;
-    const p2Id = this.players[1].id;
-
-    // Secret information guarantee:
-    // During choosing, a player only sees THEIR OWN choice, NEVER the opponent's!
     const visibleChoices = {};
     for (const p of this.players) {
-      if (this.status === 'revealed') {
-        visibleChoices[p.id] = this.choices[p.id] || null;
-      } else {
-        if (p.id === forPlayerId) {
-          visibleChoices[p.id] = this.choices[p.id] || null;
-        } else {
-          visibleChoices[p.id] = null; // HIDDEN until reveal!
-        }
-      }
+      const show = this.status !== 'choosing' || p.id === forPlayerId;
+      visibleChoices[p.id] = show ? (this.choices[p.id] || null) : null;
     }
-
     return {
       gameType: 'sps',
       matchId: this.matchId,
-      players: this.players.map(p => ({
-        id: p.id,
-        name: p.name,
-        avatar: p.avatar,
-        hasChosen: !!this.choices[p.id],
-        isBot: !!p.isBot
-      })),
+      players: this.basePlayers().map(p => ({ ...p, hasChosen: !!this.choices[p.id] })),
       round: this.round,
+      bestOf: this.bestOf,
+      toWin: this.toWin,
       status: this.status,
       scores: { ...this.scores },
       choices: visibleChoices,
       lastResult: this.lastResult,
+      matchWinner: this.matchWinner,
+      history: this.history,
+      matchNo: this.matchNo,
       myChoice: this.choices[forPlayerId] || null
     };
-  }
-
-  notify() {
-    if (this.onUpdate) this.onUpdate();
   }
 }
