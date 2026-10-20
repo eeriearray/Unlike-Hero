@@ -1,0 +1,30 @@
+{
+  "id": "recess",
+  "title": "RECESS",
+  "tagline": "The ultimate digital school playground. Three classic mini-games in one: Tic-Tac-Toe, Rock Paper Scissors, and Connect Four — all on a nostalgic school desk.",
+  "version": "1.1.0",
+  "sdk": "1.x",
+  "entry": "index.html",
+  "thumbnail": "thumbnail.svg",
+  "accent": "#ffb347",
+  "server": "server/index.mjs",
+  "players": { "min": 1, "max": 16 },
+  "roles": [
+    {
+      "id": "player",
+      "name": "Schoolyard Buddy",
+      "entry": "index.html",
+      "description": "Join the classroom lobby, chat on desks, create private room codes, and jump into mini-games!"
+    }
+  ],
+  "multiplayer": {
+    "style": "authoritative rooms, simultaneous mini-games",
+    "sameDevice": false,
+    "roomLimit": 16,
+    "transports": ["relay"],
+    "notes": "Authoritative game server with room codes, matchmaking queues, secret roles, and smart schoolyard bots."
+  },
+  "tags": ["recess", "school", "mini-games", "multiplayer", "indian-games", "party", "classic"],
+  "requires": [],
+  "status": "playable"
+}

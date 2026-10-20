@@ -1,0 +1,1708 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RECESS — The Schoolyard Game Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Caveat:wght@400;600;700&family=Fredoka:wght@400;500;600;700&family=Indie+Flower&family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* ─────────── DESIGN TOKENS ─────────── */
+:root {
+  --desk: #2d1f0e;
+  --desk-light: #3d2a10;
+  --paper: #f5f0e8;
+  --paper-line: #c8ddf0;
+  --paper-margin: #e8565b;
+  --ink-blue: #2c3e50;
+  --ink-red: #e74c3c;
+  --ink-green: #27ae60;
+  --pencil: #f4d03f;
+  --chalk-white: #f0ece4;
+  --chalk-pink: #ff8fa3;
+  --chalk-blue: #74b9ff;
+  --chalk-green: #55efc4;
+  --chalk-orange: #ffeaa7;
+  --bell-gold: #ffb347;
+  --eraser-pink: #fd79a8;
+  --shadow: rgba(0,0,0,.35);
+  --f-hand: 'Patrick Hand', 'Caveat', cursive;
+  --f-fun: 'Fredoka', 'Comic Sans MS', cursive;
+  --f-doodle: 'Indie Flower', cursive;
+  --f-ui: 'Chakra Petch', system-ui, sans-serif;
+  --ease-bounce: cubic-bezier(.68,-.55,.265,1.55);
+  --ease-smooth: cubic-bezier(.4,0,.2,1);
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; }
+body {
+  font-family: var(--f-ui);
+  background: var(--desk);
+  color: var(--chalk-white);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─────────── SCREEN MANAGEMENT ─────────── */
+.screen { display: none; width: 100%; height: 100%; position: absolute; inset: 0; }
+.screen.active { display: flex; }
+
+/* ─────────── LOBBY SCREEN ─────────── */
+#lobby {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 27px, rgba(61,42,16,.15) 27px 28px),
+    repeating-linear-gradient(90deg, transparent 0 27px, rgba(61,42,16,.1) 27px 28px),
+    linear-gradient(135deg, #2d1f0e 0%, #1a1208 100%);
+  overflow-y: auto;
+}
+#lobby::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(255,179,71,.08), transparent 50%),
+    radial-gradient(ellipse at 70% 80%, rgba(116,185,255,.06), transparent 50%);
+  pointer-events: none;
+}
+
+/* Chalkboard header */
+.lobby-header {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  margin-bottom: 8px;
+  animation: fadeSlideDown .6s var(--ease-smooth) both;
+}
+@keyframes fadeSlideDown {
+  from { opacity: 0; transform: translateY(-30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.lobby-bell {
+  font-size: 48px;
+  display: block;
+  animation: bellRing 2s ease-in-out infinite;
+  filter: drop-shadow(0 2px 8px rgba(255,179,71,.4));
+}
+@keyframes bellRing {
+  0%, 100% { transform: rotate(0); }
+  10% { transform: rotate(14deg); }
+  20% { transform: rotate(-12deg); }
+  30% { transform: rotate(8deg); }
+  40% { transform: rotate(-4deg); }
+  50% { transform: rotate(0); }
+}
+.lobby-title {
+  font: 700 clamp(42px, 8vw, 72px)/1 var(--f-fun);
+  letter-spacing: .04em;
+  background: linear-gradient(135deg, #ffb347, #ff6b6b, #74b9ff, #55efc4);
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradientShift 4s ease infinite;
+  text-shadow: none;
+  filter: drop-shadow(3px 3px 0 rgba(0,0,0,.3));
+  margin-top: 4px;
+}
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.lobby-subtitle {
+  font: 600 clamp(11px, 2vw, 15px)/1.4 var(--f-hand);
+  color: var(--chalk-orange);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  margin-top: 6px;
+  opacity: .85;
+}
+
+/* Player badge */
+.player-setup {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0 24px;
+  padding: 10px 20px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+  animation: fadeSlideDown .6s .15s var(--ease-smooth) both;
+}
+.player-setup label {
+  font: 600 12px var(--f-ui);
+  color: var(--chalk-orange);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.player-setup input {
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 8px;
+  padding: 8px 14px;
+  color: var(--chalk-white);
+  font: 500 15px var(--f-ui);
+  width: 160px;
+  transition: border-color .2s;
+}
+.player-setup input:focus {
+  outline: none;
+  border-color: var(--bell-gold);
+  box-shadow: 0 0 0 3px rgba(255,179,71,.15);
+}
+.mode-toggle {
+  display: flex;
+  gap: 4px;
+  background: rgba(255,255,255,.06);
+  border-radius: 8px;
+  padding: 3px;
+}
+.mode-btn {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--chalk-white);
+  font: 600 11px var(--f-ui);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  cursor: pointer;
+  transition: all .2s;
+}
+.mode-btn.active {
+  background: var(--bell-gold);
+  color: #1a1208;
+  box-shadow: 0 2px 8px rgba(255,179,71,.3);
+}
+
+/* Game cards grid */
+.games-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  max-width: 780px;
+  width: 90%;
+  padding: 0 16px 40px;
+  animation: fadeSlideDown .6s .3s var(--ease-smooth) both;
+}
+
+.game-card {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform .3s var(--ease-bounce), box-shadow .3s;
+  border: 2px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.04);
+  backdrop-filter: blur(6px);
+}
+.game-card:hover {
+  transform: translateY(-8px) scale(1.03);
+  box-shadow: 0 16px 40px rgba(0,0,0,.4), 0 0 20px var(--card-glow, rgba(255,179,71,.2));
+  border-color: var(--card-accent, var(--bell-gold));
+}
+.game-card:active { transform: translateY(-2px) scale(.98); }
+
+.card-illustration {
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card-bg, linear-gradient(135deg, #1a1a2e, #16213e));
+  position: relative;
+  overflow: hidden;
+}
+.card-illustration::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 60%, rgba(0,0,0,.5));
+}
+.card-icon {
+  font-size: 56px;
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,.3));
+  transition: transform .4s var(--ease-bounce);
+}
+.game-card:hover .card-icon { transform: scale(1.15) rotate(-5deg); }
+
+.card-info {
+  padding: 14px 16px 16px;
+}
+.card-name {
+  font: 700 18px/1.2 var(--f-fun);
+  color: var(--chalk-white);
+  margin-bottom: 4px;
+}
+.card-desc {
+  font: 400 12px/1.4 var(--f-hand);
+  color: rgba(240,236,228,.6);
+}
+.card-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(0,0,0,.5);
+  backdrop-filter: blur(4px);
+  font: 600 10px var(--f-ui);
+  color: var(--card-accent, var(--bell-gold));
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  z-index: 2;
+}
+
+/* Card themes */
+.card-ttt { --card-bg: linear-gradient(135deg, #1a1a3e, #2d1b69); --card-accent: #a29bfe; --card-glow: rgba(162,155,254,.3); }
+.card-rps { --card-bg: linear-gradient(135deg, #1a3e1a, #0d4d2e); --card-accent: #55efc4; --card-glow: rgba(85,239,196,.3); }
+.card-c4 { --card-bg: linear-gradient(135deg, #3e1a1a, #4d0d0d); --card-accent: #ff7675; --card-glow: rgba(255,118,117,.3); }
+
+/* Back & Header Buttons */
+.game-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.game-header-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.back-btn, .rules-btn, .sound-btn {
+  padding: 6px 14px;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 8px;
+  background: rgba(255,255,255,.08);
+  color: var(--chalk-white);
+  font: 600 13px var(--f-ui);
+  cursor: pointer;
+  transition: all .2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.back-btn:hover, .rules-btn:hover, .sound-btn:hover {
+  background: rgba(255,179,71,.2);
+  border-color: var(--bell-gold);
+  transform: translateY(-1px);
+}
+.sound-btn {
+  padding: 6px 10px;
+  font-size: 15px;
+}
+
+/* ─────────── SHARED GAME SCREEN ─────────── */
+.game-screen {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+.game-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: rgba(0,0,0,.45);
+  backdrop-filter: blur(10px);
+  z-index: 20;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.game-title-bar {
+  font: 700 20px var(--f-fun);
+  color: var(--bell-gold);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: .02em;
+}
+.score-display {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font: 600 14px var(--f-ui);
+}
+.score-p1, .score-p2 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.score-p1 .name { color: var(--ink-red); font-weight: 700; }
+.score-p2 .name { color: var(--chalk-blue); font-weight: 700; }
+.score-val {
+  background: rgba(255,255,255,.12);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font: 700 16px var(--f-fun);
+}
+.score-divider { color: rgba(255,255,255,.3); font-size: 12px; }
+
+/* Status bar */
+.game-status {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  padding: 10px 24px;
+  border-radius: 14px;
+  background: rgba(0,0,0,.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,.15);
+  font: 600 16px var(--f-hand);
+  color: var(--chalk-white);
+  text-align: center;
+  transition: all .3s var(--ease-smooth);
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0,0,0,.4);
+}
+.game-status.win { border-color: var(--chalk-green); color: var(--chalk-green); }
+.game-status.draw { border-color: var(--chalk-orange); color: var(--chalk-orange); }
+
+/* Reset button */
+.reset-btn {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 5;
+  padding: 8px 18px;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 8px;
+  background: rgba(0,0,0,.45);
+  backdrop-filter: blur(6px);
+  color: var(--chalk-white);
+  font: 600 13px var(--f-ui);
+  cursor: pointer;
+  transition: all .2s;
+}
+.reset-btn:hover { background: rgba(255,179,71,.2); border-color: var(--bell-gold); transform: translateY(-1px); }
+
+/* Rules Modal */
+.rules-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,.65);
+  backdrop-filter: blur(8px);
+}
+.rules-overlay.show { display: flex; }
+.rules-card {
+  width: 90%;
+  max-width: 440px;
+  background: #fdfaf2;
+  background-image: repeating-linear-gradient(to bottom, transparent 0 27px, #cde0f7 27px 28px);
+  border-left: 6px solid #e8565b;
+  border-radius: 16px;
+  padding: 26px 28px;
+  color: #1e293b;
+  box-shadow: 0 16px 36px rgba(0,0,0,.5);
+  animation: rulesCardPop .35s var(--ease-bounce);
+}
+@keyframes rulesCardPop {
+  from { transform: scale(0.8) translateY(20px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+.rules-title {
+  font: 700 24px var(--f-fun);
+  color: #1e3a8a;
+  margin-bottom: 14px;
+}
+.rules-body {
+  font: 500 17px/1.5 var(--f-hand);
+  color: #334155;
+  margin-bottom: 20px;
+}
+.rules-body ul {
+  padding-left: 20px;
+}
+.rules-body li {
+  margin-bottom: 8px;
+}
+.rules-close-btn {
+  display: block;
+  width: 100%;
+  background: #1e3a8a;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px;
+  font: 600 15px var(--f-fun);
+  cursor: pointer;
+  transition: transform .15s ease;
+}
+.rules-close-btn:hover {
+  transform: translateY(-1px);
+  background: #172554;
+}
+
+/* ─────────── TIC-TAC-TOE ─────────── */
+#ttt-screen {
+  background:
+    repeating-linear-gradient(0deg, transparent 0 27px, rgba(200,221,240,.06) 27px 28px),
+    repeating-linear-gradient(90deg, transparent 0 27px, rgba(200,221,240,.06) 27px 28px),
+    linear-gradient(145deg, #1a1a3e, #0d0d2e);
+}
+.ttt-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  width: min(340px, 75vmin);
+  height: min(340px, 75vmin);
+  padding: 8px;
+  position: relative;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 16px;
+}
+.ttt-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background .15s;
+  position: relative;
+  z-index: 1;
+  aspect-ratio: 1;
+}
+.ttt-cell:nth-child(1), .ttt-cell:nth-child(2), .ttt-cell:nth-child(4), .ttt-cell:nth-child(5) {
+  border-right: 4px solid rgba(162,155,254,.55);
+  border-bottom: 4px solid rgba(162,155,254,.55);
+}
+.ttt-cell:nth-child(3), .ttt-cell:nth-child(6) {
+  border-bottom: 4px solid rgba(162,155,254,.55);
+}
+.ttt-cell:nth-child(7), .ttt-cell:nth-child(8) {
+  border-right: 4px solid rgba(162,155,254,.55);
+}
+.ttt-cell:hover:not(.taken) {
+  background: rgba(162,155,254,.12);
+}
+.ttt-cell .mark {
+  font: 700 clamp(36px, 9vmin, 68px)/1 var(--f-fun);
+  opacity: 0;
+  transform: scale(0);
+  transition: all .3s var(--ease-bounce);
+}
+.ttt-cell.taken .mark {
+  opacity: 1;
+  transform: scale(1);
+}
+.ttt-cell .mark.x { color: #ff6b6b; text-shadow: 0 0 14px rgba(255,107,107,.5); }
+.ttt-cell .mark.o { color: #74b9ff; text-shadow: 0 0 14px rgba(116,185,255,.5); }
+.ttt-cell.winning {
+  animation: winPulse .6s ease infinite alternate;
+  border-radius: 8px;
+}
+@keyframes winPulse {
+  from { background: rgba(85,239,196,.1); box-shadow: inset 0 0 10px rgba(85,239,196,.4); }
+  to { background: rgba(85,239,196,.25); box-shadow: inset 0 0 20px rgba(85,239,196,.7); }
+}
+
+/* ─────────── ROCK PAPER SCISSORS ─────────── */
+#rps-screen {
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(85,239,196,.06), transparent 60%),
+    linear-gradient(145deg, #0d2818, #0a1f12);
+}
+.rps-arena {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+  position: relative;
+}
+.rps-vs {
+  font: 700 32px var(--f-fun);
+  color: var(--bell-gold);
+  text-shadow: 0 0 16px rgba(255,179,71,.4);
+  opacity: 0;
+  transition: opacity .3s;
+}
+.rps-vs.show { opacity: 1; }
+
+.rps-hands {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+}
+.rps-hand {
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255,255,255,.06);
+  border: 2px solid rgba(255,255,255,.1);
+  font-size: 60px;
+  transition: all .4s var(--ease-bounce);
+  position: relative;
+}
+.rps-hand.reveal {
+  border-color: var(--bell-gold);
+  box-shadow: 0 0 30px rgba(255,179,71,.2);
+}
+.rps-hand.winner {
+  border-color: var(--chalk-green);
+  box-shadow: 0 0 30px rgba(85,239,196,.3);
+  transform: scale(1.15);
+}
+.rps-hand.loser {
+  opacity: .4;
+  transform: scale(.85);
+}
+.rps-hand-label {
+  position: absolute;
+  bottom: -24px;
+  font: 600 12px var(--f-ui);
+  color: rgba(255,255,255,.5);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.rps-choices {
+  display: flex;
+  gap: 16px;
+}
+.rps-choice-btn {
+  width: 90px;
+  height: 90px;
+  border-radius: 16px;
+  border: 2px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.04);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all .25s var(--ease-bounce);
+  position: relative;
+  overflow: hidden;
+}
+.rps-choice-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 120%, var(--btn-glow, rgba(255,179,71,.15)), transparent 70%);
+  opacity: 0;
+  transition: opacity .2s;
+}
+.rps-choice-btn:hover::before { opacity: 1; }
+.rps-choice-btn:hover {
+  transform: translateY(-6px) scale(1.08);
+  border-color: var(--bell-gold);
+  box-shadow: 0 8px 24px rgba(0,0,0,.3);
+}
+.rps-choice-btn:active { transform: translateY(0) scale(.95); }
+.rps-choice-btn .emoji { font-size: 36px; position: relative; z-index: 1; }
+.rps-choice-btn .label {
+  font: 600 10px var(--f-ui);
+  color: rgba(255,255,255,.5);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  position: relative;
+  z-index: 1;
+}
+
+.rps-round-info {
+  font: 600 13px var(--f-ui);
+  color: rgba(255,255,255,.4);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+/* Countdown overlay */
+.rps-countdown {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,.5);
+  backdrop-filter: blur(4px);
+  z-index: 10;
+  font: 700 80px var(--f-fun);
+  color: var(--bell-gold);
+  text-shadow: 0 0 30px rgba(255,179,71,.5);
+}
+.rps-countdown.show { display: flex; }
+.rps-countdown .num {
+  animation: countPop .4s var(--ease-bounce);
+}
+@keyframes countPop {
+  from { transform: scale(2); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* ─────────── CONNECT FOUR ─────────── */
+#c4-screen {
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(255,118,117,.05), transparent 60%),
+    linear-gradient(145deg, #2d0a0a, #1a0505);
+}
+.c4-board-wrap {
+  position: relative;
+  padding: 10px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #1a4a8a, #0d3066);
+  box-shadow: 0 8px 32px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.1);
+}
+.c4-board {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(6, 1fr);
+  gap: 6px;
+  width: min(420px, 80vmin);
+  height: min(360px, 68.5vmin);
+}
+.c4-cell {
+  border-radius: 50%;
+  background: #0d2847;
+  box-shadow: inset 0 3px 6px rgba(0,0,0,.4);
+  cursor: pointer;
+  transition: all .2s;
+  position: relative;
+  overflow: hidden;
+}
+.c4-cell:hover:not(.taken) {
+  box-shadow: inset 0 3px 6px rgba(0,0,0,.4), 0 0 8px rgba(255,255,255,.1);
+}
+.c4-cell .piece {
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  opacity: 0;
+  transition: all .3s var(--ease-bounce);
+}
+.c4-cell.taken .piece {
+  opacity: 1;
+}
+.c4-cell .piece.red {
+  background: radial-gradient(circle at 35% 35%, #ff8a80, #e74c3c, #c0392b);
+  box-shadow: inset 0 -2px 4px rgba(0,0,0,.3), 0 2px 8px rgba(231,76,60,.3);
+}
+.c4-cell .piece.yellow {
+  background: radial-gradient(circle at 35% 35%, #fff176, #f1c40f, #f39c12);
+  box-shadow: inset 0 -2px 4px rgba(0,0,0,.2), 0 2px 8px rgba(241,196,15,.3);
+}
+.c4-cell.drop .piece {
+  animation: dropPiece .5s var(--ease-bounce);
+}
+@keyframes dropPiece {
+  from { transform: translateY(-300px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.c4-cell.winning .piece {
+  animation: winGlow .6s ease infinite alternate;
+}
+@keyframes winGlow {
+  from { box-shadow: inset 0 -2px 4px rgba(0,0,0,.3), 0 0 8px rgba(85,239,196,.3); }
+  to { box-shadow: inset 0 -2px 4px rgba(0,0,0,.3), 0 0 20px rgba(85,239,196,.6); }
+}
+
+/* Column hover indicator */
+.c4-col-indicator {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.c4-col-dot {
+  width: min(54px, calc(80vmin / 7 - 6px));
+  height: 12px;
+  border-radius: 6px;
+  background: rgba(255,255,255,.04);
+  transition: background .15s;
+  cursor: pointer;
+}
+.c4-col-dot:hover {
+  background: rgba(255,179,71,.2);
+}
+.c4-col-dot.active-red { background: rgba(231,76,60,.3); }
+.c4-col-dot.active-yellow { background: rgba(241,196,15,.3); }
+
+/* ─────────── WIN OVERLAY ─────────── */
+.win-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,.6);
+  backdrop-filter: blur(6px);
+}
+.win-overlay.show { display: flex; }
+.win-card {
+  text-align: center;
+  padding: 40px 50px;
+  border-radius: 20px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.12);
+  backdrop-filter: blur(12px);
+  animation: winCardPop .5s var(--ease-bounce);
+}
+@keyframes winCardPop {
+  from { transform: scale(.7); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.win-emoji { font-size: 60px; margin-bottom: 12px; }
+.win-text {
+  font: 700 28px var(--f-fun);
+  color: var(--chalk-green);
+  margin-bottom: 6px;
+}
+.win-sub {
+  font: 400 14px var(--f-hand);
+  color: rgba(255,255,255,.5);
+  margin-bottom: 24px;
+}
+.win-actions { display: flex; gap: 12px; justify-content: center; }
+.win-btn {
+  padding: 10px 24px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.15);
+  background: rgba(255,255,255,.06);
+  color: var(--chalk-white);
+  font: 600 14px var(--f-ui);
+  cursor: pointer;
+  transition: all .2s;
+}
+.win-btn:hover { background: rgba(255,179,71,.15); border-color: var(--bell-gold); }
+.win-btn.primary {
+  background: var(--bell-gold);
+  color: #1a1208;
+  border-color: var(--bell-gold);
+}
+.win-btn.primary:hover { background: #ffc56e; }
+
+/* ─────────── CONFETTI ─────────── */
+.confetti-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 60;
+  overflow: hidden;
+}
+.confetti-piece {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  top: -20px;
+  animation: confettiFall 3s ease-in forwards;
+}
+@keyframes confettiFall {
+  to {
+    transform: translateY(110vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+/* ─────────── RESPONSIVE ─────────── */
+@media (max-width: 640px) {
+  .games-grid {
+    grid-template-columns: 1fr;
+    max-width: 340px;
+  }
+  .card-illustration { height: 100px; }
+  .card-icon { font-size: 42px; }
+  .player-setup { flex-direction: column; gap: 8px; }
+  .ttt-board { width: min(280px, 80vmin); height: min(280px, 80vmin); }
+  .c4-board { width: min(320px, 90vmin); height: min(274px, 77vmin); }
+  .rps-hands { gap: 24px; }
+  .rps-hand { width: 80px; height: 80px; font-size: 40px; }
+  .rps-choice-btn { width: 70px; height: 70px; }
+  .rps-choice-btn .emoji { font-size: 28px; }
+  .game-header { flex-direction: column; gap: 6px; padding: 8px 12px; }
+  .score-display { gap: 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════ LOBBY ═══════ -->
+<div class="screen active" id="lobby">
+  <div class="lobby-header">
+    <div style="position: absolute; top: 16px; right: 20px; z-index: 10;">
+      <button class="sound-btn" id="lobby-sound-btn" onclick="toggleSound()">🔊 Sound</button>
+    </div>
+    <span class="lobby-bell" onclick="sfxBell()" title="Ring the bell!" style="cursor: pointer;">🔔</span>
+    <h1 class="lobby-title">RECESS</h1>
+    <p class="lobby-subtitle">The Schoolyard Game Hub</p>
+  </div>
+
+  <div class="player-setup">
+    <label for="p1-name">Player 1</label>
+    <input id="p1-name" maxlength="16" placeholder="Your name" value="Player 1">
+    <div class="mode-toggle">
+      <button class="mode-btn active" data-mode="ai" id="mode-ai">vs AI</button>
+      <button class="mode-btn" data-mode="local" id="mode-local">2 Player</button>
+    </div>
+    <label for="p2-name" id="p2-label" style="display:none">Player 2</label>
+    <input id="p2-name" maxlength="16" placeholder="Friend's name" value="Player 2" style="display:none">
+  </div>
+
+  <div class="games-grid">
+    <div class="game-card card-ttt" data-game="ttt">
+      <div class="card-illustration">
+        <span class="card-icon">❌⭕</span>
+      </div>
+      <span class="card-badge">Classic</span>
+      <div class="card-info">
+        <div class="card-name">Tic-Tac-Toe</div>
+        <div class="card-desc">The notebook classic. Three in a row wins — drawn on ruled paper with a pencil.</div>
+      </div>
+    </div>
+
+    <div class="game-card card-rps" data-game="rps">
+      <div class="card-illustration">
+        <span class="card-icon">✊✋✌️</span>
+      </div>
+      <span class="card-badge">Quick</span>
+      <div class="card-info">
+        <div class="card-name">Rock Paper Scissors</div>
+        <div class="card-desc">Best of 5 showdown. The ultimate desk dispute settler since forever.</div>
+      </div>
+    </div>
+
+    <div class="game-card card-c4" data-game="c4">
+      <div class="card-illustration">
+        <span class="card-icon">🔴🟡</span>
+      </div>
+      <span class="card-badge">Strategy</span>
+      <div class="card-info">
+        <div class="card-name">Connect Four</div>
+        <div class="card-desc">Drop your pieces and connect four in a row before your opponent does.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ TIC-TAC-TOE ═══════ -->
+<div class="screen game-screen" id="ttt-screen">
+  <div class="game-header">
+    <div class="game-header-left">
+      <button class="back-btn" onclick="showLobby()">← Back</button>
+      <div class="game-title-bar">❌⭕ Tic-Tac-Toe</div>
+    </div>
+    <div class="game-header-right">
+      <button class="rules-btn" onclick="showRules('ttt')">Rules 📖</button>
+      <button class="sound-btn" onclick="toggleSound()">🔊</button>
+      <div class="score-display">
+        <div class="score-p1"><span class="name" id="ttt-p1-name">P1</span> <span class="score-val" id="ttt-p1-score">0</span></div>
+        <span class="score-divider">•</span>
+        <div class="score-p2"><span class="name" id="ttt-p2-name">P2</span> <span class="score-val" id="ttt-p2-score">0</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="ttt-board" id="ttt-board"></div>
+  <div class="game-status" id="ttt-status">X goes first!</div>
+  <button class="reset-btn" onclick="tttReset()">New Round</button>
+</div>
+
+<!-- ═══════ ROCK PAPER SCISSORS ═══════ -->
+<div class="screen game-screen" id="rps-screen">
+  <div class="game-header">
+    <div class="game-header-left">
+      <button class="back-btn" onclick="showLobby()">← Back</button>
+      <div class="game-title-bar">✊ Rock Paper Scissors</div>
+    </div>
+    <div class="game-header-right">
+      <button class="rules-btn" onclick="showRules('rps')">Rules 📖</button>
+      <button class="sound-btn" onclick="toggleSound()">🔊</button>
+      <div class="score-display">
+        <div class="score-p1"><span class="name" id="rps-p1-name">P1</span> <span class="score-val" id="rps-p1-score">0</span></div>
+        <span class="score-divider">•</span>
+        <div class="score-p2"><span class="name" id="rps-p2-name">P2</span> <span class="score-val" id="rps-p2-score">0</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="rps-arena" id="rps-arena">
+    <div class="rps-round-info" id="rps-round">Round 1 of 5</div>
+    <div class="rps-hands">
+      <div class="rps-hand" id="rps-hand-left">
+        <span>❓</span>
+        <span class="rps-hand-label" id="rps-label-left">You</span>
+      </div>
+      <div class="rps-vs" id="rps-vs">VS</div>
+      <div class="rps-hand" id="rps-hand-right">
+        <span>❓</span>
+        <span class="rps-hand-label" id="rps-label-right">AI</span>
+      </div>
+    </div>
+    <div class="rps-choices" id="rps-choices">
+      <button class="rps-choice-btn" data-choice="rock" style="--btn-glow: rgba(231,76,60,.2);">
+        <span class="emoji">✊</span>
+        <span class="label">Rock</span>
+      </button>
+      <button class="rps-choice-btn" data-choice="paper" style="--btn-glow: rgba(116,185,255,.2);">
+        <span class="emoji">✋</span>
+        <span class="label">Paper</span>
+      </button>
+      <button class="rps-choice-btn" data-choice="scissors" style="--btn-glow: rgba(162,155,254,.2);">
+        <span class="emoji">✌️</span>
+        <span class="label">Scissors</span>
+      </button>
+    </div>
+    <div class="rps-countdown" id="rps-countdown"><span class="num"></span></div>
+  </div>
+  <div class="game-status" id="rps-status">Choose your weapon!</div>
+  <button class="reset-btn" onclick="rpsReset()">New Match</button>
+</div>
+
+<!-- ═══════ CONNECT FOUR ═══════ -->
+<div class="screen game-screen" id="c4-screen">
+  <div class="game-header">
+    <div class="game-header-left">
+      <button class="back-btn" onclick="showLobby()">← Back</button>
+      <div class="game-title-bar">🔴🟡 Connect Four</div>
+    </div>
+    <div class="game-header-right">
+      <button class="rules-btn" onclick="showRules('c4')">Rules 📖</button>
+      <button class="sound-btn" onclick="toggleSound()">🔊</button>
+      <div class="score-display">
+        <div class="score-p1"><span class="name" id="c4-p1-name">P1</span> <span class="score-val" id="c4-p1-score">0</span></div>
+        <span class="score-divider">•</span>
+        <div class="score-p2"><span class="name" id="c4-p2-name">P2</span> <span class="score-val" id="c4-p2-score">0</span></div>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:center">
+    <div class="c4-col-indicator" id="c4-indicator"></div>
+    <div class="c4-board-wrap">
+      <div class="c4-board" id="c4-board"></div>
+    </div>
+  </div>
+  <div class="game-status" id="c4-status">Red goes first!</div>
+  <button class="reset-btn" onclick="c4Reset()">New Round</button>
+</div>
+
+<!-- ═══════ RULES MODAL ═══════ -->
+<div class="rules-overlay" id="rules-overlay" onclick="hideRules(event)">
+  <div class="rules-card" onclick="event.stopPropagation()">
+    <div class="rules-title" id="rules-title">How to Play</div>
+    <div class="rules-body" id="rules-body"></div>
+    <button class="rules-close-btn" onclick="hideRules()">Got it! ✏️</button>
+  </div>
+</div>
+
+<!-- ═══════ WIN OVERLAY ═══════ -->
+<div class="win-overlay" id="win-overlay">
+  <div class="win-card">
+    <div class="win-emoji" id="win-emoji">🎉</div>
+    <div class="win-text" id="win-text">Player Wins!</div>
+    <div class="win-sub" id="win-sub">Great game!</div>
+    <div class="win-actions">
+      <button class="win-btn" id="win-lobby" onclick="showLobby()">Lobby</button>
+      <button class="win-btn primary" id="win-again">Play Again</button>
+    </div>
+  </div>
+</div>
+<div class="confetti-container" id="confetti"></div>
+
+<!-- ═══════ AUDIO & RULES ═══════ -->
+<script>
+// Audio synth with mute preference
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+let audioMuted = localStorage.getItem('recess_muted') === 'true';
+
+function ensureAudio() {
+  if (!audioCtx) audioCtx = new AudioCtx();
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function updateSoundBtns() {
+  document.querySelectorAll('.sound-btn').forEach(btn => {
+    btn.textContent = audioMuted ? '🔇' : '🔊';
+    btn.title = audioMuted ? 'Unmute Sound' : 'Mute Sound';
+  });
+  const lobbyBtn = document.getElementById('lobby-sound-btn');
+  if (lobbyBtn) lobbyBtn.textContent = audioMuted ? '🔇 Muted' : '🔊 Sound';
+}
+
+function toggleSound() {
+  audioMuted = !audioMuted;
+  localStorage.setItem('recess_muted', audioMuted);
+  updateSoundBtns();
+  if (!audioMuted) sfxClick();
+}
+
+function playTone(freq, dur, type = 'sine', vol = .12) {
+  if (audioMuted) return;
+  try {
+    ensureAudio();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime + dur);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime + dur);
+  } catch(e) {}
+}
+
+function sfxPlace() { playTone(520, .08, 'square', .06); }
+function sfxWin() { playTone(523, .15, 'sine', .1); setTimeout(() => playTone(659, .15, 'sine', .1), 120); setTimeout(() => playTone(784, .3, 'sine', .12), 240); }
+function sfxDraw() { playTone(330, .2, 'triangle', .08); setTimeout(() => playTone(294, .3, 'triangle', .08), 200); }
+function sfxClick() { playTone(880, .04, 'square', .04); }
+function sfxDrop() { playTone(180, .15, 'sine', .08); }
+function sfxRPS() { playTone(440, .06, 'square', .05); }
+
+// Harmonious School Bell
+function sfxBell() {
+  if (audioMuted) return;
+  try {
+    ensureAudio();
+    const t = audioCtx.currentTime;
+    [880, 1320, 1760].forEach((f, i) => {
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = i === 0 ? 'sine' : 'triangle';
+      o.frequency.setValueAtTime(f, t);
+      g.gain.setValueAtTime(0.2 / (i + 1), t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 1.6);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(t); o.stop(t + 1.6);
+    });
+  } catch(e) {}
+}
+
+// Rules Data & Modal Controllers
+const RULES_DATA = {
+  ttt: {
+    title: '❌⭕ Tic-Tac-Toe Rules',
+    html: `<ul>
+      <li>Players take turns placing their mark (<strong>X</strong> or <strong>O</strong>) in any free cell on the 3×3 grid.</li>
+      <li>Get <strong>3 in a row</strong> horizontally, vertically, or diagonally to win!</li>
+      <li>If all 9 cells are filled and no one has 3 in a row, the round is a draw.</li>
+    </ul>`
+  },
+  rps: {
+    title: '✊✋✌️ Rock Paper Scissors Rules',
+    html: `<ul>
+      <li><strong>Rock crushes Scissors</strong> (✊ beats ✌️)</li>
+      <li><strong>Scissors cuts Paper</strong> (✌️ beats ✋)</li>
+      <li><strong>Paper covers Rock</strong> (✋ beats ✊)</li>
+      <li>In <strong>2-Player Local</strong> mode, Player 1 picks secretly first, then hands the device to Player 2!</li>
+      <li>Best of 5 rounds wins the match showdown!</li>
+    </ul>`
+  },
+  c4: {
+    title: '🔴🟡 Connect Four Rules',
+    html: `<ul>
+      <li>Players take turns dropping colored discs into any of the 7 columns.</li>
+      <li>Discs slide down to the lowest empty slot in the column.</li>
+      <li>Connect <strong>4 of your discs in a row</strong> (horizontal, vertical, or diagonal) to win!</li>
+      <li>Hover over any column to see your preview indicator.</li>
+    </ul>`
+  }
+};
+
+function showRules(game) {
+  const data = RULES_DATA[game];
+  if (!data) return;
+  document.getElementById('rules-title').textContent = data.title;
+  document.getElementById('rules-body').innerHTML = data.html;
+  document.getElementById('rules-overlay').classList.add('show');
+  sfxClick();
+}
+
+function hideRules(e) {
+  document.getElementById('rules-overlay').classList.remove('show');
+  sfxClick();
+}
+</script>
+
+<!-- ═══════ GAME LOGIC ═══════ -->
+<script>
+'use strict';
+
+// ─── State ───
+let gameMode = 'ai'; // 'ai' or 'local'
+let p1Name = 'Player 1';
+let p2Name = 'AI';
+const scores = {
+  ttt: { p1: 0, p2: 0 },
+  rps: { p1: 0, p2: 0 },
+  c4: { p1: 0, p2: 0 }
+};
+
+// ─── Screen Management ───
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  hideWinOverlay();
+}
+function showLobby() {
+  showScreen('lobby');
+  sfxClick();
+}
+
+// ─── Mode Toggle ───
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    gameMode = btn.dataset.mode;
+    const show2p = gameMode === 'local';
+    document.getElementById('p2-label').style.display = show2p ? '' : 'none';
+    document.getElementById('p2-name').style.display = show2p ? '' : 'none';
+    sfxClick();
+  });
+});
+
+// ─── Name Sync ───
+function syncNames() {
+  p1Name = document.getElementById('p1-name').value.trim() || 'Player 1';
+  p2Name = gameMode === 'ai' ? 'AI' : (document.getElementById('p2-name').value.trim() || 'Player 2');
+  // Update all game headers
+  ['ttt', 'rps', 'c4'].forEach(g => {
+    const e1 = document.getElementById(`${g}-p1-name`);
+    const e2 = document.getElementById(`${g}-p2-name`);
+    if (e1) e1.textContent = p1Name;
+    if (e2) e2.textContent = p2Name;
+  });
+  // RPS labels
+  document.getElementById('rps-label-left').textContent = p1Name;
+  document.getElementById('rps-label-right').textContent = p2Name;
+}
+
+// ─── Game Card Click ───
+document.querySelectorAll('.game-card').forEach(card => {
+  card.addEventListener('click', () => {
+    syncNames();
+    const game = card.dataset.game;
+    sfxClick();
+    if (game === 'ttt') { tttInit(); showScreen('ttt-screen'); }
+    else if (game === 'rps') { rpsInit(); showScreen('rps-screen'); }
+    else if (game === 'c4') { c4Init(); showScreen('c4-screen'); }
+  });
+});
+
+// ─── Win Overlay ───
+function showWinOverlay(emoji, text, sub, onAgain) {
+  document.getElementById('win-emoji').textContent = emoji;
+  document.getElementById('win-text').textContent = text;
+  document.getElementById('win-sub').textContent = sub;
+  document.getElementById('win-overlay').classList.add('show');
+  document.getElementById('win-again').onclick = () => { hideWinOverlay(); onAgain(); };
+  spawnConfetti();
+  sfxWin();
+}
+function hideWinOverlay() {
+  document.getElementById('win-overlay').classList.remove('show');
+  document.getElementById('confetti').innerHTML = '';
+}
+
+function spawnConfetti() {
+  const container = document.getElementById('confetti');
+  const colors = ['#ff6b6b','#74b9ff','#55efc4','#ffeaa7','#fd79a8','#a29bfe','#ffb347','#ff7675'];
+  for (let i = 0; i < 60; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random() * 100 + '%';
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.width = (Math.random() * 8 + 6) + 'px';
+    piece.style.height = (Math.random() * 8 + 6) + 'px';
+    piece.style.borderRadius = Math.random() > .5 ? '50%' : '2px';
+    piece.style.animationDuration = (Math.random() * 2 + 2) + 's';
+    piece.style.animationDelay = (Math.random() * .8) + 's';
+    container.appendChild(piece);
+  }
+}
+
+// ─── Update Scores ───
+function updateScore(game) {
+  document.getElementById(`${game}-p1-score`).textContent = scores[game].p1;
+  document.getElementById(`${game}-p2-score`).textContent = scores[game].p2;
+}
+
+
+// ═══════════════════════════════════════
+//           TIC-TAC-TOE
+// ═══════════════════════════════════════
+let tttBoard, tttTurn, tttOver;
+const tttWins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+
+function tttInit() {
+  tttBoard = Array(9).fill(null);
+  tttTurn = 'X';
+  tttOver = false;
+  updateScore('ttt');
+  tttRender();
+  document.getElementById('ttt-status').className = 'game-status';
+  document.getElementById('ttt-status').textContent = `${tttTurn === 'X' ? p1Name : p2Name}'s turn (${tttTurn})`;
+}
+
+function tttRender() {
+  const board = document.getElementById('ttt-board');
+  board.innerHTML = '';
+  for (let i = 0; i < 9; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'ttt-cell' + (tttBoard[i] ? ' taken' : '');
+    cell.innerHTML = `<span class="mark ${tttBoard[i] === 'X' ? 'x' : tttBoard[i] === 'O' ? 'o' : ''}">${tttBoard[i] || ''}</span>`;
+    cell.addEventListener('click', () => tttPlay(i));
+    board.appendChild(cell);
+  }
+}
+
+function tttPlay(i) {
+  if (tttOver || tttBoard[i]) return;
+  tttBoard[i] = tttTurn;
+  sfxPlace();
+  const win = tttCheckWin();
+  if (win) {
+    tttOver = true;
+    const winner = tttTurn === 'X' ? p1Name : p2Name;
+    scores.ttt[tttTurn === 'X' ? 'p1' : 'p2']++;
+    updateScore('ttt');
+    tttRender();
+    // Highlight winning cells
+    setTimeout(() => {
+      const cells = document.querySelectorAll('.ttt-cell');
+      win.forEach(idx => cells[idx]?.classList.add('winning'));
+    }, 50);
+    document.getElementById('ttt-status').className = 'game-status win';
+    document.getElementById('ttt-status').textContent = `${winner} wins! 🎉`;
+    setTimeout(() => showWinOverlay('🏆', `${winner} wins!`, 'Tic-Tac-Toe champion', tttInit), 800);
+    return;
+  }
+  if (tttBoard.every(c => c)) {
+    tttOver = true;
+    document.getElementById('ttt-status').className = 'game-status draw';
+    document.getElementById('ttt-status').textContent = "It's a draw! 🤝";
+    tttRender();
+    sfxDraw();
+    return;
+  }
+  tttTurn = tttTurn === 'X' ? 'O' : 'X';
+  tttRender();
+  document.getElementById('ttt-status').textContent = `${tttTurn === 'X' ? p1Name : p2Name}'s turn (${tttTurn})`;
+
+  // AI move
+  if (gameMode === 'ai' && tttTurn === 'O' && !tttOver) {
+    setTimeout(tttAI, 400);
+  }
+}
+
+function tttAI() {
+  // Try to win, block, take center, corners, edges
+  const avail = tttBoard.map((v, i) => v === null ? i : -1).filter(i => i >= 0);
+  if (!avail.length) return;
+
+  // Check for winning move
+  for (const m of avail) {
+    tttBoard[m] = 'O';
+    if (tttCheckWin()) { tttBoard[m] = null; tttPlay(m); return; }
+    tttBoard[m] = null;
+  }
+  // Block player win
+  for (const m of avail) {
+    tttBoard[m] = 'X';
+    if (tttCheckWin()) { tttBoard[m] = null; tttPlay(m); return; }
+    tttBoard[m] = null;
+  }
+  // Take center
+  if (avail.includes(4)) { tttPlay(4); return; }
+  // Take a corner
+  const corners = [0,2,6,8].filter(c => avail.includes(c));
+  if (corners.length) { tttPlay(corners[Math.floor(Math.random() * corners.length)]); return; }
+  // Take any
+  tttPlay(avail[Math.floor(Math.random() * avail.length)]);
+}
+
+function tttCheckWin() {
+  for (const [a,b,c] of tttWins) {
+    if (tttBoard[a] && tttBoard[a] === tttBoard[b] && tttBoard[b] === tttBoard[c]) {
+      return [a,b,c];
+    }
+  }
+  return null;
+}
+
+function tttReset() { tttInit(); sfxClick(); }
+
+
+// ═══════════════════════════════════════
+//        ROCK PAPER SCISSORS
+// ═══════════════════════════════════════
+let rpsRound, rpsMaxRounds, rpsP1Choice, rpsP2Choice, rpsWaiting, rpsP2Picking;
+const rpsEmoji = { rock: '✊', paper: '✋', scissors: '✌️' };
+const rpsBeats = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
+
+function rpsInit() {
+  rpsRound = 1;
+  rpsMaxRounds = 5;
+  scores.rps.p1 = 0;
+  scores.rps.p2 = 0;
+  rpsP1Choice = null;
+  rpsP2Choice = null;
+  rpsWaiting = false;
+  rpsP2Picking = false;
+  updateScore('rps');
+  rpsUpdateUI();
+}
+
+function rpsUpdateUI() {
+  document.getElementById('rps-round').textContent = `Round ${rpsRound} of ${rpsMaxRounds}`;
+  document.getElementById('rps-hand-left').innerHTML = `<span>❓</span><span class="rps-hand-label">${p1Name}</span>`;
+  document.getElementById('rps-hand-right').innerHTML = `<span>❓</span><span class="rps-hand-label">${p2Name}</span>`;
+  document.getElementById('rps-hand-left').className = 'rps-hand';
+  document.getElementById('rps-hand-right').className = 'rps-hand';
+  document.getElementById('rps-vs').classList.remove('show');
+  document.getElementById('rps-status').className = 'game-status';
+  document.getElementById('rps-status').textContent = gameMode === 'local' && rpsP2Picking
+    ? `${p2Name}, choose your weapon!`
+    : 'Choose your weapon!';
+  document.getElementById('rps-choices').style.pointerEvents = '';
+}
+
+document.querySelectorAll('.rps-choice-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (rpsWaiting) return;
+    const choice = btn.dataset.choice;
+    sfxRPS();
+
+    if (gameMode === 'ai') {
+      rpsP1Choice = choice;
+      const aiChoices = ['rock', 'paper', 'scissors'];
+      rpsP2Choice = aiChoices[Math.floor(Math.random() * 3)];
+      rpsReveal();
+    } else {
+      // 2-player local: P1 picks first (hidden), then P2
+      if (!rpsP2Picking) {
+        rpsP1Choice = choice;
+        rpsP2Picking = true;
+        document.getElementById('rps-status').textContent = `${p2Name}, choose your weapon!`;
+        document.getElementById('rps-hand-left').innerHTML = `<span>🤫</span><span class="rps-hand-label">${p1Name}</span>`;
+      } else {
+        rpsP2Choice = choice;
+        rpsP2Picking = false;
+        rpsReveal();
+      }
+    }
+  });
+});
+
+function rpsReveal() {
+  rpsWaiting = true;
+  document.getElementById('rps-choices').style.pointerEvents = 'none';
+
+  // Countdown
+  const cd = document.getElementById('rps-countdown');
+  cd.classList.add('show');
+  let count = 3;
+  const nums = ['3️⃣', '2️⃣', '1️⃣', '🤜🤛'];
+  cd.querySelector('.num').textContent = nums[0];
+
+  const iv = setInterval(() => {
+    count--;
+    if (count >= 0) {
+      cd.querySelector('.num').textContent = nums[3 - count];
+      sfxRPS();
+    }
+    if (count < 0) {
+      clearInterval(iv);
+      cd.classList.remove('show');
+      rpsShowResult();
+    }
+  }, 500);
+}
+
+function rpsShowResult() {
+  const lh = document.getElementById('rps-hand-left');
+  const rh = document.getElementById('rps-hand-right');
+  lh.innerHTML = `<span>${rpsEmoji[rpsP1Choice]}</span><span class="rps-hand-label">${p1Name}</span>`;
+  rh.innerHTML = `<span>${rpsEmoji[rpsP2Choice]}</span><span class="rps-hand-label">${p2Name}</span>`;
+  lh.classList.add('reveal');
+  rh.classList.add('reveal');
+  document.getElementById('rps-vs').classList.add('show');
+
+  let resultText;
+  if (rpsP1Choice === rpsP2Choice) {
+    resultText = "It's a tie! 🤝";
+    document.getElementById('rps-status').className = 'game-status draw';
+    sfxDraw();
+  } else if (rpsBeats[rpsP1Choice] === rpsP2Choice) {
+    resultText = `${p1Name} wins this round! 🎉`;
+    scores.rps.p1++;
+    lh.classList.add('winner');
+    rh.classList.add('loser');
+    document.getElementById('rps-status').className = 'game-status win';
+    sfxWin();
+  } else {
+    resultText = `${p2Name} wins this round!`;
+    scores.rps.p2++;
+    rh.classList.add('winner');
+    lh.classList.add('loser');
+    document.getElementById('rps-status').className = 'game-status';
+    sfxPlace();
+  }
+  document.getElementById('rps-status').textContent = resultText;
+  updateScore('rps');
+
+  // Check match over
+  const neededToWin = Math.ceil(rpsMaxRounds / 2);
+  if (scores.rps.p1 >= neededToWin || scores.rps.p2 >= neededToWin || rpsRound >= rpsMaxRounds) {
+    setTimeout(() => {
+      const winner = scores.rps.p1 > scores.rps.p2 ? p1Name : scores.rps.p2 > scores.rps.p1 ? p2Name : null;
+      if (winner) {
+        showWinOverlay('👑', `${winner} wins the match!`, `${scores.rps.p1} – ${scores.rps.p2}`, rpsInit);
+      } else {
+        showWinOverlay('🤝', "It's a tie!", `${scores.rps.p1} – ${scores.rps.p2}`, rpsInit);
+      }
+    }, 1500);
+  } else {
+    rpsRound++;
+    setTimeout(() => {
+      rpsP1Choice = null;
+      rpsP2Choice = null;
+      rpsWaiting = false;
+      rpsUpdateUI();
+    }, 1800);
+  }
+}
+
+function rpsReset() { rpsInit(); sfxClick(); }
+
+
+// ═══════════════════════════════════════
+//           CONNECT FOUR
+// ═══════════════════════════════════════
+const C4_ROWS = 6, C4_COLS = 7;
+let c4Board, c4Turn, c4Over;
+
+function c4Init() {
+  c4Board = Array.from({ length: C4_ROWS }, () => Array(C4_COLS).fill(null));
+  c4Turn = 'red';
+  c4Over = false;
+  updateScore('c4');
+  c4Render();
+  document.getElementById('c4-status').className = 'game-status';
+  document.getElementById('c4-status').textContent = `${c4Turn === 'red' ? p1Name : p2Name}'s turn (${c4Turn === 'red' ? '🔴' : '🟡'})`;
+  c4RenderIndicator();
+}
+
+function highlightC4Col(col) {
+  if (c4Over) return;
+  const dots = document.querySelectorAll('.c4-col-dot');
+  dots.forEach((d, idx) => {
+    if (idx === col) {
+      d.classList.add(c4Turn === 'red' ? 'active-red' : 'active-yellow');
+    } else {
+      d.classList.remove('active-red', 'active-yellow');
+    }
+  });
+}
+
+function clearC4Col() {
+  const dots = document.querySelectorAll('.c4-col-dot');
+  dots.forEach(d => d.classList.remove('active-red', 'active-yellow'));
+}
+
+function c4RenderIndicator() {
+  const ind = document.getElementById('c4-indicator');
+  ind.innerHTML = '';
+  for (let c = 0; c < C4_COLS; c++) {
+    const dot = document.createElement('div');
+    dot.className = 'c4-col-dot';
+    dot.dataset.col = c;
+    dot.addEventListener('click', () => c4Drop(c));
+    dot.addEventListener('mouseenter', () => highlightC4Col(c));
+    dot.addEventListener('mouseleave', () => clearC4Col());
+    ind.appendChild(dot);
+  }
+}
+
+function c4Render() {
+  const board = document.getElementById('c4-board');
+  board.innerHTML = '';
+  for (let r = 0; r < C4_ROWS; r++) {
+    for (let c = 0; c < C4_COLS; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'c4-cell' + (c4Board[r][c] ? ' taken' : '');
+      cell.dataset.row = r;
+      cell.dataset.col = c;
+      const piece = document.createElement('div');
+      piece.className = 'piece' + (c4Board[r][c] ? ` ${c4Board[r][c]}` : '');
+      cell.appendChild(piece);
+      cell.addEventListener('click', () => c4Drop(c));
+      cell.addEventListener('mouseenter', () => highlightC4Col(c));
+      cell.addEventListener('mouseleave', () => clearC4Col());
+      board.appendChild(cell);
+    }
+  }
+}
+
+function c4Drop(col) {
+  if (c4Over) return;
+  // Find lowest empty row in column
+  let row = -1;
+  for (let r = C4_ROWS - 1; r >= 0; r--) {
+    if (!c4Board[r][col]) { row = r; break; }
+  }
+  if (row === -1) return; // Column full
+
+  c4Board[row][col] = c4Turn;
+  sfxDrop();
+  c4Render();
+
+  // Animate drop
+  const cell = document.querySelector(`.c4-cell[data-row="${row}"][data-col="${col}"]`);
+  if (cell) cell.classList.add('drop');
+
+  // Check win
+  const win = c4CheckWin(row, col);
+  if (win) {
+    c4Over = true;
+    const winner = c4Turn === 'red' ? p1Name : p2Name;
+    scores.c4[c4Turn === 'red' ? 'p1' : 'p2']++;
+    updateScore('c4');
+    setTimeout(() => {
+      win.forEach(([r, c]) => {
+        const wCell = document.querySelector(`.c4-cell[data-row="${r}"][data-col="${c}"]`);
+        if (wCell) wCell.classList.add('winning');
+      });
+    }, 100);
+    document.getElementById('c4-status').className = 'game-status win';
+    document.getElementById('c4-status').textContent = `${winner} wins! 🎉`;
+    setTimeout(() => showWinOverlay('🏆', `${winner} wins!`, 'Connect Four champion', c4Init), 1000);
+    return;
+  }
+
+  // Check draw
+  if (c4Board[0].every(c => c)) {
+    c4Over = true;
+    document.getElementById('c4-status').className = 'game-status draw';
+    document.getElementById('c4-status').textContent = "Board full — it's a draw! 🤝";
+    sfxDraw();
+    return;
+  }
+
+  c4Turn = c4Turn === 'red' ? 'yellow' : 'red';
+  document.getElementById('c4-status').textContent = `${c4Turn === 'red' ? p1Name : p2Name}'s turn (${c4Turn === 'red' ? '🔴' : '🟡'})`;
+  c4RenderIndicator();
+
+  // AI move
+  if (gameMode === 'ai' && c4Turn === 'yellow' && !c4Over) {
+    setTimeout(c4AI, 500);
+  }
+}
+
+function c4AI() {
+  const avail = [];
+  for (let c = 0; c < C4_COLS; c++) {
+    if (!c4Board[0][c]) avail.push(c);
+  }
+  if (!avail.length) return;
+
+  const findRow = (col) => {
+    for (let r = C4_ROWS - 1; r >= 0; r--) {
+      if (!c4Board[r][col]) return r;
+    }
+    return -1;
+  };
+
+  // 1. Try winning move (yellow)
+  for (const col of avail) {
+    const r = findRow(col);
+    c4Board[r][col] = 'yellow';
+    if (c4CheckWin(r, col)) { c4Board[r][col] = null; c4Drop(col); return; }
+    c4Board[r][col] = null;
+  }
+
+  // 2. Block opponent winning move (red)
+  for (const col of avail) {
+    const r = findRow(col);
+    c4Board[r][col] = 'red';
+    if (c4CheckWin(r, col)) { c4Board[r][col] = null; c4Drop(col); return; }
+    c4Board[r][col] = null;
+  }
+
+  // 3. Avoid dropping into column if human can win right above it!
+  const safeAvail = avail.filter(col => {
+    const r = findRow(col);
+    if (r > 0) {
+      c4Board[r - 1][col] = 'red';
+      const wouldGiveWin = c4CheckWin(r - 1, col);
+      c4Board[r - 1][col] = null;
+      return !wouldGiveWin;
+    }
+    return true;
+  });
+
+  const candidates = safeAvail.length > 0 ? safeAvail : avail;
+  // Prefer center columns: 3, then 2, 4, then 1, 5, then 0, 6
+  const pref = [3, 2, 4, 1, 5, 0, 6].filter(c => candidates.includes(c));
+  c4Drop(pref[0]);
+}
+
+function c4CheckWin(row, col) {
+  const color = c4Board[row][col];
+  if (!color) return null;
+  const dirs = [[0,1],[1,0],[1,1],[1,-1]];
+  for (const [dr, dc] of dirs) {
+    const line = [[row, col]];
+    for (let d = -1; d <= 1; d += 2) {
+      for (let s = 1; s < 4; s++) {
+        const r = row + dr * d * s, c = col + dc * d * s;
+        if (r >= 0 && r < C4_ROWS && c >= 0 && c < C4_COLS && c4Board[r][c] === color) {
+          line.push([r, c]);
+        } else break;
+      }
+    }
+    if (line.length >= 4) return line;
+  }
+  return null;
+}
+
+function c4Reset() { c4Init(); sfxClick(); }
+
+
+// ─── Hub SDK integration ───
+try {
+  if (window.parent !== window && window.parent.postMessage) {
+    document.querySelectorAll('.back-btn').forEach(btn => {
+      const original = btn.onclick;
+      btn.onclick = null;
+      btn.addEventListener('click', () => {
+        if (document.getElementById('lobby').classList.contains('active')) {
+          window.parent.postMessage({ source: 'hub-game', type: 'exit' }, '*');
+        } else {
+          showLobby();
+        }
+      });
+    });
+  }
+} catch(e) {}
+updateSoundBtns();
+</script>
+</body>
+</html>
