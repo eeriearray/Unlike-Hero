@@ -74,7 +74,7 @@ export default {
         const m = me();
         aimG.replaceChildren();
         const len = Math.hypot(dx, dy) || 1;
-        const reach = 8 + pw * 46;
+        const reach = 5 + pw * pw * 40; // roll distance grows with the square of the speed
         s('line', { x1: m.x, y1: m.y, x2: m.x - dx * .8, y2: m.y - dy * .8, class: 'mb-pull' }, aimG);
         s('line', { x1: m.x, y1: m.y, x2: m.x + dx / len * reach, y2: m.y + dy / len * reach, class: 'mb-traj' }, aimG);
         power.hidden = false;
@@ -139,7 +139,7 @@ export default {
         if (v.phase !== 'finished') return;
       }
       if (v.phase === 'aim') {
-        api.setStatus(mine ? `Your shot! Drag back from your marble. ${v.targetsLeft} targets left.` : `${nameOf(v, v.turn)} is aiming… ${v.targetsLeft} targets left.`, mine ? 'hot' : '');
+        api.setStatus(mine ? `Your shot${v.shotsLeft < 3 ? ` (${v.shotsLeft} left this turn)` : ''}! Drag back from your marble. ${v.targetsLeft} targets left.` : `${nameOf(v, v.turn)} is aiming… ${v.targetsLeft} targets left.`, mine ? 'hot' : '');
       } else if (v.phase === 'finished') {
         const best = Math.max(...v.players.map(p => v.scores[p.id]));
         const won = v.scores[api.me] === best;

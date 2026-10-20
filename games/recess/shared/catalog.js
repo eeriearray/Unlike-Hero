@@ -145,7 +145,7 @@ export const CATALOG = [
     rules: [
       'Everyone has a shooter marble inside the chalk ring, with target marbles scattered in the middle.',
       'On your turn drag back from your shooter and release to shoot.',
-      'Knock a target marble out of the ring for 1 point; knock out another player\'s shooter for 2 points.',
+      'Knock a target marble out of the ring for 1 point and shoot again (up to 3 shots a turn). Knock out another player\'s shooter for 2 points (no extra shot).',
       'If your shooter leaves the ring, you lose 1 point and it is put back at the edge.',
       'When all targets are gone, the highest score wins.'
     ]

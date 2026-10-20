@@ -123,7 +123,9 @@ function closestOnSegments(ax, ay, bx, by, cx, cy, dx, dy) {
 export function simulatePens(pens, desk) {
   const frames = [];
   const events = [];
-  const LIN_F = 34, ANG_F = 7.5, E = 0.55;
+  // Paper is grippy and pens are not billiard balls: a hit passes on only part of the speed, so one
+  // flick rarely clears the desk, and a hard flick tends to carry your own pen on after the hit.
+  const LIN_F = 60, ANG_F = 9, E = 0.35;
   const inertia = (p) => p.m * p.len * p.len / 12;
   const record = () => frames.push(pens.map(p => [r1(p.x), r1(p.y), Math.round(p.a * 1000) / 1000, p.gone ? 1 : 0]));
   record();

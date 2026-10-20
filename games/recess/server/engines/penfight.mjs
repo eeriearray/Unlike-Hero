@@ -7,7 +7,7 @@ import { simulatePens, flickPen } from '../physics.mjs';
 
 export const DESK = { w: 100, h: 140 };
 const PEN = { len: 30, r: 2.4, m: 1 };
-const MAX_IMPULSE = 115;
+const MAX_IMPULSE = 100;
 const ROUNDS_TO_WIN = 3;
 const STYLES = ['gel-blue', 'ink-red', 'pencil', 'marker-green'];
 
@@ -31,12 +31,13 @@ export class PenFightEngine extends BaseEngine {
 
   newRound() {
     this.round++;
-    const jitter = () => (BaseEngine.rand(21) - 10) / 10;
+    // Pens start somewhere in the middle of the desk, a good few pen-lengths apart and at odd angles,
+    // so there is no single "perfect opener": you have to work the other pen towards an edge.
     this.pens = this.players.map((p, i) => ({
       id: p.id, ...PEN,
-      x: DESK.w / 2 + jitter() * 8,
-      y: i === 0 ? DESK.h * 0.63 : DESK.h * 0.37,
-      a: (BaseEngine.rand(60) - 30) * Math.PI / 180 + (i === 0 ? 0 : Math.PI),
+      x: 32 + BaseEngine.rand(37),
+      y: i === 0 ? 86 + BaseEngine.rand(14) : 40 + BaseEngine.rand(14),
+      a: BaseEngine.rand(360) * Math.PI / 180,
       vx: 0, vy: 0, w: 0, gone: null
     }));
     this.turn = this.players[(this.round + this.matchNo) % 2].id;
@@ -129,15 +130,39 @@ export class PenFightEngine extends BaseEngine {
     const seq = this.seq;
     this.later(() => {
       if (this.phase !== 'aim' || this.turn !== bot.id || this.seq !== seq) return;
-      const me = this.pens.find(p => p.id === bot.id);
-      const them = this.pens.find(p => p.id !== bot.id);
-      let dx = them.x - me.x, dy = them.y - me.y;
-      const d = Math.hypot(dx, dy) || 1;
-      const ang = Math.atan2(dy, dx) + (BaseEngine.rand(21) - 10) * Math.PI / 180;
-      // Do not shoot so hard you follow them off the desk.
-      const power = Math.min(MAX_IMPULSE, 42 + d * 0.6 + BaseEngine.rand(22));
-      this.flick(bot.id, { grab: (BaseEngine.rand(41) - 20) / 100, jx: Math.cos(ang) * power, jy: Math.sin(ang) * power });
+      const plan = this.planFlick(bot.id);
+      // A steady hand, not a perfect one.
+      const ang = plan.ang + (BaseEngine.rand(7) - 3) * Math.PI / 180;
+      const power = plan.power * (0.95 + BaseEngine.rand(11) / 100);
+      this.flick(bot.id, { grab: plan.grab, jx: Math.cos(ang) * power, jy: Math.sin(ang) * power });
     }, 1400);
+  }
+
+  /** Try a few hundred flicks on a copy of the desk and keep the one that leaves the bot best placed. */
+  planFlick(botId) {
+    const me = this.pens.find(p => p.id === botId);
+    const them = this.pens.find(p => p.id !== botId);
+    const edge = (p) => Math.min(p.x, p.y, DESK.w - p.x, DESK.h - p.y);
+    const toward = Math.atan2(them.y - me.y, them.x - me.x);
+    let best = null;
+    for (let da = -44; da <= 44; da += 4) {
+      for (const f of [0.35, 0.5, 0.65, 0.8, 0.9, 1]) {
+        for (const grab of [-0.5, 0, 0.5]) {
+          const ang = toward + da * Math.PI / 180;
+          const power = f * MAX_IMPULSE;
+          const pens = this.pens.map(p => ({ ...p, vx: 0, vy: 0, w: 0, gone: null }));
+          const a = pens.find(p => p.id === botId), b = pens.find(p => p.id !== botId);
+          flickPen(a, grab, Math.cos(ang) * power, Math.sin(ang) * power);
+          simulatePens(pens, DESK);
+          let score;
+          if (a.gone) score = -1000;
+          else if (b.gone) score = 1000 + edge(a);
+          else score = (60 - edge(b)) * 2 + Math.min(edge(a), 25) - (edge(a) < 12 ? (12 - edge(a)) * 6 : 0);
+          if (!best || score > best.score) best = { score, ang, power, grab };
+        }
+      }
+    }
+    return best;
   }
 
   getView() {

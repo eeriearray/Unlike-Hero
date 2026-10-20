@@ -9,7 +9,9 @@ import { simulateDiscs } from '../physics.mjs';
 
 export const RING = { x: 50, y: 50, r: 40 };
 const SHOOTER_R = 2.6, TARGET_R = 1.9;
-const MAX_SPEED = 78;
+const MAX_SPEED = 57;
+const SHOTS_PER_TURN = 3; // knockouts earn extra shots, but nobody clears the ring in one go
+const FRICTION = 40; // dirt, not glass: a target in the middle needs a well-aimed shot to leave the ring
 const SEAT_ANGLES = [Math.PI / 2, -Math.PI / 2, Math.PI, 0]; // bottom, top, left, right
 const DESIGNS = ['tiger', 'galaxy', 'ocean', 'cherry'];
 const MAX_SHOTS = 80;
@@ -32,14 +34,22 @@ export class MarblesEngine extends BaseEngine {
     this.game++;
     this.scores = Object.fromEntries(this.players.map(p => [p.id, 0]));
     this.bodies = this.players.map((p, i) => ({ id: p.id, kind: 'shooter', r: SHOOTER_R, m: 1.5, ...this.home(i), vx: 0, vy: 0 }));
-    const cross = [[0, 0], [5, 0], [-5, 0], [0, 5], [0, -5], [10, 0], [-10, 0], [0, 10], [0, -10]];
-    cross.forEach(([dx, dy], i) => this.bodies.push({ id: `t${i}`, kind: 'target', r: TARGET_R, m: 1, x: RING.x + dx, y: RING.y + dy, vx: 0, vy: 0, colour: i % 4 }));
+    // Targets are scattered loosely round the middle. (A neat cross lines up like Newton's cradle:
+    // one hard shot down an arm pops the far marble out every time.)
+    const spots = [];
+    for (let tries = 0; spots.length < 9 && tries < 5000; tries++) {
+      const a = BaseEngine.rand(360) * Math.PI / 180, d = 2 + BaseEngine.rand(130) / 10;
+      const x = RING.x + Math.cos(a) * d, y = RING.y + Math.sin(a) * d;
+      if (spots.every(([sx, sy]) => Math.hypot(sx - x, sy - y) > TARGET_R * 2 + 2.2)) spots.push([x, y]);
+    }
+    spots.forEach(([x, y], i) => this.bodies.push({ id: `t${i}`, kind: 'target', r: TARGET_R, m: 1, x, y, vx: 0, vy: 0, colour: i % 4 }));
     const seats = this.activePlayers();
     this.turn = seats[(this.game - 1) % seats.length].id;
     this.phase = 'aim';
     this.shot = null;
     this.seq = (this.seq || 0) + 1;
     this.shots = 0;
+    this.streak = 0;
     this.winner = null;
     this.botTurn();
   }
@@ -70,11 +80,7 @@ export class MarblesEngine extends BaseEngine {
     const live = this.bodies.filter(b => !b.gone);
     const me = live.find(b => b.id === pid);
     me.vx = vx; me.vy = vy;
-    const sim = simulateDiscs(live, {
-      friction: 26,
-      restitution: 0.9,
-      outside: (b) => Math.hypot(b.x - RING.x, b.y - RING.y) > RING.r + 0.5
-    });
+    const sim = this.simulate(live);
     for (const b of live) { b.vx = b.vy = 0; }
     this.shots++;
     this.shot = { seq: ++this.seq, by: pid, ids: sim.ids, frames: sim.frames, events: sim.events };
@@ -85,10 +91,18 @@ export class MarblesEngine extends BaseEngine {
     return { ok: true };
   }
 
+  simulate(bodies) {
+    return simulateDiscs(bodies, {
+      friction: FRICTION,
+      restitution: 0.8,
+      outside: (b) => Math.hypot(b.x - RING.x, b.y - RING.y) > RING.r + 0.5
+    });
+  }
+
   settle() {
     if (this.phase !== 'rolling') return;
     const by = this.shot.by;
-    let knocked = false;
+    let knocked = false; // only knocking out a target earns another shot
     const out = this.bodies.filter(b => b.gone === 'out');
     const notes = [];
     for (const b of out) {
@@ -99,7 +113,7 @@ export class MarblesEngine extends BaseEngine {
         this.scores[by] -= 1; notes.push({ id: b.id, points: -1, to: by });
         this.respawn(b);
       } else {
-        this.scores[by] += 2; knocked = true; notes.push({ id: b.id, points: 2, to: by });
+        this.scores[by] += 2; notes.push({ id: b.id, points: 2, to: by });
         this.respawn(b);
       }
     }
@@ -117,7 +131,8 @@ export class MarblesEngine extends BaseEngine {
     }
     this.phase = 'aim';
     const ownOut = out.some(b => b.id === by);
-    if (!knocked || ownOut) this.turn = this.nextAfter(by);
+    this.streak++;
+    if (!knocked || ownOut || this.streak >= SHOTS_PER_TURN) { this.turn = this.nextAfter(by); this.streak = 0; }
     this.notify();
     this.botTurn();
   }
@@ -147,14 +162,40 @@ export class MarblesEngine extends BaseEngine {
     const seq = this.seq;
     this.later(() => {
       if (this.phase !== 'aim' || this.turn !== bot.id || this.seq !== seq) return;
-      const me = this.bodies.find(b => b.id === bot.id);
-      const targets = this.bodies.filter(b => b.kind === 'target' && !b.gone);
-      const t = targets.sort((a, b) => Math.hypot(a.x - me.x, a.y - me.y) - Math.hypot(b.x - me.x, b.y - me.y))[0];
-      const ang = Math.atan2(t.y - me.y, t.x - me.x) + (BaseEngine.rand(13) - 6) * Math.PI / 180;
-      const d = Math.hypot(t.x - me.x, t.y - me.y);
-      const sp = Math.min(MAX_SPEED, 32 + d * 0.9 + BaseEngine.rand(12));
+      const plan = this.planShot(bot.id);
+      const ang = plan.ang + (BaseEngine.rand(5) - 2) * Math.PI / 180 * 0.75;
+      const sp = Math.min(MAX_SPEED, plan.sp * (0.96 + BaseEngine.rand(9) / 100));
       this.shoot(bot.id, { vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp });
     }, 1300);
+  }
+
+  /** Simulate shots all round the compass on a copy of the ring and keep the most rewarding one. */
+  planShot(botId) {
+    let best = null;
+    const fromCentre = (b) => Math.hypot(b.x - RING.x, b.y - RING.y);
+    for (let deg = 0; deg < 360; deg += 2) {
+      for (const f of [0.4, 0.55, 0.7, 0.85, 1]) {
+        const ang = deg * Math.PI / 180;
+        const sp = f * MAX_SPEED;
+        const copy = this.bodies.filter(b => !b.gone).map(b => ({ ...b, vx: 0, vy: 0, gone: null }));
+        const me = copy.find(b => b.id === botId);
+        me.vx = Math.cos(ang) * sp; me.vy = Math.sin(ang) * sp;
+        this.simulate(copy);
+        let score = 0;
+        for (const b of copy) {
+          if (b.gone) score += b.kind === 'target' ? 10 : b.id === botId ? -30 : 20;
+          else if (b.kind === 'target') score -= Math.max(0, fromCentre(b) - 28) * 0.4; // a target left by the line is a gift to the next player
+        }
+        if (!me.gone) {
+          score -= Math.max(0, fromCentre(me) - 33) * 0.8; // don't end up teetering on the chalk
+          // Finish close to the targets: next turn's shots are short and strong.
+          const near = Math.min(...copy.filter(b => b.kind === 'target' && !b.gone).map(b => Math.hypot(b.x - me.x, b.y - me.y)), 40);
+          score += Math.max(0, 30 - near) * 0.25;
+        }
+        if (!best || score > best.score) best = { score, ang, sp };
+      }
+    }
+    return best;
   }
 
   playerLeft(pid) {
@@ -182,6 +223,7 @@ export class MarblesEngine extends BaseEngine {
       turn: this.turn,
       phase: this.phase,
       shot: this.shot,
+      shotsLeft: SHOTS_PER_TURN - this.streak,
       winner: this.winner,
       wins: { ...this.wins }
     };
