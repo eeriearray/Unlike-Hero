@@ -1754,7 +1754,10 @@
     if (sc.mid) {
       layer(x, sc.mid, 0.2, cam, W, H, sc);
       if (sc.citadel) chimney(x, sc, cam, W, H, t, theme);
-      else if (th.landmark && LIVE[th.landmark].mid) LIVE[th.landmark].mid(x, sc, cam, W, H, t);
+      else if (th.landmark && LIVE[th.landmark].mid &&
+        (th.landmark !== 'geode' || (sc.land && sc.land.hole && sc.land.crystals))) {
+        LIVE[th.landmark].mid(x, sc, cam, W, H, t);
+      }
     }
     if (theme === 'dusk' || theme === 'blossom' || theme === 'arena') flock(x, W, H, t);
     if (sc.forest) layer(x, sc.forest, 0.32, cam, W, H, sc);
