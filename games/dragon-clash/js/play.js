@@ -120,7 +120,7 @@
           (probs.length ? '<div class="errors">' + probs.map(esc).join('<br>') + '</div>' : '') +
           '<button class="btn hot vs-go" data-act="start"' + (probs.length ? ' disabled' : '') + '>Choose dragons →</button></div>' +
           '</div>';
-        for (var k = 0; k < n; k++) App.mini(App.ui.querySelector('[data-mini="' + k + '"]'), App.buildById(cfg.slots[k].build), 'idle', { facing: teamOf(k) % 2 ? -1 : 1, scale: 1.2, offset: k });
+        for (var k = 0; k < n; k++) App.mini(App.ui.querySelector('[data-mini="' + k + '"]'), App.buildById(cfg.slots[k].build), 'idle', { facing: teamOf(k) % 2 ? -1 : 1, scale: 1.2, offset: k, hd: true });
         // Random last: its thumbnail is stitched from the others.
         App.ui.querySelectorAll('[data-arena]:not([data-arena="random"])').forEach(function (cv) { arenaPreview(cv, cv.dataset.arena); });
         var rnd = App.ui.querySelector('[data-arena="random"]'); if (rnd) arenaPreview(rnd, 'random');
@@ -202,8 +202,8 @@
           '<p class="muted" style="margin:0">Unlimited stocks. In training: <kbd>R</kbd> reset positions · <kbd>T</kbd> change dummy · <kbd>[</kbd> <kbd>]</kbd> dummy damage −/+10% · <kbd>`</kbd> hitboxes and launch paths · <kbd>Esc</kbd> pause.</p>' +
           '<div class="keys" style="margin-top:8px">' + App.deviceHint(cfg.device) + '</div></div>' +
           '<div class="row"><div class="grow"></div><button class="btn hot" data-act="start">Start training →</button></div></div>';
-        App.mini(App.ui.querySelector('[data-mini="0"]'), App.buildById(cfg.build), 'idle', { scale: 0.95 });
-        App.mini(App.ui.querySelector('[data-mini="1"]'), App.buildById(cfg.dummy), 'idle', { scale: 0.95, facing: -1 });
+        App.mini(App.ui.querySelector('[data-mini="0"]'), App.buildById(cfg.build), 'idle', { scale: 0.95, hd: true });
+        App.mini(App.ui.querySelector('[data-mini="1"]'), App.buildById(cfg.dummy), 'idle', { scale: 0.95, facing: -1, hd: true });
         App.ui.querySelectorAll('[data-f]').forEach(function (s) { s.addEventListener('change', function () { cfg[s.dataset.f] = s.value; App.store.set('training', cfg); render(); }); });
       }
       function start() {
@@ -398,7 +398,7 @@
           '<span class="eyebrow">Stocks</span><div class="chips">' + [1, 2, 3].map(function (n) { return '<button class="chip' + (cfg.stocks === n ? ' on' : '') + '" data-act="stocks" data-n="' + n + '">' + n + '</button>'; }).join('') + '</div></div>' +
           (probs.length ? '<div class="errors">' + probs.map(esc).join('<br>') + '</div>' : '') +
           '<div class="row"><div class="grow"></div><button class="btn hot" data-act="lock"' + (probs.length ? ' disabled' : '') + '>Lock in & start the cup →</button></div></div>';
-        for (var i = 0; i < cfg.count; i++) App.mini(App.ui.querySelector('[data-mini="' + i + '"]'), App.buildById(cfg.entrants[i].build), 'idle', { scale: 0.9, offset: i });
+        for (var i = 0; i < cfg.count; i++) App.mini(App.ui.querySelector('[data-mini="' + i + '"]'), App.buildById(cfg.entrants[i].build), 'idle', { scale: 0.9, offset: i, hd: true });
         App.ui.querySelectorAll('[data-ctrl]').forEach(function (s) { s.addEventListener('change', function () { cfg.entrants[+s.dataset.ctrl].ctrl = s.value; save(); render(); }); });
         App.ui.querySelectorAll('[data-build]').forEach(function (s) { s.addEventListener('change', function () { cfg.entrants[+s.dataset.build].build = s.value; save(); render(); }); });
         App.ui.querySelectorAll('[data-name]').forEach(function (s) { s.addEventListener('change', function () { cfg.entrants[+s.dataset.name].name = s.value.slice(0, 14); save(); render(); }); });
