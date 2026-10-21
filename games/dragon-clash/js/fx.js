@@ -6,6 +6,15 @@
 (function () {
   'use strict';
   var D = window.DC.Data, Art = window.DCArt;
+  var FXanim;
+  function gearImg(name) { var g = Art && Art.gearImgs; return g ? g['fx-' + name] : null; }
+  /** Plays a painted effect sheet once if its frames are loaded; false means fall back to drawn particles. */
+  FXanim = function (fx, name, n, x, y, w, h, life, o) {
+    if (!gearImg(name + '-1')) return false;
+    var p = { type: 'anim', name: name, n: n, x: x, y: y, w: w, h: h, vx: 0, vy: 0, life: life, drag: 1 };
+    for (var k in o || {}) p[k] = o[k];
+    fx.add(p); return true;
+  };
   var TAU = Math.PI * 2;
   var MAX_PARTICLES = 700;
 
@@ -112,9 +121,12 @@
         var y = e.y - 70;
         if (e.ability === 'fade') this.burst(e.x, y, 18, { speed: 3, life: 30, size: 9, colors: ['rgba(200,220,255,0.35)', 'rgba(160,180,220,0.3)'], type: 'smoke', grav: -0.03 });
         else if (e.ability === 'aegis') { this.ring(e.x, y, 90, '#ffe08a', 20, 6); this.burst(e.x, y, 12, { speed: 5, life: 20, size: 4, colors: ['#fff6cf', '#ffd36a'], type: 'spark' }); }
+        else if (e.ability === 'phase' && FXanim(this, 'phase', 7, e.x, y, 200, 200, 22, { flip: e.facing < 0 })) { /* painted */ }
         else if (e.ability === 'phase') { this.ring(e.x, y, 60, '#cfe8ff', 14, 4); this.burst(e.x, y, 16, { angle: e.facing > 0 ? Math.PI : 0, spread: 0.5, speed: 9, life: 16, size: 4, colors: ['#ffffff', '#9fd0ff'], type: 'spark' }); }
+        else if (e.ability === 'decoy' && FXanim(this, 'decoy-pop', 6, e.x, y, 170, 170, 24)) { /* painted */ }
         else if (e.ability === 'decoy') this.burst(e.x, y, 20, { speed: 4, life: 28, size: 10, colors: ['rgba(220,210,240,0.5)', 'rgba(180,170,210,0.4)'], type: 'smoke', grav: -0.02 });
         else if (e.ability === 'rage') { this.ring(e.x, y, 100, '#ff4a2a', 22, 8); this.burst(e.x, y, 20, { speed: 7, life: 24, size: 5, colors: ['#ff4a2a', '#ffb02e', '#ffffff'], type: 'spark' }); this.addShake(3, settings); }
+        else if (e.ability === 'gust' && FXanim(this, 'gust', 8, e.x + e.facing * 150, y, 300, 150, 26, { flip: e.facing < 0 })) { /* painted */ }
         else if (e.ability === 'gust') {
           var dir = e.facing > 0 ? 0 : Math.PI;
           this.burst(e.x + e.facing * 40, y, 26, { angle: dir, spread: 0.35, speed: 16, life: 22, size: 12, colors: ['rgba(235,245,255,0.55)', 'rgba(200,225,255,0.4)'], type: 'smoke', drag: 0.9 });
@@ -123,12 +135,13 @@
         break;
       }
       case 'absorb':
-        this.ring(e.x, e.y, 110, '#fff2b0', 18, 9);
+        if (!FXanim(this, 'aegis-break', 8, e.x, e.y, 260, 260, 28)) this.ring(e.x, e.y, 110, '#fff2b0', 18, 9);
         this.burst(e.x, e.y, 24, { speed: 9, life: 26, size: 6, colors: ['#ffe08a', '#fff6cf', '#ffffff'], type: 'shard', grav: 0.2 });
         this.popup(e.x, e.y - 40, 'BLOCKED', '#ffe08a');
         this.addShake(4, settings);
         break;
       case 'decoyPop':
+        FXanim(this, 'decoy-pop', 6, e.x, e.y, 220, 220, 26);
         this.burst(e.x, e.y, 26, { speed: 6, life: 30, size: 11, colors: ['rgba(220,210,240,0.6)', 'rgba(255,255,255,0.5)'], type: 'smoke', grav: -0.02 });
         this.ring(e.x, e.y, 80, '#e6dcff', 16, 5);
         this.popup(e.x, e.y - 40, 'DECOY', '#e6dcff');
@@ -313,6 +326,16 @@
           x.fillStyle = p.color; x.save(); x.translate(p.x, p.y); x.rotate(p.life * 0.3);
           x.beginPath(); x.moveTo(0, -p.size); x.lineTo(p.size * 0.5, p.size * 0.6); x.lineTo(-p.size * 0.5, p.size * 0.6); x.fill(); x.restore();
           break;
+        case 'anim': {
+          // A painted effect from the customization pack, played once over its life (assets/gear/fx-<name>-<n>.png)
+          var fr = gearImg(p.name + '-' + Math.min(p.n, 1 + Math.floor((1 - k) * p.n)));
+          if (fr) {
+            x.globalAlpha = p.alpha != null ? p.alpha : 1;
+            x.save(); x.translate(p.x, p.y); if (p.flip) x.scale(-1, 1);
+            x.drawImage(fr, -p.w / 2, -p.h / 2, p.w, p.h); x.restore();
+          }
+          break;
+        }
         case 'ring':
           x.strokeStyle = p.color; x.lineWidth = p.width * k; x.beginPath(); x.arc(p.x, p.y, p.size * (1.15 - k * 0.85), 0, TAU); x.stroke();
           break;

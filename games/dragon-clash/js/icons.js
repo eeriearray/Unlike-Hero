@@ -44,13 +44,32 @@
   };
   var paths = {};
 
+  // Painted icons from the customization pack (assets/gear/icon-ability-*.png) replace the line glyphs when present
+  var GEAR = (window.DC_GEAR && window.DC_GEAR.files) || {}, IMG = {}, imgs = {};
+  ['fade', 'aegis', 'phase', 'decoy', 'rage', 'gust'].forEach(function (n) { if (GEAR['icon-ability-' + n]) IMG[n] = 'assets/gear/' + GEAR['icon-ability-' + n]; });
+  function image(name) {
+    if (!IMG[name]) return null;
+    var im = imgs[name];
+    if (!im) { im = imgs[name] = new Image(); im.src = IMG[name]; }
+    return im.complete && im.naturalWidth ? im : null;
+  }
+
   function svg(name, color, size) {
+    var s0 = size || 18;
+    if (IMG[name]) return '<img class="ico-svg ico-img" src="' + IMG[name] + '" width="' + Math.round(s0 * 1.25) + '" height="' + Math.round(s0 * 1.25) + '" alt="" aria-hidden="true" style="vertical-align:middle;object-fit:contain">';
     var d = P[name] || P.none, s = size || 18;
     return '<svg class="ico-svg" width="' + s + '" height="' + s + '" viewBox="0 0 24 24" aria-hidden="true" style="color:' + (color || 'currentColor') + '">' +
       '<path d="' + d + '" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   }
 
   function draw(ctx, name, x, y, size, color, width) {
+    var im = image(name);
+    if (im) {
+      // A translucent colour (e.g. an ability still on cooldown) dims the painted icon the same way
+      var z = size * 1.35, m = /rgba\([^)]*,\s*([\d.]+)\)/.exec(color || '');
+      ctx.save(); if (m) ctx.globalAlpha *= +m[1];
+      ctx.drawImage(im, x - z / 2, y - z / 2, z, z); ctx.restore(); return;
+    }
     if (typeof Path2D === 'undefined') return;
     var p = paths[name] || (paths[name] = new Path2D(P[name] || P.none)), k = size / 24;
     ctx.save(); ctx.translate(x - size / 2, y - size / 2); ctx.scale(k, k);
@@ -58,5 +77,5 @@
     ctx.stroke(p); ctx.restore();
   }
 
-  window.DCIcons = { svg: svg, draw: draw, has: function (n) { return !!P[n]; } };
+  window.DCIcons = { svg: svg, draw: draw, has: function (n) { return !!P[n] || !!IMG[n]; } };
 })();

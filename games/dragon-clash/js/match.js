@@ -742,7 +742,7 @@
   M.drawAegis = function (x, f, build) {
     var sc = D.BODIES[build.body].scale, r = 78 * Math.max(sc[0], sc[1]), cy = f.y - 72 * sc[1], t = this.time;
     var img = fxFrame('aegis', 8, t);
-    if (img) { x.drawImage(img, f.x - r * 1.25, cy - r * 1.25, r * 2.5, r * 2.5); return; }
+    if (img) { x.save(); x.globalAlpha *= 0.6; x.drawImage(img, f.x - r * 1.25, cy - r * 1.25, r * 2.5, r * 2.5); x.restore(); return; }   // see-through: the dragon stays readable inside
     x.save();
     var g = x.createRadialGradient(f.x, cy, r * 0.55, f.x, cy, r);
     g.addColorStop(0, 'rgba(255,220,120,0)'); g.addColorStop(0.85, 'rgba(255,214,110,0.18)'); g.addColorStop(1, 'rgba(255,240,190,0.55)');
