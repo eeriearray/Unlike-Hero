@@ -165,7 +165,7 @@ Both sound packs are licensed by the project owner for use in this game (no lice
 - **Meter** (3 bars): EX specials (Guard + Signature, 1 bar, armoured), **Dragon Fury** super (Guard + Heavy, 3 bars) with a world-freeze cinematic. **Taunt** (Y) gives a little meter.
 - Tests: `test/dragon-clash-mechanics.test.mjs`.
 
-Only the five HD sprite dragons are offered in menus; Forge builds are drawn with the HD dragon of their element (the rig stays as the `file://` fallback).
+Only the five sprite dragons are offered in menus; Forge builds are drawn with the painted dragon of their element (the rig stays as the `file://` fallback).
 
 ## Arenas (`js/scenery.js`)
 
@@ -211,7 +211,7 @@ until the real one exists. Export pieces as `docs/GEAR-ASSETS.md` describes into
 it finds (body pieces ride their rig bone, the tail mace follows the tail tip, `fx-aegis-*` and `fx-rage-*`
 frames replace the painted shield and aura).
 
-## Sprite-pack dragons (Emberfang HD, Frostwing HD, Ironmaw HD, Voltscale HD, Tidefang HD)
+## Sprite-pack dragons (Emberfang, Frostwing, Ironmaw, Voltscale, Tidefang)
 
 Five painted 25-animation dragons live in `assets/dragons/<id>/` (`emberfang frostwing ironmaw voltscale tidefang`):
 `manifest.json` plus 25 sheets (384 px cells, 4 columns, 3x frames with optical-flow in-betweens). They are extra

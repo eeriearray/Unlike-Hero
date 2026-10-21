@@ -386,7 +386,7 @@
   Object.keys(SPRITES).forEach(function (id) {
     var base = PRESETS.filter(function (p) { return p.id === id; })[0];
     var hd = JSON.parse(JSON.stringify(base));
-    hd.id = id + '-hd'; hd.name = base.name + ' HD'; hd.look.sprite = id;
+    hd.id = id + '-hd'; hd.name = base.name; hd.look.sprite = id;
     PRESETS.push(hd);
   });
 
