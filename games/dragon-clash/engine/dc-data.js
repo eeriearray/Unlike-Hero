@@ -273,13 +273,13 @@
   var BUDGET = 100;
 
   var BODIES = {
-    lithe:    { name: 'Lithe Frame',    cost: 10, weight: 82,  hurt: { w: 40, h: 120 }, scale: [0.9, 1.03], physMult: 0.95, speedMult: 1,
+    lithe:    { name: 'Lithe Frame',    cost: 10, weight: 82,  hurt: { w: 40, h: 112 }, scale: [0.84, 0.91], physMult: 0.95, speedMult: 1,
                 desc: 'Light and small: easy to launch, hard to hit.' },
     balanced: { name: 'Balanced Frame', cost: 20, weight: 100, hurt: { w: 46, h: 128 }, scale: [1, 1], physMult: 1, speedMult: 1,
                 desc: 'No weakness, no edge.' },
-    armored:  { name: 'Armored Frame',  cost: 30, weight: 114, hurt: { w: 52, h: 130 }, scale: [1.1, 1.01], physMult: 1.05, speedMult: 0.97,
+    armored:  { name: 'Armored Frame',  cost: 30, weight: 114, hurt: { w: 54, h: 142 }, scale: [1.14, 1.1], physMult: 1.05, speedMult: 0.97,
                 desc: 'Survives longer, a bigger target.' },
-    titan:    { name: 'Titan Frame',    cost: 38, weight: 128, hurt: { w: 60, h: 136 }, scale: [1.22, 1.04], physMult: 1.1, speedMult: 0.92,
+    titan:    { name: 'Titan Frame',    cost: 38, weight: 128, hurt: { w: 66, h: 154 }, scale: [1.3, 1.2], physMult: 1.1, speedMult: 0.92,
                 desc: 'Heaviest and hardest-hitting. Slow, huge target.' },
   };
 
@@ -314,15 +314,15 @@
     large:  { name: 'Large',  body: 'armored',  icon: 'size', desc: 'Heavier, hits harder, bigger target.' },
     huge:   { name: 'Huge',   body: 'titan',    icon: 'size', desc: 'Very heavy and strong, slow, huge target.' },
   };
-  // Instinct: a free, exclusive choice made before every fight that changes how a dragon wants to play.
+  // Instinct: a priced, exclusive choice made before every fight that changes how a dragon wants to play.
   var INSTINCTS = {
-    fury:      { name: 'Fury',      icon: 'fury', cost: 0, meterHit: 1.5, meterTaken: 1, guardMax: 0.65, scaleOffset: 1,
+    fury:      { name: 'Fury',      icon: 'fury', cost: 4, meterHit: 1.5, meterTaken: 1, guardMax: 0.65, scaleOffset: 1,
                  desc: 'All-out offence. +50% meter from landing hits, combos keep full damage one hit longer, but your guard bar is 35% smaller.' },
-    bastion:   { name: 'Bastion',   icon: 'bastion', cost: 0, meterHit: 0.75, meterTaken: 1, guardMax: 1.5, parryWindow: 8, guardCounterCost: 25,
+    bastion:   { name: 'Bastion',   icon: 'bastion', cost: 6, meterHit: 0.75, meterTaken: 1, guardMax: 1.5, parryWindow: 8, guardCounterCost: 25,
                  desc: 'Wall of scales. Guard bar +50%, an 8-frame parry window and Guard Counters for a quarter bar, but 25% less meter from hits.' },
-    tempest:   { name: 'Tempest',   icon: 'tempest', cost: 0, meterHit: 1, meterTaken: 1, guardMax: 1, airJumps: 1, dodgeCd: 0.7, kbTaken: 1.08, windCancel: 50,
+    tempest:   { name: 'Tempest',   icon: 'tempest', cost: 8, meterHit: 1, meterTaken: 1, guardMax: 1, airJumps: 1, dodgeCd: 0.7, kbTaken: 1.08, windCancel: 50,
                  desc: 'Never still. +1 air jump, dodges recover 30% sooner, and Dodge cancels a move that connected into a dash (half a bar). Takes 8% more knockback.' },
-    vengeance: { name: 'Vengeance', icon: 'vengeance', cost: 0, meterHit: 1, meterTaken: 2, guardMax: 1, rageDamage: 0.3,
+    vengeance: { name: 'Vengeance', icon: 'vengeance', cost: 10, meterHit: 1, meterTaken: 2, guardMax: 1, rageDamage: 0.3,
                  desc: 'Hurt it and it hurts back. Deals up to +30% damage as its own damage % climbs (full at 120%), and builds double meter from taking hits.' },
   };
   // Abilities: their own button, cooldowns in ticks (60 = 1 s). All are visible and have a counter.

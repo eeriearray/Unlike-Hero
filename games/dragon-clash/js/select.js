@@ -42,7 +42,7 @@
 
   function gearCostOf(p, gear) { return Build.gearCost(Build.withGear(p.roster[p.pick], gear)); }
 
-  /** A new dragon starts bare at its own size (the instinct is kept: it is the player's style, not the dragon's). */
+  /** A new dragon starts at its own size with the lowest-cost instinct and no ability. */
   function adoptLook(p) {
     var b = p.roster[p.pick];
     p.gear = { size: Build.sizeOf(b.body), instinct: (p.gear && p.gear.instinct) || 'fury', ability: 'none' };

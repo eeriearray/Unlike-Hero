@@ -74,7 +74,7 @@
     return { ok: errors.length === 0, errors: errors, cost: cost, remaining: budget - cost, gearCost: gearCostV };
   }
 
-  /** Loadout cost: ability + any growth in size over the dragon's own body (instincts are free). */
+  /** Loadout cost: instinct + ability + any growth in size over the dragon's own body. */
   function gearCost(b) {
     var g = b && b.gear;
     if (!g) return 0;
