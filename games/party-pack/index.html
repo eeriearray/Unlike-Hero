@@ -5,10 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#5531d6">
 <title>Party Pack</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- One display face per game, plus the shared UI faces. Everything falls back to system fonts offline. -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@700;800;900&family=Luckiest+Guy&family=Righteous&family=Permanent+Marker&family=Gochi+Hand&family=Creepster&family=Bowlby+One+SC&family=Archivo+Black&display=swap">
+<!-- Fonts and the QR code library are bundled in vendor/ so the game works with no internet. -->
+<link rel="stylesheet" href="vendor/fonts.css">
 <link rel="stylesheet" href="css/party.css">
 </head>
 <body>
@@ -55,9 +53,19 @@
 
 <script src="../../shared/sdk/hub-config.js"></script>
 <script src="../../shared/sdk/hub-sdk.js"></script>
-<!-- QR code for joining (optional: the room code alone is enough when offline) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" onerror="this.remove()"></script>
+<!-- QR code for joining (qrcode-generator 1.4.4, MIT, bundled) -->
+<script src="vendor/qrcode.min.js"></script>
 <script src="js/content.js"></script>
+<!-- Each game's questions: hundreds per game, dealt without repeats (js/games/common.js G.deal) -->
+<script src="js/content/quip.js"></script>
+<script src="js/content/fib.js"></script>
+<script src="js/content/draw.js"></script>
+<script src="js/content/quiz.js"></script>
+<script src="js/content/pitch.js"></script>
+<script src="js/content/meld.js"></script>
+<script src="js/content/social.js"></script>
+<script src="js/content/guess.js"></script>
+<script src="js/content/emoji.js"></script>
 <script src="js/core.js"></script>
 <script src="js/art.js"></script>
 <script src="js/draw.js"></script>
@@ -73,6 +81,11 @@
 <script src="js/games/quiz.js"></script>
 <script src="js/games/tee.js"></script>
 <script src="js/games/pitch.js"></script>
+<script src="js/games/meld.js"></script>
+<script src="js/games/whosaid.js"></script>
+<script src="js/games/likely.js"></script>
+<script src="js/games/guess.js"></script>
+<script src="js/games/emoji.js"></script>
 <script>
 'use strict';
 (function () {

@@ -112,12 +112,15 @@
         fire('peers', room.peers());
         if (m.t === 'hello' || isNew) send({ t: 'presence', state: presenceState });
       } else if (m.t === 'leave') { delete peers[m.from]; fire('peers', room.peers()); }
-      else if (m.t === 'msg') fire(m.topic, m.data, { id: m.from, player: m.player, name: m.name });
+      else if (m.t === 'msg') { if (m.to && m.to !== CONN) return; fire(m.topic, m.data, { id: m.from, player: m.player, name: m.name }); }
     }
     var room = {
       name: name, me: me, transport: 'none',
       on: function (topic, fn) { (handlers[topic] = handlers[topic] || []).push(fn); return function () { handlers[topic] = handlers[topic].filter(function (f) { return f !== fn; }); }; },
       emit: function (topic, data) { send({ t: 'msg', topic: topic, data: data }); },
+      /** Send to one member only (its connection id: the `id` a handler receives as the sender). The relay
+          delivers it to that socket alone, so other players never receive it. */
+      emitTo: function (connId, topic, data) { send({ t: 'msg', topic: topic, data: data, to: connId }); },
       presence: function (state) { presenceState = state; send({ t: 'presence', state: state }); },
       peers: function () { return Object.keys(peers).map(function (k) { return peers[k]; }); },
       leave: function () { send({ t: 'leave' }); if (transport) transport.close(); transport = null; }

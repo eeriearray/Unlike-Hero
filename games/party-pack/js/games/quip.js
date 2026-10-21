@@ -19,7 +19,7 @@
   async function headToHead(ctx, C, used, round) {
     await G.banner(ctx, `Round ${round}`, round === 2 ? 'Double points' : 'Two prompts each. Make them count.');
     const ps = shuffle(ctx.players()); const n = ps.length;
-    const prompts = ps.map(() => G.take(C.quip, used));
+    const prompts = G.deal(ctx, 'quip', C.quip, ps.length);
     // Prompt i is answered by player i and player i+1, so everyone gets two prompts and two opponents.
     const assign = new Map(ps.map(p => [p.id, []]));
     prompts.forEach((_, i) => { assign.get(ps[i].id).push(i); assign.get(ps[(i + 1) % n].id).push(i); });
@@ -100,7 +100,7 @@
   async function gauntlet(ctx, C) {
     await G.banner(ctx, 'THE GAUNTLET', '10 seconds per joke. No thinking allowed.', 1800);
     await ctx.say('gauntlet');
-    const blanks = shuffle(C.gauntlet).slice(0, 3); const deltas = new Map();
+    const blanks = G.deal(ctx, 'gauntlet', C.gauntlet, 3); const deltas = new Map();
     for (let k = 0; k < blanks.length; k++) {
       const b = blanks[k]; const ps = ctx.players();
       ctx.setPhase('GAUNTLET');

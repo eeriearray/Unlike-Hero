@@ -11,7 +11,7 @@
 
   const H = PP.Host = {
     code: null, room: null, players: [], audience: new Map(), vip: null, moderator: null,
-    views: {}, audView: null, ask: null, game: null, runToken: 0, hype: 0, phase: 'LOBBY_WAITING',
+    views: {}, audView: null, conns: new Map(), ask: null, game: null, runToken: 0, hype: 0, phase: 'LOBBY_WAITING',
     settings: Object.assign({ family: true, moderation: false, timerMult: 1, audience: true, voice: true, captions: true, music: 0.32, textScale: 1, highContrast: false, colorBlind: 'none', reduceMotion: false, ugc: '' }, PP.prefs.get('host', {}))
   };
   const saveSettings = () => PP.prefs.set('host', H.settings);
@@ -54,7 +54,7 @@
   H.kick = id => {
     const p = byId(id); if (!p) return;
     H.players = H.players.filter(x => x !== p);
-    if (!p.bot) H.room.emit('bye', { to: id, reason: 'The host removed you from the game.' });
+    if (!p.bot) sendTo(id, 'bye', { to: id, reason: 'The host removed you from the game.' });
     if (H.vip === id) passVip(); if (H.moderator === id) H.moderator = null;
     refresh();
   };
@@ -68,24 +68,32 @@
   H.start = () => {
     let code = null; try { code = sessionStorage.getItem('pp.hostCode'); } catch (e) { /* none */ }
     H.code = code || PP.makeCode(); try { sessionStorage.setItem('pp.hostCode', H.code); } catch (e) { /* none */ }
+    restoreState();
     H.room = PP.connect(H.code, s => { H.relay = s; renderTop(); if (s === 'connected') H.room.emit('host-up', {}); });
     if (!H.room) { $('#stage').innerHTML = '<div class="center"><h1>Hub SDK missing</h1><p>Open this game from the Unlike Hero folder.</p></div>'; return; }
-    H.room.on('join', onJoin);
-    H.room.on('in', onInput);
-    H.room.on('hb', onHeartbeat);
-    H.room.on('react', onReact);
+    // Remember which connection each phone (tab token) speaks from, so its private screen goes to it alone.
+    const via = fn => (d, from) => { if (d && d.token && from && from.id) H.conns.set(String(d.token).slice(0, 40), from.id); fn(d); };
+    H.room.on('join', via(onJoin));
+    H.room.on('in', via(onInput));
+    H.room.on('hb', via(onHeartbeat));
+    H.room.on('react', via(onReact));
     setTimeout(() => H.room.emit('host-up', {}), 50);
     setInterval(housekeeping, 1000);
+    findLanAddress(); setInterval(() => { if (!H.game) findLanAddress(); }, 10000);   // picks up Wi-Fi joining later
     setInterval(() => { H.hype = Math.max(0, H.hype - 1.5); renderHype(); }, 400);
     // The host character: mouth flaps and the speech bubble (captions) shows while a line plays.
     PP.Voice.onSpeak((hostKey, text) => {
       const el = $('#host'), b = el.querySelector('.bubble');
-      const who = hostKey === 'edge' ? curKey() : hostKey;
+      const who = hostKey === 'edge' ? 'lobby' : hostKey;     // shared lines belong to the Announcer
+      const setArt = k => { if (el.dataset.who !== k) { el.querySelector('.host-art').innerHTML = PP.Art.host(k); el.dataset.who = k; } };
       if (text) {
-        if (el.dataset.who !== who) { el.querySelector('.host-art').innerHTML = PP.Art.host(who); el.dataset.who = who; }
+        setArt(who);
         b.innerHTML = `<b>${esc((PP.HOSTS[who] || PP.HOSTS.lobby).name)}</b>${esc(text)}`;
         b.classList.toggle('on', !!H.settings.captions); el.classList.add('talking');
-      } else { el.classList.remove('talking'); setTimeout(() => { if (!el.classList.contains('talking')) b.classList.remove('on'); }, 900); }
+      } else {
+        el.classList.remove('talking');
+        setTimeout(() => { if (!el.classList.contains('talking')) { b.classList.remove('on'); setArt(curKey()); } }, 900);   // the game's host steps back in
+      }
     });
     applySettings();
     if (PP.UGC) PP.UGC.applyCode(H.settings.ugc);
@@ -102,7 +110,7 @@
     const wantsSeat = d.role !== 'audience';
     if (wantsSeat && !H.game && freeSeat() >= 0) { p = addPlayer(token, d.name, d.avatar); sendView(p); refresh(); return; }
     // full, or a game is already running: join the audience (the Megaphone)
-    if (!H.settings.audience) { H.room.emit('bye', { to: token, reason: H.game ? 'A game is in progress and the audience is off.' : 'The room is full.' }); return; }
+    if (!H.settings.audience) { sendTo(token, 'bye', { to: token, reason: H.game ? 'A game is in progress and the audience is off.' : 'The room is full.' }); return; }
     const isNew = !H.audience.has(token);
     H.audience.set(token, { name: cleanName(d.name || 'Audience', null), lastSeen: Date.now(), wantSeat: wantsSeat, avatar: d.avatar, note: d.role === 'audience' ? '' : (H.game ? 'A game is in progress, so you\'re in the audience. You\'ll get a seat in the next game.' : 'The room is full (8 players), so you\'re in the audience.') });
     if (isNew && H.audience.size === 1) speak('lobby', 'audience');
@@ -110,9 +118,9 @@
   }
   function onHeartbeat(d) {
     if (!d || !d.token) return; const p = byId(d.token);
-    if (p) { const was = p.connected; p.connected = true; p.lastSeen = Date.now(); H.room.emit('ack', { to: p.id }); if (!was) { sendView(p); refresh(); } return; }
-    const a = H.audience.get(d.token); if (a) { a.lastSeen = Date.now(); H.room.emit('ack', { to: d.token }); return; }
-    H.room.emit('who', { to: d.token });                                      // host restarted: ask the phone to join again
+    if (p) { const was = p.connected; p.connected = true; p.lastSeen = Date.now(); sendTo(p.id, 'ack', { to: p.id }); if (!was) { sendView(p); refresh(); } return; }
+    const a = H.audience.get(d.token); if (a) { a.lastSeen = Date.now(); sendTo(d.token, 'ack', { to: d.token }); return; }
+    sendTo(d.token, 'who', { to: d.token });                                      // host restarted: ask the phone to join again
   }
   function housekeeping() {
     const now = Date.now(); let changed = false;
@@ -120,6 +128,14 @@
     for (const [t, a] of H.audience) if (now - a.lastSeen > 30000) { H.audience.delete(t); changed = true; }
     if (changed) refresh();
     if (H.ask) tickAsk();
+  }
+
+  // ---------------------------------------------------------------- addressed sends
+  // Private: with the relay, a message with a connection id reaches only that phone (room.emitTo). The `to`
+  // token stays in the payload so phones still ignore anything not meant for them on the same-browser transport.
+  function sendTo(token, topic, data) {
+    const conn = H.conns.get(token);
+    if (conn && H.room.emitTo) H.room.emitTo(conn, topic, data); else H.room.emit(topic, data);
   }
 
   // ---------------------------------------------------------------- views
@@ -131,15 +147,15 @@
     const v = H.views[p.id] || lobbyView(p);
     const out = Object.assign({}, v, { me: me(p) });
     if (v.endAt) out.endsIn = Math.max(0, v.endAt - Date.now());
-    H.room.emit('view', { to: p.id, v: out });
+    sendTo(p.id, 'view', { to: p.id, v: out });
   }
   H.setView = (p, v) => { H.views[p.id] = v; sendView(p); };
-  H.sendAsset = (p, id, data) => { if (!p.bot) H.room.emit('asset', { to: p.id, id, data }); };
+  H.sendAsset = (p, id, data) => { if (!p.bot) sendTo(p.id, 'asset', { to: p.id, id, data }); };
   function sendAudienceTo(token) {
     const a = H.audience.get(token); const v = Object.assign({ type: 'aud-wait' }, H.audView || {});
     if (v.endAt) v.endsIn = Math.max(0, v.endAt - Date.now());
     v.note = a && a.note; v.game = H.game ? PP.GAMES[H.game.key].title : null; v.code = H.code; v.theme = H.game ? H.game.key : 'lobby';
-    H.room.emit('aud', { to: token, v });
+    sendTo(token, 'aud', { to: token, v });
   }
   function setAudience(v) { H.audView = v; for (const t of H.audience.keys()) sendAudienceTo(t); }
 
@@ -321,7 +337,22 @@
       if (act === 'end') H.endGame();
     });
   }
-  function joinUrl() { const u = location.href.split('#')[0].split('?')[0]; return u + '?code=' + H.code + '#play'; }
+  // Phones can't open "localhost", so when the Main Stage runs on localhost the join link and QR code use this
+  // computer's Wi-Fi address from the game server (server/index.mjs net-info). No address = show a warning.
+  function joinUrl() { const u = H.lanBase || location.href.split('#')[0].split('?')[0]; return u + '?code=' + H.code + '#play'; }
+  const onLocalhost = () => /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  async function findLanAddress() {
+    if (!onLocalhost() || location.protocol === 'file:') { H.lanState = 'ok'; return; }
+    const before = H.lanBase;
+    try {
+      const j = await fetch('net-info', { cache: 'no-store' }).then(r => r.ok ? r.json() : null);
+      const ip = j && j.addresses && j.addresses[0];
+      H.lanBase = ip ? `${location.protocol}//${ip}:${j.port || location.port}${location.pathname}` : null;
+      H.lanState = ip ? 'ok' : 'none';
+    } catch (e) { H.lanState = 'unknown'; }
+    if (H.lanBase !== before && !H.game) refresh(); else renderTop();
+  }
+  H.findLanAddress = findLanAddress;
   function renderStrip() {
     const a = H.ask;
     $('#strip').innerHTML = H.players.map(p => {
@@ -331,6 +362,7 @@
         <span class="sc">${p.score.toLocaleString()}</span>${p.afk ? '<span class="badge">AFK</span>' : ''}${p.bot ? '<span class="badge">BOT</span>' : ''}${state === 'is-done' ? '<span class="tick">✓</span>' : ''}</div>`;
     }).join('');
     PP.Audio.setStandings(H.players.map(p => ({ seat: p.seat, score: p.score })));
+    saveState();
   }
   function renderAudienceBar(final) {
     const a = H.ask, el = $('#audbar');
@@ -343,6 +375,27 @@
   }
   // The VIP is always a connected human: whoever held it may have dropped while nobody else was here.
   function ensureVip() { const v = byId(H.vip); if (!v || !v.connected) { const next = humans().find(p => p.connected); H.vip = next ? next.id : null; } }
+  // ---------------------------------------------------------------- surviving a reload
+  // The whole game lives in this tab, so a refresh would wipe it. After every change the seats, scores, VIP and
+  // moderator are saved for this tab (sessionStorage, with the room code); on reload they come back, phones rejoin
+  // their own seats by token, and the lobby says so. A round in progress can't resume mid-prompt: pick it again.
+  function saveState() {
+    try {
+      sessionStorage.setItem('pp.hostState', JSON.stringify({ code: H.code, at: Date.now(), vip: H.vip, moderator: H.moderator, game: H.game ? H.game.key : null,
+        players: H.players.map(p => ({ id: p.id, seat: p.seat, name: p.name, avatar: p.avatar, score: p.score, bot: p.bot })) }));
+    } catch (e) { /* storage unavailable */ }
+  }
+  function restoreState() {
+    let st = null; try { st = JSON.parse(sessionStorage.getItem('pp.hostState') || 'null'); } catch (e) { st = null; }
+    if (!st || st.code !== H.code || Date.now() - st.at > 6 * 3600e3 || !Array.isArray(st.players) || !st.players.length) return;
+    const now = Date.now();
+    H.players = st.players.filter(p => p && p.id).slice(0, MAX_PLAYERS).map(p => ({ id: String(p.id), seat: p.seat | 0, name: String(p.name || 'Player').slice(0, 12), avatar: String(p.avatar || '0'),
+      score: Math.max(0, p.score | 0), bot: !!p.bot, connected: true, lastSeen: now, afkMisses: 0, afk: false }));
+    H.vip = st.vip; H.moderator = st.moderator;
+    H.resumed = { game: st.game, players: H.players.length };
+  }
+  H.saveState = saveState;
+
   function refresh() { ensureVip(); renderTop(); renderStrip(); if (!H.game) lobby(); H.players.forEach(p => { if (!H.game) H.views[p.id] = null; sendView(p); }); }
   H.refresh = refresh;
 
@@ -357,8 +410,9 @@
       <section class="lobby-hero">
         <div class="howto">
           <div class="join-row"><h1 class="logo">PARTY<br>PACK</h1><div class="bigcode" aria-label="Room code">${esc(H.code)}</div></div>
-          <div class="join-card"><div id="qr" class="qr" aria-label="QR code to join"></div><div><small>Grab your phone and go to</small><b class="url">${esc(url.replace(/^https?:\/\//, '').split('?')[0])}</b><small>then enter the room code</small></div></div>
-          <p class="note-line">First phone in is the VIP and picks the game. <button class="chip-btn" id="addbot">+ Add a bot</button></p>
+          <div class="join-card"><div id="qr" class="qr" aria-label="QR code to join"></div><div><small>Grab your phone and go to</small><b class="url">${esc(url.replace(/^https?:\/\//, '').split(/[?#]/)[0].replace(/index\.html$/, ''))}</b><small>then enter the room code</small></div></div>
+          ${H.lanState === 'none' ? '<p class="note-line warn-line"><b>Phones can\'t reach this computer yet.</b> Join the same Wi-Fi or hotspot as the players (not a USB cable).</p>' : ''}
+          <p class="note-line">${H.resumed ? `The Main Stage was reloaded${H.resumed.game ? ` during ${esc((PP.GAMES[H.resumed.game] || {}).title || 'a game')}` : ''}: players and scores are kept. Pick a game to carry on.<br>` : ''}First phone in is the VIP and picks the game. <button class="chip-btn" id="addbot">+ Add a bot</button></p>
         </div>
         <div class="slots">${slots.map((p, i) => p ? `
           <div class="slot full" style="--c:${H.colorOf(p)}">${H.vip === p.id ? PP.Art.crown : ''}<span class="av">${PP.Art.player(p, H.colorOf(p))}</span><b>${esc(p.name)}</b><small>${H.vip === p.id ? 'VIP' : p.bot ? 'Bot' : H.moderator === p.id ? 'Moderator' : p.connected ? 'Ready!' : 'Disconnected'}</small><button class="x" data-kick="${esc(p.id)}" aria-label="Remove ${esc(p.name)}">✕</button></div>`
@@ -370,7 +424,7 @@
         ${Object.entries(PP.GAMES).map(([k, g]) => `
           <button class="game-card" data-game="${k}" style="--a:${g.accent};--gfont:${g.font}" title="${esc(g.blurb)}">
             <span class="gc-art">${PP.Art.host(k)}</span><b>${esc(g.title)}</b><small class="sr-only">${esc(g.blurb)}</small>
-            <span class="req">${g.min}–8 players${H.players.length < g.min ? ` · bots fill ${g.min - H.players.length}` : ''}</span>
+            <span class="req">${g.min}–8 players${H.players.length < g.min ? ` · +${g.min - H.players.length} bot${g.min - H.players.length > 1 ? 's' : ''}` : ''}</span>
           </button>`).join('')}
       </section>`;
     $('#stage').querySelectorAll('[data-kick]').forEach(b => b.onclick = () => H.kick(b.dataset.kick));
@@ -389,6 +443,7 @@
     if (H.players.length < G.min) return;
     // a fresh game: reset scores, promote audience members who want a seat
     H.players.forEach(p => { p.score = 0; p.afk = false; p.afkMisses = 0; p.ghost = false; });
+    H.resumed = null;
     const token = ++H.runToken; H.game = { key, token };
     PP.Voice.stop(); PP.Audio.setStyle(key); H.views = {}; setTheme(key);
     renderTop(); renderStrip();
@@ -435,7 +490,11 @@
       stage(html, cls) { live(); const s = $('#stage'); s.className = 'stage ' + (cls || ''); s.innerHTML = html; return s; },
       setPhase(name) { H.phase = name; const d = $('#phase'); if (d) d.textContent = name; },
       /** Speak a host line (names and answers stay on screen). await it to wait for the line, capped so a stuck voice never stalls the game. */
-      async say(lineKey, vars, maxMs) { live(); await Promise.race([speak(key, lineKey), PP.sleep(maxMs || 12000)]); live(); },
+      say(lineKey, vars, maxMs) {
+        const p = (async () => { live(); await Promise.race([speak(key, lineKey), PP.sleep(maxMs || 12000)]); live(); })();
+        p.catch(() => {});   // games often fire a line without awaiting it; ending the game mustn't leave an unhandled rejection
+        return p;
+      },
       async ask(spec) { live(); const r = await H.runAsk(token, spec); live(); return r; },
       waitAll(title, msg) { seated().forEach(p => H.setView(p, waitView(title, msg))); setAudience({ type: 'aud-wait', msg: msg || title }); },
       view: (p, v) => H.setView(p, v),

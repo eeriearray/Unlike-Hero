@@ -154,6 +154,9 @@
     const max = v.max || 80;
     wrap.innerHTML = `<textarea maxlength="${max}" rows="${opts.rows || 2}" placeholder="${esc(v.placeholder || 'Type your answer')}" enterkeyhint="send" aria-label="${esc(opts.label || 'Your answer')}"></textarea><span class="count"></span>`;
     const ta = wrap.querySelector('textarea'), count = wrap.querySelector('.count');
+    // Guesstimate wants a number pad; Emoji Charades lets through emoji only (letters are stripped as you type).
+    if (v.numeric) { ta.setAttribute('inputmode', 'decimal'); ta.rows = 1; }
+    if (v.emojiOnly) { ta.classList.add('emoji-input'); ta.addEventListener('input', () => { const kept = PP.emojiOnly(ta.value); if (kept !== ta.value) ta.value = kept; }); }
     ta.value = C.drafts[draftKey(v, i)] || '';
     const upd = () => { C.drafts[draftKey(v, i)] = ta.value; count.textContent = max - ta.value.length; };
     ta.oninput = upd; upd();

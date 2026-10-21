@@ -9,6 +9,7 @@
 // Run:  npm install  &&  npm start        (PORT=8080 by default)
 // Rooms are in memory and disappear when everyone leaves. Nothing is stored.
 import { createServer } from 'node:http';
+import { networkInterfaces } from 'node:os';
 import { readFile, readdir, stat } from 'node:fs/promises';
 import { join, normalize, extname, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -44,10 +45,14 @@ const server = createServer(async (req, res) => {
 
 // Game servers claim URL prefixes for their own WebSocket upgrades; the relay leaves those alone.
 const claimedPaths = [];
+// Games can ask for bigger relay rooms in game.json: "multiplayer": { "roomLimit": 40 } (2–200; default 16).
+const roomLimits = new Map();
 async function loadGameServers() {
   const gamesDir = join(root, 'games');
   for (const dir of (await readdir(gamesDir, { withFileTypes: true })).filter(d => d.isDirectory()).map(d => d.name).sort()) {
     const manifest = await readFile(join(gamesDir, dir, 'game.json'), 'utf8').then(JSON.parse).catch(() => null);
+    const limit = Number(manifest && manifest.multiplayer && manifest.multiplayer.roomLimit);
+    if (limit) roomLimits.set(dir, Math.max(2, Math.min(200, Math.round(limit))));
     if (!manifest || !manifest.server) continue;
     try {
       const mod = await import(pathToFileURL(join(gamesDir, dir, manifest.server)).href);
@@ -68,12 +73,20 @@ server.on('upgrade', (req, socket, head) => {
   const room = (url.searchParams.get('room') || '').slice(0, 120);
   if (url.pathname !== '/relay' || !room) { socket.destroy(); return; }
   const members = rooms.get(room) || new Set();
-  if (members.size >= MAX_PER_ROOM) { socket.destroy(); return; }
+  if (members.size >= (roomLimits.get(room.split(':')[0]) || MAX_PER_ROOM)) { socket.destroy(); return; }
   wss.handleUpgrade(req, socket, head, ws => {
     members.add(ws); rooms.set(room, members);
     ws.on('message', (data, isBinary) => {
       if (isBinary) return;
-      for (const peer of members) if (peer !== ws && peer.readyState === 1) peer.send(data.toString());
+      const text = data.toString();
+      let msg; try { msg = JSON.parse(text); } catch { return; }
+      if (!msg || typeof msg !== 'object') return;
+      // A socket's connection id is the "from" of its first frame; frames claiming another id are dropped.
+      if (!ws.conn && typeof msg.from === 'string') ws.conn = msg.from.slice(0, 64);
+      if (msg.from !== ws.conn) return;
+      // Direct messages ("to": a connection id) reach only that socket, so private views stay private.
+      if (typeof msg.to === 'string') { for (const peer of members) if (peer.conn === msg.to && peer.readyState === 1) peer.send(text); return; }
+      for (const peer of members) if (peer !== ws && peer.readyState === 1) peer.send(text);
     });
     ws.on('close', () => { members.delete(ws); if (!members.size) rooms.delete(room); });
     ws.on('error', () => ws.close());
@@ -87,5 +100,17 @@ server.on('error', e => {
 await loadGameServers();
 server.listen(PORT, () => {
   console.log(`Game hub on http://localhost:${PORT}  (relay at ws://localhost:${PORT}/relay)`);
-  console.log('Other devices on your network: use this computer\'s IP address instead of localhost.');
+  // Print the exact address friends on the same Wi-Fi or hotspot should open. Skips addresses phones can't
+  // reach: link-local 169.254.x and the 192.0.0.x a Mac gets on a USB/mobile link with no shared network.
+  const lan = Object.values(networkInterfaces()).flat()
+    .filter(a => a && (a.family === 'IPv4' || a.family === 4) && !a.internal && !/^(169\.254\.|192\.0\.0\.)/.test(a.address))
+    .map(a => a.address);
+  if (lan.length) {
+    console.log('\nFriends on the same Wi-Fi or hotspot open:');
+    for (const ip of lan) console.log(`   http://${ip}:${PORT}`);
+    console.log('');
+  } else {
+    console.log('\nFriends can\'t reach this computer yet: it isn\'t on a Wi-Fi network or hotspot.');
+    console.log('Connect it to the same Wi-Fi or phone hotspot as your friends (over Wi-Fi, not a USB cable), then restart: npm start\n');
+  }
 });

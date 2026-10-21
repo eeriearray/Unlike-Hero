@@ -67,6 +67,8 @@ Load it with relative paths and guard every use:
 Everyone who calls `Hub.room('<game-id>:<code>')` with the same name hears each other.
 
 - `room.emit(topic, data)` sends JSON to every other member; `room.on(topic, fn)` receives `(data, from)`.
+- `room.emitTo(from.id, topic, data)` sends to one member only; the relay delivers it to that connection alone (use it for anything private, like a secret role).
+- A game can raise its relay room size in `game.json`: `"multiplayer": { "roomLimit": 40 }` (default 16, max 200).
 - `room.presence(state)` publishes a small per-member state that late joiners receive.
 - `room.on('peers', list => …)` fires when members join or leave; `room.peers()` reads the list.
 - `room.on('status', s => …)` reports `connected` / `disconnected` for the relay transport (it reconnects automatically).

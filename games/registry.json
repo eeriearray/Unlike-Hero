@@ -1,6 +1,63 @@
 {
-  "generated": "2026-10-20T20:02:14.168Z",
+  "generated": "2026-10-20T21:03:41.656Z",
   "games": [
+    {
+      "id": "dragon-clash",
+      "title": "Dragon Clash",
+      "tagline": "A 2D dragon platform fighter. Forge your own dragon on a 100-point budget, then knock rivals off the Spire in 1v1, 2v2, 3v3 or a tournament.",
+      "version": "1.0.0",
+      "sdk": "1.x",
+      "entry": "index.html",
+      "server": "server/index.mjs",
+      "thumbnail": "thumbnail.jpg",
+      "accent": "#ff7a2f",
+      "players": {
+        "min": 1,
+        "max": 8
+      },
+      "roles": [
+        {
+          "id": "fighter",
+          "name": "Fighter",
+          "entry": "index.html",
+          "description": "Versus on one screen (keyboards and gamepads, CPUs fill seats), training, a local tournament, or online rooms."
+        },
+        {
+          "id": "forge",
+          "name": "Dragon Forge",
+          "entry": "index.html#forge",
+          "description": "Build a dragon: element, body, mobility, signature, ability and upgrade on a 100-point budget, then pick its horns, wings, tail and colours."
+        },
+        {
+          "id": "online",
+          "name": "Online",
+          "entry": "index.html#online",
+          "description": "Host or join a versus room or a tournament with a 4-letter code. The server runs every match."
+        }
+      ],
+      "multiplayer": {
+        "style": "platform fighter, server-authoritative online, local shared screen",
+        "sameDevice": true,
+        "transports": [
+          "server"
+        ],
+        "notes": "Local: up to 6 dragons on one screen (two keyboard layouts plus gamepads, CPUs for the rest). Online: the game's own WebSocket server (server/index.mjs, loaded by npm start) runs each match at 60 Hz, validates builds and advances tournament brackets only from finished matches."
+      },
+      "tags": [
+        "pvp",
+        "fighting",
+        "platform fighter",
+        "party",
+        "tournament",
+        "character creator"
+      ],
+      "requires": [
+        "keyboard or gamepad",
+        "npm start for online play"
+      ],
+      "status": "playable",
+      "path": "games/dragon-clash/"
+    },
     {
       "id": "mafia",
       "title": "Mafia",
@@ -51,6 +108,7 @@
       "version": "1.0.0",
       "sdk": "1.x",
       "entry": "index.html",
+      "server": "server/index.mjs",
       "thumbnail": "thumbnail.svg",
       "accent": "#ffcf3a",
       "players": {
@@ -81,6 +139,12 @@
           "name": "Prompt Studio",
           "entry": "index.html#studio",
           "description": "Write custom prompt packs and get a 7-digit share code."
+        },
+        {
+          "id": "booth",
+          "name": "Voice Booth",
+          "entry": "index.html#booth",
+          "description": "Upload or record the six hosts' lines. The full script with filenames is in voice/SCRIPT.md."
         }
       ],
       "multiplayer": {
@@ -90,7 +154,8 @@
           "local",
           "relay"
         ],
-        "notes": "The Main Stage runs every game and pushes a view to each phone. Up to 8 players plus audience phones (the bundled relay caps a room at 16 connections). Design document: games/party-pack/docs/GDD.md."
+        "roomLimit": 40,
+        "notes": "The Main Stage runs every game and pushes a view to each phone. Up to 8 players plus up to 31 audience phones (roomLimit 40 on the bundled relay). Private screens are sent to one phone only. Design document: games/party-pack/docs/GDD.md."
       },
       "tags": [
         "party",
@@ -102,7 +167,7 @@
       ],
       "requires": [
         "a shared screen plus one phone per player",
-        "npm start for play across devices"
+        "npm start for play across devices and for saving voices"
       ],
       "status": "playable",
       "path": "games/party-pack/"

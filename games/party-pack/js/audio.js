@@ -48,7 +48,12 @@
     draw: { root: 57, bpm: 92, lead: 'sine', bass: 'triangle', swing: 0.15 },
     quiz: { root: 45, bpm: 96, lead: 'sawtooth', bass: 'sawtooth', swing: 0 },
     tee: { root: 52, bpm: 118, lead: 'square', bass: 'sawtooth', swing: 0.1 },
-    pitch: { root: 48, bpm: 104, lead: 'triangle', bass: 'square', swing: 0.06 }
+    pitch: { root: 48, bpm: 104, lead: 'triangle', bass: 'square', swing: 0.06 },
+    meld: { root: 51, bpm: 96, lead: 'sine', bass: 'triangle', swing: 0.12 },
+    whosaid: { root: 54, bpm: 114, lead: 'square', bass: 'sawtooth', swing: 0.14 },
+    likely: { root: 50, bpm: 110, lead: 'triangle', bass: 'square', swing: 0.08 },
+    guess: { root: 47, bpm: 100, lead: 'square', bass: 'triangle', swing: 0.04 },
+    emoji: { root: 56, bpm: 122, lead: 'square', bass: 'sawtooth', swing: 0.1 }
   };
   const MAJOR = [0, 2, 4, 5, 7, 9, 11], MINOR = [0, 2, 3, 5, 7, 8, 10];
   const PROG = { major: [0, 4, 5, 3], minor: [0, 5, 3, 4] };          // I–V–vi–IV  /  i–VI–iv–v (scale degrees)
@@ -134,7 +139,7 @@
   // 2. Otherwise the device's best text-to-speech voice, ranked so neural/enhanced voices win and
   //    novelty voices never play, spoken phrase by phrase with natural pauses.
   const V = { on: true, onSpeak: null, queue: [], busy: false, clips: new Map(), buffers: new Map(), fx: null, ttsVoices: [] };
-  const DEFAULT_CHAR = { lobby: 1, quip: 0.97, fib: 1.06, draw: 0.94, quiz: 0.86, tee: 1.08, pitch: 1.0 };
+  const DEFAULT_CHAR = { lobby: 1, quip: 0.97, fib: 1.06, draw: 0.94, quiz: 0.86, tee: 1.08, pitch: 1.0, meld: 0.96, whosaid: 1.06, likely: 1.0, guess: 0.95, emoji: 1.1 };
   V.character = Object.assign({}, DEFAULT_CHAR, PP.prefs.get('voiceChar', {}));
 
   // --- clip storage: IndexedDB (this browser) + an optional voice/ folder pack ---
@@ -145,12 +150,15 @@
     del(id) { return this.tx('readwrite', st => st.delete(id)); },
     async all() { const db = await this.open(); return new Promise((res, rej) => { const out = new Map(); const t = db.transaction('clips'); const cur = t.objectStore('clips').openCursor(); cur.onsuccess = () => { const c = cur.result; if (c) { out.set(c.key, c.value); c.continue(); } }; t.oncomplete = () => res(out); t.onerror = () => rej(t.error); }); }
   };
+  // Folder clips (voice/index.json, uploaded through the Voice Booth and committed with the game) are the
+  // shared cast; clips recorded in this browser's Booth without the hub server override them locally.
   async function loadClips() {
-    try { (await DB.all()).forEach((blob, id) => V.clips.set(id, blob)); } catch (e) { /* storage blocked */ }
+    V.clips.clear(); V.buffers.clear();
     if (location.protocol !== 'file:') try {
-      const j = await fetch('voice/index.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null);
-      if (j && j.clips) for (const [id, file] of Object.entries(j.clips)) if (!V.clips.has(id)) V.clips.set(id, 'voice/' + file);
+      const j = await fetch('voice/index.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : null);
+      if (j && j.clips) for (const [id, file] of Object.entries(j.clips)) V.clips.set(id, 'voice/' + file + '?v=' + encodeURIComponent(file));
     } catch (e) { /* no folder pack */ }
+    try { (await DB.all()).forEach((blob, id) => V.clips.set(id, blob)); } catch (e) { /* storage blocked */ }
     if (V.onChange) V.onChange();
   }
   loadClips();
@@ -183,7 +191,8 @@
   function playClip(id, hostKey) {
     return buffer(id).then(b => new Promise(resolve => {
       if (!b) { resolve(false); return; }
-      const s = ac.createBufferSource(); s.buffer = b; s.playbackRate.value = V.character[hostKey] || 1;
+      // Uploaded voices (folder clips) play as delivered; one-person Booth recordings get the host's voice character.
+      const s = ac.createBufferSource(); s.buffer = b; s.playbackRate.value = typeof V.clips.get(id) === 'string' ? 1 : (V.character[hostKey] || 1);
       s.connect(chain().input); s.onended = () => resolve(true); s.start();
       V.stopCurrent = () => { try { s.stop(); } catch (e) { /* already stopped */ } };
     })).catch(() => false);
@@ -193,7 +202,7 @@
   const ROBOTIC = /espeak|zarvox|trinoids|bahh|bells|boing|bubbles|cellos|deranged|hysterical|organ|whisper|good news|bad news|jester|superstar|wobble|albert|junior|ralph|fred|grandpa|grandma|rocko|eddy|flo\b|reed|sandy|shelley|kathy|princess/i;
   const MALE = /\b(male|Guy|Andrew|Christopher|Brian|Eric|Roger|Davis|Tony|Jason|Ryan|Thomas|George|Daniel|Arthur|Oliver|Evan|Nathan|Aaron|Tom|Alex|Rishi|Lee|James|Gordon)\b/i;
   const FEMALE = /\b(female|Aria|Jenny|Sonia|Libby|Natasha|Clara|Emma|Ava|Michelle|Samantha|Karen|Moira|Tessa|Victoria|Zira|Hazel|Susan|Serena|Kate|Fiona|Allison|Joanna|Salli|Kimberly|Ivy|Martha|Stephanie|Catherine|Sara|Amy|Emily|Olivia|Zoe|Nicky)\b/i;
-  const HOST_GENDER = { lobby: 'm', quip: 'f', fib: 'm', draw: 'm', quiz: 'm', tee: 'f', pitch: 'm', edge: 'm' };
+  const HOST_GENDER = { lobby: 'm', quip: 'f', fib: 'm', draw: 'm', quiz: 'm', tee: 'f', pitch: 'm', meld: 'f', whosaid: 'm', likely: 'm', guess: 'm', emoji: 'f', edge: 'm' };
   function vscore(v, want) {
     if (!/^en([-_]|$)/i.test(v.lang)) return -1000;
     let s = 0; const n = v.name;
@@ -246,7 +255,7 @@
     if (V.onSpeak) V.onSpeak(hostKey, line.text);
     PP.Audio.duck(true);
     let played = false;
-    if (V.on && V.clips.has(line.id)) played = await playClip(line.id, hostKey === 'edge' ? 'lobby' : hostKey);
+    if (V.on && V.clips.has(line.id)) played = await playClip(line.id, hostKey);
     if (!played && V.on) await speakTTS(line.text, hostKey);
     if (!V.on) await PP.sleep(Math.min(4500, 900 + line.text.length * 42));   // voice off: captions still get read time
     PP.Audio.duck(false);
@@ -258,7 +267,8 @@
   function pickLine(hostKey, key) {
     const h = PP.HOSTS[hostKey] || PP.HOSTS.lobby;
     let list = h.lines && h.lines[key] ? h.lines[key].map((t, i) => ({ id: `${hostKey}.${key}.${i}`, text: t })) : null;
-    if (!list && PP.EDGE[key]) list = PP.EDGE[key].map((t, i) => ({ id: `edge.${key}.${i}`, text: t }));
+    // Shared lines (ties, AFK, hype…) are spoken by the Announcer, whichever game is on.
+    if (!list && PP.EDGE[key]) list = PP.EDGE[key].map((t, i) => ({ id: `edge.${key}.${i}`, text: t, speaker: 'edge' }));
     if (!list) return null;
     const rec = list.filter(l => V.clips.has(l.id));
     return PP.pick(rec.length ? rec : list);
@@ -275,7 +285,7 @@
       return new Promise(resolve => {
         if (!line) { resolve(); return; }
         if (V.queue.length > 1) V.queue.splice(0, V.queue.length - 1).forEach(q => q.resolve());
-        V.queue.push({ line, hostKey, resolve }); pump();
+        V.queue.push({ line, hostKey: line.speaker || hostKey, resolve }); pump();
       });
     },
     stop() { V.queue.splice(0).forEach(q => q.resolve()); if (V.stopCurrent) V.stopCurrent(); },

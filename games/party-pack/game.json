@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "sdk": "1.x",
   "entry": "index.html",
+  "server": "server/index.mjs",
   "thumbnail": "thumbnail.svg",
   "accent": "#ffcf3a",
   "players": { "min": 1, "max": 8 },
@@ -12,15 +13,17 @@
     { "id": "host", "name": "Main Stage", "entry": "index.html#host", "description": "Open on the TV or computer everyone can see. Shows the room code; bots can fill empty seats." },
     { "id": "player", "name": "Phone controller", "entry": "index.html#play", "description": "Join from a phone with the 4-character room code. The first player in is the VIP and picks the game." },
     { "id": "audience", "name": "Audience", "entry": "index.html#audience", "description": "Watch, vote and fill the Hype Meter. A unanimous audience vote doubles the points." },
-    { "id": "studio", "name": "Prompt Studio", "entry": "index.html#studio", "description": "Write custom prompt packs and get a 7-digit share code." }
+    { "id": "studio", "name": "Prompt Studio", "entry": "index.html#studio", "description": "Write custom prompt packs and get a 7-digit share code." },
+    { "id": "booth", "name": "Voice Booth", "entry": "index.html#booth", "description": "Upload or record the six hosts' lines. The full script with filenames is in voice/SCRIPT.md." }
   ],
   "multiplayer": {
     "style": "party, host-authoritative, phones as controllers, room code",
     "sameDevice": false,
     "transports": ["local", "relay"],
-    "notes": "The Main Stage runs every game and pushes a view to each phone. Up to 8 players plus audience phones (the bundled relay caps a room at 16 connections). Design document: games/party-pack/docs/GDD.md."
+    "roomLimit": 40,
+    "notes": "The Main Stage runs every game and pushes a view to each phone. Up to 8 players plus up to 31 audience phones (roomLimit 40 on the bundled relay). Private screens are sent to one phone only. Design document: games/party-pack/docs/GDD.md."
   },
   "tags": ["party", "phones as controllers", "drawing", "trivia", "social deduction", "voice"],
-  "requires": ["a shared screen plus one phone per player", "npm start for play across devices"],
+  "requires": ["a shared screen plus one phone per player", "npm start for play across devices and for saving voices"],
   "status": "playable"
 }

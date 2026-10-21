@@ -23,15 +23,33 @@
   let active = null;
   PP.UGC = {
     KINDS, validCode, newCode,
-    applyCode(code) {
+    /** Activate a pack by code: this browser's library first, then the hub's shared library (any device on it). */
+    async applyCode(code) {
       code = String(code || '').replace(/\D/g, '');
-      if (!code) { active = null; return; }
-      active = validCode(code) ? lib()[code] || null : null;
+      if (!code || !validCode(code)) { active = null; return; }
+      active = lib()[code] || null;
+      if (active || location.protocol === 'file:') return;
+      try {
+        const r = await fetch('packs/' + code, { cache: 'no-store' });
+        const pack = r.ok ? await r.json() : null;
+        if (pack && KINDS[pack.kind] && Array.isArray(pack.items)) { const all = lib(); all[code] = pack; PP.prefs.set('packs', all); active = pack; }
+      } catch (e) { /* no hub server: local packs only */ }
     },
     status() { return active ? `Active pack: "${esc(active.title)}" (${active.items.length} ${KINDS[active.kind].label}).` : 'No custom pack active.'; },
     /** Content with the active pack swapped in for its category. */
     content() { if (!active) return PP.CONTENT; const c = Object.assign({}, PP.CONTENT); const k = KINDS[active.kind].key; c[k] = active.items.length >= 3 ? active.items : PP.CONTENT[k].concat(active.items); return c; },
-    save(pack) { const code = newCode(); const all = lib(); all[code] = pack; PP.prefs.set('packs', all); return code; },
+    /** Save a pack. With the hub server it's stored on the hub so its code works on every device; otherwise in this browser. */
+    async save(pack) {
+      let code = null;
+      if (location.protocol !== 'file:') try {
+        const r = await fetch('packs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(pack) });
+        const j = await r.json().catch(() => ({}));
+        if (r.ok && validCode(j.code || '')) code = j.code;
+        else if (r.status === 400 && j.error) throw new Error(j.error);
+      } catch (e) { if (/profanity|family/i.test(e.message)) throw e; }
+      if (!code) code = newCode();
+      const all = lib(); all[code] = pack; PP.prefs.set('packs', all); return code;
+    },
     importFromUrl() { const q = new URLSearchParams(location.search).get('pack'); if (!q) return null; try { const { code, pack } = b64.dec(q); if (!validCode(code) || !KINDS[pack.kind]) return null; const all = lib(); all[code] = pack; PP.prefs.set('packs', all); return code; } catch (e) { return null; } },
     shareLink(code) { const pack = lib()[code]; return location.href.split('#')[0].split('?')[0] + '?pack=' + b64.enc({ code, pack }) + '#studio'; },
 
@@ -56,14 +74,16 @@
         const f = root.querySelector('#pack-form'); const hint = root.querySelector('#hint');
         const setHint = () => { hint.textContent = KINDS[f.kind.value].hint; f.items.placeholder = KINDS[f.kind.value].hint.split('\n')[1] || ''; };
         f.kind.onchange = setHint; setHint();
-        f.onsubmit = e => {
+        f.onsubmit = async e => {
           e.preventDefault();
           const K = KINDS[f.kind.value]; const lines = f.items.value.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 200);
           const bad = lines.filter(l => PP.filter.test(l));
           if (bad.length) { render(`<p class="error">${bad.length} line${bad.length === 1 ? '' : 's'} tripped the profanity filter. Public packs have to be family-friendly.</p>`); return; }
           const items = lines.map(K.parse).filter(Boolean);
           if (!items.length) { render('<p class="error">None of those lines matched the format for that game.</p>'); return; }
-          const code = PP.UGC.save({ v: 1, title: f.title.value.trim(), author: f.author.value.trim(), kind: f.kind.value, items, created: Date.now() });
+          let code;
+          try { code = await PP.UGC.save({ v: 1, title: f.title.value.trim(), author: f.author.value.trim(), kind: f.kind.value, items, created: Date.now() }); }
+          catch (err) { render(`<p class="error">${esc(err.message)}</p>`); return; }
           render(`<p class="ok-msg">Saved ${items.length} item${items.length === 1 ? '' : 's'} (${lines.length - items.length} skipped). Share code: <b class="pcode">${code.slice(0, 3)}-${code.slice(3)}</b></p>`);
         };
         root.querySelectorAll('[data-share]').forEach(b => b.onclick = async () => { const link = PP.UGC.shareLink(b.dataset.share); try { await navigator.clipboard.writeText(link); b.textContent = 'Copied!'; } catch (e) { prompt('Copy this link', link); } });

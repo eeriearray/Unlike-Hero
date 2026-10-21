@@ -11,7 +11,7 @@
   var A = global.MafiaAudio, E = global.MafiaEngine;
   var synth = global.speechSynthesis;
   var deviceOk = !!(synth && global.SpeechSynthesisUtterance);
-  var enabled = true, wanted = '';
+  var enabled = true, wanted = '', allowed = true;
   try { enabled = localStorage.getItem('hub.mafia.narrator') !== '0'; wanted = localStorage.getItem('hub.mafia.voice') || ''; } catch (e) { /* storage blocked */ }
   var pack = { clips: {}, deepen: 1, count: 0, total: E ? Object.keys(E.SCRIPT).length : 0 };
   var base = location.pathname.replace(/[^/]*$/, '') + 'voice/';
@@ -86,7 +86,10 @@
 
   var API = {
     get available() { return pack.count > 0 || deviceOk; },
-    get enabled() { return API.available && enabled; },
+    get enabled() { return API.available && enabled && allowed; },
+    /** The room decides who narrates (settings.narrator): in a shared room only the host's device speaks,
+        so several phones in one room don't read the same line a split second apart. */
+    setAllowed: function (on) { on = !!on; if (on === allowed) return; allowed = on; if (!on) API.cancel(); },
     pack: pack,
     onChange: function (fn) { listeners.push(fn); },
     reload: loadPack,

@@ -135,6 +135,11 @@ body.phase-trial { --sky1: #1c1016; --sky2: #4a1e26; --sky3: #6b2a2a; --far: #2a
 
 /* ───────────── Shell ───────────── */
 .app { position: relative; z-index: 2; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
+/* In a game with the 3D hall, .app is a full-screen sheet above the table (#hall3d, z-index 0). Let clicks pass
+   through it so players can tap a seat or name tag to vote or act; its own pieces stay clickable. (pointer-events
+   is inherited, so the top bar needs it back explicitly; the HUD already sets its own.) */
+body.has-3d:not(.screen-menu) .app { pointer-events: none; }
+body.has-3d:not(.screen-menu) .app > :not(.hud) { pointer-events: auto; }
 .topbar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: linear-gradient(180deg, rgba(8, 6, 5, .85), rgba(8, 6, 5, 0)); }
 .brand { font: 700 italic 21px var(--f-title); color: var(--ink); white-space: nowrap; letter-spacing: .01em; margin-right: 4px; }
 .topbar .spacer { flex: 1; }
@@ -272,6 +277,7 @@ label.field, .field { display: grid; gap: 6px; font-size: 12.5px; font-weight: 6
 /* ───────────── In-game HUD ───────────── */
 .hud { position: fixed; inset: 0; z-index: 21; pointer-events: none; } /* above the top bar so overlays cover it */
 .hud > * { pointer-events: auto; }
+.hud .hud-phase { pointer-events: none; } /* display only: let clicks reach the back-row seats behind the banner */
 .hud-phase { position: absolute; top: 64px; left: 50%; transform: translateX(-50%); width: min(460px, calc(100vw - 32px)); text-align: center; padding: 10px 18px 12px;
   border-radius: 14px; border: 1px solid var(--stroke); background: var(--glass); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: var(--shadow); }
 .hud.chat-open .hud-phase { left: calc((100vw - 392px) / 2); }
@@ -463,6 +469,10 @@ body.phase-night .hud-phase .kicker { color: #9fb4ff; } body.phase-trial .hud-ph
 .paper .masthead h1 { font: 400 clamp(30px, 6.5vw, 54px)/1 'UnifrakturMaguntia', var(--f-title); }
 .paper .dateline { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--paper-ink); font: 600 11px var(--f-label); letter-spacing: .16em; text-transform: uppercase; }
 .paper .headline { margin: 12px 0 4px; text-align: center; font: 900 clamp(28px, 6.4vw, 54px)/.98 var(--f-title); text-transform: uppercase; }
+.paper .telegram { margin: 14px 0 4px; padding: 10px 14px; border: 2px dashed var(--paper-ink); background: rgba(0, 0, 0, .05); font: 600 15px/1.4 var(--f-type, monospace); }
+.paper .telegram b { display: block; font: 700 11px var(--f-label); letter-spacing: .16em; text-transform: uppercase; margin-bottom: 4px; }
+.paper .telegram p { margin: 4px 0; }
+.paper .telegram small { opacity: .7; }
 .paper .subhead { text-align: center; font: italic 17px var(--f-news); margin-bottom: 12px; }
 .paper .news { display: grid; grid-template-columns: 210px 1fr; gap: 18px; border-top: 1px solid var(--paper-ink); padding-top: 12px; }
 .paper .news.nophoto { grid-template-columns: 1fr; }

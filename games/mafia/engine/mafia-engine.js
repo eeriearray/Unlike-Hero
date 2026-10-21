@@ -103,6 +103,7 @@
     },
     mafiaCount: 'auto',
     revealRoles: true,
+    narrator: 'host',                 // 'host': only the host's device reads the story aloud; 'all': every device does
     timers: { night: 40, discussion: 90, voting: 40, defense: 20, judgment: 20 }
   };
 
@@ -160,6 +161,7 @@
       s.mafiaCount = m === 'auto' ? 'auto' : clamp(m, 1, 5);
     }
     if ('revealRoles' in input) s.revealRoles = !!input.revealRoles;
+    if ('narrator' in input) s.narrator = input.narrator === 'all' ? 'all' : 'host';
     if (input.timers && typeof input.timers === 'object') {
       Object.keys(TIMER_LIMITS).forEach(function (k) {
         if (k in input.timers) s.timers[k] = clamp(input.timers[k], TIMER_LIMITS[k][0], TIMER_LIMITS[k][1]);
