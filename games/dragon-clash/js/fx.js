@@ -542,6 +542,7 @@
   }
 
   // Instant specials and melee trails drawn from a fighter's current move.
+  var RANGED_FX = { rockPillar: 1, arcLash: 1, waterJet: 1 };
   function drawAttackFx(x, f, setup, t, fx, pose) {
     if (f.st !== 'attack' || !f.mv) return;
     var build = setup.build;
@@ -549,18 +550,24 @@
     if (!a) return;
     var def = a.def, c = el(build.element), fc = f.fc;
     var sc = D.BODIES[build.body].scale;
+    // Painted sprite dragons carry their own attack art in the sheets: only effects that reach past the sprite are drawn
+    var key0 = f.mv === 'sig' ? build.signature : f.mv === 'ability' ? build.ability : f.mv;
+    var painted = build.look.sprite && window.DCSprites && window.DCSprites.usable(build.look.sprite);
+    if (painted && !RANGED_FX[key0]) return;
     var mouth = pose && pose.bones ? Art.pointOf('mouth', build.body, pose) : Art.anchor('mouth', build.body, fc, 0);
     var mx = f.x + mouth[0], my = f.y + mouth[1];
     x.save();
     // Telegraph: element glow at the mouth during startup of specials and heavies
     if (a.phase === 'startup' && (f.mv === 'sig' || f.mv === 'ability' || def.kind === 'heavy')) {
-      // Energy gathers where the blow will come from: the claw for melee, the mouth for breath
-      var src = pose && pose.bones ? Art.pointOf(window.DCAnim.attackKey(f, build, def) === 'breath' ? 'mouth' : 'nearHand', build.body, pose) : mouth;
-      mx = f.x + src[0]; my = f.y + src[1];
-      var r = 6 + a.p * 22;
-      var g = x.createRadialGradient(mx, my, 0, mx, my, r);
-      g.addColorStop(0, '#ffffff'); g.addColorStop(0.4, Art.alpha(c.color, 0.8)); g.addColorStop(1, Art.alpha(c.color, 0));
-      x.fillStyle = g; x.beginPath(); x.arc(mx, my, r, 0, TAU); x.fill();
+      if (!painted) {
+        // Energy gathers where the blow will come from: the claw for melee, the mouth for breath
+        var src = pose && pose.bones ? Art.pointOf(window.DCAnim.attackKey(f, build, def) === 'breath' ? 'mouth' : 'nearHand', build.body, pose) : mouth;
+        mx = f.x + src[0]; my = f.y + src[1];
+        var r = 6 + a.p * 22;
+        var g = x.createRadialGradient(mx, my, 0, mx, my, r);
+        g.addColorStop(0, '#ffffff'); g.addColorStop(0.4, Art.alpha(c.color, 0.8)); g.addColorStop(1, Art.alpha(c.color, 0));
+        x.fillStyle = g; x.beginPath(); x.arc(mx, my, r, 0, TAU); x.fill();
+      }
       if (f.mv === 'sig' && def === D.SIGNATURES.rockPillar) {
         // Rumble where the pillar will rise
         var px = f.x + fc * (150 + 28) * sc[0];
