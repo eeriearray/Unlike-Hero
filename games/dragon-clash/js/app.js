@@ -108,7 +108,7 @@
       var cv = m.cv, w = cv.clientWidth, h = cv.clientHeight;
       if (!w || !h) return;
       var dpr = Math.min(2, window.devicePixelRatio || 1);
-      if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+      if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
       var x = cv.getContext('2d');
       x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, w, h);
       // HD sprites carry their flames and wings in the frame, so they need a little less scale than the rig
