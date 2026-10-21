@@ -212,8 +212,9 @@
           out.a = 'guard'; out.fr = T < peak ? T : peak + 3 + 3 * Math.sin((T - peak) * 0.12);
         }
         break;
-      case 'crouch': if (S.crawl) { out.a = 'crawl'; out.fr = 1.5 + 1.5 * Math.sin(time * 2); } break;
-      case 'crawl': if (S.crawl) { out.a = 'crawl'; out.fr = this.phase * 2.2; } break;
+      // Holding Down plays the crawl cycle at its own pace (as in the animation preview): never a frozen frame
+      case 'crouch': if (S.crawl) { out.a = 'crawl'; out.fr = time * FPS * 0.6; } break;
+      case 'crawl': if (S.crawl) { out.a = 'crawl'; out.fr = time * FPS * 1.2; } break;
       case 'stagger': out.a = 'hit2'; out.fr = (0.5 + 0.5 * Math.sin(time * 4)) * (S.hit2.n * 0.5); break;
       case 'recoil':
         if (this.afterThrow && S.h1) { var hs = p.active.h1 || [S.h1.n * 0.4, S.h1.n * 0.6]; out.a = 'h1'; out.fr = hs[0] + clamp(T / 12, 0, 1) * (S.h1.n - 1 - hs[0]); }

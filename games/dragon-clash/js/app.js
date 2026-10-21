@@ -417,7 +417,7 @@
 
   App.deviceHint = function (dev, label) {
     var b = Input.binds();
-    if (dev === 'touch' && App.isTouch()) return '<b>' + esc(label || 'Touch screen') + '</b> left thumb: stick to move (flick up to jump, down to crouch) · right thumb: Light, Heavy, Special, Jump, Guard, Dodge · II pauses';
+    if (dev === 'touch' && App.isTouch()) return '<b>' + esc(label || 'Touch screen') + '</b> left thumb: stick to move (flick up to jump, down to crouch) · right thumb: Light, Heavy, Skill, Ability, Jump, Guard, Dodge, Gear · II pauses';
     if (dev.indexOf('pad') === 0) return '<b>' + esc(label || Input.DEVICE_NAMES[dev]) + '</b> gamepad';
     var devBinds = b[dev] || b.kb1;
     var k = function (a) { return '<kbd>' + esc(Input.keyName((devBinds[a] || ['?'])[0])) + '</kbd>'; };

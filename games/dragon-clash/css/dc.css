@@ -327,6 +327,7 @@ a.btn{text-decoration:none}
 .t-stick-zone{position:absolute;left:0;bottom:0;width:44%;height:75%;pointer-events:auto;touch-action:none}
 .t-stick{position:fixed;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;border:2px solid rgba(232,180,76,.45);background:radial-gradient(circle,rgba(20,15,12,.3),rgba(20,15,12,.65));opacity:0;transition:opacity .12s;left:110px;top:calc(100% - 150px)}
 .t-stick.on{opacity:1}
+.t-stick.rest{opacity:.32}
 .t-stick i{position:absolute;left:50%;top:50%;width:54px;height:54px;border-radius:50%;transform:translate(-50%,-50%);background:radial-gradient(circle at 35% 30%,#f2c46a,#a8692a 60%,#5a3010);box-shadow:0 4px 14px rgba(0,0,0,.6)}
 
 /* Ergonomic action pod on the right (Thumb arc layout) */
@@ -335,7 +336,7 @@ a.btn{text-decoration:none}
   background:radial-gradient(circle at 36% 30%,rgba(48,36,28,.82),rgba(16,12,10,.86));backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
   border:1.5px solid rgba(220,175,90,.38);color:#f1e6cf;box-shadow:0 6px 18px rgba(0,0,0,.5),inset 0 1px 1px rgba(255,230,170,.35);
   transition:transform .06s ease,border-color .1s,box-shadow .1s}
-.t-btn .t-icon{width:22px;height:22px;display:block;pointer-events:none}
+.t-btn .t-icon{width:calc(22px * var(--ts,1));height:calc(22px * var(--ts,1));display:block;pointer-events:none}
 .t-btn .t-lbl{font:800 9px var(--f-ui);letter-spacing:.08em;opacity:.92;pointer-events:none;line-height:1}
 
 /* Primary Core: LIGHT ATTACK */
@@ -363,6 +364,10 @@ a.btn{text-decoration:none}
 
 /* DODGE */
 .t-btn-dodge{width:56px;height:56px;right:172px;bottom:14px;border-color:rgba(61,224,208,.55);color:#55f0de}
+
+/* ELEMENTAL ABILITY */
+.t-btn-ability{border-color:rgba(255,120,70,.6);color:#ff9a6a}
+.t-btn-ability .t-lbl{font-size:8px;letter-spacing:.04em}
 
 /* GEAR (Secondary skill satellite) */
 .t-btn-gear{width:48px;height:48px;right:164px;bottom:156px;border-color:rgba(210,120,255,.55);color:#df95ff}
