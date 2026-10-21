@@ -1693,10 +1693,13 @@
         paintClouds(bw, bh, th, Noise(22 + theme.length), { sun: th.sun ? [th.sun.x, th.sun.y] : null, y0: 0.34, y1: 0.66, sx: 0.006, sy: 0.011, th: (th.cloudTh || 0.5) - 0.03, soft: 0.12, alpha: 0.58, lightX: lr ? 0.05 : -0.05, lightY: 0.05 }),
       ];
       var rg = th.ranges.map(function (R) { return paintRange(bw, bh, th, n, R, lr); });
-      sc.sky.getContext('2d').drawImage(rg[0], 0, 0);
+      if (rg[0]) sc.sky.getContext('2d').drawImage(rg[0], 0, 0);
       sc.land = LANDMARKS[th.landmark](bw, bh, th, n);
       sc.mid = rg[1] || canvas(bw, bh);
-      sc.mid.getContext('2d').drawImage(sc.land.canvas, 0, 0); sc.land.canvas = null;
+      if (sc.land && sc.land.canvas) {
+        sc.mid.getContext('2d').drawImage(sc.land.canvas, 0, 0);
+        sc.land.canvas = null;
+      }
       if (th.forest) sc.forest = paintForest(bw, bh, th, n);
       sc.ranges = [];
     } else if (theme === 'grid') {
