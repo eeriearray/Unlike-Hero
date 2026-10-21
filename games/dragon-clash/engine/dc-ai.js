@@ -13,10 +13,11 @@
 })(typeof self !== 'undefined' ? self : this, function (D, Sim) {
   'use strict';
   var B = Sim.BTN;
+  var MOVE_ABILITIES = { cinderTrail: 1, blinkStrike: 1, riptide: 1, quakeStomp: 1 };
   var LEVELS = {
-    1: { react: 20, aim: 0.55, dodge: 0.05, aggression: 0.35, sig: 0.02, ability: 0.004, guard: 0.04, tech: 0.1, grab: 0.1, meter: 0.2 },
-    2: { react: 11, aim: 0.8,  dodge: 0.18, aggression: 0.6,  sig: 0.035, ability: 0.008, guard: 0.2, tech: 0.35, grab: 0.3, meter: 0.5 },
-    3: { react: 5,  aim: 0.95, dodge: 0.38, aggression: 0.8,  sig: 0.05, ability: 0.012, guard: 0.35, tech: 0.7, grab: 0.55, meter: 0.8 },
+    1: { react: 20, aim: 0.55, dodge: 0.05, aggression: 0.35, sig: 0.02, ability: 0.06, guard: 0.04, tech: 0.1, grab: 0.1, meter: 0.2 },
+    2: { react: 11, aim: 0.8,  dodge: 0.18, aggression: 0.6,  sig: 0.035, ability: 0.12, guard: 0.2, tech: 0.35, grab: 0.3, meter: 0.5 },
+    3: { react: 5,  aim: 0.95, dodge: 0.38, aggression: 0.8,  sig: 0.05, ability: 0.18, guard: 0.35, tech: 0.7, grab: 0.55, meter: 0.8 },
   };
 
   function Bot(sim, index, opts) {
@@ -162,6 +163,12 @@
         if (dy < -50) this.hold |= B.up; else if (dy > 50) this.hold |= B.down;
         this.press(heavy && dy <= 50 && dy >= -50 ? B.heavy : B.light, 2);
       }
+      return 0;
+    }
+    // Mid-range elemental ability: the ones that travel (a dash, a teleport, a wave along the floor)
+    if (me.grounded && me.abilityCd <= 0 && adx > 120 && adx < 320 && Math.abs(dy) < 70 && MOVE_ABILITIES[me.stats.ability] && r() < this.cfg.ability) {
+      this.hold = B.down | face;
+      this.press(B.sig, 2);
       return 0;
     }
     // Mid-range signature

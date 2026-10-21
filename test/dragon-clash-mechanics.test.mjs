@@ -239,3 +239,18 @@ test('every arena is playable: main floor first, spawns on platforms, CPUs finis
   }
   assert.equal(Object.keys(D.ARENAS).filter((k) => k !== 'training').length, D.ARENA_ORDER.length);
 });
+
+test('CPU dragons use their gear ability and their elemental ability in a real match', () => {
+  for (const ability of Object.keys(D.GEAR_ABILITIES).filter((a) => a !== 'none')) {
+    const mk = (id) => Build.withGear(Build.presetBuild(id), { size: 'medium', instinct: 'fury', ability });
+    const sim = new Sim({ arena: 'skyforge', stocks: 2, seed: 7, timeLimit: 60 * 60 * 2, fighters: [{ build: mk('emberfang'), team: 0 }, { build: mk('frostwing'), team: 1 }] });
+    const bots = [new Bot(sim, 0, { seed: 1 }), new Bot(sim, 1, { seed: 2 })];
+    let gear = 0, elemental = 0;
+    while (!sim.result) {
+      sim.step(bots.map((b) => b.think()));
+      for (const e of sim.drainEvents()) { if (e.type === 'gear') gear++; if (e.type === 'attack' && e.move === 'ability') elemental++; }
+    }
+    assert.ok(gear >= 3, ability + ': gear ability used ' + gear + ' times');
+    assert.ok(elemental >= 3, ability + ' match: elemental ability used ' + elemental + ' times');
+  }
+});
