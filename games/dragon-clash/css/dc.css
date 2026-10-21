@@ -464,3 +464,107 @@ html,body{background:#090a0c}
 .btn.hot{background:linear-gradient(180deg,#b96a40,#743a28);box-shadow:0 3px 0 #3d1c14,0 10px 24px rgba(110,45,25,.25)}
 .btn.cool{background:linear-gradient(180deg,#6c9990,#3e625d);box-shadow:0 3px 0 #203b37;color:#eef5ef}
 .overlay{background:rgba(5,6,8,.78);backdrop-filter:blur(8px)}
+
+/* ═══════════════ Versus setup: arena picker + match footer ═══════════════
+   Scoped to .vs-screen. Cinzel for names, Barlow for copy, Barlow Condensed for labels and chips.
+   Spacing scale: 4 / 8 / 12 / 16 / 24 / 32. */
+.vs-screen{--vs-gold:#d9ac62;--vs-gold-hi:#f3d79c;--vs-pad:clamp(14px,3vw,40px);padding:24px var(--vs-pad) 0;gap:24px}
+.vs-screen .vs-arenas{padding:24px;display:grid;gap:16px}
+.vs-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.vs-head h2{margin:0;font:700 clamp(20px,1.6vw,26px)/1.1 Cinzel,Georgia,serif;letter-spacing:.06em;color:#f3e3c0;text-shadow:0 2px 0 #000,0 0 18px rgba(217,150,70,.18)}
+.vs-head h2::after{content:"";display:block;width:72px;height:2px;margin-top:10px;background:linear-gradient(90deg,var(--vs-gold),transparent)}
+.vs-pick{font:600 14px/1 "Barlow Condensed",Barlow,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--vs-gold)}
+.vs-pick::before{content:"Selected · ";color:#8f8370}
+.vs-label{font:700 13px/1 "Barlow Condensed",Barlow,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#a99878}
+
+/* The grid: 3 × 3 on desktop (Random is the ninth card), 2 columns on tablets, 1 on phones. */
+.vs-screen .arena-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.vs-screen .arena-card{position:relative;display:flex;flex-direction:column;padding:0;margin:0;text-align:left;cursor:pointer;color:var(--ink);overflow:hidden;
+  border:1px solid rgba(217,172,98,.18);border-radius:10px;background:linear-gradient(180deg,#232120,#151413);
+  box-shadow:inset 0 1px 0 rgba(255,236,200,.07),0 0 0 1px rgba(0,0,0,.55),0 12px 28px rgba(0,0,0,.38);
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+.vs-screen .arena-card:hover{transform:translateY(-4px);border-color:rgba(217,172,98,.5);box-shadow:inset 0 1px 0 rgba(255,236,200,.1),0 0 0 1px rgba(0,0,0,.55),0 20px 40px rgba(0,0,0,.5),0 0 24px rgba(217,150,70,.12)}
+.vs-screen .arena-card:active{transform:translateY(-1px)}
+.vs-screen .arena-card:focus{outline:none}
+.vs-screen .arena-card:focus-visible{outline:2px solid var(--vs-gold-hi);outline-offset:3px}
+.vs-screen .arena-card.on{border-color:var(--vs-gold);background:linear-gradient(180deg,#2c2620,#171513);
+  box-shadow:inset 0 0 0 1px rgba(243,215,156,.35),0 0 0 1px rgba(0,0,0,.6),0 16px 36px rgba(0,0,0,.5),0 0 32px rgba(217,150,70,.24)}
+.ac-thumb{position:relative;display:block;aspect-ratio:16/9;overflow:hidden;background:#0c0b0a;border-bottom:1px solid rgba(217,172,98,.16)}
+.ac-thumb canvas{display:block;width:100%;height:100%;transition:transform .4s ease,filter .25s ease;filter:saturate(.92) brightness(.94)}
+.ac-thumb::after{content:"";position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 0 1px rgba(255,240,210,.06),inset 0 -40px 40px -20px rgba(10,9,8,.65)}
+.vs-screen .arena-card:hover .ac-thumb canvas{transform:scale(1.035);filter:none}
+.vs-screen .arena-card.on .ac-thumb canvas{filter:none}
+.ac-badge{position:absolute;top:12px;right:12px;z-index:1;display:inline-flex;align-items:center;gap:6px;padding:5px 10px 5px 8px;border-radius:999px;
+  font:700 12px/1 "Barlow Condensed",Barlow,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#2a1706;
+  background:linear-gradient(180deg,#f6dda4,#c9913e);box-shadow:0 0 0 1px rgba(60,30,8,.5),0 4px 12px rgba(0,0,0,.45);opacity:0;transform:translateY(-4px);transition:opacity .18s,transform .18s}
+.ac-badge::before{content:"";width:12px;height:12px;border-radius:50%;background:#2a1706 url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path d='M3 6.2l2 2 4-4.4' fill='none' stroke='%23f6dda4' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/></svg>") center/12px no-repeat}
+.vs-screen .arena-card.on .ac-badge{opacity:1;transform:none}
+.ac-body{display:flex;flex-direction:column;gap:8px;padding:16px 16px 16px;flex:1}
+.ac-name{font:700 clamp(17px,1.25vw,21px)/1.15 Cinzel,Georgia,serif;letter-spacing:.03em;color:#f4e8cf}
+.vs-screen .arena-card.on .ac-name{color:var(--vs-gold-hi)}
+.ac-desc{font:500 14px/1.45 Barlow,system-ui,sans-serif;color:#bdb19b;flex:1}
+.ac-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.ac-tag{display:inline-flex;align-items:center;padding:4px 9px;border-radius:999px;white-space:nowrap;
+  font:600 12px/1 "Barlow Condensed",Barlow,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#d9c39a;
+  background:rgba(217,172,98,.08);border:1px solid rgba(217,172,98,.22)}
+.vs-screen .arena-card.on .ac-tag{background:rgba(217,172,98,.14);border-color:rgba(217,172,98,.38);color:#f0d8a6}
+
+/* Controls strip under the grid */
+.vs-keys{display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px;padding-top:16px;border-top:1px solid rgba(217,172,98,.14)}
+.vs-keys .keys{align-items:center;gap:4px 6px;font:500 13px/1.6 Barlow,system-ui,sans-serif;color:#bdb19b}
+.vs-keys .keys b{color:#efe2c6;font-weight:700;margin-right:4px}
+.vs-keys kbd{min-width:22px;padding:3px 6px;font:600 12px/1 "Barlow Condensed",Barlow,sans-serif;letter-spacing:.04em;border-radius:4px}
+
+/* Sticky footer: match rules on the left, the next step on the right */
+.vs-foot{position:sticky;bottom:0;z-index:3;margin:0 calc(-1 * var(--vs-pad));padding:16px var(--vs-pad);
+  display:flex;align-items:center;gap:16px 24px;flex-wrap:wrap;
+  background:linear-gradient(180deg,rgba(14,13,12,.86),rgba(9,9,10,.97));border-top:1px solid rgba(217,172,98,.28);
+  box-shadow:0 -1px 0 rgba(0,0,0,.6),0 -18px 40px rgba(0,0,0,.45);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.vs-settings{display:flex;align-items:center;gap:12px 28px;flex-wrap:wrap;flex:1}
+.vs-set{display:flex;align-items:center;gap:12px}
+.vs-foot .errors{flex-basis:100%;order:3;font:600 13px/1.4 Barlow,system-ui,sans-serif}
+.seg{display:inline-flex;padding:3px;gap:2px;border-radius:8px;background:rgba(0,0,0,.45);border:1px solid rgba(217,172,98,.22);box-shadow:inset 0 1px 2px rgba(0,0,0,.5)}
+.seg button{min-width:40px;height:34px;padding:0 12px;border:0;border-radius:6px;background:transparent;cursor:pointer;color:#c9bba2;
+  font:600 15px/1 "Barlow Condensed",Barlow,sans-serif;letter-spacing:.05em;transition:background .15s,color .15s}
+.seg button:hover{background:rgba(217,172,98,.1);color:#f3e3c0}
+.seg button:focus{outline:none} .seg button:focus-visible{outline:2px solid var(--vs-gold-hi);outline-offset:1px}
+.seg button.on{background:linear-gradient(180deg,#f0d394,#c48d3d);color:#241304;box-shadow:inset 0 1px 0 rgba(255,248,225,.6),0 1px 4px rgba(0,0,0,.5)}
+.vs-ff{cursor:pointer;font:600 14px/1 Barlow,system-ui,sans-serif;color:#d8cbb2}
+.vs-ff input{width:18px;height:18px;accent-color:#c48d3d;margin:0}
+.vs-go{font-family:Cinzel,Georgia,serif;font-weight:700;font-size:18px;letter-spacing:.06em;padding:14px 28px}
+
+@media (min-width:1100px) and (max-width:1439px){
+  .vs-screen .arena-cards{gap:16px}
+  .ac-body{padding:14px}
+}
+/* Tablets: two columns, Random becomes a slim full-width card so no row is left with an orphan */
+@media (max-width:1099px){
+  .vs-foot .vs-label{min-width:52px}
+  .vs-screen .arena-cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+  .vs-screen .arena-card.is-random{grid-column:1/-1;flex-direction:row;align-items:stretch}
+  .is-random .ac-thumb{flex:0 0 38%;aspect-ratio:auto;min-height:120px;border-bottom:0;border-right:1px solid rgba(217,172,98,.16)}
+  .is-random .ac-body{justify-content:center}
+  .is-random .ac-desc{flex:0}
+}
+@media (max-width:640px){
+  .vs-screen{--vs-pad:12px;padding-top:14px;gap:16px}
+  .vs-screen .vs-arenas{padding:16px;gap:12px}
+  .vs-screen .arena-cards{grid-template-columns:1fr;gap:12px}
+  .ac-body{padding:12px 14px 14px;gap:6px}
+  .ac-name{font-size:18px}
+  .ac-desc{font-size:13.5px}
+  .is-random .ac-thumb{flex-basis:34%;min-height:96px}
+  .vs-keys{display:none}
+  .vs-foot{position:static;gap:12px;padding:16px var(--vs-pad) 20px;box-shadow:none;background:linear-gradient(180deg,rgba(14,13,12,.6),rgba(9,9,10,.9))}
+  .vs-settings{gap:10px 16px}
+  .vs-set{gap:8px}
+  .vs-foot .vs-label{min-width:48px}
+  .seg button{min-width:34px;height:32px;padding:0 9px;font-size:14px}
+  .vs-go{flex:1 1 100%;font-size:16px;padding:12px 20px}
+}
+@media (prefers-reduced-motion:reduce){
+  .vs-screen .arena-card,.ac-thumb canvas,.ac-badge{transition:none}
+  .vs-screen .arena-card:hover{transform:none}
+  .vs-screen .arena-card:hover .ac-thumb canvas{transform:none}
+}
+.vs-screen .slot{grid-template-columns:88px minmax(0,1fr)} .vs-screen .slot .sel{min-width:0;width:100%}

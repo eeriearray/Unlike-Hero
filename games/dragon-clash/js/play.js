@@ -20,8 +20,20 @@
     var x = cv.getContext('2d'), w = cv.clientWidth || 200, h = cv.clientHeight || 110;
     cv.width = w * 2; cv.height = h * 2; x.scale(2, 2);
     if (id === 'random') {
-      var g = x.createLinearGradient(0, 0, w, h); g.addColorStop(0, '#2a1a4a'); g.addColorStop(1, '#4a1a3a'); x.fillStyle = g; x.fillRect(0, 0, w, h);
-      x.font = '800 54px Cinzel, serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = 'rgba(255,255,255,0.85)'; x.fillText('?', w / 2, h / 2 + 2);
+      // A strip of every arena's painted thumbnail, dimmed under a gilded question mark.
+      var g = x.createLinearGradient(0, 0, w, h); g.addColorStop(0, '#22191a'); g.addColorStop(1, '#14100e'); x.fillStyle = g; x.fillRect(0, 0, w, h);
+      var srcs = [].slice.call(cv.ownerDocument.querySelectorAll('canvas[data-arena]')).filter(function (c) { return c.dataset.arena !== 'random' && c.width; });
+      var sw = w / Math.max(1, srcs.length);
+      srcs.forEach(function (c, i) {
+        var sx = c.width * (i + 0.5) / srcs.length - c.width / srcs.length / 2;
+        x.drawImage(c, sx, 0, c.width / srcs.length, c.height, i * sw, 0, sw + 0.5, h);
+      });
+      x.fillStyle = 'rgba(12,9,7,.62)'; x.fillRect(0, 0, w, h);
+      var v = x.createRadialGradient(w / 2, h / 2, h * 0.1, w / 2, h / 2, Math.max(w, h) * 0.7); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.55)'); x.fillStyle = v; x.fillRect(0, 0, w, h);
+      var fs = Math.round(Math.min(h * 0.62, w * 0.4)), q = x.createLinearGradient(0, h / 2 - fs / 2, 0, h / 2 + fs / 2);
+      q.addColorStop(0, '#fff3d2'); q.addColorStop(0.55, '#e3b45e'); q.addColorStop(1, '#9a5e22');
+      x.font = '700 ' + fs + 'px Cinzel, Georgia, serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+      x.shadowColor = 'rgba(0,0,0,.8)'; x.shadowBlur = 18; x.shadowOffsetY = 3; x.fillStyle = q; x.fillText('?', w / 2, h / 2 + fs * 0.04);
       return;
     }
     var a = D.ARENAS[id];
@@ -31,13 +43,17 @@
 
   App.arenaChoices = function () { return D.ARENA_ORDER.concat(['random']); };
   App.pickArena = function (id) { return id === 'random' || !D.ARENAS[id] ? D.ARENA_ORDER[Math.floor(Math.random() * D.ARENA_ORDER.length)] : id; };
-  /** A stage card: painted thumbnail, name, a one-line description and what makes the layout different. */
+  /** A stage card: painted 16:9 thumbnail, name, a one-line description and chips for what makes the layout different. */
   App.arenaCard = function (id, on) {
     var a = D.ARENAS[id], walls = a && a.platforms.some(function (p) { return p.wall; });
     var soft = a ? a.platforms.filter(function (p) { return !p.solid; }).length : 0, solid = a ? a.platforms.filter(function (p) { return p.solid && !p.wall && !p.altar; }).length : 0;
-    var tags = a ? [solid > 1 ? solid + ' floors' : 'one floor', soft ? soft + ' drop-through' : 'no platforms', walls ? 'walls' : 'open sides'] : ['a different arena every match'];
-    return '<button class="arena-card' + (on ? ' on' : '') + '" data-act="arena" data-id="' + id + '"><canvas data-arena="' + id + '"></canvas><b>' + (a ? a.name : 'Random') + '</b>' +
-      '<small>' + esc(a ? a.blurb || (id === 'skyforge' ? 'The citadel spire at dusk. A wide floor and three platforms.' : 'Twin floes over a frozen rift.') : 'Let fate pick the battlefield.') + '</small><i>' + tags.join(' · ') + '</i></button>';
+    var tags = a ? [solid > 1 ? solid + ' floors' : '1 floor', soft ? soft + ' drop-through' : 'No platforms', walls ? 'Walls' : 'Open sides'] : ['New arena every match'];
+    var name = a ? a.name : 'Random';
+    return '<button class="arena-card' + (id === 'random' ? ' is-random' : '') + (on ? ' on' : '') + '" data-act="arena" data-id="' + id + '" aria-pressed="' + (on ? 'true' : 'false') + '">' +
+      '<span class="ac-thumb"><canvas data-arena="' + id + '"></canvas><span class="ac-badge" aria-hidden="true">Selected</span></span>' +
+      '<span class="ac-body"><span class="ac-name">' + esc(name) + '</span>' +
+      '<span class="ac-desc">' + esc(a ? a.blurb || (id === 'skyforge' ? 'The citadel spire at dusk. A wide floor and three platforms.' : 'Twin floes over a frozen rift.') : 'Let fate pick the battlefield from all eight arenas.') + '</span>' +
+      '<span class="ac-tags">' + tags.map(function (t) { return '<span class="ac-tag">' + esc(t) + '</span>'; }).join('') + '</span></span></button>';
   };
 
   // ─────────────────────────────── Versus ───────────────────────────────
@@ -76,7 +92,7 @@
         for (var i = 0; i < n; i++) teams[teamOf(i)].push(i);
         var probs = problems();
         App.ui.innerHTML =
-          '<div class="screen"><div class="topbar"><button class="btn ghost small" data-act="back">← Back</button><h1>Versus</h1><div class="spacer"></div>' +
+          '<div class="screen vs-screen"><div class="topbar"><button class="btn ghost small" data-act="back">← Back</button><h1>Versus</h1><div class="spacer"></div>' +
           '<div class="chips">' + Object.keys(D.FORMATS).map(function (k) { return '<button class="chip' + (cfg.format === k ? ' on' : '') + '" data-act="format" data-id="' + k + '">' + D.FORMATS[k].name + '</button>'; }).join('') + '</div></div>' +
           '<div class="teams">' + teams.map(function (list, ti) {
             var col = D.TEAM_COLORS[ti];
@@ -92,17 +108,22 @@
                   '</div></div>';
               }).join('') + '</div>';
           }).join('') + '</div>' +
-          '<div class="panel"><div class="section-title" style="margin-top:0">Arena</div><div class="arena-cards">' +
-          App.arenaChoices().map(function (id) { return App.arenaCard(id, cfg.arena === id); }).join('') + '</div>' +
-          '<div class="row" style="margin-top:12px"><span class="eyebrow">Stocks</span><div class="chips">' + [1, 2, 3, 4, 5].map(function (s) { return '<button class="chip' + (cfg.stocks === s ? ' on' : '') + '" data-act="stocks" data-n="' + s + '">' + s + '</button>'; }).join('') + '</div>' +
-          '<span class="eyebrow">Time</span><div class="chips">' + [0, 3, 5, 8].map(function (s) { return '<button class="chip' + (cfg.time === s ? ' on' : '') + '" data-act="time" data-n="' + s + '">' + (s ? s + ' min' : 'Off') + '</button>'; }).join('') + '</div>' +
-          (f.perTeam > 1 ? '<label class="row"><input type="checkbox" data-ff' + (cfg.ff ? ' checked' : '') + '> Friendly fire</label>' : '') + '</div>' +
-          '<div class="keys" style="margin-top:12px">' + humanDevices().map(function (d) { return '<div>' + App.deviceHint(d) + '</div>'; }).join('') + '</div></div>' +
+          '<section class="panel vs-arenas" aria-labelledby="vs-arena-h"><div class="vs-head"><h2 id="vs-arena-h">Choose your arena</h2>' +
+          '<span class="vs-pick">' + esc(cfg.arena === 'random' ? 'Random arena' : D.ARENAS[cfg.arena] ? D.ARENAS[cfg.arena].name : '') + '</span></div>' +
+          '<div class="arena-cards">' + App.arenaChoices().map(function (id) { return App.arenaCard(id, cfg.arena === id); }).join('') + '</div>' +
+          (humanDevices().length ? '<div class="vs-keys"><span class="vs-label">Controls</span>' + humanDevices().map(function (d) { return '<div class="keys">' + App.deviceHint(d) + '</div>'; }).join('') + '</div>' : '') +
+          '</section>' +
+          '<div class="vs-foot"><div class="vs-settings">' +
+          '<div class="vs-set"><span class="vs-label">Stocks</span><div class="seg" role="group" aria-label="Stocks">' + [1, 2, 3, 4, 5].map(function (s) { return '<button class="' + (cfg.stocks === s ? 'on' : '') + '" data-act="stocks" data-n="' + s + '" aria-pressed="' + (cfg.stocks === s) + '">' + s + '</button>'; }).join('') + '</div></div>' +
+          '<div class="vs-set"><span class="vs-label">Time</span><div class="seg" role="group" aria-label="Time limit">' + [0, 3, 5, 8].map(function (s) { return '<button class="' + (cfg.time === s ? 'on' : '') + '" data-act="time" data-n="' + s + '" aria-pressed="' + (cfg.time === s) + '">' + (s ? s + ' min' : 'Off') + '</button>'; }).join('') + '</div></div>' +
+          (f.perTeam > 1 ? '<label class="vs-set vs-ff"><input type="checkbox" data-ff' + (cfg.ff ? ' checked' : '') + '><span>Friendly fire</span></label>' : '') + '</div>' +
           (probs.length ? '<div class="errors">' + probs.map(esc).join('<br>') + '</div>' : '') +
-          '<div class="row"><div class="spacer grow"></div><button class="btn hot" data-act="start"' + (probs.length ? ' disabled' : '') + '>Choose dragons →</button></div>' +
+          '<button class="btn hot vs-go" data-act="start"' + (probs.length ? ' disabled' : '') + '>Choose dragons →</button></div>' +
           '</div>';
         for (var k = 0; k < n; k++) App.mini(App.ui.querySelector('[data-mini="' + k + '"]'), App.buildById(cfg.slots[k].build), 'idle', { facing: teamOf(k) % 2 ? -1 : 1, scale: 0.95, offset: k });
-        App.ui.querySelectorAll('[data-arena]').forEach(function (cv) { arenaPreview(cv, cv.dataset.arena); });
+        // Random last: its thumbnail is stitched from the others.
+        App.ui.querySelectorAll('[data-arena]:not([data-arena="random"])').forEach(function (cv) { arenaPreview(cv, cv.dataset.arena); });
+        var rnd = App.ui.querySelector('[data-arena="random"]'); if (rnd) arenaPreview(rnd, 'random');
         App.ui.querySelectorAll('[data-slot-ctrl]').forEach(function (s) { s.addEventListener('change', function () { cfg.slots[+s.dataset.slotCtrl].ctrl = s.value; save(); render(); }); });
         App.ui.querySelectorAll('[data-slot-build]').forEach(function (s) { s.addEventListener('change', function () { cfg.slots[+s.dataset.slotBuild].build = s.value; save(); render(); }); });
         var ff = App.ui.querySelector('[data-ff]'); if (ff) ff.addEventListener('change', function () { cfg.ff = ff.checked; save(); });
@@ -150,7 +171,7 @@
       App.on(App.ui, {
         back: function () { App.show('title'); },
         format: function (el) { cfg.format = el.dataset.id; save(); render(); },
-        arena: function (el) { cfg.arena = el.dataset.id; save(); render(); },
+        arena: function (el) { cfg.arena = el.dataset.id; save(); render(); var c = App.ui.querySelector('.arena-card.on'); if (c) c.focus({ preventScroll: true }); },
         stocks: function (el) { cfg.stocks = +el.dataset.n; save(); render(); },
         time: function (el) { cfg.time = +el.dataset.n; save(); render(); },
         start: start,
@@ -386,7 +407,7 @@
       App.on(App.ui, {
         back: function () { App.show('title'); },
         count: function (el) { cfg.count = +el.dataset.n; save(); render(); },
-        arena: function (el) { cfg.arena = el.dataset.id; save(); render(); },
+        arena: function (el) { cfg.arena = el.dataset.id; save(); render(); var c = App.ui.querySelector('.arena-card.on'); if (c) c.focus({ preventScroll: true }); },
         stocks: function (el) { cfg.stocks = +el.dataset.n; save(); render(); },
         lock: function () {
           var entrants = cfg.entrants.slice(0, cfg.count).map(function (e, i) { return { id: 'e' + i, name: e.name, ctrl: e.ctrl, build: e.build, buildSnapshot: Build.sanitize(App.buildById(e.build)) }; });
