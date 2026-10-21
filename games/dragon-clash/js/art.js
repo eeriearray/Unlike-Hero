@@ -14,7 +14,7 @@
   'use strict';
   var RIG = window.DC_WARRIOR_RIG;
   var D = window.DC.Data;
-  var imgs = {};
+  var imgs = {}, gearImgs = {};
   var ready = null;
   var cache = {};
   var CW = RIG.cell[0], CH = RIG.cell[1], RES = RIG.res || 1, PARTS = RIG.parts, ANIMS = RIG.anims || {};
@@ -28,6 +28,9 @@
   function load() {
     if (ready) return ready;
     var names = Object.keys(RIG.layers);
+    // Gear art made from the templates (assets/gear, built by tools/build_gear.py). Missing files use placeholders.
+    var GF = (window.DC_GEAR && window.DC_GEAR.files) || {};
+    Object.keys(GF).forEach(function (id) { var im = new Image(); im.onload = function () { gearImgs[id] = im; }; im.src = 'assets/gear/' + GF[id]; });
     ready = Promise.all(names.map(function (k) {
       return new Promise(function (res, rej) {
         var im = new Image();
@@ -268,6 +271,7 @@
       x.save(); x.translate(A.tail[0], A.tail[1]); x.rotate(a); x.translate(-A.tail[0], -A.tail[1]);
       x.drawImage(art.tail, 0, 0, CW, CH);
       x.restore();
+      tailInfo = { tip: rotP([16, 136], A.tail, a), angle: Math.PI + a, mid: rotP([52, 130], A.tail, a) };
       return;
     }
     var n = 12, len = style === 'club' ? 52 : style === 'fluke' ? 58 : 62;
@@ -310,6 +314,7 @@
     x.strokeStyle = 'rgba(10,14,10,0.85)'; x.lineWidth = 1.1; x.stroke();
     // Tips
     var tip = pts[pts.length - 1], pre = pts[pts.length - 3];
+    tailInfo = { tip: tip.slice(), angle: Math.atan2(tip[1] - pre[1], tip[0] - pre[0]), mid: pts[3].slice() };
     var ta = Math.atan2(tip[1] - pre[1], tip[0] - pre[0]);
     x.translate(tip[0], tip[1]); x.rotate(ta);
     var t = pose.time || 0;
@@ -552,6 +557,117 @@
     }
   }
 
+  // ─────────────── gear: armour and weapons ───────────────
+  var tailInfo = null;
+  function rotP(p, c, a) { var s = Math.sin(a), k = Math.cos(a), dx = p[0] - c[0], dy = p[1] - c[1]; return [c[0] + dx * k - dy * s, c[1] + dx * s + dy * k]; }
+  var MATERIAL = {
+    scale: { base: '#a8743a', light: '#e8b878', dark: '#4a2a10' },
+    iron:  { base: '#7d8796', light: '#e2e8f0', dark: '#262c36' },
+    bone:  { base: '#d6c9a8', light: '#fffaea', dark: '#5a4a30' },
+    steel: { base: '#9aa6b6', light: '#ffffff', dark: '#2a303a' },
+  };
+  // Which pieces ride on which bone. 'a:' = armour piece, 'w:<weapon>:' = weapon piece.
+  var GEAR_ON = {
+    head: ['a:helm', 'w:hornspikes:hornspikes'], torso: ['a:chest'],
+    nearArmUp: ['a:pauldron-near'], farArmUp: ['a:pauldron-far'],
+    nearArmLo: ['a:bracer-near', 'w:talons:talons-near', 'w:greatclaws:greatclaws-near'], farArmLo: ['a:bracer-far', 'w:talons:talons-far', 'w:greatclaws:greatclaws-far'],
+    nearShin: ['a:greave-near'], farShin: ['a:greave-far'],
+  };
+
+  function gearPieces(gear, bone) {
+    if (!gear) return [];
+    var out = [];
+    (GEAR_ON[bone] || []).forEach(function (code) {
+      var p = code.split(':');
+      if (p[0] === 'a' && gear.armor && gear.armor !== 'none') out.push({ id: 'armor-' + gear.armor + '-' + p[1], piece: p[1], mat: gear.armor });
+      if (p[0] === 'w' && gear.weapon === p[1]) out.push({ id: 'weapon-' + p[2], piece: p[2], mat: 'steel' });
+    });
+    return out;
+  }
+
+  /** Draw the gear for one bone (in that bone's space), or every piece when bone is null (idle frames). */
+  function drawGear(x, gear, bone, dy) {
+    if (!gear) return;
+    var bones = bone ? [bone] : Object.keys(GEAR_ON);
+    bones.forEach(function (b) {
+      gearPieces(gear, b).forEach(function (pc) {
+        x.save();
+        if (dy) x.translate(0, b === 'head' ? dy : dy * 0.6);
+        var img = gearImgs[pc.id];
+        // Template space: 960x960 at 2x the pack's 480 px cells, origin at source (0,0) = cell units (-15, -70)
+        if (img) x.drawImage(img, -15, -70, 240, 240);
+        else placeholder(x, pc.piece, MATERIAL[pc.mat] || MATERIAL.iron);
+        x.restore();
+      });
+    });
+  }
+
+  function plateShape(x, cx, cy, w, h, rot, M) {
+    x.save(); x.translate(cx, cy); x.rotate(rot || 0);
+    var g = x.createLinearGradient(0, -h, 0, h); g.addColorStop(0, M.light); g.addColorStop(0.45, M.base); g.addColorStop(1, M.dark);
+    x.fillStyle = g; x.strokeStyle = M.dark; x.lineWidth = 0.9;
+    x.beginPath(); x.moveTo(-w, h * 0.5); x.quadraticCurveTo(-w * 0.9, -h, 0, -h); x.quadraticCurveTo(w * 0.9, -h, w, h * 0.5); x.quadraticCurveTo(0, h * 0.2, -w, h * 0.5); x.fill(); x.stroke();
+    x.fillStyle = M.light; x.beginPath(); x.arc(-w * 0.5, 0, 0.9, 0, Math.PI * 2); x.arc(w * 0.5, 0, 0.9, 0, Math.PI * 2); x.fill();
+    x.restore();
+  }
+
+  function blade(x, x0, y0, x1, y1, w, M) {
+    var dx = x1 - x0, dy = y1 - y0, l = Math.sqrt(dx * dx + dy * dy), nx = -dy / l * w, ny = dx / l * w;
+    var g = x.createLinearGradient(x0 + nx, y0 + ny, x0 - nx, y0 - ny); g.addColorStop(0, M.light); g.addColorStop(1, M.base);
+    x.fillStyle = g; x.strokeStyle = M.dark; x.lineWidth = 0.7;
+    x.beginPath(); x.moveTo(x0 + nx, y0 + ny); x.lineTo(x1, y1); x.lineTo(x0 - nx, y0 - ny); x.closePath(); x.fill(); x.stroke();
+  }
+
+  // Simple stand-ins in the right place and material, until the drawn pieces arrive
+  function placeholder(x, piece, M) {
+    switch (piece) {
+      case 'helm':
+        x.save(); var g = x.createLinearGradient(100, 24, 120, 40); g.addColorStop(0, M.light); g.addColorStop(1, M.base);
+        x.fillStyle = g; x.strokeStyle = M.dark; x.lineWidth = 0.9;
+        x.beginPath(); x.moveTo(97, 41); x.quadraticCurveTo(99, 23, 116, 25); x.lineTo(126, 31); x.lineTo(129, 37); x.lineTo(124, 37); x.lineTo(118, 33); x.lineTo(106, 36); x.lineTo(103, 43); x.closePath(); x.fill(); x.stroke();
+        x.strokeStyle = M.dark; x.beginPath(); x.moveTo(104, 28); x.lineTo(112, 34); x.stroke(); x.restore(); break;
+      case 'chest':
+        x.save(); var gc = x.createLinearGradient(100, 54, 132, 90); gc.addColorStop(0, M.light); gc.addColorStop(0.5, M.base); gc.addColorStop(1, M.dark);
+        x.fillStyle = gc; x.strokeStyle = M.dark; x.lineWidth = 1;
+        x.beginPath(); x.moveTo(103, 56); x.lineTo(128, 56); x.lineTo(131, 74); x.lineTo(118, 89); x.lineTo(102, 78); x.closePath(); x.fill(); x.stroke();
+        x.strokeStyle = M.light; x.globalAlpha *= 0.6; x.beginPath(); x.moveTo(116, 58); x.lineTo(117, 86); x.moveTo(104, 66); x.lineTo(129, 66); x.stroke(); x.restore(); break;
+      case 'pauldron-near': plateShape(x, 128, 59, 11, 8, 0.3, M); break;
+      case 'pauldron-far': plateShape(x, 92, 53, 9, 7, -0.3, { base: M.dark, light: M.base, dark: '#111' }); break;
+      case 'bracer-near': plateShape(x, 135, 95, 7, 8, 0.4, M); break;
+      case 'bracer-far': plateShape(x, 80, 88, 6, 7, -0.3, { base: M.dark, light: M.base, dark: '#111' }); break;
+      case 'greave-near': plateShape(x, 129, 130, 7, 11, 0.1, M); break;
+      case 'greave-far': plateShape(x, 90, 130, 6, 10, -0.1, { base: M.dark, light: M.base, dark: '#111' }); break;
+      case 'talons-near': [[-4, 0], [0, 2], [4, 1]].forEach(function (o) { blade(x, 138 + o[0], 106 + o[1], 143 + o[0] * 1.3, 117 + o[1], 1.6, M); }); break;
+      case 'talons-far': [[-3, 0], [1, 2], [4, 1]].forEach(function (o) { blade(x, 80 + o[0], 110 + o[1], 77 + o[0] * 1.3, 120 + o[1], 1.4, { base: M.dark, light: M.base, dark: '#111' }); }); break;
+      case 'greatclaws-near': blade(x, 134, 94, 156, 124, 3.2, M); blade(x, 138, 98, 152, 128, 2.4, M); break;
+      case 'greatclaws-far': blade(x, 82, 90, 70, 122, 2.8, { base: M.dark, light: M.base, dark: '#111' }); break;
+      case 'hornspikes':
+        blade(x, 112, 26, 102, 4, 3, M); blade(x, 120, 26, 116, 6, 2.6, M); break;
+    }
+  }
+
+  /** Tail weapon and tail guard, at the tail's live position. Called right after the tail is drawn. */
+  function drawTailGear(x, gear) {
+    if (!gear || !tailInfo) return;
+    if (gear.armor && gear.armor !== 'none') {
+      var M = MATERIAL[gear.armor], img = gearImgs['armor-' + gear.armor + '-tailguard'];
+      if (img) x.drawImage(img, -15, -70, 240, 240);
+      else { var m = tailInfo.mid; plateShape(x, m[0], m[1] - 3, 7, 5, tailInfo.angle - Math.PI, M); plateShape(x, (m[0] + A.tail[0]) / 2, (m[1] + A.tail[1]) / 2 - 4, 8, 6, tailInfo.angle - Math.PI, M); }
+    }
+    if (gear.weapon === 'tailmace') {
+      var t = tailInfo.tip, mi = gearImgs['weapon-tailmace'];
+      x.save(); x.translate(t[0], t[1]); x.rotate(tailInfo.angle);
+      if (mi) x.drawImage(mi, -64, -64, 128, 128);   // 512 px canvas = 128 units, attach point at the centre
+      else {
+        var S = MATERIAL.steel;
+        for (var k = 0; k < 8; k++) { var a = k * Math.PI / 4; blade(x, Math.cos(a) * 6, Math.sin(a) * 6, Math.cos(a) * 13, Math.sin(a) * 13, 2, S); }
+        var g = x.createRadialGradient(-2, -2, 1, 0, 0, 8); g.addColorStop(0, S.light); g.addColorStop(1, S.dark);
+        x.fillStyle = g; x.beginPath(); x.arc(0, 0, 8, 0, Math.PI * 2); x.fill();
+      }
+      x.restore();
+    }
+  }
+
   // ─────────────── cutout rig ───────────────
   // Bone angles (radians, + = clockwise with the dragon facing right). Arms and legs at 0 hang as painted;
   // + swings a limb backward, − forward. Torso + leans forward, head + tips the snout down.
@@ -584,12 +700,13 @@
     function limb(name) {
       part(ctx, art.rig, name);
       drawArmor(ctx, look, 0, name);
+      drawGear(ctx, pose.gear, name);
       if (flash) { var a = ctx.globalAlpha; ctx.globalAlpha = a * flash; part(ctx, art.rigWhite, name); ctx.globalAlpha = a; }
     }
     bone('torso', function () { drawWing(ctx, look, pose, true); });
     bone('farArmUp', function () { limb('farArmUp'); });
     bone('farArmLo', function () { limb('farArmLo'); });
-    ctx.save(); ctx.translate(0, pose.hip || 0); drawTail(ctx, look, pose, art); ctx.restore();
+    ctx.save(); ctx.translate(0, pose.hip || 0); drawTail(ctx, look, pose, art); drawTailGear(ctx, pose.gear); ctx.restore();
     bone('farThigh', function () { limb('farThigh'); });
     bone('farShin', function () { limb('farShin'); });
     bone('torso', function () { drawSpikes(ctx, look, 0); drawWing(ctx, look, pose, false); limb('torso'); drawAccessory(ctx, look, 0, pose, 'torso'); });
@@ -608,11 +725,13 @@
   function drawSheet(ctx, look, art, pose, f) {
     drawWing(ctx, look, pose, true);
     drawTail(ctx, look, pose, art);
+    drawTailGear(ctx, pose.gear);
     drawSpikes(ctx, look, f);
     drawWing(ctx, look, pose, false);
     var sxp = (f % RIG.cols) * CW * RES, syp = Math.floor(f / RIG.cols) * CH * RES;
     ctx.drawImage(art.sheet, sxp, syp, CW * RES, CH * RES, 0, 0, CW, CH);
     drawArmor(ctx, look, f);
+    drawGear(ctx, pose.gear, null, RIG.frame[f].dy);
     drawHead(ctx, look, f, pose);
     drawHorns(ctx, look, f, art);
     drawEyes(ctx, look, f, pose);
@@ -702,5 +821,5 @@
     return [(p[0] - RIG.feet[0]) * body.scale[0] * (facing || 1), (p[1] - RIG.feet[1]) * body.scale[1]];
   }
 
-  window.DCArt = { packAnims: ANIMS, prepare: function (look) { if (imgs['body-main']) composed(look); }, load: load, draw: draw, anchor: anchor, pointOf: pointOf, shade: shade, alpha: alpha, mix: mix, rig: RIG, CW: CW, CH: CH };
+  window.DCArt = { gearImgs: gearImgs, packAnims: ANIMS, prepare: function (look) { if (imgs['body-main']) composed(look); }, load: load, draw: draw, anchor: anchor, pointOf: pointOf, shade: shade, alpha: alpha, mix: mix, rig: RIG, CW: CW, CH: CH };
 })();

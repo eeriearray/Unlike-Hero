@@ -197,7 +197,7 @@
       if (this.countdown === 0) Audio.play('go');
       return;
     }
-    if (this.sim.result) return;
+    if (this.sim.result) { if (!this.ended) this.finish(this.sim.result); return; }   // e.g. ended by a forfeit
     var inputs = this.readInputs();
     this.sim.step(inputs);
     var self = this;
@@ -255,6 +255,10 @@
       case 'break': Audio.play('break', { pan: pan }); break;
       case 'respawn': Audio.play('respawn', { pan: pan, vol: 0.6 }); break;
       case 'buff': Audio.play('buff', { pan: pan }); break;
+      case 'gear': Audio.play({ fade: 'whoosh', aegis: 'buff', phase: 'dodge', decoy: 'respawn', rage: 'charge', gust: 'heavyWhoosh' }[e.ability] || 'buff', { pan: pan }); break;
+      case 'absorb': Audio.play('clash', { pan: pan }); break;
+      case 'decoyPop': Audio.play('break', { pan: pan, vol: 0.8 }); break;
+      case 'unfade': Audio.play('whoosh', { pan: pan, vol: 0.6 }); break;
       case 'sfx': if (e.id === 'dodge') Audio.play('dodge', { pan: pan }); else if (e.id === 'denied' && this.isLocalFighter(e.f)) Audio.play('denied'); break;
     }
   };
@@ -341,6 +345,7 @@
     // Floor hazards under the dragons
     v.p.forEach(function (p) { if (p.g) FXL.drawProjectile(x, p, self.time, self.fx); });
     var fs = this.setupInfo.fighters;
+    (v.d || []).forEach(function (d) { self.drawDecoy(x, d, fs[d.o]); });
     v.f.forEach(function (f, i) { if (f.st !== 'dead' && f.st !== 'out') self.drawFighter(x, f, fs[i], i); });
     v.p.forEach(function (p) { if (!p.g) FXL.drawProjectile(x, p, self.time, self.fx); });
     this.fx.draw(x);
@@ -403,7 +408,9 @@
     var an = this.animators[i] || (this.animators[i] = new Anim.Animator());
     var gb = this.groundBelow(f.x, f.y);
     var pose = an.update(f, build, this.time + i * 0.37, this.dt || 0, { ground: gb == null ? null : gb - f.y });
-    if (f.st === 'dodge' || f.st === 'airdodge') pose.alpha = 0.75;
+    pose.gear = build.gear;
+    if (f.fd) pose.alpha = 0.16 + 0.06 * Math.sin(this.time * 9);
+    else if (f.st === 'dodge' || f.st === 'airdodge') pose.alpha = 0.75;
     else if (f.inv) pose.alpha = 0.55 + 0.45 * (Math.floor(this.time * 18) % 2);
     if (f.hl > 0 && f.st === 'hitstun') pose.dx += (Math.random() - 0.5) * 6;
     var self = this;
@@ -419,9 +426,12 @@
       g.addColorStop(0, Art.alpha(f.sk ? '#d8b07a' : el.color, 0.14 * pose.glow)); g.addColorStop(1, Art.alpha(el.color, 0));
       x.fillStyle = g; x.beginPath(); x.arc(f.x, f.y - 70, 85, 0, Math.PI * 2); x.fill();
     }
+    if (f.rg) this.drawRage(x, f, build);
     x.save(); x.translate(f.x, f.y);
     Art.draw(x, build.look, build.body, pose);
     x.restore();
+    if (f.fd) this.drawShimmer(x, f, build);
+    if (f.ag) this.drawAegis(x, f, build);
     this.swingTrail(x, f, build, pose, i);
     this.footDust(f, an, i);
     FXL.drawAttackFx(x, f, info, this.time, this.fx, pose);
@@ -431,9 +441,78 @@
     var tag = this.tagFor(i, info);
     var ty = f.y - 150 * D.BODIES[build.body].scale[1];
     x.font = '400 15px "Lilita One", system-ui, sans-serif'; x.textAlign = 'center';
+    x.save(); if (f.fd) x.globalAlpha = 0.3;
     x.lineWidth = 4; x.strokeStyle = 'rgba(10,6,20,0.8)'; x.strokeText(tag, f.x, ty);
     x.fillStyle = teamCol; x.fillText(tag, f.x, ty);
     x.beginPath(); x.moveTo(f.x - 6, ty + 5); x.lineTo(f.x + 6, ty + 5); x.lineTo(f.x, ty + 11); x.fill();
+    x.restore();
+  };
+
+  // ── Gear ability visuals. Drawn frames from assets/gear (fx-<ability>-<n>) replace the painted stand-ins. ──
+  function fxFrame(name, n, t, fps) {
+    var g = Art.gearImgs;
+    if (!g || !g['fx-' + name + '-1']) return null;
+    var k = 1 + Math.floor(t * (fps || 12)) % n;
+    return g['fx-' + name + '-' + k] || g['fx-' + name + '-1'];
+  }
+
+  M.drawAegis = function (x, f, build) {
+    var sc = D.BODIES[build.body].scale, r = 78 * Math.max(sc[0], sc[1]), cy = f.y - 72 * sc[1], t = this.time;
+    var img = fxFrame('aegis', 8, t);
+    if (img) { x.drawImage(img, f.x - r * 1.25, cy - r * 1.25, r * 2.5, r * 2.5); return; }
+    x.save();
+    var g = x.createRadialGradient(f.x, cy, r * 0.55, f.x, cy, r);
+    g.addColorStop(0, 'rgba(255,220,120,0)'); g.addColorStop(0.85, 'rgba(255,214,110,0.18)'); g.addColorStop(1, 'rgba(255,240,190,0.55)');
+    x.fillStyle = g; x.beginPath(); x.arc(f.x, cy, r, 0, Math.PI * 2); x.fill();
+    // Hex facets sliding round the shell
+    x.strokeStyle = 'rgba(255,236,170,0.55)'; x.lineWidth = 1.5;
+    for (var k = 0; k < 6; k++) {
+      var a = t * 0.8 + k * Math.PI / 3, px = f.x + Math.cos(a) * r * 0.82, py = cy + Math.sin(a) * r * 0.82;
+      x.beginPath(); for (var j = 0; j <= 6; j++) { var b = j * Math.PI / 3; x[j ? 'lineTo' : 'moveTo'](px + Math.cos(b) * 9, py + Math.sin(b) * 9); } x.stroke();
+    }
+    x.strokeStyle = 'rgba(255,250,220,' + (0.6 + 0.3 * Math.sin(t * 6)) + ')'; x.lineWidth = 2.5;
+    x.beginPath(); x.arc(f.x, cy, r, 0, Math.PI * 2); x.stroke();
+    x.restore();
+  };
+
+  M.drawRage = function (x, f, build) {
+    var sc = D.BODIES[build.body].scale, cy = f.y - 70 * sc[1], t = this.time;
+    var img = fxFrame('rage', 8, t);
+    if (img) { var R = 110 * sc[1]; x.drawImage(img, f.x - R, cy - R, R * 2, R * 2); return; }
+    x.save();
+    var r = 90 * sc[1] * (1 + 0.06 * Math.sin(t * 14));
+    var g = x.createRadialGradient(f.x, cy, 10, f.x, cy, r);
+    g.addColorStop(0, 'rgba(255,60,30,0.28)'); g.addColorStop(0.6, 'rgba(200,20,10,0.16)'); g.addColorStop(1, 'rgba(120,0,0,0)');
+    x.fillStyle = g; x.beginPath(); x.arc(f.x, cy, r, 0, Math.PI * 2); x.fill();
+    // Rising heat licks
+    x.globalCompositeOperation = 'lighter';
+    for (var k = 0; k < 7; k++) {
+      var ph = (t * 1.6 + k / 7) % 1, px = f.x + Math.sin(k * 2.3 + t * 3) * 34 * sc[0], py = f.y - ph * 140 * sc[1];
+      x.fillStyle = 'rgba(255,' + Math.round(80 + 100 * (1 - ph)) + ',40,' + (0.45 * (1 - ph)) + ')';
+      x.beginPath(); x.ellipse(px, py, 4 * (1 - ph) + 2, 10 * (1 - ph) + 3, 0, 0, Math.PI * 2); x.fill();
+    }
+    x.restore();
+  };
+
+  M.drawShimmer = function (x, f, build) {
+    var sc = D.BODIES[build.body].scale, t = this.time;
+    x.save(); x.globalCompositeOperation = 'lighter';
+    for (var k = 0; k < 9; k++) {
+      var a = k * 2.4 + t * 2, rr = 26 + 20 * Math.sin(k * 1.7 + t * 3);
+      var px = f.x + Math.cos(a) * rr * sc[0], py = f.y - 70 * sc[1] + Math.sin(a * 1.3) * 55 * sc[1];
+      var al = 0.25 * (0.5 + 0.5 * Math.sin(t * 11 + k));
+      x.fillStyle = 'rgba(200,230,255,' + al + ')'; x.fillRect(px - 1, py - 1, 2, 2);
+    }
+    x.restore();
+  };
+
+  /** A decoy: the owner's dragon, idling where it was left. Looks exactly like the real one on purpose. */
+  M.drawDecoy = function (x, d, info) {
+    if (!info) return;
+    var b = info.build, k = d.l < 30 ? d.l / 30 : 1;
+    x.save(); x.translate(d.x, d.y); x.globalAlpha = k;
+    Art.draw(x, b.look, b.body, { time: this.time + d.id * 0.7, facing: d.fc, gear: b.gear });
+    x.restore();
   };
 
   // Swing trail from the rig: the attacking hand's real path, kept while the strike plays out.
@@ -543,7 +622,7 @@
       x.save(); roundRect(x, cx + 10, y0 + 8, 58, 60, 10); x.clip();
       x.fillStyle = Art.alpha(el.color, 0.25); x.fillRect(cx + 10, y0 + 8, 58, 60);
       x.translate(cx + 32, y0 + 140); x.scale(0.82, 0.82);
-      Art.draw(x, b.look, b.body, { time: self.time + i, facing: 1, frame: 0 });
+      Art.draw(x, b.look, b.body, { time: self.time + i, facing: 1, frame: 0, gear: b.gear });
       x.restore();
       // Name and element
       x.font = '600 12px Nunito, system-ui, sans-serif'; x.textAlign = 'left'; x.fillStyle = '#d8d0f0';
@@ -561,6 +640,8 @@
       var sigCd = D.SIGNATURES[b.signature].cooldown, abCd = D.ABILITIES[b.ability].cooldown;
       ring(x, cx + cw - 20, y0 + 22, 11, f.sc / sigCd, el.color, 'L');
       ring(x, cx + cw - 20, y0 + 52, 11, f.ac / abCd, el.glow, '↓L');
+      var gearAb = b.gear && b.gear.ability !== 'none' && D.GEAR_ABILITIES[b.gear.ability];
+      if (gearAb) ring(x, cx + cw - 48, y0 + 52, 11, (f.gc || 0) / gearAb.cooldown, '#ffd36a', gearAb.icon, f.fd || f.ag || f.rg);
       x.restore();
     });
     if (v.tl) {
@@ -569,7 +650,8 @@
     }
   };
 
-  function ring(x, cx, cy, r, frac, col, label) {
+  function ring(x, cx, cy, r, frac, col, label, active) {
+    if (active) { x.fillStyle = Art.alpha(col, 0.35); x.beginPath(); x.arc(cx, cy, r + 3, 0, Math.PI * 2); x.fill(); }
     x.lineWidth = 3;
     x.strokeStyle = 'rgba(255,255,255,0.12)'; x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.stroke();
     var ready = frac <= 0;

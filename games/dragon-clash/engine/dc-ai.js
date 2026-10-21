@@ -76,6 +76,17 @@
     var face = dx > 0 ? B.right : B.left;
     this.planHold = 0;
 
+    // Gear ability: defensive ones when threatened, aggressive ones up close
+    var gid = me.stats.gearAbility;
+    if (gid && me.gearCd <= 0 && this.tapT === 0 && r() < this.cfg.aggression * 0.6) {
+      var near = adx < 160 && Math.abs(dy) < 120, threatened = near && (t.state === 'attack' || me.dmg > 60);
+      var gustable = near && (me.x - this.stageMid()) * dx < 0 ? false : near;   // gust them off, not back onto the stage
+      if ((threatened && (gid === 'aegis' || gid === 'fade' || gid === 'phase' || gid === 'decoy')) || (near && gid === 'rage') || (gid === 'gust' && gustable)) {
+        this.hold = gid === 'gust' || gid === 'phase' ? face : 0;
+        this.press(B.gear, 2);
+        return 0;
+      }
+    }
     // Dodge an incoming attack
     if (t.state === 'attack' && adx < 150 && Math.abs(dy) < 120 && r() < this.cfg.dodge && me.dodgeCd <= 0) {
       this.press(B.dodge, 2);

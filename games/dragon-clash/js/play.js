@@ -25,7 +25,6 @@
   // ─────────────────────────────── Versus ───────────────────────────────
   App.screens.versus = {
     enter: function () {
-      if (!App.saidChampion) { App.saidChampion = true; window.DCAudio.init(); setTimeout(function () { window.DCAudio.voice('vChampion'); }, 250); }
       var cfg = Object.assign({ format: '1v1', arena: 'skyforge', stocks: 3, time: 0, ff: false, slots: [] }, App.store.get('versus', {}));
       function slotCount() { var f = D.FORMATS[cfg.format]; return f.teams * f.perTeam; }
       function normalise() {
@@ -66,7 +65,7 @@
                 var uniq = opp.filter(function (e, k) { return opp.indexOf(e) === k; });
                 return '<div class="slot"><canvas data-mini="' + i + '"></canvas><div class="fields">' +
                   '<select class="sel" data-slot-ctrl="' + i + '">' + ctrlOptions(s.ctrl) + '</select>' +
-                  '<select class="sel" data-slot-build="' + i + '">' + App.buildOptions(s.build) + '</select>' +
+                  '<select class="sel" data-slot-build="' + i + '" title="Starting pick on the Dragon Select screen">' + App.buildOptions(s.build) + '</select>' +
                   '<div class="row" style="gap:4px">' + uniq.map(function (e) { return App.matchupChip(b.element, e); }).join('') + '</div>' +
                   '</div></div>';
               }).join('') + '</div>';
@@ -78,7 +77,7 @@
           (f.perTeam > 1 ? '<label class="row"><input type="checkbox" data-ff' + (cfg.ff ? ' checked' : '') + '> Friendly fire</label>' : '') + '</div>' +
           '<div class="keys" style="margin-top:12px">' + humanDevices().map(function (d) { return '<div>' + App.deviceHint(d) + '</div>'; }).join('') + '</div></div>' +
           (probs.length ? '<div class="errors">' + probs.map(esc).join('<br>') + '</div>' : '') +
-          '<div class="row"><div class="spacer grow"></div><button class="btn hot" data-act="start"' + (probs.length ? ' disabled' : '') + '>Fight! →</button></div>' +
+          '<div class="row"><div class="spacer grow"></div><button class="btn hot" data-act="start"' + (probs.length ? ' disabled' : '') + '>Choose dragons →</button></div>' +
           '</div>';
         for (var k = 0; k < n; k++) App.mini(App.ui.querySelector('[data-mini="' + k + '"]'), App.buildById(cfg.slots[k].build), 'idle', { facing: teamOf(k) % 2 ? -1 : 1, scale: 0.95, offset: k });
         App.ui.querySelectorAll('[data-arena]').forEach(function (cv) { arenaPreview(cv, cv.dataset.arena); });
@@ -88,14 +87,30 @@
       }
       function humanDevices() { var out = []; for (var i = 0; i < slotCount(); i++) if (!isCpu(cfg.slots[i].ctrl)) out.push(cfg.slots[i].ctrl); return out; }
       function save() { App.store.set('versus', cfg); }
+      // Fight → Dragon Select (every player picks and dresses a dragon) → the match. Rematch goes back to Select.
+      var lastPicks = null;
       function start() {
-        var n = slotCount(), fighters = [], controllers = [], human = 0, labels = [], localTeams = [];
+        var n = slotCount(), human = 0, slots = [];
         for (var i = 0; i < n; i++) {
-          var s = cfg.slots[i], b = App.buildById(s.build), team = teamOf(i);
-          fighters.push({ id: 's' + i, build: b, team: team, name: b.name, tapJump: App.settings.tapJump });
-          if (isCpu(s.ctrl)) { controllers.push({ i: i, type: 'bot', level: +s.ctrl.slice(3) }); labels.push('CPU ' + b.name); }
-          else { human++; controllers.push({ i: i, type: 'human', device: s.ctrl, label: 'P' + human }); labels.push('P' + human + ' ' + b.name); if (localTeams.indexOf(team) < 0) localTeams.push(team); }
+          var s = cfg.slots[i], cpu = isCpu(s.ctrl);
+          if (!cpu) human++;
+          var prev = lastPicks && lastPicks[i];
+          slots.push({ ctrl: s.ctrl, team: teamOf(i), label: cpu ? 'CPU ' + (i + 1) : 'P' + human, build: prev ? prev.build : s.build, gear: prev ? prev.gear : null, keep: !!prev });
         }
+        App.show('select', {
+          slots: slots,
+          onBack: function () { App.show('versus'); },
+          onReady: function (builds, picks) { lastPicks = picks; launch(slots, builds); },
+        });
+      }
+      function launch(slots, builds) {
+        var fighters = [], controllers = [], labels = [], localTeams = [];
+        slots.forEach(function (sl, i) {
+          var b = builds[i];
+          fighters.push({ id: 's' + i, build: b, team: sl.team, name: b.name, tapJump: App.settings.tapJump });
+          if (isCpu(sl.ctrl)) { controllers.push({ i: i, type: 'bot', level: +sl.ctrl.slice(3) }); labels.push('CPU ' + b.name); }
+          else { controllers.push({ i: i, type: 'human', device: sl.ctrl, label: sl.label }); labels.push(sl.label + ' ' + b.name); if (localTeams.indexOf(sl.team) < 0) localTeams.push(sl.team); }
+        });
         var simOpts = { arena: cfg.arena, fighters: fighters, stocks: cfg.stocks, timeLimit: cfg.time * 3600, friendlyFire: cfg.ff, seed: (Date.now() & 0xffff) + 1 };
         var opts = {
           simOpts: simOpts, controllers: controllers, label: 'versus ' + cfg.format,
@@ -104,7 +119,7 @@
             var setup = match.setupInfo;
             App.stopMatch();
             App.show('results', { result: result, setup: setup, labels: labels, localTeams: localTeams, mode: 'versus',
-              onRematch: function () { simOpts.seed++; App.startLocalMatch(opts); }, onChange: function () { App.show('versus'); } });
+              rematchLabel: 'Rematch: pick dragons', onRematch: start, onChange: function () { App.show('versus'); } });
           },
           onQuit: function () { App.show('versus'); },
         };

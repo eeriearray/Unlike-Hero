@@ -8,12 +8,12 @@
 (function () {
   'use strict';
   var B = window.DC.Sim.BTN;
-  var ACTIONS = ['left', 'right', 'up', 'down', 'jump', 'light', 'heavy', 'sig', 'dodge'];
+  var ACTIONS = ['left', 'right', 'up', 'down', 'jump', 'light', 'heavy', 'sig', 'dodge', 'gear'];
   var LABELS = { left: 'Move left', right: 'Move right', up: 'Up / aim up (tap to jump)', down: 'Down / drop / fast fall', jump: 'Jump',
-                 light: 'Light attack', heavy: 'Heavy attack', sig: 'Signature (Down + it: elemental ability)', dodge: 'Dash / dodge' };
+                 light: 'Light attack', heavy: 'Heavy attack', sig: 'Signature (Down + it: elemental ability)', dodge: 'Dash / dodge', gear: 'Gear ability' };
   var DEFAULTS = {
-    kb1: { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'], jump: ['Space'], light: ['KeyJ'], heavy: ['KeyK'], sig: ['KeyL'], dodge: ['ShiftLeft'] },
-    kb2: { left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'], jump: ['Enter'], light: ['Numpad1', 'Comma'], heavy: ['Numpad2', 'Period'], sig: ['Numpad3', 'Slash'], dodge: ['Numpad0', 'ShiftRight'] },
+    kb1: { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'], jump: ['Space'], light: ['KeyJ'], heavy: ['KeyK'], sig: ['KeyL'], dodge: ['ShiftLeft'], gear: ['KeyI'] },
+    kb2: { left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'], jump: ['Enter'], light: ['Numpad1', 'Comma'], heavy: ['Numpad2', 'Period'], sig: ['Numpad3', 'Slash'], dodge: ['Numpad0', 'ShiftRight'], gear: ['Numpad4', 'Semicolon'] },
   };
   var DEVICE_NAMES = { kb1: 'Keyboard 1', kb2: 'Keyboard 2', pad0: 'Gamepad 1', pad1: 'Gamepad 2', pad2: 'Gamepad 3', pad3: 'Gamepad 4' };
 
@@ -63,7 +63,8 @@
     if (bt(2)) h |= B.light;
     if (bt(3)) h |= B.heavy;
     if (bt(1)) h |= B.sig;
-    if (bt(4) || bt(5) || bt(6) || bt(7)) h |= B.dodge;
+    if (bt(5) || bt(6) || bt(7)) h |= B.dodge;
+    if (bt(4)) h |= B.gear;
     return h;
   }
 

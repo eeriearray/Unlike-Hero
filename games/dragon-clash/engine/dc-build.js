@@ -20,7 +20,7 @@
   function costBreakdown(b) {
     b = b || {};
     var rows = [
-      { slot: 'body', table: D.BODIES, id: b.body },
+      { slot: 'body', table: D.BODIES, id: b.gear && b.gear.base ? b.gear.base : b.body },
       { slot: 'mobility', table: D.MOBILITY, id: b.mobility },
       { slot: 'signature', table: D.SIGNATURES, id: b.signature },
       { slot: 'ability', table: D.ABILITIES, id: b.ability },
@@ -55,7 +55,47 @@
     if (cost > budget) errors.push('Over budget: ' + cost + ' / ' + budget + ' points.');
     var lookErr = validateLook(b.look);
     if (lookErr) errors.push(lookErr);
-    return { ok: errors.length === 0, errors: errors, cost: cost, remaining: budget - cost };
+    var gearCostV = 0;
+    if (b.gear != null) {
+      var g = b.gear;
+      if (typeof g !== 'object') errors.push('Bad loadout.');
+      else {
+        if (!own(D.SIZES, g.size)) errors.push('Unknown size.');
+        else if (D.SIZES[g.size].body !== b.body) errors.push('Size does not match the body.');
+        if (!own(D.BODIES, g.base)) errors.push('Unknown base body.');
+        if (!own(D.ARMOR, g.armor)) errors.push('Unknown armour.');
+        if (!own(D.WEAPONS, g.weapon)) errors.push('Unknown weapon.');
+        if (!own(D.GEAR_ABILITIES, g.ability)) errors.push('Unknown gear ability.');
+        if (!errors.length) {
+          gearCostV = gearCost(b);
+          if (gearCostV > D.GEAR_BUDGET) errors.push('Loadout over budget: ' + gearCostV + ' / ' + D.GEAR_BUDGET + ' points.');
+        }
+      }
+    }
+    return { ok: errors.length === 0, errors: errors, cost: cost, remaining: budget - cost, gearCost: gearCostV };
+  }
+
+  /** Loadout cost: armour + weapon + ability + any growth in size over the dragon's own body. */
+  function gearCost(b) {
+    var g = b && b.gear;
+    if (!g) return 0;
+    var grow = Math.max(0, (D.BODIES[b.body] ? D.BODIES[b.body].cost : 0) - (D.BODIES[g.base] ? D.BODIES[g.base].cost : 0));
+    return grow + ((D.ARMOR[g.armor] || {}).cost || 0) + ((D.WEAPONS[g.weapon] || {}).cost || 0) + ((D.GEAR_ABILITIES[g.ability] || {}).cost || 0);
+  }
+
+  /** A build wearing a loadout. size swaps the body; the original body is kept as gear.base for costing. */
+  function withGear(b, gear) {
+    var out = JSON.parse(JSON.stringify(b));
+    var base = b.gear && b.gear.base ? b.gear.base : b.body;
+    out.gear = { size: gear.size, base: base, armor: gear.armor, weapon: gear.weapon, ability: gear.ability };
+    out.body = D.SIZES[gear.size] ? D.SIZES[gear.size].body : base;
+    return out;
+  }
+
+  /** The size a body frame corresponds to. */
+  function sizeOf(body) {
+    for (var k in D.SIZES) if (D.SIZES[k].body === body) return k;
+    return 'medium';
   }
 
   function validateLook(look) {
@@ -81,6 +121,7 @@
       name: typeof b.name === 'string' ? b.name.slice(0, 40) : '',
       element: b.element, body: b.body, mobility: b.mobility, signature: b.signature, ability: b.ability, upgrade: b.upgrade,
       look: look,
+      gear: b.gear && typeof b.gear === 'object' ? { size: b.gear.size, base: b.gear.base, armor: b.gear.armor, weapon: b.gear.weapon, ability: b.gear.ability } : undefined,
     };
   }
 
@@ -88,7 +129,7 @@
   function deriveStats(b) {
     var body = D.BODIES[b.body], mob = D.MOBILITY[b.mobility], up = D.UPGRADES[b.upgrade];
     var cd = up.cooldown || 1;
-    return {
+    var st = {
       element: b.element,
       weight: body.weight,
       hurt: { w: body.hurt.w, h: body.hurt.h },
@@ -109,6 +150,13 @@
       sigCd: Math.round(D.SIGNATURES[b.signature].cooldown * cd),
       abilityCd: Math.round(D.ABILITIES[b.ability].cooldown * cd),
     };
+    // Loadout: armour slows you and soaks knockback; weapons boost specific attacks; one gear ability
+    var g = b.gear || {}, ar = D.ARMOR[g.armor] || D.ARMOR.none, wp = D.WEAPONS[g.weapon] || D.WEAPONS.claws, ga = D.GEAR_ABILITIES[g.ability] || D.GEAR_ABILITIES.none;
+    st.kbTaken *= ar.kbTaken; st.run *= ar.speed; st.air *= ar.speed; st.jump *= ar.jump;
+    st.weapon = { lightPhys: wp.lightPhys || 1, heavyPhys: wp.heavyPhys || 1, heavyReach: wp.heavyReach || 1, tailPhys: wp.tailPhys || 1, tailKb: wp.tailKb || 1, upKb: wp.upKb || 1, upPhys: wp.upPhys || 1 };
+    st.gearAbility = g.ability && g.ability !== 'none' ? g.ability : null;
+    st.gearCd = ga.cooldown || 0;
+    return st;
   }
 
   /** 0–5 bars for the Forge's compact stat display. */
@@ -135,6 +183,6 @@
     return b;
   }
 
-  return { validateBuild: validateBuild, validateLook: validateLook, sanitize: sanitize, deriveStats: deriveStats,
+  return { gearCost: gearCost, withGear: withGear, sizeOf: sizeOf, validateBuild: validateBuild, validateLook: validateLook, sanitize: sanitize, deriveStats: deriveStats,
            costBreakdown: costBreakdown, totalCost: totalCost, statBars: statBars, presetBuild: presetBuild };
 });

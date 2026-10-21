@@ -15,6 +15,7 @@ Open `index.html` (or the hub). Everything except online play works from `file:/
 | Dash / dodge | Left Shift | Num 0 or Right Shift | bumpers / triggers |
 | Light / Heavy / Signature | J / K / L | Num 1 / 2 / 3 or , . / | X / Y / B |
 | Elemental ability | S + L | ↓ + Num 3 | down + B |
+| Gear ability | I | Num 4 or ; | LB |
 | Pause | Esc | Esc | Start |
 
 Hold a direction with an attack for its variants (up, down, side, in the air). Up + Heavy in the air is the
@@ -155,6 +156,26 @@ aurora, mist, snow, shooting stars, fireflies, and blurred foreground framing. `
   in the Forge, at match start and on the server. Stats are derived from catalog ids only, so a modified client
   cannot send itself stats. Cosmetics never change stats.
 
+## Dragon Select and gear
+
+Before every Versus match each player picks a dragon and a loadout with their own controls (↑↓ row, ←→ change,
+light to ready, heavy back). Gear has its own **30-point budget** on top of the dragon's 100-point build; options
+you can't afford are skipped. All numbers live in `engine/dc-data.js` (`SIZES`, `ARMOR`, `WEAPONS`,
+`GEAR_ABILITIES`) and are checked by `Build.validateBuild`, locally and on the server.
+
+| Slot | Options | Effect |
+| --- | --- | --- |
+| Size | Small · Medium · Large · Huge | Swaps the body frame (hitbox, weight, power, speed). Growing past the dragon's own size costs the difference in body points; shrinking is free. |
+| Armour | None · Scale Mail 6 · Iron Plate 11 · Dragonbone 16 | −6 / −12 / −18% knockback taken; −3 / −7 / −11% run and air speed, lower jumps. |
+| Weapon | Bare Claws · Steel Talons 8 · Great Claws 12 · Tail Mace 8 · Horn Spikes 8 | Light +15% damage · heavy +15% damage and reach · tail attacks +30% damage, +10% knockback · up attacks +15% knockback, +10% damage. |
+| Ability | Fade 10 · Aegis 12 · Phase Dash 8 · Decoy 10 · Rage 10 · Gust 8 | Fade: ~20% visible for 1.5 s, broken by attacking or being hit. Aegis: absorbs one hit within 3 s. Phase Dash: invulnerable boosted dash. Decoy: a copy that bursts when struck. Rage: +15% damage dealt and taken knockback for 5 s. Gust: shoves enemies ahead, no damage. |
+
+CPUs pick a random affordable loadout and use their ability. **Art:** every piece has a drawn-in-code placeholder
+until the real one exists. Export pieces as `docs/GEAR-ASSETS.md` describes into `assets/gear/src/`, then run
+`python3 tools/build_gear.py`; it downscales them and writes `assets/gear/gear.js`, and the game uses each file
+it finds (body pieces ride their rig bone, the tail mace follows the tail tip, `fx-aegis-*` and `fx-rage-*`
+frames replace the painted shield and aura).
+
 ## Online
 
 ```bash
@@ -172,7 +193,7 @@ There is no client-side prediction yet, so play feels best on the same network.
 
 `npm test` (from the repo root) runs `test/dragon-clash-*.test.mjs`: every elemental pairing, element-only modifiers,
 build validation and tampering, hitboxes vs hurtboxes, one hit per attack, dodges, knockback growth, ring-outs, teams,
-time-outs, interaction rules, ledges, determinism, held buttons, tournament byes and progression from real fights,
+time-outs, interaction rules, gear budget and every gear effect, ledges, determinism, held buttons, tournament byes and progression from real fights,
 and an end-to-end online test where separate WebSocket clients play a server-run match and a CPU cup.
 
 ## Gameplay inspection (Emberfang first, then the roster)

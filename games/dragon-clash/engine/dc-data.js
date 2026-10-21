@@ -220,6 +220,42 @@
     ironWill:       { name: 'Iron Will',      cost: 16, desc: 'Take 8% less knockback.', kbTaken: 0.92 },
   };
 
+  // ─────────────────────────────── Gear (loadout chosen before each fight) ───────────────────────────────
+  // A second budget, the same for every dragon, on top of the 100-point build. Size swaps the body frame: going up
+  // costs the difference in body cost, going down is free and refunds nothing.
+  var GEAR_BUDGET = 30;
+  var SIZES = {
+    small:  { name: 'Small',  body: 'lithe',    icon: '🦎', desc: 'Hard to hit, easy to launch.' },
+    medium: { name: 'Medium', body: 'balanced', icon: '🐉', desc: 'The all-rounder.' },
+    large:  { name: 'Large',  body: 'armored',  icon: '🦖', desc: 'Heavier, hits harder, bigger target.' },
+    huge:   { name: 'Huge',   body: 'titan',    icon: '🏔️', desc: 'Very heavy and strong, slow, huge target.' },
+  };
+  var ARMOR = {
+    none:  { name: 'No armour',   cost: 0,  icon: '·',  kbTaken: 1,    speed: 1,    jump: 1,    desc: 'Nothing slows you down.' },
+    scale: { name: 'Scale Mail',  cost: 6,  icon: '🛡️', kbTaken: 0.94, speed: 0.97, jump: 0.99, desc: '−6% knockback taken, −3% speed.' },
+    iron:  { name: 'Iron Plate',  cost: 11, icon: '🛡️', kbTaken: 0.88, speed: 0.93, jump: 0.96, desc: '−12% knockback taken, −7% speed, lower jumps.' },
+    bone:  { name: 'Dragonbone',  cost: 16, icon: '🛡️', kbTaken: 0.82, speed: 0.89, jump: 0.93, desc: '−18% knockback taken, −11% speed, low jumps.' },
+  };
+  var WEAPONS = {
+    claws:      { name: 'Bare Claws',   cost: 0,  icon: '✋', desc: 'No weapon.' },
+    talons:     { name: 'Steel Talons', cost: 8,  icon: '🗡️', lightPhys: 1.15, desc: 'Light attacks +15% damage.' },
+    greatclaws: { name: 'Great Claws',  cost: 12, icon: '⚔️', heavyPhys: 1.15, heavyReach: 1.15, desc: 'Heavy attacks +15% damage and 15% longer reach.' },
+    tailmace:   { name: 'Tail Mace',    cost: 8,  icon: '🔨', tailPhys: 1.3, tailKb: 1.1, desc: 'Tail attacks +30% damage, +10% knockback.' },
+    hornspikes: { name: 'Horn Spikes',  cost: 8,  icon: '🦏', upKb: 1.15, upPhys: 1.1, desc: 'Up attacks launch 15% harder, +10% damage.' },
+  };
+  // Moves each weapon boosts
+  var TAIL_MOVES = { dtilt: 1, dsmash: 1 }, UP_MOVES = { utilt: 1, usmash: 1, uair: 1 };
+  // Abilities: their own button, cooldowns in ticks (60 = 1 s). All are visible and have a counter.
+  var GEAR_ABILITIES = {
+    none:  { name: 'No ability', cost: 0, icon: '·', cooldown: 0, desc: 'Bank the points.' },
+    fade:  { name: 'Fade',       cost: 10, icon: '👻', cooldown: 840, duration: 90,  desc: 'Turn to a faint shimmer for 1.5 s. Ends when you attack or are hit.' },
+    aegis: { name: 'Aegis',      cost: 12, icon: '🔰', cooldown: 720, duration: 180, desc: 'A shield that absorbs one hit within 3 s.' },
+    phase: { name: 'Phase Dash', cost: 8,  icon: '💨', cooldown: 480, duration: 14,  desc: 'A fast dash through attacks (invulnerable while dashing).' },
+    decoy: { name: 'Decoy',      cost: 10, icon: '🎭', cooldown: 720, duration: 180, desc: 'Leave a copy that bursts when struck, hitting nearby enemies.' },
+    rage:  { name: 'Rage',       cost: 10, icon: '😤', cooldown: 900, duration: 300, mult: 1.15, desc: '5 s of +15% damage dealt and +15% knockback taken.' },
+    gust:  { name: 'Gust',       cost: 8,  icon: '🌪️', cooldown: 420, range: 230, desc: 'A wing blast that shoves enemies in front away. No damage.' },
+  };
+
   // ─────────────────────────────── Cosmetics (no combat effect) ───────────────────────────────
   var PARTS = {
     head:   { warrior: 'Warrior', beak: 'Beaked', maw: 'Iron Maw', frill: 'Frilled', crest: 'Bladed Crest', whiskers: 'Ember Whiskers' },
@@ -301,6 +337,7 @@
     TICK_RATE: TICK_RATE, ELEMENTS: ELEMENTS, ELEMENT_ORDER: ELEMENT_ORDER, BEATS: BEATS, ELEMENT_CONFIG: ELEMENT_CONFIG,
     elementMultiplier: elementMultiplier, matchup: matchup, INTERACTIONS: INTERACTIONS, STATUS: STATUS,
     PHYSICS: PHYSICS, MOVES: MOVES, pickMove: pickMove, SIGNATURES: SIGNATURES, ABILITIES: ABILITIES,
+    GEAR_BUDGET: GEAR_BUDGET, SIZES: SIZES, ARMOR: ARMOR, WEAPONS: WEAPONS, GEAR_ABILITIES: GEAR_ABILITIES, TAIL_MOVES: TAIL_MOVES, UP_MOVES: UP_MOVES,
     BUDGET: BUDGET, BODIES: BODIES, MOBILITY: MOBILITY, UPGRADES: UPGRADES, PARTS: PARTS, PRESETS: PRESETS,
     ARENAS: ARENAS, FORMATS: FORMATS, TEAM_COLORS: TEAM_COLORS, TEAM_NAMES: TEAM_NAMES,
   };

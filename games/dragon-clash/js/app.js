@@ -85,6 +85,7 @@
       x.save(); x.translate(w / 2 + (m.opts.dx || 0) * scale, h - 8 * scale); x.scale(scale, scale);
       x.fillStyle = 'rgba(0,0,0,.25)'; x.beginPath(); x.ellipse(0, 0, 40, 7, 0, 0, Math.PI * 2); x.fill();
       var pose = m.kind === 'idle' ? { time: t + (m.opts.offset || 0), facing: m.opts.facing || 1, element: m.build.element } : Anim.showcase(m.kind, m.build, t + (m.opts.offset || 0), m.opts.facing || 1);
+      pose.gear = m.build.gear;
       Art.draw(x, m.build.look, m.build.body, pose);
       x.restore();
     });
@@ -221,9 +222,10 @@
         '<tr><td>Light</td><td>' + k('kb1', 'light') + '</td><td>' + k('kb2', 'light') + '</td></tr>' +
         '<tr><td>Heavy</td><td>' + k('kb1', 'heavy') + '</td><td>' + k('kb2', 'heavy') + '</td></tr>' +
         '<tr><td>Signature</td><td>' + k('kb1', 'sig') + '</td><td>' + k('kb2', 'sig') + '</td></tr>' +
+        '<tr><td>Gear ability</td><td>' + k('kb1', 'gear') + '</td><td>' + k('kb2', 'gear') + '</td></tr>' +
         '<tr><td>Elemental ability</td><td>' + k('kb1', 'down') + ' + ' + k('kb1', 'sig') + '</td><td>' + k('kb2', 'down') + ' + ' + k('kb2', 'sig') + '</td></tr>' +
         '<tr><td>Pause</td><td><kbd>Esc</kbd></td><td><kbd>Esc</kbd> · gamepad Start</td></tr>' +
-        '</table><p class="dim">Columns: Keyboard 1, Keyboard 2. Gamepads: stick/d-pad move, A jump, X light, Y heavy, B signature, bumpers dodge. Remap in Controls & settings.</p></div>' +
+        '</table><p class="dim">Columns: Keyboard 1, Keyboard 2. Gamepads: stick/d-pad move, A jump, X light, Y heavy, B signature, LB gear ability, RB/triggers dodge. Remap in Controls & settings.</p></div>' +
         '<div class="panel"><h3>Moves</h3><table class="movelist"><tr class="dim"><td></td><td>Ground</td><td>Up</td><td>Down</td><td>Air</td><td>Air up</td><td>Air down</td></tr>' +
         moveRows.map(function (r) { return '<tr><td><b>' + r[0] + '</b></td>' + r.slice(1).map(function (id) { return '<td>' + id.split(' / ').map(mv).join('<br>') + '</td>'; }).join('') + '</tr>'; }).join('') +
         '</table><p class="dim">Hold a direction when you press the button. % = damage, f = startup frames (60 per second). Heavies hit harder and leave you open longer.</p></div>' +
@@ -262,7 +264,7 @@
           '<table class="remap movelist"><tr class="dim"><td></td><td>Keyboard 1</td><td>Keyboard 2</td></tr>' + Input.ACTIONS.map(row).join('') + '</table>' +
           (conf.length ? '<p class="errors">Used twice: ' + conf.map(esc).join(', ') + '</p>' : '<p class="ok-text">No shared keys between the two layouts.</p>') +
           '<div class="row"><button class="btn ghost small" data-act="reset" data-dev="kb1">Reset Keyboard 1</button><button class="btn ghost small" data-act="reset" data-dev="kb2">Reset Keyboard 2</button></div>' +
-          '<p class="dim">Gamepads: stick or d-pad move, A jump, X light, Y heavy, B signature, bumpers/triggers dodge, Start pauses. Connected now: ' + (Input.connectedPads().length || 'none (press a button to wake one)') + '.</p></div>' +
+          '<p class="dim">Gamepads: stick or d-pad move, A jump, X light, Y heavy, B signature, LB gear ability, RB/triggers dodge, Start pauses. Connected now: ' + (Input.connectedPads().length || 'none (press a button to wake one)') + '.</p></div>' +
           '</div></div>';
         ui.querySelectorAll('input[type=range]').forEach(function (r) {
           r.addEventListener('input', function () { App.settings[r.dataset.set] = +r.value; App.saveSettings(); });
@@ -293,6 +295,8 @@
    */
   App.startLocalMatch = function (opts) {
     App.stopMatch();
+    if (App.screen && App.screens[App.screen] && App.screens[App.screen].leave) App.screens[App.screen].leave();
+    App.screen = 'match';
     ui.innerHTML = '';
     App.clearMinis();
     var helpKeys = opts.controllers.filter(function (c) { return c.type === 'human'; }).map(function (c) { return App.deviceHint(c.device, c.label); }).join(' &nbsp;·&nbsp; ');
@@ -314,7 +318,7 @@
     var b = Input.binds();
     if (dev.indexOf('pad') === 0) return '<b>' + esc(label || Input.DEVICE_NAMES[dev]) + '</b> gamepad';
     var k = function (a) { return '<kbd>' + esc(Input.keyName(b[dev][a][0] || '?')) + '</kbd>'; };
-    return '<b>' + esc(label || Input.DEVICE_NAMES[dev]) + '</b> ' + k('left') + k('right') + ' move ' + (b[dev].jump[0] ? k('jump') : k('up')) + ' jump ' + k('light') + k('heavy') + k('sig') + ' attacks ' + k('dodge') + ' dodge';
+    return '<b>' + esc(label || Input.DEVICE_NAMES[dev]) + '</b> ' + k('left') + k('right') + ' move ' + (b[dev].jump[0] ? k('jump') : k('up')) + ' jump ' + k('light') + k('heavy') + k('sig') + ' attacks ' + k('dodge') + ' dodge ' + k('gear') + ' gear';
   };
 
   App.stopMatch = function () {

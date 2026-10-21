@@ -104,6 +104,37 @@
         this.ring(e.x, e.y - 64, 70, '#d8b07a', 22, 7);
         this.burst(e.x, e.y - 60, 14, { speed: 4, life: 26, size: 6, colors: ['#a0794a', '#d8c08a'], type: 'shard', grav: 0.25 });
         break;
+      case 'gear': {
+        var y = e.y - 70;
+        if (e.ability === 'fade') this.burst(e.x, y, 18, { speed: 3, life: 30, size: 9, colors: ['rgba(200,220,255,0.35)', 'rgba(160,180,220,0.3)'], type: 'smoke', grav: -0.03 });
+        else if (e.ability === 'aegis') { this.ring(e.x, y, 90, '#ffe08a', 20, 6); this.burst(e.x, y, 12, { speed: 5, life: 20, size: 4, colors: ['#fff6cf', '#ffd36a'], type: 'spark' }); }
+        else if (e.ability === 'phase') { this.ring(e.x, y, 60, '#cfe8ff', 14, 4); this.burst(e.x, y, 16, { angle: e.facing > 0 ? Math.PI : 0, spread: 0.5, speed: 9, life: 16, size: 4, colors: ['#ffffff', '#9fd0ff'], type: 'spark' }); }
+        else if (e.ability === 'decoy') this.burst(e.x, y, 20, { speed: 4, life: 28, size: 10, colors: ['rgba(220,210,240,0.5)', 'rgba(180,170,210,0.4)'], type: 'smoke', grav: -0.02 });
+        else if (e.ability === 'rage') { this.ring(e.x, y, 100, '#ff4a2a', 22, 8); this.burst(e.x, y, 20, { speed: 7, life: 24, size: 5, colors: ['#ff4a2a', '#ffb02e', '#ffffff'], type: 'spark' }); this.addShake(3, settings); }
+        else if (e.ability === 'gust') {
+          var dir = e.facing > 0 ? 0 : Math.PI;
+          this.burst(e.x + e.facing * 40, y, 26, { angle: dir, spread: 0.35, speed: 16, life: 22, size: 12, colors: ['rgba(235,245,255,0.55)', 'rgba(200,225,255,0.4)'], type: 'smoke', drag: 0.9 });
+          this.burst(e.x + e.facing * 40, y, 12, { angle: dir, spread: 0.25, speed: 20, life: 14, size: 3, colors: ['#ffffff'], type: 'spark' });
+        }
+        break;
+      }
+      case 'absorb':
+        this.ring(e.x, e.y, 110, '#fff2b0', 18, 9);
+        this.burst(e.x, e.y, 24, { speed: 9, life: 26, size: 6, colors: ['#ffe08a', '#fff6cf', '#ffffff'], type: 'shard', grav: 0.2 });
+        this.popup(e.x, e.y - 40, 'BLOCKED', '#ffe08a');
+        this.addShake(4, settings);
+        break;
+      case 'decoyPop':
+        this.burst(e.x, e.y, 26, { speed: 6, life: 30, size: 11, colors: ['rgba(220,210,240,0.6)', 'rgba(255,255,255,0.5)'], type: 'smoke', grav: -0.02 });
+        this.ring(e.x, e.y, 80, '#e6dcff', 16, 5);
+        this.popup(e.x, e.y - 40, 'DECOY', '#e6dcff');
+        break;
+      case 'decoyGone':
+        this.burst(e.x, e.y - 60, 12, { speed: 2.5, life: 26, size: 9, colors: ['rgba(220,210,240,0.4)'], type: 'smoke', grav: -0.03 });
+        break;
+      case 'unfade':
+        this.burst(e.x, e.y - 70, 10, { speed: 3, life: 16, size: 3, colors: ['#cfe8ff', '#ffffff'], type: 'spark' });
+        break;
       case 'attack':
         // Wing-burst gust handled on jump; nothing here.
         break;
