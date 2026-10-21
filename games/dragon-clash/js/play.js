@@ -6,21 +6,39 @@
   var App = window.DCApp, D = window.DC.Data, Build = window.DC.Build, Sim = window.DC.Sim, Bot = window.DC.Bot, T = window.DC.Tournament, Input = window.DCInput;
   var esc = App.esc;
 
-  var CONTROLS = [['kb1', 'Keyboard 1'], ['kb2', 'Keyboard 2'], ['pad0', 'Gamepad 1'], ['pad1', 'Gamepad 2'], ['pad2', 'Gamepad 3'], ['pad3', 'Gamepad 4'],
-                  ['cpu1', 'CPU · easy'], ['cpu2', 'CPU · normal'], ['cpu3', 'CPU · hard']];
-  var PRESET_ROTATION = ['emberfang', 'frostwing', 'voltscale', 'ironmaw', 'tidefang', 'warrior'];
-
-  function ctrlOptions(sel) { return CONTROLS.map(function (c) { return '<option value="' + c[0] + '"' + (c[0] === sel ? ' selected' : '') + '>' + c[1] + '</option>'; }).join(''); }
+  function getControls() {
+    return App.isTouch()
+      ? [['touch', 'Touch screen'], ['kb1', 'Keyboard 1'], ['kb2', 'Keyboard 2'], ['pad0', 'Gamepad 1'], ['pad1', 'Gamepad 2'], ['pad2', 'Gamepad 3'], ['pad3', 'Gamepad 4'], ['cpu1', 'CPU · easy'], ['cpu2', 'CPU · normal'], ['cpu3', 'CPU · hard']]
+      : [['kb1', 'Keyboard 1'], ['kb2', 'Keyboard 2'], ['pad0', 'Gamepad 1'], ['pad1', 'Gamepad 2'], ['pad2', 'Gamepad 3'], ['pad3', 'Gamepad 4'], ['touch', 'Touch screen'], ['cpu1', 'CPU · easy'], ['cpu2', 'CPU · normal'], ['cpu3', 'CPU · hard']];
+  }
+  function ctrlOptions(sel) { return getControls().map(function (c) { return '<option value="' + c[0] + '"' + (c[0] === sel ? ' selected' : '') + '>' + c[1] + '</option>'; }).join(''); }
+  var PRESET_ROTATION = ['emberfang-hd', 'frostwing-hd', 'voltscale-hd', 'ironmaw-hd', 'tidefang-hd'];
   function isCpu(c) { return c.indexOf('cpu') === 0; }
   function defaultBuildId(i) { var mine = App.myBuilds(); if (i === 0 && mine[0]) return mine[0].id; return 'preset-' + PRESET_ROTATION[i % PRESET_ROTATION.length]; }
 
   function arenaPreview(cv, id) {
     var x = cv.getContext('2d'), w = cv.clientWidth || 200, h = cv.clientHeight || 110;
     cv.width = w * 2; cv.height = h * 2; x.scale(2, 2);
+    if (id === 'random') {
+      var g = x.createLinearGradient(0, 0, w, h); g.addColorStop(0, '#2a1a4a'); g.addColorStop(1, '#4a1a3a'); x.fillStyle = g; x.fillRect(0, 0, w, h);
+      x.font = '800 54px Cinzel, serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = 'rgba(255,255,255,0.85)'; x.fillText('?', w / 2, h / 2 + 2);
+      return;
+    }
     var a = D.ARENAS[id];
     window.DCScenery.backdrop(x, a, { x: 800, y: 450 }, w, h, 3);
     x.save(); x.scale(w / 1600, h / 900); x.translate(0, 60); window.DCScenery.platforms(x, a, 0); x.restore();
   }
+
+  App.arenaChoices = function () { return D.ARENA_ORDER.concat(['random']); };
+  App.pickArena = function (id) { return id === 'random' || !D.ARENAS[id] ? D.ARENA_ORDER[Math.floor(Math.random() * D.ARENA_ORDER.length)] : id; };
+  /** A stage card: painted thumbnail, name, a one-line description and what makes the layout different. */
+  App.arenaCard = function (id, on) {
+    var a = D.ARENAS[id], walls = a && a.platforms.some(function (p) { return p.wall; });
+    var soft = a ? a.platforms.filter(function (p) { return !p.solid; }).length : 0, solid = a ? a.platforms.filter(function (p) { return p.solid && !p.wall && !p.altar; }).length : 0;
+    var tags = a ? [solid > 1 ? solid + ' floors' : 'one floor', soft ? soft + ' drop-through' : 'no platforms', walls ? 'walls' : 'open sides'] : ['a different arena every match'];
+    return '<button class="arena-card' + (on ? ' on' : '') + '" data-act="arena" data-id="' + id + '"><canvas data-arena="' + id + '"></canvas><b>' + (a ? a.name : 'Random') + '</b>' +
+      '<small>' + esc(a ? a.blurb || (id === 'skyforge' ? 'The citadel spire at dusk. A wide floor and three platforms.' : 'Twin floes over a frozen rift.') : 'Let fate pick the battlefield.') + '</small><i>' + tags.join(' · ') + '</i></button>';
+  };
 
   // ─────────────────────────────── Versus ───────────────────────────────
   App.screens.versus = {
@@ -28,9 +46,13 @@
       var cfg = Object.assign({ format: '1v1', arena: 'skyforge', stocks: 3, time: 0, ff: false, slots: [] }, App.store.get('versus', {}));
       function slotCount() { var f = D.FORMATS[cfg.format]; return f.teams * f.perTeam; }
       function normalise() {
-        var n = slotCount();
+        var n = slotCount(), isTouch = App.isTouch();
         for (var i = 0; i < n; i++) {
-          if (!cfg.slots[i]) cfg.slots[i] = { ctrl: i === 0 ? 'kb1' : 'cpu2', build: defaultBuildId(i) };
+          if (!cfg.slots[i]) cfg.slots[i] = { ctrl: i === 0 ? App.defaultDevice() : 'cpu2', build: defaultBuildId(i) };
+          if (i === 0) {
+            if (!isTouch && cfg.slots[i].ctrl === 'touch') cfg.slots[i].ctrl = 'kb1';
+            if (isTouch && cfg.slots[i].ctrl === 'kb1') cfg.slots[i].ctrl = 'touch';
+          }
           if (!App.allBuilds().some(function (b) { return b.id === cfg.slots[i].build; })) cfg.slots[i].build = defaultBuildId(i);
         }
       }
@@ -71,7 +93,7 @@
               }).join('') + '</div>';
           }).join('') + '</div>' +
           '<div class="panel"><div class="section-title" style="margin-top:0">Arena</div><div class="arena-cards">' +
-          ['skyforge', 'frostfall'].map(function (id) { return '<button class="arena-card' + (cfg.arena === id ? ' on' : '') + '" data-act="arena" data-id="' + id + '"><canvas data-arena="' + id + '"></canvas><b>' + D.ARENAS[id].name + '</b></button>'; }).join('') + '</div>' +
+          App.arenaChoices().map(function (id) { return App.arenaCard(id, cfg.arena === id); }).join('') + '</div>' +
           '<div class="row" style="margin-top:12px"><span class="eyebrow">Stocks</span><div class="chips">' + [1, 2, 3, 4, 5].map(function (s) { return '<button class="chip' + (cfg.stocks === s ? ' on' : '') + '" data-act="stocks" data-n="' + s + '">' + s + '</button>'; }).join('') + '</div>' +
           '<span class="eyebrow">Time</span><div class="chips">' + [0, 3, 5, 8].map(function (s) { return '<button class="chip' + (cfg.time === s ? ' on' : '') + '" data-act="time" data-n="' + s + '">' + (s ? s + ' min' : 'Off') + '</button>'; }).join('') + '</div>' +
           (f.perTeam > 1 ? '<label class="row"><input type="checkbox" data-ff' + (cfg.ff ? ' checked' : '') + '> Friendly fire</label>' : '') + '</div>' +
@@ -111,7 +133,7 @@
           if (isCpu(sl.ctrl)) { controllers.push({ i: i, type: 'bot', level: +sl.ctrl.slice(3) }); labels.push('CPU ' + b.name); }
           else { controllers.push({ i: i, type: 'human', device: sl.ctrl, label: sl.label }); labels.push(sl.label + ' ' + b.name); if (localTeams.indexOf(sl.team) < 0) localTeams.push(sl.team); }
         });
-        var simOpts = { arena: cfg.arena, fighters: fighters, stocks: cfg.stocks, timeLimit: cfg.time * 3600, friendlyFire: cfg.ff, seed: (Date.now() & 0xffff) + 1 };
+        var simOpts = { arena: App.pickArena(cfg.arena), fighters: fighters, stocks: cfg.stocks, timeLimit: cfg.time * 3600, friendlyFire: cfg.ff, seed: (Date.now() & 0xffff) + 1 };
         var opts = {
           simOpts: simOpts, controllers: controllers, label: 'versus ' + cfg.format,
           restart: function () { simOpts.seed++; App.startLocalMatch(opts); },
@@ -140,19 +162,23 @@
   // ─────────────────────────────── Training ───────────────────────────────
   App.screens.training = {
     enter: function () {
-      var cfg = Object.assign({ build: defaultBuildId(0), device: 'kb1', dummy: 'preset-ironmaw', mode: 'stand' }, App.store.get('training', {}));
+      var cfg = Object.assign({ build: defaultBuildId(0), device: App.defaultDevice(), dummy: 'preset-ironmaw', mode: 'stand', arena: 'training' }, App.store.get('training', {}));
+      if (!App.isTouch() && cfg.device === 'touch') cfg.device = 'kb1';
+      if (App.isTouch() && cfg.device === 'kb1') cfg.device = 'touch';
       var MODES = [['stand', 'Standing dummy'], ['jump', 'Jumping dummy'], ['dodge', 'Dodging dummy'], ['cpu1', 'CPU · easy'], ['cpu2', 'CPU · normal'], ['cpu3', 'CPU · hard']];
       function render() {
         App.ui.innerHTML = '<div class="screen"><div class="topbar"><button class="btn ghost small" data-act="back">← Back</button><h1>Training</h1></div>' +
           '<div class="teams">' +
           '<div class="team" style="border-color:' + D.TEAM_COLORS[0] + '"><h3>You</h3><div class="slot"><canvas data-mini="0"></canvas><div class="fields">' +
           '<select class="sel" data-f="build">' + App.buildOptions(cfg.build) + '</select>' +
-          '<select class="sel" data-f="device">' + CONTROLS.slice(0, 6).map(function (c) { return '<option value="' + c[0] + '"' + (cfg.device === c[0] ? ' selected' : '') + '>' + c[1] + '</option>'; }).join('') + '</select></div></div></div>' +
+          '<select class="sel" data-f="device">' + getControls().slice(0, 6).map(function (c) { return '<option value="' + c[0] + '"' + (cfg.device === c[0] ? ' selected' : '') + '>' + c[1] + '</option>'; }).join('') + '</select></div></div></div>' +
           '<div class="team" style="border-color:' + D.TEAM_COLORS[1] + '"><h3>Opponent</h3><div class="slot"><canvas data-mini="1"></canvas><div class="fields">' +
           '<select class="sel" data-f="dummy">' + App.buildOptions(cfg.dummy) + '</select>' +
           '<select class="sel" data-f="mode">' + MODES.map(function (m) { return '<option value="' + m[0] + '"' + (cfg.mode === m[0] ? ' selected' : '') + '>' + m[1] + '</option>'; }).join('') + '</select>' +
           App.matchupChip(App.buildById(cfg.build).element, App.buildById(cfg.dummy).element) + '</div></div></div></div>' +
-          '<div class="panel"><p class="muted" style="margin:0">Unlimited stocks. In training: <kbd>R</kbd> reset positions · <kbd>T</kbd> change dummy · <kbd>[</kbd> <kbd>]</kbd> dummy damage −/+10% · <kbd>`</kbd> hitboxes and launch paths · <kbd>Esc</kbd> pause.</p>' +
+          '<div class="panel"><div class="row" style="margin-bottom:8px"><span class="eyebrow">Arena</span><select class="sel" data-f="arena">' +
+          ['training'].concat(D.ARENA_ORDER).map(function (id) { return '<option value="' + id + '"' + (cfg.arena === id ? ' selected' : '') + '>' + D.ARENAS[id].name + '</option>'; }).join('') + '</select></div>' +
+          '<p class="muted" style="margin:0">Unlimited stocks. In training: <kbd>R</kbd> reset positions · <kbd>T</kbd> change dummy · <kbd>[</kbd> <kbd>]</kbd> dummy damage −/+10% · <kbd>`</kbd> hitboxes and launch paths · <kbd>Esc</kbd> pause.</p>' +
           '<div class="keys" style="margin-top:8px">' + App.deviceHint(cfg.device) + '</div></div>' +
           '<div class="row"><div class="grow"></div><button class="btn hot" data-act="start">Start training →</button></div></div>';
         App.mini(App.ui.querySelector('[data-mini="0"]'), App.buildById(cfg.build), 'idle', { scale: 0.95 });
@@ -161,7 +187,7 @@
       }
       function start() {
         var me = App.buildById(cfg.build), dummy = App.buildById(cfg.dummy);
-        var simOpts = { arena: 'training', stocks: 1, training: { infinite: true }, seed: 5,
+        var simOpts = { arena: D.ARENAS[cfg.arena] ? cfg.arena : 'training', stocks: 1, training: { infinite: true }, seed: 5,
           fighters: [{ id: 'me', build: me, team: 0, name: me.name, tapJump: App.settings.tapJump }, { id: 'dummy', build: dummy, team: 1, name: dummy.name }] };
         var mode = cfg.mode;
         var controllers = [{ i: 0, type: 'human', device: cfg.device, label: 'You' }, botFor(mode)];
@@ -180,15 +206,12 @@
         }
         function panel() {
           var p = document.createElement('div'); p.className = 'train-panel';
-          var moves = ['jab', 'utilt', 'dtilt', 'fsmash', 'usmash', 'dsmash', 'nair', 'fair', 'dair', 'wingBurst'];
-          var sig = D.SIGNATURES[me.signature], ab = D.ABILITIES[me.ability];
-          var row = function (n, m) { var src = m.spawn || m.trail || m; var dmg = (src.phys || 0) + (src.elem || 0); return '<tr><td>' + esc(n) + '</td><td>' + m.startup + '</td><td>' + m.active + '</td><td>' + m.recovery + '</td><td>' + (dmg ? Math.round(dmg * 10) / 10 + (m.multi ? '×' + m.multi.max : '') : '—') + '</td></tr>'; };
           // A compact bar, styled like the HUD: what you change often is one click away, the move list folds out.
           p.innerHTML = '<div class="tp-row"><span class="tp-title">Training</span>' +
             '<select class="tp-sel" data-tmode title="Dummy behaviour (T)">' + MODES.map(function (m) { return '<option value="' + m[0] + '"' + (mode === m[0] ? ' selected' : '') + '>' + m[1] + '</option>'; }).join('') + '</select>' +
             '<span class="tp-dmg"><button data-act="dm" title="[">−</button><b data-tdmg>0%</b><button data-act="dp" title="]">+</button></span>' +
             '<button class="tp-btn" data-act="reset" title="R">↺ Reset</button><button class="tp-btn" data-act="moves">Moves</button></div>' +
-            '<div data-body class="tp-body" style="display:none"><table><tr class="dim"><th>Move</th><th>Start</th><th>Active</th><th>Recover</th><th>%</th></tr>' + moves.map(function (k) { return row(D.MOVES[k].name, D.MOVES[k]); }).join('') + row(sig.name, sig) + row(ab.name + ' (↓L)', ab) + '</table>' +
+            '<div data-body class="tp-body" style="display:none">' + App.moveTable(me) +
             '<div class="tp-foot"><span class="dim">Frames at 60 per second · % before element modifiers</span><label><input type="checkbox" data-dev> Dev overlay (`)</label></div></div>';
           document.getElementById('ui').appendChild(p);
           App.on(p, {
@@ -213,12 +236,104 @@
     },
   };
 
+  // ─────────────────────────────── Tutorial ───────────────────────────────
+  // Lessons run in a live training match. Each one names the buttons from the player's own key bindings and is
+  // ticked off by a real simulation event, so it can only be passed by actually doing it.
+  App.screens.tutorial = {
+    enter: function () {
+      var cfg = Object.assign({ build: 'preset-emberfang', device: App.defaultDevice() }, App.store.get('tutorial', {}));
+      if (!App.isTouch() && cfg.device === 'touch') cfg.device = 'kb1';
+      if (App.isTouch() && cfg.device === 'kb1') cfg.device = 'touch';
+      App.ui.innerHTML = '<div class="screen"><div class="topbar"><button class="btn ghost small" data-act="back">← Back</button><h1>Tutorial</h1></div>' +
+        '<div class="panel"><p class="muted" style="margin-top:0">Fourteen short lessons, from running to Dragon Fury. Each one is checked by the game, so you learn it by doing it. A sparring dragon helps with guarding and parrying. <kbd>Esc</kbd> pauses; you can skip a lesson there.</p>' +
+        '<div class="row"><span class="eyebrow">Dragon</span><select class="sel" data-f="build">' + App.buildOptions(cfg.build) + '</select>' +
+        '<span class="eyebrow">Controls</span><select class="sel" data-f="device">' + getControls().slice(0, 6).map(function (c) { return '<option value="' + c[0] + '"' + (cfg.device === c[0] ? ' selected' : '') + '>' + c[1] + '</option>'; }).join('') + '</select></div>' +
+        '<div class="keys" style="margin-top:8px">' + App.deviceHint(cfg.device) + '</div></div>' +
+        '<div class="row"><div class="grow"></div><button class="btn hot" data-act="start">Start the tutorial →</button></div></div>';
+      App.ui.querySelectorAll('[data-f]').forEach(function (s) { s.addEventListener('change', function () { cfg[s.dataset.f] = s.value; App.store.set('tutorial', cfg); App.show('tutorial'); }); });
+      App.on(App.ui, { back: function () { App.show('title'); }, start: function () { runTutorial(cfg); } });
+    },
+  };
+
+  function runTutorial(cfg) {
+    var me = App.buildById(cfg.build), dummy = App.buildById('preset-ironmaw');
+    var b = Input.binds()[cfg.device] || Input.binds().kb1, pad = cfg.device.indexOf('pad') === 0, touch = cfg.device === 'touch';
+    var TOUCH = { left: 'stick', right: 'stick', up: 'stick up', down: 'stick down', jump: 'Jump', light: 'Light', heavy: 'Heavy', sig: 'Special', guard: 'Guard', dodge: 'Dodge', gear: 'Gear', taunt: 'Taunt' };
+    function k(a) { if (touch) return '<kbd>' + TOUCH[a] + '</kbd>'; if (pad) { var pb = Input.padBinds()[a]; return '<kbd>' + (pb ? Input.padName(pb[0]) : a) + '</kbd>'; } return '<kbd>' + esc(Input.keyName((b[a] || ['?'])[0])) + '</kbd>'; }
+    var mv = pad || touch ? '<kbd>stick</kbd>' : k('left') + k('right');
+    var runT = 0;
+    var LESSONS = [
+      { t: 'Move', d: 'Run left and right with ' + mv + '.', tick: function (F) { if (F.state === 'run') runT++; return runT > 50; } },
+      { t: 'Jump', d: 'Jump with ' + k('jump') + ', then press it again in the air for an air jump.', ev: function (e) { return e.type === 'jump' && e.air && e.f === 0; } },
+      { t: 'Light attack', d: 'Walk up to the dummy and hit it with ' + k('light') + '. Hold a direction for different attacks.', ev: function (e) { return e.type === 'hit' && e.by === 0 && e.kind === 'light'; } },
+      { t: 'Heavy attack', d: 'Heavy ' + k('heavy') + ' is slower and hits harder. Land one.', ev: function (e) { return e.type === 'hit' && e.by === 0 && e.kind === 'heavy'; } },
+      { t: 'Signature', d: 'Your elemental move: ' + k('sig') + '. Hold ' + k('down') + ' with it for your elemental ability.', ev: function (e) { return e.type === 'attack' && e.f === 0 && (e.kind === 'sig' || e.kind === 'ability'); } },
+      { t: 'Dodge', d: 'Tap ' + k('dodge') + ' to dodge in place, or with a direction to dash. You are invulnerable for a moment.', tick: function (F) { return F.state === 'dodge'; } },
+      { t: 'Guard', d: 'The sparring dragon attacks now. Hold ' + k('guard') + ' to block its jab.', dummy: 'jab', ev: function (e) { return e.type === 'block' && e.target === 0; } },
+      { t: 'Perfect parry', d: 'Let go of Guard, then press ' + k('guard') + ' just as the jab arrives. Too early and you only block.', dummy: 'jab', ev: function (e) { return e.type === 'parry' && e.f === 0; } },
+      { t: 'Grab and throw', d: 'Guards cannot stop a grab. Hold ' + k('guard') + ' and press ' + k('light') + ' next to the dummy.', ev: function (e) { return e.type === 'throw' && e.f === 0; } },
+      { t: 'Cancel', d: 'Hit with ' + k('light') + ' and press ' + k('heavy') + ' straight away: the heavy cancels the light\'s recovery.', ev: function (e) { return e.type === 'cancel' && e.f === 0; } },
+      { t: 'Combo', d: 'Land a combo of 3 or more: try ' + k('light') + ' → ' + k('heavy') + ' → ' + k('sig') + ' as fast as you can.', ev: function (e) { return (e.type === 'hit' && e.by === 0 && e.combo >= 3); } },
+      { t: 'EX special', d: 'You have one bar of meter. Hold ' + k('guard') + ' and press ' + k('sig') + ' for a faster, stronger, armoured EX special.', meter: 100, ev: function (e) { return e.type === 'attack' && e.f === 0 && e.ex; } },
+      { t: 'Dragon Fury', d: 'A full meter: hold ' + k('guard') + ' and press ' + k('heavy') + ' to unleash your super.', meter: 300, ev: function (e) { return e.type === 'super' && e.f === 0; } },
+      { t: 'Taunt', d: 'Show off with ' + k('taunt') + '. It fills a little meter, if nobody hits you first.', ev: function (e) { return e.type === 'taunt' && e.f === 0; } },
+    ];
+    var step = 0, doneT = 0, panelEl = null;
+    var simOpts = { arena: 'training', stocks: 1, training: { infinite: true }, seed: 11,
+      fighters: [{ id: 'me', build: me, team: 0, name: me.name, tapJump: App.settings.tapJump }, { id: 'dummy', build: dummy, team: 1, name: 'Sparring' }] };
+    var controllers = [{ i: 0, type: 'human', device: cfg.device, label: 'You' }, { i: 1, type: 'bot', mode: 'stand' }];
+    var opts = {
+      simOpts: simOpts, controllers: controllers, training: { dummy: 1 }, label: 'tutorial',
+      restart: function () { App.startLocalMatch(opts); begin(); },
+      onQuit: function () { App.show('tutorial'); },
+      onEvent: function (e) { var L = LESSONS[step]; if (L && !doneT && L.ev && L.ev(e)) pass(); },
+    };
+    function setup() {
+      var m = App.match, L = LESSONS[step];
+      if (!m || !L) return;
+      m.setDummyMode(L.dummy || 'stand');
+      if (L.meter || L.dummy) m.trainingReset();
+      m.sim.fighters[0].meter = L.meter || 0;
+      runT = 0;
+      render();
+    }
+    function pass() { doneT = 70; window.DCAudio.play('select'); render(); }
+    function render() {
+      if (!panelEl) return;
+      var L = LESSONS[step];
+      if (!L) {
+        panelEl.innerHTML = '<h4>Tutorial complete!</h4><p>You know every tool now. Try Versus against a CPU, or Training to practise combos.</p><div class="row"><button class="btn hot small" data-act="tq">Back to the menu</button></div>';
+        return;
+      }
+      panelEl.innerHTML = '<div class="dim" style="font-size:12px">Lesson ' + (step + 1) + ' of ' + LESSONS.length + '</div><h4>' + L.t + '</h4><p>' + L.d + '</p>' +
+        (doneT ? '<div class="tut-done">' + window.DCIcons.svg('check', '#5af08a', 16) + ' Nice! Next lesson…</div>' : '') +
+        '<div class="tut-steps">' + LESSONS.map(function (x, i) { return '<i class="' + (i < step || (i === step && doneT) ? 'done' : i === step ? 'now' : '') + '"></i>'; }).join('') + '</div>' +
+        '<div class="row" style="margin-top:8px"><button class="btn ghost small" data-act="tskip">Skip lesson</button></div>';
+    }
+    function begin() {
+      panelEl = document.createElement('div'); panelEl.className = 'tut-panel';
+      document.getElementById('ui').appendChild(panelEl);
+      App.on(panelEl, { tskip: function () { step++; doneT = 0; setup(); }, tq: function () { App.stopMatch(); App.show('title'); } });
+      setup();
+      var iv = setInterval(function () {
+        var m = App.match;
+        if (!m || !document.body.contains(panelEl)) { clearInterval(iv); return; }
+        if (m.paused) return;
+        var L = LESSONS[step];
+        if (L && !doneT && L.tick && L.tick(m.sim.fighters[0])) pass();
+        if (doneT && (doneT -= 3) <= 0) { doneT = 0; step++; setup(); }
+      }, 50);
+    }
+    App.startLocalMatch(opts);
+    begin();
+  }
+
   // ─────────────────────────────── Local tournament ───────────────────────────────
   var cup = null; // { t, cfg, entrants }
 
   /** Runs a whole CPU-vs-CPU match headless: a real simulation, so the result is earned, not invented. */
   function simulateMatch(ea, eb, cfg, seed) {
-    var sim = new Sim({ arena: cfg.arena, stocks: cfg.stocks, timeLimit: 60 * 60 * 4, seed: seed,
+    var sim = new Sim({ arena: App.pickArena(cfg.arena), stocks: cfg.stocks, timeLimit: 60 * 60 * 4, seed: seed,
       fighters: [{ id: ea.id, build: App.buildById(ea.build), team: 0, name: ea.name }, { id: eb.id, build: App.buildById(eb.build), team: 1, name: eb.name }] });
     var bots = [new Bot(sim, 0, { level: +ea.ctrl.slice(3) || 2, seed: seed }), new Bot(sim, 1, { level: +eb.ctrl.slice(3) || 2, seed: seed + 9 })];
     while (!sim.result) sim.step([bots[0].think(), bots[1].think()]);
@@ -230,8 +345,13 @@
       if (cup && cup.t && cup.t.status !== 'done') { App.show('bracket'); return; }
       var cfg = Object.assign({ count: 8, arena: 'skyforge', stocks: 2, entrants: [] }, App.store.get('cup', {}));
       function normalise() {
+        var isTouch = App.isTouch();
         for (var i = 0; i < 8; i++) {
-          if (!cfg.entrants[i]) cfg.entrants[i] = { name: i === 0 ? 'You' : 'CPU ' + (i + 1), ctrl: i === 0 ? 'kb1' : 'cpu2', build: defaultBuildId(i) };
+          if (!cfg.entrants[i]) cfg.entrants[i] = { name: i === 0 ? 'You' : 'CPU ' + (i + 1), ctrl: i === 0 ? App.defaultDevice() : 'cpu2', build: defaultBuildId(i) };
+          if (i === 0) {
+            if (!isTouch && cfg.entrants[i].ctrl === 'touch') cfg.entrants[i].ctrl = 'kb1';
+            if (isTouch && cfg.entrants[i].ctrl === 'kb1') cfg.entrants[i].ctrl = 'touch';
+          }
           if (!App.allBuilds().some(function (b) { return b.id === cfg.entrants[i].build; })) cfg.entrants[i].build = defaultBuildId(i);
         }
       }
@@ -253,7 +373,7 @@
             return '<div class="slot"><canvas data-mini="' + i + '"></canvas><div class="fields"><div class="row" style="gap:6px"><span class="pill">Seed ' + (i + 1) + '</span><input class="text" style="font-size:16px;padding:5px 9px" maxlength="14" data-name="' + i + '" value="' + esc(e.name) + '"></div>' +
               '<select class="sel" data-ctrl="' + i + '">' + ctrlOptions(e.ctrl) + '</select><select class="sel" data-build="' + i + '">' + App.buildOptions(e.build) + '</select></div></div>';
           }).join('') + '</div>' +
-          '<div class="panel row"><span class="eyebrow">Arena</span><div class="chips">' + ['skyforge', 'frostfall'].map(function (id) { return '<button class="chip' + (cfg.arena === id ? ' on' : '') + '" data-act="arena" data-id="' + id + '">' + D.ARENAS[id].name + '</button>'; }).join('') + '</div>' +
+          '<div class="panel row"><span class="eyebrow">Arena</span><div class="chips">' + App.arenaChoices().map(function (id) { return '<button class="chip' + (cfg.arena === id ? ' on' : '') + '" data-act="arena" data-id="' + id + '">' + (id === 'random' ? 'Random' : D.ARENAS[id].name) + '</button>'; }).join('') + '</div>' +
           '<span class="eyebrow">Stocks</span><div class="chips">' + [1, 2, 3].map(function (n) { return '<button class="chip' + (cfg.stocks === n ? ' on' : '') + '" data-act="stocks" data-n="' + n + '">' + n + '</button>'; }).join('') + '</div></div>' +
           (probs.length ? '<div class="errors">' + probs.map(esc).join('<br>') + '</div>' : '') +
           '<div class="row"><div class="grow"></div><button class="btn hot" data-act="lock"' + (probs.length ? ' disabled' : '') + '>Lock in & start the cup →</button></div></div>';
@@ -288,7 +408,7 @@
           if (!e) return '<div class="p empty">' + (m.bye && m.status === 'done' && slotHasBye ? 'bye' : '—') + '</div>';
           var cls = m.status === 'done' ? (m.winner === id ? 'win' : 'lose') : '';
           var b = e.buildSnapshot || {};
-          return '<div class="p ' + cls + '"><span class="seed">' + e.seed + '</span>' + (b.element ? D.ELEMENTS[b.element].icon : '') + ' ' + esc(e.name) + '</div>';
+          return '<div class="p ' + cls + '"><span class="seed">' + e.seed + '</span>' + (b.element ? App.elIcon(b.element) : '') + ' ' + esc(e.name) + '</div>';
         };
         var act = opts.actions ? opts.actions(m) : '';
         return '<div class="bm ' + m.status + '">' + side(m.a, true) + side(m.b, true) + (act ? '<div class="act">' + act + '</div>' : '') + '</div>';
@@ -306,7 +426,7 @@
         var champ = done ? T.entrant(t, t.champion) : null;
         App.ui.innerHTML = '<div class="screen"><div class="topbar"><button class="btn ghost small" data-act="menu">← Menu</button><h1>' + (done ? 'Champion' : 'Bracket') + '</h1><div class="spacer"></div>' +
           (done ? '<button class="btn hot" data-act="again">New cup</button>' : '<button class="btn ghost small" data-act="abandon">Abandon cup</button>') + '</div>' +
-          (done ? '<div class="row" style="align-items:center"><div class="stage-card" style="min-height:300px;width:min(360px,100%)"><canvas data-champ></canvas></div><div><div class="eyebrow">Tournament champion</div><div class="champion">🏆 ' + esc(champ.name) + '</div><p class="muted">' + D.ELEMENTS[champ.buildSnapshot.element].icon + ' ' + esc(champ.buildSnapshot.name) + ' won ' + t.rounds.length + ' rounds.</p></div></div>' : '') +
+          (done ? '<div class="row" style="align-items:center"><div class="stage-card" style="min-height:300px;width:min(360px,100%)"><canvas data-champ></canvas></div><div><div class="eyebrow">Tournament champion</div><div class="champion">' + window.DCIcons.svg('cup', '#ffcf3a', 30) + ' ' + esc(champ.name) + '</div><p class="muted">' + App.elIcon(champ.buildSnapshot.element) + ' ' + esc(champ.buildSnapshot.name) + ' won ' + t.rounds.length + ' rounds.</p></div></div>' : '') +
           '<div class="panel">' + App.renderBracket(t, { actions: function (m) {
             if (m.status !== 'ready') return '';
             var hum = human(m.a) || human(m.b);
@@ -323,7 +443,7 @@
         var controllers = [ea, eb].map(function (e, i) { return isCpu(e.ctrl) ? { i: i, type: 'bot', level: +e.ctrl.slice(3) } : { i: i, type: 'human', device: e.ctrl, label: e.name }; });
         var labels = [ea.name, eb.name];
         var opts = {
-          simOpts: { arena: cup.cfg.arena, stocks: cup.cfg.stocks, timeLimit: 60 * 60 * 6, seed: ++cup.seed, fighters: fighters }, controllers: controllers, label: 'tournament',
+          simOpts: { arena: App.pickArena(cup.cfg.arena), stocks: cup.cfg.stocks, timeLimit: 60 * 60 * 6, seed: ++cup.seed, fighters: fighters }, controllers: controllers, label: 'tournament',
           onEnd: function (result, match) {
             App.stopMatch();
             var winner = result.winnerTeam === 0 ? ea.id : eb.id;
@@ -347,7 +467,7 @@
       App.on(App.ui, {
         menu: function () { App.show('title'); },
         again: function () { cup = null; App.show('cup'); },
-        abandon: function () { if (confirm('Abandon this cup?')) { cup = null; App.show('cup'); } },
+        abandon: function () { App.confirmAsk('Abandon this cup?', 'Abandon', function () { cup = null; App.show('cup'); }); },
         play: function (el) { play(T.find(t, el.dataset.m)); },
         watch: function (el) { play(T.find(t, el.dataset.m), true); },
         sim: function (el) {

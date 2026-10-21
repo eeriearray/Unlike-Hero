@@ -1,7 +1,7 @@
 /*
  * Dragon Select — before every Versus match, each player picks a dragon and its loadout, Tekken-style.
  * Every human player drives their own panel with their own controls (keyboard layout or gamepad):
- *   up / down   choose a row (Dragon, Size, Armour, Weapon, Ability, Ready)
+ *   up / down   choose a row (Dragon, Size, Instinct, Ability, Ready)
  *   left/right  change it (options you can't afford with the 30 gear points are skipped)
  *   light/jump  confirm (ready)      heavy  back (unready)
  * Mouse works on every arrow too. Gear changes how the dragon fights; Build.validateBuild checks it like any build.
@@ -15,17 +15,17 @@
   // Palettes, only used to tell identical dragons apart on opposing teams. 'Original' keeps the build's own colours.
   var PALETTES = [
     { name: 'Original' },
-    { name: 'Crimson',  primary: '#b8261c', secondary: '#ffc14a', belly: '#ff9a6a', eye: '#ffe14a' },
-    { name: 'Obsidian', primary: '#2a2a36', secondary: '#9a6bff', belly: '#5a5a70', eye: '#c89aff' },
-    { name: 'Jade',     primary: '#2f8a5a', secondary: '#e8d68a', belly: '#9fd8a6', eye: '#ffe96a' },
-    { name: 'Azure',    primary: '#2a6ad8', secondary: '#dff4ff', belly: '#9cc8ff', eye: '#bff6ff' },
-    { name: 'Gilded',   primary: '#c8962a', secondary: '#fff1b0', belly: '#ffdc8a', eye: '#ff6a3a' },
-    { name: 'Violet',   primary: '#6a2a9a', secondary: '#ff8ad8', belly: '#c08ae8', eye: '#ffd1f4' },
-    { name: 'Ashen',    primary: '#8a8a94', secondary: '#2a2a30', belly: '#d0d0d8', eye: '#ff3b3b' },
+    { name: 'Crimson',  tint: 'crimson', primary: '#b8261c', secondary: '#ffc14a', belly: '#ff9a6a', eye: '#ffe14a' },
+    { name: 'Obsidian', shade: 'shadow', primary: '#2a2a36', secondary: '#9a6bff', belly: '#5a5a70', eye: '#c89aff' },
+    { name: 'Jade',     tint: 'jade', primary: '#2f8a5a', secondary: '#e8d68a', belly: '#9fd8a6', eye: '#ffe96a' },
+    { name: 'Azure',    tint: 'azure', primary: '#2a6ad8', secondary: '#dff4ff', belly: '#9cc8ff', eye: '#bff6ff' },
+    { name: 'Gilded',   shade: 'gilded', primary: '#c8962a', secondary: '#fff1b0', belly: '#ffdc8a', eye: '#ff6a3a' },
+    { name: 'Violet',   tint: 'violet', primary: '#6a2a9a', secondary: '#ff8ad8', belly: '#c08ae8', eye: '#ffd1f4' },
+    { name: 'Ashen',    shade: 'bone', primary: '#8a8a94', secondary: '#2a2a30', belly: '#d0d0d8', eye: '#ff3b3b' },
   ];
-  var ROWS = ['dragon', 'size', 'armor', 'weapon', 'ability', 'ready'];
-  var ROW_LABEL = { dragon: 'Dragon', size: 'Size', armor: 'Armour', weapon: 'Weapon', ability: 'Ability', ready: 'Ready' };
-  var TABLE = { size: D.SIZES, armor: D.ARMOR, weapon: D.WEAPONS, ability: D.GEAR_ABILITIES };
+  var ROWS = ['dragon', 'size', 'instinct', 'ability', 'ready'];
+  var ROW_LABEL = { dragon: 'Dragon', size: 'Size', instinct: 'Instinct', ability: 'Ability', ready: 'Ready' };
+  var TABLE = { size: D.SIZES, instinct: D.INSTINCTS, ability: D.GEAR_ABILITIES };
 
   function roster() { return App.presets().concat(App.myBuilds()); }
 
@@ -34,15 +34,18 @@
     var base = Build.withGear(p.roster[p.pick], p.gear);
     var pal = PALETTES[p.palette];
     if (pal.primary) ['primary', 'secondary', 'belly', 'eye'].forEach(function (k) { base.look[k] = pal[k]; });
+    // HD dragons show the palette as a recolour (the rig colours above don't apply to painted sprites)
+    if (pal.tint) base.look.tint = pal.tint;
+    if (pal.shade) base.look.shade = pal.shade;
     return base;
   }
 
   function gearCostOf(p, gear) { return Build.gearCost(Build.withGear(p.roster[p.pick], gear)); }
 
-  /** A new dragon starts bare at its own size. */
+  /** A new dragon starts bare at its own size (the instinct is kept: it is the player's style, not the dragon's). */
   function adoptLook(p) {
     var b = p.roster[p.pick];
-    p.gear = { size: Build.sizeOf(b.body), armor: 'none', weapon: 'claws', ability: 'none' };
+    p.gear = { size: Build.sizeOf(b.body), instinct: (p.gear && p.gear.instinct) || 'fury', ability: 'none' };
     p.palette = 0;
   }
 
@@ -60,7 +63,7 @@
   function randomGear(p) {
     var pick = function (t) { var o = Object.keys(t); return o[Math.floor(Math.random() * o.length)]; };
     for (var tries = 0; tries < 40; tries++) {
-      var g = { size: Math.random() < 0.6 ? p.gear.size : pick(D.SIZES), armor: pick(D.ARMOR), weapon: pick(D.WEAPONS), ability: pick(D.GEAR_ABILITIES) };
+      var g = { size: Math.random() < 0.6 ? p.gear.size : pick(D.SIZES), instinct: pick(D.INSTINCTS), ability: pick(D.GEAR_ABILITIES) };
       if (gearCostOf(p, g) <= D.GEAR_BUDGET) { p.gear = g; return; }
     }
   }
@@ -75,7 +78,7 @@
       var players = arg.slots.map(function (s, i) {
         var idx = Math.max(0, R.map(function (b) { return b.id; }).indexOf(s.build));
         var cpu = s.ctrl.indexOf('cpu') === 0;
-        if (cpu && !s.keep) idx = Math.floor(Math.random() * D.PRESETS.length);
+        if (cpu && !s.keep) idx = Math.floor(Math.random() * App.presets().length);
         var p = { i: i, ctrl: s.ctrl, cpu: cpu, team: s.team, label: s.label, roster: R, pick: idx, row: 0, ready: cpu, prev: 0 };
         adoptLook(p);
         if (s.gear && gearCostOf(p, s.gear) <= D.GEAR_BUDGET && Build.validateBuild(Build.withGear(R[idx], s.gear)).ok) p.gear = Object.assign({}, s.gear);
@@ -100,7 +103,7 @@
       function keepGear(p) {
         var g = p.gear;
         adoptLook(p);
-        var kept = { size: p.gear.size, armor: g.armor, weapon: g.weapon, ability: g.ability };
+        var kept = { size: p.gear.size, instinct: g.instinct, ability: g.ability };
         if (gearCostOf(p, kept) <= D.GEAR_BUDGET) p.gear = kept;
       }
 
@@ -142,10 +145,12 @@
         if (!alive || App.screen !== 'select' || e.repeat) return;
         var binds = Input.binds(), soloKb1 = !players.some(function (q) { return q.ctrl === 'kb2'; });
         players.forEach(function (p) {
-          if (p.cpu || !binds[p.ctrl]) return;
+          if (p.cpu) return;
+          var pBinds = binds[p.ctrl] || (p.ctrl === 'touch' ? binds.kb1 : null);
+          if (!pBinds) return;
           for (var name in ACT) {
-            var codes = binds[p.ctrl][name] || [];
-            var alt = p.ctrl === 'kb1' && soloKb1 && { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' }[name];
+            var codes = pBinds[name] || [];
+            var alt = (p.ctrl === 'kb1' || p.ctrl === 'touch') && soloKb1 && { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' }[name];
             if (codes.indexOf(e.code) >= 0 || e.code === alt) { e.preventDefault(); act(p, ACT[name]); return; }
           }
         });
@@ -170,15 +175,20 @@
 
       function valueOf(p, key) {
         var b = p.roster[p.pick];
-        if (key === 'dragon') return D.ELEMENTS[b.element].icon + ' ' + b.name;
-        if (key === 'ready') return p.ready ? 'READY!' : 'Press ' + confirmKey(p) + ' when ready';
-        var it = TABLE[key][p.gear[key]];
-        return it.icon + ' ' + it.name;
+        if (key === 'dragon') return b.name;
+        if (key === 'ready') return p.ready ? 'READY!' : (p.ctrl === 'touch' && window.DCTouch && window.DCTouch.isTouchDevice()) ? 'Tap here when ready' : 'Press ' + confirmKey(p) + ' when ready';
+        return TABLE[key][p.gear[key]].name;
+      }
+
+      function iconOf(p, key) {
+        if (key === 'dragon') return App.elIcon(p.roster[p.pick].element, 16);
+        if (key === 'ready') return '';
+        return window.DCIcons.svg(TABLE[key][p.gear[key]].icon, key === 'instinct' ? '#ffcf3a' : '#d8d0f0', 16);
       }
 
       // Points an option costs (size: growth over the dragon's own frame)
       function costOf(p, key) {
-        if (key === 'size') { var one = { size: p.gear.size, armor: 'none', weapon: 'claws', ability: 'none' }; return gearCostOf(p, one); }
+        if (key === 'size') { var one = { size: p.gear.size, instinct: p.gear.instinct, ability: 'none' }; return gearCostOf(p, one); }
         return TABLE[key][p.gear[key]].cost || 0;
       }
 
@@ -191,13 +201,14 @@
 
       function gearKey(p) {
         if (p.ctrl.indexOf('pad') === 0) return 'LB';
-        var bd = Input.binds()[p.ctrl];
+        var bd = Input.binds()[p.ctrl] || Input.binds().kb1;
         return bd && bd.gear ? Input.keyName(bd.gear[0]) : 'gear';
       }
 
       function confirmKey(p) {
+        if (p.ctrl === 'touch' && window.DCTouch && window.DCTouch.isTouchDevice()) return 'tap here';
         if (p.ctrl.indexOf('pad') === 0) return 'A';
-        var bd = Input.binds()[p.ctrl];
+        var bd = Input.binds()[p.ctrl] || Input.binds().kb1;
         return bd ? Input.keyName(bd.light[0]) : 'light';
       }
 
@@ -214,24 +225,24 @@
             var meter = '<div class="sp-budget"><span>Gear</span><div class="sp-meter"><i style="width:' + Math.round(used / D.GEAR_BUDGET * 100) + '%"></i></div><b>' + used + ' / ' + D.GEAR_BUDGET + '</b></div>';
             return '<div class="sp' + (p.ready ? ' ready' : '') + '" style="--team:' + col + '">' +
               '<div class="sp-head"><b>' + esc(p.label) + '</b><span class="dim">' + (p.cpu ? 'CPU' : esc(Input.DEVICE_NAMES[p.ctrl] || p.ctrl)) + '</span></div>' +
-              '<div class="sp-stage"><canvas data-sel="' + p.i + '"></canvas><div class="sp-elem">' + el.icon + ' ' + el.name + '</div>' + (p.ready ? '<div class="sp-ready">READY</div>' : '') + '</div>' +
+              '<div class="sp-stage"><canvas data-sel="' + p.i + '"></canvas><div class="sp-elem">' + App.elIcon(b.element, 16) + ' ' + el.name + '</div>' + (p.ready ? '<div class="sp-ready">READY</div>' : '') + '</div>' +
               '<div class="sp-stats">' + stats + '</div>' + meter +
-              (p.cpu ? '<div class="sp-cpu">' + ROWS.slice(1, 5).map(function (key) { return '<span title="' + esc(ROW_LABEL[key]) + '">' + esc(valueOf(p, key)) + '</span>'; }).join('') + '</div>' : ROWS.map(function (key, r) {
+              (p.cpu ? '<div class="sp-cpu">' + ROWS.slice(1, 4).map(function (key) { return '<span title="' + esc(ROW_LABEL[key]) + '">' + iconOf(p, key) + ' ' + esc(valueOf(p, key)) + '</span>'; }).join('') + '</div>' : ROWS.map(function (key, r) {
                 var arrows = key !== 'ready';
                 return '<div class="sp-row' + (p.row === r && !p.ready ? ' on' : '') + (key === 'ready' ? ' sp-go' : '') + '" data-act="row" data-p="' + p.i + '" data-r="' + r + '">' +
                   '<span class="sp-label">' + ROW_LABEL[key] + '</span>' +
                   (arrows ? '<button class="sp-arrow" data-act="prev" data-p="' + p.i + '" data-r="' + r + '">◀</button>' : '') +
-                  '<span class="sp-val">' + esc(valueOf(p, key)) + (TABLE[key] && costOf(p, key) ? ' <em>' + costOf(p, key) + '</em>' : '') + '</span>' +
+                  '<span class="sp-val">' + iconOf(p, key) + ' ' + esc(valueOf(p, key)) + (TABLE[key] && costOf(p, key) ? ' <em>' + costOf(p, key) + '</em>' : '') + '</span>' +
                   (arrows ? '<button class="sp-arrow" data-act="next" data-p="' + p.i + '" data-r="' + r + '">▶</button>' : '') + '</div>';
               }).join('') + '<div class="sp-desc">' + esc(describe(p)) + (left > 0 && !p.ready ? ' <span class="dim">' + left + (left === 1 ? ' point' : ' points') + ' left.</span>' : '') + '</div>') + '</div>';
           }).join('') + '</div>' +
           '<div class="select-roster">' + R.map(function (b, k) {
             var marks = players.filter(function (p) { return !p.cpu && p.pick === k; }).map(function (p) { return '<i style="background:' + D.TEAM_COLORS[p.team % 4] + '">' + esc(p.label) + '</i>'; }).join('');
-            return '<button class="sr' + (marks ? ' on' : '') + '" data-act="pick" data-k="' + k + '"><canvas data-ros="' + k + '"></canvas><span>' + D.ELEMENTS[b.element].icon + ' ' + esc(b.name) + '</span><div class="sr-marks">' + marks + '</div></button>';
+            return '<button class="sr' + (marks ? ' on' : '') + '" data-act="pick" data-k="' + k + '"><canvas data-ros="' + k + '"></canvas><span>' + App.elIcon(b.element, 15) + ' ' + esc(b.name) + '</span><div class="sr-marks">' + marks + '</div></button>';
           }).join('') + '</div></div>';
         App.ui.innerHTML = html;
-        players.forEach(function (p) { App.mini(App.ui.querySelector('[data-sel="' + p.i + '"]'), composeBuild(p), p.ready ? 'victory' : 'idle', { scale: 1.25, facing: p.team % 2 ? -1 : 1, offset: p.i }); });
-        R.forEach(function (b, k) { App.mini(App.ui.querySelector('[data-ros="' + k + '"]'), b, 'idle', { scale: 0.9, offset: k * 0.7 }); });
+        players.forEach(function (p) { App.mini(App.ui.querySelector('[data-sel="' + p.i + '"]'), composeBuild(p), p.ready ? 'victory' : 'idle', { scale: 1.65, facing: p.team % 2 ? -1 : 1, offset: p.i, hd: true }); });
+        R.forEach(function (b, k) { App.mini(App.ui.querySelector('[data-ros="' + k + '"]'), b, 'idle', { scale: 1.2, offset: k * 0.7 }); });
       }
 
       var firstHuman = function () { return players.filter(function (p) { return !p.cpu && !p.ready; })[0]; };

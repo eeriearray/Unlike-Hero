@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Dragon Clash — art gallery</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=Barlow:wght@500;600;700;800&family=Barlow+Condensed:wght@600;700;800&display=swap">
 <style>html,body{margin:0;height:100%;overflow:hidden;background:#1b1530;color:#fff;font:14px system-ui}canvas{display:block;width:100vw;height:100vh}</style>
 </head>
 <body>
@@ -82,7 +82,7 @@ if (!location.hash.startsWith('#scene')) DCArt.load().then(() => {
       // A fireball in flight and a hit spark
       DCFX.drawProjectile(x, { ty: 'fireball', x: 760, y: 560, vx: 9, el: 'fire' }, 0, null);
       x.restore();
-      x.font = `${Math.round(W * 0.095)}px "Lilita One", system-ui`; x.textAlign = 'center';
+      x.font = `900 ${Math.round(W * 0.095)}px Cinzel, serif`; x.textAlign = 'center';
       x.lineWidth = W * 0.012; x.strokeStyle = '#5a1a0e'; x.strokeText('DRAGON CLASH', W / 2, H * 0.14);
       x.fillStyle = '#fff'; x.fillText('DRAGON CLASH', W / 2, H * 0.14);
     } else {

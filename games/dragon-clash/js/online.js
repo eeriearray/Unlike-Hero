@@ -6,7 +6,7 @@
   'use strict';
   var App = window.DCApp, D = window.DC.Data, Build = window.DC.Build, Net = window.DCNet, Cup = window.DC.Tournament;
   var esc = App.esc;
-  var S = { net: null, room: null, you: null, matchId: null, device: 'kb1', pick: null, status: 'idle', lastEnd: null, spectating: null };
+  var S = { net: null, room: null, you: null, matchId: null, device: window.DCApp.defaultDevice(), pick: null, status: 'idle', lastEnd: null, spectating: null };
 
   function myName() {
     var n = App.store.get('onlineName', null);
@@ -71,7 +71,7 @@
     App.on(o, {
       resume: function () { if (App.match) App.match.togglePause(false); },
       stop: function () { o.remove(); S.net.send({ t: 'unspectate' }); S.matchId = null; App.stopMatch(); App.show('room'); },
-      forfeit: function () { if (!confirm('Forfeit this match?')) return; o.remove(); S.net.send({ t: 'forfeit' }); if (App.match) App.match.togglePause(false); },
+      forfeit: function () { App.confirmAsk('Forfeit this match?', 'Forfeit', function () { o.remove(); S.net.send({ t: 'forfeit' }); if (App.match) App.match.togglePause(false); }); },
     });
   }
 
@@ -101,10 +101,10 @@
         '<div class="teams">' +
         '<div class="panel" style="display:grid;gap:10px"><div class="eyebrow">Your name</div><input class="text" data-name maxlength="16" value="' + esc(myName()) + '">' +
         '<div class="eyebrow">Your dragon</div><select class="sel" data-build>' + App.buildOptions(S.pick || (App.myBuilds()[0] || {}).id || 'preset-emberfang') + '</select>' +
-        '<div class="eyebrow">Controls</div><select class="sel" data-dev>' + [['kb1', 'Keyboard'], ['pad0', 'Gamepad 1']].map(function (d) { return '<option value="' + d[0] + '"' + (S.device === d[0] ? ' selected' : '') + '>' + d[1] + '</option>'; }).join('') + '</select></div>' +
+        '<div class="eyebrow">Controls</div><select class="sel" data-dev>' + (App.isTouch() ? [['touch', 'Touch screen'], ['kb1', 'Keyboard'], ['pad0', 'Gamepad 1']] : [['kb1', 'Keyboard'], ['touch', 'Touch screen'], ['pad0', 'Gamepad 1']]).map(function (d) { return '<option value="' + d[0] + '"' + (S.device === d[0] ? ' selected' : '') + '>' + d[1] + '</option>'; }).join('') + '</select></div>' +
         '<div class="panel" style="display:grid;gap:10px;align-content:start"><div class="eyebrow">Host</div>' +
-        '<button class="btn hot" data-act="create" data-mode="versus">⚔️ Create a versus room</button>' +
-        '<button class="btn" data-act="create" data-mode="cup">🏆 Create a tournament</button>' +
+        '<button class="btn hot" data-act="create" data-mode="versus">Create a versus room</button>' +
+        '<button class="btn" data-act="create" data-mode="cup">Create a tournament</button>' +
         '<div class="eyebrow" style="margin-top:8px">Join</div><div class="row"><input class="text grow" data-code maxlength="4" placeholder="CODE" style="text-transform:uppercase;letter-spacing:.2em"><button class="btn cool" data-act="join">Join</button></div>' +
         (saved ? '<button class="btn ghost small" data-act="rejoin">Rejoin room ' + esc(saved.code) + '</button>' : '') +
         '<p class="dim" data-status></p></div></div></div>';
@@ -146,7 +146,7 @@
       var f = D.FORMATS[r.settings.format];
       var lobby = r.state === 'lobby';
       var html = '<div class="screen"><div class="topbar"><button class="btn ghost small" data-act="leave">← Leave</button>' +
-        '<h1>' + (r.mode === 'cup' ? '🏆 Online tournament' : '⚔️ Online versus') + '</h1><div class="spacer"></div>' +
+        '<h1>' + (r.mode === 'cup' ? 'Online tournament' : 'Online versus') + '</h1><div class="spacer"></div>' +
         '<div style="text-align:right"><div class="eyebrow">Room code</div><div class="code-big">' + esc(r.code) + '</div></div></div>';
       if (r.mode === 'cup' && r.cup) html += cupHtml(r, me);
       else {
@@ -168,7 +168,7 @@
         if (host) {
           html += '<div class="panel" style="display:grid;gap:8px"><div class="eyebrow">Host settings</div>' +
             (r.mode === 'versus' ? '<div class="chips">' + Object.keys(D.FORMATS).map(function (k) { return '<button class="chip' + (r.settings.format === k ? ' on' : '') + '" data-act="set" data-k="format" data-v="' + k + '">' + D.FORMATS[k].name + '</button>'; }).join('') + '</div>' : '') +
-            '<div class="chips">' + ['skyforge', 'frostfall'].map(function (k) { return '<button class="chip' + (r.settings.arena === k ? ' on' : '') + '" data-act="set" data-k="arena" data-v="' + k + '">' + D.ARENAS[k].name + '</button>'; }).join('') + '</div>' +
+            '<div class="chips">' + D.ARENA_ORDER.map(function (k) { return '<button class="chip' + (r.settings.arena === k ? ' on' : '') + '" data-act="set" data-k="arena" data-v="' + k + '">' + D.ARENAS[k].name + '</button>'; }).join('') + '</div>' +
             '<div class="chips"><span class="eyebrow" style="align-self:center">Stocks</span>' + [1, 2, 3, 4, 5].map(function (n) { return '<button class="chip' + (r.settings.stocks === n ? ' on' : '') + '" data-act="set" data-k="stocks" data-v="' + n + '">' + n + '</button>'; }).join('') + '</div>' +
             '<div class="row"><button class="btn ghost small" data-act="bot" data-level="1">＋ CPU easy</button><button class="btn ghost small" data-act="bot" data-level="2">＋ CPU normal</button><button class="btn ghost small" data-act="bot" data-level="3">＋ CPU hard</button></div>' +
             '<button class="btn hot" data-act="start">Start ' + (r.mode === 'cup' ? 'the cup' : 'the match') + ' →</button>' +
@@ -190,8 +190,8 @@
       }
       function memberHtml(m) {
         var b = m.build;
-        return '<div class="member"><canvas data-mem="' + m.id + '"></canvas><div class="grow"><b>' + esc(m.name) + '</b>' + (m.id === r.host ? ' 👑' : '') + (m.id === S.you ? ' <span class="pill">you</span>' : '') +
-          '<div class="dim">' + (b ? D.ELEMENTS[b.element].icon + ' ' + esc(b.name) : 'choosing…') + '</div></div>' +
+        return '<div class="member"><canvas data-mem="' + m.id + '"></canvas><div class="grow"><b>' + esc(m.name) + '</b>' + (m.id === r.host ? ' ' + window.DCIcons.svg('crown', '#ffcf3a', 14) : '') + (m.id === S.you ? ' <span class="pill">you</span>' : '') +
+          '<div class="dim">' + (b ? App.elIcon(b.element) + ' ' + esc(b.name) : 'choosing…') + '</div></div>' +
           (m.bot ? '<span class="pill">CPU ' + ['', 'easy', 'normal', 'hard'][m.level || 2] + '</span>' + (r.host === S.you && r.state === 'lobby' ? ' <button class="icon-btn" data-act="kick" data-id="' + m.id + '">✕</button>' : '')
             : !m.connected ? '<span class="pill wait">reconnecting</span>' : m.ready ? '<span class="pill ok">ready</span>' : '<span class="pill wait">not ready</span>') + '</div>';
       }
@@ -202,7 +202,7 @@
     var t = r.cup;
     var out = t.entrants.filter(function (e) { return e.id === S.you; })[0];
     var mm = Cup.matchFor(t, S.you);
-    var msg = t.status === 'done' ? '🏆 ' + esc(Cup.entrant(t, t.champion).name) + ' is the champion!' :
+    var msg = t.status === 'done' ? window.DCIcons.svg('cup', '#ffcf3a', 18) + ' ' + esc(Cup.entrant(t, t.champion).name) + ' is the champion!' :
       mm ? (mm.status === 'live' ? 'Your match is live.' : 'Your next match starts when it is ready.') :
       out && out.out ? 'You are out. Watch the live matches below.' : 'Waiting for the next round.';
     var liveIds = {};
@@ -217,7 +217,7 @@
   }
 
   var handlers = {
-    leave: function () { if (!confirm('Leave this room?')) return; S.net.send({ t: 'leave' }); S.net.close(); S.net = null; S.room = null; App.show('online'); },
+    leave: function () { App.confirmAsk('Leave this room?', 'Leave', function () { S.net.send({ t: 'leave' }); S.net.close(); S.net = null; S.room = null; App.show('online'); }); },
     ready: function () { var me = S.room.members.filter(function (m) { return m.id === S.you; })[0]; S.net.send({ t: 'ready', ready: !(me && me.ready) }); },
     team: function (el) { S.net.send({ t: 'team', team: +el.dataset.team }); },
     set: function (el) { var o = { t: 'settings' }; o[el.dataset.k] = el.dataset.k === 'stocks' ? +el.dataset.v : el.dataset.v; S.net.send(o); },

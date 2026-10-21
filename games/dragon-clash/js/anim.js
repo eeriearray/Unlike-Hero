@@ -76,6 +76,9 @@
     flex:      { windup: P({ nAU: 25, nAL: -60, fAU: -25, fAL: -60, hip: 6, torso: 12, head: 10, nT: -15, nS: 25, fT: 15, fS: 25 }),
                  strike: P({ nAU: 25, nAL: -115, fAU: -25, fAL: -115, hip: 8, torso: -8, head: -14, nT: -22, nS: 20, fT: 22, fS: 20 }),
                  follow: P({ nAU: 20, nAL: -100, fAU: -20, fAL: -100, hip: 7, torso: -4, head: -8, nT: -20, nS: 20, fT: 20, fS: 20 }) },
+    grab:      { windup: P({ nAU: 45, nAL: -50, fAU: 35, fAL: -50, torso: -8, head: 4, hip: 4, nT: -14, nS: 22, fT: 12, fS: 18 }),
+                 strike: P({ nAU: -86, nAL: -24, fAU: -74, fAL: -30, torso: 20, head: 6, hip: 6, nT: -34, nS: 26, fT: 26, fS: 14 }),
+                 follow: P({ nAU: -70, nAL: -40, fAU: -60, fAL: -40, torso: 14, head: 4, hip: 5, nT: -26, nS: 22, fT: 20, fS: 12 }) },
     dash:      { windup: P({ hip: 8, torso: 30, head: -24, nAU: 50, fAU: 55, nT: -35, nS: 50, fT: 25, fS: 30 }),
                  strike: P({ hip: 7, torso: 36, head: -26, nAU: -80, nAL: -10, fAU: 60, nT: -45, nS: 40, fT: 35, fS: 25 }),
                  follow: P({ hip: 6, torso: 28, head: -18, nAU: -60, nAL: -30, fAU: 45, nT: -35, nS: 35, fT: 28, fS: 22 }) },
@@ -110,9 +113,8 @@
 
   function moveDef(f, build) {
     if (!f.mv) return null;
-    if (f.mv === 'sig') return D.SIGNATURES[build.signature];
-    if (f.mv === 'ability') return D.ABILITIES[build.ability];
-    return D.MOVES[f.mv];
+    var d = f.mv === 'sig' ? D.SIGNATURES[build.signature] : f.mv === 'ability' ? D.ABILITIES[build.ability] : D.MOVES[f.mv];
+    return f.ex && d ? D.exVersion(d) : d;
   }
 
   /** { phase: 'startup'|'active'|'recovery', p: 0..1, def } for the current attack. */
@@ -145,6 +147,12 @@
       // Braking: the sim is already idle but momentum is still sliding the dragon, so brace instead of standing
       b = P({ torso: -10, head: 6, nT: -30, nS: 8, fT: 20, fS: 26, hip: 3, nAU: -25, nAL: -20, fAU: 25, fAL: -20 });
       e.tailAngle = -0.25; e.snap = 0.5;
+    } else if (s === 'idle' && x.fidget > 0) {
+      // Idle variation every so often: a look over the shoulder and a tail flick, or a wing stretch
+      var fk = Math.sin(Math.min(1, x.fidget) * Math.PI);
+      b = x.fidgetKind ? P({ head: -22 * fk, torso: -6 * fk, nAU: -30 * fk, fAU: 40 * fk, nAL: -20 * fk, fAL: -20 * fk })
+                       : P({ head: 18 * fk, torso: 4 * fk, nAU: 10 * fk, fAU: -8 * fk });
+      e.wing = x.fidgetKind ? 0.15 + 0.85 * fk : 0.1; e.tailAngle = x.fidgetKind ? 0 : -0.6 * fk; e.tailSwing = 0.25; e.snap = 0.2;
     } else if (s === 'idle') {
       e.idle = true;
       b = P({ torso: Math.sin(t * 2.2) * 1.2, head: Math.sin(t * 2.2 + 0.6) * 1.5 });
@@ -242,18 +250,91 @@
         b = P({ nAU: -60 + Math.sin(w) * 50, nAL: -30, fAU: 40 + Math.sin(w + 2) * 50, fAL: -30, nT: -30 + Math.sin(w + 1) * 30, nS: 40, fT: 20 + Math.sin(w + 3) * 30, fS: 35, head: -20, torso: 10 });
         e.rot = t * 14 * (f.vx >= 0 ? 1 : -1) * f.fc; e.pivot = 0.5; e.wing = 0.8; e.tailSwing = 0.5;
       } else {
-        var rec = Math.max(0, 1 - T / 24);
-        b = mixP(REST, P({ torso: -24 * away, head: -32 * away, nAU: -48, nAL: -30, fAU: -22, fAL: -40, nT: -20, nS: 32, fT: 12, fS: 22, hip: 3 }), 0.45 + 0.55 * rec);
+        // Light hits flinch, heavy and counter hits snap the whole body back
+        var rec = Math.max(0, 1 - T / 24), amp = Math.min(1.5, 0.75 + Math.abs(f.vx) / 10) * (f.hk === 'counter' ? 1.25 : 1);
+        b = mixP(REST, P({ torso: -24 * away * amp, head: -32 * away * amp, nAU: -48 * amp, nAL: -30, fAU: -22 * amp, fAL: -40, nT: -20, nS: 32, fT: 12, fS: 22, hip: 3 }), 0.45 + 0.55 * rec);
         e.wing = 0.6; e.tailAngle = -0.5 * away; e.snap = T < 2 ? 0.9 : 0.35;
       }
+    } else if (s === 'guard' || s === 'blockstun') {
+      // Forearms crossed over the face, wings wrapped forward; deeper and lower when crouch-guarding
+      var G = f.cg ? P({ hip: 15, torso: -6, head: 14, nAU: -84, nAL: -100, fAU: -50, fAL: -108, nT: -50, nS: 84, fT: -30, fS: 70 })
+                   : P({ hip: 7, torso: -12, head: 12, nAU: -82, nAL: -98, fAU: -46, fAL: -105, nT: -18, nS: 34, fT: 12, fS: 28 });
+      if (s === 'blockstun') {
+        // Recoil from the blocked blow, settling back into the guard (feet stay planted; the sim slides the body)
+        var bk = Math.max(0, 1 - T / 9);
+        b = add(G, P({ torso: -14 * bk, head: 12 * bk, nAU: 10 * bk, fAU: 8 * bk }));
+        e.snap = T < 2 ? 0.9 : 0.4; e.lean = -0.08 * bk;
+      } else { b = add(G, P({ torso: Math.sin(t * 3) * 1.5 })); e.snap = 0.55; }
+      e.wing = 0.15; e.tailAngle = 0.3;
+    } else if (s === 'crawl') {
+      // Low creep: the crouch with the legs and arms trading steps, body level
+      var cp = x.phase, cs2 = Math.sin(cp), cc2 = Math.cos(cp);
+      b = P({ hip: 15, nT: -50 + 18 * cs2, nS: 82 - 10 * Math.max(0, cc2), fT: -34 - 18 * cs2, fS: 68 - 10 * Math.max(0, -cc2), torso: 30, head: -14,
+              nAU: -30 + 25 * cs2, nAL: -50, fAU: 10 - 25 * cs2, fAL: -40 });
+      e.snap = 0.45; e.tailAngle = -0.3; e.tailSwing = 0.3; e.wing = 0.05;
+    } else if (s === 'crouch') {
+      b = P({ hip: 14, nT: -48, nS: 80, fT: -32, fS: 66, torso: 20 + Math.sin(t * 2.2) * 1.5, head: -6, nAU: -22, nAL: -42, fAU: 16, fAL: -32 });
+      e.snap = 0.5; e.tailAngle = -0.2; e.wing = 0.1;
+    } else if (s === 'stagger') {
+      // Dizzy: the head and body loll in slow circles, arms hang
+      var wob = Math.sin(t * 5), wob2 = Math.cos(t * 5);
+      b = P({ torso: 6 + wob * 10, head: 16 + wob2 * 18, nAU: 25 + wob * 8, nAL: -10, fAU: -15 - wob * 8, fAL: -10, hip: 4, nT: -16, nS: 26, fT: 10, fS: 22 });
+      e.lean = wob * 0.06; e.snap = 0.25; e.wing = 0.05; e.tailAngle = 0.5; e.mouth = 0.3;
+    } else if (s === 'recoil') {
+      if (x.afterThrow) {
+        // Follow-through of a throw: the body keeps going the way the victim went, then settles
+        var ft = Math.max(0, 1 - T / 12);
+        b = mixP(REST, P({ torso: 26, head: 10, nAU: -80, nAL: -10, fAU: -62, fAL: -20, hip: 6, nT: -30, nS: 26, fT: 24, fS: 12 }), ft);
+      } else b = P({ torso: -16, head: -18, nAU: -40, nAL: -40, fAU: -20, fAL: -40, hip: 4, nT: -22, nS: 30, fT: 14, fS: 22 });
+      e.snap = 0.45; e.wing = 0.4;
+    } else if (s === 'grabbed') {
+      // Held up and struggling
+      var st2 = Math.sin(t * 16);
+      b = P({ torso: -18, head: -22 + st2 * 5, nAU: -120 + st2 * 25, nAL: -40, fAU: -100 - st2 * 25, fAL: -40, nT: 8 + st2 * 14, nS: 20, fT: -10 - st2 * 14, fS: 24 });
+      e.dy = -8; e.wing = 0.7 + st2 * 0.2; e.tailSwing = 0.5; e.snap = 0.6;
+    } else if (s === 'throwing') {
+      // Holding the victim at arm's length, then winding back for the hurl
+      var wk = Math.min(1, T / 18);
+      b = P({ nAU: -78 + wk * 40, nAL: -30, fAU: -64 + wk * 36, fAL: -30, torso: 12 - wk * 30, head: 4 - wk * 14, hip: 5, nT: -24, nS: 30, fT: 20, fS: 18 });
+      e.snap = 0.5; e.wing = 0.3 + wk * 0.4; e.tailAngle = 0.3 + wk * 0.4;
+    } else if (s === 'down') {
+      // Flat on the back: hits the floor, bounces a little, lies still breathing
+      var bounce = T < 10 ? Math.sin(T / 10 * Math.PI) * 6 : 0;
+      b = P({ nAU: -30, nAL: -20, fAU: 20, fAL: -20, head: -20 + Math.sin(t * 2) * 2, nT: -20, nS: 20, fT: 10, fS: 30 });
+      e.rot = -1.45; e.pivot = 0; e.dy = -bounce; e.snap = 0.6; e.wing = 0; e.tailAngle = 0.6;
+    } else if (s === 'getup') {
+      if (f.gu === 'roll') {
+        var rk2 = Math.min(1, T / 28);
+        b = P(Object.assign({ torso: 30, head: 25, nAU: -60, nAL: -100, fAU: -50, fAL: -100 }, AIR_TUCK));
+        e.rot = -1.45 + out(rk2) * (Math.PI * 2 + 1.45) * (f.vx * f.fc < 0 ? -1 : 1); e.pivot = 0.4; e.snap = 0.6; e.wing = 0.2;
+      } else {
+        // Push up off the floor and stand
+        var up2 = ease(Math.min(1, T / 16));
+        b = mixP(P({ nAU: -100, nAL: -40, fAU: -40, fAL: -40, head: -10, nT: -60, nS: 90, fT: -40, fS: 80, hip: 10, torso: 24 }), REST, up2);
+        e.rot = -1.45 * (1 - up2); e.pivot = 0; e.snap = 0.6;
+      }
+    } else if (s === 'wallsplat') {
+      // Flattened against the wall, limbs splayed, then peeling off
+      var sp = Math.max(0, 1 - T / 6);
+      b = P({ torso: -20, head: -26, nAU: -150, nAL: -10, fAU: 140, fAL: -10, nT: -30, nS: 10, fT: 30, fS: 10, hip: 2 });
+      e.sx = 1 - 0.18 * sp; e.sy = 1 + 0.08 * sp; e.rot = 0.1 * (f.ws || 1); e.pivot = 0.5; e.snap = 0.9; e.wing = 1;
+    } else if (s === 'taunt') {
+      // A roar: rear up, arms wide, wings spread, mouth open at the peak
+      var tk = Math.min(1, T / 14), roar = T > 14 && T < 40 ? 1 : 0;
+      b = mixP(REST, P({ torso: -14, head: -36 + Math.sin(t * 30) * 2 * roar, nAU: -120, nAL: -30, fAU: 110, fAL: -30, hip: -2, nT: -10, nS: 14, fT: 10, fS: 8 }), ease(tk));
+      e.mouth = roar ? 1 : 0.2 * tk; e.wing = 0.4 + 0.6 * tk; e.tailCurl = 0.6; e.snap = 0.4; e.glow = roar * 0.6;
     } else if (s === 'attack') {
       var a = attackPhase(f, build);
       if (a) {
         var key = attackKey(f, build, a.def), K = fitted(ATTACK[key] || ATTACK.clawLight, f.mv);
-        var heavy = a.def.kind === 'heavy' || f.mv === 'sig' || f.mv === 'ability';
-        if (a.phase === 'startup') { b = mixP(REST, K.windup, out(a.p)); e.glow = heavy ? ease(a.p) : 0; e.snap = 0.45; }
-        else if (a.phase === 'active') { b = K.strike; e.snap = 0.85; e.glow = heavy ? 1 : 0; }
+        var heavy = a.def.kind === 'heavy' || a.def.kind === 'super' || f.mv === 'sig' || f.mv === 'ability';
+        // Anticipation eases into the windup (and squashes a little for heavies), the strike snaps out stretched,
+        // momentum carries into the follow-through, then the body settles back to a ready stance.
+        var sq = heavy ? 0.06 : 0.03;
+        if (a.phase === 'startup') { b = mixP(REST, K.windup, out(a.p)); e.glow = heavy ? ease(a.p) : 0; e.snap = 0.45; e.sx = 1 + sq * ease(a.p); e.sy = 1 - sq * ease(a.p); }
+        else if (a.phase === 'active') { b = K.strike; e.snap = 0.85; e.glow = heavy ? 1 : 0; var st3 = Math.max(0, 1 - a.p * 2); e.sx = 1 + sq * 0.6 * st3; e.sy = 1 + sq * 0.5 * st3; }
         else { b = a.p < 0.3 ? mixP(K.strike, K.follow, a.p / 0.3) : mixP(K.follow, REST, ease((a.p - 0.3) / 0.7)); e.snap = 0.35; e.glow = heavy ? 1 - a.p : 0; }
+        if (f.ex || f.mv === 'ultimate') e.glow = Math.max(e.glow, 0.8);
         if (!f.gr && (key === 'clawLight' || key === 'clawHeavy' || key === 'breath' || key === 'throw')) b = add(b, P({ nT: -30, nS: 50, fT: -20, fS: 35, hip: -b.hip }));
         var sigKey = f.mv === 'sig' ? build.signature : f.mv === 'ability' ? build.ability : null;
         if (sigKey && MOUTH[sigKey]) e.mouth = a.phase === 'startup' ? ease(a.p) : a.phase === 'active' ? 1 : 1 - a.p;
@@ -317,7 +398,7 @@
   /** f: fighter snapshot; dt in seconds. Returns a pose for DCArt.draw. */
   Animator.prototype.update = function (f, build, time, dt, env) {
     var prev = this.prev;
-    if (f.st === 'run') this.phase += Math.max(0.12, Math.abs(f.vx) * 0.055) * (dt * 60);
+    if (f.st === 'run' || f.st === 'crawl') this.phase += Math.max(0.12, Math.abs(f.vx) * (f.st === 'crawl' ? 0.09 : 0.055)) * (dt * 60);
     if (prev && f.aj < prev.aj && f.st === 'air' && prev.st !== 'ledge') this.flipT = 22;   // spent an air jump
     if (this.flipT > 0) this.flipT -= dt * 60;
     if (f.st === 'land' && prev && prev.st === 'hitstun' && prev.tb) this.knock = true;
@@ -325,9 +406,22 @@
     if (prev && prev.st === 'hitstun' && f.st === 'air') this.recoverT = 14;
     if (this.recoverT > 0) this.recoverT -= dt * 60;
     if (f.st === 'dodge' && f.stT < 2) this.dashing = Math.abs(f.vx) > 1;
-    this.prev = { st: f.st, aj: f.aj, tb: f.tb };
+    if (f.st === 'recoil' && prev && prev.st === 'throwing') this.afterThrow = true;
+    if (f.st !== 'recoil') this.afterThrow = false;
+    // Idle variations: after a few calm seconds, a short fidget
+    if (f.st === 'idle' && Math.abs(f.vx) < 0.3) {
+      this.calm = (this.calm || 0) + dt;
+      if (this.fidget > 0) { this.fidget += dt / 1.4; if (this.fidget >= 1) { this.fidget = 0; this.calm = 0; } }
+      else if (this.calm > 6 + (this.fidgetSeed = this.fidgetSeed || Math.random() * 4)) { this.fidget = 0.001; this.fidgetKind = !this.fidgetKind; this.fidgetSeed = Math.random() * 4; }
+    } else { this.calm = 0; this.fidget = 0; }
+    // Turning around: a quick squash through the turn instead of an instant mirror
+    if (prev && prev.fc != null && prev.fc !== f.fc && (f.st === 'idle' || f.st === 'run' || f.st === 'crouch' || f.st === 'guard')) this.turnT = 1;
+    this.turnT = Math.max(0, (this.turnT || 0) - dt * 60 / 6);
+    this.prev = { st: f.st, aj: f.aj, tb: f.tb, fc: f.fc };
 
-    var c = clip(f, build, { time: time, phase: this.phase, flipT: this.flipT, knock: this.knock, recoverT: this.recoverT || 0, ground: env && env.ground, dashing: this.dashing });
+    var c = clip(f, build, { time: time, phase: this.phase, flipT: this.flipT, knock: this.knock, recoverT: this.recoverT || 0, ground: env && env.ground, dashing: this.dashing,
+                            afterThrow: this.afterThrow, fidget: this.fidget || 0, fidgetKind: this.fidgetKind });
+    if (this.turnT > 0) { c.e.sx = (c.e.sx || 1) * (1 - 0.55 * Math.sin(this.turnT * Math.PI)); c.e.idle = false; }
     var k = 1 - Math.pow(1 - c.e.snap, dt * 60);
     var tgt = c.b;
     if (!this.cur) this.cur = JSON.parse(JSON.stringify(tgt));

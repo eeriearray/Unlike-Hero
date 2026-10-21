@@ -17,11 +17,11 @@
 
   // ─────────────────────────────── Elements ───────────────────────────────
   var ELEMENTS = {
-    fire:      { id: 'fire',      name: 'Fire',      icon: '🔥', color: '#ff6a2a', glow: '#ffcf4a', dark: '#7a1c08' },
-    ice:       { id: 'ice',       name: 'Ice',       icon: '❄️', color: '#7fe0ff', glow: '#e8fbff', dark: '#1d4f7a' },
-    lightning: { id: 'lightning', name: 'Lightning', icon: '⚡', color: '#ffe14a', glow: '#b48cff', dark: '#3d2a7a' },
-    earth:     { id: 'earth',     name: 'Earth',     icon: '⛰️', color: '#c58b4c', glow: '#ffd59a', dark: '#4a3320' },
-    water:     { id: 'water',     name: 'Water',     icon: '💧', color: '#2fd3c8', glow: '#a8fff4', dark: '#0d4a6a' },
+    fire:      { id: 'fire',      name: 'Fire',      icon: 'fire', color: '#ff6a2a', glow: '#ffcf4a', dark: '#7a1c08' },
+    ice:       { id: 'ice',       name: 'Ice',       icon: 'ice', color: '#7fe0ff', glow: '#e8fbff', dark: '#1d4f7a' },
+    lightning: { id: 'lightning', name: 'Lightning', icon: 'lightning', color: '#ffe14a', glow: '#b48cff', dark: '#3d2a7a' },
+    earth:     { id: 'earth',     name: 'Earth',     icon: 'earth', color: '#c58b4c', glow: '#ffd59a', dark: '#4a3320' },
+    water:     { id: 'water',     name: 'Water',     icon: 'water', color: '#2fd3c8', glow: '#a8fff4', dark: '#0d4a6a' },
   };
   var ELEMENT_ORDER = ['fire', 'ice', 'earth', 'lightning', 'water'];
   // Fire → Ice → Earth → Lightning → Water → Fire
@@ -50,11 +50,11 @@
    * special-cases one element against another. Each rule is small, visible and avoidable.
    */
   var INTERACTIONS = {
-    melt:       { id: 'melt',       text: 'Fire melts ice barriers and ice shards.',                  icon: '🔥❄️' },
-    extinguish: { id: 'extinguish', text: 'Water puts out fire projectiles, flames and burns.',       icon: '💧🔥' },
-    grounded:   { id: 'grounded',   text: 'Stone Skin grounds lightning: its hitstun is halved.',     icon: '⛰️⚡' },
-    conduct:    { id: 'conduct',    text: 'Lightning arcs once through soaked targets (+2%).',         icon: '⚡💧' },
-    clash:      { id: 'clash',      text: 'Other opposing projectiles cancel each other out.',        icon: '💥' },
+    melt:       { id: 'melt',       text: 'Fire melts ice barriers and ice shards.',                  icons: ['fire', 'ice'] },
+    extinguish: { id: 'extinguish', text: 'Water puts out fire projectiles, flames and burns.',       icons: ['water', 'fire'] },
+    grounded:   { id: 'grounded',   text: 'Stone Skin grounds lightning: its hitstun is halved.',     icons: ['earth', 'lightning'] },
+    conduct:    { id: 'conduct',    text: 'Lightning arcs once through soaked targets (+2%).',         icons: ['lightning', 'water'] },
+    clash:      { id: 'clash',      text: 'Other opposing projectiles cancel each other out.',        icons: ['clash'] },
   };
 
   // Status effects: short, capped, never stack, always shown on the dragon.
@@ -79,7 +79,43 @@
     dodgeInvulnStart: 3, dodgeInvulnEnd: 18, dodgeTicks: 26, airDodgeTicks: 30, airDodgeSpeed: 8.5,
     dashSpeed: 9.5,
     maxDamage: 999,
+    // Guard (hold Guard on the ground). A guard bar drains when hits are blocked and refills when you let go.
+    guardMax: 60, guardRegen: 0.3, guardHoldDrain: 0.06, guardDrainBase: 2, guardDrainPerDmg: 1.5,
+    blockstunBase: 4, blockstunPerDmg: 1.0, blockstunMax: 22, blockLagMult: 0.6, blockPushBase: 2.5, blockPushPerKb: 0.35,
+    guardBreakStun: 100,         // dizzy ticks after the guard bar breaks
+    parryWindow: 5,              // ticks after pressing Guard in which a hit is parried
+    parryLockout: 24,            // pressing Guard again sooner than this gives no parry window (no mashing)
+    parryStun: 22,               // the parried attacker staggers this long
+    // Throws (Guard + Light on the ground)
+    throwHold: 18, throwBreakWindow: 12, throwBreakPush: 5.5, throwBreakRecoil: 14, throwEndLag: 12,
+    // Cancels: a move that hit or was blocked can cancel into a stronger one until this many ticks after its active frames
+    cancelLate: 6,
+    // Knockdown after an untechable tumble landing, then a choice of get-up
+    downMin: 14, downMax: 50, getupTicks: 20, getupRollTicks: 28, getupRollSpeed: 6.5,
+    // Walls (arenas with wall pillars)
+    wallSplatKb: 6.5, wallSplatTicks: 30, wallSplatHitstun: 16, wallJumpSpeed: 7.5,
+    // Super meter: 3 bars. EX specials cost one bar, the Dragon Fury super all three.
+    meterMax: 300, meterBar: 100, meterOnHit: 1.2, meterOnTaken: 0.8, meterOnBlock: 0.5, meterOnParry: 25, meterTaunt: 12,
+    tauntTicks: 50,
+    crawlSpeed: 0.38,            // crawling (Down + direction) moves at this fraction of running speed
   };
+
+  // Combo scaling and anti-infinite rules. A combo is every hit a dragon takes before it can act again; multi-hit
+  // moves count as one step. Damage is scaled by step; from step 3 each hit also gives less hitstun, a move reused
+  // in the same combo gives even less, and at maxSteps the victim bursts free (brief invulnerability).
+  var COMBO = {
+    scaling: [1, 1, 0.9, 0.8, 0.7, 0.62, 0.55, 0.5, 0.45, 0.4],
+    hitstunDecay: 0.07, hitstunMin: 0.45, staleHitstun: 0.7, staleAfter: 2,
+    maxSteps: 12, burstInvuln: 40,
+    counterDamage: 1.1, counterHitstun: 1.25, counterHitlag: 4,
+  };
+
+  // When several buttons arrive on the same tick, the first one in this list wins. Guard + button combinations come
+  // first because they are deliberate two-button commands; Light beats Heavy so a sloppy double press is the safe move.
+  var INPUT_PRIORITY = ['gear', 'super', 'ex', 'grab', 'sig', 'light', 'heavy', 'dodge', 'jump', 'taunt'];
+
+  // Which kinds of move may cancel into which, on hit or block. A move never cancels into itself.
+  var CANCELS = { light: ['super', 'ex', 'sig', 'heavy'], heavy: ['super', 'ex', 'sig'], sig: ['super'], ability: ['super'] };
 
   // ─────────────────────────────── Moves ───────────────────────────────
   // Boxes are relative to the dragon's feet, x forward (mirrored by facing), y up negative.
@@ -89,7 +125,7 @@
     jab:     { name: 'Claw Jab', kind: 'light', startup: 4, active: 3, recovery: 10, phys: 4, elem: 0,
                kb: 3.4, growth: 0.055, angle: 38, boxes: [{ x: 18, y: -88, w: 56, h: 32 }], lunge: 1.6, anim: 'claw' },
     utilt:   { name: 'Horn Flick', kind: 'light', startup: 5, active: 5, recovery: 12, phys: 5, elem: 0,
-               kb: 3.8, growth: 0.07, angle: 86, boxes: [{ x: -14, y: -168, w: 66, h: 56 }], anim: 'up' },
+               kb: 3.8, growth: 0.07, angle: 86, boxes: [{ x: -14, y: -168, w: 66, h: 56 }], anim: 'up', jumpCancel: true },
     dtilt:   { name: 'Tail Sweep', kind: 'light', startup: 6, active: 4, recovery: 14, phys: 5, elem: 0,
                kb: 3.6, growth: 0.06, angle: 18, boxes: [{ x: 8, y: -30, w: 82, h: 28 }], anim: 'tail' },
     fsmash:  { name: 'Rending Claw', kind: 'heavy', startup: 16, active: 4, recovery: 27, phys: 12, elem: 2,
@@ -115,7 +151,55 @@
                kb: 4.6, growth: 0.1, angle: -78, boxes: [{ x: -30, y: -40, w: 60, h: 50 }], selfVel: [0, 13], anim: 'stomp', landingLag: 16 },
     ledgeAttack: { name: 'Ledge Swipe', kind: 'light', startup: 10, active: 4, recovery: 16, phys: 6, elem: 0,
                kb: 4.5, growth: 0.04, angle: 30, boxes: [{ x: 10, y: -70, w: 80, h: 50 }], anim: 'claw' },
+    // Command attack: Heavy while running at speed.
+    dashAttack: { name: 'Charging Ram', kind: 'heavy', startup: 9, active: 6, recovery: 22, phys: 9, elem: 1,
+               kb: 5.8, growth: 0.1, angle: 42, boxes: [{ x: 6, y: -104, w: 74, h: 80 }], lunge: 6.5, anim: 'dash' },
+    // Wake-up attack from a knockdown: hits both sides, invulnerable until it is active.
+    getupAttack: { name: 'Rising Sweep', kind: 'light', startup: 10, active: 5, recovery: 20, phys: 6, elem: 0,
+               kb: 4.8, growth: 0.04, angle: 28, away: true, boxes: [{ x: -84, y: -54, w: 168, h: 50 }], anim: 'spin', invulnStartup: true },
+    // Guard Counter: Heavy during blockstun with half a bar. Invulnerable startup, pushes the attacker away.
+    guardCounter: { name: 'Guard Counter', kind: 'heavy', startup: 6, active: 4, recovery: 24, phys: 4, elem: 0,
+               kb: 7.6, growth: 0.02, angle: 34, boxes: [{ x: 4, y: -120, w: 82, h: 100 }], anim: 'push', meter: 50, invulnStartup: true },
+    // Guard + Light on the ground. Beats guard, loses to attacks. The throw comes out after the hold.
+    grab:    { name: 'Claw Grab', kind: 'grab', startup: 6, active: 3, recovery: 24, phys: 0, elem: 0,
+               kb: 0, growth: 0, angle: 0, boxes: [{ x: 6, y: -114, w: 58, h: 96 }], anim: 'grab' },
+    fthrow:  { name: 'Hurl', kind: 'throw', phys: 8, elem: 0, kb: 6.8, growth: 0.11, angle: 40 },
+    bthrow:  { name: 'Tail Toss', kind: 'throw', phys: 9, elem: 0, kb: 7.2, growth: 0.12, angle: 44 },
+    // Dragon Fury: Guard + Heavy with a full meter. The world stops for the cinematic, then a huge elemental blast.
+    ultimate: { name: 'Dragon Fury', kind: 'super', startup: 8, active: 14, recovery: 30, phys: 12, elem: 14,
+               kb: 9.5, growth: 0.17, angle: 38, boxes: [{ x: -10, y: -186, w: 340, h: 186 }], anim: 'nova', freeze: 50, meter: 300 },
   };
+
+  /** An EX (enhanced) special: one bar, faster, stronger, armoured through its startup, ignores the cooldown. */
+  var exCache = {};
+  function exVersion(def) {
+    if (!def) return def;
+    var key = def.name;
+    if (exCache[key]) return exCache[key];
+    var ex = JSON.parse(JSON.stringify(def));
+    ex.name = def.name + ' EX'; ex.ex = true; ex.armor = true;
+    ex.startup = Math.max(3, Math.ceil(def.startup * 0.7));
+    var boost = function (o) { if (!o) return; if (o.phys) o.phys *= 1.4; if (o.elem) o.elem *= 1.5; if (o.kb) o.kb *= 1.15; if (o.speed) o.speed *= 1.2; if (o.finalKb) o.finalKb *= 1.15; };
+    boost(ex); boost(ex.spawn); boost(ex.trail);
+    if (ex.boxes) ex.boxes = ex.boxes.map(function (b) { return { x: b.x, y: b.y - 6, w: b.w * 1.15, h: b.h + 12 }; });
+    exCache[key] = ex;
+    return ex;
+  }
+
+  /**
+   * Frame data for the move list: startup, active, recovery and the advantage (+/− frames) after the first active
+   * frame connects with a standing, undamaged target. Hitstop freezes both dragons equally, so it cancels out.
+   */
+  function frameData(def) {
+    var src = def.spawn || def.trail || def;
+    var dmg = (src.phys || 0) + (src.elem || 0);
+    var kb = (src.kb || 0) + (src.growth || 0) * dmg;
+    var hitstun = Math.max(4, Math.min(PHYSICS.hitstunMax, Math.round(kb * PHYSICS.hitstunPerKb)));
+    var blockstun = Math.min(PHYSICS.blockstunMax, Math.round(PHYSICS.blockstunBase + dmg * PHYSICS.blockstunPerDmg));
+    var after = (def.spawn ? 0 : Math.max(0, (def.active || 1) - 1)) + (def.recovery || 0);
+    return { startup: def.startup, active: def.active, recovery: def.recovery, damage: Math.round(dmg * 10) / 10,
+             onHit: def.kind === 'grab' ? null : hitstun - after, onBlock: def.kind === 'grab' || def.kind === 'throw' ? null : blockstun - after };
+  }
 
   // Which move a button + direction + ground/air chooses.
   function pickMove(button, dir, grounded) {
@@ -225,35 +309,31 @@
   // costs the difference in body cost, going down is free and refunds nothing.
   var GEAR_BUDGET = 30;
   var SIZES = {
-    small:  { name: 'Small',  body: 'lithe',    icon: '🦎', desc: 'Hard to hit, easy to launch.' },
-    medium: { name: 'Medium', body: 'balanced', icon: '🐉', desc: 'The all-rounder.' },
-    large:  { name: 'Large',  body: 'armored',  icon: '🦖', desc: 'Heavier, hits harder, bigger target.' },
-    huge:   { name: 'Huge',   body: 'titan',    icon: '🏔️', desc: 'Very heavy and strong, slow, huge target.' },
+    small:  { name: 'Small',  body: 'lithe',    icon: 'size', desc: 'Hard to hit, easy to launch.' },
+    medium: { name: 'Medium', body: 'balanced', icon: 'size', desc: 'The all-rounder.' },
+    large:  { name: 'Large',  body: 'armored',  icon: 'size', desc: 'Heavier, hits harder, bigger target.' },
+    huge:   { name: 'Huge',   body: 'titan',    icon: 'size', desc: 'Very heavy and strong, slow, huge target.' },
   };
-  var ARMOR = {
-    none:  { name: 'No armour',   cost: 0,  icon: '·',  kbTaken: 1,    speed: 1,    jump: 1,    desc: 'Nothing slows you down.' },
-    scale: { name: 'Scale Mail',  cost: 6,  icon: '🛡️', kbTaken: 0.94, speed: 0.97, jump: 0.99, desc: '−6% knockback taken, −3% speed.' },
-    iron:  { name: 'Iron Plate',  cost: 11, icon: '🛡️', kbTaken: 0.88, speed: 0.93, jump: 0.96, desc: '−12% knockback taken, −7% speed, lower jumps.' },
-    bone:  { name: 'Dragonbone',  cost: 16, icon: '🛡️', kbTaken: 0.82, speed: 0.89, jump: 0.93, desc: '−18% knockback taken, −11% speed, low jumps.' },
+  // Instinct: a free, exclusive choice made before every fight that changes how a dragon wants to play.
+  var INSTINCTS = {
+    fury:      { name: 'Fury',      icon: 'fury', cost: 0, meterHit: 1.5, meterTaken: 1, guardMax: 0.65, scaleOffset: 1,
+                 desc: 'All-out offence. +50% meter from landing hits, combos keep full damage one hit longer, but your guard bar is 35% smaller.' },
+    bastion:   { name: 'Bastion',   icon: 'bastion', cost: 0, meterHit: 0.75, meterTaken: 1, guardMax: 1.5, parryWindow: 8, guardCounterCost: 25,
+                 desc: 'Wall of scales. Guard bar +50%, an 8-frame parry window and Guard Counters for a quarter bar, but 25% less meter from hits.' },
+    tempest:   { name: 'Tempest',   icon: 'tempest', cost: 0, meterHit: 1, meterTaken: 1, guardMax: 1, airJumps: 1, dodgeCd: 0.7, kbTaken: 1.08, windCancel: 50,
+                 desc: 'Never still. +1 air jump, dodges recover 30% sooner, and Dodge cancels a move that connected into a dash (half a bar). Takes 8% more knockback.' },
+    vengeance: { name: 'Vengeance', icon: 'vengeance', cost: 0, meterHit: 1, meterTaken: 2, guardMax: 1, rageDamage: 0.3,
+                 desc: 'Hurt it and it hurts back. Deals up to +30% damage as its own damage % climbs (full at 120%), and builds double meter from taking hits.' },
   };
-  var WEAPONS = {
-    claws:      { name: 'Bare Claws',   cost: 0,  icon: '✋', desc: 'No weapon.' },
-    talons:     { name: 'Steel Talons', cost: 8,  icon: '🗡️', lightPhys: 1.15, desc: 'Light attacks +15% damage.' },
-    greatclaws: { name: 'Great Claws',  cost: 12, icon: '⚔️', heavyPhys: 1.15, heavyReach: 1.15, desc: 'Heavy attacks +15% damage and 15% longer reach.' },
-    tailmace:   { name: 'Tail Mace',    cost: 8,  icon: '🔨', tailPhys: 1.3, tailKb: 1.1, desc: 'Tail attacks +30% damage, +10% knockback.' },
-    hornspikes: { name: 'Horn Spikes',  cost: 8,  icon: '🦏', upKb: 1.15, upPhys: 1.1, desc: 'Up attacks launch 15% harder, +10% damage.' },
-  };
-  // Moves each weapon boosts
-  var TAIL_MOVES = { dtilt: 1, dsmash: 1 }, UP_MOVES = { utilt: 1, usmash: 1, uair: 1 };
   // Abilities: their own button, cooldowns in ticks (60 = 1 s). All are visible and have a counter.
   var GEAR_ABILITIES = {
-    none:  { name: 'No ability', cost: 0, icon: '·', cooldown: 0, desc: 'Bank the points.' },
-    fade:  { name: 'Fade',       cost: 10, icon: '👻', cooldown: 840, duration: 90,  desc: 'Turn to a faint shimmer for 1.5 s. Ends when you attack or are hit.' },
-    aegis: { name: 'Aegis',      cost: 12, icon: '🔰', cooldown: 720, duration: 180, desc: 'A shield that absorbs one hit within 3 s.' },
-    phase: { name: 'Phase Dash', cost: 8,  icon: '💨', cooldown: 480, duration: 14,  desc: 'A fast dash through attacks (invulnerable while dashing).' },
-    decoy: { name: 'Decoy',      cost: 10, icon: '🎭', cooldown: 720, duration: 180, desc: 'Leave a copy that bursts when struck, hitting nearby enemies.' },
-    rage:  { name: 'Rage',       cost: 10, icon: '😤', cooldown: 900, duration: 300, mult: 1.15, desc: '5 s of +15% damage dealt and +15% knockback taken.' },
-    gust:  { name: 'Gust',       cost: 8,  icon: '🌪️', cooldown: 420, range: 230, desc: 'A wing blast that shoves enemies in front away. No damage.' },
+    none:  { name: 'No ability', cost: 0, icon: 'none', cooldown: 0, desc: 'Bank the points.' },
+    fade:  { name: 'Fade',       cost: 10, icon: 'fade', cooldown: 840, duration: 90,  desc: 'Turn to a faint shimmer for 1.5 s. Ends when you attack or are hit.' },
+    aegis: { name: 'Aegis',      cost: 12, icon: 'aegis', cooldown: 720, duration: 180, desc: 'A shield that absorbs one hit within 3 s.' },
+    phase: { name: 'Phase Dash', cost: 8,  icon: 'phase', cooldown: 480, duration: 14,  desc: 'A fast dash through attacks (invulnerable while dashing).' },
+    decoy: { name: 'Decoy',      cost: 10, icon: 'decoy', cooldown: 720, duration: 180, desc: 'Leave a copy that bursts when struck, hitting nearby enemies.' },
+    rage:  { name: 'Rage',       cost: 10, icon: 'rage', cooldown: 900, duration: 300, mult: 1.15, desc: '5 s of +15% damage dealt and +15% knockback taken.' },
+    gust:  { name: 'Gust',       cost: 8,  icon: 'gust', cooldown: 420, range: 230, desc: 'A wing blast that shoves enemies in front away. No damage.' },
   };
 
   // ─────────────────────────────── Cosmetics (no combat effect) ───────────────────────────────
@@ -269,6 +349,13 @@
     accessory: { none: 'None', crown: 'Crown', scarf: 'Scarf', hornRings: 'Horn Rings', amulet: 'Amulet' },
     aura:   { none: 'None', subtle: 'Subtle', blazing: 'Blazing' },
   };
+
+  // HD sprite recolours (cosmetic): a scale colour re-hues the painted art keeping its shading, a finish changes its
+  // surface. Both are optional look fields; missing means natural.
+  var TINTS = { none: { name: 'Natural' }, crimson: { name: 'Crimson', color: '#d8301c' }, ember: { name: 'Ember', color: '#ff8a1c' },
+                gold: { name: 'Gold', color: '#e8c040' }, jade: { name: 'Jade', color: '#2fae6a' }, azure: { name: 'Azure', color: '#2f7ad8' },
+                frost: { name: 'Frost', color: '#7fd8ff' }, violet: { name: 'Violet', color: '#8a3ad8' }, rose: { name: 'Rose', color: '#e0508a' } };
+  var SHADES = { none: { name: 'Natural' }, shadow: { name: 'Shadow' }, gilded: { name: 'Gilded' }, bone: { name: 'Bone' }, spectral: { name: 'Spectral' } };
 
   // Archetypes: each is a valid ≤100-point build plus a distinct look.
   var PRESETS = [
@@ -306,7 +393,7 @@
   // ─────────────────────────────── Arenas ───────────────────────────────
   // Solid platforms have ledges; 'soft' platforms can be dropped through (down) and jumped up through.
   var ARENAS = {
-    skyforge: { id: 'skyforge', name: 'Skyforge Spire', theme: 'dusk',
+    skyforge: { id: 'skyforge', name: 'Skyforge Spire', theme: 'storm', blurb: 'A dragon-forged tower above the stormline. Lightning crowns the upper platforms.',
                 size: [1600, 900], blast: { left: -260, right: 1860, top: -520, bottom: 1180 },
                 platforms: [
                   { x: 340, y: 640, w: 920, h: 170, solid: true },
@@ -315,7 +402,7 @@
                   { x: 695, y: 320, w: 210, h: 14 },
                 ],
                 spawns: [[560, 640], [1040, 640], [460, 640], [1140, 640], [660, 640], [940, 640]] },
-    frostfall: { id: 'frostfall', name: 'Frostfall Rift', theme: 'night',
+    frostfall: { id: 'frostfall', name: 'Frostfall Rift', theme: 'crystal', blurb: 'A frozen dragon hollow lit by living crystals and falling ice.',
                 size: [1600, 900], blast: { left: -260, right: 1860, top: -520, bottom: 1180 },
                 platforms: [
                   { x: 300, y: 650, w: 420, h: 150, solid: true },
@@ -325,7 +412,7 @@
                   { x: 1000, y: 430, w: 180, h: 14 },
                 ],
                 spawns: [[470, 650], [1130, 650], [380, 650], [1220, 650], [600, 650], [1000, 650]] },
-    training: { id: 'training', name: 'Training Grounds', theme: 'grid',
+    training: { id: 'training', name: 'Training Grounds', theme: 'blossom', blurb: 'A quiet dragon dojo garden with drifting petals and temple lanterns.',
                 size: [1600, 900], blast: { left: -260, right: 1860, top: -520, bottom: 1180 },
                 platforms: [
                   { x: 300, y: 640, w: 1000, h: 170, solid: true },
@@ -333,7 +420,63 @@
                   { x: 880, y: 470, w: 200, h: 14 },
                 ],
                 spawns: [[600, 640], [1000, 640]] },
+    caldera: { id: 'caldera', name: 'Ember Caldera', theme: 'volcano', blurb: 'A basalt crown over a lava lake. Two low ledges step down off the sides.',
+                size: [1600, 900], blast: { left: -260, right: 1860, top: -520, bottom: 1180 },
+                platforms: [
+                  { x: 430, y: 640, w: 740, h: 180, solid: true },
+                  { x: 200, y: 730, w: 180, h: 120, solid: true },
+                  { x: 1220, y: 730, w: 180, h: 120, solid: true },
+                  { x: 690, y: 470, w: 220, h: 14 },
+                ],
+                spawns: [[600, 640], [1000, 640], [290, 730], [1310, 730], [700, 640], [900, 640]] },
+    stormcrown: { id: 'stormcrown', name: 'Stormcrown Peaks', theme: 'storm', blurb: 'Three summits in a thunderhead. Mind the gaps.',
+                size: [1600, 900], blast: { left: -260, right: 1860, top: -520, bottom: 1180 },
+                platforms: [
+                  { x: 650, y: 600, w: 300, h: 210, solid: true },
+                  { x: 240, y: 680, w: 320, h: 150, solid: true },
+                  { x: 1040, y: 680, w: 320, h: 150, solid: true },
+                  { x: 690, y: 430, w: 220, h: 14 },
+                ],
+                spawns: [[400, 680], [1200, 680], [740, 600], [860, 600], [320, 680], [1280, 680]] },
+    jade: { id: 'jade', name: 'Jade Terrace', theme: 'blossom', blurb: 'A temple garden in spring. Three floating terraces over a wide floor.',
+                size: [1600, 900], blast: { left: -260, right: 1860, top: -520, bottom: 1180 },
+                platforms: [
+                  { x: 360, y: 640, w: 880, h: 170, solid: true },
+                  { x: 440, y: 500, w: 200, h: 14 },
+                  { x: 960, y: 500, w: 200, h: 14 },
+                  { x: 700, y: 365, w: 200, h: 14 },
+                ],
+                spawns: [[560, 640], [1040, 640], [460, 640], [1140, 640], [680, 640], [920, 640]] },
+    colosseum: { id: 'colosseum', name: 'Dragon Colosseum', theme: 'arena', blurb: 'Walled sand pit. Wall splats, wall jumps and corner pressure; KOs go over the top.',
+                size: [1600, 900], blast: { left: -260, right: 1860, top: -460, bottom: 1180 },
+                platforms: [
+                  { x: 340, y: 660, w: 920, h: 180, solid: true },
+                  { x: 220, y: 330, w: 120, h: 510, solid: true, wall: true },
+                  { x: 1260, y: 330, w: 120, h: 510, solid: true, wall: true },
+                  { x: 690, y: 480, w: 220, h: 14 },
+                ],
+                spawns: [[600, 660], [1000, 660], [480, 660], [1120, 660], [720, 660], [880, 660]] },
+    crystal: { id: 'crystal', name: 'Crystal Hollow', theme: 'crystal', blurb: 'A glowing geode cavern. Small floor, low side perches.',
+                size: [1600, 900], blast: { left: -240, right: 1840, top: -480, bottom: 1160 },
+                platforms: [
+                  { x: 440, y: 640, w: 720, h: 180, solid: true },
+                  { x: 250, y: 545, w: 170, h: 14 },
+                  { x: 1180, y: 545, w: 170, h: 14 },
+                  { x: 700, y: 455, w: 200, h: 14 },
+                ],
+                spawns: [[600, 640], [1000, 640], [520, 640], [1080, 640], [740, 640], [860, 640]] },
+    shrine: { id: 'shrine', name: 'Sunken Shrine', theme: 'reef', blurb: 'A drowned temple. A raised altar splits the floor.',
+                size: [1600, 900], blast: { left: -260, right: 1860, top: -520, bottom: 1180 },
+                platforms: [
+                  { x: 320, y: 660, w: 960, h: 170, solid: true },
+                  { x: 720, y: 580, w: 160, h: 80, solid: true, altar: true },
+                  { x: 400, y: 500, w: 190, h: 14 },
+                  { x: 1010, y: 500, w: 190, h: 14 },
+                ],
+                spawns: [[520, 660], [1080, 660], [420, 660], [1180, 660], [620, 660], [980, 660]] },
   };
+  // Arenas offered in Versus, tournaments and online rooms, in menu order (training stays separate).
+  var ARENA_ORDER = ['skyforge', 'frostfall', 'caldera', 'stormcrown', 'jade', 'colosseum', 'crystal', 'shrine'];
 
   var FORMATS = {
     '1v1': { id: '1v1', name: '1 v 1', teams: 2, perTeam: 1 },
@@ -348,8 +491,9 @@
     TICK_RATE: TICK_RATE, ELEMENTS: ELEMENTS, ELEMENT_ORDER: ELEMENT_ORDER, BEATS: BEATS, ELEMENT_CONFIG: ELEMENT_CONFIG,
     elementMultiplier: elementMultiplier, matchup: matchup, INTERACTIONS: INTERACTIONS, STATUS: STATUS,
     PHYSICS: PHYSICS, MOVES: MOVES, pickMove: pickMove, SIGNATURES: SIGNATURES, ABILITIES: ABILITIES,
-    GEAR_BUDGET: GEAR_BUDGET, SIZES: SIZES, ARMOR: ARMOR, WEAPONS: WEAPONS, GEAR_ABILITIES: GEAR_ABILITIES, TAIL_MOVES: TAIL_MOVES, UP_MOVES: UP_MOVES,
-    BUDGET: BUDGET, BODIES: BODIES, MOBILITY: MOBILITY, UPGRADES: UPGRADES, PARTS: PARTS, PRESETS: PRESETS, SPRITES: SPRITES,
-    ARENAS: ARENAS, FORMATS: FORMATS, TEAM_COLORS: TEAM_COLORS, TEAM_NAMES: TEAM_NAMES,
+    GEAR_BUDGET: GEAR_BUDGET, SIZES: SIZES, INSTINCTS: INSTINCTS, GEAR_ABILITIES: GEAR_ABILITIES,
+    BUDGET: BUDGET, BODIES: BODIES, MOBILITY: MOBILITY, UPGRADES: UPGRADES, PARTS: PARTS, PRESETS: PRESETS, SPRITES: SPRITES, TINTS: TINTS, SHADES: SHADES,
+    ARENAS: ARENAS, ARENA_ORDER: ARENA_ORDER, FORMATS: FORMATS, TEAM_COLORS: TEAM_COLORS, TEAM_NAMES: TEAM_NAMES,
+    COMBO: COMBO, INPUT_PRIORITY: INPUT_PRIORITY, CANCELS: CANCELS, exVersion: exVersion, frameData: frameData,
   };
 });

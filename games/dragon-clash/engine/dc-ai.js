@@ -14,9 +14,9 @@
   'use strict';
   var B = Sim.BTN;
   var LEVELS = {
-    1: { react: 20, aim: 0.55, dodge: 0.05, aggression: 0.35, sig: 0.02, ability: 0.004 },
-    2: { react: 11, aim: 0.8,  dodge: 0.18, aggression: 0.6,  sig: 0.035, ability: 0.008 },
-    3: { react: 5,  aim: 0.95, dodge: 0.38, aggression: 0.8,  sig: 0.05, ability: 0.012 },
+    1: { react: 20, aim: 0.55, dodge: 0.05, aggression: 0.35, sig: 0.02, ability: 0.004, guard: 0.04, tech: 0.1, grab: 0.1, meter: 0.2 },
+    2: { react: 11, aim: 0.8,  dodge: 0.18, aggression: 0.6,  sig: 0.035, ability: 0.008, guard: 0.2, tech: 0.35, grab: 0.3, meter: 0.5 },
+    3: { react: 5,  aim: 0.95, dodge: 0.38, aggression: 0.8,  sig: 0.05, ability: 0.012, guard: 0.35, tech: 0.7, grab: 0.55, meter: 0.8 },
   };
 
   function Bot(sim, index, opts) {
@@ -44,6 +44,16 @@
     this.hold = 0;
     if (!me || me.state === 'dead' || me.state === 'out') return 0;
     if (this.mode === 'stand') return 0;
+    if (this.mode === 'jab') {
+      // Tutorial sparring partner: walks up and throws a slow, regular jab to block or parry
+      var foe = this.target(me);
+      if (!foe || me.state !== 'idle' && me.state !== 'run') return 0;
+      var gap = foe.x - me.x;
+      if (Math.abs(gap) > 110) { this.hold = gap > 0 ? B.right : B.left; return 0; }
+      if (me.facing !== (gap > 0 ? 1 : -1)) { this.hold = gap > 0 ? B.right : B.left; return 0; }
+      if (sim.tick % 75 === 0 && this.tapT === 0) this.press(B.light, 2);
+      return 0;
+    }
     if (this.mode === 'jump') { if (me.grounded && this.tapT === 0 && r() < 0.05) this.press(B.jump, 8); return this.recover(me) || 0; }
     if (this.mode === 'dodge') {
       var near = this.target(me);
@@ -54,11 +64,28 @@
     if (rec !== null) return rec;
 
     if (me.state === 'hitstun') {
-      // Survival DI: hold toward the stage and up
+      // Survival DI: hold toward the stage and up; tech the landing or the wall when it comes
       var mid = this.stageMid();
       this.hold = (me.x < mid ? B.right : B.left) | B.up;
+      if (me.tumble && this.tapT === 0 && (me.vy + me.kby > 2 || Math.abs(me.kbx) > 6) && r() < this.cfg.tech * 0.25) this.press(B.dodge, 2);
       return 0;
     }
+    if (me.state === 'blockstun' || me.state === 'guard') {
+      // Keep the guard up while the pressure lasts; answer with a Guard Counter or let go when it stops
+      var foe = this.target(me);
+      if (me.state === 'blockstun' && me.meter >= me.stats.guardCounterCost && this.tapT === 0 && r() < this.cfg.meter * 0.3) { this.hold = B.guard; this.press(B.heavy, 2); return 0; }
+      if (foe && foe.state === 'attack' && Math.abs(foe.x - me.x) < 200 && (me.state === 'blockstun' || r() < 0.9)) { this.hold = B.guard; return 0; }
+      if (me.state === 'blockstun') { this.hold = B.guard; return 0; }
+    }
+    if (me.state === 'down') {
+      // Wake-up: mix stand, roll and get-up attack
+      if (me.stateT >= D.PHYSICS.downMin && this.tapT === 0) {
+        var w = r();
+        if (w < 0.35) this.press(B.light, 2); else if (w < 0.7) this.hold = r() < 0.5 ? B.left : B.right; else this.press(B.jump, 2);
+      }
+      return 0;
+    }
+    if (me.state === 'grabbed') { if (this.tapT === 0 && r() < this.cfg.tech * 0.3) this.press(B.light, 2); return 0; }
     if (me.state === 'ledge') {
       if (me.stateT > 10 + r() * 30 && this.tapT === 0) {
         var c = r();
@@ -86,6 +113,25 @@
         this.press(B.gear, 2);
         return 0;
       }
+    }
+    // Guard an incoming attack (and sometimes a perfect parry, by pressing late)
+    if (me.grounded && t.state === 'attack' && t.moveDef && t.moveT < t.moveDef.startup && adx < 170 && Math.abs(dy) < 120 && r() < this.cfg.guard) {
+      this.planHold = B.guard; this.hold = B.guard; this.wait = 14;
+      return 0;
+    }
+    // A turtling rival gets grabbed
+    if (me.grounded && (t.state === 'guard' || t.state === 'blockstun') && adx < 85 && Math.abs(dy) < 60 && this.tapT === 0 && r() < this.cfg.grab) {
+      this.hold = B.guard | face; this.press(B.light, 2);
+      return 0;
+    }
+    // Spend meter: Dragon Fury up close with a full bar, EX specials from range
+    if (me.meter >= D.PHYSICS.meterMax && adx < 240 && Math.abs(dy) < 100 && this.tapT === 0 && r() < this.cfg.meter * 0.2) {
+      this.hold = B.guard | face; this.press(B.heavy, 2);
+      return 0;
+    }
+    if (me.meter >= D.PHYSICS.meterBar && adx > 180 && adx < 600 && Math.abs(dy) < 70 && this.tapT === 0 && r() < this.cfg.meter * 0.04) {
+      this.hold = B.guard | face; this.press(B.sig, 2);
+      return 0;
     }
     // Dodge an incoming attack
     if (t.state === 'attack' && adx < 150 && Math.abs(dy) < 120 && r() < this.cfg.dodge && me.dodgeCd <= 0) {

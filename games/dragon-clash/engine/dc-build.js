@@ -63,8 +63,7 @@
         if (!own(D.SIZES, g.size)) errors.push('Unknown size.');
         else if (D.SIZES[g.size].body !== b.body) errors.push('Size does not match the body.');
         if (!own(D.BODIES, g.base)) errors.push('Unknown base body.');
-        if (!own(D.ARMOR, g.armor)) errors.push('Unknown armour.');
-        if (!own(D.WEAPONS, g.weapon)) errors.push('Unknown weapon.');
+        if (!own(D.INSTINCTS, g.instinct)) errors.push('Unknown instinct.');
         if (!own(D.GEAR_ABILITIES, g.ability)) errors.push('Unknown gear ability.');
         if (!errors.length) {
           gearCostV = gearCost(b);
@@ -75,19 +74,19 @@
     return { ok: errors.length === 0, errors: errors, cost: cost, remaining: budget - cost, gearCost: gearCostV };
   }
 
-  /** Loadout cost: armour + weapon + ability + any growth in size over the dragon's own body. */
+  /** Loadout cost: ability + any growth in size over the dragon's own body (instincts are free). */
   function gearCost(b) {
     var g = b && b.gear;
     if (!g) return 0;
     var grow = Math.max(0, (D.BODIES[b.body] ? D.BODIES[b.body].cost : 0) - (D.BODIES[g.base] ? D.BODIES[g.base].cost : 0));
-    return grow + ((D.ARMOR[g.armor] || {}).cost || 0) + ((D.WEAPONS[g.weapon] || {}).cost || 0) + ((D.GEAR_ABILITIES[g.ability] || {}).cost || 0);
+    return grow + ((D.INSTINCTS[g.instinct] || {}).cost || 0) + ((D.GEAR_ABILITIES[g.ability] || {}).cost || 0);
   }
 
   /** A build wearing a loadout. size swaps the body; the original body is kept as gear.base for costing. */
   function withGear(b, gear) {
     var out = JSON.parse(JSON.stringify(b));
     var base = b.gear && b.gear.base ? b.gear.base : b.body;
-    out.gear = { size: gear.size, base: base, armor: gear.armor, weapon: gear.weapon, ability: gear.ability };
+    out.gear = { size: gear.size, base: base, instinct: gear.instinct, ability: gear.ability };
     out.body = D.SIZES[gear.size] ? D.SIZES[gear.size].body : base;
     return out;
   }
@@ -104,6 +103,8 @@
       if (!own(D.PARTS[slot], look[slot])) return 'Unknown ' + slot + ' part.';
     }
     if (look.sprite != null && !own(D.SPRITES, look.sprite)) return 'Unknown sprite pack.';
+    if (look.tint != null && !own(D.TINTS, look.tint)) return 'Unknown scale colour.';
+    if (look.shade != null && !own(D.SHADES, look.shade)) return 'Unknown finish.';
     for (var i = 0; i < COLOR_KEYS.length; i++) {
       if (typeof look[COLOR_KEYS[i]] !== 'string' || !HEX.test(look[COLOR_KEYS[i]])) return 'Bad colour: ' + COLOR_KEYS[i] + '.';
     }
@@ -118,12 +119,14 @@
     for (var slot in D.PARTS) look[slot] = src[slot];
     COLOR_KEYS.forEach(function (k) { look[k] = src[k]; });
     if (own(D.SPRITES, src.sprite)) look.sprite = src.sprite;
+    if (own(D.TINTS, src.tint) && src.tint !== 'none') look.tint = src.tint;
+    if (own(D.SHADES, src.shade) && src.shade !== 'none') look.shade = src.shade;
     return {
       id: typeof b.id === 'string' ? b.id.slice(0, 40) : undefined,
       name: typeof b.name === 'string' ? b.name.slice(0, 40) : '',
       element: b.element, body: b.body, mobility: b.mobility, signature: b.signature, ability: b.ability, upgrade: b.upgrade,
       look: look,
-      gear: b.gear && typeof b.gear === 'object' ? { size: b.gear.size, base: b.gear.base, armor: b.gear.armor, weapon: b.gear.weapon, ability: b.gear.ability } : undefined,
+      gear: b.gear && typeof b.gear === 'object' ? { size: b.gear.size, base: b.gear.base, instinct: b.gear.instinct, ability: b.gear.ability } : undefined,
     };
   }
 
@@ -152,10 +155,19 @@
       sigCd: Math.round(D.SIGNATURES[b.signature].cooldown * cd),
       abilityCd: Math.round(D.ABILITIES[b.ability].cooldown * cd),
     };
-    // Loadout: armour slows you and soaks knockback; weapons boost specific attacks; one gear ability
-    var g = b.gear || {}, ar = D.ARMOR[g.armor] || D.ARMOR.none, wp = D.WEAPONS[g.weapon] || D.WEAPONS.claws, ga = D.GEAR_ABILITIES[g.ability] || D.GEAR_ABILITIES.none;
-    st.kbTaken *= ar.kbTaken; st.run *= ar.speed; st.air *= ar.speed; st.jump *= ar.jump;
-    st.weapon = { lightPhys: wp.lightPhys || 1, heavyPhys: wp.heavyPhys || 1, heavyReach: wp.heavyReach || 1, tailPhys: wp.tailPhys || 1, tailKb: wp.tailKb || 1, upKb: wp.upKb || 1, upPhys: wp.upPhys || 1 };
+    // Loadout: an instinct that changes how the dragon fights, and one gear ability
+    var g = b.gear || {}, ins = D.INSTINCTS[g.instinct], ga = D.GEAR_ABILITIES[g.ability] || D.GEAR_ABILITIES.none;
+    st.instinct = ins ? g.instinct : null;
+    st.guardMax = D.PHYSICS.guardMax * (ins ? ins.guardMax : 1);
+    st.parryWindow = ins && ins.parryWindow || D.PHYSICS.parryWindow;
+    st.meterHit = ins ? ins.meterHit : 1; st.meterTaken = ins ? ins.meterTaken : 1;
+    st.scaleOffset = ins && ins.scaleOffset || 0;
+    st.guardCounterCost = ins && ins.guardCounterCost || D.MOVES.guardCounter.meter;
+    st.windCancel = ins && ins.windCancel || 0;
+    st.rageDamage = ins && ins.rageDamage || 0;
+    if (ins && ins.airJumps) st.airJumps += ins.airJumps;
+    if (ins && ins.dodgeCd) st.dodgeCd = Math.round(st.dodgeCd * ins.dodgeCd);
+    if (ins && ins.kbTaken) st.kbTaken *= ins.kbTaken;
     st.gearAbility = g.ability && g.ability !== 'none' ? g.ability : null;
     st.gearCd = ga.cooldown || 0;
     return st;

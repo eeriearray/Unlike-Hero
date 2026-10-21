@@ -8,15 +8,16 @@
  * snapshot (state, state timer, move timer, velocity) into { a: sheet key, fr: fractional frame }; draw() paints it
  * with the frame's lowest opaque row on the fighter's feet.
  *
- * Memory: a pack is ~530 MB decoded at full size, so sheets are downscaled to RES on load and only the dragons in
- * the match are kept (unloadExcept). Menus load just the idle sheet. If a manifest cannot be fetched (file://) the
+ * Memory: sheets are trimmed to the opaque area of their frames (tools/trim_sprites.py; manifest cw/ch/ox/oy), which
+ * makes full resolution affordable (~230-300 MB a dragon decoded). The Low effects setting decodes at 70%. Only the
+ * dragons in the match are kept (unloadExcept). Menus load just the idle sheet. If a manifest cannot be fetched (file://) the
  * dragon is drawn with its rig look instead.
  */
 (function () {
   'use strict';
 
   var ROOT = 'assets/dragons/';
-  var RES = 0.625;          // decoded size relative to the 384 px source cells
+  var RES = 1;              // decoded size relative to the source cells (setRes: 0.7 on the Low effects setting)
   var K = 3;                // sheets hold each original frame plus two in-betweens
   var SCALE = 0.55;         // world units per source pixel (feet to horn tip ≈ 142, like the rig)
   var FPS = 30;             // source frames per second at 10 fps original: the sheets are 3x
@@ -28,7 +29,8 @@
     recover: '23_Recovery', victory: '24_Victory', defeat: '25_Defeat',
   };
   var MOVE_ANIM = { jab: 'l1', utilt: 'l2', dtilt: 'l3', fsmash: 'h1', usmash: 'h2', dsmash: 'h2', nair: 'l3', fair: 'l1', uair: 'l2', dair: 'l3',
-                    fheavyAir: 'h1', wingBurst: 'e2', meteor: 'h2', ledgeAttack: 'l1' };
+                    fheavyAir: 'h1', wingBurst: 'e2', meteor: 'h2', ledgeAttack: 'l1',
+                    dashAttack: 'h1', getupAttack: 'l3', guardCounter: 'h2', grab: 'l1', ultimate: 'e2' };
   var COMBO = ['l1', 'l2', 'l3'];
 
   var packs = {};   // id → { man, cx, sheets: {key: {im, cols, n, bot, cw, ch}}, idle: Promise, all: Promise, failed }
@@ -60,20 +62,29 @@
   }
 
   function loadSheet(id, key) {
-    var p = pack(id), nm = NAMES[key];
+    var p = pack(id), nm = NAMES[key], hd = key === 'idleHD';
+    if (hd) nm = NAMES.idle;
     if (p.sheets[key]) return Promise.resolve(true);
-    return fetchImg(ROOT + id + '/' + nm + '.png').then(function (im) {
+    var file = hd ? (p.man[nm].hd && p.man[nm].hd.file) : nm + '.png';
+    if (!file) return Promise.resolve(false);
+    return fetchImg(ROOT + id + '/' + file).then(function (im) {
       return (im.decode ? im.decode().catch(function () {}) : Promise.resolve()).then(function () {
-        var w = Math.round(im.naturalWidth * RES), h = Math.round(im.naturalHeight * RES);
+        var w = Math.round(im.naturalWidth * (hd ? 1 : RES)), h = Math.round(im.naturalHeight * (hd ? 1 : RES));
         return (window.createImageBitmap ? createImageBitmap(im, { resizeWidth: w, resizeHeight: h, resizeQuality: 'high' }).catch(function () { return im; }) : Promise.resolve(im));
       });
     }).then(function (bm) {
       var m = p.man[nm], rows = Math.ceil(m.n / m.cols), w = bm.width || bm.naturalWidth, h = bm.height || bm.naturalHeight;
       warm(bm);
       if (!packs[id] || packs[id] !== p) { if (bm.close) bm.close(); return false; }   // evicted while loading
-      p.sheets[key] = { im: bm, cols: m.cols, n: m.n, bot: m.bot, cw: w / m.cols, ch: h / rows, loop: !!m.loop };
+      p.sheets[key] = { im: bm, cols: m.cols, n: m.n, bot: m.bot, cw: w / m.cols, ch: h / rows, loop: !!m.loop, ox: m.ox || 0, oy: m.oy || 0, res: w / (m.cw ? m.cw * m.cols : w / RES) };
       return true;
-    }).catch(function () { p.failed = true; return false; });
+    }).catch(function () { if (!hd) p.failed = true; return false; });
+  }
+
+  /** The sharpened 2x idle sheet (tools/upscale_idle.py) for big previews; loaded on first use. */
+  function loadIdleHD(id) {
+    var p = pack(id);
+    return p.idleHDP || (p.idleHDP = loadIdle(id).then(function (ok) { return ok ? loadSheet(id, 'idleHD') : false; }));
   }
 
   /** The idle sheet only: enough for menus, select portraits and the rig-less decoy. */
@@ -140,7 +151,9 @@
     if (force) this.forceT += dt;
     this.time = time;
     // Per-state bookkeeping
-    if (f.st === 'run') this.phase += 0.24 * Math.abs(f.vx) * dt * 60;
+    if (f.st === 'run' || f.st === 'crawl') this.phase += 0.24 * Math.abs(f.vx) * dt * 60;
+    // Running 2 is the sprint: it takes over after half a second of running flat out (or at any time above 5.6)
+    this.runT = f.st === 'run' && Math.abs(f.vx) > 3.8 ? (this.runT || 0) + dt : 0;
     if (f.gr || f.st === 'ledge') { this.peak = 1; this.j2 = false; }
     else if (f.vy < 0) this.peak = Math.max(this.peak, -f.vy);
     if (pr.aj != null && f.aj < pr.aj && !f.gr) { this.j2 = true; this.peak = Math.max(1, -f.vy); }
@@ -150,6 +163,8 @@
       this.combo = time - this.comboT < 0.8 && f.mv === pr.lastMv ? (this.combo + 1) % 3 : 0;
     }
     if (f.st === 'attack') { this.comboT = time; this.lastMv = f.mv; }
+    if (f.st === 'recoil' && pr.st === 'throwing') this.afterThrow = true;
+    if (f.st !== 'recoil') this.afterThrow = false;
     this.prev = { st: f.st, aj: f.aj, mv: f.mv, mT: f.mT, lastMv: this.lastMv };
 
     var out = { a: 'idle', fr: time * FPS, dy: 0 };
@@ -158,7 +173,7 @@
 
     switch (f.st) {
       case 'run':
-        out.a = Math.abs(f.vx) > 5.6 && S.run2 ? 'run2' : 'run';
+        out.a = (Math.abs(f.vx) > 5.6 || this.runT > 0.5) && S.run2 ? 'run2' : 'run';
         out.fr = this.phase * 3;
         break;
       case 'squat': out.a = 'jump'; out.fr = Math.min(6, T * 1.2); break;
@@ -186,6 +201,33 @@
         else { out.a = this.hitN ? 'hit' : 'hit2'; out.fr = clamp(T / 24, 0, 1) * (S[out.a].n - 1); }
         break;
       case 'attack': attack(this, p, f, build, out); break;
+      case 'guard': case 'blockstun':
+        if (f.st === 'blockstun' || f.hl > 0) {
+          // A blocked (or parried) hit: Defence 2, whose frames carry the shield arc, played through the blockstun
+          out.a = 'guard2'; out.fr = f.st === 'blockstun' ? Math.min(S.guard2.n - 4, 5 + T * 1.1) : S.guard2.n * 0.45;
+        } else {
+          // Raising the guard: Defence 1 up to its peak, then a slow sway around it while it is held
+          var peak = Math.round(S.guard.n * 0.45);
+          out.a = 'guard'; out.fr = T < peak ? T : peak + 3 + 3 * Math.sin((T - peak) * 0.12);
+        }
+        break;
+      case 'crouch': if (S.crawl) { out.a = 'crawl'; out.fr = 1.5 + 1.5 * Math.sin(time * 2); } break;
+      case 'crawl': if (S.crawl) { out.a = 'crawl'; out.fr = this.phase * 2.2; } break;
+      case 'stagger': out.a = 'hit2'; out.fr = (0.5 + 0.5 * Math.sin(time * 4)) * (S.hit2.n * 0.5); break;
+      case 'recoil':
+        if (this.afterThrow && S.h1) { var hs = p.active.h1 || [S.h1.n * 0.4, S.h1.n * 0.6]; out.a = 'h1'; out.fr = hs[0] + clamp(T / 12, 0, 1) * (S.h1.n - 1 - hs[0]); }
+        else { out.a = 'hit'; out.fr = clamp(T / 14, 0, 1) * (S.hit.n * 0.6); }
+        break;
+      case 'grabbed': out.a = 'hit'; out.fr = S.hit.n * (0.3 + 0.1 * Math.sin(time * 14)); out.dy = -8; break;
+      case 'throwing': { var ha = p.active.h1 || [S.h1.n * 0.4]; out.a = 'h1'; out.fr = clamp(T / 18, 0, 1) * ha[0] * 0.9; break; }
+      // Knocked down: the collapsed end of Defeat (Recovery starts mid-air, so it only plays the rise)
+      case 'down': out.a = 'defeat'; out.fr = Math.min(S.defeat.n - 1, 22 + T * 0.6); break;
+      case 'getup':
+        if (f.gu === 'roll' && S.dodge) { out.a = 'dodge'; out.fr = clamp(T / 28, 0, 1) * (S.dodge.n - 1); }
+        else { var r0 = Math.round(S.recover.n * 0.27); out.a = 'recover'; out.fr = r0 + clamp(T / 20, 0, 1) * (S.recover.n - 1 - r0); }
+        break;
+      case 'wallsplat': out.a = 'knock'; out.fr = 10; break;
+      case 'taunt': out.a = 'victory'; out.fr = clamp(T / 50, 0, 1) * (S.victory.n - 1); break;
       default: break;
     }
     return out;
@@ -214,7 +256,7 @@
   Tracker.showcase = function (kind, time) {
     var c = (time % 2) / 2;
     var map = { run: 'run', jump: 'jump', hit: 'hit', attack: 'h1', light: 'l1', spin: 'h2', up: 'l2', tail: 'l3', special: 'e1', victory: 'victory', defeat: 'defeat' };
-    return { a: map[kind] || 'idle', fr: kind === 'victory' ? Math.min(33, time * 36) : kind === 'defeat' ? Math.min(39, (time % 4) * 42) : c * 40, dy: 0, loop: true };
+    return { a: map[kind] || 'idle', fr: kind === 'victory' ? Math.min(33, time * 36) : kind === 'defeat' ? Math.min(39, time * 30) : c * 40, dy: 0, loop: true };
   };
 
   // ───────────────────────────── drawing ─────────────────────────────
@@ -222,26 +264,52 @@
    * Paint a sprite dragon with its feet at the current origin. Returns false (draw nothing) when the pack is not
    * usable, so the caller falls back to the rig. pose: { desc|spr, facing, alpha, flash, dx, dy, time }.
    */
-  function draw(ctx, id, pose, body) {
+  // Recolouring: the frame is copied to a scratch canvas, re-hued with the 'hue' blend (keeps the painted light and
+  // shade, swaps the colour) and/or given a finish, then masked back to the frame's own alpha.
+  var scratch = null;
+  var SHADE_OPS = { shadow: [['multiply', '#5a5866', 1]], gilded: [['color', '#d9a441', 0.55], ['soft-light', '#ffe0a0', 0.35]],
+                    bone: [['saturation', '#808080', 1], ['screen', '#2e2a26', 1]], spectral: [['saturation', '#808080', 0.8], ['screen', '#1e4a6a', 1]] };
+  function recolor(s, sx, sy, look) {
+    var D = window.DC.Data, T = look && look.tint && D.TINTS[look.tint], ops = look && look.shade ? SHADE_OPS[look.shade] : null;
+    if (!(T && T.color) && !ops) return null;
+    if (!scratch) scratch = document.createElement('canvas');
+    if (scratch.width !== Math.ceil(s.cw) || scratch.height !== Math.ceil(s.ch)) { scratch.width = Math.ceil(s.cw); scratch.height = Math.ceil(s.ch); }
+    var c = scratch.getContext('2d');
+    c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1; c.clearRect(0, 0, scratch.width, scratch.height);
+    c.drawImage(s.im, sx, sy, s.cw, s.ch, 0, 0, s.cw, s.ch);
+    if (T && T.color) { c.globalCompositeOperation = 'hue'; c.globalAlpha = 0.9; c.fillStyle = T.color; c.fillRect(0, 0, s.cw, s.ch); }
+    (ops || []).forEach(function (o) { c.globalCompositeOperation = o[0]; c.globalAlpha = o[2]; c.fillStyle = o[1]; c.fillRect(0, 0, s.cw, s.ch); });
+    c.globalCompositeOperation = 'destination-in'; c.globalAlpha = 1;
+    c.drawImage(s.im, sx, sy, s.cw, s.ch, 0, 0, s.cw, s.ch);
+    c.globalCompositeOperation = 'source-over';
+    return scratch;
+  }
+
+  function draw(ctx, id, pose, body, look) {
     var p = packs[id];
     if (!p) { loadIdle(id); return false; }
     if (p.failed || !p.sheets.idle) return false;
     var d = pose.spr || { a: 'idle', fr: (pose.time || 0) * FPS, dy: 0 };
     var s = p.sheets[d.a] || p.sheets.idle;
+    // Big previews ask for the sharpened 2x idle sheet (same frames, same offsets: only its resolution differs)
+    if (pose.hd && (d.a === 'idle' || !p.sheets[d.a])) { if (p.sheets.idleHD) s = p.sheets.idleHD; else loadIdleHD(id); }
     if (!p.sheets[d.a]) d = { a: 'idle', fr: (pose.time || 0) * FPS, dy: 0 };
     var loop = s.loop || d.a === 'idle';
     var i = Math.floor(d.fr);
     i = loop ? ((i % s.n) + s.n) % s.n : clamp(i, 0, s.n - 1);
     var sx = (body && body.scale[0]) || 1, sy = (body && body.scale[1]) || 1;
-    var k = SCALE, w = s.cw / RES * k, h = s.ch / RES * k;
+    var k = SCALE, w = s.cw / s.res * k, h = s.ch / s.res * k;
     var botRow = (s.bot[i] != null ? s.bot[i] : 350) + 1;
     ctx.save();
     ctx.translate(pose.dx || 0, (pose.dy || 0) + (d.dy || 0) * sy);
     ctx.scale((pose.facing || 1) * sx, sy);
     var a0 = ctx.globalAlpha;
     if (pose.alpha != null) ctx.globalAlpha = a0 * pose.alpha;
-    var col = i % s.cols, row = (i / s.cols) | 0, ox = -p.cx * k, oy = -botRow * k;
-    ctx.drawImage(s.im, col * s.cw, row * s.ch, s.cw, s.ch, ox, oy, w, h);
+    var col = i % s.cols, row = (i / s.cols) | 0, ox = (s.ox - p.cx) * k, oy = (s.oy - botRow) * k;
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    var rc = recolor(s, col * s.cw, row * s.ch, look);
+    if (rc) ctx.drawImage(rc, 0, 0, s.cw, s.ch, ox, oy, w, h);
+    else ctx.drawImage(s.im, col * s.cw, row * s.ch, s.cw, s.ch, ox, oy, w, h);
     if (pose.flash > 0) {
       ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = a0 * Math.min(1, pose.flash) * 0.9;
       ctx.drawImage(s.im, col * s.cw, row * s.ch, s.cw, s.ch, ox, oy, w, h);
@@ -250,5 +318,8 @@
     return true;
   }
 
-  window.DCSprites = { ROOT: ROOT, NAMES: NAMES, Tracker: Tracker, load: load, loadAll: loadAll, loadIdle: loadIdle, unloadExcept: unloadExcept, ready: ready, usable: usable, draw: draw, packs: packs };
+  /** Decode resolution for sheets loaded from now on (1 = source pixels). */
+  function setRes(r) { RES = r; }
+
+  window.DCSprites = { ROOT: ROOT, setRes: setRes, NAMES: NAMES, Tracker: Tracker, load: load, loadAll: loadAll, loadIdle: loadIdle, unloadExcept: unloadExcept, ready: ready, usable: usable, draw: draw, packs: packs };
 })();

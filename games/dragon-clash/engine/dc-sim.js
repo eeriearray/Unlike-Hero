@@ -20,8 +20,10 @@
   'use strict';
 
   var P = D.PHYSICS;
-  var BTN = { left: 1, right: 2, up: 4, down: 8, jump: 16, light: 32, heavy: 64, sig: 128, dodge: 256, gear: 512 };
-  var ACTIONS = BTN.jump | BTN.light | BTN.heavy | BTN.sig | BTN.dodge | BTN.gear;
+  var BTN = { left: 1, right: 2, up: 4, down: 8, jump: 16, light: 32, heavy: 64, sig: 128, dodge: 256, gear: 512, guard: 1024, taunt: 2048 };
+  var ACTIONS = BTN.jump | BTN.light | BTN.heavy | BTN.sig | BTN.dodge | BTN.gear | BTN.guard | BTN.taunt;
+  // States in which a dragon is still inside the combo that put it there (it cannot act yet)
+  var COMBO_STATES = { hitstun: 1, wallsplat: 1, grabbed: 1 };
   var DEG = Math.PI / 180;
 
   function overlap(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
@@ -83,6 +85,8 @@
     this.result = null;
     this.ledgeOwners = {};
     this.decoys = [];
+    this.freeze = 0;          // super cinematic: the whole world waits
+    this.freezeBy = -1;
 
     var self = this;
     var fs = opts.fighters || [];
@@ -104,6 +108,9 @@
         buf: null, held: 0, prevHeld: 0, jumpT: 0, squat: 0, squatFromUp: false, dropT: 0, respawnT: 0,
         techWindow: 0, lastHitBy: -1, lastHitTick: -9999, prevDown: false, prevHeld2: 0, tapJump: spec.tapJump !== false,
         kos: 0, falls: 0, dealt: 0, taken: 0,
+        guardHp: st.guardMax, guardPressT: -999, parryOk: false, crouchGuard: false, blockT: 0, staggerT: 0, recoilT: 0, armor: 0,
+        meter: 0, combo: null, grab: -1, grabbedBy: -1, splatUsed: false, splatT: 0, splatSide: 0, wallTouch: 0, wallJumpCd: 0,
+        getupHow: null, getupDir: 0, hitConfirm: false, moveEx: false, hitKind: '', landFromAttack: false, parries: 0,
       };
       return f;
     });
@@ -127,6 +134,7 @@
     f.grounded = true; f.plat = this.platformAt(f.x, f.y);
     f.state = 'idle'; f.stateT = 0; f.move = null; f.hitstun = 0; f.tumble = false;
     f.airJumps = f.stats.airJumps; f.usedRecovery = false; f.usedBlink = false; f.airDodged = false;
+    f.guardHp = f.stats.guardMax; f.combo = null; f.splatUsed = false; f.grab = -1; f.grabbedBy = -1; f.armor = 0;
   };
 
   S.platformAt = function (x, y) {
@@ -137,6 +145,8 @@
 
   S.hurtbox = function (f) {
     var w = f.stats.hurt.w, h = f.stats.hurt.h;
+    // Crouching (and crouch-guarding) lowers the hurtbox, so high attacks can whiff over it
+    if (f.state === 'crouch' || f.state === 'crawl' || ((f.state === 'guard' || f.state === 'blockstun') && f.crouchGuard)) h *= 0.66;
     return { x: f.x - w / 2, y: f.y - h, w: w, h: h };
   };
 
@@ -147,6 +157,11 @@
   S.step = function (inputs) {
     if (this.result) return;
     this.tick++;
+    if (this.freeze > 0) {
+      // The super's cinematic: nobody moves, no timers run, then the move plays out
+      if (--this.freeze === 0) this.emit({ type: 'superGo', f: this.freezeBy });
+      return;
+    }
     var fs = this.fighters, i;
     for (i = 0; i < fs.length; i++) this.updateFighter(fs[i], (inputs && inputs[i]) || { held: 0, pressed: 0 });
     this.separate();
@@ -171,12 +186,16 @@
       return;
     }
     // Input buffer: remember action presses for a few ticks so they come out as soon as the dragon can act.
+    // Presses on the same tick arrive together; INPUT_PRIORITY decides between them when they are used.
     if (pressed & (ACTIONS | BTN.up)) f.buf = { bits: pressed & (ACTIONS | BTN.up), t: P.inputBuffer, held: held };
     else if (f.buf && --f.buf.t <= 0) f.buf = null;
     if (pressed & BTN.dodge) f.techWindow = 10;
     else if (f.techWindow > 0) f.techWindow--;
+    // Parry window opens on a fresh Guard press; pressing again too soon gives none (mashing never parries)
+    if (pressed & BTN.guard) { f.parryOk = this.tick - f.guardPressT > P.parryLockout; f.guardPressT = this.tick; }
 
     if (f.hitlag > 0) { f.hitlag--; return; }
+    if (f.combo && !COMBO_STATES[f.state]) this.endCombo(f);
 
     // Timers
     if (f.invuln > 0) f.invuln--;
@@ -190,6 +209,9 @@
     if (f.fade > 0) f.fade--;
     if (f.aegis > 0) f.aegis--;
     if (f.rage > 0) f.rage--;
+    if (f.armor > 0) f.armor--;
+    if (f.wallJumpCd > 0) f.wallJumpCd--;
+    if (f.state !== 'guard' && f.state !== 'blockstun' && f.guardHp < f.stats.guardMax) f.guardHp = Math.min(f.stats.guardMax, f.guardHp + P.guardRegen);
     this.updateStatus(f);
     f.stateT++;
 
@@ -202,8 +224,20 @@
       case 'attack': this.stAttack(f, dirX, dirY, held); break;
       case 'ledge': this.stLedge(f, dirX, dirY, held); return;
       case 'ledgeclimb': this.stLedgeClimb(f); return;
+      case 'grabbed': this.stGrabbed(f); return;
+      case 'throwing': this.stThrowing(f, dirX); return;
+      case 'wallsplat': this.stWallsplat(f); return;
       case 'dodge': this.stDodge(f); break;
       case 'airdodge': this.stAirDodge(f); break;
+      case 'guard': this.stGuard(f, dirX, dirY, held); break;
+      case 'blockstun': this.stBlockstun(f, held); break;
+      case 'stagger': if (--f.staggerT <= 0) this.setState(f, f.grounded ? 'idle' : 'air'); break;
+      case 'recoil': if (--f.recoilT <= 0) this.setState(f, f.grounded ? 'idle' : 'air'); break;
+      case 'down': this.stDown(f, dirX); break;
+      case 'getup': this.stGetup(f); break;
+      case 'taunt':
+        if (f.stateT >= P.tauntTicks) { this.addMeter(f, P.meterTaunt); this.setState(f, f.grounded ? 'idle' : 'air'); }
+        break;
       case 'land':
         if (--f.landLag <= 0) this.setState(f, 'idle');
         f.vx *= P.groundFriction;
@@ -215,6 +249,15 @@
         this.stFree(f, dirX, dirY, held, moveMult);
     }
     this.physics(f, dirX, held, moveMult);
+  };
+
+  S.addMeter = function (f, v) { if (f) f.meter = clamp(f.meter + v, 0, P.meterMax); };
+
+  /** The combo on f is over (it can act again): report it and clear its anti-infinite bookkeeping. */
+  S.endCombo = function (f) {
+    var C = f.combo;
+    if (C && C.n >= 2) this.emit({ type: 'comboEnd', f: f.i, by: C.by, n: C.n, dmg: r1(C.dmg), x: f.x, y: f.y });
+    f.combo = null; f.splatUsed = false;
   };
 
   S.setState = function (f, s) { f.state = s; f.stateT = 0; };
@@ -234,39 +277,42 @@
     }
   };
 
-  // Free states: idle, run, air.
+  function dirName(dirX, dirY) { return dirY < 0 ? 'up' : dirY > 0 ? 'down' : dirX !== 0 ? 'side' : 'neutral'; }
+
+  // Free states: idle, run, crouch, air.
   S.stFree = function (f, dirX, dirY, held, moveMult) {
     var b = f.buf ? f.buf.bits : 0;
-    var dir = dirY < 0 ? 'up' : dirY > 0 ? 'down' : dirX !== 0 ? 'side' : 'neutral';
+    var dir = dirName(dirX, dirY);
     if (f.grounded) {
       if (b & BTN.gear) { f.buf = null; this.useGear(f); return; }
-      if (this.tryAttack(f, b, dir, dirX)) return;
-      if (b & BTN.dodge && f.dodgeCd <= 0) {
-        f.buf = null;
-        if (dirX !== 0) { f.facing = dirX; f.dodgeDir = dirX; } else f.dodgeDir = 0;
-        f.dodgeCd = f.stats.dodgeCd;
-        this.setState(f, 'dodge');
-        this.emit({ type: 'sfx', id: 'dodge', x: f.x, y: f.y });
-        return;
-      }
+      if (this.tryAttack(f, b, dir, dirX, held)) return;
+      if (b & BTN.dodge && f.dodgeCd <= 0) { f.buf = null; this.startDodge(f, dirX); return; }
       if (b & (BTN.jump | BTN.up)) {
         var fromUp = !(b & BTN.jump);
         f.buf = null;
         this.setState(f, 'squat'); f.squat = 3; f.squatFromUp = fromUp;
         return;
       }
-      if ((held & BTN.down) && f.plat >= 0 && !this.arena.platforms[f.plat].solid && (f.prevDown === false)) {
+      if (b & BTN.taunt) { f.buf = null; this.setState(f, 'taunt'); this.emit({ type: 'taunt', f: f.i, x: f.x, y: f.y }); return; }
+      if (held & BTN.guard) { this.setState(f, 'guard'); f.crouchGuard = !!(held & BTN.down); this.emit({ type: 'guardUp', f: f.i, x: f.x, y: f.y }); return; }
+      var pl = this.arena.platforms[f.plat];
+      if ((held & BTN.down) && pl && !pl.solid && (f.prevDown === false)) {
         f.grounded = false; f.dropT = 12; f.plat = -1; this.setState(f, 'air');
       }
       f.prevDown = !!(held & BTN.down);
-      if (dirX !== 0) {
+      if (!f.grounded) return;
+      if ((held & BTN.down) && pl && pl.solid) {
+        // Down on solid ground: crouch, or crawl along low (and keep the small hurtbox) when a direction is held
+        if (dirX !== 0) { f.facing = dirX; if (f.state !== 'crawl') this.setState(f, 'crawl'); }
+        else if (f.state !== 'crouch') this.setState(f, 'crouch');
+      } else if (dirX !== 0) {
         f.facing = dirX;
         if (f.state !== 'run') this.setState(f, 'run');
       } else if (f.state !== 'idle') this.setState(f, 'idle');
     } else {
       if (f.state !== 'air') this.setState(f, 'air');
       if (b & BTN.gear) { f.buf = null; this.useGear(f); return; }
-      if (this.tryAttack(f, b, dir, dirX)) return;
+      if (this.tryAttack(f, b, dir, dirX, held)) return;
       if (b & BTN.dodge && !f.airDodged && f.dodgeCd <= 0) {
         f.buf = null;
         f.airDodged = true;
@@ -275,10 +321,16 @@
         f.vx = dirX / len * P.airDodgeSpeed; f.vy = dirY / len * P.airDodgeSpeed;
         f.kbx = f.kby = 0;
         this.setState(f, 'airdodge');
-        this.emit({ type: 'sfx', id: 'dodge', x: f.x, y: f.y });
+        this.emit({ type: 'sfx', id: 'dodge', f: f.i, x: f.x, y: f.y });
         return;
       }
-      if (b & (BTN.jump | BTN.up) && f.airJumps > 0 && f.stateT > 1) {
+      // Wall jump: kick off an arena wall you are touching (does not spend an air jump)
+      if (b & (BTN.jump | BTN.up) && f.wallTouch && f.wallJumpCd <= 0) {
+        f.buf = null;
+        f.vx = -f.wallTouch * P.wallJumpSpeed; f.vy = -f.stats.jump * 0.85; f.jumpT = 0; f.kbx = f.kby = 0;
+        f.facing = -f.wallTouch; f.wallJumpCd = 20; f.fastFall = false;
+        this.emit({ type: 'walljump', f: f.i, x: f.x, y: f.y, side: f.wallTouch });
+      } else if (b & (BTN.jump | BTN.up) && f.airJumps > 0 && f.stateT > 1) {
         f.buf = null;
         f.airJumps--;
         f.vy = -f.stats.jump * 0.94; f.jumpT = 0;
@@ -293,10 +345,17 @@
     }
   };
 
+  S.startDodge = function (f, dirX) {
+    if (dirX !== 0) { f.facing = dirX; f.dodgeDir = dirX; } else f.dodgeDir = 0;
+    f.dodgeCd = f.stats.dodgeCd;
+    this.setState(f, 'dodge');
+    this.emit({ type: 'sfx', id: 'dodge', f: f.i, x: f.x, y: f.y });
+  };
+
   S.stSquat = function (f, dirX, held) {
     var b = f.buf ? f.buf.bits : 0;
     // A tap-jump (up) followed quickly by an attack becomes a grounded up attack instead of a jump.
-    if (f.squatFromUp && (b & (BTN.light | BTN.heavy))) { this.setState(f, 'idle'); this.tryAttack(f, b, 'up', dirX); return; }
+    if (f.squatFromUp && (b & (BTN.light | BTN.heavy))) { this.setState(f, 'idle'); this.tryAttack(f, b, 'up', dirX, held); return; }
     if (--f.squat > 0) return;
     var full = (held & (BTN.jump | (f.tapJump ? BTN.up : 0))) !== 0;
     f.grounded = false; f.plat = -1;
@@ -312,36 +371,65 @@
     return D.MOVES[key];
   };
 
-  S.tryAttack = function (f, b, dir, dirX) {
-    var key = null;
-    if (b & BTN.sig) key = dir === 'down' ? 'ability' : 'sig';
-    else if (b & BTN.light) key = D.pickMove('light', dir, f.grounded);
-    else if (b & BTN.heavy) key = D.pickMove('heavy', dir, f.grounded);
+  /**
+   * Turn buffered button bits into a move. Categories are tried in D.INPUT_PRIORITY order, so simultaneous presses
+   * always resolve the same way. `only` (cancels) limits the categories; the current move is never chosen again.
+   */
+  S.tryAttack = function (f, b, dir, dirX, held, only) {
+    var guard = (held | 0) & BTN.guard, key = null, ex = false, order = D.INPUT_PRIORITY;
+    for (var i = 0; i < order.length && !key; i++) {
+      var c = order[i];
+      if (only && only.indexOf(c) < 0) continue;
+      if (c === 'super' && guard && (b & BTN.heavy) && f.meter >= D.MOVES.ultimate.meter) key = 'ultimate';
+      else if (c === 'ex' && guard && (b & BTN.sig) && f.meter >= P.meterBar) { key = dir === 'down' ? 'ability' : 'sig'; ex = true; }
+      else if (c === 'grab' && guard && (b & BTN.light) && f.grounded && !only) key = 'grab';
+      else if (c === 'sig' && (b & BTN.sig)) key = dir === 'down' ? 'ability' : 'sig';
+      else if (c === 'light' && (b & BTN.light)) key = D.pickMove('light', dir, f.grounded);
+      else if (c === 'heavy' && (b & BTN.heavy)) {
+        // Command attack: Heavy while running flat out is a charging ram
+        key = f.grounded && f.state === 'run' && dir === 'side' && Math.abs(f.vx) > f.stats.run * 0.8 && f.stateT > 4 ? 'dashAttack' : D.pickMove('heavy', dir, f.grounded);
+      }
+      if (key && only && key === f.move && !ex) key = null;
+    }
     if (!key) return false;
     var def = this.moveDef(f, key);
-    if (key === 'sig' && f.sigCd > 0) { f.buf = null; this.emit({ type: 'sfx', id: 'denied', x: f.x, y: f.y, f: f.i }); return true; }
-    if (key === 'ability' && f.abilityCd > 0) { f.buf = null; this.emit({ type: 'sfx', id: 'denied', x: f.x, y: f.y, f: f.i }); return true; }
+    if (ex) def = D.exVersion(def);
+    else {
+      if (key === 'sig' && f.sigCd > 0) { f.buf = null; this.emit({ type: 'sfx', id: 'denied', x: f.x, y: f.y, f: f.i }); return true; }
+      if (key === 'ability' && f.abilityCd > 0) { f.buf = null; this.emit({ type: 'sfx', id: 'denied', x: f.x, y: f.y, f: f.i }); return true; }
+    }
     if (key === 'wingBurst' && f.usedRecovery) { f.buf = null; return false; }
     if ((def.groundOnly || (def.spawn && def.spawn.ground)) && !f.grounded) { f.buf = null; this.emit({ type: 'sfx', id: 'denied', x: f.x, y: f.y, f: f.i }); return true; }
     if (def.oncePerAir && !f.grounded && f.usedBlink) { f.buf = null; return true; }
     f.buf = null;
+    if (ex) this.addMeter(f, -P.meterBar);
+    if (key === 'ultimate') f.meter = 0;
     if (dirX !== 0 && (f.grounded || key === 'sig' || key === 'ability' || key === 'fair' || key === 'fheavyAir')) f.facing = dirX;
-    this.startMove(f, key, def);
+    this.startMove(f, key, def, ex);
     return true;
   };
 
-  S.startMove = function (f, key, def) {
+  S.startMove = function (f, key, def, ex) {
     if (f.fade > 0) { f.fade = 0; this.emit({ type: 'unfade', f: f.i, x: f.x, y: f.y }); }
+    var cancelled = f.state === 'attack' ? f.move : null;
     f.move = key; f.moveDef = def; f.moveT = 0; f.multiN = 0;
     f.moveKind = key === 'sig' ? 'sig' : key === 'ability' ? 'ability' : def.kind;
+    f.moveEx = !!ex; f.hitConfirm = false;
     f.attackId = this.nextId++;
     f.hits = {};
     if (key === 'sig') f.sigCd = f.stats.sigCd;
     if (key === 'ability') f.abilityCd = f.stats.abilityCd;
     if (key === 'wingBurst') { f.usedRecovery = true; f.fastFall = false; }
     if (def.oncePerAir && !f.grounded) f.usedBlink = true;
+    if (def.armor) f.armor = def.startup;
+    if (def.invulnStartup) f.invuln = Math.max(f.invuln, def.startup);
     this.setState(f, 'attack');
-    this.emit({ type: 'attack', f: f.i, move: key, kind: f.moveKind, element: f.element, x: f.x, y: f.y });
+    this.emit({ type: 'attack', f: f.i, move: key, kind: f.moveKind, element: f.element, x: f.x, y: f.y, ex: !!ex, cancel: cancelled });
+    if (key === 'ultimate') {
+      this.freeze = def.freeze; this.freezeBy = f.i;
+      f.invuln = Math.max(f.invuln, def.startup + def.active);
+      this.emit({ type: 'super', f: f.i, x: f.x, y: f.y, element: f.element, ticks: def.freeze });
+    }
   };
 
   S.stAttack = function (f, dirX, dirY, held) {
@@ -358,11 +446,33 @@
       if (def.trail && (t - start) % def.trail.every === 0 && f.grounded) this.spawnTrail(f, def.trail);
     }
     if (def.lunge && t === start) f.vx += def.lunge * f.facing;
+    // Cancel window: once this move has hit or been blocked, a buffered stronger move takes over
+    if (f.hitConfirm && f.buf && t >= start && t < end + P.cancelLate) {
+      if (def.jumpCancel && f.grounded && (f.buf.bits & (BTN.jump | BTN.up))) {
+        f.buf = null; f.move = null; f.moveDef = null;
+        this.setState(f, 'squat'); f.squat = 3; f.squatFromUp = false;
+        this.emit({ type: 'cancel', f: f.i, into: 'jump', x: f.x, y: f.y });
+        return;
+      }
+      // Tempest instinct: Dodge cancels a connected move into a dash for half a bar
+      if (f.stats.windCancel && (f.buf.bits & BTN.dodge) && f.grounded && f.meter >= f.stats.windCancel) {
+        f.buf = null; this.addMeter(f, -f.stats.windCancel); f.move = null; f.moveDef = null; f.moveEx = false;
+        this.startDodge(f, dirX); f.dodgeCd = 0;
+        this.emit({ type: 'cancel', f: f.i, into: 'wind', x: f.x, y: f.y });
+        return;
+      }
+      var allowed = D.CANCELS[f.moveKind];
+      var aid = f.attackId;
+      if (allowed && this.tryAttack(f, f.buf.bits, dirName(dirX, dirY), dirX, held, allowed) && f.attackId !== aid) {
+        this.emit({ type: 'cancel', f: f.i, into: f.move, x: f.x, y: f.y });
+        return;
+      }
+    }
     // Aerials can drift
     if (!f.grounded && dirX !== 0) f.vx = clamp(f.vx + dirX * 0.35, -f.stats.air, f.stats.air);
     if (!f.grounded) this.tryLedge(f);
     if (t >= total) {
-      f.move = null; f.moveDef = null;
+      f.move = null; f.moveDef = null; f.moveEx = false;
       this.setState(f, f.grounded ? 'idle' : 'air');
     }
   };
@@ -451,6 +561,209 @@
     if (dirX !== 0) f.vx = clamp(f.vx + dirX * 0.12, -2.5, 2.5);
   };
 
+  // ─────────────────────────────── Guard, parry, blockstun ───────────────────────────────
+  S.stGuard = function (f, dirX, dirY, held) {
+    var b = f.buf ? f.buf.bits : 0;
+    if (!f.grounded) { this.setState(f, 'air'); return; }
+    f.guardHp = Math.max(1, f.guardHp - P.guardHoldDrain);   // turtling slowly costs guard
+    // Out of guard: grab (Light), EX (Signature), super (Heavy with a full meter), or a normal attack
+    if (this.tryAttack(f, b, dirName(dirX, dirY), dirX, held)) return;
+    if (b & BTN.dodge && f.dodgeCd <= 0) { f.buf = null; this.startDodge(f, dirX); return; }
+    if (b & BTN.jump) { f.buf = null; this.setState(f, 'squat'); f.squat = 3; f.squatFromUp = false; return; }
+    if (!(held & BTN.guard)) { this.setState(f, (held & BTN.down) ? 'crouch' : 'idle'); return; }
+    f.crouchGuard = !!(held & BTN.down);
+  };
+
+  S.stBlockstun = function (f, held) {
+    var b = f.buf ? f.buf.bits : 0;
+    // Guard Counter: Heavy during blockstun with half a bar
+    if ((b & BTN.heavy) && f.meter >= f.stats.guardCounterCost) {
+      f.buf = null; this.addMeter(f, -f.stats.guardCounterCost);
+      this.startMove(f, 'guardCounter', D.MOVES.guardCounter);
+      this.emit({ type: 'guardCounter', f: f.i, x: f.x, y: f.y });
+      return;
+    }
+    if (--f.blockT <= 0) this.setState(f, (held & BTN.guard) && f.grounded ? 'guard' : 'idle');
+  };
+
+  S.isGuarding = function (f) { return (f.state === 'guard' || f.state === 'blockstun') && f.grounded; };
+
+  /** A guarding dragon blocks only what comes from in front of it. */
+  S.facesAttack = function (B, spec, src) {
+    var fx = spec.fromX != null ? spec.fromX : src ? src.x : B.x + B.facing;
+    return (fx - B.x) * B.facing >= -8;
+  };
+
+  /** Is f standing against an arena wall (or, for guards, the stage edge) on side dir? */
+  S.againstWall = function (f, dir, edgeToo) {
+    var ps = this.arena.platforms, hw = f.stats.hurt.w / 2;
+    for (var k = 0; k < ps.length; k++) {
+      var p = ps[k];
+      if (!p.wall || f.y <= p.y || f.y - f.stats.hurt.h >= p.y + p.h) continue;
+      if (dir > 0 && Math.abs(f.x + hw - p.x) < 8) return true;
+      if (dir < 0 && Math.abs(f.x - hw - (p.x + p.w)) < 8) return true;
+    }
+    var pl = edgeToo && f.grounded ? ps[f.plat] : null;
+    return !!(pl && ((dir > 0 && f.x > pl.x + pl.w - 16) || (dir < 0 && f.x < pl.x + 16)));
+  };
+
+  /** A hit met a guard: parry, block or guard break. Returns what happened. */
+  S.block = function (src, B, spec, dir, lagSrc) {
+    var raw = (spec.phys || 0) + (spec.elem || 0);
+    if (B.parryOk && this.tick - B.guardPressT <= B.stats.parryWindow) {
+      // Perfect parry: no damage, no guard loss; a melee attacker is left staggering
+      B.parryOk = false; B.parries++;
+      B.hitlag = 10; this.addMeter(B, P.meterOnParry);
+      if (lagSrc && lagSrc !== B) {
+        lagSrc.hitlag = 10; lagSrc.move = null; lagSrc.moveDef = null; lagSrc.moveEx = false;
+        lagSrc.staggerT = P.parryStun; this.setState(lagSrc, 'stagger');
+      }
+      this.emit({ type: 'parry', f: B.i, by: src ? src.i : -1, x: B.x + B.facing * 24, y: B.y - B.stats.hurt.h * 0.55 });
+      return 'parry';
+    }
+    var drain = (P.guardDrainBase + raw * P.guardDrainPerDmg) * (spec.kind === 'super' ? 2.2 : spec.kind === 'heavy' ? 1.3 : 1);
+    B.guardHp -= drain;
+    var lag = Math.round(Math.min(P.hitlagMax, P.hitlagBase + raw * P.hitlagPerDamage) * P.blockLagMult);
+    B.hitlag = lag;
+    if (lagSrc) { lagSrc.hitlag = lag; lagSrc.hitConfirm = true; }
+    if (src) this.addMeter(src, raw * P.meterOnBlock * src.stats.meterHit);
+    this.addMeter(B, raw * 0.3);
+    if (B.guardHp <= 0) {
+      // Guard crush: the guard shatters and the dragon is dizzy for a long, punishable moment
+      B.guardHp = B.stats.guardMax * 0.35; B.staggerT = P.guardBreakStun; B.vx = dir * 3;
+      this.setState(B, 'stagger');
+      this.emit({ type: 'guardBreak', f: B.i, by: src ? src.i : -1, x: B.x, y: B.y - B.stats.hurt.h * 0.6 });
+      return 'break';
+    }
+    B.blockT = Math.min(P.blockstunMax, Math.round(P.blockstunBase + raw * P.blockstunPerDmg));
+    this.setState(B, 'blockstun');
+    // Pushback; against a wall or the stage edge it goes back onto the attacker instead
+    var push = (P.blockPushBase + (spec.kb || 0) * P.blockPushPerKb) * 1.6;
+    if (this.againstWall(B, dir, true)) { if (lagSrc) lagSrc.vx = -dir * push; }
+    else B.vx = dir * push;
+    this.emit({ type: 'block', target: B.i, by: src ? src.i : -1, x: B.x + B.facing * 18, y: B.y - B.stats.hurt.h * 0.55, dmg: raw,
+      guard: B.guardHp / B.stats.guardMax, heavy: spec.kind === 'heavy' || spec.kind === 'super', element: spec.elem > 0 ? spec.element : 'phys' });
+    return 'block';
+  };
+
+  // ─────────────────────────────── Throws ───────────────────────────────
+  S.grabConnect = function (A, B) {
+    if (B.fade > 0) { B.fade = 0; this.emit({ type: 'unfade', f: B.i, x: B.x, y: B.y }); }
+    A.grab = B.i; A.move = null; A.moveDef = null;
+    this.setState(A, 'throwing');
+    B.grabbedBy = A.i; B.move = null; B.moveDef = null; B.buf = null; B.vx = B.vy = B.kbx = B.kby = 0;
+    B.facing = -A.facing;
+    this.setState(B, 'grabbed');
+    this.emit({ type: 'grab', f: A.i, target: B.i, x: (A.x + B.x) / 2, y: A.y - 70 });
+  };
+
+  S.stGrabbed = function (f) {
+    var A = this.fighters[f.grabbedBy];
+    if (!A || A.state !== 'throwing' || A.grab !== f.i) { f.grabbedBy = -1; this.setState(f, f.grounded ? 'idle' : 'air'); return; }
+    var b = f.buf ? f.buf.bits : 0;
+    // Throw break: any attack, guard or dodge press early in the hold
+    if (f.stateT <= P.throwBreakWindow && (b & (BTN.light | BTN.heavy | BTN.guard | BTN.dodge))) { f.buf = null; this.throwBreak(A, f); return; }
+    f.x = A.x + A.facing * (A.stats.hurt.w / 2 + f.stats.hurt.w / 2 + 4); f.y = A.y;
+    f.vx = f.vy = f.kbx = f.kby = 0;
+  };
+
+  S.stThrowing = function (f, dirX) {
+    var B = this.fighters[f.grab];
+    if (!B || B.state !== 'grabbed' || B.grabbedBy !== f.i) { f.grab = -1; f.recoilT = P.throwEndLag; this.setState(f, 'recoil'); return; }
+    f.vx = 0;
+    if (f.stateT < P.throwHold) return;
+    // Hold back to throw behind you
+    var back = dirX === -f.facing;
+    if (back) f.facing = -f.facing;
+    var def = D.MOVES[back ? 'bthrow' : 'fthrow'];
+    f.grab = -1; B.grabbedBy = -1;
+    B.x = f.x + f.facing * (f.stats.hurt.w / 2 + B.stats.hurt.w / 2 + 4);
+    this.emit({ type: 'throw', f: f.i, target: B.i, back: back, x: B.x, y: B.y - 60 });
+    this.applyHit(f, B, { phys: def.phys * f.stats.physMult, elem: 0, element: f.element, kb: def.kb, growth: def.growth, angle: def.angle,
+      kind: 'throw', unblockable: true, aid: 'throw' + f.attackId, moveKey: back ? 'bthrow' : 'fthrow', fromX: f.x }, f.facing, f);
+    f.recoilT = P.throwEndLag; this.setState(f, 'recoil');
+  };
+
+  S.throwBreak = function (A, B) {
+    A.grab = -1; B.grabbedBy = -1;
+    A.vx = -A.facing * P.throwBreakPush; B.vx = A.facing * P.throwBreakPush;
+    A.recoilT = B.recoilT = P.throwBreakRecoil;
+    this.setState(A, 'recoil'); this.setState(B, 'recoil');
+    this.emit({ type: 'throwBreak', f: B.i, by: A.i, x: (A.x + B.x) / 2, y: A.y - 70 });
+  };
+
+  /** Let go of any grab f is part of (hit by a third dragon, knocked out, left the match). */
+  S.releaseGrab = function (f) {
+    var o;
+    if (f.grab >= 0) {
+      o = this.fighters[f.grab];
+      if (o && o.grabbedBy === f.i) { o.grabbedBy = -1; if (o.state === 'grabbed') this.setState(o, o.grounded ? 'idle' : 'air'); }
+      f.grab = -1;
+    }
+    if (f.grabbedBy >= 0) {
+      o = this.fighters[f.grabbedBy];
+      if (o && o.grab === f.i) { o.grab = -1; if (o.state === 'throwing') { o.recoilT = 10; this.setState(o, 'recoil'); } }
+      f.grabbedBy = -1;
+    }
+  };
+
+  // ─────────────────────────────── Knockdown and wake-up ───────────────────────────────
+  S.stDown = function (f, dirX) {
+    var b = f.buf ? f.buf.bits : 0;
+    f.vx *= P.groundFriction;
+    if (f.stateT >= P.downMin) {
+      if (b & (BTN.light | BTN.heavy)) { f.buf = null; this.startMove(f, 'getupAttack', D.MOVES.getupAttack); this.emit({ type: 'getup', f: f.i, how: 'attack', x: f.x, y: f.y }); return; }
+      if ((b & BTN.dodge) || dirX !== 0) { f.buf = null; this.getup(f, 'roll', dirX || -f.facing); return; }
+      if (b & (BTN.jump | BTN.up | BTN.guard)) { f.buf = null; this.getup(f, 'stand', 0); return; }
+    }
+    if (f.stateT >= P.downMax) this.getup(f, 'stand', 0);
+  };
+
+  S.getup = function (f, how, dir) {
+    f.getupHow = how; f.getupDir = dir;
+    f.invuln = Math.max(f.invuln, how === 'roll' ? P.getupRollTicks - 6 : P.getupTicks);
+    if (dir) f.facing = how === 'roll' ? -dir : f.facing;
+    this.setState(f, 'getup');
+    this.emit({ type: 'getup', f: f.i, how: how, x: f.x, y: f.y });
+  };
+
+  S.stGetup = function (f) {
+    var T = f.getupHow === 'roll' ? P.getupRollTicks : P.getupTicks;
+    if (f.getupHow === 'roll') f.vx = f.getupDir * P.getupRollSpeed * (1 - f.stateT / T);
+    if (f.stateT >= T) { f.getupHow = null; this.setState(f, 'idle'); }
+  };
+
+  // ─────────────────────────────── Walls ───────────────────────────────
+  /** f hit an arena wall on side `side` (-1: wall to its left). Splat, tech or just stop. */
+  S.hitWall = function (f, side) {
+    var into = side < 0 ? f.vx + f.kbx < 0 : f.vx + f.kbx > 0;
+    if (f.state === 'hitstun' && Math.abs(f.kbx) >= P.wallSplatKb && into) {
+      if (f.techWindow > 0) {
+        // Wall tech: kick off the wall instead of splatting
+        f.kbx = 0; f.kby = 0; f.vx = -side * 3; f.vy = -5; f.hitstun = 0; f.tumble = false;
+        f.invuln = Math.max(f.invuln, 14); this.setState(f, 'air');
+        this.emit({ type: 'tech', f: f.i, x: f.x, y: f.y, wall: true });
+        return;
+      }
+      if (!f.splatUsed) {
+        f.splatUsed = true; f.splatSide = side; f.splatT = P.wallSplatTicks;
+        f.kbx = f.kby = f.vx = f.vy = 0; f.hitstun = 0; f.tumble = false;
+        f.dmg = Math.min(P.maxDamage, r1(f.dmg + 2)); f.taken += 2;
+        this.setState(f, 'wallsplat');
+        this.emit({ type: 'wallsplat', f: f.i, x: f.x - side * f.stats.hurt.w / 2, y: f.y - f.stats.hurt.h * 0.55, side: side });
+        return;
+      }
+      f.kbx = -f.kbx * 0.45;   // already splatted in this combo: bounce off
+      return;
+    }
+    if (side < 0) { f.vx = Math.max(0, f.vx); f.kbx = Math.max(0, f.kbx); } else { f.vx = Math.min(0, f.vx); f.kbx = Math.min(0, f.kbx); }
+  };
+
+  S.stWallsplat = function (f) {
+    f.vx = f.vy = f.kbx = f.kby = 0;
+    if (--f.splatT <= 0) { f.hitstun = P.wallSplatHitstun; f.vx = -f.splatSide * 1.5; this.setState(f, 'hitstun'); }
+  };
+
   // ─────────────────────────────── Ledges ───────────────────────────────
   S.tryLedge = function (f) {
     if (f.ledgeRegrab > 0 || f.vy < -1) return;
@@ -458,8 +771,9 @@
     var ps = this.arena.platforms;
     for (var k = 0; k < ps.length; k++) {
       var p = ps[k];
-      if (!p.solid) continue;
+      if (!p.solid || p.altar) continue;
       for (var side = -1; side <= 1; side += 2) {
+        if (p.wall && side !== (p.x + p.w / 2 < this.arena.size[0] / 2 ? -1 : 1)) continue;
         var lx = side < 0 ? p.x : p.x + p.w;
         var key = k + ':' + side;
         if (this.ledgeOwners[key] !== undefined && this.ledgeOwners[key] !== f.i) continue;
@@ -534,12 +848,12 @@
   // ─────────────────────────────── Physics ───────────────────────────────
   S.physics = function (f, dirX, held, moveMult) {
     var st = f.stats;
-    var free = f.state === 'idle' || f.state === 'run' || f.state === 'air';
+    var free = f.state === 'idle' || f.state === 'run' || f.state === 'air' || f.state === 'crawl';
     if (f.grounded) {
       if (free && dirX !== 0) {
-        var target = dirX * st.run * moveMult;
+        var target = dirX * st.run * moveMult * (f.state === 'crawl' ? P.crawlSpeed : 1);
         f.vx += (target - f.vx) * 0.32;
-      } else if (f.state !== 'dodge') f.vx *= P.groundFriction;
+      } else if (f.state !== 'dodge' && f.state !== 'getup') f.vx *= P.groundFriction;
       if (Math.abs(f.vx) < 0.05) f.vx = 0;
     } else {
       if ((free || f.state === 'attack') && dirX !== 0 && f.state !== 'attack') {
@@ -573,10 +887,16 @@
   S.collide = function (f, px, py) {
     var ps = this.arena.platforms, k, p;
     var hw = f.stats.hurt.w / 2, h = f.stats.hurt.h;
+    f.wallTouch = 0;
     // Walls of solid platforms
     for (k = 0; k < ps.length; k++) {
       p = ps[k];
       if (!p.solid) continue;
+      if (p.wall && f.y > p.y + 4 && f.y - h < p.y + p.h) {
+        // Arena walls are swept, so even a very fast launch cannot pass through them
+        if (px - hw >= p.x + p.w - 0.5 && f.x - hw < p.x + p.w) { f.x = p.x + p.w + hw; this.hitWall(f, -1); continue; }
+        if (px + hw <= p.x + 0.5 && f.x + hw > p.x) { f.x = p.x - hw; this.hitWall(f, 1); continue; }
+      }
       if (f.y > p.y + 4 && f.y - h < p.y + p.h && f.x + hw > p.x && f.x - hw < p.x + p.w) {
         if (py <= p.y + 4 && f.vy + f.kby >= 0) continue; // will land below
         var dl = f.x + hw - p.x, dr = p.x + p.w - (f.x - hw), db = p.y + p.h - (f.y - h);
@@ -594,12 +914,21 @@
         else { f.x = s.x + s.w + hw; f.vx = Math.max(0, f.vx); f.kbx = Math.max(0, f.kbx); }
       }
     }
+    // Touching an arena wall (for wall jumps)
+    for (k = 0; k < ps.length; k++) {
+      p = ps[k];
+      if (!p.wall || f.y <= p.y + 4 || f.y - h >= p.y + p.h) continue;
+      if (Math.abs(f.x - hw - (p.x + p.w)) < 3) f.wallTouch = -1;
+      else if (Math.abs(f.x + hw - p.x) < 3) f.wallTouch = 1;
+    }
+    // A guard holds its footing: blocking never slides a dragon off the edge
+    if (f.grounded && (f.state === 'guard' || f.state === 'blockstun') && ps[f.plat]) f.x = clamp(f.x, ps[f.plat].x + 2, ps[f.plat].x + ps[f.plat].w - 2);
     // Landing
     if (f.grounded) {
       p = ps[f.plat];
       if (!p || f.x < p.x || f.x > p.x + p.w) {
         f.grounded = false; f.plat = -1; f.jumpT = 99;
-        if (f.state === 'idle' || f.state === 'run') this.setState(f, 'air');
+        if (f.state === 'idle' || f.state === 'run' || f.state === 'crawl' || f.state === 'crouch') this.setState(f, 'air');
         if (f.state === 'dodge') { f.dodgeInv = false; this.setState(f, 'air'); }
       } else f.y = p.y;
       return;
@@ -620,19 +949,24 @@
     f.y = p.y; f.plat = k; f.grounded = true; f.vy = 0; f.kby = 0; f.fastFall = false;
     f.airJumps = f.stats.airJumps; f.usedRecovery = false; f.usedBlink = false; f.airDodged = false; f.ledgeInvulnUsed = false;
     this.emit({ type: 'land', f: f.i, x: f.x, y: f.y, hard: vy > 9 });
+    f.landFromAttack = false;
     if (f.state === 'hitstun') {
       if (f.tumble && vy > 4) {
-        if (f.techWindow > 0) { f.invuln = Math.max(f.invuln, 20); f.landLag = 8; f.kbx = 0; this.emit({ type: 'tech', f: f.i, x: f.x, y: f.y }); }
-        else { f.landLag = 24; f.kbx *= 0.3; }
-        f.hitstun = 0; f.tumble = false; this.setState(f, 'land');
+        f.hitstun = 0; f.tumble = false;
+        if (f.techWindow > 0) { f.invuln = Math.max(f.invuln, 20); f.landLag = 8; f.kbx = 0; this.setState(f, 'land'); this.emit({ type: 'tech', f: f.i, x: f.x, y: f.y }); }
+        else {
+          // Untechable landing: knocked down flat, then a wake-up choice (stand, roll or get-up attack)
+          f.kbx *= 0.3; this.setState(f, 'down');
+          this.emit({ type: 'knockdown', f: f.i, x: f.x, y: f.y, hard: vy > 9 });
+        }
       }
       return;
     }
     if (f.state === 'attack') {
       var lag = f.moveDef.landingLag;
-      if (f.moveKind === 'sig' || f.moveKind === 'ability') return;   // specials continue on landing
-      f.move = null; f.moveDef = null;
-      f.landLag = lag || P.landingLag; this.setState(f, 'land');
+      if (f.moveKind === 'sig' || f.moveKind === 'ability' || f.moveKind === 'super') return;   // specials continue on landing
+      f.move = null; f.moveDef = null; f.moveEx = false;
+      f.landLag = lag || P.landingLag; f.landFromAttack = true; this.setState(f, 'land');
       return;
     }
     if (f.state === 'airdodge') { f.dodgeInv = false; f.landLag = 8; this.setState(f, 'land'); return; }
@@ -706,8 +1040,7 @@
     var def = f.moveDef, t = f.moveT;
     if (t < def.startup || t >= def.startup + def.active) return [];
     var melee = f.moveKind === 'light' || f.moveKind === 'heavy';
-    var wr = f.moveKind === 'heavy' && f.stats.weapon ? f.stats.weapon.heavyReach || 1 : 1;
-    var sx = f.stats.scale[0] * (melee ? f.stats.reach * wr : 1), sy = f.stats.scale[1] * (melee ? f.stats.reach : 1);
+    var sx = f.stats.scale[0] * (melee ? f.stats.reach : 1), sy = f.stats.scale[1] * (melee ? f.stats.reach : 1);
     return def.boxes.map(function (b) {
       var w = b.w * sx, h = b.h * sy, x0 = b.x * sx;
       return { x: f.facing > 0 ? f.x + x0 : f.x - x0 - w, y: f.y + b.y * sy, w: w, h: h };
@@ -722,6 +1055,16 @@
       if (!self.isAlive(A)) return;
       var boxes = self.activeBoxes(A);
       if (!boxes.length) return;
+      if (A.moveKind === 'grab') {
+        // A grab takes the first grounded rival in reach. Guarding does not stop it; attacks and dodges do.
+        for (var g = 0; g < fs.length; g++) {
+          var G = fs[g];
+          if (G === A || !self.opponents(A, G) || !self.hittable(G) || !G.grounded || G.state === 'grabbed' || G.state === 'throwing') continue;
+          var gb = self.hurtbox(G);
+          if (boxes.some(function (bx) { return overlap(bx, gb); })) { self.grabConnect(A, G); break; }
+        }
+        return;
+      }
       // Melee hits on ice walls
       self.structures.forEach(function (s) {
         if (!self.opponentsTeam(A.team, s.team) || s.hitBy === A.attackId) return;
@@ -748,23 +1091,20 @@
   S.opponentsTeam = function (ta, tb) { return ta !== tb || this.friendlyFire; };
 
   S.hittable = function (f) {
-    return this.isAlive(f) && f.invuln <= 0 && !f.dodgeInv && f.state !== 'ledgeclimb';
+    return this.isAlive(f) && f.invuln <= 0 && !f.dodgeInv && f.state !== 'ledgeclimb' && f.state !== 'down';
   };
 
   // Damage/knockback numbers for a move, with body and upgrade modifiers. Pure data, no side effects.
   S.hitSpec = function (A, def) {
     var melee = A.moveKind === 'light' || A.moveKind === 'heavy';
-    var phys = def.phys || 0, kbMult = 1, w = A.stats.weapon || {};
-    if (melee) {
-      phys *= A.stats.physMult * (A.moveKind === 'light' ? A.stats.lightPhys * (w.lightPhys || 1) : (w.heavyPhys || 1));
-      if (D.TAIL_MOVES[A.move]) { phys *= w.tailPhys || 1; kbMult *= w.tailKb || 1; }
-      if (D.UP_MOVES[A.move]) { phys *= w.upPhys || 1; kbMult *= w.upKb || 1; }
-    }
+    var phys = def.phys || 0, kbMult = 1;
+    if (melee) phys *= A.stats.physMult * (A.moveKind === 'light' ? A.stats.lightPhys : 1);
     var finalHit = def.multi && A.multiN >= def.multi.max;
     return {
       phys: phys, elem: def.elem || 0, element: A.element,
       kb: (finalHit && def.finalKb ? def.finalKb : def.kb) * kbMult, growth: (finalHit && def.finalGrowth ? def.finalGrowth : def.growth) * kbMult,
-      angle: def.angle, away: def.away, status: def.status, heavy: A.moveKind === 'heavy', kind: A.moveKind,
+      angle: def.angle, away: def.away, status: def.status, heavy: A.moveKind === 'heavy' || A.moveKind === 'super', kind: A.moveKind,
+      aid: A.attackId, moveKey: A.move === 'sig' || A.move === 'ability' ? A.move + (A.moveEx ? 'EX' : '') : A.move, fromX: A.x,
     };
   };
 
@@ -776,16 +1116,28 @@
 
   /** Applies one hit. src = attacking fighter (for credit). lagSrc = fighter that also freezes (melee only). */
   S.applyHit = function (src, B, spec, dir, lagSrc) {
+    if (!spec.unblockable && this.isGuarding(B) && this.facesAttack(B, spec, src)) return this.block(src, B, spec, dir, lagSrc);
     if (B.aegis > 0) {
       // Aegis takes the whole hit, once
       B.aegis = 0;
       if (lagSrc) lagSrc.hitlag = 8;
       this.emit({ type: 'absorb', target: B.i, by: src ? src.i : -1, x: B.x, y: B.y - B.stats.hurt.h * 0.55 });
-      return;
+      return 'absorb';
     }
     if (B.fade > 0) { B.fade = 0; this.emit({ type: 'unfade', f: B.i, x: B.x, y: B.y }); }
+    this.releaseGrab(B);
     var rage = D.GEAR_ABILITIES.rage.mult;
     if (src && src.rage > 0) spec = Object.assign({}, spec, { phys: spec.phys * rage, elem: spec.elem * rage });
+    // Counter hit: struck during an attack's startup. Punish: struck while recovering from a whiffed action.
+    var counter = B.state === 'attack' && B.moveDef && B.moveT < B.moveDef.startup;
+    var punish = !counter && ((B.state === 'attack' && B.moveDef && B.moveT >= B.moveDef.startup + B.moveDef.active) ||
+      (B.state === 'land' && B.landFromAttack) || (B.state === 'dodge' && B.stateT > P.dodgeInvulnEnd) || B.state === 'recoil' || B.state === 'stagger');
+    // Combo bookkeeping: each new attack is one step; multi-hit moves stay on their step
+    var CB = D.COMBO, C = B.combo || (B.combo = { n: 0, dmg: 0, by: src ? src.i : -1, ids: {}, moves: {} });
+    var aid = spec.aid != null ? spec.aid : 't' + this.tick;
+    if (!C.ids[aid]) { C.ids[aid] = true; C.n++; if (spec.moveKey) C.moves[spec.moveKey] = (C.moves[spec.moveKey] || 0) + 1; }
+    var step = C.n - 1, sStep = Math.max(0, step - (src ? src.stats.scaleOffset : 0)), scale = CB.scaling[Math.min(sStep, CB.scaling.length - 1)];
+    var stale = spec.moveKey && C.moves[spec.moveKey] > CB.staleAfter;
     var mult = D.elementMultiplier(spec.element, B.element, this.elementConfig);
     var elem = spec.elem * mult;
     var conduct = false;
@@ -793,10 +1145,31 @@
       elem += 2; conduct = true; B.status.soaked = 0;   // arcs once, then the target is dry
       this.emit({ type: 'rule', rule: 'conduct', x: B.x, y: B.y - 70 });
     }
-    var dmg = r1(spec.phys + elem);
+    var venge = src && src.stats.rageDamage ? 1 + src.stats.rageDamage * Math.min(1, src.dmg / 120) : 1;   // Vengeance instinct
+    var dmg = r1((spec.phys + elem) * scale * venge * (counter ? CB.counterDamage : 1));
     B.dmg = Math.min(P.maxDamage, r1(B.dmg + dmg));
-    B.taken += dmg;
-    if (src) src.dealt += dmg;
+    B.taken += dmg; C.dmg += dmg;
+    if (src) { src.dealt += dmg; if (src !== B) this.addMeter(src, dmg * P.meterOnHit * src.stats.meterHit); }
+    this.addMeter(B, dmg * P.meterOnTaken * B.stats.meterTaken);
+    if (lagSrc) lagSrc.hitConfirm = true;
+    if (src) { B.lastHitBy = src.i; B.lastHitTick = this.tick; }
+    var lag = Math.min(P.hitlagMax, Math.round(P.hitlagBase + dmg * P.hitlagPerDamage)) + (counter ? CB.counterHitlag : 0);
+
+    // Super armour (EX specials): the damage lands, the dragon keeps going
+    if (B.armor > 0 && B.state === 'attack' && spec.kind !== 'throw' && spec.kind !== 'super') {
+      B.hitlag = Math.round(lag * 0.6); if (lagSrc) lagSrc.hitlag = B.hitlag;
+      this.emit({ type: 'armor', target: B.i, by: src ? src.i : -1, x: B.x, y: B.y - B.stats.hurt.h * 0.55, dmg: dmg });
+      return 'armor';
+    }
+    // Anti-infinite: a combo that reaches the step limit bursts the victim free
+    if (step >= CB.maxSteps) {
+      B.move = null; B.moveDef = null; B.hitstun = 0; B.tumble = false; B.invuln = Math.max(B.invuln, CB.burstInvuln);
+      B.kbx = dir * 5; B.kby = -4; B.vx = B.vy = 0; B.grounded = false; B.plat = -1;
+      this.setState(B, 'air');
+      this.emit({ type: 'burst', f: B.i, by: src ? src.i : -1, x: B.x, y: B.y - B.stats.hurt.h * 0.55, n: C.n });
+      this.endCombo(B);
+      return 'burst';
+    }
 
     // Knockback: grows with the target's damage, shrinks with weight. Elements never touch this.
     var kb = (spec.kb + spec.growth * B.dmg) * (200 / (B.stats.weight + 100)) * B.stats.kbTaken;
@@ -822,16 +1195,21 @@
       hs = Math.round(hs * 0.5);
       this.emit({ type: 'rule', rule: 'grounded', x: B.x, y: B.y - 70 });
     }
-    B.hitstun = Math.max(4, hs);
+    // Hitstun decays through long combos, and faster for a move used over and over (no loops)
+    hs *= Math.max(CB.hitstunMin, 1 - CB.hitstunDecay * Math.max(0, step - 1));
+    if (stale) hs *= CB.staleHitstun;
+    if (counter) hs *= CB.counterHitstun;
+    B.hitstun = Math.max(4, Math.round(hs));
     B.tumble = kb >= P.tumbleKb;
+    // In the corner the attacker takes the pushback the wall stops the victim from taking
+    if (lagSrc && B.grounded && this.againstWall(B, dir)) lagSrc.vx = -dir * (2 + kb * 0.4);
     if (B.state === 'ledge') this.releaseLedge(B);
-    B.move = null; B.moveDef = null; B.dodgeInv = false;
+    B.move = null; B.moveDef = null; B.dodgeInv = false; B.moveEx = false; B.armor = 0;
     B.usedRecovery = false; B.airDodged = false; B.usedBlink = false; B.fastFall = false; B.ledgeInvulnUsed = false;
     this.setState(B, 'hitstun');
-    var lag = Math.min(P.hitlagMax, Math.round(P.hitlagBase + dmg * P.hitlagPerDamage));
     B.hitlag = lag;
     if (lagSrc) lagSrc.hitlag = lag;
-    if (src) { B.lastHitBy = src.i; B.lastHitTick = this.tick; }
+    B.hitKind = counter ? 'counter' : punish ? 'punish' : '';
     // Status effects: short, never stacked, never on a target that is already affected.
     if (spec.status === 'chill' && B.status.chill <= 0) B.status.chill = D.STATUS.chill.ticks;
     if (spec.status === 'burn' && B.status.burn <= 0) {
@@ -841,7 +1219,9 @@
     if (spec.status === 'soaked') { B.status.soaked = D.STATUS.soaked.ticks; B.status.burn = 0; }
     this.emit({ type: 'hit', target: B.i, by: src ? src.i : -1, x: B.x, y: B.y - B.stats.hurt.h * 0.55, dmg: dmg,
       kb: r1(kb), angle: ang, dir: dir, element: spec.elem > 0 ? spec.element : 'phys', heavy: !!spec.heavy, kind: spec.kind,
-      mult: mult, conduct: conduct, lag: lag });
+      mult: mult, conduct: conduct, lag: lag, counter: counter, punish: punish, combo: C.n, comboDmg: r1(C.dmg), scale: scale,
+      strength: spec.kind === 'super' ? 'super' : spec.kind === 'throw' ? 'heavy' : dmg >= 11 ? 'heavy' : dmg >= 6 ? 'medium' : 'light' });
+    return 'hit';
   };
 
   // ─────────────────────────────── Projectiles & structures ───────────────────────────────
@@ -920,7 +1300,7 @@
         if (last !== undefined && (!pr.rehit || this.tick - last < pr.rehit)) continue;
         pr.hits[f.i] = this.tick;
         var spec = { phys: pr.hit.phys || 0, elem: pr.hit.elem || 0, element: pr.element, kb: pr.hit.kb, growth: pr.hit.growth,
-          angle: pr.hit.angle, status: pr.hit.status, heavy: false, kind: 'proj' };
+          angle: pr.hit.angle, status: pr.hit.status, heavy: false, kind: 'proj', aid: pr.attackId, moveKey: 'proj:' + pr.type, fromX: pr.x - (pr.vx || 0) };
         var dir = pr.vx !== 0 ? sign(pr.vx) : sign(f.x - pr.x);
         this.applyHit(owner, f, spec, dir, null);
         if (!pr.pierce) { pr.life = 0; break; }
@@ -947,6 +1327,8 @@
     if (by >= 0 && by !== f.i) this.fighters[by].kos++;
     f.falls++;
     this.releaseLedge(f);
+    this.releaseGrab(f);
+    this.endCombo(f);
     if (!(this.training && this.training.infinite)) f.stocks--;
     this.emit({ type: 'ko', f: f.i, by: by, x: clamp(f.x, bz.left, bz.right), y: clamp(f.y, bz.top, bz.bottom), stocks: f.stocks });
     f.move = null; f.moveDef = null; f.status = { chill: 0, burn: 0, burnNext: 0, soaked: 0 }; f.buffs.stoneSkin = 0; f.fade = f.aegis = f.rage = 0;
@@ -957,7 +1339,7 @@
   S.respawn = function (f) {
     this.placeAtSpawn(f, f.i);
     var main = this.arena.platforms[0];
-    f.x = main.x + main.w / 2 + (f.i % 2 ? 60 : -60) * (1 + (f.i >> 1));
+    f.x = clamp(main.x + main.w / 2 + (f.i % 2 ? 60 : -60) * (1 + (f.i >> 1)), main.x + 40, main.x + main.w - 40);
     f.y = main.y; f.plat = 0; f.grounded = true;
     f.dmg = this.training && this.training.keepDamage ? f.dmg : 0;
     f.invuln = P.respawnInvuln;
@@ -971,6 +1353,7 @@
     if (!f || f.state === 'out') return;
     f.stocks = 0; f.state = 'out'; f.x = -9999; f.forfeit = true;
     this.releaseLedge(f);
+    this.releaseGrab(f);
     this.emit({ type: 'forfeit', f: i });
     this.checkEnd();
   };
@@ -1011,10 +1394,11 @@
   S.setDamage = function (i, v) { var f = this.fighters[i]; if (f) f.dmg = clamp(v, 0, P.maxDamage); };
   S.resetPositions = function () {
     var self = this;
-    this.projectiles = []; this.structures = []; this.ledgeOwners = {}; this.decoys = [];
+    this.projectiles = []; this.structures = []; this.ledgeOwners = {}; this.decoys = []; this.freeze = 0;
     this.fighters.forEach(function (f, i) {
       self.placeAtSpawn(f, i); f.dmg = 0; f.hitlag = 0; f.invuln = 0;
       f.status = { chill: 0, burn: 0, burnNext: 0, soaked: 0 }; f.buffs.stoneSkin = 0; f.sigCd = f.abilityCd = f.dodgeCd = f.gearCd = 0; f.fade = f.aegis = f.rage = 0;
+      f.meter = 0; f.move = null; f.moveDef = null;
     });
   };
 
@@ -1025,12 +1409,15 @@
     return {
       t: this.tick,
       tl: this.timeLimit ? Math.max(0, this.timeLimit - this.tick) : 0,
+      fz: this.freeze, fzb: this.freezeBy,
       f: this.fighters.map(function (f) {
         return {
           x: r1(f.x), y: r1(f.y), vx: r1(f.vx + f.kbx), vy: r1(f.vy + f.kby), fc: f.facing, st: f.state, stT: f.stateT,
           mv: f.move, mT: f.moveT, d: f.dmg, s: f.stocks, hl: f.hitlag, inv: f.invuln > 0 || !!f.dodgeInv, tb: f.tumble, gr: f.grounded,
           ch: f.status.chill > 0 ? 1 : 0, bu: f.status.burn > 0 ? 1 : 0, so: f.status.soaked > 0 ? 1 : 0, sk: f.buffs.stoneSkin > 0 ? 1 : 0, gc: f.gearCd, fd: f.fade > 0 ? 1 : 0, ag: f.aegis > 0 ? 1 : 0, rg: f.rage > 0 ? 1 : 0,
           sc: f.sigCd, ac: f.abilityCd, dc: f.dodgeCd, aj: f.airJumps, ls: f.ledge ? f.ledge.side : 0,
+          gh: Math.round(f.guardHp), gm: Math.round(f.stats.guardMax), mt: Math.floor(f.meter), cb: f.combo ? f.combo.n : 0, cdm: f.combo ? r1(f.combo.dmg) : 0,
+          hk: f.state === 'hitstun' ? f.hitKind : '', ex: f.moveEx ? 1 : 0, cg: f.crouchGuard ? 1 : 0, gu: f.getupHow, ws: f.splatSide, ar: f.armor > 0 ? 1 : 0,
         };
       }),
       p: this.projectiles.map(function (p) {

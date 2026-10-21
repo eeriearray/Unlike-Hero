@@ -1,20 +1,20 @@
-// Dragon Clash gear: loadout budget and validation, stat effects of size, armour and weapons, and the gear abilities.
+// Dragon Clash gear: loadout budget and validation, size, the four instincts, and the gear abilities.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { D, Sim, Build, B, plain, duel, press, hits } from './dragon-clash-helpers.mjs';
 
-const NONE = { size: 'medium', armor: 'none', weapon: 'claws', ability: 'none' };
+const NONE = { size: 'medium', instinct: 'fury', ability: 'none' };
 const geared = (element, gear) => Build.withGear(plain(element), Object.assign({}, NONE, gear));
 
 test('a bare loadout is valid and free; gear costs its listed points', () => {
   const bare = geared('fire', {});
   assert.ok(Build.validateBuild(bare).ok);
   assert.equal(Build.gearCost(bare), 0);
-  assert.equal(Build.gearCost(geared('fire', { armor: 'iron', weapon: 'talons', ability: 'phase' })), 11 + 8 + 8);
+  assert.equal(Build.gearCost(geared('fire', { instinct: 'bastion', ability: 'phase' })), 8);
 });
 
 test('the loadout must fit the 30-point gear budget', () => {
-  const over = geared('fire', { armor: 'bone', weapon: 'greatclaws', ability: 'aegis' }); // 16 + 12 + 12
+  const over = Build.withGear(plain('fire', { body: 'lithe' }), Object.assign({}, NONE, { size: 'huge', ability: 'aegis' })); // 28 + 12
   const v = Build.validateBuild(over);
   assert.equal(v.ok, false);
   assert.match(v.errors.join(' '), /Loadout over budget/);
@@ -31,30 +31,51 @@ test('growing a size costs the difference in body points; shrinking is free', ()
 
 test('a tampered loadout is rejected', () => {
   const b = geared('fire', {});
-  assert.equal(Build.validateBuild(Object.assign({}, b, { gear: Object.assign({}, b.gear, { armor: 'adamant' }) })).ok, false);
+  assert.equal(Build.validateBuild(Object.assign({}, b, { gear: Object.assign({}, b.gear, { instinct: 'adamant' }) })).ok, false);
   assert.equal(Build.validateBuild(Object.assign({}, b, { body: 'titan' })).ok, false, 'size must match the body');
   assert.equal(Build.validateBuild(Object.assign({}, b, { gear: Object.assign({}, b.gear, { ability: '__proto__' }) })).ok, false);
 });
 
-test('armour soaks knockback and costs speed', () => {
-  const s0 = Build.deriveStats(geared('fire', {})), s1 = Build.deriveStats(geared('fire', { armor: 'iron' }));
-  assert.ok(Math.abs(s1.kbTaken / s0.kbTaken - 0.88) < 1e-9);
-  assert.ok(s1.run < s0.run && s1.jump < s0.jump);
-  const k = (gear) => { const { sim, T } = duel(plain('fire'), geared('ice', gear)); T.dmg = 80; return hits(press(sim, 0, B.heavy, 30))[0].kb; };
-  assert.ok(k({ armor: 'bone' }) < k({}) * 0.9);
+test('every loadout must pick a known instinct', () => {
+  const b = geared('fire', {});
+  assert.equal(Build.validateBuild(Object.assign({}, b, { gear: Object.assign({}, b.gear, { instinct: undefined }) })).ok, false);
+  for (const id of Object.keys(D.INSTINCTS)) assert.ok(Build.validateBuild(geared('fire', { instinct: id })).ok, id);
 });
 
-test('weapons boost only the attacks they are for', () => {
-  const dmg = (gear, bits, held = 0) => { const { sim, T } = duel(geared('fire', gear), plain('ice'), { gap: 55 }); press(sim, 0, bits, 40, held); return T.dmg; };
-  assert.ok(dmg({ weapon: 'talons' }, B.light) > dmg({}, B.light));
-  assert.equal(dmg({ weapon: 'talons' }, B.heavy), dmg({}, B.heavy));
-  assert.ok(dmg({ weapon: 'tailmace' }, B.heavy, B.down) > dmg({}, B.heavy, B.down));
+test('Fury builds meter faster and keeps combos at full damage longer, with a smaller guard', () => {
+  const meter = (ins) => { const { sim, A } = duel(geared('fire', { instinct: ins }), plain('ice'), { gap: 55 }); press(sim, 0, B.heavy, 40); return A.meter; };
+  assert.ok(meter('fury') > meter('bastion') * 1.9);
+  assert.ok(Build.deriveStats(geared('fire', { instinct: 'fury' })).guardMax < Build.deriveStats(geared('fire', { instinct: 'bastion' })).guardMax / 2);
+  const third = (ins) => { const { sim, A, T } = duel(geared('fire', { instinct: ins }), plain('ice'), { gap: 60 }); let h = [];
+    for (let n = 0; n < 3; n++) { T.x = A.x + 60; A.facing = 1; h = h.concat(hits(press(sim, 0, B.light, 8))); A.move = null; A.state = 'idle'; A.hitlag = 0; T.hitstun = 40; }
+    return h[2].dmg; };
+  assert.ok(third('fury') > third('bastion'));
 });
 
-test('Great Claws reach further with heavy attacks', () => {
-  const reach = (gear) => { const { sim, A } = duel(geared('fire', gear), plain('ice')); sim.step([{ held: 0, pressed: B.heavy }, { held: 0, pressed: 0 }]);
-    for (let i = 0; i < 40 && !sim.activeBoxes(A).length; i++) sim.step([]); return Math.max(...sim.activeBoxes(A).map((b) => b.x + b.w)) - A.x; };
-  assert.ok(reach({ weapon: 'greatclaws' }) > reach({}) * 1.1);
+test('Bastion parries with a wider window and counters for a quarter bar', () => {
+  const st = Build.deriveStats(geared('fire', { instinct: 'bastion' }));
+  assert.equal(st.parryWindow, 8); assert.equal(st.guardCounterCost, 25);
+  const parried = (ins) => { const { sim } = duel(plain('fire'), geared('ice', { instinct: ins }), { gap: 60 }); const mv = D.MOVES.fsmash; const ev = [];
+    for (let k = 0; k < 40; k++) { sim.step([{ held: 0, pressed: k === 0 ? B.heavy : 0 }, { held: k >= mv.startup - 7 ? B.guard : 0, pressed: 0 }]); ev.push(...sim.drainEvents()); }
+    return ev.some((e) => e.type === 'parry'); };
+  assert.ok(parried('bastion'), 'pressed 7 frames early: still a parry');
+  assert.ok(!parried('fury'), 'pressed 7 frames early: only a block');
+});
+
+test('Tempest gets an extra air jump and wind-cancels a connected move into a dash', () => {
+  assert.equal(Build.deriveStats(geared('fire', { instinct: 'tempest' })).airJumps, Build.deriveStats(geared('fire', {})).airJumps + 1);
+  const { sim, A } = duel(geared('fire', { instinct: 'tempest' }), plain('ice'), { gap: 60 });
+  A.meter = 100;
+  const ev = [];
+  for (let k = 0; k < 20; k++) { sim.step([{ held: 0, pressed: k === 0 ? B.light : k === D.MOVES.jab.startup + 1 ? B.dodge : 0 }, { held: 0, pressed: 0 }]); ev.push(...sim.drainEvents()); }
+  assert.ok(ev.some((e) => e.type === 'cancel' && e.into === 'wind'));
+  assert.equal(A.meter < 100, true);
+});
+
+test('Vengeance hits harder the more damage it has taken', () => {
+  const dmg = (selfDmg) => { const { sim, A, T } = duel(geared('fire', { instinct: 'vengeance' }), plain('ice'), { gap: 55 }); A.dmg = selfDmg; press(sim, 0, B.heavy, 40); return T.dmg; };
+  const r = dmg(120) / dmg(0);
+  assert.ok(r > 1.25 && r < 1.35, String(r));
 });
 
 test('Aegis absorbs one hit completely, then is gone', () => {

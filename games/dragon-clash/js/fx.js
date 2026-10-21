@@ -15,6 +15,8 @@
   function FX() { this.parts = []; this.shake = 0; this.flash = 0; this.popups = []; }
 
   FX.prototype.add = function (p) {
+    // Low effects setting: half the particles, a smaller cap
+    if (this.low && (this.parts.length >= MAX_PARTICLES / 2 || ((this.lowN = (this.lowN || 0) + 1) & 1))) return;
     if (this.parts.length >= MAX_PARTICLES) this.parts.shift();
     p.life = p.life || 30; p.max = p.life; p.size = p.size || 4; p.drag = p.drag != null ? p.drag : 0.94; p.grav = p.grav || 0;
     this.parts.push(p);
@@ -41,7 +43,9 @@
     switch (e.type) {
       case 'hit':
         this.impact(e);
-        this.addShake(e.kb > 12 ? Math.min(8, (e.kb - 10) * 0.45) : 0, settings);
+        this.strike(e);
+        // Mass comes from hitstop, recoil and sound; the screen only shakes for the big ones
+        this.addShake(e.strength === 'super' ? 10 : e.kb > 12 ? Math.min(8, (e.kb - 10) * 0.45) : e.counter && e.strength === 'heavy' ? 3 : 0, settings);
         if (e.mult > 1) this.popup(e.x, e.y - 46, '▲', el(e.element).color);
         if (e.mult < 1) this.popup(e.x, e.y - 46, '▼', '#9aa3b8');
         break;
@@ -135,9 +139,89 @@
       case 'unfade':
         this.burst(e.x, e.y - 70, 10, { speed: 3, life: 16, size: 3, colors: ['#cfe8ff', '#ffffff'], type: 'spark' });
         break;
+      case 'block': {
+        // A hex shield spark facing the blow; heavier blocks throw more
+        var n = e.heavy ? 14 : 8, col = e.guard < 0.3 ? '#ff8a5a' : '#bfe8ff';
+        this.add({ x: e.x, y: e.y, vx: 0, vy: 0, life: 10, size: e.heavy ? 34 : 24, color: col, type: 'hex', drag: 1 });
+        this.burst(e.x, e.y, n, { speed: e.heavy ? 7 : 5, life: 14, size: 3, colors: [col, '#ffffff'], type: 'spark', drag: 0.85 });
+        if (e.heavy) this.addShake(2, settings);
+        break;
+      }
+      case 'parry':
+        this.add({ x: e.x, y: e.y, vx: 0, vy: 0, life: 16, size: 70, color: '#ffffff', type: 'glint', drag: 1 });
+        this.ring(e.x, e.y, 60, '#bff6ff', 16, 6); this.ring(e.x, e.y, 100, 'rgba(255,255,255,0.7)', 22, 3);
+        this.burst(e.x, e.y, 18, { speed: 10, life: 16, size: 3, colors: ['#ffffff', '#bff6ff'], type: 'spark', drag: 0.84 });
+        this.flash = Math.max(this.flash, 0.18);
+        break;
+      case 'guardBreak':
+        this.burst(e.x, e.y, 28, { speed: 9, life: 34, size: 9, colors: ['#bfe8ff', '#ffffff', '#ff9a3a'], type: 'shard', grav: 0.3 });
+        this.ring(e.x, e.y, 120, '#ff9a3a', 22, 8);
+        this.popup(e.x, e.y - 50, 'BREAK!', '#ff9a3a');
+        this.addShake(6, settings); this.flash = Math.max(this.flash, 0.15);
+        break;
+      case 'grab': this.ring(e.x, e.y, 40, 'rgba(255,255,255,0.8)', 10, 4); break;
+      case 'throw':
+        this.burst(e.x, e.y, 10, { speed: 6, life: 18, size: 4, colors: ['#ffffff'], type: 'spark' });
+        this.addShake(3, settings);
+        break;
+      case 'throwBreak':
+        this.ring(e.x, e.y, 70, '#e6dcff', 16, 5);
+        this.burst(e.x, e.y, 14, { speed: 8, life: 14, size: 3, colors: ['#ffffff', '#e6dcff'], type: 'spark', drag: 0.85 });
+        break;
+      case 'wallsplat':
+        // Cracks spider out on the wall where the dragon hit, with dust falling off it
+        this.add({ x: e.x, y: e.y, vx: 0, vy: 0, life: 90, size: 46, color: 'rgba(40,24,16,0.85)', type: 'crack', drag: 1, side: e.side, seed: Math.random() * 1000 });
+        this.burst(e.x, e.y, 16, { angle: e.side < 0 ? 0 : Math.PI, spread: 1.2, speed: 6, life: 30, size: 5, colors: ['#c8a878', '#8a6a4a'], type: 'rock', grav: 0.35 });
+        this.dust(e.x, e.y + 40, 6, 20, -e.side);
+        this.addShake(6, settings);
+        break;
+      case 'knockdown':
+        this.dust(e.x, e.y, e.hard ? 12 : 8, 40, 0);
+        this.addShake(e.hard ? 4 : 2, settings);
+        break;
+      case 'getup': if (e.how === 'roll') this.dust(e.x, e.y, 6, 16, 0); break;
+      case 'walljump':
+        this.ring(e.x - e.side * 20, e.y - 70, 40, 'rgba(255,255,255,0.75)', 12, 3);
+        this.dust(e.x - e.side * 22, e.y - 60, 6, 10, -e.side);
+        break;
+      case 'burst':
+        this.ring(e.x, e.y, 150, '#9fdcff', 24, 9); this.ring(e.x, e.y, 90, '#ffffff', 16, 4);
+        this.burst(e.x, e.y, 24, { speed: 11, life: 20, size: 4, colors: ['#ffffff', '#9fdcff'], type: 'spark', drag: 0.86 });
+        break;
+      case 'armor': this.ring(e.x, e.y, 54, '#ffb03a', 10, 5); break;
+      case 'taunt': {
+        // A small element emote: flame puff, snowflakes, sparks, pebbles or bubbles
+        var fe = fighters && fighters[e.f] && fighters[e.f].build.element, ec = el(fe);
+        var ty = fe === 'earth' ? 'rock' : fe === 'ice' ? 'shard' : fe === 'water' ? 'drop' : 'dot';
+        this.burst(e.x, e.y - 130, 16, { angle: -Math.PI / 2, spread: 1.1, speed: 4, life: 40, size: fe === 'earth' ? 5 : 4, colors: [ec.color, ec.glow, '#ffffff'], type: ty, grav: fe === 'fire' || fe === 'lightning' ? -0.04 : 0.12 });
+        break;
+      }
+      case 'super':
+        this.ring(e.x, e.y - 80, 220, el(e.element).glow, 30, 10);
+        this.flash = Math.max(this.flash, 0.3);
+        break;
+      case 'superGo': this.addShake(8, settings); break;
       case 'attack':
         // Wing-burst gust handled on jump; nothing here.
         break;
+    }
+  };
+
+  /** The strike itself, on top of the element impact: sized and coloured by strength, gold for counter hits. */
+  FX.prototype.strike = function (e) {
+    var x = e.x, y = e.y, st = e.strength || 'light';
+    var size = { light: 18, medium: 28, heavy: 42, super: 70 }[st] || 18;
+    if (e.counter) {
+      this.add({ x: x, y: y, vx: 0, vy: 0, life: 12, size: size * 1.4, color: '#ffcf4a', type: 'star', drag: 1, rotA: Math.random() });
+      this.ring(x, y, size * 2.2, '#ffcf4a', 14, 5); this.ring(x, y, size * 1.3, '#ffffff', 10, 3);
+    }
+    if (st === 'heavy' || st === 'super') {
+      // Heavy: a hard white flash at the contact point and a shockwave ring that travels with the launch
+      this.add({ x: x, y: y, vx: 0, vy: 0, life: 6, size: size * 1.6, color: '#ffffff', type: 'flare', drag: 1 });
+      this.ring(x, y, size * 2.6, 'rgba(255,255,255,0.9)', 14, st === 'super' ? 10 : 6);
+      if (st === 'super') this.flash = Math.max(this.flash, 0.4);
+    } else if (st === 'medium') {
+      this.ring(x, y, size * 1.6, 'rgba(255,255,255,0.75)', 10, 4);
     }
   };
 
@@ -290,6 +374,31 @@
           x.beginPath(); x.ellipse(p.x, p.y, p.size * (1.6 - k), p.size * (1.6 - k) * 0.55, 0, 0, TAU); x.stroke();
           x.beginPath(); x.ellipse(p.x, p.y, p.size * (1.1 - k * 0.6), p.size * (1.1 - k * 0.6) * 0.55, 0, 0, TAU); x.stroke();
           break;
+        case 'hex': {
+          var hr = p.size * (1.25 - k * 0.35);
+          x.strokeStyle = p.color; x.lineWidth = 3 * k + 1;
+          x.beginPath(); for (var hi = 0; hi <= 6; hi++) { var ha = hi * Math.PI / 3 + Math.PI / 6; x.lineTo(p.x + Math.cos(ha) * hr, p.y + Math.sin(ha) * hr); } x.stroke();
+          x.globalAlpha = k * 0.25; x.fillStyle = p.color; x.fill();
+          break;
+        }
+        case 'glint': {
+          var gl = p.size * (0.4 + (1 - k) * 0.8);
+          x.strokeStyle = p.color; x.lineWidth = 3 * k; x.lineCap = 'round';
+          x.beginPath(); x.moveTo(p.x - gl, p.y); x.lineTo(p.x + gl, p.y); x.moveTo(p.x, p.y - gl * 0.7); x.lineTo(p.x, p.y + gl * 0.7); x.stroke();
+          break;
+        }
+        case 'crack': {
+          // Deterministic per crack so it does not flicker; fades over its last half
+          x.globalAlpha = Math.min(1, k * 2); x.strokeStyle = p.color; x.lineWidth = 2;
+          var rs = p.seed;
+          for (var cl = 0; cl < 7; cl++) {
+            var ca = (cl / 7) * Math.PI * 2, cx2 = p.x, cy2 = p.y;
+            x.beginPath(); x.moveTo(cx2, cy2);
+            for (var cs = 0; cs < 4; cs++) { rs = (rs * 9301 + 49297) % 233280; ca += (rs / 233280 - 0.5) * 0.8; cx2 += Math.cos(ca) * p.size * 0.28 * (p.side ? 0.4 : 1); cy2 += Math.sin(ca) * p.size * 0.28; x.lineTo(cx2, cy2); }
+            x.stroke();
+          }
+          break;
+        }
         case 'star': {
           x.save(); x.translate(p.x, p.y); x.rotate(p.rotA || 0); x.fillStyle = p.color;
           var sr = p.size * (0.5 + k * 0.5);
@@ -300,7 +409,7 @@
       }
     }
     x.globalAlpha = 1;
-    x.textAlign = 'center'; x.font = '900 18px "Lilita One", system-ui, sans-serif';
+    x.textAlign = 'center'; x.font = '900 18px Cinzel, serif';
     this.popups.forEach(function (p) {
       x.globalAlpha = Math.min(1, p.life / 15);
       x.lineWidth = 4; x.strokeStyle = 'rgba(0,0,0,0.6)'; x.strokeText(p.text, p.x, p.y);
@@ -560,6 +669,33 @@
     x.restore();
   }
 
+  /** Element energy around a dragon unleashing its super (drawn in world space, behind it). */
+  function drawSuperAura(x, f, setup, t) {
+    var c = el(setup.build.element), sc = D.BODIES[setup.build.body].scale, cy = f.y - 75 * sc[1];
+    x.save(); x.globalCompositeOperation = 'lighter';
+    var R = 170 * sc[1] * (1 + 0.05 * Math.sin(t * 20));
+    var g = x.createRadialGradient(f.x, cy, 10, f.x, cy, R);
+    g.addColorStop(0, Art.alpha(c.glow, 0.55)); g.addColorStop(0.4, Art.alpha(c.color, 0.3)); g.addColorStop(1, Art.alpha(c.color, 0));
+    x.fillStyle = g; x.beginPath(); x.arc(f.x, cy, R, 0, TAU); x.fill();
+    for (var i = 0; i < 12; i++) {
+      var a = i / 12 * TAU + t * 3, r0 = 60 * sc[1], r1 = (150 + 40 * Math.sin(t * 9 + i)) * sc[1];
+      x.strokeStyle = Art.alpha(i % 2 ? c.glow : c.color, 0.5); x.lineWidth = 3;
+      x.beginPath(); x.moveTo(f.x + Math.cos(a) * r0, cy + Math.sin(a) * r0); x.lineTo(f.x + Math.cos(a) * r1, cy + Math.sin(a) * r1); x.stroke();
+    }
+    x.restore();
+  }
+
+  /** EX specials and armour: a flickering outline-glow so the extra power reads at a glance. */
+  function drawPowerAura(x, f, build, t, armor) {
+    var c = el(build.element), sc = D.BODIES[build.body].scale, cy = f.y - 70 * sc[1];
+    x.save(); x.globalCompositeOperation = 'lighter';
+    var col = armor ? '#ffb03a' : c.glow, R = 95 * sc[1] * (1 + 0.08 * Math.sin(t * 30));
+    var g = x.createRadialGradient(f.x, cy, R * 0.4, f.x, cy, R);
+    g.addColorStop(0, Art.alpha(col, 0)); g.addColorStop(0.75, Art.alpha(col, 0.22)); g.addColorStop(1, Art.alpha(col, 0));
+    x.fillStyle = g; x.beginPath(); x.arc(f.x, cy, R, 0, TAU); x.fill();
+    x.restore();
+  }
+
   // ─────────────── arenas ───────────────
   var bgCache = {};
   function stars(seed, n, w, h) {
@@ -657,7 +793,8 @@
   /** Screen-space finishing pass: a soft vignette so the centre (and the fighters) carry the light. */
   function drawVignette(x, W, H, th) {
     var g = x.createRadialGradient(W / 2, H * 0.55, Math.min(W, H) * 0.35, W / 2, H * 0.55, Math.max(W, H) * 0.75);
-    g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, th === 'grid' ? 'rgba(0,0,10,0.35)' : 'rgba(10,4,24,0.45)');
+    var T = window.DCScenery && window.DCScenery.THEMES[th];
+    g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, T && T.vignette ? T.vignette : th === 'grid' ? 'rgba(0,0,10,0.35)' : 'rgba(10,4,24,0.45)');
     x.fillStyle = g; x.fillRect(0, 0, W, H);
   }
 
@@ -710,6 +847,6 @@
     });
   }
 
-  window.DCFX = { FX: FX, drawVignette: drawVignette, drawTrail: drawTrail, drawProjectile: drawProjectile, drawStructure: drawStructure, drawAttackFx: drawAttackFx,
+  window.DCFX = { FX: FX, drawVignette: drawVignette, drawSuperAura: drawSuperAura, drawPowerAura: drawPowerAura, drawTrail: drawTrail, drawProjectile: drawProjectile, drawStructure: drawStructure, drawAttackFx: drawAttackFx,
                   drawBackdrop: drawBackdrop, drawPlatforms: drawPlatforms, lightning: lightning, el: el };
 })();

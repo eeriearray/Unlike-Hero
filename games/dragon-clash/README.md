@@ -22,6 +22,24 @@ Hold a direction with an attack for its variants (up, down, side, in the air). U
 Wing Burst recovery (once per jump). Keys are remappable in **Controls & settings**, which also flags keys shared
 between the two layouts.
 
+### Phones and tablets
+
+On touch devices the game picks **Touch screen** controls by default (also selectable as a device anywhere you choose
+controls): a floating stick under the left thumb (flick up to jump, down to crouch), Light / Heavy / Special / Jump /
+Guard / Dodge plus Gear and Taunt under the right thumb, and a pause button. Hold Guard and tap Light, Special or Heavy
+for grabs, EX specials and Dragon Fury, as on a keyboard. `js/touch.js` tracks every finger by pointer id, so
+combinations work. Touch devices also start on Low effects (70% sprite resolution, half the particles) to stay inside
+mobile memory limits, the HUD moves to the top, menus compact on short screens, and phones held upright during a fight
+are asked to turn sideways.
+
+## Appearance of the HD dragons
+
+The painted dragons can't change horns or wings, so the Forge's Appearance tab offers what the art supports: any of the
+five paintings regardless of element (`look.sprite`), a **scale colour** that re-hues the frames while keeping their
+painted shading (`look.tint`, `D.TINTS`), a **finish** (`look.shade`: Shadow, Gilded, Bone, Spectral) and the element
+aura. Recolouring happens per frame on a scratch canvas in `js/sprite.js`. Mirror matches on the select screen use the
+same recolours to tell identical dragons apart.
+
 ## Asset audit
 
 What exists locally (verified, not assumed):
@@ -136,7 +154,23 @@ Match (everyone on their last stock), Victor / Game Over, and Select Your Champi
 itself. Pages opened from `file://` cannot fetch audio, so they fall back to the original synthesised sounds.
 Both sound packs are licensed by the project owner for use in this game (no license file ships in the source folder).
 
+## Fighting systems (`engine/dc-sim.js`, numbers in `engine/dc-data.js`)
+
+- **Frame data**: every move has startup/active/recovery; `D.frameData(def)` gives advantage on hit and on block. The pause menu, How to play and Training show the full table.
+- **Guard** (U / Num 5 / LT-RT): blocks hits from the front, with blockstun, pushback and a guard bar; an empty bar is a **guard break** (dizzy). Hold Down to crouch-guard. **Perfect parry**: Guard pressed within 5 frames of the hit (re-pressing within 24 frames gives no window). **Guard Counter**: Heavy in blockstun for half a bar.
+- **Throws**: Guard + Light grabs (beats guard); hold back for a back throw; any attack/Guard/Dodge press in the first 12 frames breaks it.
+- **Cancels** on hit or block (light → heavy/special/EX/super, heavy → special/EX/super, special → super; Up-Light jump-cancels). **Input buffer** 6 frames; simultaneous presses resolve by `INPUT_PRIORITY`.
+- **Combos**: scaling by step (100, 100, 90 … 40%), hitstun decay, stale-move hitstun, and a burst escape at 12 steps. **Counter hits** (hit during startup) and **punishes** are flagged and called out.
+- **Knockdown** after an untechable tumble landing; invulnerable wake-up: stand, roll or get-up attack. **Walls** (Dragon Colosseum): wall splat once per combo, wall tech, wall jump, corner pushback onto the attacker.
+- **Meter** (3 bars): EX specials (Guard + Signature, 1 bar, armoured), **Dragon Fury** super (Guard + Heavy, 3 bars) with a world-freeze cinematic. **Taunt** (Y) gives a little meter.
+- Tests: `test/dragon-clash-mechanics.test.mjs`.
+
+Only the five HD sprite dragons are offered in menus; Forge builds are drawn with the HD dragon of their element (the rig stays as the `file://` fallback).
+
 ## Arenas (`js/scenery.js`)
+
+Eight arenas (`D.ARENA_ORDER`): Skyforge Spire, Frostfall Rift, **Ember Caldera** (volcano, eruptions, lava lake), **Stormcrown Peaks** (three summits, rain, lightning), **Jade Terrace** (pagoda, blossom petals), **Dragon Colosseum** (walls, crowd that cheers KOs), **Crystal Hollow** (geode cave), **Sunken Shrine** (underwater ruins, kelp, fish). Preview any with `gallery.html#scene=<id>&live`.
+
 
 Painted procedurally, pixel by pixel, once per arena and screen size, then drawn with parallax: dithered sky, sun or
 moon with halo, Milky Way, clouds from fractal noise lit toward the light, mountain ranges with ridge and facet
@@ -166,9 +200,10 @@ you can't afford are skipped. All numbers live in `engine/dc-data.js` (`SIZES`, 
 | Slot | Options | Effect |
 | --- | --- | --- |
 | Size | Small · Medium · Large · Huge | Swaps the body frame (hitbox, weight, power, speed). Growing past the dragon's own size costs the difference in body points; shrinking is free. |
-| Armour | None · Scale Mail 6 · Iron Plate 11 · Dragonbone 16 | −6 / −12 / −18% knockback taken; −3 / −7 / −11% run and air speed, lower jumps. |
-| Weapon | Bare Claws · Steel Talons 8 · Great Claws 12 · Tail Mace 8 · Horn Spikes 8 | Light +15% damage · heavy +15% damage and reach · tail attacks +30% damage, +10% knockback · up attacks +15% knockback, +10% damage. |
+| Instinct (free, pick one) | Fury · Bastion · Tempest · Vengeance | Fury: +50% meter from hits, combos keep full damage a hit longer, guard bar −35%. Bastion: guard bar +50%, 8-frame parry, Guard Counter for a quarter bar, −25% meter from hits. Tempest: +1 air jump, dodges recover 30% sooner, Dodge cancels a connected move into a dash (half a bar), +8% knockback taken. Vengeance: up to +30% damage as its own damage climbs to 120%, double meter from taking hits. |
 | Ability | Fade 10 · Aegis 12 · Phase Dash 8 · Decoy 10 · Rage 10 · Gust 8 | Fade: ~20% visible for 1.5 s, broken by attacking or being hit. Aegis: absorbs one hit within 3 s. Phase Dash: invulnerable boosted dash. Decoy: a copy that bursts when struck. Rage: +15% damage dealt and taken knockback for 5 s. Gust: shoves enemies ahead, no damage. |
+
+Armour and weapons were removed; the gear art pipeline below still describes them but nothing loads those pieces.
 
 CPUs pick a random affordable loadout and use their ability. **Art:** every piece has a drawn-in-code placeholder
 until the real one exists. Export pieces as `docs/GEAR-ASSETS.md` describes into `assets/gear/src/`, then run
@@ -190,9 +225,11 @@ travels in the build that online players send. Forge-built rig dragons are uncha
 
 | Sim state | Sheet |
 | --- | --- |
-| idle / run (fast run) / squat | Idle / Running (Running 2 above speed 5.6; frames advance with distance) / start of Jumping |
+| idle / run (sprint) / squat | Idle / Running (Running 2 after half a second flat out, or above speed 5.6; frames advance with distance) / start of Jumping |
+| crouch / crawl (Down + direction) | Crawl, held near its first frames / Crawl, advancing with distance |
+| guard held / blocked hit, parry | Defence 1 raised to its peak and swaying / Defence 2 (the shield arc) through the blockstun |
 | ascent (air jump) / fall / land | Jumping (Jumping 2) driven by vertical speed / Falling / Landing |
-| spot dodge, air dodge | Defence 1 (raise, hold on `hold`, release) / Defence 2 |
+| spot dodge, air dodge | Defence 1 (raise, hold, release) / Defence 2 |
 | dash dodge (back, forward) | Dodging / Dodging 2 |
 | jab, fair, nair (repeated within 0.8 s) | Light Attack 1, 2, 3 in turn; utilt / dtilt use Light 2 / 3 |
 | smashes, aerial heavies | Heavy 1 (fsmash, fheavyAir), Heavy 2 (usmash, dsmash, meteor) |
@@ -206,8 +243,8 @@ frame, active frames cover its `active` window, recovery plays the rest. Every f
 the fighter's feet, so feet stay on the floor in every state; facing flips about the manifest `cx`. Gear pieces are not
 drawn on sprite dragons (gear stats still apply; size scales the sprite).
 
-**Loading:** a pack is ~530 MB decoded, so sheets are downscaled to 62.5 % on load (`RES` in `js/sprite.js`) and only
-the dragons in a match are kept: the match shows "Summoning dragons…" while it decodes and touches every sheet, and
+**Loading:** sheets are trimmed to the opaque area of their frames by `tools/trim_sprites.py` (manifest `cw/ch/ox/oy`) and
+decoded at full resolution (~230–300 MB a dragon; 70% on the Low effects setting), and only the dragons in a match are kept: the match shows "Summoning dragons…" while it decodes and touches every sheet, and
 frees the rest (`DCSprites.unloadExcept`). Menus and the select screen load only the idle sheet. Online rooms start
 decoding when a sprite dragon joins the room. From `file://` the manifest cannot be fetched, so sprite dragons fall back
 to their rig look.

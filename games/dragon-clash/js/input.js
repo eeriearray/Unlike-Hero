@@ -8,14 +8,20 @@
 (function () {
   'use strict';
   var B = window.DC.Sim.BTN;
-  var ACTIONS = ['left', 'right', 'up', 'down', 'jump', 'light', 'heavy', 'sig', 'dodge', 'gear'];
-  var LABELS = { left: 'Move left', right: 'Move right', up: 'Up / aim up (tap to jump)', down: 'Down / drop / fast fall', jump: 'Jump',
-                 light: 'Light attack', heavy: 'Heavy attack', sig: 'Signature (Down + it: elemental ability)', dodge: 'Dash / dodge', gear: 'Gear ability' };
+  var ACTIONS = ['left', 'right', 'up', 'down', 'jump', 'light', 'heavy', 'sig', 'guard', 'dodge', 'gear', 'taunt'];
+  var LABELS = { left: 'Move left', right: 'Move right', up: 'Up / aim up (tap to jump)', down: 'Down / crouch / drop / fast fall', jump: 'Jump',
+                 light: 'Light attack', heavy: 'Heavy attack', sig: 'Signature (Down + it: elemental ability)', guard: 'Guard (+ Light grab, + Signature EX, + Heavy super)',
+                 dodge: 'Dash / dodge / roll', gear: 'Gear ability', taunt: 'Taunt' };
   var DEFAULTS = {
-    kb1: { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'], jump: ['Space'], light: ['KeyJ'], heavy: ['KeyK'], sig: ['KeyL'], dodge: ['ShiftLeft'], gear: ['KeyI'] },
-    kb2: { left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'], jump: ['Enter'], light: ['Numpad1', 'Comma'], heavy: ['Numpad2', 'Period'], sig: ['Numpad3', 'Slash'], dodge: ['Numpad0', 'ShiftRight'], gear: ['Numpad4', 'Semicolon'] },
+    kb1: { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'], jump: ['Space'], light: ['KeyJ'], heavy: ['KeyK'], sig: ['KeyL'], guard: ['KeyU'], dodge: ['ShiftLeft'], gear: ['KeyI'], taunt: ['KeyY'] },
+    kb2: { left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'], jump: ['Enter'], light: ['Numpad1', 'Comma'], heavy: ['Numpad2', 'Period'], sig: ['Numpad3', 'Slash'], guard: ['Numpad5', 'Quote'], dodge: ['Numpad0', 'ShiftRight'], gear: ['Numpad4', 'Semicolon'], taunt: ['Numpad6', 'Backslash'] },
   };
-  var DEVICE_NAMES = { kb1: 'Keyboard 1', kb2: 'Keyboard 2', pad0: 'Gamepad 1', pad1: 'Gamepad 2', pad2: 'Gamepad 3', pad3: 'Gamepad 4' };
+  // Gamepad buttons (standard mapping). Movement is always the left stick and d-pad; every button is remappable.
+  var PAD_ACTIONS = ['jump', 'light', 'heavy', 'sig', 'guard', 'dodge', 'gear', 'taunt'];
+  var PAD_DEFAULTS = { jump: [0], light: [2], heavy: [3], sig: [1], guard: [6, 7], dodge: [5], gear: [4], taunt: [8] };
+  var PAD_NAMES = ['A', 'B', 'X', 'Y', 'LB', 'RB', 'LT', 'RT', 'Back', 'Start', 'L-stick', 'R-stick', 'D-up', 'D-down', 'D-left', 'D-right'];
+  var padBinds = JSON.parse(JSON.stringify(PAD_DEFAULTS));
+  var DEVICE_NAMES = { kb1: 'Keyboard 1', kb2: 'Keyboard 2', pad0: 'Gamepad 1', pad1: 'Gamepad 2', pad2: 'Gamepad 3', pad3: 'Gamepad 4', touch: 'Touch screen' };
 
   var down = {};
   var binds = JSON.parse(JSON.stringify(DEFAULTS));
@@ -59,12 +65,10 @@
     if (ax > 0.4 || bt(15)) h |= B.right;
     if (ay < -0.55 || bt(12)) h |= B.up;
     if (ay > 0.55 || bt(13)) h |= B.down;
-    if (bt(0)) h |= B.jump;
-    if (bt(2)) h |= B.light;
-    if (bt(3)) h |= B.heavy;
-    if (bt(1)) h |= B.sig;
-    if (bt(5) || bt(6) || bt(7)) h |= B.dodge;
-    if (bt(4)) h |= B.gear;
+    for (var a = 0; a < PAD_ACTIONS.length; a++) {
+      var list = padBinds[PAD_ACTIONS[a]];
+      for (var q = 0; q < list.length; q++) if (bt(list[q])) { h |= B[PAD_ACTIONS[a]]; break; }
+    }
     return h;
   }
 
@@ -77,9 +81,18 @@
   /** Held bits for a device. */
   function read(dev) {
     if (dev && dev.indexOf('pad') === 0) return readPad(+dev.slice(3));
+    if (dev === 'touch') {
+      var th = window.DCTouch ? window.DCTouch.held() : 0;
+      var kh = 0;
+      if (binds.kb1) for (var i = 0; i < ACTIONS.length; i++) if (keyHeld('kb1', ACTIONS[i])) kh |= B[ACTIONS[i]];
+      return th | kh;
+    }
     if (!binds[dev]) return 0;
     var h = 0;
     for (var i = 0; i < ACTIONS.length; i++) if (keyHeld(dev, ACTIONS[i])) h |= B[ACTIONS[i]];
+    if (dev === 'kb1' && window.DCTouch && window.DCTouch.isShown && window.DCTouch.isShown()) {
+      h |= window.DCTouch.held();
+    }
     return h;
   }
 
@@ -95,15 +108,36 @@
     binds = JSON.parse(JSON.stringify(DEFAULTS));
     if (saved) for (var d in saved) if (binds[d]) for (var a in saved[d]) if (binds[d][a] && Array.isArray(saved[d][a])) binds[d][a] = saved[d][a].slice(0, 3).map(String);
   }
+  function loadPad(saved) {
+    padBinds = JSON.parse(JSON.stringify(PAD_DEFAULTS));
+    if (saved) for (var a in saved) if (padBinds[a] && Array.isArray(saved[a])) padBinds[a] = saved[a].slice(0, 2).map(Number).filter(function (n) { return n >= 0 && n < 17; });
+  }
+  function setPadBinding(action, buttons) { padBinds[action] = buttons.slice(0, 2); }
+  function resetPad() { padBinds = JSON.parse(JSON.stringify(PAD_DEFAULTS)); }
+  /** The first button newly pressed on any pad since the last call (for remapping), or -1. */
+  var padPrev = {};
+  function padPressed() {
+    var pads = navigator.getGamepads ? navigator.getGamepads() : [], hit = -1;
+    for (var i = 0; i < 4; i++) {
+      var p = pads && pads[i]; if (!p) continue;
+      for (var k = 0; k < p.buttons.length && k < 17; k++) {
+        var on = p.buttons[k] && p.buttons[k].pressed, key = i + ':' + k;
+        if (on && !padPrev[key] && hit < 0) hit = k;
+        padPrev[key] = on;
+      }
+    }
+    return hit;
+  }
 
   function setBinding(dev, action, codes) { binds[dev][action] = codes.slice(0, 3); }
   function reset(dev) { binds[dev] = JSON.parse(JSON.stringify(DEFAULTS[dev])); }
 
   /** Pretty key label. */
   function keyName(code) {
+    if (code === 'Backslash') return '\\';
     return code.replace(/^Key/, '').replace(/^Digit/, '').replace(/^Numpad/, 'Num ').replace('ShiftLeft', 'L-Shift').replace('ShiftRight', 'R-Shift')
       .replace('ArrowLeft', '←').replace('ArrowRight', '→').replace('ArrowUp', '↑').replace('ArrowDown', '↓')
-      .replace('Comma', ',').replace('Period', '.').replace('Slash', '/').replace('Space', 'Space').replace('ControlLeft', 'L-Ctrl').replace('ControlRight', 'R-Ctrl');
+      .replace('Comma', ',').replace('Period', '.').replace('Slash', '/').replace('Space', 'Space').replace('ControlLeft', 'L-Ctrl').replace('ControlRight', 'R-Ctrl').replace('Quote', "'").replace('Semicolon', ';');
   }
 
   /** Every key bound in more than one place across the layouts in use. */
@@ -122,5 +156,7 @@
 
   window.DCInput = { read: read, onKey: onKey, padStart: padStart, connectedPads: connectedPads, setInUse: setInUse, load: load,
                      binds: function () { return binds; }, setBinding: setBinding, reset: reset, keyName: keyName, conflicts: conflicts,
+                     loadPad: loadPad, padBinds: function () { return padBinds; }, setPadBinding: setPadBinding, resetPad: resetPad, padPressed: padPressed,
+                     padName: function (k) { return PAD_NAMES[k] || 'Button ' + k; }, PAD_ACTIONS: PAD_ACTIONS,
                      ACTIONS: ACTIONS, LABELS: LABELS, DEVICE_NAMES: DEVICE_NAMES, isDown: function (c) { return !!down[c]; } };
 })();
