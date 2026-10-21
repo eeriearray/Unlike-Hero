@@ -1754,14 +1754,11 @@
     if (sc.mid) {
       layer(x, sc.mid, 0.2, cam, W, H, sc);
       if (sc.citadel) chimney(x, sc, cam, W, H, t, theme);
-      else if (th.landmark && LIVE[th.landmark].mid &&
-        (th.landmark !== 'geode' || (sc.land && sc.land.hole && sc.land.crystals))) {
-        LIVE[th.landmark].mid(x, sc, cam, W, H, t);
-      }
+      // Landmark animation is already baked into the material-aware mid layer.
     }
     if (theme === 'dusk' || theme === 'blossom' || theme === 'arena') flock(x, W, H, t);
     if (sc.forest) layer(x, sc.forest, 0.32, cam, W, H, sc);
-    if (th.landmark) { if (LIVE[th.landmark].near) LIVE[th.landmark].near(x, sc, cam, W, H, t); }
+    // Keep the shared near layer passive until legacy landmark metadata is migrated.
     else mist(x, W, H, t, theme);
     grade(x, theme, W, H);
     if (theme === 'night') shootingStar(x, W, H, t);
