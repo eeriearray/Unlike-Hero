@@ -8,17 +8,17 @@
 (function () {
   'use strict';
   var B = window.DC.Sim.BTN;
-  var ACTIONS = ['left', 'right', 'up', 'down', 'jump', 'light', 'heavy', 'sig', 'guard', 'dodge', 'gear', 'taunt'];
+  var ACTIONS = ['left', 'right', 'up', 'down', 'jump', 'light', 'heavy', 'sig', 'ability', 'guard', 'dodge', 'gear', 'taunt'];
   var LABELS = { left: 'Move left', right: 'Move right', up: 'Up / aim up (tap to jump)', down: 'Down / crouch / drop / fast fall', jump: 'Jump',
-                 light: 'Light attack', heavy: 'Heavy attack', sig: 'Signature (Down + it: elemental ability)', guard: 'Guard (+ Light grab, + Signature EX, + Heavy super)',
+                 light: 'Light attack', heavy: 'Heavy attack', sig: 'Signature (Down + it: elemental ability)', ability: 'Elemental ability', guard: 'Guard (+ Light grab, + Signature EX, + Heavy super)',
                  dodge: 'Dash / dodge / roll', gear: 'Gear ability', taunt: 'Taunt' };
   var DEFAULTS = {
-    kb1: { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'], jump: ['Space'], light: ['KeyJ'], heavy: ['KeyK'], sig: ['KeyL'], guard: ['KeyU'], dodge: ['ShiftLeft'], gear: ['KeyI'], taunt: ['KeyY'] },
-    kb2: { left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'], jump: ['Enter'], light: ['Numpad1', 'Comma'], heavy: ['Numpad2', 'Period'], sig: ['Numpad3', 'Slash'], guard: ['Numpad5', 'Quote'], dodge: ['Numpad0', 'ShiftRight'], gear: ['Numpad4', 'Semicolon'], taunt: ['Numpad6', 'Backslash'] },
+    kb1: { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'], jump: ['Space'], light: ['KeyJ'], heavy: ['KeyK'], sig: ['KeyL'], ability: ['KeyO'], guard: ['KeyU'], dodge: ['ShiftLeft'], gear: ['KeyI'], taunt: ['KeyY'] },
+    kb2: { left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'], jump: ['Enter'], light: ['Numpad1', 'Comma'], heavy: ['Numpad2', 'Period'], sig: ['Numpad3', 'Slash'], ability: ['Numpad7', 'BracketRight'], guard: ['Numpad5', 'Quote'], dodge: ['Numpad0', 'ShiftRight'], gear: ['Numpad4', 'Semicolon'], taunt: ['Numpad6', 'Backslash'] },
   };
   // Gamepad buttons (standard mapping). Movement is always the left stick and d-pad; every button is remappable.
-  var PAD_ACTIONS = ['jump', 'light', 'heavy', 'sig', 'guard', 'dodge', 'gear', 'taunt'];
-  var PAD_DEFAULTS = { jump: [0], light: [2], heavy: [3], sig: [1], guard: [6, 7], dodge: [5], gear: [4], taunt: [8] };
+  var PAD_ACTIONS = ['jump', 'light', 'heavy', 'sig', 'ability', 'guard', 'dodge', 'gear', 'taunt'];
+  var PAD_DEFAULTS = { jump: [0], light: [2], heavy: [3], sig: [1], ability: [7], guard: [6], dodge: [5], gear: [4], taunt: [8] };
   var PAD_NAMES = ['A', 'B', 'X', 'Y', 'LB', 'RB', 'LT', 'RT', 'Back', 'Start', 'L-stick', 'R-stick', 'D-up', 'D-down', 'D-left', 'D-right'];
   var padBinds = JSON.parse(JSON.stringify(PAD_DEFAULTS));
   var DEVICE_NAMES = { kb1: 'Keyboard 1', kb2: 'Keyboard 2', pad0: 'Gamepad 1', pad1: 'Gamepad 2', pad2: 'Gamepad 3', pad3: 'Gamepad 4', touch: 'Touch screen' };

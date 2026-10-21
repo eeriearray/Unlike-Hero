@@ -254,3 +254,13 @@ test('CPU dragons use their gear ability and their elemental ability in a real m
     assert.ok(elemental >= 3, ability + ' match: elemental ability used ' + elemental + ' times');
   }
 });
+
+test('the Elemental ability button fires the elemental ability without holding Down', () => {
+  const { sim, A } = duel(plain('fire'), plain('ice'), { gap: 300 });
+  const ev = press(sim, 0, B.ability, 5);
+  assert.equal(A.move, 'ability');
+  assert.ok(ev.some((e) => e.type === 'attack' && e.move === 'ability'));
+  const s2 = duel(plain('fire'), plain('ice'), { gap: 300 });
+  press(s2.sim, 0, B.sig, 5);
+  assert.equal(s2.A.move, 'sig', 'Signature alone still fires the signature');
+});

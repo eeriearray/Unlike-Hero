@@ -14,7 +14,7 @@ Open `index.html` (or the hub). Everything except online play works from `file:/
 | Down / drop / fast fall | S | ↓ | down |
 | Dash / dodge | Left Shift | Num 0 or Right Shift | bumpers / triggers |
 | Light / Heavy / Signature | J / K / L | Num 1 / 2 / 3 or , . / | X / Y / B |
-| Elemental ability | S + L | ↓ + Num 3 | down + B |
+| Elemental ability | O (or S + L) | Num 7 or ] (or ↓ + Num 3) | RT (or down + B) |
 | Gear ability | I | Num 4 or ; | LB |
 | Pause | Esc | Esc | Start |
 

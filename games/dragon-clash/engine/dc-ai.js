@@ -155,7 +155,7 @@
       this.hold = r() < this.cfg.aim ? face : 0;
       var heavy = t.dmg > 85 && r() < 0.5 ? true : r() < 0.18;
       if (me.grounded) {
-        if (r() < this.cfg.ability && me.abilityCd <= 0) { this.hold = B.down; this.press(B.sig, 2); }
+        if (r() < this.cfg.ability && me.abilityCd <= 0) { this.hold = 0; this.press(B.ability, 2); }
         else if (dy < -60) { this.hold |= B.up; this.press(heavy ? B.heavy : B.light, 2); }
         else if (r() < 0.2) { this.hold = B.down; this.press(heavy ? B.heavy : B.light, 2); }
         else this.press(heavy ? B.heavy : B.light, 2);
@@ -167,8 +167,8 @@
     }
     // Mid-range elemental ability: the ones that travel (a dash, a teleport, a wave along the floor)
     if (me.grounded && me.abilityCd <= 0 && adx > 120 && adx < 320 && Math.abs(dy) < 70 && MOVE_ABILITIES[me.stats.ability] && r() < this.cfg.ability) {
-      this.hold = B.down | face;
-      this.press(B.sig, 2);
+      this.hold = face;
+      this.press(B.ability, 2);
       return 0;
     }
     // Mid-range signature

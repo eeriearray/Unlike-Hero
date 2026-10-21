@@ -20,8 +20,8 @@
   'use strict';
 
   var P = D.PHYSICS;
-  var BTN = { left: 1, right: 2, up: 4, down: 8, jump: 16, light: 32, heavy: 64, sig: 128, dodge: 256, gear: 512, guard: 1024, taunt: 2048 };
-  var ACTIONS = BTN.jump | BTN.light | BTN.heavy | BTN.sig | BTN.dodge | BTN.gear | BTN.guard | BTN.taunt;
+  var BTN = { left: 1, right: 2, up: 4, down: 8, jump: 16, light: 32, heavy: 64, sig: 128, dodge: 256, gear: 512, guard: 1024, taunt: 2048, ability: 4096 };
+  var ACTIONS = BTN.jump | BTN.light | BTN.heavy | BTN.sig | BTN.dodge | BTN.gear | BTN.guard | BTN.taunt | BTN.ability;
   // States in which a dragon is still inside the combo that put it there (it cannot act yet)
   var COMBO_STATES = { hitstun: 1, wallsplat: 1, grabbed: 1 };
   var DEG = Math.PI / 180;
@@ -377,13 +377,15 @@
    */
   S.tryAttack = function (f, b, dir, dirX, held, only) {
     var guard = (held | 0) & BTN.guard, key = null, ex = false, order = D.INPUT_PRIORITY;
+    // The elemental ability has its own button; Down + Signature still works too
+    var special = b & (BTN.sig | BTN.ability), elemental = (b & BTN.ability) || dir === 'down';
     for (var i = 0; i < order.length && !key; i++) {
       var c = order[i];
       if (only && only.indexOf(c) < 0) continue;
       if (c === 'super' && guard && (b & BTN.heavy) && f.meter >= D.MOVES.ultimate.meter) key = 'ultimate';
-      else if (c === 'ex' && guard && (b & BTN.sig) && f.meter >= P.meterBar) { key = dir === 'down' ? 'ability' : 'sig'; ex = true; }
+      else if (c === 'ex' && guard && special && f.meter >= P.meterBar) { key = elemental ? 'ability' : 'sig'; ex = true; }
       else if (c === 'grab' && guard && (b & BTN.light) && f.grounded && !only) key = 'grab';
-      else if (c === 'sig' && (b & BTN.sig)) key = dir === 'down' ? 'ability' : 'sig';
+      else if (c === 'sig' && special) key = elemental ? 'ability' : 'sig';
       else if (c === 'light' && (b & BTN.light)) key = D.pickMove('light', dir, f.grounded);
       else if (c === 'heavy' && (b & BTN.heavy)) {
         // Command attack: Heavy while running flat out is a charging ram

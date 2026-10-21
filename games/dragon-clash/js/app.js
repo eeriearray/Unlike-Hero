@@ -287,7 +287,7 @@
         '<tr><td>Guard</td><td>' + k('kb1', 'guard') + '</td><td>' + k('kb2', 'guard') + '</td></tr>' +
         '<tr><td>Gear ability</td><td>' + k('kb1', 'gear') + '</td><td>' + k('kb2', 'gear') + '</td></tr>' +
         '<tr><td>Taunt</td><td>' + k('kb1', 'taunt') + '</td><td>' + k('kb2', 'taunt') + '</td></tr>' +
-        '<tr><td>Elemental ability</td><td>' + k('kb1', 'down') + ' + ' + k('kb1', 'sig') + '</td><td>' + k('kb2', 'down') + ' + ' + k('kb2', 'sig') + '</td></tr>' +
+        '<tr><td>Elemental ability</td><td>' + k('kb1', 'ability') + ' or ' + k('kb1', 'down') + ' + ' + k('kb1', 'sig') + '</td><td>' + k('kb2', 'ability') + ' or ' + k('kb2', 'down') + ' + ' + k('kb2', 'sig') + '</td></tr>' +
         '<tr><td>Pause</td><td><kbd>Esc</kbd></td><td><kbd>Esc</kbd> · gamepad Start</td></tr>' +
         '</table><p class="dim">Columns: Keyboard 1, Keyboard 2. Gamepads: stick/d-pad move, A jump, X light, Y heavy, B signature, LT/RT guard, RB dodge, LB gear ability, Back taunt. Remap keys and pad buttons in Controls & settings.</p></div>' +
         '<div class="panel"><h3>Fighting basics</h3><div class="basics">' +
@@ -421,7 +421,7 @@
     if (dev.indexOf('pad') === 0) return '<b>' + esc(label || Input.DEVICE_NAMES[dev]) + '</b> gamepad';
     var devBinds = b[dev] || b.kb1;
     var k = function (a) { return '<kbd>' + esc(Input.keyName((devBinds[a] || ['?'])[0])) + '</kbd>'; };
-    return '<b>' + esc(label || (dev === 'touch' ? 'Keyboard 1' : Input.DEVICE_NAMES[dev])) + '</b> ' + k('left') + k('right') + ' move ' + (devBinds.jump[0] ? k('jump') : k('up')) + ' jump ' + k('light') + k('heavy') + k('sig') + ' attacks ' + k('guard') + ' guard ' + k('dodge') + ' dodge ' + k('gear') + ' gear';
+    return '<b>' + esc(label || (dev === 'touch' ? 'Keyboard 1' : Input.DEVICE_NAMES[dev])) + '</b> ' + k('left') + k('right') + ' move ' + (devBinds.jump[0] ? k('jump') : k('up')) + ' jump ' + k('light') + k('heavy') + k('sig') + ' attacks ' + k('ability') + ' ability ' + k('guard') + ' guard ' + k('dodge') + ' dodge ' + k('gear') + ' gear';
   };
 
   App.stopMatch = function () {
