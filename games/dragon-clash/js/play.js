@@ -120,7 +120,7 @@
           (probs.length ? '<div class="errors">' + probs.map(esc).join('<br>') + '</div>' : '') +
           '<button class="btn hot vs-go" data-act="start"' + (probs.length ? ' disabled' : '') + '>Choose dragons →</button></div>' +
           '</div>';
-        for (var k = 0; k < n; k++) App.mini(App.ui.querySelector('[data-mini="' + k + '"]'), App.buildById(cfg.slots[k].build), 'idle', { facing: teamOf(k) % 2 ? -1 : 1, scale: 0.95, offset: k });
+        for (var k = 0; k < n; k++) App.mini(App.ui.querySelector('[data-mini="' + k + '"]'), App.buildById(cfg.slots[k].build), 'idle', { facing: teamOf(k) % 2 ? -1 : 1, scale: 1.2, offset: k });
         // Random last: its thumbnail is stitched from the others.
         App.ui.querySelectorAll('[data-arena]:not([data-arena="random"])').forEach(function (cv) { arenaPreview(cv, cv.dataset.arena); });
         var rnd = App.ui.querySelector('[data-arena="random"]'); if (rnd) arenaPreview(rnd, 'random');

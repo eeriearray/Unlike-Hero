@@ -572,4 +572,6 @@ html,body{background:#090a0c}
   .vs-screen .arena-card:hover{transform:none}
   .vs-screen .arena-card:hover .ac-thumb canvas{transform:none}
 }
-.vs-screen .slot{grid-template-columns:88px minmax(0,1fr)} .vs-screen .slot .sel{min-width:0;width:100%}
+.vs-screen .slot{grid-template-columns:150px minmax(0,1fr);min-height:150px}
+.vs-screen .slot canvas{width:150px;height:150px}
+.vs-screen .slot .sel{min-width:0;width:100%}
