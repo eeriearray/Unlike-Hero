@@ -771,6 +771,7 @@
    * idleMix 1 = the pack's real idle frames, 0 = the cutout rig posed by `bones`; between = a short crossfade.
    */
   function draw(ctx, look, bodyId, pose) {
+    if (look.sprite && window.DCSprites && window.DCSprites.draw(ctx, look.sprite, pose, D.BODIES[bodyId] || D.BODIES.balanced)) return;
     if (!imgs['body-main']) return;
     var art = composed(look);
     var body = D.BODIES[bodyId] || D.BODIES.balanced;

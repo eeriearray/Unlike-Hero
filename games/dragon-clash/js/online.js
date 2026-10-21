@@ -18,7 +18,7 @@
     if (S.net) return Promise.resolve(S.net);
     var net = new Net();
     S.net = net;
-    net.on('room', function (m) { S.room = m.room; S.you = m.you; if (App.screen === 'room' && !App.match) App.screens.room.render(); });
+    net.on('room', function (m) { S.room = m.room; S.you = m.you; preloadSprites(m.room); if (App.screen === 'room' && !App.match) App.screens.room.render(); });
     // Only navigate when the player is in the online flow (or just refreshed onto the title screen)
     function inOnline() { return !App.match && (App.screen === 'online' || App.screen === 'room' || App.screen === 'title' || App.screen === 'results'); }
     net.on('joined', function () { if (inOnline()) App.show('room'); });
@@ -34,6 +34,12 @@
     net.on('snap', function (m) { if (App.match && m.m === S.matchId) App.match.pushSnapshot(m.s); });
     net.on('end', function (m) { if (m.m === S.matchId) showEnd(m); });
     return net.connect().then(function () { return net; }, function (e) { S.net = null; throw e; });
+  }
+
+  // Sprite dragons in the room start decoding while players are still in the lobby, so the match does not wait for them
+  function preloadSprites(room) {
+    if (!window.DCSprites || !room) return;
+    (room.members || []).forEach(function (mem) { var id = mem.build && mem.build.look && mem.build.look.sprite; if (id) window.DCSprites.load(id); });
   }
 
   function startMatch(m) {

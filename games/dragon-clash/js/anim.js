@@ -351,6 +351,9 @@
     var out = toPose(this.cur, c.e, f, build, time, this.idleMix, this.blink > 0 ? Math.min(1, this.blink * 2) : 0, this.wingV);
     var pk = packFor(f, build, { phase: this.phase, dashing: this.dashing });
     if (pk) this.lastPack = pk;
+    if (build.look.sprite && window.DCSprites) {
+      out.spr = (this.spr || (this.spr = new window.DCSprites.Tracker())).update(build.look.sprite, f, build, time, dt, { force: env && env.force, knock: this.knock, dashing: this.dashing });
+    }
     // Pack frames are complete drawings too: switch, never blend
     this.animMix = pk ? 1 : 0;
     out.anim = pk; out.animMix = this.animMix;
@@ -423,6 +426,7 @@
     } else p = pose(f, build, time);
     if (extra.dy) p.dy = (p.dy || 0) + extra.dy;
     if (kind === 'idle') p.idleMix = 1;
+    if (build.look.sprite && window.DCSprites && kind !== 'idle') p.spr = window.DCSprites.Tracker.showcase(kind, time);
     return p;
   }
 

@@ -292,6 +292,17 @@
               primary: '#3c9a3a', secondary: '#f2c23a', belly: '#9bc46a', eye: '#ff3b3b' } },
   ];
 
+  // Sprite-pack dragons: the five archetypes above, drawn from painted sheets (assets/dragons/<id>/, see js/sprite.js).
+  // Same stats as the rig archetype; look.sprite only picks the art (cosmetic, never read by the simulation). The rig
+  // look stays on the build as the fallback when the sheets cannot load.
+  var SPRITES = { emberfang: 'Emberfang', frostwing: 'Frostwing', ironmaw: 'Ironmaw', voltscale: 'Voltscale', tidefang: 'Tidefang' };
+  Object.keys(SPRITES).forEach(function (id) {
+    var base = PRESETS.filter(function (p) { return p.id === id; })[0];
+    var hd = JSON.parse(JSON.stringify(base));
+    hd.id = id + '-hd'; hd.name = base.name + ' HD'; hd.look.sprite = id;
+    PRESETS.push(hd);
+  });
+
   // ─────────────────────────────── Arenas ───────────────────────────────
   // Solid platforms have ledges; 'soft' platforms can be dropped through (down) and jumped up through.
   var ARENAS = {
@@ -338,7 +349,7 @@
     elementMultiplier: elementMultiplier, matchup: matchup, INTERACTIONS: INTERACTIONS, STATUS: STATUS,
     PHYSICS: PHYSICS, MOVES: MOVES, pickMove: pickMove, SIGNATURES: SIGNATURES, ABILITIES: ABILITIES,
     GEAR_BUDGET: GEAR_BUDGET, SIZES: SIZES, ARMOR: ARMOR, WEAPONS: WEAPONS, GEAR_ABILITIES: GEAR_ABILITIES, TAIL_MOVES: TAIL_MOVES, UP_MOVES: UP_MOVES,
-    BUDGET: BUDGET, BODIES: BODIES, MOBILITY: MOBILITY, UPGRADES: UPGRADES, PARTS: PARTS, PRESETS: PRESETS,
+    BUDGET: BUDGET, BODIES: BODIES, MOBILITY: MOBILITY, UPGRADES: UPGRADES, PARTS: PARTS, PRESETS: PRESETS, SPRITES: SPRITES,
     ARENAS: ARENAS, FORMATS: FORMATS, TEAM_COLORS: TEAM_COLORS, TEAM_NAMES: TEAM_NAMES,
   };
 });

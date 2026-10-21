@@ -176,6 +176,42 @@ until the real one exists. Export pieces as `docs/GEAR-ASSETS.md` describes into
 it finds (body pieces ride their rig bone, the tail mace follows the tail tip, `fx-aegis-*` and `fx-rage-*`
 frames replace the painted shield and aura).
 
+## Sprite-pack dragons (Emberfang HD, Frostwing HD, Ironmaw HD, Voltscale HD, Tidefang HD)
+
+Five painted 25-animation dragons live in `assets/dragons/<id>/` (`emberfang frostwing ironmaw voltscale tidefang`):
+`manifest.json` plus 25 sheets (384 px cells, 4 columns, 3x frames with optical-flow in-betweens). They are extra
+archetypes in the roster (`<id>-hd`): the same stats, moves and AI as the rig archetype of that name, with
+`look.sprite = '<id>'` choosing the art. The sprite is cosmetic; the simulation never reads it (a test checks a sprite
+dragon and its rig twin play identical matches). `look.sprite` is whitelisted by `Build.validateBuild/sanitize`, so it
+travels in the build that online players send. Forge-built rig dragons are unchanged.
+
+**Swapping a pack:** replace the folder's sheets and `manifest.json`. The renderer (`js/sprite.js`) reads frame counts
+`n`, `cols`, `loop`, per-frame foot row `bot`, attack `active` frames, guard `hold` and body centre `cx` from the manifest.
+
+| Sim state | Sheet |
+| --- | --- |
+| idle / run (fast run) / squat | Idle / Running (Running 2 above speed 5.6; frames advance with distance) / start of Jumping |
+| ascent (air jump) / fall / land | Jumping (Jumping 2) driven by vertical speed / Falling / Landing |
+| spot dodge, air dodge | Defence 1 (raise, hold on `hold`, release) / Defence 2 |
+| dash dodge (back, forward) | Dodging / Dodging 2 |
+| jab, fair, nair (repeated within 0.8 s) | Light Attack 1, 2, 3 in turn; utilt / dtilt use Light 2 / 3 |
+| smashes, aerial heavies | Heavy 1 (fsmash, fheavyAir), Heavy 2 (usmash, dsmash, meteor) |
+| signature / elemental ability, Wing Burst | Elemental 1 / Elemental 2 |
+| hitstun / tumble / knockdown | Hit 1 and 2 alternating / Knockback / Recovery |
+| ledge hang, climb | Falling frame, Recovery |
+| match end | Victory for the winning team, Defeat for the rest |
+
+Attack sheets are time-stretched onto the move's own frame data: startup frames play up to the manifest's first `active`
+frame, active frames cover its `active` window, recovery plays the rest. Every frame is drawn with its `bot` row on
+the fighter's feet, so feet stay on the floor in every state; facing flips about the manifest `cx`. Gear pieces are not
+drawn on sprite dragons (gear stats still apply; size scales the sprite).
+
+**Loading:** a pack is ~530 MB decoded, so sheets are downscaled to 62.5 % on load (`RES` in `js/sprite.js`) and only
+the dragons in a match are kept: the match shows "Summoning dragons…" while it decodes and touches every sheet, and
+frees the rest (`DCSprites.unloadExcept`). Menus and the select screen load only the idle sheet. Online rooms start
+decoding when a sprite dragon joins the room. From `file://` the manifest cannot be fetched, so sprite dragons fall back
+to their rig look.
+
 ## Online
 
 ```bash

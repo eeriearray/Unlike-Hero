@@ -46,6 +46,16 @@
     this.arena = D.ARENAS[this.setupInfo.arena] || D.ARENAS.skyforge;
     this.setupInfo.fighters.forEach(function (f) { Art.prepare(f.build.look); });
     window.DCScenery.prepare(this.arena, window.innerWidth, window.innerHeight);   // tint each dragon's art now, not mid-fight
+    // Sprite-pack dragons: decode and touch every sheet of the dragons in this match before it starts (and free the rest)
+    var spriteIds = [];
+    this.setupInfo.fighters.forEach(function (f) { var s = f.build.look.sprite; if (s && spriteIds.indexOf(s) < 0) spriteIds.push(s); });
+    if (window.DCSprites) {
+      window.DCSprites.unloadExcept(spriteIds);
+      if (spriteIds.length) {
+        this.spriteLoad = 0;
+        window.DCSprites.loadAll(spriteIds, function (k) { self.spriteLoad = k; }).then(function () { self.spriteLoad = null; });
+      }
+    }
     this.view = null;
     this.acc = 0;
     this.last = performance.now();
@@ -140,6 +150,7 @@
   M.frame = function (now) {
     var dt = Math.min(100, now - this.last);
     this.last = now;
+    if (this.spriteLoad != null) { this.drawLoading(); return; }
     this.time += dt / 1000;
     this.dt = this.paused ? 0 : dt / 1000;
     var ticks = 0;
@@ -161,6 +172,15 @@
     // Effects advance with game time, not with the screen's refresh rate
     for (var k = 0; k < Math.min(ticks, 5); k++) this.fx.update();
     this.render();
+  };
+
+  M.drawLoading = function () {
+    var x = this.ctx, W = this.W, H = this.H, k = this.spriteLoad || 0;
+    x.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    x.fillStyle = '#120c24'; x.fillRect(0, 0, W, H);
+    this.drawText('Summoning dragons…', W / 2, H / 2 - 20, 34);
+    x.fillStyle = 'rgba(255,255,255,0.15)'; x.fillRect(W / 2 - 160, H / 2 + 20, 320, 8);
+    x.fillStyle = '#ffcf4a'; x.fillRect(W / 2 - 160, H / 2 + 20, 320 * k, 8);
   };
 
   M.positions = function () {
@@ -407,7 +427,10 @@
     else if (tr.length) tr.shift();
     var an = this.animators[i] || (this.animators[i] = new Anim.Animator());
     var gb = this.groundBelow(f.x, f.y);
-    var pose = an.update(f, build, this.time + i * 0.37, this.dt || 0, { ground: gb == null ? null : gb - f.y });
+    var end = this.view && this.view.end, force = null;
+    // the simulation stops at the end of a match, so whatever the dragon was doing is replaced by its victory or defeat sheet
+    if (end && build.look.sprite) force = end.winnerTeam === info.team ? 'victory' : 'defeat';
+    var pose = an.update(f, build, this.time + i * 0.37, this.dt || 0, { ground: gb == null ? null : gb - f.y, force: force });
     pose.gear = build.gear;
     if (f.fd) pose.alpha = 0.16 + 0.06 * Math.sin(this.time * 9);
     else if (f.st === 'dodge' || f.st === 'airdodge') pose.alpha = 0.75;
@@ -519,6 +542,7 @@
   var HAND_ANIMS = { clawLight: 1, clawHeavy: 1, up: 1, stomp: 'foot', burst: 1, throw: 1, push: 1, dash: 1, breath: 0, slam: 'foot', nova: 1 };
   M.swingTrail = function (x, f, build, pose, i) {
     var st = this.swings[i] || (this.swings[i] = []);
+    if (build.look.sprite && window.DCSprites.usable(build.look.sprite)) return;   // the painted sheets carry their own swoosh
     var a = f.st === 'attack' ? Anim.attackPhase(f, build) : null;
     var key = a ? Anim.attackKey(f, build, a.def) : null;
     var live = a && HAND_ANIMS[key] && (a.phase === 'active' || (a.phase === 'startup' && a.p > 0.7) || (a.phase === 'recovery' && a.p < 0.25));

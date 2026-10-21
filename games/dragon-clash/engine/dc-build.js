@@ -103,6 +103,7 @@
     for (var slot in D.PARTS) {
       if (!own(D.PARTS[slot], look[slot])) return 'Unknown ' + slot + ' part.';
     }
+    if (look.sprite != null && !own(D.SPRITES, look.sprite)) return 'Unknown sprite pack.';
     for (var i = 0; i < COLOR_KEYS.length; i++) {
       if (typeof look[COLOR_KEYS[i]] !== 'string' || !HEX.test(look[COLOR_KEYS[i]])) return 'Bad colour: ' + COLOR_KEYS[i] + '.';
     }
@@ -116,6 +117,7 @@
     var src = b.look || {};
     for (var slot in D.PARTS) look[slot] = src[slot];
     COLOR_KEYS.forEach(function (k) { look[k] = src[k]; });
+    if (own(D.SPRITES, src.sprite)) look.sprite = src.sprite;
     return {
       id: typeof b.id === 'string' ? b.id.slice(0, 40) : undefined,
       name: typeof b.name === 'string' ? b.name.slice(0, 40) : '',
