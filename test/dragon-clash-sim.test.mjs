@@ -124,6 +124,16 @@ test('a dragon falling beside the stage grabs the ledge, then can climb back', (
   assert.ok(A.grounded && A.x > p.x, 'back on stage');
 });
 
+test('a dragon left hanging on a ledge climbs up by itself within about a second', () => {
+  const { sim, A } = duel(plain('fire'), plain('ice'));
+  const p = D.ARENAS.skyforge.platforms[0];
+  A.x = p.x - 22; A.y = p.y + 60; A.grounded = false; A.state = 'air'; A.vy = 2;
+  sim.step([]);
+  assert.equal(A.state, 'ledge');
+  for (let i = 0; i < 100; i++) sim.step([]);
+  assert.ok(A.grounded && A.x > p.x, 'back on stage without any input');
+});
+
 test('the same seed and inputs replay the same match', () => {
   const run = () => {
     const sim = new Sim({ stocks: 1, seed: 42, timeLimit: 60 * 60 * 2, fighters: [{ build: Build.presetBuild('voltscale'), team: 0 }, { build: Build.presetBuild('tidefang'), team: 1 }] });

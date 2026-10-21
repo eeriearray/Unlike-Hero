@@ -74,7 +74,7 @@
     hitlagBase: 3, hitlagPerDamage: 0.45, hitlagMax: 13,
     diDegrees: 14,               // directional influence: hold away/sideways while hit
     respawnTicks: 70, respawnInvuln: 120,
-    ledgeInvuln: 36, ledgeRegrab: 34, ledgeMaxHang: 300,
+    ledgeInvuln: 36, ledgeRegrab: 34, ledgeMaxHang: 60,
     landingLag: 4, inputBuffer: 6,
     dodgeInvulnStart: 3, dodgeInvulnEnd: 18, dodgeTicks: 26, airDodgeTicks: 30, airDodgeSpeed: 8.5,
     dashSpeed: 9.5,

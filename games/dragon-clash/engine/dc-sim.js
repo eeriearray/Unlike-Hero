@@ -817,8 +817,10 @@
       f.buf = null; this.climb(f, 'roll');
     } else if (toward) {
       this.climb(f, 'climb');
-    } else if (away || dirY > 0 || f.stateT > P.ledgeMaxHang) {
+    } else if (away || dirY > 0) {
       this.releaseLedge(f); f.ledgeRegrab = P.ledgeRegrab; f.y -= 20; this.setState(f, 'air');
+    } else if (f.stateT > P.ledgeMaxHang) {
+      this.climb(f, 'climb');   // nobody wants to dangle: a dragon left hanging pulls itself up
     }
   };
 

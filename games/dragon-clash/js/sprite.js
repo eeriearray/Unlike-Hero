@@ -194,7 +194,8 @@
         else guard(this, p, out, 'guard', T, 26);
         break;
       case 'airdodge': guard(this, p, out, 'guard2', T, 30); break;
-      case 'ledge': out.a = 'fall'; out.fr = 6; out.dy = 34; break;
+      // No hang frames in the packs: the falling pose, raised so the claws sit on the lip and pulled back off the rock face
+      case 'ledge': out.a = 'fall'; out.fr = 6; out.dy = -16; out.dx = -30; break;
       case 'ledgeclimb': out.a = 'recover'; out.fr = clamp(T / 22, 0, 1) * (S.recover.n - 1); break;
       case 'hitstun':
         if (f.tb) { out.a = 'knock'; out.fr = Math.min(17, T * 0.9); }
@@ -301,7 +302,7 @@
     var k = SCALE, w = s.cw / s.res * k, h = s.ch / s.res * k;
     var botRow = (s.bot[i] != null ? s.bot[i] : 350) + 1;
     ctx.save();
-    ctx.translate(pose.dx || 0, (pose.dy || 0) + (d.dy || 0) * sy);
+    ctx.translate((pose.dx || 0) + (d.dx || 0) * (pose.facing || 1) * sx, (pose.dy || 0) + (d.dy || 0) * sy);
     ctx.scale((pose.facing || 1) * sx, sy);
     var a0 = ctx.globalAlpha;
     if (pose.alpha != null) ctx.globalAlpha = a0 * pose.alpha;
