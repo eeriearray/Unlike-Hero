@@ -1669,16 +1669,14 @@
   }
 
   // ─────────────── scene cache and drawing ───────────────
-  // Keep the legacy scene compositor compatible with the landmark painters used by
-  // the current arena themes. The newer painters are used by the gallery only.
-  var LANDMARKS = {
-    volcano: paintVolcano,
-    tower: paintTower,
-    pagoda: paintPagoda,
-    colosseum: paintColosseum,
-    geode: paintGeode,
-    temple: paintTemple,
-  };
+  // Keep the scene compositor compatible with the material-aware landmark painters.
+  var LANDMARKS = {};
+  Object.keys(PAINT2).forEach(function (key) {
+    LANDMARKS[key] = function (w, h, th, n) {
+      var result = PAINT2[key]({ W: w, H: h, S: h / 900, n: n, th: th, fm: 1 });
+      return { canvas: result.mid, land: result.land };
+    };
+  });
   var scenes = {};
   function scene(theme, W, H) {
     var bw = Math.round(W * 1.3 / 64) * 64, bh = Math.round(H * 1.15 / 64) * 64;   // margin for parallax, bucketed
