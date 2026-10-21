@@ -53,7 +53,8 @@
   function stepGear(p, key, dir) {
     var opts = Object.keys(TABLE[key]), k = opts.indexOf(p.gear[key]);
     for (var n = 1; n < opts.length; n++) {
-      var g = Object.assign({}, p.gear); g[key] = opts[(k + dir * n + opts.length * n) % opts.length];
+      var next = (k + dir * n + opts.length) % opts.length;
+      var g = Object.assign({}, p.gear); g[key] = opts[next];
       if (gearCostOf(p, g) <= D.GEAR_BUDGET) { p.gear = g; return true; }
     }
     return false;
@@ -186,9 +187,12 @@
         return window.DCIcons.svg(TABLE[key][p.gear[key]].icon, key === 'instinct' ? '#ffcf3a' : '#d8d0f0', 16);
       }
 
-      // Points an option costs (size: growth over the dragon's own frame)
+      // Show each option's own cost; the complete loadout is checked before every change.
       function costOf(p, key) {
-        if (key === 'size') { var one = { size: p.gear.size, instinct: p.gear.instinct, ability: 'none' }; return gearCostOf(p, one); }
+        if (key === 'size') {
+          var base = p.roster[p.pick], baseBody = D.BODIES[base.body], sizeBody = D.BODIES[D.SIZES[p.gear.size].body];
+          return Math.max(0, (sizeBody ? sizeBody.cost : 0) - (baseBody ? baseBody.cost : 0));
+        }
         return TABLE[key][p.gear[key]].cost || 0;
       }
 
