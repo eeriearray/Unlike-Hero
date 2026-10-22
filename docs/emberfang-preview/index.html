@@ -1,0 +1,615 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Emberfang in-game preview</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root { color-scheme: dark; }
+  body { margin:0; background:#0b0709; color:#eadcd2; font:14px/1.4 system-ui,sans-serif; }
+  #wrap { max-width:1280px; margin:0 auto; padding:12px; }
+  canvas { width:100%; display:block; background:#000; border-radius:8px; }
+  .row { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0; align-items:center; }
+  button { background:#2a1713; color:#ffd7b0; border:1px solid #6b3320; border-radius:6px; padding:5px 9px; cursor:pointer; font:inherit; }
+  button.on { background:#8a2f12; }
+  .help { color:#b99a88; font-size:13px; }
+  kbd { background:#2a1713; border:1px solid #6b3320; border-radius:4px; padding:0 5px; }
+  #load { position:fixed; inset:0; display:grid; place-items:center; background:#0b0709; font-size:18px; z-index:5; }
+</style>
+<div id="load">Loading Emberfang… <span id="lp"></span></div>
+<div id="wrap">
+  <canvas id="c" width="1280" height="600"></canvas>
+  <div class="row help">
+    <span><kbd>A</kbd><kbd>D</kbd> run (hold <kbd>Shift</kbd> = sprint)</span>
+    <span><kbd>Space</kbd> dodge (+ toward the rival = dash in, otherwise step back)</span>
+    <span><kbd>W</kbd> jump (double-tap for 2nd jump anim)</span>
+    <span><kbd>S</kbd> crawl</span>
+    <span><kbd>I</kbd> hold to guard (<kbd>I</kbd>+<kbd>S</kbd> = braced guard)</span>
+    <span><kbd>J</kbd> light x3 combo</span>
+    <span><kbd>K</kbd> heavy (tap twice for 2nd)</span>
+    <span><kbd>L</kbd> elemental (<kbd>S</kbd>+<kbd>L</kbd> for 2nd)</span>
+    <span><kbd>V</kbd> victory</span>
+    <span><kbd>R</kbd> reset</span>
+  </div>
+  <div class="row">
+    <span id="pick"></span>
+    Dummy: <button id="m0" class="on">Stands still</button><button id="m1">Fights back</button>
+    Speed: <button id="f10">0.7x</button><button id="f12" class="on">1x</button><button id="f15">1.3x</button><button id="f20">1.6x</button>
+    <button id="dbg">Show boxes</button>
+  </div>
+  <div class="row" id="czrow"></div>
+  <div class="row" id="buildrow"></div>
+  <div class="row" id="viewer"></div>
+</div>
+<script>
+const C = 384, FEET_X = 172, FEET_Y = 352, SCALE = 0.95, GROUND = 505, HORIZON = 462;
+const ANIMS = {
+  idle:'01_Idle', run:'02_Running', run2:'03_Running_2', crawl:'04_Crawl', jump:'05_Jumping', jump2:'06_Jumping_2',
+  fall:'07_Falling', land:'08_Landing', dodge:'09_Dodging', dodge2:'10_Dodging_2', guard:'11_Defence_1', guard2:'12_Defence_2',
+  l1:'13_Light_Attack', h1:'14_Heavy_Attack', l2:'15_Light_Attack_2', l3:'16_Light_Attack_3', h2:'17_Heavy_Attack_2',
+  e1:'18_Elemental_Attack', e2:'19_Elemental_Attack_2', hit:'20_Hit_Reaction', hit2:'21_Hit_Reaction_2', knock:'22_Knockback',
+  recover:'23_Recovery', victory:'24_Victory', defeat:'25_Defeat'
+};
+// per-attack: active window (fraction of anim), damage, reach (world px from feet), knockback, fps
+const ATK = {
+  l1:{a:[.45,.6], dmg:6,  reach:200, kb:0, lunge:300},  l2:{a:[.45,.6], dmg:7, reach:210, kb:0, lunge:340}, l3:{a:[.5,.65], dmg:9, reach:230, kb:1, lunge:460},
+  h1:{a:[.5,.65], dmg:14, reach:250, kb:1, lunge:520},  h2:{a:[.45,.6], dmg:16, reach:270, kb:1, lunge:600},
+  e1:{a:[.45,.8], dmg:18, reach:420, kb:1, lunge:0},  e2:{a:[.45,.7], dmg:20, reach:300, kb:1, lunge:0},
+};
+// per-animation playback: fps, first frame (skips the near-idle lead-in), last frame
+const CFG = {
+  idle:{fps:10}, run:{fps:16,s:0}, run2:{fps:16}, crawl:{fps:12}, jump:{fps:12}, jump2:{fps:12}, fall:{fps:10}, land:{fps:30},
+  dodge:{fps:28,s:2}, dodge2:{fps:28,s:2}, guard:{fps:26}, guard2:{fps:26},
+  l1:{fps:34,s:3}, l2:{fps:34,s:3}, l3:{fps:34,s:3}, h1:{fps:30,s:3}, h2:{fps:30,s:3}, e1:{fps:26,s:3}, e2:{fps:26,s:3},
+  hit:{fps:30}, hit2:{fps:30}, knock:{fps:24}, recover:{fps:20}, victory:{fps:12}, defeat:{fps:14}
+};
+const FREE_Y = { jump:1, jump2:1, fall:1, knock:1, defeat:1, victory:1 }, LOCK = 1;
+const AIR_LOCK = { jump:1, jump2:1, fall:1 };
+const K = 3;   // sheets3x holds the original frames plus 2 optical-flow in-betweens each
+const BLEND = { idle:1, run:1, run2:1, crawl:1, guard:1, guard2:1, fall:1 };
+let freeze = 0, shake = 0; const sparks = [];
+// cx: body-centre x inside the 384px cell; skip: drop each attack's lead-in frames (older packs start with near-idle frames);
+// proc: how much of the engine's procedural lean/squash to layer on (the layered pack already has real body motion);
+// guardHold: source frame where the guard pose peaks; airLock: jump sheets already rise inside the cell, so pin feet and let physics supply height.
+const DRAGONS = {
+  ember:{ dir:'ember3x', name:'EMBERFANG', btn:'Emberfang', cx:165, skip:false, proc:.3, guardHold:3, atk:{}, airLock:true },
+  frost:{ dir:'frost3x', name:'FROSTWING', btn:'Frostwing', cx:166, skip:false, proc:.3, guardHold:4, atk:{}, airLock:true },
+  volt: { dir:'volt3x',  name:'VOLTSCALE', btn:'Voltscale', cx:157, skip:false, proc:.3, guardHold:4, atk:{}, airLock:true },
+  tide: { dir:'tide3x',  name:'TIDEFANG',  btn:'Tidefang',  cx:165, skip:false, proc:.3, guardHold:4, atk:{}, airLock:true },
+  iron: { dir:'iron3x',  name:'IRONMAW',   btn:'Ironmaw',   cx:169, skip:false, proc:.3, guardHold:4, atk:{}, airLock:true },
+};
+const sheets = {}, counts = {};   // keyed [dragon][anim]
+const cnt = f => counts[f.dragon][ANIMS[f.anim]];
+const czTmp = document.createElement('canvas'); czTmp.width = czTmp.height = 384; const czCtx = czTmp.getContext('2d');
+const atk = (f, a = f.anim) => DRAGONS[f.dragon].atk[a] || ATK[a];   // attack data; packs with metadata override the hit window
+let fps = 1, debug = false, dummyMode = 0;
+const cv = document.getElementById('c'), g = cv.getContext('2d');
+
+const loading = {};
+// The first drawImage of a big sheet uploads it to the GPU and stalls the frame (visible as a hitch the first time each move plays),
+// so touch every sheet once while the loading screen is up.
+const warm = im => { g.drawImage(im, 0, 0, 4, 4, 0, 0, 1, 1); };
+// Each dragon is ~20 MB of PNG and ~450 MB decoded, so only the ones on screen are loaded.
+function loadDragon(d) {
+  if (loading[d]) return loading[d]; sheets[d] = {}; counts[d] = {};
+  return loading[d] = fetch(DRAGONS[d].dir + '/manifest.json').then(r => r.json()).then(raw => { const man = raw.anims || raw; if (raw.cx) DRAGONS[d].cx = Math.round(raw.cx); let n = 0; const total = Object.keys(ANIMS).length; return Promise.all(Object.entries(ANIMS).map(([k, nm]) => new Promise(res => {
+    const im = new Image(); im.onload = async () => {
+      try { await im.decode(); } catch (e) {} sheets[d][nm] = im; warm(im); counts[d][nm] = { n:man[nm].n, cols:man[nm].cols, bot:man[nm].bot };
+      const hd = man[nm].hold; if (hd && nm.startsWith('11_')) DRAGONS[d].guardHold = hd[Math.floor(hd.length / 2)];
+      const act = man[nm].active; if (act && ATK[k]) DRAGONS[d].atk[k] = { ...ATK[k], a:[act[0] * K / man[nm].n, Math.min(1, (act[act.length - 1] + 1) * K / man[nm].n)] };
+      const lp = document.getElementById('lp'); if (lp) lp.textContent = DRAGONS[d].btn + ' ' + ++n + '/' + total; res(); };
+    im.src = DRAGONS[d].dir + '/' + nm + '.png';
+  }))); });
+}
+async function load() {
+  await Promise.all([...new Set([P.dragon, D.dragon])].map(loadDragon));
+  document.getElementById('load').remove();
+}
+
+class Fighter {
+  constructor(x, face, dragon) { this.x = x; this.y = 0; this.vy = 0; this.vx = 0; this.face = face; this.dragon = dragon; this.hp = 100; this.reset(x, face); }
+  reset(x, face) { this.x = x; this.y = 0; this.vy = 0; this.vx = 0; this.face = face; this.hp = 100; this.dead = false; this.set('idle', true); this.combo = 0; this.jumps = 0; this.state = 'free'; this.hitDone = false; }
+  set(a, loop, lock) { if (this.anim === a && loop) return; if (!loop && this === P) for (const k of ['KeyJ','KeyK','KeyL','KeyW','KeyV','Space']) delete pressed[k]; this.anim = a; this.t = 0; this.manual = null; this.lunged = false; this.trail = this.trail || []; this.loop = !!loop; this.lock = !!lock; this.hitDone = false; }
+  get cfg() { return CFG[this.anim]; }
+  get first() { return DRAGONS[this.dragon].skip ? (this.cfg.s || 0) * K : 0; }
+  get nf() { return cnt(this).n - this.first; }
+  get pos() { return this.manual != null ? this.manual : this.t * this.cfg.fps * K * fps; }   // fractional frame index
+  get prog() { return Math.min(1, this.pos / this.nf); }
+  get done() { return !this.loop && this.pos >= this.nf; }
+  get frame() { const f = this.pos; return this.first + (this.loop ? Math.floor(f) % this.nf : Math.min(this.nf - 1, Math.floor(f))); }
+  get next() { return this.first + (this.loop ? (Math.floor(this.pos) + 1) % this.nf : Math.min(this.nf - 1, Math.floor(this.pos) + 1)); }
+  get frac() { return this.pos - Math.floor(this.pos); }
+  get air() { return this.y < -1; }
+}
+
+const P = new Fighter(380, 1, 'ember'), D = new Fighter(900, -1, 'iron');
+const keys = {}, pressed = {};
+addEventListener('keydown', e => { if (!keys[e.code]) pressed[e.code] = performance.now(); keys[e.code] = true; if (['Space','ArrowUp','ArrowDown'].includes(e.code)) e.preventDefault(); });
+addEventListener('keyup', e => { keys[e.code] = false; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+const BUF = 320;
+const buffered = c => pressed[c] && performance.now() - pressed[c] < BUF;
+
+function damage(victim, atk, attacker) {
+  if (victim.dead) return;
+  const guarding = victim.anim.startsWith('guard') && victim.face === -attacker.face;
+  if (guarding) { freeze = .05; victim.blockT = .18; sparks.push({ x:victim.x + victim.face * 70, y:victim.y - 150, t:0, d:victim.dragon }); shake = Math.max(shake, 5); victim.vx = attacker.face * 120; victim.hp -= Math.round(atk.dmg * .1); return; }
+  victim.hp -= atk.dmg; victim.state = 'hurt'; victim.combo = 0; victim.flash = .09; freeze = atk.kb ? .11 : .06; shake = atk.kb ? 14 : 6;
+  victim.vx = attacker.face * (atk.kb ? 420 : 160);
+  if (victim.hp <= 0) { victim.hp = 0; victim.dead = true; victim.set('defeat', false, true); victim.vx = attacker.face * 260; return; }
+  if (atk.kb) victim.set('knock', false, true); else victim.set((victim.hitN = !victim.hitN) ? 'hit' : 'hit2', false, true);
+}
+
+function control(f, dt, ai) {
+  const I = ai || { left:keys.KeyA, right:keys.KeyD, up:buffered('KeyW'), down:keys.KeyS, dash:keys.ShiftLeft || keys.ShiftRight, dodge:buffered('Space'),
+    guard:keys.KeyI, l:buffered('KeyJ'), h:buffered('KeyK'), e:buffered('KeyL'), v:buffered('KeyV') };
+  const grounded = !f.air;
+  // gravity
+  if (f.air || f.vy) { f.vy += 2200 * dt; f.y += f.vy * dt; if (f.y >= 0) { f.y = 0; f.vy = 0; f.jumps = 0; if (f.state === 'air') { f.state = 'free'; f.set('land', false, true); } } }
+  f.x += f.vx * dt; f.vx *= Math.pow(.0008, dt);
+  f.x = Math.max(80, Math.min(1200, f.x));
+  // locked animations finish
+  if (f.dead) return;
+  if (f.lock) {
+    if (f.anim in ATK) {
+      const a = atk(f), p = f.prog;
+      if (!f.lunged && p >= a.a[0] - .08) { f.lunged = true; f.vx += f.face * a.lunge; }
+      if (!f.hitDone && p >= a.a[0] && p <= a.a[1]) {
+        const o = f === P ? D : P, dx = (o.x - f.x) * f.face;
+        if (dx > -40 && dx < a.reach * SCALE * (f.size || 1) * (f.reachMul || 1) && Math.abs(o.y - f.y) < 140) { f.hitDone = true; damage(o, a, f); }
+      }
+      // combo chaining
+      if (p > .35 && I.l && f.anim === 'l1') { f.set('l2', false, true); return; }
+      if (p > .35 && I.l && f.anim === 'l2') { f.set('l3', false, true); return; }
+      if (p > .35 && I.h && f.anim === 'h1') { f.set('h2', false, true); return; }
+    }
+    const dir0 = (I.right ? 1 : 0) - (I.left ? 1 : 0);
+    if (f.anim in ATK && f.prog > atk(f).a[1] + .1 && (I.l || I.h || I.e || I.up || dir0)) { f.lock = false; f.set('idle', true); }   // recovery can be cancelled
+    else if (f.anim === 'land' && f.prog > .35 && (I.l || I.h || I.e || I.up || dir0)) { f.lock = false; f.set('idle', true); }
+    else if ((f.anim === 'dodge' || f.anim === 'dodge2') && f.prog > .6 && (I.l || I.h)) { f.lock = false; f.set('idle', true); }
+    if (f.lock && f.done) {
+      if (f.anim === 'knock') { f.set('recover', false, true); }
+      else { f.lock = false; f.state = f.air ? 'air' : 'free'; f.set('idle', true); }
+    }
+    if (f.lock && (f.anim === 'dodge' || f.anim === 'dodge2')) f.vx = f.face * (f.dodgeDir || 1) * (f.dodgeDir < 0 ? 420 : 560);
+    if (f.lock) return;
+  }
+  // free state
+  if (I.v) { f.set('victory', false, true); return; }
+  if (I.guard && grounded) {                       // raise the guard once, then hold the peak pose (the sheet's arm sweep must not loop)
+    const want = I.down ? 'guard2' : 'guard';     // I = Defence 1, I+S = Defence 2 (braced)
+    if (f.anim !== want) { f.set(want, false); f.lock = false; }
+    const hold = DRAGONS[f.dragon].guardHold * K, raw = f.t * f.cfg.fps * K * fps;
+    f.manual = raw < hold ? raw : hold + 2.2 * Math.sin((f.t - hold / (f.cfg.fps * K * fps)) * 9);   // once raised, keep moving inside the hold window
+    f.vx *= .5; return;
+  }
+  if (f.anim.startsWith('guard') && f.manual != null) { const at = f.manual; f.set(f.anim, false, true); f.t = at / (f.cfg.fps * K * fps); return; }   // release: play the rest out
+  if (I.l) { f.set('l1', false, true); f.vx = f.face * 120; return; }
+  if (I.h) { f.set('h1', false, true); return; }
+  if (I.e) { f.set(I.down ? 'e2' : 'e1', false, true); return; }
+  if (I.up && f.jumps < 2) { f.vy = -950; f.y -= 2; f.jumps++; f.state = 'air'; f.set(f.jumps === 2 ? 'jump2' : 'jump', false, true); f.lock = false; return; }
+  if (f.air) {
+    if (f.vy > 0) f.set('fall', true);
+    else if (f.anim === 'jump' || f.anim === 'jump2') f.manual = Math.min(f.nf - .01, (1 + f.vy / 950) * f.nf);
+    if (I.left) f.x -= 260 * (f.spd || 1) * dt; if (I.right) f.x += 260 * (f.spd || 1) * dt; return;
+  }
+  const dir = (I.right ? 1 : 0) - (I.left ? 1 : 0);
+  if (I.dodge) {                                   // forward dash (Dodging 2) or backward step (Dodging 1), relative to the rival
+    const fwd = dir * f.face > 0; f.dodgeDir = fwd ? 1 : -1; f.set(fwd ? 'dodge2' : 'dodge', false, true); return;
+  }
+  if (I.down) { if (dir) { f.face = dir; f.x += dir * 150 * (f.spd || 1) * dt; } f.set('crawl', true); return; }
+  f.runv = (f.runv || 0) + ((dir * (I.dash ? 460 : 340) * (f.spd || 1)) - (f.runv || 0)) * Math.min(1, dt * 16);
+  f.x += f.runv * dt;
+  if (dir) { f.face = dir; f.set(I.dash ? 'run2' : 'run', true); }
+  else f.set('idle', true);
+}
+
+// simple dummy AI
+let aiT = 0;
+function dummyInput(dt) {
+  aiT -= dt; const I = {}; const dx = P.x - D.x, dist = Math.abs(dx);
+  if (P.dead) return I;
+  D.face = dx > 0 ? 1 : -1;
+  if (dummyMode === 1 && !D.lock) {
+    if (!D.anim.startsWith('guard')) D.guardLow = Math.random() < .4;
+    if (P.anim in ATK && dist < 340 && Math.random() < .08) { I.guard = true; I.down = D.guardLow; }
+    else if (D.anim.startsWith('guard') && P.anim in ATK && dist < 360) { I.guard = true; I.down = D.guardLow; }
+    else if (dist > 260) { I.right = dx > 0; I.left = dx < 0; }
+    else if (aiT <= 0) { aiT = 1 + Math.random() * 1.2; const r = Math.random(); if (r < .5) I.l = true; else if (r < .8) I.h = true; else I.e = true; I.down = false; }
+  }
+  return I;
+}
+
+const ease = x => x * x * (3 - 2 * x), clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+// Procedural body motion layered on the sheet frames (the generated sheets keep the torso nearly still).
+// rot: radians, + leans toward facing direction; sx/sy: squash & stretch about the feet; dx/dy: local px.
+function pose(f) {
+  const a = f.anim, p = f.prog, T = performance.now() / 1000, o = { rot:0, sx:1, sy:1, dx:0, dy:0 };
+  if (a === 'idle') { const b = Math.sin(T * 2.6); o.sy = 1 + .014 * b; o.sx = 1 - .006 * b; o.rot = .012 * Math.sin(T * 1.3); }
+  else if (a === 'run' || a === 'run2') {
+    const ph = f.pos / K * .5 * Math.PI, bob = Math.abs(Math.sin(ph));
+    o.rot = (a === 'run2' ? .2 : .13) + .03 * Math.sin(ph); o.dy = -4 * bob; o.sy = 1 + .03 * bob; o.sx = 1 + .03 * (1 - bob); o.dx = 8;
+  } else if (a === 'crawl') { const ph = f.pos / K * .6 * Math.PI; o.dy = -5 * Math.abs(Math.sin(ph)); o.rot = .05 * Math.sin(ph); }
+  else if (a in ATK) {
+    const k = atk(f), heavy = k.dmg >= 14 ? 1.35 : 1, [s0, s1] = k.a;
+    if (a === 'e1' || a === 'e2') {                    // charge: crouch + lean back, then burst up/forward
+      if (p < s0) { const u = ease(p / s0); o.sy = 1 - .08 * u; o.sx = 1 + .05 * u; o.rot = -.1 * u; o.dx = -12 * u; }
+      else { const u = ease(clamp((p - s0) / (1 - s0))); o.sy = .92 + .12 * Math.sin(Math.min(1, (p - s0) * 4) * Math.PI / 2) - .04 * u; o.rot = -.1 + .2 * (1 - u); o.dx = -12 + 22 * (1 - u); }
+    } else if (p < s0) {                               // anticipation: coil back
+      const u = ease(p / s0); o.rot = -.17 * heavy * u; o.sy = 1 - .06 * heavy * u; o.sx = 1 + .04 * u; o.dx = -26 * heavy * u;
+    } else if (p < s1 + .05) {                         // strike: snap forward, stretch
+      const u = ease(clamp((p - s0) / (s1 + .05 - s0))); o.rot = -.17 * heavy + .5 * heavy * u; o.sx = 1.04 + .09 * heavy * u; o.sy = .94 + .05 * u; o.dx = -26 * heavy + 90 * heavy * u;
+    } else {                                           // recovery: settle
+      const u = ease(clamp((p - s1 - .05) / (1 - s1 - .05))); o.rot = .33 * heavy * (1 - u); o.dx = 64 * heavy * (1 - u); o.sx = 1 + .09 * (1 - u); o.sy = 1 - .02 * (1 - u);
+    }
+  } else if (a === 'dodge' || a === 'dodge2') { const u = Math.sin(clamp(p) * Math.PI); o.rot = .28 * u; o.sx = 1 + .12 * u; o.sy = 1 - .07 * u; o.dx = 20 * u; }
+  else if (a === 'guard' || a === 'guard2') { const br = Math.sin(T * 7); o.sy = .95 + .016 * br; o.sx = 1.03 - .008 * br; o.rot = -.07 + .025 * Math.sin(T * 5); o.dx = -10 + 3 * br; if (a === 'guard2') { o.sy -= .03; o.sx += .03; } }
+  if (f.blockT > 0) { const u = f.blockT / .18; o.dx -= 22 * u; o.sx += .05 * u; o.rot -= .08 * u; }
+  else if (a === 'hit' || a === 'hit2') { const u = Math.sin(clamp(p) * Math.PI); o.rot = -.22 * u; o.dx = -28 * u; o.sy = 1 - .04 * u; o.sx = 1 + .03 * u; }
+  else if (a === 'knock') { const u = clamp(p); o.rot = -.55 * Math.sin(u * Math.PI) ; o.dy = -34 * Math.sin(Math.min(1, u * 1.6) * Math.PI); o.dx = -30 * u; }
+  else if (a === 'recover') { const u = 1 - clamp(p); o.rot = -.1 * u; o.sy = 1 - .05 * u; }
+  else if (a === 'jump' || a === 'jump2') { o.sy = 1.09; o.sx = .95; o.rot = .06; }
+  else if (a === 'fall') { o.rot = .14; o.sy = 1.04; o.sx = .97; }
+  else if (a === 'land') { const u = 1 - clamp(p); o.sy = 1 - .13 * u; o.sx = 1 + .1 * u; }
+  else if (a === 'victory') { const b = Math.abs(Math.sin(f.pos / K * .5)); o.dy = -10 * b; o.sy = 1 + .02 * b; }
+  const pr = DRAGONS[f.dragon].proc;
+  if (pr !== 1) { o.rot *= pr; o.dx *= pr; o.dy *= pr; o.sx = 1 + (o.sx - 1) * pr; o.sy = 1 + (o.sy - 1) * pr; }
+  // Ground lock: the generated sheets bounce the whole body up and down (the run frames lift ~35px), so grounded moves keep their
+  // lowest foot pixel on the floor. Airborne / tumbling moves are left alone.
+  if (!(a in FREE_Y && !(DRAGONS[f.dragon].airLock && a in AIR_LOCK)) && (!f.air || (DRAGONS[f.dragon].airLock && a in AIR_LOCK))) { const b = cnt(f).bot[f.frame]; if (b) o.dy += (FEET_Y - 2 - b) * LOCK; }
+  return o;
+}
+
+function frameDraw(f, snap) {
+  const s = snap || { x:f.x, y:f.y, anim:f.anim, frame:f.frame, next:f.next, frac:f.frac, manual:f.manual, pose:pose(f), face:f.face, alpha:1 };
+  const nm = ANIMS[s.anim], im = sheets[f.dragon][nm], cnt = counts[f.dragon][nm];
+  const cz = f.cz && (f.cz.hue || f.cz.sat !== 1 || f.cz.bri !== 1) ? f.cz : null;
+  const at = i => {
+    const sx = (i % cnt.cols) * C, sy = (i / cnt.cols | 0) * C, ox = -DRAGONS[f.dragon].cx;
+    if (!cz) { g.drawImage(im, sx, sy, C, C, ox, -FEET_Y, C, C); return; }
+    czCtx.filter = `hue-rotate(${cz.hue}deg) saturate(${cz.sat}) brightness(${cz.bri})`; czCtx.clearRect(0, 0, C, C); czCtx.drawImage(im, sx, sy, C, C, 0, 0, C, C);   // recolour one 384px frame, not whole sheets
+    g.drawImage(czTmp, ox, -FEET_Y);
+  };
+  g.save(); g.translate(s.x, GROUND + s.y); g.scale(s.face * SCALE * (f.size || 1), SCALE * (f.size || 1));
+  g.translate(s.pose.dx, s.pose.dy); g.rotate(s.pose.rot); g.scale(s.pose.sx, s.pose.sy);
+  g.globalAlpha = s.alpha * ((f.ab && f.ab.fadeT > 0) ? .35 : 1);
+  if (f.cz && f.cz.aura && !snap) { g.shadowColor = f.cz.glow; g.shadowBlur = 26; at(s.frame); g.shadowBlur = 0; g.shadowColor = 'transparent'; }   // aura glow, then the sprite on top
+  at(s.frame);
+  if (!snap && s.anim.startsWith('guard') && f.manual != null) { g.globalCompositeOperation = 'lighter'; g.globalAlpha = .1 + .1 * Math.sin(performance.now() / 70); at(s.frame); }   // shield shimmer while holding
+  if (!snap && f.flash > 0) { g.globalCompositeOperation = 'lighter'; g.globalAlpha = .55 * (f.flash / .09); at(s.frame); }
+  g.restore();
+  return s;
+}
+// afterimages when moving fast or striking
+function trails(f) {
+  const speed = Math.abs(f.vx) + (f.anim in ATK && f.prog > atk(f).a[0] - .05 && f.prog < atk(f).a[1] + .1 ? 380 : 0) + (f.anim === 'run2' ? 360 : 0);
+  f.trailT = (f.trailT || 0) - 1;
+  if (speed > 320 && f.trailT <= 0) { f.trailT = 2; f.trail.push({ x:f.x, y:f.y, anim:f.anim, frame:f.frame, next:f.next, frac:0, manual:null, pose:pose(f), face:f.face, alpha:.38 }); }
+  f.trail = f.trail.filter(t => (t.alpha -= .035) > 0);
+  for (const t of f.trail) frameDraw(f, t);
+}
+
+function drawBG() {
+  const gr = g.createLinearGradient(0,0,0,HORIZON); gr.addColorStop(0,'#1a0d12'); gr.addColorStop(1,'#4a2218'); g.fillStyle = gr; g.fillRect(0,0,1280,HORIZON);
+  g.fillStyle = '#26121a';
+  for (let i = 0; i < 9; i++) { const h = 150 + (i * 53 % 120), x = i * 150 - 30; g.fillRect(x, HORIZON - h - 40, 120, h + 40); }
+  g.fillStyle = '#ffb36a33'; for (let i = 0; i < 9; i++) for (let r = 0; r < 4; r++) if ((i * 7 + r * 3) % 5 < 2) g.fillRect(i * 150 - 10 + (r % 2) * 50, HORIZON - 190 + r * 40, 18, 22);
+  // floor: a plane with perspective seams, so the feet stand IN it rather than on its edge
+  const fl = g.createLinearGradient(0,HORIZON,0,600); fl.addColorStop(0,'#3a1d16'); fl.addColorStop(1,'#150a08'); g.fillStyle = fl; g.fillRect(0,HORIZON,1280,600 - HORIZON);
+  g.strokeStyle = '#ff8a3d26'; g.lineWidth = 1;
+  for (let i = -8; i <= 20; i++) { g.beginPath(); g.moveTo(640 + (i - 6) * 40, HORIZON); g.lineTo(640 + (i - 6) * 170, 600); g.stroke(); }
+  for (const y of [HORIZON + 14, HORIZON + 38, HORIZON + 74, HORIZON + 122]) { g.beginPath(); g.moveTo(0, y); g.lineTo(1280, y); g.stroke(); }
+  g.fillStyle = '#ff8a3d55'; g.fillRect(0, HORIZON, 1280, 2);
+}
+const SPARK = { ember:'255,160,60', frost:'140,220,255', volt:'190,140,255', iron:'210,180,90', tide:'90,225,235' };
+function drawSparks() {                                  // block impact: expanding ring + burst lines
+  for (const sp of sparks) { const u = sp.t / .3, c = SPARK[sp.d]; g.save(); g.translate(sp.x, GROUND + sp.y); g.strokeStyle = `rgba(${c},${1 - u})`; g.lineWidth = 5 * (1 - u) + 1;
+    g.beginPath(); g.arc(0, 0, 14 + 60 * u, 0, 7); g.stroke();
+    for (let i = 0; i < 8; i++) { const a = i * .785 + .2, r0 = 20 + 40 * u, r1 = r0 + 26 * (1 - u); g.beginPath(); g.moveTo(Math.cos(a) * r0, Math.sin(a) * r0); g.lineTo(Math.cos(a) * r1, Math.sin(a) * r1); g.stroke(); } g.restore(); }
+}
+function shadow(f) {
+  const h = Math.max(0, -f.y), k = 1 - Math.min(.6, h / 500);
+  g.save(); g.fillStyle = `rgba(0,0,0,${.5 * k})`; g.beginPath(); g.ellipse(f.x + 6 * f.face, GROUND + 3, 92 * k, 15 * k, 0, 0, 7); g.fill(); g.restore();
+}
+function hud() {
+  const bar = (x, f, name, right) => {
+    g.fillStyle = '#000a'; g.fillRect(x, 20, 480, 22);
+    g.fillStyle = '#e0451d'; const w = 476 * f.hp / (f.maxHp || 100); g.fillRect(right ? x + 478 - w : x + 2, 22, w, 18);
+    g.fillStyle = '#fff'; g.font = '14px system-ui'; g.textAlign = right ? 'right' : 'left'; g.fillText(name + ' · ' + f.anim, right ? x + 476 : x + 6, 58);
+  };
+  bar(30, P, DRAGONS[P.dragon].name, false); bar(770, D, DRAGONS[D.dragon].name, true);
+  if (D.dead) { g.fillStyle = '#ffd7b0'; g.font = '700 54px system-ui'; g.textAlign = 'center'; g.fillText('K.O.', 640, 150); }
+  if (P.dead) { g.fillStyle = '#ffd7b0'; g.font = '700 54px system-ui'; g.textAlign = 'center'; g.fillText('DEFEATED', 640, 150); }
+}
+
+let last = performance.now();
+function tick(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  if (freeze > 0) { freeze -= dt; requestAnimationFrame(tick); drawFrame(); return; }
+  P.t += dt; D.t += dt; P.blockT = Math.max(0, (P.blockT || 0) - dt); D.blockT = Math.max(0, (D.blockT || 0) - dt); for (const sp of sparks) sp.t += dt; while (sparks.length && sparks[0].t > .3) sparks.shift(); P.flash = Math.max(0, (P.flash || 0) - dt); D.flash = Math.max(0, (D.flash || 0) - dt); shake *= Math.pow(.001, dt);
+  if (preview) { if (P.anim !== preview) P.set(preview, true); P.loop = true; P.manual = null; P.lock = false; P.dead = false; P.y = 0; P.vy = 0; P.vx = 0; P.x = 640; P.face = 1; D.x = 1150; D.set('idle', true); D.t += dt; }
+  else { control(P, dt); control(D, dt, dummyInput(dt)); }
+  if (pressed.KeyR) { delete pressed.KeyR; P.reset(380, 1); D.reset(900, -1); }
+  if (!P.lock && !D.dead) { const dx = D.x - P.x; if (!P.dead && Math.abs(dx) > 30 && P.anim in {idle:1,run:1,run2:1,crawl:1,guard:1,guard2:1}) P.face = dx > 0 ? 1 : -1; }
+  // soft push apart
+  if (Math.abs(P.x - D.x) < 70) { const s = P.x < D.x ? 1 : -1; P.x -= s * 2; D.x += s * 2; }
+  for (const k in pressed) if (now - pressed[k] > BUF) delete pressed[k];
+  drawFrame(); requestAnimationFrame(tick);
+}
+function drawFrame() {
+  g.save(); if (shake > .5) g.translate((Math.random() - .5) * shake, (Math.random() - .5) * shake);
+  drawBG(); shadow(D); shadow(P); trails(D); trails(P); frameDraw(D); frameDraw(P); drawSparks();
+  if (debug) { for (const f of [P, D]) { g.strokeStyle = '#0f0'; g.strokeRect(f.x - 60, GROUND + f.y - 250 * SCALE, 120, 250 * SCALE); const a = f.anim in ATK && atk(f); if (a && f.prog >= a.a[0] && f.prog <= a.a[1]) { g.strokeStyle = '#f33'; g.strokeRect(f.face > 0 ? f.x : f.x - a.reach * SCALE, GROUND + f.y - 200, a.reach * SCALE, 160); } } }
+  g.restore(); hud();
+}
+
+// controls UI + animation viewer
+const $ = id => document.getElementById(id);
+const pickBox = $('pick');
+for (const [label, f, def] of [['You', P, 'ember'], ['Rival', D, 'iron']]) {
+  const grp = document.createElement('span'); grp.append(label + ': '); const btns = {};
+  for (const d in DRAGONS) { const b = document.createElement('button'); b.textContent = DRAGONS[d].btn; btns[d] = b; if (d === def) b.className = 'on';
+    b.onclick = async () => { const t = b.textContent; b.textContent = t + '…'; await loadDragon(d); b.textContent = t; f.dragon = d; f.set('idle', true); for (const k in btns) btns[k].classList.toggle('on', k === d); }; grp.append(b); }
+  pickBox.append(grp, ' ');
+}
+$('m0').onclick = () => { dummyMode = 0; $('m0').classList.add('on'); $('m1').classList.remove('on'); };
+$('m1').onclick = () => { dummyMode = 1; $('m1').classList.add('on'); $('m0').classList.remove('on'); };
+const MULT = {10:.7, 12:1, 15:1.3, 20:1.6};
+[10,12,15,20].forEach(n => $('f'+n).onclick = () => { fps = MULT[n]; [10,12,15,20].forEach(m => $('f'+m).classList.toggle('on', m === n)); });
+$('dbg').onclick = e => { debug = !debug; e.target.classList.toggle('on', debug); };
+const viewer = $('viewer'); viewer.innerHTML = '<span class="help">Click an animation to loop it (click again or press Back to return to the game):</span>';
+let preview = null; const vbtn = {};
+const setPreview = k => { preview = (preview === k) ? null : k; for (const n in vbtn) vbtn[n].classList.toggle('on', n === preview); back.style.display = preview ? '' : 'none';
+  if (!preview) { P.set('idle', true); P.x = 380; D.x = 900; P.face = 1; } };
+const back = document.createElement('button'); back.textContent = '← Back to game'; back.style.display = 'none'; back.onclick = () => setPreview(preview); viewer.appendChild(back);
+for (const k in ANIMS) { const b = document.createElement('button'); b.textContent = ANIMS[k].replace(/_/g,' '); b.onclick = () => setPreview(k); vbtn[k] = b; viewer.appendChild(b); }
+
+
+// ====== Customization: abilities (effects), size, and gear preview ======
+// Ability keys 1-6 work in the match; armor/weapons are shown on the "select screen" view only (the pieces are rigid
+// images drawn for one pose, so they are not yet tracked through the 25 animations).
+(() => {
+  const CZ = 'customization/', img = {}, imgs = {};      // img: promises, imgs: loaded images
+  const load = p => img[p] || (img[p] = new Promise(r => { const i = new Image(); i.onload = () => { imgs[p] = i; r(i); }; i.src = CZ + p; }));
+  const FXD = { aegis_bubble:[512,512,8], aegis_shatter:[512,512,8], phase_dash:[512,512,8], decoy_pop:[512,512,6], rage_aura:[512,512,8], gust_wind:[512,256,8] };
+  const fx = {}, gustC = [];                       // loaded sheets; gust per-frame bbox centres
+  const ABIL = [
+    { key:'Digit1', id:'aegis',     icon:'ability_aegis',      name:'Aegis',      cd:5 },
+    { key:'Digit2', id:'phase',     icon:'ability_phase_dash', name:'Phase Dash', cd:3 },
+    { key:'Digit3', id:'decoy',     icon:'ability_decoy',      name:'Decoy',      cd:5 },
+    { key:'Digit4', id:'rage',      icon:'ability_rage',       name:'Rage',       cd:8 },
+    { key:'Digit5', id:'gust',      icon:'ability_gust',       name:'Gust',       cd:3 },
+    { key:'Digit6', id:'fade',      icon:'ability_fade',       name:'Fade',       cd:6 },
+  ];
+  const SIZES = [.8, .9, 1, 1.1, 1.2, 1.3];
+  const ARMORS = ['scale_mail', 'iron_plate', 'dragonbone'];
+  const WEAPONS = { steel_talons:['steel_talons_far', 'steel_talons_near'], great_claws:['great_claws_far', 'great_claws_near'], tail_mace:['tail_mace'], horn_spikes:['horn_spikes'] };
+  const FAR = ['shoulder_far', 'forearm_far', 'shin_far', 'tail_guard'], NEAR = ['waist', 'chest', 'shin_near', 'forearm_near', 'shoulder_near', 'helmet'];
+  const ab = f => f.ab || (f.ab = { aegisT:0, rageT:0, fadeT:0, invul:0, cd:{} });
+  const fxs = [], gusts = [], decoys = [];
+  const state = { armor:null, weapons:{}, size:2, view:false };
+
+  const ready = Promise.all([
+    ...Object.keys(FXD).map(n => load('fx/' + n + '.png').then(i => { fx[n] = i; })),
+    ...ABIL.map(a => load('icons/' + a.icon + '.png')),
+    ...['size_1','size_2','size_3','size_4','size_5','size_6','armor_scale_mail','armor_iron_plate','armor_dragonbone','weapon_steel_talons','weapon_great_claws','weapon_tail_mace','weapon_horn_spikes'].map(n => load('icons/' + n + '.png')),
+  ]).then(() => {                                  // where the gust crescent is inside each frame, so it can be centred on the projectile
+    const [w, h, n] = FXD.gust_wind, c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d', { willReadFrequently:true });
+    for (let i = 0; i < n; i++) { x.clearRect(0, 0, w, h); x.drawImage(fx.gust_wind, (i % 4) * w, (i / 4 | 0) * h, w, h, 0, 0, w, h); const d = x.getImageData(0, 0, w, h).data; let x0 = w, x1 = 0, y0 = h, y1 = 0;
+      for (let p = 3; p < d.length; p += 4) if (d[p] > 30) { const q = (p - 3) / 4, px = q % w, py = q / w | 0; if (px < x0) x0 = px; if (px > x1) x1 = px; if (py < y0) y0 = py; if (py > y1) y1 = py; }
+      gustC.push(x1 > x0 ? [(x0 + x1) / 2, (y0 + y1) / 2] : null); }
+  });
+
+  function drawFx(name, i, x, y, face, size, alpha = 1) {                       // 512x512 effect cells: dragon feet at (256,440)
+    const [w, h] = FXD[name], im = fx[name]; if (!im) return;
+    g.save(); g.translate(x, GROUND + y); g.scale(face * SCALE * size, SCALE * size); g.globalAlpha = alpha;
+    g.drawImage(im, (i % 4) * w, (i / 4 | 0) * h, w, h, -256, -440, w, h); g.restore();
+  }
+  const frameOf = (name, t, dur, loop) => { const n = FXD[name][2]; return loop ? Math.floor(t * 12) % n : Math.min(n - 1, Math.floor(t / dur * n)); };
+
+  function use(f, id) {
+    const A = ab(f), def = ABIL.find(a => a.id === id); if (!def || (A.cd[id] || 0) > 0 || f.dead || (f === P && window.czBuild && !window.czBuild.loadout.has(id))) return;
+    A.cd[id] = def.cd; const sz = f.size || 1;
+    if (id === 'aegis') A.aegisT = 4;
+    if (id === 'rage') A.rageT = 5;
+    if (id === 'fade') A.fadeT = 2;
+    if (id === 'phase') { fxs.push({ n:'phase_dash', x:f.x, y:f.y, face:f.face, t:0, dur:.5, sz }); f.x = Math.max(80, Math.min(1200, f.x + f.face * 300)); f.vx = 0; A.invul = .3; fxs.push({ n:'phase_dash', x:f.x, y:f.y, face:-f.face, t:0, dur:.5, sz }); }
+    if (id === 'decoy') { fxs.push({ n:'decoy_pop', x:f.x, y:f.y, face:f.face, t:0, dur:.5, sz }); decoys.push({ x:f.x, y:f.y, face:f.face, dragon:f.dragon, anim:f.anim, frame:f.frame, pose:pose(f), t:0, sz }); f.x = Math.max(80, Math.min(1200, f.x - f.face * 170)); A.invul = .25; }
+    if (id === 'gust') gusts.push({ x:f.x + f.face * 110, y:f.y - 140, face:f.face, t:0, owner:f });
+  }
+  addEventListener('keydown', e => { const a = ABIL.find(x => x.key === e.code || ('Numpad' + x.key.slice(5)) === e.code); if (a && !state.view) use(P, a.id); });
+
+  // damage: aegis absorbs one hit and shatters, rage boosts outgoing damage, invulnerability frames ignore hits
+  const od = window.damage;
+  window.damage = function (victim, atk, attacker) {
+    const A = ab(victim); if (A.invul > 0 || A.fadeT > 0 || victim.dead) return;
+    if (A.aegisT > 0) { A.aegisT = 0; fxs.push({ n:'aegis_shatter', x:victim.x, y:victim.y, face:1, t:0, dur:.6, sz:victim.size || 1 }); freeze = .07; shake = Math.max(shake, 7); victim.vx = attacker.face * 220; return; }
+    if (ab(attacker).rageT > 0) atk = { ...atk, dmg:Math.round(atk.dmg * 1.5) };
+    return od(victim, atk, attacker);
+  };
+
+  // behind the dragon: rage aura (shadow() is drawn just before the fighters)
+  const oShadow = window.shadow;
+  window.shadow = function (f) { oShadow(f); const A = ab(f); if (A.rageT > 0) drawFx('rage_aura', frameOf('rage_aura', performance.now() / 1000, 1, true), f.x, f.y, f.face, f.size || 1, Math.min(1, A.rageT) * .9); };
+  // in front: bubble, one-shot effects, decoys, gusts (drawSparks() is drawn right after the fighters)
+  const oSpark = window.drawSparks;
+  window.drawSparks = function () {
+    oSpark();
+    for (const d of decoys) { g.save(); g.globalAlpha = .45 * Math.min(1, (2.2 - d.t) * 2); g.filter = 'none'; const nm = ANIMS[d.anim], im = sheets[d.dragon][nm], c = counts[d.dragon][nm];
+      g.translate(d.x, GROUND + d.y); g.scale(d.face * SCALE * d.sz, SCALE * d.sz); g.translate(d.pose.dx, d.pose.dy); g.rotate(d.pose.rot); g.scale(d.pose.sx, d.pose.sy);
+      g.drawImage(im, (d.frame % c.cols) * C, (d.frame / c.cols | 0) * C, C, C, -DRAGONS[d.dragon].cx, -FEET_Y, C, C); g.globalCompositeOperation = 'lighter'; g.globalAlpha *= .6; g.drawImage(im, (d.frame % c.cols) * C, (d.frame / c.cols | 0) * C, C, C, -DRAGONS[d.dragon].cx, -FEET_Y, C, C); g.restore(); }
+    for (const f of [P, D]) { const A = ab(f); if (A.aegisT > 0) drawFx('aegis_bubble', frameOf('aegis_bubble', performance.now() / 1000, 1, true), f.x, f.y, 1, f.size || 1, A.aegisT < 1 ? .4 + .6 * Math.abs(Math.sin(performance.now() / 70)) : 1); }
+    for (const e of fxs) drawFx(e.n, frameOf(e.n, e.t, e.dur, false), e.x, e.y, e.face, e.sz, Math.max(0, 1 - Math.max(0, e.t / e.dur - .85) / .15));
+    for (const gu of gusts) { const i = Math.floor(gu.t * 14) % 6, c = gustC[i] || [256, 128], [w, h] = FXD.gust_wind;
+      g.save(); g.translate(gu.x, GROUND + gu.y); g.scale(gu.face * SCALE * 1.3, SCALE * 1.3); g.drawImage(fx.gust_wind, (i % 4) * w, (i / 4 | 0) * h, w, h, -c[0], -c[1], w, h); g.restore(); }
+  };
+  // ability bar + status on the HUD
+  const oHud = window.hud;
+  window.hud = function () {
+    oHud(); const A = ab(P), ic = id => imgs['icons/' + ABIL.find(a => a.id === id).icon + '.png'];
+    ABIL.forEach((a, i) => { g.save(); if (window.czBuild && !window.czBuild.loadout.has(a.id)) g.globalAlpha = .22; const x = 30 + i * 62, y = 536, cd = A.cd[a.id] || 0, im = ic(a.id); g.fillStyle = '#000b'; g.fillRect(x, y, 56, 56); if (im && im.complete) g.drawImage(im.__v || im, x + 4, y + 4, 48, 48);
+      if (cd > 0) { g.fillStyle = '#000c'; g.fillRect(x, y, 56, 56 * Math.min(1, cd / a.cd)); g.fillStyle = '#fff'; g.font = '16px system-ui'; g.textAlign = 'center'; g.fillText(cd.toFixed(1), x + 28, y + 34); }
+      g.fillStyle = '#ffd7b0'; g.font = '12px system-ui'; g.textAlign = 'left'; g.fillText(i + 1, x + 4, y + 14); g.restore(); });
+    const tags = []; if (A.aegisT > 0) tags.push('Aegis ' + A.aegisT.toFixed(1)); if (A.rageT > 0) tags.push('Rage ' + A.rageT.toFixed(1)); if (A.fadeT > 0) tags.push('Fade ' + A.fadeT.toFixed(1));
+    if (tags.length) { g.fillStyle = '#9fe8ff'; g.font = '14px system-ui'; g.textAlign = 'left'; g.fillText(tags.join('  ·  '), 30, 530); }
+  };
+  // timers + gust travel/hits (wraps the frame loop; uses its own clock)
+  let lastT = performance.now(); const oTick = window.tick;
+  window.tick = function (now) {
+    const t = performance.now(), dt = Math.min(.05, (t - lastT) / 1000); lastT = t;
+    if (!state.view && freeze <= 0) {
+      for (const f of [P, D]) { const A = ab(f); A.aegisT = Math.max(0, A.aegisT - dt); A.rageT = Math.max(0, A.rageT - dt); A.fadeT = Math.max(0, A.fadeT - dt); A.invul = Math.max(0, A.invul - dt); for (const k in A.cd) A.cd[k] = Math.max(0, A.cd[k] - dt); }
+      for (const e of fxs) e.t += dt; for (let i = fxs.length - 1; i >= 0; i--) if (fxs[i].t > fxs[i].dur) fxs.splice(i, 1);
+      for (const d of decoys) { d.t += dt; if (d.t > 2.2 && !d.popped) { d.popped = true; fxs.push({ n:'decoy_pop', x:d.x, y:d.y, face:d.face, t:0, dur:.5, sz:d.sz }); } } for (let i = decoys.length - 1; i >= 0; i--) if (decoys[i].t > 2.2) decoys.splice(i, 1);
+      for (let i = gusts.length - 1; i >= 0; i--) { const gu = gusts[i]; gu.t += dt; gu.x += gu.face * 760 * dt; const o = gu.owner === P ? D : P;
+        if (!o.dead && Math.abs(gu.x - o.x) < 90 && Math.abs((gu.y + 140) - o.y) < 160) { window.damage(o, { dmg:8, kb:1 }, gu.owner); o.vx = gu.face * 520; gusts.splice(i, 1); }
+        else if (gu.x < -100 || gu.x > 1380) gusts.splice(i, 1); }
+    }
+    return oTick(now);
+  };
+
+  // ---- customize: colour + aura (work on every dragon and animation; no new art needed) ----
+  const AURAS = { none:null, ember:{ glow:'#ff8a2a', col:['#ffb347', '#ff5a1f', '#ffd27a'], up:1 }, frost:{ glow:'#9fe8ff', col:['#e6fbff', '#9fe8ff', '#ffffff'], up:-.4 }, volt:{ glow:'#b98cff', col:['#fff27a', '#b98cff', '#7ad7ff'], up:0, line:1 }, earth:{ glow:'#d8b04a', col:['#8a6a3a', '#5fbf5a', '#c8a64a'], up:.5, sq:1 }, tide:{ glow:'#4ee3e8', col:['#bffcff', '#4ee3e8', '#7ac7ff'], up:.8, ring:1 } };
+  const SWATCH = [['Original', 0, 1, 1], ['Gold', 40, 1.1, 1.1], ['Lime', 90, 1.1, 1], ['Teal', 160, 1.1, 1], ['Sky', 200, 1.1, 1.05], ['Blue', 230, 1.2, 1], ['Violet', 275, 1.1, 1], ['Pink', 320, 1.1, 1.05], ['Shadow', 0, .35, .6]];
+  const cz = P.cz = { hue:0, sat:1, bri:1, aura:null, glow:'#fff' }, particles = [];
+  const row = document.getElementById('czrow'), mk = (txt, cls) => { const b = document.createElement('button'); b.innerHTML = txt; if (cls) b.className = cls; return b; };
+  const iconTag = n => `<img src="${CZ}icons/${n}.png" width="32" height="32" style="vertical-align:middle">`;
+  const dot = h => `<span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:hsl(${h},80%,55%);vertical-align:middle"></span>`;
+  ready.then(() => {
+    row.append('Customize: Size ');
+    const szBtns = SIZES.map((v, i) => { const b = mk(iconTag('size_' + (i + 1)), i === 2 ? 'on' : ''); b.title = 'Size ' + (i + 1) + ' (x' + v + ')'; b.onclick = () => { state.size = i; P.size = v; szBtns.forEach((x, j) => x.classList.toggle('on', j === i)); window.czApply && window.czApply(); }; return b; });
+    row.append(...szBtns, ' Colour ');
+    const swBtns = SWATCH.map(([n, h, sa, br], i) => { const b = mk(i === 0 ? 'Original' : (n === 'Shadow' ? 'Shadow' : dot(h)), i === 0 ? 'on' : ''); b.title = n; b.onclick = () => { Object.assign(cz, { hue:h, sat:sa, bri:br }); swBtns.forEach((x, j) => x.classList.toggle('on', j === i)); }; return b; });
+    row.append(...swBtns);
+    row.append(document.createElement('br'), 'Aura ');
+    const auBtns = Object.keys(AURAS).map(n => { const b = mk(n === 'none' ? 'none' : n[0].toUpperCase() + n.slice(1), n === 'none' ? 'on' : ''); b.onclick = () => { cz.aura = n === 'none' ? null : n; cz.glow = n === 'none' ? '#fff' : AURAS[n].glow; auBtns.forEach(x => x.classList.toggle('on', x === b)); }; return b; });
+    row.append(...auBtns, ' ');
+    const rnd = mk('Randomize'); rnd.onclick = () => { const h = Math.random() * 360 | 0, a = Object.keys(AURAS)[Math.random() * 6 | 0]; Object.assign(cz, { hue:h, sat:1.1, bri:1 }); swBtns.forEach(x => x.classList.remove('on')); auBtns[Object.keys(AURAS).indexOf(a)].click(); };
+    const sel = mk('Dragon select screen'); sel.onclick = () => { state.view = !state.view; sel.classList.toggle('on', state.view); preview = state.view ? 'idle' : null; if (!state.view) { P.set('idle', true); P.x = 380; D.x = 900; } };
+    row.append(rnd, ' ', sel);
+    const note = document.createElement('div'); note.className = 'help'; note.style.width = '100%'; note.textContent = 'Abilities: keys 1-6 (Aegis, Phase Dash, Decoy, Rage, Gust, Fade). Size, colour and aura apply to every move and every dragon.'; row.append(note);
+  });
+  // aura particles (spawned around the dragon, drawn after the fighters)
+  function spawnAura(f, dt) {
+    const A = f.cz && AURAS[f.cz.aura]; if (!A) return; const sz = f.size || 1;
+    if (Math.random() < dt * 60 * .9) { const c = A.col[Math.random() * A.col.length | 0];
+      particles.push({ f, ox:(Math.random() - .5) * 120 * sz, oy:-Math.random() * 230 * sz, vx:(Math.random() - .5) * 30, vy:-A.up * (30 + Math.random() * 60), life:0, max:.7 + Math.random() * .8, c, s:2 + Math.random() * 4, A, a:Math.random() * 6.28 }); }
+  }
+  function drawParticles() {
+    for (const p of particles) { const u = p.life / p.max, x = p.f.x + p.ox + p.vx * p.life, y = GROUND + p.f.y + p.oy + p.vy * p.life; g.save(); g.globalAlpha = (1 - u) * .85; g.fillStyle = g.strokeStyle = p.c;
+      if (p.A.line) { g.lineWidth = 2; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(p.a) * 14, y + Math.sin(p.a) * 14); g.stroke(); }
+      else if (p.A.ring) { g.lineWidth = 1.5; g.beginPath(); g.arc(x, y, p.s * (1 + u), 0, 7); g.stroke(); }
+      else if (p.A.sq) { g.translate(x, y); g.rotate(p.a + p.life * 3); g.fillRect(-p.s / 2, -p.s / 2, p.s, p.s); }
+      else { g.beginPath(); g.arc(x, y, p.s * (1 - u * .5), 0, 7); g.fill(); } g.restore(); }
+  }
+  const oSpark2 = window.drawSparks; window.drawSparks = function () { oSpark2(); drawParticles(); };
+  const oTick2 = window.tick; let lt2 = performance.now();
+  window.tick = function (now) { const t = performance.now(), dt = Math.min(.05, (t - lt2) / 1000); lt2 = t; if (!state.view) { spawnAura(P, dt); for (const p of particles) p.life += dt; for (let i = particles.length - 1; i >= 0; i--) if (particles[i].life > particles[i].max) particles.splice(i, 1); } return oTick2(now); };
+
+  function drawSelect() {
+    g.fillStyle = '#14090c'; g.fillRect(0, 0, 1280, 600); const gr = g.createRadialGradient(640, 330, 40, 640, 330, 520); gr.addColorStop(0, '#3a1f1a'); gr.addColorStop(1, '#100707'); g.fillStyle = gr; g.fillRect(0, 0, 1280, 600);
+    g.fillStyle = '#ffd7b0'; g.font = '700 22px system-ui'; g.textAlign = 'center'; g.fillText(DRAGONS[P.dragon].name + ' · size ' + (state.size + 1) + (cz.aura ? ' · ' + cz.aura + ' aura' : ''), 640, 40);
+    g.fillStyle = '#ffd7b055'; g.font = '14px system-ui'; g.fillText('original', 380, 70); g.fillText('your dragon', 900, 70);
+    const old = P.x, oldS = P.size, oldC = P.cz, oldFace = P.face;
+    P.size = 1.35 * SIZES[state.size] / SCALE; P.face = 1; P.set('idle', true); P.y = 0;
+    P.cz = { hue:0, sat:1, bri:1, aura:null }; P.x = 380; frameDraw(P);
+    P.cz = cz; P.x = 900; frameDraw(P); spawnPreviewParticles();
+    P.x = old; P.size = oldS; P.cz = oldC; P.face = oldFace;
+  }
+  function spawnPreviewParticles() { const o = P.x; P.x = 900; spawnAura(P, .016); P.x = o; drawParticles(); for (const p of particles) p.life += .016; for (let i = particles.length - 1; i >= 0; i--) if (particles[i].life > particles[i].max) particles.splice(i, 1); }
+  const oDraw = window.drawFrame;
+  window.drawFrame = function () { if (state.view) { drawSelect(); return; } oDraw(); };
+})();
+
+// ====== Build: game-impacting add-ons (perks, elemental imbue, ability loadout, size trade-offs) ======
+(() => {
+  const PERKS = {
+    tough:  { name:'Thick Hide',   hp:.3, spd:-.05, desc:'+30% HP, -5% speed' },
+    swift:  { name:'Swift',        spd:.15,          desc:'+15% move speed' },
+    heavy:  { name:'Heavy Hitter', dmg:.2, spd:-.08, desc:'+20% damage, -8% speed' },
+    vamp:   { name:'Vampiric',     vamp:.2,           desc:'heal 20% of damage you deal' },
+    thorns: { name:'Thorns',       thorns:3,          desc:'attackers take 3 damage' },
+    reach:  { name:'Long Reach',   reach:.2,          desc:'+20% attack reach' },
+    wind:   { name:'Second Wind',  wind:1,            desc:'survive one lethal hit (back to 30% HP)' },
+    guard:  { name:'Iron Guard',   guard:1,           desc:'blocked hits do no damage and cut ability cooldowns by 1s' },
+  };
+  const IMBUES = {
+    none:  { name:'None' },
+    burn:  { name:'Burn',  col:'#ff7a2a', desc:'hits set the target alight: 2 damage/s for 3s' },
+    chill: { name:'Chill', col:'#9fe8ff', desc:'hits slow the target 40% for 2.5s' },
+    shock: { name:'Shock', col:'#c9a0ff', desc:'hits stun the target for 0.35s' },
+  };
+  const SIZES = [.8, .9, 1, 1.1, 1.2, 1.3], MAX_PERKS = 2, MAX_ABIL = 3;
+  const ids = ['aegis', 'phase', 'decoy', 'rage', 'gust', 'fade'], names = { aegis:'Aegis', phase:'Phase Dash', decoy:'Decoy', rage:'Rage', gust:'Gust', fade:'Fade' };
+  const build = window.czBuild = { perks:new Set(), imbue:'none', loadout:new Set(['aegis', 'rage', 'gust']) };
+  const statusFx = [];
+
+  // ---- stats: size trade-offs + perks -> multipliers on the player ----
+  function applyStats() {
+    const sz = SIZES[(window.czSizeIdx != null ? window.czSizeIdx : 2)] || 1; let hp = sz, dmg = 1 + (sz - 1) * .5, spd = 1 - (sz - 1) * .6, reach = 1, vamp = 0, thorns = 0, wind = 0, guard = 0, hpBonus = 0;
+    for (const k of build.perks) { const p = PERKS[k]; hpBonus += p.hp || 0; dmg += p.dmg || 0; spd += p.spd || 0; reach += p.reach || 0; vamp += p.vamp || 0; thorns += p.thorns || 0; wind += p.wind || 0; guard += p.guard || 0; }
+    const maxHp = Math.round(100 * hp * (1 + hpBonus)), frac = P.hp / (P.maxHp || 100);
+    Object.assign(P, { maxHp, dmgMul:dmg, spdBase:spd, reachMul:reach, vamp, thorns, wind, guardPerk:guard, imbue:build.imbue === 'none' ? null : build.imbue });
+    if (!P.dead) P.hp = Math.max(1, Math.round(maxHp * frac));
+    const el = document.getElementById('buildstats'); if (el) el.textContent = `HP ${maxHp}  ·  damage x${dmg.toFixed(2)}  ·  speed x${spd.toFixed(2)}  ·  reach x${(reach * sz).toFixed(2)}` + (build.imbue !== 'none' ? '  ·  ' + IMBUES[build.imbue].name : '');
+  }
+  window.czApply = () => { window.czSizeIdx = SIZES.indexOf(P.size || 1); if (window.czSizeIdx < 0) window.czSizeIdx = 2; applyStats(); };
+
+  // new rounds start at full (max) HP and clear statuses
+  const r0 = Fighter.prototype.reset;
+  Fighter.prototype.reset = function (x, face) { r0.call(this, x, face); this.hp = this.maxHp || 100; this.burnT = this.chillT = 0; this.windUsed = false; };
+
+  // ---- damage hooks: damage multiplier, Iron Guard, vampiric, thorns, imbue, Second Wind ----
+  const od = window.damage;
+  window.damage = function (victim, atk, attacker) {
+    if (victim.dead) return;
+    if (attacker.dmgMul && attacker.dmgMul !== 1) atk = { ...atk, dmg:Math.max(1, Math.round(atk.dmg * attacker.dmgMul)) };
+    const guarding = victim.anim.startsWith('guard') && victim.face === -attacker.face, before = victim.hp, lowCd = victim.ab && victim.ab.cd;
+    od(victim, atk, attacker);
+    if (guarding && victim.guardPerk && victim.hp < before) { victim.hp = before; if (lowCd) for (const k in lowCd) lowCd[k] = Math.max(0, lowCd[k] - 1); return; }
+    const dealt = before - victim.hp; if (dealt <= 0) return;
+    if (attacker.vamp) attacker.hp = Math.min(attacker.maxHp || 100, attacker.hp + dealt * attacker.vamp);
+    if (victim.thorns && !attacker.dead) attacker.hp = Math.max(1, attacker.hp - victim.thorns);
+    const im = attacker.imbue;
+    if (im && !victim.dead) {
+      if (im === 'burn') victim.burnT = 3; if (im === 'chill') victim.chillT = 2.5;
+      if (im === 'shock') { victim.set('hit', false, true); victim.vx = 0; }
+    }
+    if (victim.dead && victim.wind && !victim.windUsed) {                          // Second Wind: get back up once
+      victim.windUsed = true; victim.dead = false; victim.hp = Math.round((victim.maxHp || 100) * .3); victim.set('recover', false, true); victim.vx = 0;
+      victim.ab = victim.ab || { cd:{} }; victim.ab.invul = 1.2; victim.ab.aegisT = 2;
+    }
+  };
+
+  // ---- statuses tick + a speed multiplier combining build and chill ----
+  let last = performance.now(); const oTick = window.tick;
+  window.tick = function (now) {
+    const t = performance.now(), dt = Math.min(.05, (t - last) / 1000); last = t;
+    for (const f of [P, D]) {
+      f.spd = (f.spdBase || 1) * ((f.chillT > 0) ? .6 : 1);
+      if (f.burnT > 0) { f.burnT -= dt; f.burnAcc = (f.burnAcc || 0) + dt * 2; if (f.burnAcc >= 1 && !f.dead) { f.burnAcc -= 1; f.hp = Math.max(1, f.hp - 1); f.flash = .04; } }
+      if (f.chillT > 0) f.chillT -= dt;
+      if ((f.burnT > 0 || f.chillT > 0) && Math.random() < dt * 40) statusFx.push({ f, ox:(Math.random() - .5) * 90, oy:-Math.random() * 200, t:0, max:.6, c:f.burnT > 0 ? '#ff7a2a' : '#bfefff', up:f.burnT > 0 ? 1 : -.2 });
+    }
+    for (const p of statusFx) p.t += dt; while (statusFx.length && statusFx[0].t > statusFx[0].max) statusFx.shift();
+    return oTick(now);
+  };
+  const oSp = window.drawSparks;
+  window.drawSparks = function () { oSp(); for (const p of statusFx) { const u = p.t / p.max; g.save(); g.globalAlpha = (1 - u) * .9; g.fillStyle = p.c; g.beginPath(); g.arc(p.f.x + p.ox, GROUND + p.f.y + p.oy - p.up * 50 * p.t, 3 * (1 - u * .5), 0, 7); g.fill(); g.restore(); } };
+  const oHud = window.hud;
+  window.hud = function () { oHud(); const tag = (f, x, al) => { const a = []; if (f.burnT > 0) a.push('Burning'); if (f.chillT > 0) a.push('Chilled'); if (a.length) { g.fillStyle = f.burnT > 0 ? '#ff9a4a' : '#9fe8ff'; g.font = '13px system-ui'; g.textAlign = al; g.fillText(a.join(' · '), x, 74); } }; tag(P, 30, 'left'); tag(D, 1250, 'right'); };
+
+  // ---- UI ----
+  const row = document.getElementById('buildrow'), mk = (txt, cls, title) => { const b = document.createElement('button'); b.textContent = txt; if (cls) b.className = cls; if (title) b.title = title; return b; };
+  const note = document.createElement('div'); note.className = 'help'; note.style.width = '100%';
+  row.append('Perks (pick 2): ');
+  const pk = Object.entries(PERKS).map(([k, p]) => { const b = mk(p.name, '', p.desc); b.onclick = () => { if (build.perks.has(k)) build.perks.delete(k); else if (build.perks.size < MAX_PERKS) build.perks.add(k); pk.forEach(([kk, bb]) => bb.classList.toggle('on', build.perks.has(kk))); note.textContent = p.desc; applyStats(); }; return [k, b]; });
+  row.append(...pk.map(x => x[1]), document.createElement('br'), 'Imbue: ');
+  const im = Object.entries(IMBUES).map(([k, p]) => { const b = mk(p.name, k === 'none' ? 'on' : '', p.desc || ''); b.onclick = () => { build.imbue = k; im.forEach(([kk, bb]) => bb.classList.toggle('on', kk === k)); note.textContent = p.desc || 'No elemental effect on hits.'; applyStats(); }; return [k, b]; });
+  row.append(...im.map(x => x[1]), document.createElement('br'), 'Abilities (pick 3, keys 1-6): ');
+  const ab = ids.map(k => { const b = mk(names[k], build.loadout.has(k) ? 'on' : '', ''); b.onclick = () => { if (build.loadout.has(k)) build.loadout.delete(k); else if (build.loadout.size < MAX_ABIL) build.loadout.add(k); ab.forEach(([kk, bb]) => bb.classList.toggle('on', build.loadout.has(kk))); }; return [k, b]; });
+  row.append(...ab.map(x => x[1]));
+  const stats = document.createElement('div'); stats.id = 'buildstats'; stats.className = 'help'; stats.style.width = '100%'; row.append(stats, note);
+  window.czApply();
+})();
+
+load().then(() => requestAnimationFrame(tick));
+</script>
