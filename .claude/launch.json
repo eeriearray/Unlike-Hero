@@ -18,6 +18,15 @@
         "server/relay.mjs"
       ],
       "port": 8093
+    },
+    {
+      "name": "my-hub",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "cd '/Users/akshat/Desktop/unlike hero' && exec node server/relay.mjs"
+      ],
+      "port": 8080
     }
   ]
 }
