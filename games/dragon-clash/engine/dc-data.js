@@ -166,8 +166,9 @@
     fthrow:  { name: 'Hurl', kind: 'throw', phys: 8, elem: 0, kb: 6.8, growth: 0.11, angle: 40 },
     bthrow:  { name: 'Tail Toss', kind: 'throw', phys: 9, elem: 0, kb: 7.2, growth: 0.12, angle: 44 },
     // Dragon Fury: Guard + Heavy with a full meter. The world stops for the cinematic, then a huge elemental blast.
+    // The blast reaches 90 below the feet too, so a Fury from the top of a high jump still catches a grounded rival.
     ultimate: { name: 'Dragon Fury', kind: 'super', startup: 8, active: 14, recovery: 30, phys: 12, elem: 14,
-               kb: 9.5, growth: 0.17, angle: 38, boxes: [{ x: -10, y: -186, w: 340, h: 186 }], anim: 'nova', freeze: 50, meter: 300 },
+               kb: 9.5, growth: 0.17, angle: 38, boxes: [{ x: -10, y: -186, w: 340, h: 276 }], anim: 'nova', freeze: 50, meter: 300 },
   };
 
   /** An EX (enhanced) special: one bar, faster, stronger, armoured through its startup, ignores the cooldown. */

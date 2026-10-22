@@ -264,3 +264,18 @@ test('the Elemental ability button fires the elemental ability without holding D
   press(s2.sim, 0, B.sig, 5);
   assert.equal(s2.A.move, 'sig', 'Signature alone still fires the signature');
 });
+
+test('Dragon Fury fires and connects for every dragon, on the ground and from the top of a jump', () => {
+  for (const id of ['emberfang-hd', 'frostwing-hd', 'ironmaw-hd', 'voltscale-hd', 'tidefang-hd']) {
+    for (const air of [false, true]) {
+      const a = Build.withGear(Build.presetBuild(id), { size: 'medium', instinct: 'fury', ability: 'none' });
+      const { sim, A } = duel(a, Build.presetBuild('emberfang'), { gap: 90 });
+      if (air) { press(sim, 0, B.jump, 10, B.jump); assert.ok(!A.grounded, id + ' should be airborne'); }
+      A.meter = D.PHYSICS.meterMax;
+      const ev = press(sim, 0, B.heavy, 140, B.guard);
+      assert.ok(ev.some((e) => e.type === 'super'), `${id} ${air ? 'air' : 'ground'}: the super starts`);
+      assert.ok(hits(ev).length > 0, `${id} ${air ? 'air' : 'ground'}: the blast connects`);
+      assert.equal(A.meter < D.PHYSICS.meterBar, true, `${id}: the meter is spent`);
+    }
+  }
+});
