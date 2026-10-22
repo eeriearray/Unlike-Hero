@@ -17,6 +17,12 @@
 (function (global) {
   'use strict';
   var SDK_VERSION = '1.0.0';
+  // iPhone/iPad sound: play through Silent mode and unlock on the right gesture (see ios-audio.js next to this file)
+  (function () {
+    var me = document.currentScript && document.currentScript.src;
+    if (!me || global.__hubIosAudio) return;
+    var s = document.createElement('script'); s.src = me.replace(/hub-sdk\.js(\?.*)?$/, 'ios-audio.js'); (document.head || document.documentElement).appendChild(s);
+  })();
   var qs = new URLSearchParams(location.search);
   var inFrame = (function () { try { return global.parent !== global; } catch (e) { return true; } })();
   // One id per open page, so two tabs of the same browser (same player) still hear each other.
