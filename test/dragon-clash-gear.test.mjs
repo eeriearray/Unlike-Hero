@@ -6,11 +6,11 @@ import { D, Sim, Build, B, plain, duel, press, hits } from './dragon-clash-helpe
 const NONE = { size: 'medium', instinct: 'fury', ability: 'none' };
 const geared = (element, gear) => Build.withGear(plain(element), Object.assign({}, NONE, gear));
 
-test('a bare loadout is valid and free; gear costs its listed points', () => {
+test('a bare loadout is valid and costs only its instinct; gear costs its listed points', () => {
   const bare = geared('fire', {});
   assert.ok(Build.validateBuild(bare).ok);
-  assert.equal(Build.gearCost(bare), 0);
-  assert.equal(Build.gearCost(geared('fire', { instinct: 'bastion', ability: 'phase' })), 8);
+  assert.equal(Build.gearCost(bare), D.INSTINCTS.fury.cost);
+  assert.equal(Build.gearCost(geared('fire', { instinct: 'bastion', ability: 'phase' })), D.INSTINCTS.bastion.cost + 8);
 });
 
 test('the loadout must fit the 30-point gear budget', () => {
@@ -21,9 +21,9 @@ test('the loadout must fit the 30-point gear budget', () => {
 });
 
 test('growing a size costs the difference in body points; shrinking is free', () => {
-  const grow = D.BODIES.titan.cost - D.BODIES.balanced.cost;
-  assert.equal(Build.gearCost(geared('earth', { size: 'huge' })), grow);
-  assert.equal(Build.gearCost(geared('earth', { size: 'small' })), 0);
+  const grow = D.BODIES.titan.cost - D.BODIES.balanced.cost, instinct = D.INSTINCTS.fury.cost;
+  assert.equal(Build.gearCost(geared('earth', { size: 'huge' })), grow + instinct);
+  assert.equal(Build.gearCost(geared('earth', { size: 'small' })), instinct);
   assert.equal(geared('earth', { size: 'huge' }).body, 'titan');
   // The core 100-point build is still costed on the original body
   assert.equal(Build.totalCost(geared('earth', { size: 'huge' })), Build.totalCost(plain('earth')));
