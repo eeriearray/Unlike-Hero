@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" role="img" aria-label="The Hollow">
+  <defs>
+    <linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1020"/><stop offset=".55" stop-color="#2a2646"/><stop offset="1" stop-color="#5a3f55"/></linearGradient>
+    <radialGradient id="v" cx=".5" cy=".5" r=".75"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".8"/></radialGradient>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3dfa6"/><stop offset=".6" stop-color="#b08d48"/><stop offset="1" stop-color="#6e5428"/></linearGradient>
+  </defs>
+  <rect width="640" height="400" fill="url(#s)"/>
+  <g fill="#f3efe0" opacity=".6"><circle cx="60" cy="40" r="1.2"/><circle cx="150" cy="80" r="1"/><circle cx="270" cy="30" r="1.4"/><circle cx="410" cy="60" r="1"/><circle cx="560" cy="34" r="1.3"/><circle cx="600" cy="110" r="1"/><circle cx="90" cy="130" r="1"/></g>
+  <circle cx="500" cy="92" r="30" fill="#e8e2c9" opacity=".9"/><circle cx="512" cy="86" r="27" fill="#2a2646" opacity=".9"/><circle cx="500" cy="92" r="54" fill="#e8e2c9" opacity=".06"/>
+  <path d="M0 300c60-30 120-26 190-6s140 10 210-8 170-10 240 12v102H0z" fill="#090b11"/>
+  <g stroke="#06070b" stroke-width="6" stroke-linecap="round" fill="none"><path d="M60 330q-3-50 4-92M62 280q-26-20-38-48M63 262q26-14 40-44"/><path d="M560 336q-2-60 4-110M562 280q26-18 40-44M563 252q-24-14-34-40"/></g>
+  <path d="M270 330V150l14-28h72l14 28v180z" fill="#0b0e17"/><path d="M296 190h48v46h-48z" fill="#05070b"/><path d="M320 190v-10" stroke="#cfd5e6" stroke-width="2"/>
+  <path d="M312 190c0-6 16-6 16 0v6c4 2 6 8 6 14h-28c0-6 2-12 6-14z" fill="#c9a35b" opacity=".85"/>
+  <ellipse cx="320" cy="320" rx="260" ry="20" fill="#cfd5e6" opacity=".05"/>
+  <text x="320" y="368" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-weight="700" font-size="40" letter-spacing="10" fill="url(#g)">THE HOLLOW</text>
+  <rect width="640" height="400" fill="url(#v)"/>
+</svg>

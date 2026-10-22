@@ -4,3 +4,4 @@ node_modules/
 .cursor/
 Unlike-Hero/
 games/casino/server/data/
+games/the-hollow/server/.data/

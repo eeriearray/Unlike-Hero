@@ -116,6 +116,9 @@ RIFTBREAK does the same with plain WebSockets instead of Socket.io: `games/riftb
 `/games/riftbreak/ws`, runs `games/riftbreak/engine/riftbreak-engine.js` authoritatively (shuffles, draws, legality, turns)
 and pushes each socket `viewFor(itsPlayer)` plus only the events it hasn't seen. Seats survive reloads through a
 per-seat token kept in `sessionStorage`; a dropped player's seat is played by a bot until they return.
+The Hollow uses the same mechanism and adds persistence: `games/the-hollow/server/index.mjs` serialises unfinished rooms
+to `HOLLOW_DATA_DIR` (default `games/the-hollow/server/.data/`) and restores them at start-up, and its `engine/` is a data-driven
+rules engine (content in `engine/data/*.js`) that runs on the server for online play and in the browser for solo play.
 
 ## Path to a hosted platform
 
