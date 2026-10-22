@@ -9,17 +9,24 @@
 // Run:  npm install  &&  npm start        (PORT=8080 by default)
 // Rooms are in memory and disappear when everyone leaves. Nothing is stored.
 import { createServer } from 'node:http';
-import { networkInterfaces } from 'node:os';
+import { networkInterfaces, platform } from 'node:os';
+import { execFileSync } from 'node:child_process';
 import { readFile, readdir, stat } from 'node:fs/promises';
 import { join, normalize, extname, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { WebSocketServer } from 'ws';
+import { gzipSync } from 'node:zlib';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = Number(process.env.PORT) || 8080;
 const MAX_MSG = 16 * 1024;          // bytes per message
 const MAX_PER_ROOM = 16;            // sockets per room
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.wav': 'audio/wav', '.webm': 'audio/webm', '.m4a': 'audio/mp4', '.woff2': 'font/woff2', '.glb': 'model/gltf-binary', '.gltf': 'model/gltf+json', '.md': 'text/markdown; charset=utf-8', '.txt': 'text/plain; charset=utf-8' };
+// Code revalidates on every load (a 304 when unchanged), so edits show up at once; art, sound and models are cached for an
+// hour. Text is gzipped once per file version and kept in memory. Over a slow Wi-Fi this is most of a page's load time.
+const LONG_CACHE = /\.(png|jpe?g|webp|svg|mp3|ogg|wav|webm|m4a|woff2|glb|gltf)$/i;
+const COMPRESS = /\.(html|m?js|css|json|svg|md|txt|gltf)$/i;
+const gzCache = new Map();
 const BLOCKED = /(^|\/)(node_modules|server|tools|\.git)(\/|$)|(^|\/)\.|^package(-lock)?\.json$/;
 
 const server = createServer(async (req, res) => {
@@ -38,8 +45,29 @@ const server = createServer(async (req, res) => {
     const info = await stat(file).catch(() => null);
     if (!info) { res.writeHead(404).end('Not found'); return; }
     if (info.isDirectory()) { res.writeHead(301, { location: path + '/' }).end(); return; }
-    res.writeHead(200, { 'content-type': TYPES[extname(file).toLowerCase()] || 'application/octet-stream', 'cache-control': 'no-cache' });
-    res.end(await readFile(file));
+    const etag = `"${info.size.toString(36)}-${Math.floor(info.mtimeMs).toString(36)}"`;
+    const head = { 'content-type': TYPES[extname(file).toLowerCase()] || 'application/octet-stream', 'cache-control': LONG_CACHE.test(file) ? 'public, max-age=3600' : 'no-cache',
+                   etag, 'last-modified': info.mtime.toUTCString(), 'accept-ranges': 'bytes', vary: 'accept-encoding' };
+    if (req.headers['if-none-match'] === etag) { res.writeHead(304, head).end(); return; }
+    const range = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '');
+    if (range && info.size) {
+      // Safari plays <audio>/<video> only from servers that answer range requests
+      let a = range[1] === '' ? Math.max(0, info.size - Number(range[2])) : Number(range[1]), b = range[1] !== '' && range[2] !== '' ? Number(range[2]) : info.size - 1;
+      b = Math.min(b, info.size - 1);
+      if (a > b) { res.writeHead(416, { 'content-range': `bytes */${info.size}` }).end(); return; }
+      const body = (await readFile(file)).subarray(a, b + 1);
+      res.writeHead(206, { ...head, 'content-range': `bytes ${a}-${b}/${info.size}`, 'content-length': body.length }).end(req.method === 'HEAD' ? undefined : body);
+      return;
+    }
+    let body = await readFile(file);
+    if (COMPRESS.test(file) && body.length > 1024 && /\bgzip\b/.test(req.headers['accept-encoding'] || '')) {
+      let gz = gzCache.get(file);
+      if (!gz || gz.etag !== etag) { gz = { etag, data: gzipSync(body) }; gzCache.set(file, gz); }
+      body = gz.data; head['content-encoding'] = 'gzip';
+    }
+    head['content-length'] = body.length;
+    res.writeHead(200, head);
+    res.end(req.method === 'HEAD' ? undefined : body);
   } catch (e) { res.writeHead(500).end('Server error'); }
 });
 
@@ -105,12 +133,30 @@ server.listen(PORT, () => {
   const lan = Object.values(networkInterfaces()).flat()
     .filter(a => a && (a.family === 'IPv4' || a.family === 4) && !a.internal && !/^(169\.254\.|192\.0\.0\.)/.test(a.address))
     .map(a => a.address);
-  if (lan.length) {
+  // Some phone hotspots (an iPhone sharing an IPv6-only carrier like Jio) give no IPv4 address at all: offer the
+  // Wi-Fi's stable IPv6 address instead, which every device on that hotspot can open.
+  const lan6 = lan.length ? [] : ipv6Addresses().map(ip => `[${ip}]`);
+  if (lan.length || lan6.length) {
     console.log('\nFriends on the same Wi-Fi or hotspot open:');
-    for (const ip of lan) console.log(`   http://${ip}:${PORT}`);
+    for (const ip of lan.concat(lan6)) console.log(`   http://${ip}:${PORT}`);
+    if (lan6.length) console.log('   (open this address on this computer too, so invite links and QR codes use it)');
     console.log('');
   } else {
     console.log('\nFriends can\'t reach this computer yet: it isn\'t on a Wi-Fi network or hotspot.');
     console.log('Connect it to the same Wi-Fi or phone hotspot as your friends (over Wi-Fi, not a USB cable), then restart: npm start\n');
   }
 });
+
+/** Stable global IPv6 addresses of the network adapters (not temporary privacy addresses, not the 464XLAT one). */
+function ipv6Addresses() {
+  if (platform() === 'darwin') {
+    try {
+      // macOS marks each address: keep "autoconf secured", skip "temporary" and "clat46"
+      return execFileSync('ifconfig', { encoding: 'utf8' }).split('\n')
+        .filter(l => /^\s*inet6 [23][0-9a-f]{3}:/i.test(l) && /autoconf secured/.test(l) && !/temporary|clat46|deprecated/.test(l))
+        .map(l => l.trim().split(/\s+/)[1]);
+    } catch { /* fall through */ }
+  }
+  return Object.entries(networkInterfaces()).filter(([n]) => !/^(utun|awdl|llw|lo|docker|br-|veth)/.test(n)).flatMap(([, l]) => l || [])
+    .filter(a => (a.family === 'IPv6' || a.family === 6) && !a.internal && /^[23]/.test(a.address)).map(a => a.address).slice(0, 1);
+}

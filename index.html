@@ -6,7 +6,7 @@
 <title>Unlike Hero</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Bungee&family=Chakra+Petch:wght@400;500;600;700&family=DynaPuff:wght@400;500;600;700&family=Fredoka:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Michroma&family=Orbitron:wght@500;600;700&family=Pirata+One&family=Racing+Sans+One&family=Saira+Stencil+One&family=Share+Tech+Mono&family=Special+Elite&family=Teko:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Bungee&family=Chakra+Petch:wght@400;500;600;700&family=DynaPuff:wght@400;500;600;700&family=Fredoka:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Michroma&family=Orbitron:wght@500;600;700&family=Pirata+One&family=Racing+Sans+One&family=Saira+Stencil+One&family=Share+Tech+Mono&family=Special+Elite&family=Teko:wght@500;600;700&display=swap" media="print" onload="this.media='all'">
 <style>
 :root{
   --paper:#10140f; --surface:#1a2018; --surface-2:#252d22; --line:#475141;
@@ -115,14 +115,16 @@ button:focus-visible,input:focus-visible,a:focus-visible,summary:focus-visible,s
 code{padding:2px 5px;border:1px solid var(--line);border-radius:3px;background:var(--surface);color:var(--ink);font:12px var(--f-mono)}
 .empty{margin:0;color:var(--muted);font-size:13px}
 /* full-window player */
-.player{position:fixed;inset:0;z-index:20;background:#000;display:grid;grid-template-rows:auto 1fr}
+.player{position:fixed;inset:0;z-index:20;background:#000;display:flex;flex-direction:column}
 .pbar{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:8px 12px;background:#111;border-bottom:1px solid #333;flex-wrap:wrap}
 .pbar b{font:500 22px/1 var(--f-display);color:#f4f4ef}
 .pbar .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .player .btn{border-color:#41443f;background:#1b1e1a;color:#f4f4ef}
 .player .btn:hover{border-color:#b64232;background:#b64232}
 .share{font:12px var(--f-mono);color:#a9afa6;max-width:min(520px,60vw);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-iframe{width:100%;height:100%;border:0;background:#050607}
+/* iPad Safari sizes iframes to their content and ignores height:100% in a grid row, which left games black: pin the frame into a stage instead */
+.stage{position:relative;flex:1 1 auto;min-height:0;overflow:hidden;-webkit-overflow-scrolling:touch}
+.stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#050607}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:30;background:var(--ink);color:var(--surface);border:1px solid var(--ink);border-radius:3px;padding:10px 16px;font:500 11px var(--f-mono)}
 @media(max-width:1000px){.wrap{padding-inline:28px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.intro h1{font-size:46px}}
 @media(max-width:640px){.shape-purple{top:-54px;left:-62px;width:122px;height:122px}.shape-teal{top:-42px;right:-64px;width:108px;height:105px}.shape-bolt{top:36%;left:-38px;width:52px;height:92px}.shape-star{top:24px;left:78%;width:20px;height:20px}.shape-dot{width:10px;height:10px}.shape-dot-a{top:31%;left:6%}.shape-dot-b{top:3%;right:8%;width:8px;height:8px}.shape-dot-c{bottom:4%;left:35%;width:8px;height:8px}.shape-cross{width:23px;height:23px}.shape-cross::before{width:23px;height:5px}.shape-cross::after{width:5px;height:23px}.shape-cross-a{top:10%;left:24%}.shape-cross-b{right:-8px;top:61%}.shape-cross-c{left:7%;bottom:21%}.shape-ring{left:-54px;bottom:-55px;width:128px;height:128px;border-width:18px;box-shadow:0 0 0 24px rgba(35,57,114,.38)}.shape-blue{right:-58px;bottom:-58px;width:128px;height:128px}.shape-triangle{right:9%;bottom:17%;width:27px;height:25px}.shape-triangle-teal{left:12%;bottom:14%;width:25px;height:24px}.shape-squiggle{width:96px;height:38px;border-width:3px}.shape-squiggle::after{left:28px;top:-3px;width:60px;height:35px;border-width:3px}.shape-squiggle-a{left:-70px;top:20%}.shape-squiggle-b{right:-70px;top:27%}.shape-squiggle-c{right:8%;bottom:4%}.wrap{padding:0 16px 48px}.masthead{min-height:76px;align-items:flex-start;padding:17px 0;flex-direction:column;gap:16px}.brand{gap:10px}.brand-mark{font-size:25px}.brand-kicker{padding-left:10px;font-size:9px}.header-actions{width:100%;justify-content:space-between;gap:12px}.player-field{gap:7px}.player-field input{width:104px}.connection summary{min-height:34px}.intro{padding:34px 0 21px;align-items:flex-start;flex-direction:column;gap:13px}.intro h1{font-size:38px}.intro h1 em{white-space:nowrap}.collection-count{padding:0}.grid{grid-template-columns:1fr;gap:12px}.thumb-wrap{aspect-ratio:1.8}.card-body{min-height:218px;padding:17px}.game-title{font-size:29px}.tagline{font-size:15px}.pbar{padding:8px}.pbar b{font-size:18px}.share{max-width:46vw;font-size:10px}}
@@ -189,7 +191,7 @@ iframe{width:100%;height:100%;border:0;background:#050607}
     <div class="row"><button class="btn" id="p-exit">← Library</button><b id="p-title">Game</b></div>
     <div class="row"><span class="share" id="p-share"></span><button class="btn" id="p-copy">Copy partner link</button><button class="btn" id="p-full">Fullscreen</button></div>
   </div>
-  <iframe id="frame" title="Game" allow="fullscreen; autoplay; clipboard-write" allowfullscreen></iframe>
+  <div class="stage"><iframe id="frame" title="Game" allow="fullscreen; autoplay; clipboard-write" allowfullscreen></iframe></div>
 </div>
 
 <script src="shared/sdk/hub-config.js"></script>
