@@ -42,7 +42,7 @@
   };
 
   // Friction multiplier and bounce per material.
-  var FLOOR_FRICTION = { grass: 1, felt: 1, stone: 0.95, wood: 0.9, bridge: 0.95, sand: 5.5, metal: 0.92, glass: 0.88, brass: 0.9, tile: 0.95, carpet: 1.1, pad: 1 };
+  var FLOOR_FRICTION = { grass: 1, felt: 1, stone: 0.95, wood: 0.9, bridge: 0.95, sand: 5.6, metal: 0.92, glass: 0.88, brass: 0.9, tile: 0.95, carpet: 1.1, pad: 1 };
   var WALL_BOUNCE = { wood: 0.7, stone: 0.62, metal: 0.8, brass: 0.78, glass: 0.82, rope: 0.45, hedge: 0.5, bumper: 1.25, neon: 0.85, rubber: 0.9 };
 
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
@@ -148,7 +148,8 @@
     });
     (hole.gates || []).forEach(function (g) {
       var a = mx(g.a, m), b = mx(g.b, m);
-      w.gates.push({ ax: a[0], az: a[1], bx: b[0], bz: b[1], h: g.h || 0, height: g.height || 0.7, period: g.period || 5, open: g.open == null ? 0.45 : g.open, phase: g.phase || 0, thick: g.thick || 0.14, mat: g.mat || 'brass', e: WALL_BOUNCE[g.mat || 'brass'] || 0.75 });
+      // Laser (neon) gates are a thin sheet of light; brass gates are a solid panel.
+      w.gates.push({ ax: a[0], az: a[1], bx: b[0], bz: b[1], h: g.h || 0, height: g.height || 0.7, period: g.period || 5, open: g.open == null ? 0.45 : g.open, phase: g.phase || 0, thick: g.thick || (g.mat === 'neon' ? 0.06 : 0.14), mat: g.mat || 'brass', e: WALL_BOUNCE[g.mat || 'brass'] || 0.75 });
     });
     (hole.bumpers || []).forEach(function (bp) {
       var c = mx(bp.at, m);
@@ -231,7 +232,8 @@
             for (var pi2 = 0; pi2 < parts; pi2++) {
               var p0 = lo + (hi - lo) * pi2 / parts, p1 = lo + (hi - lo) * (pi2 + 1) / parts, um = (p0 + p1) / 2;
               var mxq = a[0] + ex * um, mzq = a[1] + ez * um;
-              if (Math.abs(heightOn(f, mxq, mzq) - heightOn(g, mxq, mzq)) < 0.06) keep = subtractInterval(keep, p0, p1);
+              // Even a lip of a few centimetres is a quarter of the ball: it gets a rail too.
+              if (Math.abs(heightOn(f, mxq, mzq) - heightOn(g, mxq, mzq)) < 0.005) keep = subtractInterval(keep, p0, p1);
             }
           }
         }
@@ -244,7 +246,9 @@
           var p = [a[0] + ex * iv[0], a[1] + ez * iv[0]], q = [a[0] + ex * iv[1], a[1] + ez * iv[1]];
           var h0 = heightOn(f, p[0], p[1]), h1 = heightOn(f, q[0], q[1]);
           var mat = opt.mat || railMat, hgt = opt.height || railH;
-          w.walls.push({ ax: p[0], az: p[1], bx: q[0], bz: q[1], top: Math.max(h0, h1) + hgt, base: Math.min(h0, h1) - 30, h0: h0, h1: h1, height: hgt, thick: opt.thick || 0.15, e: WALL_BOUNCE[mat] || 0.7, mat: mat, soft: false, rail: true });
+          // A rope rail is drawn as a thin rope on slim posts: collide like one, not like a plank.
+          var thick = opt.thick || (mat === 'rope' ? 0.06 : 0.15);
+          w.walls.push({ ax: p[0], az: p[1], bx: q[0], bz: q[1], top: Math.max(h0, h1) + hgt, base: Math.min(h0, h1) - 30, h0: h0, h1: h1, height: hgt, thick: thick, e: WALL_BOUNCE[mat] || 0.7, mat: mat, soft: false, rail: true });
         });
       }
     });
@@ -877,7 +881,7 @@
       var lim = (dd < inner ? C.CAPTURE_SPEED_CENTER : C.CAPTURE_SPEED * (1 - 0.4 * k)) * (b.r > C.R * 1.2 ? 0.8 : 1);
       if (spd < lim) {
         b.holed = true; b.moving = false;
-        body.setLinvel({ x: 0, y: 0, z: 0 }, true); body.setEnabled(false);
+        retire(b);
         if (ev) ev({ type: 'cup', id: b.id, x: w.cup[0], z: w.cup[1], y: w.cupH });
         return 'cup';
       } else if (!b.lipped) {
@@ -908,6 +912,19 @@
     }
     if (b.shotT > C.MAX_SHOT_TIME && grounded) return settle(b, ev, f);
     return null;
+  }
+
+  /**
+   * Take a ball out of play (holed, or out of strokes). Stop it and put it to sleep before disabling it: a
+   * disabled body that is still awake stays in Rapier's active set and corrupts the solver. Its spin leaked
+   * into other balls, so a putt played after someone holed out skidded to a stop after a metre or two.
+   */
+  function retire(b) {
+    stopRide(b);
+    var body = b.body;
+    if (!body) return;
+    body.setLinvel({ x: 0, y: 0, z: 0 }, false); body.setAngvel({ x: 0, y: 0, z: 0 }, false);
+    body.sleep(); body.setEnabled(false);
   }
 
   function hazard(b) {
@@ -992,7 +1009,7 @@
     compileHole: compileHole, floorAt: floorAt, blocked: blocked, inPoly: inPoly, heightOn: heightOn, clamp: clamp,
     dynamicAt: dynamicAt, platformAt: platformAt, sliderAt: sliderAt, spinnerAngle: spinnerAngle, gateClosed: gateClosed,
     createSim: createSim, freeSim: freeSim, addBall: addBall, removeBall: removeBall, place: place, push: push, stopRide: stopRide,
-    shoot: shoot, wake: wake, stepSim: stepSim, predict: predict, shotSpeed: shotSpeed
+    shoot: shoot, wake: wake, retire: retire, stepSim: stepSim, predict: predict, shotSpeed: shotSpeed
   };
   return api;
 });
