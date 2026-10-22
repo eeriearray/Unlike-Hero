@@ -6,7 +6,48 @@
   'use strict';
   var App = window.DCApp, D = window.DC.Data, Build = window.DC.Build, Net = window.DCNet, Cup = window.DC.Tournament;
   var esc = App.esc;
-  var S = { net: null, room: null, you: null, matchId: null, device: window.DCApp.defaultDevice(), pick: null, status: 'idle', lastEnd: null, spectating: null };
+  var S = { net: null, room: null, you: null, matchId: null, device: window.DCApp.defaultDevice(), pick: null, gear: null, gearFor: null, status: 'idle', lastEnd: null, spectating: null };
+
+  // ─────────────── loadout: the same Size / Instinct / Ability picks as Versus, on the 30 gear points ───────────────
+  var GEAR = [['size', 'Size', D.SIZES], ['instinct', 'Instinct', D.INSTINCTS], ['ability', 'Ability', D.GEAR_ABILITIES]];
+  /** The loadout for the picked dragon: kept while the dragon stays the same; a new dragon starts at its own size. */
+  function myGear() {
+    var base = App.buildById(S.pick);
+    if (!S.gear || S.gearFor !== base.id) {
+      var saved = App.store.get('onlineGear', null), g = { size: Build.sizeOf(base.body), instinct: (S.gear && S.gear.instinct) || 'fury', ability: 'none' };
+      if (saved && saved.dragon === base.id && Build.gearCost(Build.withGear(base, saved)) <= D.GEAR_BUDGET) g = { size: saved.size, instinct: saved.instinct, ability: saved.ability };
+      S.gear = g; S.gearFor = base.id;
+    }
+    return S.gear;
+  }
+  function myBuild() { return Build.sanitize(Build.withGear(App.buildById(S.pick), myGear())); }
+  function gearHtml(locked) {
+    var base = App.buildById(S.pick), g = myGear(), used = Build.gearCost(Build.withGear(base, g));
+    return '<div class="gear-picks" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">' + GEAR.map(function (row) {
+      return '<label style="display:grid;gap:4px"><span class="eyebrow">' + row[1] + '</span><select class="sel" data-gear="' + row[0] + '"' + (locked ? ' disabled' : '') + '>' +
+        Object.keys(row[2]).map(function (k) {
+          var t = Object.assign({}, g); t[row[0]] = k;
+          var fits = Build.gearCost(Build.withGear(base, t)) <= D.GEAR_BUDGET;
+          var price = row[0] === 'size' ? '' : ' · ' + row[2][k].cost + ' pts';
+          return '<option value="' + k + '"' + (k === g[row[0]] ? ' selected' : '') + (fits ? '' : ' disabled') + '>' + esc(row[2][k].name) + price + (fits ? '' : ' (over budget)') + '</option>';
+        }).join('') + '</select></label>';
+    }).join('') + '</div><div class="dim" style="font-size:13px">' + esc(D.INSTINCTS[g.instinct].desc) + (g.ability !== 'none' ? ' ' + esc(D.GEAR_ABILITIES[g.ability].desc) : '') +
+      ' <b>' + used + ' / ' + D.GEAR_BUDGET + ' gear points</b></div>';
+  }
+  function bindGear(onChange) {
+    App.ui.querySelectorAll('[data-gear]').forEach(function (el) {
+      el.addEventListener('change', function () {
+        var g = Object.assign({}, myGear()); g[el.dataset.gear] = el.value;
+        if (Build.gearCost(Build.withGear(App.buildById(S.pick), g)) > D.GEAR_BUDGET) { App.toast('That loadout is over the ' + D.GEAR_BUDGET + ' gear points.'); onChange(); return; }
+        S.gear = g; App.store.set('onlineGear', Object.assign({ dragon: S.gearFor }, g)); onChange();
+      });
+    });
+  }
+  /** "Medium · Fury · Gust" for a member's build, so everyone sees each other's loadout in the lobby. */
+  function loadoutText(b) {
+    var g = b && b.gear; if (!g) return '';
+    return [D.SIZES[g.size] && D.SIZES[g.size].name, D.INSTINCTS[g.instinct] && D.INSTINCTS[g.instinct].name, g.ability && g.ability !== 'none' && D.GEAR_ABILITIES[g.ability] && D.GEAR_ABILITIES[g.ability].name].filter(Boolean).join(' · ');
+  }
 
   function myName() {
     var n = App.store.get('onlineName', null);
@@ -118,7 +159,7 @@
         App.store.set('onlineName', nameEl.value.slice(0, 16));
         status('Connecting…');
         ensureNet().then(function (net) {
-          msg.name = nameEl.value; msg.build = Build.sanitize(App.buildById(S.pick));
+          msg.name = nameEl.value; msg.build = myBuild();
           net.send(msg);
         }, function (e) { status(e.message + ' Is the hub server running (npm start)?'); });
       }
@@ -164,6 +205,7 @@
       if (lobby) {
         html += '<div class="teams"><div class="panel" style="display:grid;gap:8px"><div class="eyebrow">Your dragon</div>' +
           '<select class="sel" data-build' + (me.ready ? ' disabled' : '') + '>' + App.buildOptions(S.pick || (me.build && me.build.id) || 'preset-emberfang') + '</select>' +
+          gearHtml(me.ready) +
           '<div class="row"><button class="btn ' + (me.ready ? 'ghost' : 'hot') + '" data-act="ready">' + (me.ready ? 'Not ready' : 'Ready!') + '</button><span class="dim">Builds are checked by the server and locked when the room starts.</span></div></div>';
         if (host) {
           html += '<div class="panel" style="display:grid;gap:8px"><div class="eyebrow">Host settings</div>' +
@@ -185,13 +227,18 @@
       r.members.forEach(function (m) { if (m.build) App.mini(App.ui.querySelector('[data-mem="' + m.id + '"]'), m.build, 'idle', { scale: 1 }); });
       var sel = App.ui.querySelector('[data-build]');
       if (sel) {
-        sel.addEventListener('change', function () { S.pick = sel.value; S.net.send({ t: 'build', build: Build.sanitize(App.buildById(sel.value)) }); });
-        if (!me.build && !me.ready) S.net.send({ t: 'build', build: Build.sanitize(App.buildById(sel.value)) });
+        S.pick = sel.value;
+        var sendBuild = function () { S.net.send({ t: 'build', build: myBuild() }); };
+        sel.addEventListener('change', function () { S.pick = sel.value; sendBuild(); App.screens.room.render(); });
+        bindGear(function () { sendBuild(); App.screens.room.render(); });
+        // The server keeps what it was last sent: make sure it matches the dragon and loadout shown here
+        var mine = me.build && me.build.gear, want = myGear();
+        if (!me.ready && (!me.build || me.build.id !== App.buildById(S.pick).id || !mine || mine.size !== want.size || mine.instinct !== want.instinct || mine.ability !== want.ability)) sendBuild();
       }
       function memberHtml(m) {
         var b = m.build;
         return '<div class="member"><canvas data-mem="' + m.id + '"></canvas><div class="grow"><b>' + esc(m.name) + '</b>' + (m.id === r.host ? ' ' + window.DCIcons.svg('crown', '#ffcf3a', 14) : '') + (m.id === S.you ? ' <span class="pill">you</span>' : '') +
-          '<div class="dim">' + (b ? App.elIcon(b.element) + ' ' + esc(b.name) : 'choosing…') + '</div></div>' +
+          '<div class="dim">' + (b ? App.elIcon(b.element) + ' ' + esc(b.name) + (loadoutText(b) ? ' <span style="opacity:.75">· ' + esc(loadoutText(b)) + '</span>' : '') : 'choosing…') + '</div></div>' +
           (m.bot ? '<span class="pill">CPU ' + ['', 'easy', 'normal', 'hard'][m.level || 2] + '</span>' + (r.host === S.you && r.state === 'lobby' ? ' <button class="icon-btn" data-act="kick" data-id="' + m.id + '">✕</button>' : '')
             : !m.connected ? '<span class="pill wait">reconnecting</span>' : m.ready ? '<span class="pill ok">ready</span>' : '<span class="pill wait">not ready</span>') + '</div>';
       }
