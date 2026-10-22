@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Dragon Clash — art gallery</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=Barlow:wght@500;600;700;800&family=Barlow+Condensed:wght@600;700;800&display=swap">
+<style>html,body{margin:0;height:100%;overflow:hidden;background:#1b1530;color:#fff;font:14px system-ui}canvas{display:block;width:100vw;height:100vh}</style>
+</head>
+<body>
+<!-- Dev page, not linked from the game. Default: every archetype through the art pipeline, animated, both facings.
+     #thumb: the scene used for thumbnail.jpg (screenshot it at 16:10). -->
+<canvas id="c"></canvas>
+<script src="engine/dc-data.js"></script>
+<script src="assets/warrior/rig.js"></script>
+<script src="js/art.js"></script>
+<script src="js/anim.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/scenery.js"></script>
+<script>
+const D = DC.Data, c = document.getElementById('c'), x = c.getContext('2d');
+const thumb = location.hash === '#thumb';
+// #scene=<arena id>[&t=seconds]: the painted arena at a fixed 1280x720, with two dragons, scaled to fit
+if (location.hash.startsWith('#scene')) {
+  const id = (/scene=(\w+)/.exec(location.hash) || [])[1] || 'skyforge', T0 = +((/t=([\d.]+)/.exec(location.hash) || [])[1] || 3);
+  c.style.width = '100vw'; c.style.height = 'auto'; c.width = 1280; c.height = 720;
+  window.fit = () => {}; removeEventListener('resize', fit);
+  DCArt.load().then(() => {
+    const A = D.ARENAS[id], z = 1280 / 1600, t0 = performance.now();
+    DCScenery.prepare(A, 1280, 720);
+    (function draw() {
+      const t = T0 + (location.hash.includes('live') ? (performance.now() - t0) / 1000 : 0);
+      x.setTransform(1, 0, 0, 1, 0, 0);
+      DCScenery.backdrop(x, A, { x: 800, y: 470, z: z, zBase: z }, 1280, 720, t);
+      x.save(); x.scale(z, z); x.translate(0, -20);
+      DCScenery.platforms(x, A, t);
+      [['emberfang', A.spawns[0]], ['frostwing', A.spawns[1]]].forEach(([pid, sp], k) => { const p = P(pid); x.save(); x.translate(sp[0], sp[1]); DCArt.draw(x, p.look, p.body, { time: t + k, facing: k ? -1 : 1, element: p.element }); x.restore(); });
+      x.restore();
+      DCScenery.foreground(x, A, { x: 800, y: 470 }, 1280, 720, t);
+      requestAnimationFrame(draw);
+    })();
+  });
+}
+function fit() { c.width = innerWidth * 2; c.height = innerHeight * 2; }
+fit(); addEventListener('resize', fit);
+const P = id => D.PRESETS.find(p => p.id === id);
+if (!location.hash.startsWith('#scene')) DCArt.load().then(() => {
+  const t0 = performance.now();
+  (function loop() {
+    const t = (performance.now() - t0) / 1000, W = innerWidth, H = innerHeight;
+    x.setTransform(2, 0, 0, 2, 0, 0);
+    if (location.hash.startsWith('#poses')) {
+      // Every animation state at its key moment, on the rig. #poses=<preset id>, add &live to animate.
+      const id = (location.hash.split('=')[1] || 'emberfang').split('&')[0], p = P(id), live = location.hash.includes('live');
+      x.fillStyle = '#2a2147'; x.fillRect(0, 0, W, H);
+      const cells = [['idle (pack frames)', 'idle', 0], ['run', 'run', 0.25], ['run', 'run', 0.6], ['jump', 'jump', 0.35], ['fall', 'jump', 1.0], ['land', 'jump', 1.5],
+        ['claw windup', 'attack', 10 / 60], ['claw strike', 'attack', 17 / 60], ['jab strike', 'light', 5 / 60], ['uppercut', 'up', 16 / 60], ['tail sweep', 'tail', 7 / 60], ['special windup', 'special', 9 / 60],
+        ['special strike', 'special', 14 / 60], ['hit', 'hit', 3 / 60], ['victory', 'victory', 0.3], ['defeat', 'defeat', 0]];
+      const pg = /page=(\d)/.exec(location.hash), list = pg ? cells.slice(+pg[1] * 4, +pg[1] * 4 + 4) : cells;
+      const cols = pg ? 4 : 8, cw = W / cols, ch = pg ? H : H / 2, s = Math.min(cw / 130, ch / 175);
+      list.forEach(([label, kind, tt], i) => {
+        const cx = (i % cols) * cw + cw / 2, cy = Math.floor(i / cols) * ch + ch - 22;
+        x.save(); x.translate(cx, cy); x.scale(s, s);
+        x.fillStyle = 'rgba(0,0,0,.3)'; x.beginPath(); x.ellipse(0, 0, 40, 6, 0, 0, 7); x.fill();
+        DCArt.draw(x, p.look, p.body, DCAnim.showcase(kind, p, live ? t + tt : tt, 1));
+        x.restore();
+        x.fillStyle = '#fff'; x.font = '12px system-ui'; x.textAlign = 'center'; x.fillText(label, cx, cy + 16);
+      });
+    } else if (thumb) {
+      DCFX.drawBackdrop(x, D.ARENAS.skyforge, { x: 800, y: 450 }, W, H, 4);
+      const z = W / 1100;
+      x.save(); x.scale(z, z); x.translate(-250, -90);
+      DCFX.drawPlatforms(x, D.ARENAS.skyforge, 0);
+      const cast = [['emberfang', 560, 640, 1, 'attack', 1.35], ['frostwing', 1000, 470, -1, 'hit', 1.1], ['voltscale', 800, 320, 1, 'jump', 1.0], ['ironmaw', 1120, 640, -1, 'idle', 1.3], ['tidefang', 470, 470, 1, 'idle', 1.05]];
+      for (const [id, px, py, f, kind, s] of cast) {
+        const p = P(id);
+        x.save(); x.translate(px, py); x.scale(s, s);
+        const pose = kind === 'idle' ? { time: 0.4, facing: f, element: p.element } : DCAnim.showcase(kind, p, kind === 'attack' ? 0.42 : kind === 'jump' ? 0.02 : 0.5, f);
+        pose.flash = 0; pose.dx = kind === 'attack' ? 10 : 0;
+        DCArt.draw(x, p.look, p.body, pose);
+        x.restore();
+      }
+      // A fireball in flight and a hit spark
+      DCFX.drawProjectile(x, { ty: 'fireball', x: 760, y: 560, vx: 9, el: 'fire' }, 0, null);
+      x.restore();
+      x.font = `900 ${Math.round(W * 0.095)}px Cinzel, serif`; x.textAlign = 'center';
+      x.lineWidth = W * 0.012; x.strokeStyle = '#5a1a0e'; x.strokeText('DRAGON CLASH', W / 2, H * 0.14);
+      x.fillStyle = '#fff'; x.fillText('DRAGON CLASH', W / 2, H * 0.14);
+    } else {
+      x.fillStyle = '#2a2147'; x.fillRect(0, 0, W, H);
+      const s = Math.min(W / 1500, H / 700) * 1.7;
+      D.PRESETS.forEach((p, i) => {
+        for (const row of [0, 1]) {
+          x.save(); x.translate((130 + i * 240) * s / 1.7, (row ? 640 : 300) * s / 1.7); x.scale(s, s);
+          x.fillStyle = 'rgba(0,0,0,.3)'; x.beginPath(); x.ellipse(0, 0, 40, 6, 0, 0, 7); x.fill();
+          DCArt.draw(x, p.look, p.body, { time: t + i, facing: row ? -1 : 1, wing: row ? 0.5 + 0.5 * Math.sin(t * 8) : null, element: p.element });
+          x.restore();
+        }
+        x.fillStyle = '#fff'; x.fillText(p.name, (90 + i * 240) * s / 1.7, 330 * s / 1.7);
+      });
+    }
+    requestAnimationFrame(loop);
+  })();
+});
+</script>
+</body>
+</html>
