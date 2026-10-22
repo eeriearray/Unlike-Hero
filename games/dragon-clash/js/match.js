@@ -78,7 +78,7 @@
     var isTouchDev = window.DCTouch && window.DCTouch.isTouchDevice();
     this.touch = ((opts.controllers || []).some(function (c) { return c.type === 'human' && c.device === 'touch'; }) || opts.device === 'touch') && isTouchDev;
     if (this.touch && window.DCTouch) window.DCTouch.show({ onPause: function () { if (!self.ended) self.togglePause(); } });
-    this.onTap = function () { if (self.vsT > 20) self.vsT = 20; };
+    this.onTap = function () { if (self.vsT > 20 && self.o.mode === 'local') self.vsT = 20; };
     this.canvas.addEventListener('pointerdown', this.onTap);
     if (this.settings.captions) Audio.onCaption = function (text, dur) { self.caption = { text: text, until: self.time + Math.max(1.2, dur + 0.4) }; };
   }
@@ -107,7 +107,7 @@
   };
 
   M.onKey = function (e) {
-    if (this.vsT > 20 && e.code !== 'Escape') { this.vsT = 20; return; }   // any key skips the versus card
+    if (this.vsT > 20 && e.code !== 'Escape' && this.o.mode === 'local') { this.vsT = 20; return; }   // any key skips the versus card (online, the server keeps time)
     if (e.code === 'Escape' || e.code === 'KeyP') { if (!this.ended) this.togglePause(); }
     if (e.code === 'Backquote') this.debug = !this.debug;
     if (this.o.training && !this.paused) {
@@ -142,7 +142,13 @@
     if (this.snaps.length > 30) this.snaps.shift();
     var self = this;
     (snap.ev || []).forEach(function (e) { self.onEvent(e); });
-    this.countdown = snap.cd || 0;
+    // The server's countdown covers the versus card, then 3-2-1: replay the card, beeps and FIGHT! as Versus does locally
+    var cd = snap.cd || 0, prev = this.lastCd == null ? cd : this.lastCd;   // joining mid-match (spectating) plays nothing
+    this.lastCd = cd;
+    this.vsT = Math.max(0, cd - COUNTDOWN);
+    this.countdown = Math.min(cd, COUNTDOWN);
+    if (prev - COUNTDOWN > VS_TICKS - 24 && cd - COUNTDOWN <= VS_TICKS - 24) Audio.play('vsSlam');
+    for (var c = prev - 1; c >= cd; c--) if (c < COUNTDOWN) { if (c % 60 === 0 && c > 0) Audio.play('count'); else if (c === 0) Audio.play('go'); }
     if (snap.end && !this.ended) this.finish(snap.end);
   };
 
@@ -527,11 +533,11 @@
     var build = info.build, el = D.ELEMENTS[build.element];
     var teamCol = D.TEAM_COLORS[info.team % D.TEAM_COLORS.length];
     // Entrance: each dragon glides down onto its spawn during the countdown, landing before FIGHT!
-    var ent = this.o.mode === 'local' && !this.o.training ? Math.max(0, Math.min(1, (this.countdown - 60 + i * 8) / 80)) : 0;
+    var ent = !this.o.training ? Math.max(0, Math.min(1, (this.countdown - 60 + i * 8) / 80)) : 0;
     if (this.vsT > 0) ent = 1;
     if (ent > 0) {
       f = Object.assign({}, f, { st: 'air', gr: false, vy: 3 + ent * 4, stT: 20, y: f.y - 520 * ent * ent });
-    } else if (this.o.mode === 'local' && !this.landed[i] && this.countdown > 0) {
+    } else if (!this.o.training && !this.landed[i] && this.countdown > 0) {
       this.landed[i] = true;
       this.fx.dust(f.x, f.y, 10, 26, 0); this.fx.ring(f.x, f.y - 6, 70, Art.alpha(el.color, 0.8), 18, 5);
       this.fx.addShake(3, this.settings); Audio.play('land', { pan: this.panFor(f.x), vol: 1 });

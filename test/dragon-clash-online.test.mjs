@@ -24,7 +24,7 @@ function client() {
     ws.on('message', (d) => {
       const m = JSON.parse(String(d));
       if (m.t !== 'snap') ws.got.push(m);
-      else ws.snaps = (ws.snaps || 0) + 1;
+      else { ws.snaps = (ws.snaps || 0) + 1; ws.last = m.s; }
       ws.waiters = ws.waiters.filter((w) => !(w.pred(m) && (w.res(m), true)));
     });
     ws.do = (o) => ws.send(JSON.stringify(o));
@@ -103,4 +103,53 @@ test('an online cup with CPUs advances only from server-run matches', async () =
   assert.ok(t.champion && t.champion !== done.you);
   assert.equal(t.log.length, 3);
   a.close();
+});
+
+/** A 1v1 against a server-filled CPU; resolves once the match has started for `a`. */
+async function soloMatch(build) {
+  const a = await client();
+  a.do({ t: 'create', mode: 'versus', name: 'Solo', build, tapJump: true });
+  await a.wait(type('joined'));
+  a.do({ t: 'ready', ready: true });
+  await a.wait(type('room', (m) => m.room.members.some((x) => x.ready)));
+  a.do({ t: 'start' });
+  const mt = await a.wait(type('match'));
+  return { a, mt };
+}
+const until = (pred, ms = 8000) => new Promise((res, rej) => { const t0 = Date.now(); (function poll() { if (pred()) return res(); if (Date.now() - t0 > ms) return rej(new Error('timeout')); setTimeout(poll, 5); })(); });
+
+test('online: holding Guard reaches the server (it sits above the first ten button bits)', async () => {
+  const { a, mt } = await soloMatch(Build.presetBuild('frostwing-hd'));
+  a.do({ t: 'input', h: 1024, c: {} });
+  await until(() => a.last && a.last.cd === 0 && a.last.f[mt.you].st === 'guard');
+  a.close();
+});
+
+test('online: the very first press of a button counts', async () => {
+  const { a, mt } = await soloMatch(Build.presetBuild('emberfang-hd'));
+  await until(() => a.last && a.last.cd === 0);
+  a.do({ t: 'input', h: 0, c: { jump: 1 } });
+  await until(() => a.last && !a.last.f[mt.you].gr);
+  a.close();
+});
+
+test('online: CPUs are painted sprite dragons, and a mirror match gets a recolour', async () => {
+  const { a, mt } = await soloMatch(Build.presetBuild('voltscale-hd'));
+  const [me, cpu] = mt.match.setup.fighters;
+  assert.ok(cpu.build.look.sprite, 'the CPU uses a sprite dragon');
+  if (cpu.build.id === me.build.id) assert.notEqual(cpu.build.look.tint || '', me.build.look.tint || '');
+  a.close();
+  const b = await client(), c = await client();
+  b.do({ t: 'create', mode: 'versus', name: 'B', build: Build.presetBuild('tidefang-hd') });
+  const jb = await b.wait(type('joined'));
+  c.do({ t: 'join', code: jb.code, name: 'C', build: Build.presetBuild('tidefang-hd') });
+  await c.wait(type('joined'));
+  c.do({ t: 'team', team: 1 }); b.do({ t: 'ready', ready: true }); c.do({ t: 'ready', ready: true });
+  await b.wait(type('room', (m) => m.room.members.length === 2 && m.room.members.every((x) => x.ready) && m.room.members.some((x) => x.team === 1)));
+  b.do({ t: 'start' });
+  const m2 = await b.wait(type('match'));
+  const [f1, f2] = m2.match.setup.fighters;
+  assert.equal(f1.build.id, f2.build.id);
+  assert.notEqual(f1.build.look.tint || '', f2.build.look.tint || '', 'identical dragons on opposing sides are told apart');
+  b.close(); c.close();
 });

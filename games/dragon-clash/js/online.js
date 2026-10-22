@@ -6,7 +6,7 @@
   'use strict';
   var App = window.DCApp, D = window.DC.Data, Build = window.DC.Build, Net = window.DCNet, Cup = window.DC.Tournament;
   var esc = App.esc;
-  var S = { net: null, room: null, you: null, matchId: null, device: window.DCApp.defaultDevice(), pick: null, gear: null, gearFor: null, status: 'idle', lastEnd: null, spectating: null };
+  var S = { net: null, room: null, you: null, matchId: null, device: window.DCApp.defaultDevice(), pick: null, gear: null, gearFor: null, palette: App.store.get('onlinePalette', 0) | 0, status: 'idle', lastEnd: null, spectating: null };
 
   // ─────────────── loadout: the same Size / Instinct / Ability picks as Versus, on the 30 gear points ───────────────
   var GEAR = [['size', 'Size', D.SIZES], ['instinct', 'Instinct', D.INSTINCTS], ['ability', 'Ability', D.GEAR_ABILITIES]];
@@ -20,10 +20,17 @@
     }
     return S.gear;
   }
-  function myBuild() { return Build.sanitize(Build.withGear(App.buildById(S.pick), myGear())); }
+  /** The picked dragon wearing its loadout and colour, composed the way Dragon Select does it. */
+  function myBuild() {
+    var b = Build.withGear(App.buildById(S.pick), myGear()), pal = (App.PALETTES || [])[S.palette];
+    if (pal && pal.primary) ['primary', 'secondary', 'belly', 'eye'].forEach(function (k) { b.look[k] = pal[k]; });
+    if (pal && pal.tint) b.look.tint = pal.tint;
+    if (pal && pal.shade) b.look.shade = pal.shade;
+    return Build.sanitize(b);
+  }
   function gearHtml(locked) {
     var base = App.buildById(S.pick), g = myGear(), used = Build.gearCost(Build.withGear(base, g));
-    return '<div class="gear-picks" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">' + GEAR.map(function (row) {
+    return '<div class="gear-picks" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px">' + GEAR.map(function (row) {
       return '<label style="display:grid;gap:4px"><span class="eyebrow">' + row[1] + '</span><select class="sel" data-gear="' + row[0] + '"' + (locked ? ' disabled' : '') + '>' +
         Object.keys(row[2]).map(function (k) {
           var t = Object.assign({}, g); t[row[0]] = k;
@@ -32,7 +39,9 @@
           return '<option value="' + k + '"' + (k === g[row[0]] ? ' selected' : '') + (fits ? '' : ' disabled') + '>' + esc(row[2][k].name) + price + (fits ? '' : ' (over budget)') + '</option>';
         }).join('') + '</select></label>';
     }).join('') + '</div><div class="dim" style="font-size:13px">' + esc(D.INSTINCTS[g.instinct].desc) + (g.ability !== 'none' ? ' ' + esc(D.GEAR_ABILITIES[g.ability].desc) : '') +
-      ' <b>' + used + ' / ' + D.GEAR_BUDGET + ' gear points</b></div>';
+      ' <b>' + used + ' / ' + D.GEAR_BUDGET + ' gear points</b></div>' +
+      (App.PALETTES ? '<label style="display:grid;gap:4px"><span class="eyebrow">Colour</span><select class="sel" data-palette' + (locked ? ' disabled' : '') + '>' +
+        App.PALETTES.map(function (p, i) { return '<option value="' + i + '"' + (i === S.palette ? ' selected' : '') + '>' + esc(p.name) + '</option>'; }).join('') + '</select></label>' : '');
   }
   function bindGear(onChange) {
     App.ui.querySelectorAll('[data-gear]').forEach(function (el) {
@@ -42,6 +51,8 @@
         S.gear = g; App.store.set('onlineGear', Object.assign({ dragon: S.gearFor }, g)); onChange();
       });
     });
+    var pal = App.ui.querySelector('[data-palette]');
+    if (pal) pal.addEventListener('change', function () { S.palette = +pal.value || 0; App.store.set('onlinePalette', S.palette); onChange(); });
   }
   /** "Medium · Fury · Gust" for a member's build, so everyone sees each other's loadout in the lobby. */
   function loadoutText(b) {
@@ -159,7 +170,7 @@
         App.store.set('onlineName', nameEl.value.slice(0, 16));
         status('Connecting…');
         ensureNet().then(function (net) {
-          msg.name = nameEl.value; msg.build = myBuild();
+          msg.name = nameEl.value; msg.build = myBuild(); msg.tapJump = App.settings.tapJump !== false;
           net.send(msg);
         }, function (e) { status(e.message + ' Is the hub server running (npm start)?'); });
       }
@@ -212,6 +223,8 @@
             (r.mode === 'versus' ? '<div class="chips">' + Object.keys(D.FORMATS).map(function (k) { return '<button class="chip' + (r.settings.format === k ? ' on' : '') + '" data-act="set" data-k="format" data-v="' + k + '">' + D.FORMATS[k].name + '</button>'; }).join('') + '</div>' : '') +
             '<div class="chips">' + D.ARENA_ORDER.map(function (k) { return '<button class="chip' + (r.settings.arena === k ? ' on' : '') + '" data-act="set" data-k="arena" data-v="' + k + '">' + D.ARENAS[k].name + '</button>'; }).join('') + '</div>' +
             '<div class="chips"><span class="eyebrow" style="align-self:center">Stocks</span>' + [1, 2, 3, 4, 5].map(function (n) { return '<button class="chip' + (r.settings.stocks === n ? ' on' : '') + '" data-act="set" data-k="stocks" data-v="' + n + '">' + n + '</button>'; }).join('') + '</div>' +
+            '<div class="chips"><span class="eyebrow" style="align-self:center">Time</span>' + [0, 3, 5, 8].map(function (n) { return '<button class="chip' + ((r.settings.time | 0) === n ? ' on' : '') + '" data-act="set" data-k="time" data-v="' + n + '">' + (n ? n + ' min' : '∞') + '</button>'; }).join('') + '</div>' +
+            (r.mode === 'versus' && D.FORMATS[r.settings.format].perTeam > 1 ? '<label class="row" style="gap:8px"><input type="checkbox" data-ff' + (r.settings.ff ? ' checked' : '') + '><span>Friendly fire</span></label>' : '') +
             '<div class="row"><button class="btn ghost small" data-act="bot" data-level="1">＋ CPU easy</button><button class="btn ghost small" data-act="bot" data-level="2">＋ CPU normal</button><button class="btn ghost small" data-act="bot" data-level="3">＋ CPU hard</button></div>' +
             '<button class="btn hot" data-act="start">Start ' + (r.mode === 'cup' ? 'the cup' : 'the match') + ' →</button>' +
             (r.mode === 'versus' ? '<p class="dim">Empty seats are filled with CPUs.</p>' : '<p class="dim">Seeds follow join order. Byes go to the top seeds.</p>') + '</div>';
@@ -225,21 +238,29 @@
       html += '</div>';
       App.ui.innerHTML = html;
       r.members.forEach(function (m) { if (m.build) App.mini(App.ui.querySelector('[data-mem="' + m.id + '"]'), m.build, 'idle', { scale: 1 }); });
+      App.ui.querySelectorAll('[data-cpu-dragon]').forEach(function (el) { el.addEventListener('change', function () { S.net.send({ t: 'bot', op: 'set', id: el.dataset.cpuDragon, preset: el.value.replace(/^preset-/, '') }); }); });
+      App.ui.querySelectorAll('[data-cpu-level]').forEach(function (el) { el.addEventListener('change', function () { S.net.send({ t: 'bot', op: 'set', id: el.dataset.cpuLevel, level: +el.value }); }); });
+      var ffEl = App.ui.querySelector('[data-ff]');
+      if (ffEl) ffEl.addEventListener('change', function () { S.net.send({ t: 'settings', ff: ffEl.checked }); });
       var sel = App.ui.querySelector('[data-build]');
       if (sel) {
         S.pick = sel.value;
-        var sendBuild = function () { S.net.send({ t: 'build', build: myBuild() }); };
+        var sendBuild = function () { S.net.send({ t: 'build', build: myBuild(), tapJump: App.settings.tapJump !== false }); };
         sel.addEventListener('change', function () { S.pick = sel.value; sendBuild(); App.screens.room.render(); });
         bindGear(function () { sendBuild(); App.screens.room.render(); });
         // The server keeps what it was last sent: make sure it matches the dragon and loadout shown here
         var mine = me.build && me.build.gear, want = myGear();
-        if (!me.ready && (!me.build || me.build.id !== App.buildById(S.pick).id || !mine || mine.size !== want.size || mine.instinct !== want.instinct || mine.ability !== want.ability)) sendBuild();
+        if (!me.ready && (!me.build || me.build.id !== App.buildById(S.pick).id || !mine || mine.size !== want.size || mine.instinct !== want.instinct || mine.ability !== want.ability || (me.build.look.tint || '') !== (myBuild().look.tint || '') || (me.build.look.shade || '') !== (myBuild().look.shade || ''))) sendBuild();
       }
       function memberHtml(m) {
         var b = m.build;
         return '<div class="member"><canvas data-mem="' + m.id + '"></canvas><div class="grow"><b>' + esc(m.name) + '</b>' + (m.id === r.host ? ' ' + window.DCIcons.svg('crown', '#ffcf3a', 14) : '') + (m.id === S.you ? ' <span class="pill">you</span>' : '') +
           '<div class="dim">' + (b ? App.elIcon(b.element) + ' ' + esc(b.name) + (loadoutText(b) ? ' <span style="opacity:.75">· ' + esc(loadoutText(b)) + '</span>' : '') : 'choosing…') + '</div></div>' +
-          (m.bot ? '<span class="pill">CPU ' + ['', 'easy', 'normal', 'hard'][m.level || 2] + '</span>' + (r.host === S.you && r.state === 'lobby' ? ' <button class="icon-btn" data-act="kick" data-id="' + m.id + '">✕</button>' : '')
+          (m.bot ? (r.host === S.you && r.state === 'lobby'
+              ? '<select class="sel" data-cpu-dragon="' + m.id + '" style="width:auto">' + App.presets().map(function (p) { return '<option value="' + esc(p.id) + '"' + (b && b.id === p.id ? ' selected' : '') + '>' + esc(p.name) + '</option>'; }).join('') + '</select>' +
+                ' <select class="sel" data-cpu-level="' + m.id + '" style="width:auto">' + [1, 2, 3].map(function (l) { return '<option value="' + l + '"' + ((m.level || 2) === l ? ' selected' : '') + '>CPU ' + ['', 'easy', 'normal', 'hard'][l] + '</option>'; }).join('') + '</select>' +
+                ' <button class="icon-btn" data-act="kick" data-id="' + m.id + '">✕</button>'
+              : '<span class="pill">CPU ' + ['', 'easy', 'normal', 'hard'][m.level || 2] + '</span>')
             : !m.connected ? '<span class="pill wait">reconnecting</span>' : m.ready ? '<span class="pill ok">ready</span>' : '<span class="pill wait">not ready</span>') + '</div>';
       }
     },
@@ -267,7 +288,7 @@
     leave: function () { App.confirmAsk('Leave this room?', 'Leave', function () { S.net.send({ t: 'leave' }); S.net.close(); S.net = null; S.room = null; App.show('online'); }); },
     ready: function () { var me = S.room.members.filter(function (m) { return m.id === S.you; })[0]; S.net.send({ t: 'ready', ready: !(me && me.ready) }); },
     team: function (el) { S.net.send({ t: 'team', team: +el.dataset.team }); },
-    set: function (el) { var o = { t: 'settings' }; o[el.dataset.k] = el.dataset.k === 'stocks' ? +el.dataset.v : el.dataset.v; S.net.send(o); },
+    set: function (el) { var o = { t: 'settings' }, k = el.dataset.k; o[k] = k === 'stocks' || k === 'time' ? +el.dataset.v : el.dataset.v; S.net.send(o); },
     bot: function (el) { S.net.send({ t: 'bot', op: 'add', level: +el.dataset.level }); },
     kick: function (el) { S.net.send({ t: 'bot', op: 'remove', id: el.dataset.id }); },
     start: function () { S.net.send({ t: 'start' }); },

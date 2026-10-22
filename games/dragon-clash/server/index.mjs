@@ -15,10 +15,19 @@ const Build = require('../engine/dc-build.js');
 const Sim = require('../engine/dc-sim.js');
 const Bot = require('../engine/dc-ai.js');
 const Cup = require('../engine/dc-tournament.js');
+// Every button the simulation knows (Guard, Taunt and the Ability button sit above the first ten bits)
+const ALL_BUTTONS = Object.values(Sim.BTN).reduce((a, b) => a | b, 0);
+// CPUs use the painted sprite dragons, the same roster Versus offers
+const CPU_PRESETS = D.PRESETS.filter((p) => p.look && p.look.sprite);
+function cpuBuild(presetId, level) {
+  const preset = CPU_PRESETS.find((p) => p.id === presetId) || CPU_PRESETS[randomInt(CPU_PRESETS.length)];
+  return { preset, build: Build.sanitize(Build.presetBuild(preset.id)), name: 'CPU ' + preset.name, level: Math.max(1, Math.min(3, level | 0 || 2)) };
+}
 
 const TICK_MS = 1000 / 60;
 const SNAP_EVERY = 2;              // ticks between snapshots (30 Hz)
-const COUNTDOWN = 150;             // ticks
+const COUNTDOWN = 150;
+const VS_CARD = 150;                // ticks of the versus card before the countdown, as in local Versus             // ticks
 const GRACE_MS = 20_000;           // a dropped player can reconnect for this long
 const IDLE_ROOM_MS = 10 * 60_000;
 const MAX_ROOMS = 300;
@@ -97,6 +106,7 @@ export default function attach({ httpServer, basePath, log = console.log, tickMs
         const v = Build.validateBuild(m.build);
         if (!v.ok) return err(conn, 'Build rejected: ' + v.errors.join(' '));
         me.build = Build.sanitize(m.build);
+        if (m.tapJump != null) me.tapJump = !!m.tapJump;
         push(room);
         return;
       }
@@ -117,6 +127,7 @@ export default function attach({ httpServer, basePath, log = console.log, tickMs
         if (m.arena && D.ARENAS[m.arena] && m.arena !== 'training') s.arena = m.arena;
         if (m.stocks) s.stocks = Math.max(1, Math.min(5, m.stocks | 0));
         if (m.time != null) s.time = [0, 3, 5, 8].includes(m.time | 0) ? m.time | 0 : 0;
+        if (m.ff != null) s.ff = !!m.ff;
         const teams = D.FORMATS[s.format].teams;
         for (const mem of room.members.values()) if (mem.team >= teams) mem.team = 0;
         push(room);
@@ -126,10 +137,13 @@ export default function attach({ httpServer, basePath, log = console.log, tickMs
         if (!host || room.state !== 'lobby') return;
         if (m.op === 'add') {
           if (room.members.size >= MAX_MEMBERS) return err(conn, 'Room is full.');
-          const preset = D.PRESETS[randomInt(D.PRESETS.length)];
+          const c = cpuBuild(m.preset, m.level);
           const id = 'b' + randomBytes(4).toString('hex');
-          const b = Build.presetBuild(preset.id);
-          room.members.set(id, { id, name: 'CPU ' + preset.name, bot: true, level: Math.max(1, Math.min(3, m.level | 0 || 2)), build: Build.sanitize(b), ready: true, team: smallestTeam(room), connected: true, token: null });
+          room.members.set(id, { id, name: c.name, bot: true, level: c.level, build: c.build, ready: true, team: smallestTeam(room), connected: true, token: null });
+        } else if (m.op === 'set') {
+          // The host changes a CPU's dragon or difficulty, like a CPU slot in Versus
+          const b = room.members.get(m.id);
+          if (b && b.bot) { const c = cpuBuild(m.preset || (CPU_PRESETS.find((p) => b.build && Build.presetBuild(p.id).id === b.build.id) || {}).id, m.level != null ? m.level : b.level); Object.assign(b, { name: c.name, build: c.build, level: c.level }); }
         } else if (m.op === 'remove') {
           const b = room.members.get(m.id);
           if (b && b.bot) room.members.delete(m.id);
@@ -152,11 +166,12 @@ export default function attach({ httpServer, basePath, log = console.log, tickMs
         const slot = mt.slots.indexOf(me.id);
         if (slot < 0) return;
         const inp = mt.inputs[slot];
-        inp.held = (m.h | 0) & 1023;
+        inp.held = (m.h | 0) & ALL_BUTTONS;
         if (m.c && typeof m.c === 'object') {
           for (const k of Object.keys(Sim.BTN)) {
-            const c = m.c[k] | 0;
-            if (inp.counters[k] !== undefined && ((c - inp.counters[k]) & 255) > 0 && ((c - inp.counters[k]) & 255) < 16) inp.pending |= Sim.BTN[k];
+            // Press counters start at 0 on both ends, so the very first press of a button counts too
+            const c = m.c[k] | 0, was = inp.counters[k] | 0, d = (c - was) & 255;
+            if (d > 0 && d < 16) inp.pending |= Sim.BTN[k];
             inp.counters[k] = c;
           }
         }
@@ -206,7 +221,7 @@ export default function attach({ httpServer, basePath, log = console.log, tickMs
 
   function createRoom(mode) {
     const code = newCode();
-    const r = { code, mode, host: null, members: new Map(), settings: { format: '1v1', arena: 'skyforge', stocks: mode === 'cup' ? 2 : 3, time: 0 },
+    const r = { code, mode, host: null, members: new Map(), settings: { format: '1v1', arena: 'skyforge', stocks: mode === 'cup' ? 2 : 3, time: 0, ff: false },
       state: 'lobby', matches: new Map(), cup: null, lastResult: null, idle: null };
     rooms.set(code, r);
     return r;
@@ -223,6 +238,7 @@ export default function attach({ httpServer, basePath, log = console.log, tickMs
     const id = 'm' + randomBytes(5).toString('hex');
     const mem = { id, name: cleanName(m.name), bot: false, build: null, ready: false, team: smallestTeam(room), connected: true, token: randomBytes(16).toString('base64url'), conn, match: null, grace: null };
     if (m.build) { const v = Build.validateBuild(m.build); if (v.ok) mem.build = Build.sanitize(m.build); }
+    if (m.tapJump != null) mem.tapJump = !!m.tapJump;
     room.members.set(id, mem);
     if (!room.host) room.host = id;
     conn.room = room; conn.member = mem;
@@ -318,9 +334,9 @@ export default function attach({ httpServer, basePath, log = console.log, tickMs
     // Fill empty seats with CPUs
     teams.forEach((t, ti) => {
       while (t.length < f.perTeam) {
-        const preset = D.PRESETS[randomInt(D.PRESETS.length)];
+        const c = cpuBuild(null, 2);
         const id = 'b' + randomBytes(4).toString('hex');
-        const bot = { id, name: 'CPU ' + preset.name, bot: true, level: 2, build: Build.sanitize(Build.presetBuild(preset.id)), ready: true, team: ti, connected: true };
+        const bot = { id, name: c.name, bot: true, level: c.level, build: c.build, ready: true, team: ti, connected: true };
         room.members.set(id, bot);
         t.push(bot);
       }
@@ -336,15 +352,35 @@ export default function attach({ httpServer, basePath, log = console.log, tickMs
     push(room);
   }
 
+  /**
+   * Mirror matches: the same dragon in the same colours on opposing sides gets a different recolour for the later one,
+   * as Dragon Select does in Versus, so players can tell them apart. Works on copies; lobby builds are untouched.
+   */
+  function matchBuilds(members, teams) {
+    const TINTS = ['azure', 'crimson', 'jade', 'violet'];
+    const seen = [];
+    return members.map((m, i) => {
+      const b = JSON.parse(JSON.stringify(m.build)), team = teams ? teams[i] : m.team;
+      const key = (bb) => bb.id + '|' + (bb.look.tint || '') + '|' + (bb.look.shade || '');
+      if (b.look && seen.some((o) => o.team !== team && key(o.b) === key(b))) {
+        const used = new Set(seen.filter((o) => o.b.id === b.id).map((o) => o.b.look.tint));
+        b.look.tint = TINTS.find((t) => !used.has(t)) || TINTS[i % TINTS.length]; delete b.look.shade;
+      }
+      seen.push({ b, team });
+      return b;
+    });
+  }
+
   function runMatch(room, members, opts) {
     const id = 'x' + nextMatch++;
+    const builds = matchBuilds(members, opts.teams);
     const sim = new Sim({
       arena: room.settings.arena, stocks: room.settings.stocks, timeLimit: room.settings.time ? room.settings.time * 3600 : MATCH_TIME,
-      seed: randomInt(1, 1e9),
-      fighters: members.map((m, i) => ({ id: m.id, name: m.name, build: m.build, team: opts.teams ? opts.teams[i] : m.team })),
+      seed: randomInt(1, 1e9), friendlyFire: !!room.settings.ff && !opts.teams,
+      fighters: members.map((m, i) => ({ id: m.id, name: m.name, build: builds[i], team: opts.teams ? opts.teams[i] : m.team, tapJump: m.tapJump !== false })),
     });
     const mt = { id, sim, slots: members.map((m) => m.id), inputs: members.map(() => ({ held: 0, pending: 0, counters: {} })),
-      bots: new Map(), countdown: COUNTDOWN, spectators: new Set(), events: [], tick: 0, cupMatch: opts.cupMatch || null, timer: null, ended: false };
+      bots: new Map(), countdown: COUNTDOWN + VS_CARD, spectators: new Set(), events: [], tick: 0, cupMatch: opts.cupMatch || null, timer: null, ended: false };
     members.forEach((m, i) => { if (m.bot) mt.bots.set(i, new Bot(sim, i, { level: m.level || 2, seed: randomInt(1, 1e6) })); else m.match = id; });
     room.matches.set(id, mt);
     for (const m of members) if (m.conn) send(m.conn.ws, { t: 'match', match: matchInfo(mt), you: mt.slots.indexOf(m.id) });

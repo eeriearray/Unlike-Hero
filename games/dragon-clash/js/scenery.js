@@ -1736,6 +1736,7 @@
 
   var birds = null;
   function backdrop(x, arena, cam0, W, H, t) {
+    if (!(W >= 1 && H >= 1)) return;   // a hidden or collapsed view has nothing to paint (and 0-size painters throw)
     var theme = arena.theme, sc = scene(theme, W, H), th = sc.th;
     var cam = { x: cam0.x, y: cam0.y, zoom: cam0.zBase ? cam0.z / cam0.zBase : 1 };
     layer(x, sc.sky, 0.05, cam, W, H, sc);
