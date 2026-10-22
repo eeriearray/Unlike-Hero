@@ -1,6 +1,7 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "hub", "runtimeExecutable": "node", "runtimeArgs": ["server/relay.mjs"], "port": 8080 }
+    { "name": "hub", "runtimeExecutable": "node", "runtimeArgs": ["server/relay.mjs"], "port": 8080 },
+    { "name": "hub-scenes", "runtimeExecutable": "env", "runtimeArgs": ["PORT=8093", "node", "server/relay.mjs"], "port": 8093 }
   ]
 }
