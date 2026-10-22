@@ -134,18 +134,26 @@ server.listen(PORT, () => {
     .filter(a => a && (a.family === 'IPv4' || a.family === 4) && !a.internal && !/^(169\.254\.|192\.0\.0\.)/.test(a.address))
     .map(a => a.address);
   // Some phone hotspots (an iPhone sharing an IPv6-only carrier like Jio) give no IPv4 address at all: offer the
-  // Wi-Fi's stable IPv6 address instead, which every device on that hotspot can open.
+  // Wi-Fi's IPv6 address instead. It changes whenever the hotspot reconnects, so Macs also print their .local name.
   const lan6 = lan.length ? [] : ipv6Addresses().map(ip => `[${ip}]`);
   if (lan.length || lan6.length) {
     console.log('\nFriends on the same Wi-Fi or hotspot open:');
     for (const ip of lan.concat(lan6)) console.log(`   http://${ip}:${PORT}`);
-    if (lan6.length) console.log('   (open this address on this computer too, so invite links and QR codes use it)');
+    const local = localName();
+    if (local) console.log(`   http://${local}:${PORT}   (iPhone, iPad and Mac: keeps working when the address changes)`);
+    if (lan6.length) console.log('   (open the link on this computer too, so invite links and QR codes use it)');
     console.log('');
   } else {
     console.log('\nFriends can\'t reach this computer yet: it isn\'t on a Wi-Fi network or hotspot.');
     console.log('Connect it to the same Wi-Fi or phone hotspot as your friends (over Wi-Fi, not a USB cable), then restart: npm start\n');
   }
 });
+
+/** This Mac's Bonjour name (name.local), which Apple devices on the same network resolve whatever its address. */
+function localName() {
+  if (platform() !== 'darwin') return '';
+  try { const n = execFileSync('scutil', ['--get', 'LocalHostName'], { encoding: 'utf8' }).trim(); return n ? n + '.local' : ''; } catch { return ''; }
+}
 
 /** Stable global IPv6 addresses of the network adapters (not temporary privacy addresses, not the 464XLAT one). */
 function ipv6Addresses() {

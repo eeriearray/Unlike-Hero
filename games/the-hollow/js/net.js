@@ -14,7 +14,7 @@
   function get(store, k) { try { return JSON.parse(store.getItem(k) || 'null'); } catch (e) { return null; } }
 
   function createOnline(h) {
-    var socket = g.io({ path: basePath() + 'socket.io', transports: ['websocket', 'polling'], reconnectionDelayMax: 4000 });
+    var socket = g.io({ path: basePath() + 'socket.io', transports: ['websocket', 'polling'], tryAllTransports: true, reconnectionDelayMax: 4000 });
     var seat = null, closedByUs = false;
     function emit(ev, data) {
       return new Promise(function (resolve) {

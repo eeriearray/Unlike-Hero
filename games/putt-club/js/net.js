@@ -14,7 +14,7 @@
   function onlineAvailable() { return typeof global.io === 'function' && location.protocol !== 'file:'; }
 
   function createOnline(h) {
-    var socket = global.io({ path: basePath() + 'socket.io', transports: ['websocket', 'polling'], reconnectionDelayMax: 4000 });
+    var socket = global.io({ path: basePath() + 'socket.io', transports: ['websocket', 'polling'], tryAllTransports: true, reconnectionDelayMax: 4000 });
     var seat = null, closed = false;
     function emit(ev, data) {
       return new Promise(function (resolve) {

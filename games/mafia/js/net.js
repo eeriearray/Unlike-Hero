@@ -14,7 +14,7 @@
   function savedSeat() { try { return JSON.parse(sessionStorage.getItem(SEAT_KEY) || 'null'); } catch (e) { return null; } }
 
   function createOnline(h) {
-    var socket = global.io({ path: basePath() + 'socket.io', transports: ['websocket', 'polling'] });
+    var socket = global.io({ path: basePath() + 'socket.io', transports: ['websocket', 'polling'], tryAllTransports: true });
     var seat = null;
     function emit(ev, data) {
       return new Promise(function (resolve) {

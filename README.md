@@ -8,7 +8,17 @@ Every game is self-contained in `games/<id>/` and plugs into the hub through a s
 **Quickest (no install):** double-click `index.html`. The hub opens and every game runs.
 Multiplayer between tabs and devices needs the server below.
 
-**With multiplayer across devices:**
+**With friends (one step):** double-click `Start Hub.command` in Finder, or run:
+
+```bash
+npm run play
+```
+
+It stops an old copy of the hub, installs packages if needed, starts the server and prints the link to share
+(copied to the clipboard). On a Mac the link is `http://<mac-name>.local:8080` when the network has no normal
+address (an iPhone hotspot on an IPv6-only carrier), so it keeps working when the hotspot reconnects.
+
+**With multiplayer across devices, by hand:**
 
 ```bash
 npm install

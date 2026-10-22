@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connection check</title>
+<style>
+  body{margin:0;padding:24px;background:#101310;color:#eef0e8;font:16px/1.5 -apple-system,system-ui,sans-serif}
+  h1{margin:0 0 4px;font-size:28px} p{margin:0 0 18px;color:#a9afa6}
+  table{border-collapse:collapse;width:100%;max-width:760px} td{padding:8px 10px;border-bottom:1px solid #2a2f29;vertical-align:top}
+  td:first-child{width:2em;font-size:20px} .note{color:#a9afa6;font-size:13px}
+</style>
+</head>
+<body>
+<!-- Dev page, not linked from the hub. Open http://<this computer>:8080/shared/net-check.html on a phone or tablet to see
+     which kinds of game connection get through: page loads, the hub relay, socket.io games and the raw WebSocket games. -->
+<h1 id="sum">Checking…</h1>
+<p>Address: <b id="addr"></b></p>
+<table id="t"></table>
+<script src="/shared/sdk/hub-config.js"></script>
+<script src="/games/putt-club/socket.io/socket.io.min.js"></script>
+<script>
+const rows = document.getElementById('t'); document.getElementById('addr').textContent = location.host;
+const ws = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host;
+function row(name) { const tr = rows.insertRow(); tr.insertCell().textContent = '…'; tr.insertCell().innerHTML = '<b>' + name + '</b><div class="note"></div>'; return tr; }
+function timed(p, ms) { return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('no answer in ' + ms / 1000 + ' s')), ms))]); }
+function wsOpen(url) { return new Promise((res, rej) => { let s; try { s = new WebSocket(url); } catch (e) { rej(e); return; } s.onopen = () => { s.close(); res('open'); }; s.onerror = () => rej(new Error('WebSocket error')); }); }
+function sio(game, transports, tryAll) {
+  return new Promise((res, rej) => {
+    const s = io(location.origin, { path: '/games/' + game + '/socket.io', transports, tryAllTransports: !!tryAll, forceNew: true, reconnection: false, timeout: 6000 });
+    s.on('connect', () => { const t = s.io.engine.transport.name; s.close(); res('connected via ' + t); });
+    s.on('connect_error', e => { s.close(); rej(new Error(e.message)); });
+  });
+}
+const checks = [
+  ['Page files (HTTP)', () => fetch('/games/registry.json', { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return 'HTTP ' + r.status; })],
+  ['Hub relay (Party Pack, linked play)', () => wsOpen((window.HUB_CONFIG && HUB_CONFIG.relayUrl || ws + '/relay') + '?room=netcheck')],
+  ['Putt Club (socket.io, WebSocket)', () => sio('putt-club', ['websocket'])],
+  ['Putt Club (socket.io, polling)', () => sio('putt-club', ['polling'])],
+  ['Mafia (socket.io, as the game connects)', () => sio('mafia', ['websocket', 'polling'], true)],
+  ['Neon Casino (socket.io, as the game connects)', () => sio('casino', ['websocket', 'polling'], true)],
+  ['The Hollow (socket.io, as the game connects)', () => sio('the-hollow', ['websocket', 'polling'], true)],
+  ['Dragon Clash online (WebSocket)', () => wsOpen(ws + '/games/dragon-clash/ws')],
+  ['RIFTBREAK (WebSocket)', () => wsOpen(ws + '/games/riftbreak/ws')],
+  ['RECESS (WebSocket)', () => wsOpen(ws + '/games/recess/ws')],
+];
+(async () => {
+  let ok = 0;
+  for (const [name, fn] of checks) {
+    const tr = row(name), t0 = performance.now();
+    try { const r = await timed(fn(), 8000); tr.cells[0].textContent = '✅'; tr.querySelector('.note').textContent = r + ' · ' + Math.round(performance.now() - t0) + ' ms'; ok++; }
+    catch (e) { tr.cells[0].textContent = '❌'; tr.querySelector('.note').textContent = e.message; }
+  }
+  const s = ok + ' of ' + checks.length + ' connections work';
+  document.getElementById('sum').textContent = s; document.title = s;
+})();
+</script>
+</body>
+</html>

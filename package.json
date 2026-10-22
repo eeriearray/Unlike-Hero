@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node server/relay.mjs",
+    "play": "bash tools/play.sh",
     "registry": "node tools/build-registry.mjs",
     "new-game": "node tools/new-game.mjs",
     "test": "node --test"
