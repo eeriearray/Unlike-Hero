@@ -453,12 +453,12 @@
     window.DCScenery.platforms(x, this.arena, this.time);
     v.s.forEach(function (s) { FXL.drawStructure(x, s, self.time); });
     // Floor hazards under the dragons
-    v.p.forEach(function (p) { if (p.g) FXL.drawProjectile(x, p, self.time, self.fx); });
+    v.p.forEach(function (p) { if (p.g) FXL.drawProjectile(x, p, self.time, self.paused ? null : self.fx); });
     var fs = this.setupInfo.fighters;
     (v.d || []).forEach(function (d) { self.drawDecoy(x, d, fs[d.o]); });
     var superOn = v.fz > 0 && v.f[v.fzb];
     v.f.forEach(function (f, i) { if (f.st !== 'dead' && f.st !== 'out' && !(superOn && i === v.fzb)) self.drawFighter(x, f, fs[i], i); });
-    v.p.forEach(function (p) { if (!p.g) FXL.drawProjectile(x, p, self.time, self.fx); });
+    v.p.forEach(function (p) { if (!p.g) FXL.drawProjectile(x, p, self.time, self.paused ? null : self.fx); });
     if (superOn) {
       // The world dims and the super's owner stands lit in front of it
       x.save(); x.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);

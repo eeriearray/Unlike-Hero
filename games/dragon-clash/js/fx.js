@@ -320,7 +320,9 @@
           x.fillStyle = p.color; x.beginPath(); x.arc(p.x, p.y, p.size * k, 0, TAU); x.fill();
           break;
         case 'smoke':
-          x.globalAlpha = k * 0.6; x.fillStyle = p.color; x.beginPath(); x.arc(p.x, p.y, p.size * (2 - k), 0, TAU); x.fill();
+          // A soft-edged puff (cached sprite per colour) rather than a hard disc
+          var pr = p.size * (2 - k) * 1.5;
+          x.globalAlpha = k * 0.7; x.drawImage(puff(p.color), p.x - pr, p.y - pr, pr * 2, pr * 2);
           break;
         case 'shard':
           x.fillStyle = p.color; x.save(); x.translate(p.x, p.y); x.rotate(p.life * 0.3);
@@ -382,8 +384,11 @@
         }
         case 'rock':
           p.rotA = (p.rotA || 0) + (p.spin || 0.1);
-          x.save(); x.translate(p.x, p.y); x.rotate(p.rotA); x.fillStyle = p.color; x.strokeStyle = 'rgba(40,26,12,0.9)'; x.lineWidth = 1;
-          x.beginPath(); x.moveTo(-p.size, -p.size * 0.3); x.lineTo(-p.size * 0.2, -p.size); x.lineTo(p.size, -p.size * 0.4); x.lineTo(p.size * 0.6, p.size * 0.7); x.lineTo(-p.size * 0.6, p.size * 0.8); x.closePath(); x.fill(); x.stroke();
+          // A chip of stone: base colour, a lit upper facet and a shadowed lower one
+          x.save(); x.translate(p.x, p.y); x.rotate(p.rotA); x.fillStyle = p.color;
+          x.beginPath(); x.moveTo(-p.size, -p.size * 0.3); x.lineTo(-p.size * 0.2, -p.size); x.lineTo(p.size, -p.size * 0.4); x.lineTo(p.size * 0.6, p.size * 0.7); x.lineTo(-p.size * 0.6, p.size * 0.8); x.closePath(); x.fill();
+          x.fillStyle = 'rgba(255,236,205,0.35)'; x.beginPath(); x.moveTo(-p.size, -p.size * 0.3); x.lineTo(-p.size * 0.2, -p.size); x.lineTo(p.size, -p.size * 0.4); x.lineTo(0, 0); x.closePath(); x.fill();
+          x.fillStyle = 'rgba(20,10,4,0.35)'; x.beginPath(); x.moveTo(p.size, -p.size * 0.4); x.lineTo(p.size * 0.6, p.size * 0.7); x.lineTo(-p.size * 0.6, p.size * 0.8); x.lineTo(0, 0); x.closePath(); x.fill();
           x.restore();
           break;
         case 'drop': {
@@ -443,106 +448,387 @@
 
   function hex(c) { return c && c[0] === '#' ? c : '#ffffff'; }
 
-  function lightning(x, x0, y0, x1, y1, color, w, segs) {
-    x.save();
-    x.strokeStyle = color; x.lineWidth = w; x.lineJoin = 'round'; x.shadowColor = color; x.shadowBlur = 12;
-    x.beginPath(); x.moveTo(x0, y0);
-    for (var i = 1; i < segs; i++) {
-      var k = i / segs;
-      x.lineTo(x0 + (x1 - x0) * k + rnd(-10, 10), y0 + (y1 - y0) * k + rnd(-10, 10));
+  // ─────────────── effect helpers: seeded shapes, additive light ───────────────
+  /** Stable pseudo-random in [0,1) for a number, so shapes keep their silhouette from frame to frame. */
+  function hash(n) { n = Math.sin(n * 127.1 + 311.7) * 43758.5453; return n - Math.floor(n); }
+  /** The light an effect throws on the air around it (draw with 'lighter'). */
+  function glow(x, cx, cy, r, rgb, a) {
+    var g = x.createRadialGradient(cx, cy, 0, cx, cy, r);
+    g.addColorStop(0, 'rgba(' + rgb + ',' + a + ')'); g.addColorStop(0.4, 'rgba(' + rgb + ',' + (a * 0.35) + ')'); g.addColorStop(1, 'rgba(' + rgb + ',0)');
+    x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r, 0, TAU); x.fill();
+  }
+  var puffs = {};
+  /** A soft radial puff in the given colour, rendered once and reused for every smoke particle of that colour. */
+  function puff(color) {
+    if (puffs[color]) return puffs[color];
+    var c = document.createElement('canvas'); c.width = c.height = 64;
+    var g = c.getContext('2d'), rg = g.createRadialGradient(32, 32, 0, 32, 32, 32), m = /rgba?\(([^)]+)\)/.exec(color), parts = m ? m[1].split(',') : null;
+    var rgb = parts ? parts.slice(0, 3).join(',') : '255,255,255', a = parts && parts[3] != null ? +parts[3] : 1;
+    if (!parts && color[0] === '#') { var n = parseInt(color.slice(1), 16); rgb = (n >> 16 & 255) + ',' + (n >> 8 & 255) + ',' + (n & 255); }
+    rg.addColorStop(0, 'rgba(' + rgb + ',' + a + ')'); rg.addColorStop(0.5, 'rgba(' + rgb + ',' + a * 0.55 + ')'); rg.addColorStop(1, 'rgba(' + rgb + ',0)');
+    g.fillStyle = rg; g.fillRect(0, 0, 64, 64);
+    return (puffs[color] = c);
+  }
+  function poly(x, pts) { x.beginPath(); x.moveTo(pts[0][0], pts[0][1]); for (var i = 1; i < pts.length; i++) x.lineTo(pts[i][0], pts[i][1]); x.closePath(); }
+  /** An irregular stone outline of n corners around radius r. */
+  function rockPts(seed, r, n) {
+    var pts = [];
+    for (var i = 0; i < n; i++) { var a = (i + (hash(seed + i) - 0.5) * 0.6) / n * TAU, rr = r * (0.76 + hash(seed * 3.1 + i) * 0.34); pts.push([Math.cos(a) * rr, Math.sin(a) * rr]); }
+    return pts;
+  }
+  /**
+   * A lit stone silhouette: body shaded from a fixed upper-left light whatever the spin, faceted planes,
+   * a warm rim on the lit edge and a dark contact edge. pts are in the rotated frame.
+   */
+  function stone(x, pts, rot, R, cols) {
+    x.save(); x.rotate(rot); poly(x, pts); x.rotate(-rot);
+    var g = x.createRadialGradient(-R * 0.45, -R * 0.5, R * 0.1, -R * 0.1, -R * 0.1, R * 1.45);
+    g.addColorStop(0, cols[0]); g.addColorStop(0.4, cols[1]); g.addColorStop(0.8, cols[2]); g.addColorStop(1, cols[3]);
+    x.fillStyle = g; x.fill();
+    x.save(); x.clip();
+    // Facets: each wedge from an off-centre point to one edge, shaded by how much it faces the light
+    var n = pts.length, cx = R * 0.22, cy = -R * 0.18;
+    for (var i = 0; i < n; i++) {
+      var a = pts[i], b = pts[(i + 1) % n], ang = Math.atan2(a[1] + b[1], a[0] + b[0]) + rot;
+      var lit = Math.cos(ang + Math.PI * 0.75);
+      x.save(); x.rotate(rot); x.beginPath(); x.moveTo(cx, cy); x.lineTo(a[0], a[1]); x.lineTo(b[0], b[1]); x.closePath(); x.restore();
+      x.fillStyle = lit > 0 ? 'rgba(255,240,215,' + (lit * 0.1) + ')' : 'rgba(10,6,2,' + (-lit * 0.22) + ')'; x.fill();
     }
-    x.lineTo(x1, y1); x.stroke();
-    x.strokeStyle = '#ffffff'; x.lineWidth = w * 0.4; x.shadowBlur = 0; x.stroke();
+    x.restore();
+    x.save(); x.rotate(rot); poly(x, pts); x.restore();
+    x.strokeStyle = 'rgba(18,10,4,0.55)'; x.lineWidth = 2.5; x.lineJoin = 'round'; x.stroke();
+    var rim = x.createLinearGradient(-R, -R, R * 0.4, R * 0.4);
+    rim.addColorStop(0, 'rgba(255,238,205,0.85)'); rim.addColorStop(0.45, 'rgba(255,238,205,0)'); rim.addColorStop(0.7, 'rgba(0,0,0,0)'); rim.addColorStop(1, 'rgba(12,6,2,0.75)');
+    x.strokeStyle = rim; x.lineWidth = 2; x.lineJoin = 'round'; x.stroke();
+    x.restore();
+  }
+  /** A two-faced crystal or rock spike rising from the floor: lit left face, shaded right face. */
+  function spike(x, sx, bw, h, lean, lite, dark) {
+    var ax = sx + lean, mid = sx + bw * 0.15;
+    var gl = x.createLinearGradient(sx - bw, 0, ax, -h); gl.addColorStop(0, lite[1]); gl.addColorStop(1, lite[0]);
+    x.fillStyle = gl; x.beginPath(); x.moveTo(sx - bw, 0); x.lineTo(ax, -h); x.lineTo(mid, 0); x.closePath(); x.fill();
+    var gd = x.createLinearGradient(mid, 0, ax, -h); gd.addColorStop(0, dark[1]); gd.addColorStop(1, dark[0]);
+    x.fillStyle = gd; x.beginPath(); x.moveTo(mid, 0); x.lineTo(ax, -h); x.lineTo(sx + bw, 0); x.closePath(); x.fill();
+  }
+
+  /**
+   * A forked lightning arc: midpoint-displaced so it reads as a real discharge, drawn as an additive glow,
+   * a coloured channel and a white-hot core. seed keeps the shape still between re-rolls.
+   */
+  function lightning(x, x0, y0, x1, y1, color, w, segs, seed) {
+    var s = seed != null ? seed : Math.random() * 1000, n = 0;
+    function r() { return hash(s + (n++) * 1.37) - 0.5; }
+    var len = Math.sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0)) || 1, nx = -(y1 - y0) / len, ny = (x1 - x0) / len;
+    var pts = [[x0, y0], [x1, y1]], amp = Math.min(34, len * 0.3);
+    while (pts.length < Math.max(4, segs * 1.5)) {
+      var out = [pts[0]];
+      for (var i = 1; i < pts.length; i++) { var a = pts[i - 1], b = pts[i], d = r() * amp; out.push([(a[0] + b[0]) / 2 + nx * d, (a[1] + b[1]) / 2 + ny * d]); out.push(b); }
+      pts = out; amp *= 0.55;
+    }
+    var line = function (p) { x.beginPath(); x.moveTo(p[0][0], p[0][1]); for (var j = 1; j < p.length; j++) x.lineTo(p[j][0], p[j][1]); };
+    x.save(); x.globalCompositeOperation = 'lighter'; x.lineJoin = 'round'; x.lineCap = 'round';
+    line(pts);
+    x.strokeStyle = Art.alpha(hex(color), 0.07); x.lineWidth = w * 6; x.stroke();
+    x.strokeStyle = Art.alpha(hex(color), 0.1); x.lineWidth = w * 2.6; x.stroke();
+    x.strokeStyle = Art.alpha(hex(color), 0.9); x.lineWidth = w; x.stroke();
+    x.strokeStyle = 'rgba(255,255,255,0.95)'; x.lineWidth = Math.max(1, w * 0.38); x.stroke();
+    // One or two thin forks peeling off the main channel
+    for (var f = 0; f < 2; f++) {
+      var k0 = 2 + Math.floor((r() + 0.5) * (pts.length - 4)), p0 = pts[k0], fl = len * (0.1 + (r() + 0.5) * 0.12), fa = Math.atan2(y1 - y0, x1 - x0) + (r() < 0 ? -1 : 1) * (0.4 + (r() + 0.5) * 0.6);
+      var fp = [p0], cx = p0[0], cy = p0[1];
+      for (var q = 0; q < 4; q++) { cx += Math.cos(fa + r() * 1.2) * fl / 4; cy += Math.sin(fa + r() * 1.2) * fl / 4; fp.push([cx, cy]); }
+      line(fp); x.strokeStyle = Art.alpha(hex(color), 0.12); x.lineWidth = w * 2; x.stroke();
+      x.strokeStyle = Art.alpha(hex(color), 0.7); x.lineWidth = Math.max(0.8, w * 0.4); x.stroke();
+    }
     x.restore();
   }
 
   // ─────────────── projectiles & structures ───────────────
   function drawProjectile(x, p, t, fx) {
-    var c = el(p.el);
     x.save();
     x.translate(p.x, p.y);
-    var dir = p.vx < 0 ? -1 : 1;
+    var dir = p.vx < 0 ? -1 : 1, i, k;
     switch (p.ty) {
       case 'fireball': {
-        var g = x.createRadialGradient(0, 0, 0, 0, 0, 26);
-        g.addColorStop(0, '#fff6c8'); g.addColorStop(0.35, '#ffb02e'); g.addColorStop(0.7, 'rgba(255,90,30,0.7)'); g.addColorStop(1, 'rgba(255,60,20,0)');
-        x.fillStyle = g; x.beginPath(); x.arc(0, 0, 26, 0, TAU); x.fill();
-        if (fx && Math.random() < 0.8) fx.add({ x: p.x - dir * 10, y: p.y + rnd(-6, 6), vx: -dir * rnd(1, 3), vy: rnd(-1.5, 0.5), life: 18, size: rnd(3, 7), color: Math.random() < 0.5 ? '#ff6a2a' : '#ffcf4a', type: 'dot' });
+        // A comet of fire: flickering tongues streaming back off a white-hot core
+        var fa = Math.atan2(p.vy, p.vx || dir), fl = t * 26 + p.id * 3;
+        x.rotate(fa); x.globalCompositeOperation = 'lighter';
+        glow(x, -6, 0, 64, '255,110,30', 0.32);
+        // The tail: overlapping soft blooms that shrink and cool from yellow to deep red, each wavering on its own
+        for (i = 9; i >= 1; i--) {
+          var u = i / 10, br = 17 * (1 - u * 0.8), bx = -i * 6.5, by = Math.sin(fl * 0.9 - i * 0.8) * 3 * u;
+          glow(x, bx, by, br * 1.9, u < 0.3 ? '255,200,90' : u < 0.6 ? '255,120,40' : '220,60,25', 0.55 * (1 - u * 0.6));
+        }
+        var cg = x.createRadialGradient(3, -2, 0, 0, 0, 19);
+        cg.addColorStop(0, 'rgba(255,255,245,1)'); cg.addColorStop(0.3, 'rgba(255,228,140,0.95)'); cg.addColorStop(0.7, 'rgba(255,130,40,0.7)'); cg.addColorStop(1, 'rgba(255,70,20,0)');
+        x.fillStyle = cg; x.beginPath(); x.arc(0, 0, 19, 0, TAU); x.fill();
+        for (i = 0; i < 2; i++) glow(x, Math.cos(fl * 0.35 + i * Math.PI) * 5, Math.sin(fl * 0.35 + i * Math.PI) * 5, 9, '255,255,220', 0.55);
+        if (fx) {
+          if (Math.random() < 0.6) fx.add({ x: p.x - dir * 12 + rnd(-4, 4), y: p.y + rnd(-7, 7), vx: -p.vx * 0.15 + rnd(-0.5, 0.5), vy: rnd(-1.2, 0.2), life: rnd(14, 22), size: rnd(6, 11), color: '#ff7a2f', type: 'flame', drag: 0.92, grav: -0.05 });
+          if (Math.random() < 0.35) fx.add({ x: p.x - dir * 10, y: p.y + rnd(-8, 8), vx: -p.vx * 0.3 + rnd(-1, 1), vy: rnd(-2, 0.5), life: rnd(18, 30), size: rnd(1.5, 3), color: Math.random() < 0.5 ? '#ffd36a' : '#ff9a3a', type: 'ember', drag: 0.95, grav: -0.03 });
+        }
         break;
       }
       case 'iceShard':
       case 'lance': {
-        var L = p.ty === 'lance' ? 40 : 24;
+        // A faceted crystal: pale lit upper face, deep blue lower face, a bright ridge and a frost wake
+        var lance = p.ty === 'lance', L = lance ? 46 : 27, Hh = p.h / 2 + 1;
         x.scale(dir, 1);
-        x.fillStyle = 'rgba(200,245,255,0.95)'; x.strokeStyle = '#ffffff'; x.lineWidth = 1.5;
-        x.shadowColor = c.color; x.shadowBlur = 14;
-        x.beginPath(); x.moveTo(L, 0); x.lineTo(-L * 0.4, -p.h / 2); x.lineTo(-L, 0); x.lineTo(-L * 0.4, p.h / 2); x.closePath(); x.fill(); x.stroke();
-        if (fx && Math.random() < 0.5) fx.add({ x: p.x - dir * L, y: p.y + rnd(-5, 5), vx: 0, vy: rnd(-0.5, 0.5), life: 20, size: 3, color: '#e8fbff', type: 'dot' });
+        x.globalCompositeOperation = 'lighter';
+        var WL = L * (lance ? 4 : 3.4);
+        for (i = 0; i < 3; i++) {
+          var ww = Hh * (1.1 - i * 0.35), wl = WL * (1 - i * 0.25), wake = x.createLinearGradient(-L * 0.4, 0, -wl, 0);
+          wake.addColorStop(0, 'rgba(' + (i === 2 ? '255,255,255' : '160,230,255') + ',' + (0.14 + i * 0.1) + ')'); wake.addColorStop(1, 'rgba(120,210,255,0)');
+          x.fillStyle = wake; x.beginPath(); x.moveTo(-L * 0.4, -ww); x.quadraticCurveTo(-wl * 0.5, -ww * 0.45, -wl, 0); x.quadraticCurveTo(-wl * 0.5, ww * 0.45, -L * 0.4, ww); x.fill();
+        }
+        glow(x, 0, 0, L * 1.5, '127,224,255', 0.26);
+        x.globalCompositeOperation = 'source-over';
+        var crystal = function (ox, oy, l, h, a) {
+          x.save(); x.translate(ox, oy); x.rotate(a);
+          var gt = x.createLinearGradient(0, -h, 0, 0); gt.addColorStop(0, '#f6feff'); gt.addColorStop(1, '#b4ecff');
+          x.fillStyle = gt; x.beginPath(); x.moveTo(l, 0); x.lineTo(-l * 0.3, -h); x.lineTo(-l, 0); x.closePath(); x.fill();
+          var gb = x.createLinearGradient(0, 0, 0, h); gb.addColorStop(0, '#5cb4e6'); gb.addColorStop(1, '#1f5c96');
+          x.fillStyle = gb; x.beginPath(); x.moveTo(l, 0); x.lineTo(-l, 0); x.lineTo(-l * 0.3, h); x.closePath(); x.fill();
+          x.fillStyle = 'rgba(255,255,255,0.6)'; x.beginPath(); x.moveTo(l * 0.92, -0.5); x.lineTo(-l * 0.15, -h * 0.5); x.lineTo(-l * 0.55, -0.5); x.closePath(); x.fill();
+          x.fillStyle = 'rgba(160,230,255,0.35)'; x.beginPath(); x.moveTo(l * 0.6, 0.5); x.lineTo(-l * 0.3, h * 0.75); x.lineTo(-l * 0.7, 0.5); x.closePath(); x.fill();
+          x.strokeStyle = 'rgba(255,255,255,0.95)'; x.lineWidth = 1; x.beginPath(); x.moveTo(-l, 0); x.lineTo(l, 0); x.stroke();
+          x.restore();
+        };
+        if (lance) { crystal(-L * 0.2, -Hh * 0.42, L * 0.55, Hh * 0.6, -0.12); crystal(-L * 0.3, Hh * 0.4, L * 0.45, Hh * 0.5, 0.1); }
+        crystal(0, 0, L, Hh, 0);
+        // A glint that rolls along the tip
+        x.globalCompositeOperation = 'lighter';
+        var gs = 5 + 4 * Math.sin(t * 14 + p.id);
+        x.strokeStyle = 'rgba(255,255,255,0.9)'; x.lineWidth = 1.4; x.lineCap = 'round';
+        x.beginPath(); x.moveTo(L * 0.72 - gs, -1); x.lineTo(L * 0.72 + gs, -1); x.moveTo(L * 0.72, -1 - gs * 0.8); x.lineTo(L * 0.72, -1 + gs * 0.8); x.stroke();
+        glow(x, L * 0.72, -1, 8, '255,255,255', 0.6);
+        if (fx && Math.random() < 0.55) fx.add({ x: p.x - dir * L * rnd(0.3, 1), y: p.y + rnd(-Hh, Hh), vx: -p.vx * 0.05, vy: rnd(-0.4, 0.4), life: rnd(16, 26), size: rnd(2.5, 4.5), color: Math.random() < 0.6 ? '#ffffff' : '#bfefff', type: 'frostStar', drag: 0.94 });
         break;
       }
-      case 'bolt':
-        x.restore();
-        lightning(x, p.x - dir * 30, p.y, p.x + dir * 24, p.y, c.color, 4, 5);
-        lightning(x, p.x - dir * 30, p.y, p.x + dir * 24, p.y, c.glow, 2, 4);
-        return;
+      case 'bolt': {
+        // A ball of plasma dragging a crackling channel, re-rolled ~24 times a second so it snaps rather than shimmers
+        var seed = Math.floor(t * 24) * 7 + p.id * 13, hx = dir * 16;
+        x.globalCompositeOperation = 'lighter';
+        glow(x, hx, 0, 54, '255,215,80', 0.3); glow(x, hx, 0, 34, '180,140,255', 0.25);
+        x.restore(); x.save();
+        lightning(x, p.x - dir * 56, p.y + (hash(seed) - 0.5) * 10, p.x + hx, p.y, '#ffe14a', 2.6, 6, seed);
+        lightning(x, p.x - dir * 40, p.y + (hash(seed + 3) - 0.5) * 16, p.x + hx, p.y, '#b48cff', 1.6, 5, seed + 50);
+        x.globalCompositeOperation = 'lighter';
+        glow(x, p.x + hx, p.y, 13, '255,255,255', 0.95);
+        if (fx && Math.random() < 0.4) fx.add({ x: p.x + hx, y: p.y, x2: p.x + hx + rnd(-28, 28), y2: p.y + rnd(-28, 28), vx: 0, vy: 0, life: 4, size: 1.5, color: '#ffe14a', type: 'bolt', drag: 1 });
+        break;
+      }
       case 'boulder': {
-        x.rotate(t * 6 * dir);
-        x.fillStyle = '#8a6a4a'; x.strokeStyle = '#3a2814'; x.lineWidth = 2.5;
-        x.beginPath();
-        for (var i = 0; i < 8; i++) { var a = i / 8 * TAU, r = 20 + (i % 3) * 2; x.lineTo(Math.cos(a) * r, Math.sin(a) * r); }
-        x.closePath(); x.fill(); x.stroke();
-        x.strokeStyle = 'rgba(255,220,160,0.35)'; x.beginPath(); x.moveTo(-8, -6); x.lineTo(6, 4); x.stroke();
+        // A lit, faceted stone tumbling along its arc: a dust wake behind, earth-power seams glowing through it
+        var R = 23, rot = t * 5.5 * dir + p.id;
+        var pts = rockPts(p.id * 7.3, R, 11);
+        x.globalCompositeOperation = 'lighter'; glow(x, 0, 0, R * 2.1, '255,170,90', 0.16); x.globalCompositeOperation = 'source-over';
+        stone(x, pts, rot, R, ['#d0ab7c', '#8c6642', '#4a321c', '#1c120a']);
+        x.save(); x.rotate(rot); poly(x, pts); x.clip();
+        // Grain: pits and flecks scattered over the face
+        for (i = 0; i < 14; i++) { var gx2 = (hash(p.id + i * 3) - 0.5) * R * 1.6, gy2 = (hash(p.id + i * 5 + 1) - 0.5) * R * 1.6; x.fillStyle = i % 3 ? 'rgba(30,18,8,0.2)' : 'rgba(255,236,200,0.18)'; x.beginPath(); x.arc(gx2, gy2, 0.5 + hash(i + p.id) * 0.8, 0, TAU); x.fill(); }
+        // Earth-power seams: a hairline fracture that branches, glowing faintly from inside
+        x.globalCompositeOperation = 'lighter'; x.lineCap = 'round'; x.lineJoin = 'round';
+        var pulse = 0.5 + 0.3 * Math.sin(t * 10 + p.id), a0 = pts[1], cx3 = (hash(p.id + 2) - 0.5) * R * 0.5, cy3 = (hash(p.id + 4) - 0.5) * R * 0.5;
+        x.beginPath(); x.moveTo(a0[0] * 0.95, a0[1] * 0.95); x.lineTo(a0[0] * 0.45 + 2, a0[1] * 0.45 - 2); x.lineTo(cx3, cy3);
+        x.lineTo(pts[6][0] * 0.5, pts[6][1] * 0.5 + 2); x.lineTo(pts[6][0] * 0.95, pts[6][1] * 0.95);
+        x.moveTo(cx3, cy3); x.lineTo(pts[9][0] * 0.55 - 1, pts[9][1] * 0.55); x.lineTo(pts[9][0] * 0.9, pts[9][1] * 0.9);
+        x.strokeStyle = 'rgba(255,140,50,' + (pulse * 0.3) + ')'; x.lineWidth = 3.5; x.stroke();
+        x.strokeStyle = 'rgba(255,214,150,' + (pulse * 0.55) + ')'; x.lineWidth = 0.8; x.stroke();
+        x.restore();
+        if (fx) {
+          if (Math.random() < 0.5) fx.add({ x: p.x + rnd(-10, 10), y: p.y + rnd(-10, 10), vx: -p.vx * 0.2, vy: -p.vy * 0.1 - 0.3, life: rnd(22, 34), size: rnd(6, 10), color: 'rgba(200,172,130,0.4)', type: 'smoke', drag: 0.95 });
+          if (Math.random() < 0.12) fx.add({ x: p.x + rnd(-14, 14), y: p.y + rnd(-14, 14), vx: -p.vx * 0.2 + rnd(-1, 1), vy: rnd(-1.5, 0.5), life: rnd(26, 40), size: rnd(2, 3.5), color: '#8a6a4a', type: 'rock', drag: 0.98, grav: 0.32, spin: rnd(-0.3, 0.3) });
+        }
         break;
       }
       case 'wave': {
+        // A breaking wave: long back slope, a curling lip of foam, a shaded hollow under it, spray off the top
         x.scale(dir, 1);
-        var gw = x.createLinearGradient(0, -p.h, 0, 0);
-        gw.addColorStop(0, 'rgba(168,255,244,0.95)'); gw.addColorStop(1, 'rgba(15,143,160,0.9)');
-        x.fillStyle = gw;
-        x.beginPath(); x.moveTo(-p.w / 2 - 20, 0);
-        x.quadraticCurveTo(-p.w / 2, -p.h * 0.6, p.w / 4, -p.h);
-        x.quadraticCurveTo(p.w / 2 + 6, -p.h + 4, p.w / 2, -p.h * 0.6 + Math.sin(t * 10) * 3);
-        x.quadraticCurveTo(p.w / 2 - 10, -p.h * 0.8, p.w / 2 - 4, 0);
-        x.closePath(); x.fill();
-        x.strokeStyle = 'rgba(255,255,255,0.8)'; x.lineWidth = 2; x.stroke();
-        if (fx && Math.random() < 0.6) fx.add({ x: p.x + dir * p.w / 2, y: p.y - p.h * 0.8, vx: dir * rnd(0, 2), vy: rnd(-3, -1), life: 18, size: 3, color: '#c8fff8', type: 'dot', grav: 0.2 });
+        k = Math.min(1, (p.a || 0) / 8) * Math.min(1, (p.l || 99) / 10);
+        var W = p.w, H = p.h * (0.35 + 0.65 * k) * 1.12, ph = t * 9 + p.id, crestX = W * 0.16, lipX = W * 0.66;
+        var back = [];
+        for (i = 0; i <= 16; i++) {
+          var s = i / 16, e = s * s * (3 - 2 * s);
+          back.push([-W * 1.3 + (crestX + W * 1.3) * s, -H * Math.pow(e, 1.35) + Math.sin(ph + s * 10) * 1.6 * Math.sin(s * Math.PI)]);
+        }
+        var crest = back[16], lipY = -H * 0.6 + Math.sin(ph * 1.3) * 2;
+        var bez = function (u) { var v = 1 - u; return [v * v * v * crest[0] + 3 * v * v * u * (W * 0.42) + 3 * v * u * u * (lipX + 6) + u * u * u * lipX, v * v * v * crest[1] + 3 * v * v * u * (-H * 1.14) + 3 * v * u * u * (-H * 0.98) + u * u * u * lipY]; };
+        var body = function () {
+          x.beginPath(); x.moveTo(-W * 1.35, 2);
+          for (var j = 0; j <= 16; j++) x.lineTo(back[j][0], back[j][1]);
+          x.bezierCurveTo(W * 0.42, -H * 1.14, lipX + 6, -H * 0.98, lipX, lipY);
+          x.quadraticCurveTo(W * 0.52, -H * 0.66, W * 0.47, -H * 0.48);
+          x.quadraticCurveTo(W * 0.3, -H * 0.24, W * 0.6, 2); x.closePath();
+        };
+        body();
+        var wg = x.createLinearGradient(0, -H * 1.1, 0, 2);
+        wg.addColorStop(0, 'rgba(206,255,248,0.97)'); wg.addColorStop(0.22, 'rgba(96,228,216,0.95)'); wg.addColorStop(0.62, 'rgba(22,146,166,0.93)'); wg.addColorStop(1, 'rgba(8,66,94,0.92)');
+        x.fillStyle = wg; x.fill();
+        x.save(); x.clip();
+        // Shade inside the curl, and a translucent sheen where light passes through the back slope
+        var hg = x.createRadialGradient(W * 0.46, -H * 0.36, 0, W * 0.46, -H * 0.36, H * 0.75);
+        hg.addColorStop(0, 'rgba(2,36,58,0.6)'); hg.addColorStop(1, 'rgba(2,36,58,0)');
+        x.fillStyle = hg; x.fillRect(-W * 1.4, -H * 1.3, W * 2.2, H * 1.4);
+        x.globalCompositeOperation = 'lighter';
+        var sg = x.createRadialGradient(-W * 0.2, -H * 0.55, 0, -W * 0.2, -H * 0.55, H * 0.9);
+        sg.addColorStop(0, 'rgba(140,255,236,0.28)'); sg.addColorStop(1, 'rgba(140,255,236,0)');
+        x.fillStyle = sg; x.fillRect(-W * 1.4, -H * 1.3, W * 2.2, H * 1.4);
+        // Current lines running parallel to the surface
+        x.lineCap = 'round';
+        for (var b = 0; b < 3; b++) {
+          x.beginPath();
+          for (i = 3; i <= 15; i++) { var dy = H * (0.17 + b * 0.2) * Math.min(1, i / 10); var yy = back[i][1] + dy + Math.sin(ph * 0.7 + i * 0.9 + b * 2) * 1.5; if (i === 3) x.moveTo(back[i][0], yy); else x.lineTo(back[i][0], yy); }
+          x.strokeStyle = 'rgba(210,255,250,' + (0.13 - b * 0.03) + ')'; x.lineWidth = 1.6 - b * 0.3; x.stroke();
+        }
+        x.restore();
+        // Specular streak just under the surface
+        x.save(); x.globalCompositeOperation = 'lighter'; x.lineCap = 'round';
+        var spg = x.createLinearGradient(back[4][0], 0, crest[0], 0);
+        spg.addColorStop(0, 'rgba(255,255,255,0)'); spg.addColorStop(1, 'rgba(255,255,255,0.75)');
+        x.beginPath(); for (i = 4; i <= 16; i++) { if (i === 4) x.moveTo(back[i][0], back[i][1] + 3); else x.lineTo(back[i][0], back[i][1] + 3); }
+        x.strokeStyle = spg; x.lineWidth = 2; x.stroke();
+        x.restore();
+        // Foam: churning clusters along the crest and lip, thinning toward the tail, and a frothy base
+        x.save(); x.lineCap = 'round'; x.lineJoin = 'round';
+        var lip = function () { x.beginPath(); for (var j = 10; j <= 16; j++) { if (j === 10) x.moveTo(back[j][0], back[j][1] + 1); else x.lineTo(back[j][0], back[j][1] + 1); } for (var u3 = 0.1; u3 <= 1.001; u3 += 0.1) { var bq = bez(u3); x.lineTo(bq[0], bq[1] + 1); } };
+        lip(); var fg2 = x.createLinearGradient(back[10][0], 0, lipX, 0); fg2.addColorStop(0, 'rgba(255,255,255,0)'); fg2.addColorStop(0.45, 'rgba(255,255,255,0.95)'); fg2.addColorStop(1, 'rgba(255,255,255,1)');
+        x.strokeStyle = fg2; x.lineWidth = 4.5 * (0.6 + k * 0.4); x.stroke();
+        x.restore();
+        for (i = 0; i < 18; i++) {
+          var u = i / 17, fp = bez(u), fr = (1 + hash(p.id + i) * 2.4) * (1 + 0.3 * Math.sin(ph * 2 + i)) * (0.6 + k * 0.4);
+          fp[0] += Math.sin(ph * 1.7 + i * 2.3) * 2.2; fp[1] += Math.cos(ph * 1.3 + i) * 2.2 - 1.5;
+          x.fillStyle = 'rgba(255,255,255,' + (0.55 + hash(i * 3 + p.id) * 0.45) + ')'; x.beginPath(); x.arc(fp[0], fp[1], fr, 0, TAU); x.fill();
+        }
+        var bf = x.createLinearGradient(-W * 1.3, 0, W * 0.6, 0); bf.addColorStop(0, 'rgba(240,255,252,0)'); bf.addColorStop(0.5, 'rgba(240,255,252,0.45)'); bf.addColorStop(1, 'rgba(240,255,252,0.65)');
+        x.fillStyle = bf; x.beginPath(); x.moveTo(-W * 1.3, 2);
+        for (i = 0; i <= 12; i++) x.lineTo(-W * 1.3 + i / 12 * W * 1.9, -3 - 3 * Math.abs(Math.sin(ph * 0.9 + i * 1.7)));
+        x.lineTo(W * 0.6, 2); x.closePath(); x.fill();
+        for (i = 0; i < 14; i++) { x.fillStyle = 'rgba(255,255,255,' + (0.4 + hash(p.id + i * 5) * 0.5) + ')'; x.beginPath(); x.arc(-W * 1.1 + hash(i * 7 + Math.floor(ph * 0.6)) * W * 1.7, -1 - hash(i + 3) * 4, 0.8 + hash(i * 2) * 1.4, 0, TAU); x.fill(); }
+        if (fx) {
+          var lp = bez(0.9);
+          if (Math.random() < 0.8) fx.add({ x: p.x + dir * lp[0], y: p.y + lp[1], vx: dir * rnd(0.5, 2) + p.vx * 0.35, vy: rnd(-3.5, -1.2), life: rnd(16, 26), size: rnd(1.4, 2.6), color: Math.random() < 0.5 ? '#ffffff' : '#c8fff8', type: 'drop', drag: 0.98, grav: 0.26 });
+          if (Math.random() < 0.45) fx.add({ x: p.x + dir * crest[0], y: p.y + crest[1], vx: -dir * rnd(0.4, 1.4) + p.vx * 0.3, vy: rnd(-0.8, -0.2), life: rnd(22, 32), size: rnd(5, 8), color: 'rgba(225,255,250,0.2)', type: 'smoke', drag: 0.95 });
+        }
         break;
       }
       case 'quake': {
-        x.fillStyle = '#7a5a3a';
-        for (var q = 0; q < 4; q++) { x.beginPath(); x.moveTo(-p.w / 2 + q * 12, 0); x.lineTo(-p.w / 2 + q * 12 + 6, -12 - (q % 2) * 12 - Math.sin(t * 20 + q) * 4); x.lineTo(-p.w / 2 + q * 12 + 12, 0); x.fill(); }
-        if (fx && Math.random() < 0.6) fx.add({ x: p.x, y: p.y, vx: rnd(-1, 1), vy: rnd(-4, -2), life: 20, size: 4, color: '#a0794a', type: 'shard', grav: 0.3 });
+        // Stone fangs punching up through the floor in a rolling ripple, a molten seam glowing at their roots
+        x.globalCompositeOperation = 'lighter';
+        x.save(); x.scale(1, 0.3); glow(x, 0, 0, p.w * 0.9, '255,160,70', 0.35); x.restore();
+        x.strokeStyle = 'rgba(255,190,110,0.8)'; x.lineWidth = 2; x.lineJoin = 'round';
+        x.beginPath(); for (i = 0; i <= 8; i++) { var cxq = -p.w * 0.7 + i / 8 * p.w * 1.4; if (i) x.lineTo(cxq, -1 + (hash(p.id + i) - 0.5) * 3); else x.moveTo(cxq, -1); } x.stroke();
+        x.globalCompositeOperation = 'source-over';
+        for (var q = 0; q < 5; q++) {
+          var rise = 0.5 + 0.5 * Math.sin(t * 15 - q * 1.15 + p.id), hq = (14 + hash(p.id + q * 3) * 24) * (0.3 + 0.7 * rise), qx = -p.w / 2 + q * p.w / 4 + (hash(q + p.id) - 0.5) * 6, bw = 6 + hash(q * 7 + p.id) * 5, ln = (hash(q + 11) - 0.5) * 12;
+          // A broken slab: chipped shoulders, a split down its face
+          var sh = [[qx - bw, 0], [qx - bw * 0.85, -hq * 0.42], [qx - bw * 0.35 + ln * 0.6, -hq * 0.78], [qx + ln, -hq], [qx + ln + bw * 0.35, -hq * 0.84], [qx + bw * 0.7, -hq * 0.5], [qx + bw, 0]];
+          var lg2 = x.createLinearGradient(qx - bw, -hq, qx + bw, 0); lg2.addColorStop(0, '#e6c99a'); lg2.addColorStop(0.5, '#9a7650'); lg2.addColorStop(1, '#3a2818');
+          x.fillStyle = lg2; poly(x, sh); x.fill();
+          x.fillStyle = 'rgba(20,10,4,0.4)'; x.beginPath(); x.moveTo(qx + ln, -hq); x.lineTo(qx + ln + bw * 0.35, -hq * 0.84); x.lineTo(qx + bw * 0.7, -hq * 0.5); x.lineTo(qx + bw, 0); x.lineTo(qx + bw * 0.1, 0); x.lineTo(qx + ln * 0.3 + 1, -hq * 0.45); x.closePath(); x.fill();
+          x.strokeStyle = 'rgba(255,236,200,0.55)'; x.lineWidth = 1; x.beginPath(); x.moveTo(qx - bw * 0.85, -hq * 0.42); x.lineTo(qx - bw * 0.35 + ln * 0.6, -hq * 0.78); x.lineTo(qx + ln, -hq); x.stroke();
+        }
+        for (q = 0; q < 6; q++) {
+          var rx2 = (q / 5 - 0.5) * p.w * 1.25 + (hash(q * 13 + p.id) - 0.5) * 6, rr2 = 2 + hash(q + p.id * 2) * 2.6, rg2 = x.createLinearGradient(rx2 - rr2, -rr2 * 1.6, rx2 + rr2, 0);
+          rg2.addColorStop(0, '#d2b182'); rg2.addColorStop(1, '#4a3420');
+          x.save(); x.translate(rx2, -rr2 * 0.6); x.scale(1.3, 0.8); poly(x, rockPts(q * 5 + p.id, rr2, 6)); x.restore(); x.fillStyle = rg2; x.fill();
+        }
+        if (fx && Math.random() < 0.6) {
+          fx.add({ x: p.x + rnd(-p.w / 2, p.w / 2), y: p.y - 4, vx: rnd(-1, 1), vy: rnd(-1.2, -0.3), life: rnd(22, 32), size: rnd(7, 11), color: 'rgba(196,164,120,0.42)', type: 'smoke', drag: 0.94, grav: -0.01 });
+          fx.add({ x: p.x + rnd(-p.w / 2, p.w / 2), y: p.y - 6, vx: rnd(-1.5, 1.5), vy: rnd(-5, -2.5), life: 26, size: rnd(2, 4), color: '#9a7650', type: 'rock', drag: 0.98, grav: 0.34, spin: rnd(-0.3, 0.3) });
+        }
         break;
       }
       case 'chillField': {
-        var active = p.dl <= 0;
-        x.strokeStyle = active ? 'rgba(200,245,255,0.9)' : 'rgba(200,245,255,' + (0.4 + 0.3 * Math.sin(t * 20)) + ')';
-        x.setLineDash(active ? [] : [8, 6]); x.lineWidth = 3;
-        x.beginPath(); x.ellipse(0, -p.h / 2, p.w / 2, p.h / 2, 0, 0, TAU); x.stroke();
-        if (active) { x.fillStyle = 'rgba(160,230,255,0.28)'; x.fill(); }
-        x.setLineDash([]);
+        // Telegraph: frost creeping across the floor. Active: frozen ground, ice crystals and a column of cold mist
+        var active = p.dl <= 0, fw = p.w / 2;
+        k = active ? Math.min(1, (p.l || 50) / 12) : 0.5 + 0.5 * Math.sin(t * 16);
+        x.save(); x.scale(1, 0.14);
+        var gg = x.createRadialGradient(0, 0, 0, 0, 0, fw);
+        gg.addColorStop(0, 'rgba(235,252,255,' + (active ? 0.8 : 0.3 * k) + ')'); gg.addColorStop(0.7, 'rgba(150,220,255,' + (active ? 0.45 : 0.15 * k) + ')'); gg.addColorStop(1, 'rgba(150,220,255,0)');
+        x.fillStyle = gg; x.beginPath(); x.arc(0, 0, fw, 0, TAU); x.fill(); x.restore();
+        if (active) {
+          for (i = 0; i < 6; i++) {
+            var mx = (hash(p.id + i) - 0.5) * p.w * 0.8, my = -p.h * (0.2 + 0.6 * ((t * 0.6 + hash(i * 3 + p.id)) % 1)), mr = 26 + hash(i + 7) * 20;
+            var mg = x.createRadialGradient(mx, my, 0, mx, my, mr);
+            mg.addColorStop(0, 'rgba(225,246,255,' + (0.22 * k) + ')'); mg.addColorStop(1, 'rgba(225,246,255,0)');
+            x.fillStyle = mg; x.beginPath(); x.arc(mx, my, mr, 0, TAU); x.fill();
+          }
+          x.globalAlpha = k;
+          // Crystals grow in clusters of three, the outer ones leaning away from the tallest
+          for (i = 0; i < 4; i++) {
+            var ccx = (i / 3 - 0.5) * p.w * 0.72 + (hash(p.id + i * 2) - 0.5) * 18, ch = (14 + hash(i * 5 + p.id) * 14) * k;
+            spike(x, ccx - 5, 3 + hash(i) * 1.5, ch * 0.55, -ch * 0.35, ['#ffffff', '#bfeaff'], ['#78c4ee', '#2f6fa4']);
+            spike(x, ccx + 5, 3 + hash(i + 2) * 1.5, ch * 0.45, ch * 0.3, ['#ffffff', '#bfeaff'], ['#78c4ee', '#2f6fa4']);
+            spike(x, ccx, 4 + hash(i + 1) * 2, ch, (hash(i + 4) - 0.5) * 4, ['#ffffff', '#c8eeff'], ['#6ab8e6', '#24609a']);
+          }
+          x.globalAlpha = 1;
+        }
+        x.globalCompositeOperation = 'lighter';
+        for (i = 0; i < 8; i++) {
+          var tw = Math.max(0, Math.sin(t * 6 + i * 2.3 + p.id)), gx = (hash(p.id + i * 9) - 0.5) * p.w * 0.9, gy = active ? -hash(i * 4) * p.h : -2;
+          if (tw > 0.2) { x.strokeStyle = 'rgba(255,255,255,' + tw * 0.9 + ')'; x.lineWidth = 1.2; x.beginPath(); x.moveTo(gx - 4 * tw, gy); x.lineTo(gx + 4 * tw, gy); x.moveTo(gx, gy - 4 * tw); x.lineTo(gx, gy + 4 * tw); x.stroke(); }
+        }
         break;
       }
       case 'puddle': {
-        x.fillStyle = 'rgba(47,211,200,0.45)'; x.strokeStyle = 'rgba(168,255,244,0.8)'; x.lineWidth = 2;
-        x.beginPath(); x.ellipse(0, -3, p.w / 2, 8, 0, 0, TAU); x.fill(); x.stroke();
-        x.strokeStyle = 'rgba(255,255,255,0.5)';
-        x.beginPath(); x.ellipse(Math.sin(t * 2) * 20, -3, 14 + (t * 20 % 20), 3, 0, 0, TAU); x.stroke();
+        // Still water with a soft edge, a sky sheen and rings spreading from falling drips
+        k = Math.min(1, (p.a || 20) / 12) * Math.min(1, (p.l || 99) / 20);
+        var rw = p.w / 2 * (0.5 + 0.5 * k);
+        x.save(); x.scale(1, 0.15);
+        var pg = x.createRadialGradient(0, -20, 0, 0, -20, rw);
+        pg.addColorStop(0, 'rgba(110,232,222,' + 0.6 * k + ')'); pg.addColorStop(0.75, 'rgba(18,120,142,' + 0.55 * k + ')'); pg.addColorStop(1, 'rgba(18,120,142,0)');
+        x.fillStyle = pg; x.beginPath(); x.arc(0, -20, rw, 0, TAU); x.fill(); x.restore();
+        x.globalCompositeOperation = 'lighter';
+        x.fillStyle = 'rgba(220,255,250,' + 0.22 * k + ')'; x.beginPath(); x.ellipse(-rw * 0.25, -4, rw * 0.38, 1.8, 0, 0, TAU); x.fill();
+        for (i = 0; i < 3; i++) {
+          var cyc = t * 0.7 + i / 3, ci = Math.floor(cyc), u2 = cyc - ci, rx = (hash(ci * 3 + i + p.id) - 0.5) * rw * 1.1;
+          x.strokeStyle = 'rgba(200,255,250,' + (1 - u2) * 0.55 * k + ')'; x.lineWidth = 1.3;
+          x.beginPath(); x.ellipse(rx, -3, 4 + u2 * 26, 1 + u2 * 4, 0, 0, TAU); x.stroke();
+        }
         break;
       }
       case 'whirlpool': {
-        x.strokeStyle = 'rgba(47,211,200,0.85)'; x.lineWidth = 4;
-        for (var w = 0; w < 3; w++) { x.beginPath(); x.arc(0, 0, 20 + w * 14, t * 8 + w * 2, t * 8 + w * 2 + 4); x.stroke(); }
-        x.fillStyle = 'rgba(15,143,160,0.25)'; x.beginPath(); x.arc(0, 0, 55, 0, TAU); x.fill();
+        // A vortex: dark eye, tapered spiral arms of water and foam flecks being dragged inward
+        var Rw = p.w / 2, rot = t * 5 + p.id;
+        var vg = x.createRadialGradient(0, 0, 0, 0, 0, Rw);
+        vg.addColorStop(0, 'rgba(2,24,40,0.85)'); vg.addColorStop(0.4, 'rgba(10,86,108,0.55)'); vg.addColorStop(0.8, 'rgba(30,170,180,0.18)'); vg.addColorStop(1, 'rgba(47,211,200,0)');
+        x.fillStyle = vg; x.beginPath(); x.arc(0, 0, Rw, 0, TAU); x.fill();
+        for (var arm = 0; arm < 5; arm++) {
+          var outer = [], inner = [];
+          for (i = 0; i <= 20; i++) {
+            var sa = i / 20, an = rot + arm * TAU / 5 + sa * 3.6, rr = Rw * (0.96 - sa * 0.86), hw = (0.5 + 4 * Math.sin(Math.min(1, sa * 1.6) * Math.PI * 0.5) * (1 - sa)) * (arm % 2 ? 0.8 : 1);
+            outer.push([Math.cos(an) * (rr + hw), Math.sin(an) * (rr + hw)]); inner.unshift([Math.cos(an) * (rr - hw), Math.sin(an) * (rr - hw)]);
+          }
+          var ag = x.createRadialGradient(0, 0, Rw * 0.1, 0, 0, Rw);
+          ag.addColorStop(0, 'rgba(120,230,224,0)'); ag.addColorStop(0.5, arm % 2 ? 'rgba(90,220,214,0.5)' : 'rgba(150,250,240,0.65)'); ag.addColorStop(0.85, arm % 2 ? 'rgba(140,240,232,0.75)' : 'rgba(215,255,250,0.9)'); ag.addColorStop(1, 'rgba(215,255,250,0)');
+          x.fillStyle = ag; poly(x, outer.concat(inner)); x.fill();
+        }
+        x.globalCompositeOperation = 'lighter';
+        glow(x, 0, 0, Rw * 0.3, '120,255,240', 0.2);
+        for (i = 0; i < 12; i++) {
+          var fr2 = Rw * (0.3 + hash(p.id + i) * 0.62), fa2 = hash(i * 7 + p.id) * TAU + rot * (1.6 - fr2 / Rw);
+          x.fillStyle = 'rgba(235,255,252,' + (0.35 + hash(i + 5) * 0.4) + ')'; x.beginPath(); x.arc(Math.cos(fa2) * fr2, Math.sin(fa2) * fr2, 0.7 + hash(i) * 1.1, 0, TAU); x.fill();
+        }
         break;
       }
       case 'flames': {
-        var k = Math.min(1, p.l / 30);
-        for (var fl = 0; fl < 3; fl++) {
-          var h = (18 + Math.sin(t * 16 + fl * 2 + p.id) * 6) * k;
-          x.fillStyle = ['rgba(255,90,30,0.85)', 'rgba(255,170,40,0.85)', 'rgba(255,240,150,0.9)'][fl];
-          x.beginPath(); x.moveTo(-12 + fl * 4, 0); x.quadraticCurveTo(-4 + fl * 3, -h, 2 + fl * 2, -h * 1.2); x.quadraticCurveTo(8, -h * 0.5, 12 - fl * 3, 0); x.fill();
+        // A patch of burning ground: tongues of fire licking up off a hot glow, sparks lifting away
+        k = Math.min(1, (p.l || 30) / 30) * Math.min(1, ((p.a || 6) + 1) / 6);
+        x.globalCompositeOperation = 'lighter';
+        x.save(); x.scale(1, 0.4); glow(x, 0, -4, 40 * k, '255,110,30', 0.5); x.restore();
+        for (var layer = 0; layer < 2; layer++) {
+          for (i = 0; i < 7; i++) {
+            var fo = (i - 3) * 4.5 + (hash(p.id + i) - 0.5) * 4, fh = (layer ? 8 + hash(i + p.id) * 8 : 12 + hash(p.id * 3 + i) * 14 + 12 * (1 - Math.abs(i - 3) / 3.5)) * (1 - Math.abs(i - 3) / 5) * k * (0.7 + 0.3 * Math.sin(t * 17 + i * 1.9 + p.id)), sw = Math.sin(t * 9 + i * 1.3 + p.id) * 4, bw2 = layer ? 3 : 5.5;
+            var flg = x.createLinearGradient(0, 0, 0, -fh);
+            if (layer) { flg.addColorStop(0, 'rgba(255,250,220,0.35)'); flg.addColorStop(0.25, 'rgba(255,250,220,0.85)'); flg.addColorStop(1, 'rgba(255,220,120,0)'); }
+            else { flg.addColorStop(0, 'rgba(255,90,20,0.3)'); flg.addColorStop(0.2, 'rgba(255,100,25,0.75)'); flg.addColorStop(0.55, 'rgba(255,160,40,0.5)'); flg.addColorStop(1, 'rgba(255,200,80,0)'); }
+            x.fillStyle = flg; x.beginPath(); x.moveTo(fo - bw2, 0);
+            x.bezierCurveTo(fo - bw2, -fh * 0.45, fo + sw * 0.5 - bw2 * 0.3, -fh * 0.7, fo + sw, -fh);
+            x.bezierCurveTo(fo + sw * 0.5 + bw2 * 0.3, -fh * 0.7, fo + bw2, -fh * 0.45, fo + bw2, 0); x.closePath(); x.fill();
+          }
         }
+        if (fx && Math.random() < 0.18 * k) fx.add({ x: p.x + rnd(-12, 12), y: p.y - rnd(6, 20), vx: rnd(-0.6, 0.6), vy: rnd(-2.2, -1), life: rnd(20, 34), size: rnd(1.5, 2.5), color: Math.random() < 0.5 ? '#ffd36a' : '#ff8a3a', type: 'ember', drag: 0.97, grav: -0.02 });
         break;
       }
     }
@@ -551,15 +837,29 @@
 
   function drawStructure(x, s, t) {
     if (s.ty === 'iceWall') {
+      // A wall of clustered crystal columns: each lit on its left face, shaded on its right, frost mist at the foot
       x.save();
-      var k = Math.min(1, s.l / 20);
+      var k = Math.min(1, s.l / 20), i;
       x.globalAlpha = k;
-      var g = x.createLinearGradient(s.x, s.y, s.x + s.w, s.y + s.h);
-      g.addColorStop(0, 'rgba(232,251,255,0.95)'); g.addColorStop(1, 'rgba(95,184,255,0.85)');
-      x.fillStyle = g; x.strokeStyle = '#ffffff'; x.lineWidth = 2;
-      x.beginPath(); x.moveTo(s.x, s.y + s.h); x.lineTo(s.x - 4, s.y + 30); x.lineTo(s.x + s.w * 0.3, s.y); x.lineTo(s.x + s.w * 0.7, s.y + 14); x.lineTo(s.x + s.w + 4, s.y + 40); x.lineTo(s.x + s.w, s.y + s.h); x.closePath();
-      x.fill(); x.stroke();
-      x.strokeStyle = 'rgba(255,255,255,0.6)'; x.beginPath(); x.moveTo(s.x + 8, s.y + s.h - 10); x.lineTo(s.x + s.w * 0.4, s.y + 20); x.stroke();
+      x.translate(s.x, s.y + s.h);
+      // Back row first (darker, leaning out), then the front row; each column a hexagonal prism with a faceted point
+      var cols = [[0.22, 0.7, -0.22, 0.2, 1], [0.78, 0.74, 0.2, 0.2, 1], [0.12, 0.55, -0.32, 0.17, 0], [0.42, 1, -0.05, 0.27, 0], [0.66, 0.84, 0.12, 0.23, 0], [0.9, 0.5, 0.34, 0.16, 0]];
+      for (i = 0; i < cols.length; i++) {
+        var c = cols[i], cx = c[0] * s.w, hh = s.h * c[1] * (0.92 + hash(s.id + i) * 0.1), bw = s.w * c[3], back = c[4];
+        x.save(); x.translate(cx, 0); x.rotate(c[2]);
+        var tip = hh * 0.82;
+        var lg = x.createLinearGradient(-bw, 0, 0, -hh); lg.addColorStop(0, back ? 'rgba(90,160,214,0.85)' : 'rgba(150,215,250,0.9)'); lg.addColorStop(1, back ? 'rgba(190,232,252,0.9)' : 'rgba(248,254,255,0.96)');
+        x.fillStyle = lg; x.beginPath(); x.moveTo(-bw, 0); x.lineTo(-bw, -tip); x.lineTo(0, -hh); x.lineTo(0, 0); x.closePath(); x.fill();
+        var dg = x.createLinearGradient(0, 0, bw, -hh); dg.addColorStop(0, back ? 'rgba(20,70,130,0.88)' : 'rgba(34,100,166,0.9)'); dg.addColorStop(1, back ? 'rgba(80,150,210,0.88)' : 'rgba(120,196,240,0.92)');
+        x.fillStyle = dg; x.beginPath(); x.moveTo(0, 0); x.lineTo(0, -hh); x.lineTo(bw, -tip); x.lineTo(bw, 0); x.closePath(); x.fill();
+        // Refraction: a pale inner band and the bright ridge
+        x.fillStyle = 'rgba(255,255,255,' + (back ? 0.12 : 0.22) + ')'; x.beginPath(); x.moveTo(-bw * 0.7, -tip * 0.1); x.lineTo(-bw * 0.45, -tip * 0.95); x.lineTo(-bw * 0.25, -tip * 0.9); x.lineTo(-bw * 0.5, -tip * 0.05); x.closePath(); x.fill();
+        x.strokeStyle = 'rgba(255,255,255,' + (back ? 0.45 : 0.9) + ')'; x.lineWidth = 1; x.beginPath(); x.moveTo(0, 0); x.lineTo(0, -hh); x.lineTo(-bw, -tip); x.stroke();
+        x.restore();
+      }
+      x.globalCompositeOperation = 'lighter';
+      glow(x, s.w * 0.5, -s.h * 0.5, s.h * 0.7, '160,230,255', 0.18 + 0.06 * Math.sin(t * 4));
+      x.save(); x.scale(1, 0.25); glow(x, s.w * 0.5, 0, s.w * 0.9, '220,245,255', 0.35); x.restore();
       x.restore();
     }
   }
@@ -594,8 +894,8 @@
       if (f.mv === 'sig' && def === D.SIGNATURES.rockPillar) {
         // Rumble where the pillar will rise
         var px = f.x + fc * (150 + 28) * sc[0];
-        x.fillStyle = 'rgba(160,121,74,' + (0.3 + a.p * 0.5) + ')';
-        x.fillRect(px - 30, f.y - 6 - Math.random() * 4, 60, 6);
+        x.save(); x.globalCompositeOperation = 'lighter'; x.translate(px, f.y); x.scale(1, 0.25); glow(x, 0, 0, 40 + a.p * 20, '255,170,90', 0.15 + a.p * 0.3); x.restore();
+        if (Math.random() < 0.5) fx.add({ x: px + rnd(-28, 28), y: f.y - 2, vx: rnd(-0.6, 0.6), vy: rnd(-2.5, -1), life: 18, size: rnd(1.5, 3), color: '#a0794a', type: 'rock', drag: 0.98, grav: 0.25, spin: rnd(-0.3, 0.3) });
       }
       if (f.mv === 'sig' && def === D.SIGNATURES.arcLash) {
         x.strokeStyle = Art.alpha(c.color, 0.25 + a.p * 0.35); x.setLineDash([10, 10]); x.lineWidth = 2;
@@ -610,15 +910,42 @@
       } else if (key === 'arcLash') {
         lightning(x, f.x + fc * 30 * sc[0], f.y - 85 * sc[1], f.x + fc * 260 * sc[0], f.y - 85 * sc[1], c.color, 5, 10);
       } else if (key === 'waterJet') {
-        var jx = f.x + fc * 28 * sc[0], jy = f.y - 89 * sc[1];
-        var jg = x.createLinearGradient(jx, jy, jx + fc * 200, jy);
-        jg.addColorStop(0, 'rgba(168,255,244,0.95)'); jg.addColorStop(1, 'rgba(47,211,200,0.25)');
-        x.fillStyle = jg; x.fillRect(Math.min(jx, jx + fc * 200), jy - 12 - Math.sin(t * 40) * 2, 200, 24 + Math.sin(t * 40) * 4);
-        fx.add({ x: jx + fc * 200, y: jy, vx: fc * rnd(1, 3), vy: rnd(-3, 1), life: 16, size: 4, color: '#c8fff8', type: 'dot', grav: 0.25 });
+        // A pressurised stream: a turbulent translucent body, a bright core and streaks racing down it, spraying at the end
+        var jx = f.x + fc * 28 * sc[0], jy = f.y - 89 * sc[1], JL = 200;
+        x.save(); x.translate(jx, jy); x.scale(fc, 1);
+        var edge = function (side, amp) { for (var j = 0; j <= 20; j++) { var u = j / 20, hw = (7 + u * 9) + Math.sin(t * 38 - u * 14 + side) * amp * u; x.lineTo(u * JL, side * hw); } };
+        x.beginPath(); x.moveTo(0, -6); edge(-1, 3); for (var j2 = 20; j2 >= 0; j2--) { var u2 = j2 / 20; x.lineTo(u2 * JL, (7 + u2 * 9) + Math.sin(t * 38 - u2 * 14 + 1) * 3 * u2); } x.closePath();
+        var jg = x.createLinearGradient(0, 0, JL, 0);
+        jg.addColorStop(0, 'rgba(120,236,226,0.9)'); jg.addColorStop(0.7, 'rgba(40,180,190,0.6)'); jg.addColorStop(1, 'rgba(40,180,190,0)');
+        x.fillStyle = jg; x.fill();
+        x.globalCompositeOperation = 'lighter';
+        var cg2 = x.createLinearGradient(0, 0, JL * 0.9, 0); cg2.addColorStop(0, 'rgba(235,255,252,0.85)'); cg2.addColorStop(1, 'rgba(235,255,252,0)');
+        x.fillStyle = cg2; x.beginPath(); x.moveTo(0, -2.5); x.quadraticCurveTo(JL * 0.5, -4, JL * 0.9, 0); x.quadraticCurveTo(JL * 0.5, 4, 0, 2.5); x.fill();
+        x.lineCap = 'round';
+        for (var st = 0; st < 5; st++) {
+          var sx0 = ((t * 900 + st * 47) % (JL + 60)) - 30, sy0 = (hash(st + Math.floor((t * 900 + st * 47) / (JL + 60))) - 0.5) * 14 * (0.4 + sx0 / JL);
+          x.strokeStyle = 'rgba(255,255,255,' + (0.55 * (1 - Math.max(0, sx0) / JL)) + ')'; x.lineWidth = 1.5;
+          x.beginPath(); x.moveTo(Math.max(0, sx0 - 26), sy0); x.lineTo(Math.max(0, sx0), sy0); x.stroke();
+        }
+        x.restore();
+        fx.add({ x: jx + fc * JL, y: jy + rnd(-10, 10), vx: fc * rnd(1, 4), vy: rnd(-3.5, 1), life: rnd(14, 22), size: rnd(1.5, 3), color: Math.random() < 0.5 ? '#ffffff' : '#c8fff8', type: 'drop', drag: 0.98, grav: 0.25 });
+        if (Math.random() < 0.4) fx.add({ x: jx + fc * JL * rnd(0.8, 1), y: jy, vx: fc * rnd(0.5, 1.5), vy: rnd(-0.6, 0), life: 24, size: rnd(6, 9), color: 'rgba(220,255,250,0.22)', type: 'smoke', drag: 0.95 });
       } else if (key === 'rockPillar') {
-        var bx = f.x + fc * (150 + 28) * sc[0], k = Math.min(1, a.p * 3);
-        x.fillStyle = '#8a6a4a'; x.strokeStyle = '#3a2814'; x.lineWidth = 3;
-        x.beginPath(); x.moveTo(bx - 26, f.y); x.lineTo(bx - 18, f.y - 130 * k); x.lineTo(bx + 4, f.y - 150 * k); x.lineTo(bx + 22, f.y - 124 * k); x.lineTo(bx + 26, f.y); x.closePath(); x.fill(); x.stroke();
+        // A basalt column bursting up: lit and shaded faces, strata bands, a broken crown and rubble at its foot
+        var bx = f.x + fc * (150 + 28) * sc[0], k = Math.min(1, a.p * 3), ph2 = 150 * (1 - Math.pow(1 - k, 3));
+        x.save(); x.translate(bx, f.y);
+        var lf = x.createLinearGradient(-26, 0, 0, 0); lf.addColorStop(0, '#d6b486'); lf.addColorStop(1, '#a07a50');
+        x.fillStyle = lf; x.beginPath(); x.moveTo(-26, 0); x.lineTo(-20, -ph2 * 0.86); x.lineTo(-8, -ph2 * 0.97); x.lineTo(2, -ph2); x.lineTo(0, 0); x.closePath(); x.fill();
+        var df = x.createLinearGradient(0, 0, 26, 0); df.addColorStop(0, '#6a4c30'); df.addColorStop(1, '#2e1f12');
+        x.fillStyle = df; x.beginPath(); x.moveTo(0, 0); x.lineTo(2, -ph2); x.lineTo(14, -ph2 * 0.9); x.lineTo(22, -ph2 * 0.82); x.lineTo(26, 0); x.closePath(); x.fill();
+        x.strokeStyle = 'rgba(20,10,4,0.35)'; x.lineWidth = 1.2;
+        for (var sb = 1; sb < 6; sb++) { var sy = -ph2 * sb / 6.2; x.beginPath(); x.moveTo(-24 + sb * 0.5, sy + 2); x.lineTo(-6, sy - 1); x.lineTo(1, sy + 1); x.lineTo(24 - sb * 0.4, sy - 2); x.stroke(); }
+        x.strokeStyle = 'rgba(255,236,200,0.6)'; x.lineWidth = 1.5; x.beginPath(); x.moveTo(-26, 0); x.lineTo(-20, -ph2 * 0.86); x.lineTo(-8, -ph2 * 0.97); x.lineTo(2, -ph2); x.stroke();
+        for (var rb = 0; rb < 5; rb++) { var rx3 = (rb - 2) * 13 + (hash(rb + 3) - 0.5) * 6, rr3 = 3 + hash(rb) * 4, rg3 = x.createLinearGradient(rx3 - rr3, -rr3 * 1.5, rx3 + rr3, 0); rg3.addColorStop(0, '#c8a678'); rg3.addColorStop(1, '#3a2818');
+          x.save(); x.translate(rx3, -rr3 * 0.5); x.scale(1.3, 0.8); poly(x, rockPts(rb * 7 + 1, rr3, 6)); x.restore(); x.fillStyle = rg3; x.fill(); }
+        x.restore();
+        if (a.p < 0.35) { fx.add({ x: bx + rnd(-26, 26), y: f.y - rnd(0, ph2), vx: rnd(-2.5, 2.5), vy: rnd(-5, -1.5), life: 30, size: rnd(2, 4.5), color: Math.random() < 0.5 ? '#9a7650' : '#c8a678', type: 'rock', drag: 0.98, grav: 0.35, spin: rnd(-0.3, 0.3) });
+          fx.add({ x: bx + rnd(-30, 30), y: f.y - 6, vx: rnd(-2, 2), vy: rnd(-1.4, -0.3), life: rnd(24, 36), size: rnd(8, 13), color: 'rgba(196,164,120,0.4)', type: 'smoke', drag: 0.94, grav: -0.01 }); }
       } else if (key === 'emberBurst' || key === 'staticPulse') {
         var rr = 40 + a.p * 60;
         x.strokeStyle = Art.alpha(c.color, 1 - a.p); x.lineWidth = 8;
