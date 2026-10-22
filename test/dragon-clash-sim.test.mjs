@@ -71,10 +71,10 @@ test('time out: most stocks, then least damage, wins', () => {
   assert.equal(sim.result.winnerTeam, 1);
 });
 
-test('elemental rules: water douses fire, fire melts ice, earth absorbs bolts, the rest clash', () => {
+test('elemental rules: water douses fire, fire melts ice (and is spent), earth absorbs bolts, the rest clash', () => {
   const p = (element, type) => ({ element, type });
   assert.deepEqual(Sim.resolveClash(p('water', 'wave'), p('fire', 'fireball')), { rule: 'extinguish', kill: 'b' });
-  assert.deepEqual(Sim.resolveClash(p('ice', 'iceShard'), p('fire', 'fireball')), { rule: 'melt', kill: 'a' });
+  assert.deepEqual(Sim.resolveClash(p('ice', 'iceShard'), p('fire', 'fireball')), { rule: 'melt', kill: 'both' });
   assert.deepEqual(Sim.resolveClash(p('earth', 'boulder'), p('lightning', 'bolt')), { rule: 'absorb', kill: 'b' });
   assert.deepEqual(Sim.resolveClash(p('ice', 'iceShard'), p('lightning', 'bolt')), { rule: 'clash', kill: 'both' });
 });

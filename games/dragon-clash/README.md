@@ -283,10 +283,14 @@ every melee move, for every body type and both facings: the striking claw, foot 
 
 ## Known issues and what remains
 
-- **Balance is not tuned.** CPU-vs-CPU matrix (`node tools/balance-matrix.cjs`, level-3 CPUs, 2 stocks): Ironmaw
-  98%, Emberfang 70%, Tidefang 50%, Dragon Warrior 40%, Voltscale 30%, Frostwing 13%. CPUs favour heavy builds and
-  don't exploit speed, but the Titan body is very likely too strong. Tuning was deliberately left out of the
-  visual overhaul so damage numbers stayed unchanged.
+- **Balance is tuned against CPUs, not people.** `node tools/balance-matrix.cjs` (level-3 CPUs, 60 games per
+  pairing, all arenas): Ironmaw 56%, Emberfang 55%, Tidefang 48%, Voltscale 47%, Frostwing 45%, and no matchup worse
+  than 57–43. Changes that got there: Fireball recharges and casts slower, Cinder Trail's flames are shorter and
+  cooler, a fireball melting an ice shard is spent too, Ice Shard recharges faster and hits a little harder, Blink
+  Strike stops in front of a rival (and won't carry you off a ledge from the ground), Water Jet and Tidal Wave
+  recharge sooner, and Tidefang's ability is Riptide (Tide Pool does no damage). With normal (level-2) CPUs the light
+  Frostwing and Voltscale sit near 40% and the heavy dragons near 60%: sloppier play punishes light bodies. People
+  exploit speed and air mobility more than CPUs do.
 - **Missing pack animations.** Until the pack's other sheets are added (see above), run, attacks, hurt and the rest
   are rig animations made from the idle art, not hand-drawn frames. Jump, fall, landing, air attacks, ledge and
   tumble have no pack frames at all and would need new artwork (or stay on the rig).

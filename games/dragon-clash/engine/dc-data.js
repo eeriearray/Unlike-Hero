@@ -50,7 +50,7 @@
    * special-cases one element against another. Each rule is small, visible and avoidable.
    */
   var INTERACTIONS = {
-    melt:       { id: 'melt',       text: 'Fire melts ice barriers and ice shards.',                  icons: ['fire', 'ice'] },
+    melt:       { id: 'melt',       text: 'Fire melts ice barriers; a fire shot and an ice shard melt each other.',                  icons: ['fire', 'ice'] },
     extinguish: { id: 'extinguish', text: 'Water puts out fire projectiles, flames and burns.',       icons: ['water', 'fire'] },
     grounded:   { id: 'grounded',   text: 'Stone Skin grounds lightning: its hitstun is halved.',     icons: ['earth', 'lightning'] },
     conduct:    { id: 'conduct',    text: 'Lightning arcs once through soaked targets (+2%).',         icons: ['lightning', 'water'] },
@@ -219,12 +219,12 @@
   // Signature: L (neutral / side). Elemental ability: Down + L. Every one has a cooldown and a readable telegraph.
   var SIGNATURES = {
     fireball:     { element: 'fire', name: 'Fireball', cost: 22, desc: 'Fast fireball. Burns on hit.',
-                    startup: 13, active: 1, recovery: 18, cooldown: 54, spawn: { type: 'fireball', speed: 9, life: 70, w: 34, h: 26, phys: 0, elem: 7, kb: 4.2, growth: 0.07, angle: 30, status: 'burn' } },
+                    startup: 16, active: 1, recovery: 24, cooldown: 72, spawn: { type: 'fireball', speed: 9, life: 70, w: 34, h: 26, phys: 0, elem: 7, kb: 4.2, growth: 0.07, angle: 30, status: 'burn' } },
     flameBreath:  { element: 'fire', name: 'Flame Breath', cost: 26, desc: 'Short cone of fire: 5 quick hits.',
                     startup: 12, active: 26, recovery: 18, cooldown: 90, multi: { every: 6, max: 5 }, phys: 0, elem: 2.4,
                     kb: 2.2, growth: 0.02, angle: 35, finalKb: 5.6, finalGrowth: 0.09, boxes: [{ x: 30, y: -120, w: 120, h: 58 }] },
     iceShard:     { element: 'ice', name: 'Ice Shard', cost: 24, desc: 'Piercing shard that chills (20% slower, 0.75 s).',
-                    startup: 14, active: 1, recovery: 18, cooldown: 60, spawn: { type: 'iceShard', speed: 11, life: 60, w: 40, h: 16, phys: 1, elem: 6, kb: 3.8, growth: 0.06, angle: 25, status: 'chill', structure: false } },
+                    startup: 14, active: 1, recovery: 18, cooldown: 50, spawn: { type: 'iceShard', speed: 11, life: 60, w: 40, h: 16, phys: 1, elem: 7, kb: 3.8, growth: 0.06, angle: 25, status: 'chill', structure: false } },
     glacierLance: { element: 'ice', name: 'Glacier Lance', cost: 26, desc: 'Slow, heavy lance. Big knockback.',
                     startup: 22, active: 1, recovery: 22, cooldown: 96, spawn: { type: 'lance', speed: 6.5, life: 95, w: 64, h: 22, phys: 2, elem: 9, kb: 6.2, growth: 0.11, angle: 30 } },
     bolt:         { element: 'lightning', name: 'Bolt', cost: 22, desc: 'Very fast, light bolt. Low knockback.',
@@ -238,10 +238,10 @@
                     startup: 24, active: 8, recovery: 24, cooldown: 96, phys: 2, elem: 9, kb: 6, growth: 0.11, angle: 84,
                     boxes: [{ x: 150, y: -120, w: 56, h: 120 }], groundOnly: true },
     waterJet:     { element: 'water', name: 'Water Jet', cost: 22, desc: 'Jet of 3 hits that pushes. Soaks.',
-                    startup: 11, active: 18, recovery: 16, cooldown: 64, multi: { every: 6, max: 3 }, phys: 0, elem: 2.6,
-                    kb: 3.6, growth: 0.04, angle: 15, finalKb: 4.8, finalGrowth: 0.08, status: 'soaked', boxes: [{ x: 28, y: -104, w: 170, h: 30 }] },
+                    startup: 11, active: 18, recovery: 16, cooldown: 54, multi: { every: 6, max: 3 }, phys: 0, elem: 2.6,
+                    kb: 3.6, growth: 0.04, angle: 15, finalKb: 4.8, finalGrowth: 0.08, status: 'soaked', boxes: [{ x: 28, y: -104, w: 200, h: 34 }] },
     tidalWave:    { element: 'water', name: 'Tidal Wave', cost: 26, desc: 'A wave rolls along the ground. Jump it.',
-                    startup: 16, active: 1, recovery: 22, cooldown: 90, spawn: { type: 'wave', speed: 7, life: 80, w: 60, h: 56, ground: true, phys: 1, elem: 8, kb: 5.2, growth: 0.09, angle: 55, status: 'soaked' } },
+                    startup: 16, active: 1, recovery: 22, cooldown: 72, spawn: { type: 'wave', speed: 8.5, life: 72, w: 60, h: 68, ground: true, phys: 1, elem: 8, kb: 5.2, growth: 0.09, angle: 55, status: 'soaked' } },
   };
 
   var ABILITIES = {
@@ -249,7 +249,7 @@
                     startup: 10, active: 5, recovery: 22, cooldown: 150, phys: 0, elem: 6, kb: 5, growth: 0.08, angle: 50, away: true, status: 'burn',
                     boxes: [{ x: -70, y: -130, w: 140, h: 130 }] },
     cinderTrail:  { element: 'fire', name: 'Cinder Trail', cost: 20, desc: 'Dash forward leaving flames on the floor.',
-                    startup: 6, active: 14, recovery: 18, cooldown: 180, selfVel: [10, 0], trail: { type: 'flames', life: 90, every: 4, phys: 0, elem: 2, kb: 2.5, growth: 0.02, angle: 70, rehit: 30, w: 34, h: 30 } },
+                    startup: 6, active: 14, recovery: 18, cooldown: 180, selfVel: [10, 0], trail: { type: 'flames', life: 60, every: 4, phys: 0, elem: 1.5, kb: 2.5, growth: 0.02, angle: 70, rehit: 30, w: 34, h: 30 } },
     frostWall:    { element: 'ice', name: 'Frost Wall', cost: 20, desc: 'Ice barrier ahead for 2 s. Blocks shots. Fire melts it.',
                     startup: 12, active: 1, recovery: 20, cooldown: 240, structure: { type: 'iceWall', dx: 80, w: 30, h: 110, life: 120, hp: 24 } },
     chillField:   { element: 'ice', name: 'Chill Field', cost: 18, desc: 'Frost circle forms, then chills anyone inside.',
@@ -257,7 +257,7 @@
     staticPulse:  { element: 'lightning', name: 'Static Pulse', cost: 15, desc: 'Instant spark ring. Low knockback, fast.',
                     startup: 5, active: 4, recovery: 18, cooldown: 120, phys: 0, elem: 5, kb: 4.4, growth: 0.05, angle: 60, away: true,
                     boxes: [{ x: -64, y: -124, w: 128, h: 120 }] },
-    blinkStrike:  { element: 'lightning', name: 'Blink Strike', cost: 22, desc: 'Teleport forward 150 px and strike. Once per jump.',
+    blinkStrike:  { element: 'lightning', name: 'Blink Strike', cost: 22, desc: 'Teleport up to 150 px, stopping in front of a rival, and strike. Once per jump.',
                     startup: 10, active: 4, recovery: 22, cooldown: 150, blink: 150, oncePerAir: true, phys: 1, elem: 6, kb: 4.6, growth: 0.08, angle: 40,
                     boxes: [{ x: -10, y: -120, w: 80, h: 100 }] },
     stoneSkin:    { element: 'earth', name: 'Stone Skin', cost: 20, desc: '0.75 s of armour: 35% less knockback. Never invulnerable.',
@@ -372,7 +372,7 @@
     { id: 'ironmaw', name: 'Ironmaw', element: 'earth', body: 'titan', mobility: 'stomper', signature: 'boulder', ability: 'quakeStomp', upgrade: 'keenClaws',
       look: { head: 'maw', horns: 'ram', wings: 'stub', tail: 'club', spikes: 'plates', armor: 'rock', eyes: 'calm', markings: 'none', accessory: 'none', aura: 'none',
               primary: '#8a6a4a', secondary: '#d8c08a', belly: '#c79c6a', eye: '#ffb84a' } },
-    { id: 'tidefang', name: 'Tidefang', element: 'water', body: 'balanced', mobility: 'strider', signature: 'tidalWave', ability: 'tidePool', upgrade: 'secondWind',
+    { id: 'tidefang', name: 'Tidefang', element: 'water', body: 'balanced', mobility: 'strider', signature: 'tidalWave', ability: 'riptide', upgrade: 'secondWind',
       look: { head: 'frill', horns: 'fin', wings: 'fin', tail: 'fluke', spikes: 'fins', armor: 'none', eyes: 'calm', markings: 'waves', accessory: 'none', aura: 'subtle',
               primary: '#0f8fa0', secondary: '#7ff2e4', belly: '#a9f0e0', eye: '#e8fffb' } },
     { id: 'warrior', name: 'Dragon Warrior', element: 'earth', body: 'balanced', mobility: 'strider', signature: 'rockPillar', ability: 'stoneSkin', upgrade: 'keenClaws',

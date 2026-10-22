@@ -47,15 +47,16 @@
   // Projectile meets projectile (opposing owners). Returns { rule, kill: 'a'|'b'|'both'|null }.
   var CLASH_RULES = [
     { rule: 'extinguish', test: function (a, b) { return a.element === 'water' && b.element === 'fire'; } },
-    { rule: 'melt',       test: function (a, b) { return a.element === 'fire' && b.element === 'ice'; } },
+    // Fire melts an ice shard but is spent doing it (it used to fly on, winning every trade against ice)
+    { rule: 'melt',       both: true, test: function (a, b) { return a.element === 'fire' && b.element === 'ice'; } },
     { rule: 'absorb',     test: function (a, b) { return a.element === 'earth' && b.element === 'lightning' && (a.type === 'boulder' || a.type === 'quake'); } },
   ];
   var HAZARD_TYPES = { flames: 1, puddle: 1, chillField: 1, whirlpool: 1 };
 
   function resolveClash(a, b) {
     for (var i = 0; i < CLASH_RULES.length; i++) {
-      if (CLASH_RULES[i].test(a, b)) return { rule: CLASH_RULES[i].rule, kill: 'b' };
-      if (CLASH_RULES[i].test(b, a)) return { rule: CLASH_RULES[i].rule, kill: 'a' };
+      if (CLASH_RULES[i].test(a, b)) return { rule: CLASH_RULES[i].rule, kill: CLASH_RULES[i].both ? 'both' : 'b' };
+      if (CLASH_RULES[i].test(b, a)) return { rule: CLASH_RULES[i].rule, kill: CLASH_RULES[i].both ? 'both' : 'a' };
     }
     // Hazards on the floor don't cancel missiles; only the rules above affect them.
     if (HAZARD_TYPES[a.type] || HAZARD_TYPES[b.type]) return { rule: null, kill: null };
@@ -500,7 +501,16 @@
       this.emit({ type: 'buff', kind: def.buff.type, f: f.i, x: f.x, y: f.y });
     }
     if (def.blink) {
-      var nx = f.x + f.facing * def.blink;
+      // Stop just short of the nearest rival ahead within reach, so the strike lands instead of passing them
+      var reach = def.blink, self = this;
+      this.fighters.forEach(function (o) {
+        if (o === f || !self.opponents(f, o) || !self.hittable(o)) return;
+        var ahead = (o.x - f.x) * f.facing;
+        if (ahead > 0 && ahead < def.blink + 60 && Math.abs(o.y - f.y) < 120) reach = Math.min(reach, Math.max(0, ahead - 55));
+      });
+      var nx = f.x + f.facing * reach;
+      // From the ground it never carries you off the platform's edge (in the air it still crosses gaps)
+      if (f.grounded && f.plat >= 0) { var pl = this.arena.platforms[f.plat]; nx = clamp(nx, pl.x + 12, pl.x + pl.w - 12); }
       this.emit({ type: 'blink', f: f.i, x0: f.x, y0: f.y, x1: nx, y1: f.y, element: f.element });
       f.x = nx;
       if (f.grounded && !this.supportAt(f.x, f.y)) { f.grounded = false; f.plat = -1; }
