@@ -508,6 +508,7 @@
     if (sc.mid) { layer(x, sc.mid, 0.2, cam, W, H, sc); chimney(x, sc, cam, W, H, t, theme); }
     if (theme === 'dusk') flock(x, W, H, t);
     if (sc.forest) layer(x, sc.forest, 0.32, cam, W, H, sc);
+    dragonLandmarks(x, arena, W, H, t, cam);
     mist(x, W, H, t, theme);
     if (theme === 'night') shootingStar(x, W, H, t);
     if (theme === 'grid') {
@@ -644,6 +645,61 @@
     x.strokeStyle = g; x.lineWidth = 1.6; x.beginPath(); x.moveTo(hx, hy); x.lineTo(hx + 90, hy - 44); x.stroke();
   }
 
+  function dragonCrest(x, cx, cy, scale, color, alpha) {
+    x.save(); x.translate(cx, cy); x.scale(scale, scale); x.globalAlpha = alpha;
+    x.beginPath(); x.moveTo(0, -42); x.lineTo(13, -20); x.lineTo(36, -27); x.lineTo(22, -5);
+    x.lineTo(34, 25); x.lineTo(9, 14); x.lineTo(0, 42); x.lineTo(-9, 14); x.lineTo(-34, 25);
+    x.lineTo(-22, -5); x.lineTo(-36, -27); x.lineTo(-13, -20); x.closePath();
+    x.fillStyle = color; x.fill(); x.restore();
+  }
+
+  function dragonLandmarks(x, arena, W, H, t, cam) {
+    var kind = arena.dragonTheme;
+    if (!kind) return;
+    x.save();
+    if (kind === 'forge') {
+      // A distant dragon-forged gate gives the sunset arena a readable focal point.
+      var gx = W * 0.5, gy = H * 0.57;
+      x.fillStyle = 'rgba(22,12,30,0.72)';
+      x.beginPath(); x.moveTo(gx - 160, gy + 105); x.lineTo(gx - 125, gy - 75); x.lineTo(gx - 42, gy - 132);
+      x.lineTo(gx, gy - 190); x.lineTo(gx + 42, gy - 132); x.lineTo(gx + 125, gy - 75); x.lineTo(gx + 160, gy + 105); x.closePath(); x.fill();
+      x.fillStyle = 'rgba(255,151,72,0.22)'; x.fillRect(gx - 15, gy - 118, 30, 165);
+      dragonCrest(x, gx, gy - 42, 0.64, '#ffb866', 0.42);
+      // Slow airships add scale without crossing the fighters' play space.
+      var ship = (t * 18) % (W + 260) - 130;
+      x.translate(ship, H * 0.22 + Math.sin(t * 0.35) * 7);
+      x.fillStyle = 'rgba(37,20,45,0.85)'; x.beginPath(); x.ellipse(0, 0, 44, 11, 0, 0, TAU); x.fill();
+      x.fillStyle = 'rgba(255,173,87,0.75)'; x.fillRect(-18, 7, 36, 3);
+      x.strokeStyle = 'rgba(255,205,130,0.65)'; x.lineWidth = 2; x.beginPath(); x.moveTo(0, -8); x.lineTo(0, -31); x.stroke();
+      x.fillStyle = 'rgba(255,211,145,0.65)'; x.beginPath(); x.moveTo(1, -30); x.lineTo(23, -17); x.lineTo(1, -13); x.closePath(); x.fill();
+    } else if (kind === 'frost') {
+      // An ancient ice-dragon shrine sits behind the broken platforms.
+      var ix = W * 0.5, iy = H * 0.47;
+      x.fillStyle = 'rgba(125,205,236,0.16)'; x.beginPath(); x.ellipse(ix, iy + 30, 190, 38, 0, 0, TAU); x.fill();
+      x.strokeStyle = 'rgba(190,241,255,0.36)'; x.lineWidth = 8; x.lineJoin = 'round';
+      x.beginPath(); x.moveTo(ix - 150, iy + 80); x.lineTo(ix - 118, iy - 70); x.lineTo(ix - 54, iy - 122); x.lineTo(ix, iy - 168); x.lineTo(ix + 54, iy - 122); x.lineTo(ix + 118, iy - 70); x.lineTo(ix + 150, iy + 80); x.stroke();
+      dragonCrest(x, ix, iy - 78, 0.7, '#bff4ff', 0.34);
+      // A restrained rune halo breathes behind the shrine.
+      x.globalCompositeOperation = 'lighter';
+      for (var r = 0; r < 3; r++) {
+        x.strokeStyle = 'rgba(130,225,255,' + (0.12 - r * 0.025) + ')'; x.lineWidth = 2;
+        x.beginPath(); x.arc(ix, iy - 65, 70 + r * 22 + Math.sin(t * 0.7 + r) * 3, 0, TAU); x.stroke();
+      }
+    } else if (kind === 'dojo') {
+      // Training is a dragon dojo, not an abstract grid.
+      var dx = W * 0.5, dy = H * 0.5;
+      x.fillStyle = 'rgba(20,28,52,0.9)';
+      x.fillRect(dx - 180, dy - 120, 360, 170);
+      x.fillStyle = 'rgba(255,207,58,0.75)'; x.fillRect(dx - 190, dy - 128, 380, 8);
+      x.fillStyle = 'rgba(61,224,208,0.18)'; x.fillRect(dx - 150, dy - 80, 300, 85);
+      dragonCrest(x, dx, dy - 47, 0.48, '#ffcf3a', 0.5);
+      x.strokeStyle = 'rgba(255,207,58,0.35)'; x.lineWidth = 3;
+      [-210, 210].forEach(function (px) { x.beginPath(); x.moveTo(dx + px, dy + 125); x.lineTo(dx + px, dy - 155); x.stroke(); });
+      x.fillStyle = 'rgba(255,207,58,0.6)'; x.font = '800 13px Nunito, sans-serif'; x.textAlign = 'center'; x.fillText('DRAGON DOJO', dx, dy + 33);
+    }
+    x.restore();
+  }
+
   /** Stone platforms, drawn in world space. Edges stay crisp and bright so the ledges read in a fight. */
   function platforms(x, arena, t) {
     var theme = arena.theme, th = THEMES[theme] || THEMES.dusk;
@@ -663,6 +719,16 @@
       if (theme === 'grid' && p.solid) {
         x.fillStyle = 'rgba(200,220,255,0.35)'; x.font = '11px system-ui';
         for (var m = 0; m <= p.w; m += 100) { x.fillRect(p.x + m, p.y + 6, 1, 10); x.fillText(String(m), p.x + m + 3, p.y + 18); }
+      }
+      if (arena.dragonTheme && i > 0) {
+        var rune = arena.dragonTheme === 'frost' ? '150,235,255' : arena.dragonTheme === 'dojo' ? '255,207,58' : '255,150,65';
+        var spacing = Math.max(70, Math.min(150, p.w / 2));
+        x.save(); x.globalAlpha = 0.38 + Math.sin(t * 1.2 + i) * 0.08; x.strokeStyle = 'rgba(' + rune + ',0.8)'; x.lineWidth = 1.5;
+        for (var rx = p.x + spacing * 0.5; rx < p.x + p.w - 20; rx += spacing) {
+          x.beginPath(); x.arc(rx, p.y + 8, 7, 0, TAU); x.moveTo(rx - 5, p.y + 8); x.lineTo(rx + 5, p.y + 8);
+          x.moveTo(rx, p.y + 3); x.lineTo(rx, p.y + 13); x.stroke();
+        }
+        x.restore();
       }
       // Fireflies (dusk) or drifting ice glints (night) around soft platforms
       if (!p.solid && theme !== 'grid') {

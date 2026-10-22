@@ -6,7 +6,7 @@
   'use strict';
   var App = window.DCApp, D = window.DC.Data, Build = window.DC.Build, Net = window.DCNet, Cup = window.DC.Tournament;
   var esc = App.esc;
-  var S = { net: null, room: null, you: null, matchId: null, device: 'kb1', pick: null, status: 'idle', lastEnd: null, spectating: null };
+  var S = { net: null, room: null, you: null, matchId: null, device: window.DCApp.defaultDevice(), pick: null, status: 'idle', lastEnd: null, spectating: null };
 
   function myName() {
     var n = App.store.get('onlineName', null);
@@ -95,7 +95,7 @@
         '<div class="teams">' +
         '<div class="panel" style="display:grid;gap:10px"><div class="eyebrow">Your name</div><input class="text" data-name maxlength="16" value="' + esc(myName()) + '">' +
         '<div class="eyebrow">Your dragon</div><select class="sel" data-build>' + App.buildOptions(S.pick || (App.myBuilds()[0] || {}).id || 'preset-emberfang') + '</select>' +
-        '<div class="eyebrow">Controls</div><select class="sel" data-dev>' + [['kb1', 'Keyboard'], ['pad0', 'Gamepad 1']].map(function (d) { return '<option value="' + d[0] + '"' + (S.device === d[0] ? ' selected' : '') + '>' + d[1] + '</option>'; }).join('') + '</select></div>' +
+        '<div class="eyebrow">Controls</div><select class="sel" data-dev>' + (App.isTouch() ? [['touch', 'Touch screen'], ['kb1', 'Keyboard'], ['pad0', 'Gamepad 1']] : [['kb1', 'Keyboard'], ['touch', 'Touch screen'], ['pad0', 'Gamepad 1']]).map(function (d) { return '<option value="' + d[0] + '"' + (S.device === d[0] ? ' selected' : '') + '>' + d[1] + '</option>'; }).join('') + '</select></div>' +
         '<div class="panel" style="display:grid;gap:10px;align-content:start"><div class="eyebrow">Host</div>' +
         '<button class="btn hot" data-act="create" data-mode="versus">⚔️ Create a versus room</button>' +
         '<button class="btn" data-act="create" data-mode="cup">🏆 Create a tournament</button>' +

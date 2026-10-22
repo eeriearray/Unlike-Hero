@@ -152,7 +152,7 @@ export default function attach({ httpServer, basePath, log = console.log, tickMs
         const slot = mt.slots.indexOf(me.id);
         if (slot < 0) return;
         const inp = mt.inputs[slot];
-        inp.held = (m.h | 0) & 511;
+        inp.held = (m.h | 0) & 1023;
         if (m.c && typeof m.c === 'object') {
           for (const k of Object.keys(Sim.BTN)) {
             const c = m.c[k] | 0;
