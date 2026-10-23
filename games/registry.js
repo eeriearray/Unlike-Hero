@@ -51,7 +51,7 @@ window.GAME_REGISTRY = [
     "sdk": "1.x",
     "entry": "index.html",
     "server": "server/index.mjs",
-    "thumbnail": "thumbnail.jpg",
+    "thumbnail": "banner.jpg",
     "accent": "#ff7a2f",
     "players": {
       "min": 1,
