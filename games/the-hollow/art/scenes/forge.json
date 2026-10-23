@@ -1,0 +1,63 @@
+{
+  "id": "forge",
+  "region": "heart",
+  "background": "task2_environments_heart_forge",
+  "moods": {},
+  "viewBox": [
+    1600,
+    900
+  ],
+  "hotspots": [
+    {
+      "id": "mold",
+      "x": 148,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "mold",
+      "label": "Examine the mold",
+      "hidden": false
+    },
+    {
+      "id": "cast",
+      "x": 708,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "cast",
+      "label": "Cast a grave-iron blade",
+      "hidden": false
+    },
+    {
+      "id": "hammer",
+      "x": 1268,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "hammer",
+      "label": "Strike the anvil",
+      "hidden": false
+    },
+    {
+      "id": "search_area",
+      "x": 320,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "investigate",
+      "label": "Investigate the surroundings"
+    },
+    {
+      "id": "way_out",
+      "x": 1080,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "travel",
+      "label": "Choose a road"
+    }
+  ],
+  "artDirection": "supplied"
+}

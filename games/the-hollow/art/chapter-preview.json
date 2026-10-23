@@ -1,0 +1,6526 @@
+{
+  "note": "Isolated presentation samples. No real expedition, player record or save is loaded.",
+  "catalog": {
+    "chapter": {
+      "id": "missing_bell",
+      "title": "Chapter One: The Missing Bell",
+      "premise": "Thornwick has vanished from every map. Its bell rings every night anyway, though the tower has stood empty for forty years. Each time it tolls, something in the Hollow remembers a new name. You came to find out whose.",
+      "goal": "Learn what happened to Thornwick, why the bell rings, and what lies beneath the Abbey. Then silence the bell, ring it backward, bargain with what holds it, or break it, before the thirteenth toll."
+    },
+    "regions": {
+      "village": {
+        "id": "village",
+        "name": "The Dying Village",
+        "color": "#6f9a95",
+        "ambience": "village",
+        "hazard": "Collapse and crows",
+        "blurb": "Thornwick, or what is left of it: shutters hung open, wells that drip upward, a bell that will not stop."
+      },
+      "estate": {
+        "id": "estate",
+        "name": "The Black Estate",
+        "color": "#8a78c9",
+        "ambience": "estate",
+        "hazard": "Traps and shifting rooms",
+        "blurb": "The magistrate's house of black brick. Its rooms rearrange themselves at night so nobody finds the same door twice."
+      },
+      "woods": {
+        "id": "woods",
+        "name": "The Whispering Woods",
+        "color": "#5f9a6f",
+        "ambience": "woods",
+        "hazard": "Beasts and getting lost",
+        "blurb": "Pines that lean toward travellers. The wind in them says half-sentences."
+      },
+      "abbey": {
+        "id": "abbey",
+        "name": "The Forsaken Abbey",
+        "color": "#c4a867",
+        "ambience": "abbey",
+        "hazard": "Curses and sanity loss",
+        "blurb": "Father Venn's abbey, windowless since the Silencing. The stones remember being prayed at."
+      },
+      "crypt": {
+        "id": "crypt",
+        "name": "The Sunken Crypt",
+        "color": "#5d86ad",
+        "ambience": "crypt",
+        "hazard": "Drowning and the restless dead",
+        "blurb": "Knee-deep black water, candles floating in it. The dead here do not want to be found, only to be counted."
+      },
+      "heart": {
+        "id": "heart",
+        "name": "The Heart of the Hollow",
+        "color": "#c0556f",
+        "ambience": "heart",
+        "hazard": "Overwhelming dread",
+        "blurb": "The place Thornwick went. A cavern the size of a village, lit by a single enormous, silent bell."
+      }
+    },
+    "regionLabels": {
+      "village": [
+        230,
+        440
+      ],
+      "estate": [
+        240,
+        100
+      ],
+      "woods": [
+        700,
+        790
+      ],
+      "abbey": [
+        690,
+        70
+      ],
+      "crypt": [
+        1020,
+        810
+      ],
+      "heart": [
+        1040,
+        20
+      ]
+    },
+    "pillars": {
+      "fate": {
+        "id": "fate",
+        "name": "What became of Thornwick",
+        "need": 2
+      },
+      "bell": {
+        "id": "bell",
+        "name": "Why the bell rings",
+        "need": 2
+      },
+      "entity": {
+        "id": "entity",
+        "name": "What waits beneath",
+        "need": 2
+      },
+      "end": {
+        "id": "end",
+        "name": "How it might end",
+        "need": 2
+      }
+    },
+    "statuses": {
+      "blessed": {
+        "name": "Blessed",
+        "good": true,
+        "text": "+2 to your next check."
+      },
+      "cursed": {
+        "name": "Cursed",
+        "good": false,
+        "text": "-1 to every check until cleansed."
+      },
+      "marked": {
+        "name": "Marked",
+        "good": false,
+        "text": "The entity knows your name. Enemies strike you harder and the Remembrancer speaks to you."
+      },
+      "bleeding": {
+        "name": "Bleeding",
+        "good": false,
+        "text": "Lose 1 Vitality at the end of each round until healed, tonic or Rest."
+      },
+      "hunted": {
+        "name": "Hunted",
+        "good": false,
+        "text": "Something follows. Resting is not safe until you lose it."
+      }
+    },
+    "levels": [
+      0,
+      5,
+      12,
+      21,
+      32,
+      46
+    ],
+    "upgrades": [
+      {
+        "id": "might",
+        "name": "+1 Might",
+        "text": "Permanent."
+      },
+      {
+        "id": "wit",
+        "name": "+1 Wit",
+        "text": "Permanent."
+      },
+      {
+        "id": "fate",
+        "name": "+1 Fate",
+        "text": "Permanent."
+      },
+      {
+        "id": "vit",
+        "name": "+3 Max Vitality",
+        "text": "And heal 3."
+      },
+      {
+        "id": "san",
+        "name": "+3 Max Sanity",
+        "text": "And restore 3."
+      },
+      {
+        "id": "steel_nerves",
+        "name": "Steel Nerves",
+        "text": "The first Sanity loss you take each round is reduced by 1.",
+        "skill": true
+      },
+      {
+        "id": "second_wind",
+        "name": "Second Wind",
+        "text": "Resting restores 1 more.",
+        "skill": true
+      },
+      {
+        "id": "cartographer",
+        "name": "Cartographer's Eye",
+        "text": "Hidden routes next to you are always visible to you.",
+        "skill": true
+      },
+      {
+        "id": "lore_keeper",
+        "name": "Lore-Keeper",
+        "text": "+1 to Investigate and an extra puzzle hint whenever you find a clue.",
+        "skill": true
+      },
+      {
+        "id": "ghost_step",
+        "name": "Ghost Step",
+        "text": "Your Sprints are silent, always.",
+        "skill": true
+      },
+      {
+        "id": "bargainer",
+        "name": "Silver Tongue",
+        "text": "Shops charge you 1 less (minimum 1). You earn 1 more Silver from finds.",
+        "skill": true
+      },
+      {
+        "id": "duelist",
+        "name": "Duelist's Poise",
+        "text": "+1 to Strike (Might) checks in confrontations.",
+        "skill": true
+      },
+      {
+        "id": "ability",
+        "name": "Deepen your gift",
+        "text": "Upgrade your class ability.",
+        "ability": true
+      }
+    ],
+    "phaseName": [
+      "Something Is Wrong",
+      "It Knows Your Name",
+      "The Hollow Awakens"
+    ],
+    "phaseText": [
+      "Strange sounds, small omens. There is time to gather supplies and look around.",
+      "The Hollow has learned your names. Enemies grow bolder, safe places sour, roads shift.",
+      "The Hollow is awake. Greater threats walk. The Escape Gate stands open. There is not much time."
+    ],
+    "cfg": {
+      "clockMax": 36,
+      "phaseAt": [
+        12,
+        24
+      ],
+      "noiseMax": 3,
+      "packSize": 7
+    },
+    "abilityUp": {
+      "occultist": "Twist Fate can be used twice per phase.",
+      "hunter": "Set Snare has a cooldown of 1 round.",
+      "apothecary": "Brew needs only 1 herb.",
+      "medium": "Calm the Dead restores 3 Sanity and no longer advances the Clock.",
+      "vagabond": "Slip Away can be used twice per phase.",
+      "exorcist": "You gain 2 more rites of sealing."
+    },
+    "boss": {
+      "name": "The Abbey Warden",
+      "hp": 10,
+      "chains": 3,
+      "blurb": "Bound to the Abbey by three chains and to the Hollow by an oath. He guards the stair to the crypts.",
+      "phases": [
+        {
+          "chains": 3,
+          "name": "Bound",
+          "attack": {
+            "vit": -2
+          },
+          "text": "Three chains hold him upright. He strikes slowly, with the weight of a collapsing roof."
+        },
+        {
+          "chains": 2,
+          "name": "Straining",
+          "attack": {
+            "vit": -2,
+            "san": -1
+          },
+          "text": "Two chains left. His voice begins to carry words. They are your name."
+        },
+        {
+          "chains": 1,
+          "name": "Unleashed",
+          "attack": {
+            "vit": -3,
+            "san": -1
+          },
+          "text": "One chain. The whole Abbey rings with his anger."
+        },
+        {
+          "chains": 0,
+          "name": "Free",
+          "attack": {
+            "vit": -3,
+            "san": -2
+          },
+          "text": "No chains. He is faster, but nothing protects him now."
+        }
+      ]
+    },
+    "classes": {
+      "occultist": {
+        "id": "occultist",
+        "name": "The Occultist",
+        "person": "Isolde Marrowe",
+        "title": "Reader of Forbidden Margins",
+        "color": "#8b6fd1",
+        "stats": {
+          "might": 0,
+          "wit": 3,
+          "fate": 3
+        },
+        "vit": 9,
+        "san": 7,
+        "passive": {
+          "name": "Margin Notes",
+          "text": "+2 to every check made at an occult place (marked with a violet star). Sees the exact odds of every puzzle choice."
+        },
+        "active": {
+          "name": "Twist Fate",
+          "text": "After a failed check, reroll it and keep the new result. Costs 1 Sanity. Once per Haunting phase.",
+          "limit": "once per phase"
+        },
+        "weakness": "Frail mind: only 7 Sanity.",
+        "backstory": "Isolde catalogued banned books for a university that burned them. She kept the footnotes.",
+        "reason": "The bell tolls in the margins of seven forbidden texts. She wants the eighth page.",
+        "silver": 2,
+        "start": [
+          "lantern",
+          "salt"
+        ]
+      },
+      "hunter": {
+        "id": "hunter",
+        "name": "The Hunter",
+        "person": "Corvin Ash",
+        "title": "Warden of the Wolf-Roads",
+        "color": "#b9733d",
+        "stats": {
+          "might": 3,
+          "wit": 1,
+          "fate": 1
+        },
+        "vit": 12,
+        "san": 8,
+        "passive": {
+          "name": "Tracker",
+          "text": "+2 Might against beasts and the undead. Beasts never ambush you when you step carefully. -1 to every check at an occult place."
+        },
+        "active": {
+          "name": "Set Snare",
+          "text": "Lay a snare here. The next enemy to arrive or ambush at this place is wounded and cannot ambush. Cooldown: 2 rounds.",
+          "limit": "cooldown 2 rounds"
+        },
+        "weakness": "Poor at the occult.",
+        "backstory": "Corvin tracked wolves for the crown until the wolves started walking on two legs.",
+        "reason": "Something took his hounds into the Hollow. He wants them back, or what is left of them.",
+        "silver": 3,
+        "start": [
+          "snare",
+          "tonic"
+        ]
+      },
+      "apothecary": {
+        "id": "apothecary",
+        "name": "The Apothecary",
+        "person": "Maelis Thorne",
+        "title": "Mixer of Small Mercies",
+        "color": "#4fa38a",
+        "stats": {
+          "might": 1,
+          "wit": 3,
+          "fate": 2
+        },
+        "vit": 10,
+        "san": 9,
+        "passive": {
+          "name": "Forager",
+          "text": "Gathers a herb the first time they enter a village or woodland place. All healing you give or receive restores +1."
+        },
+        "active": {
+          "name": "Brew",
+          "text": "Turn 2 herbs into a Tonic, a Salt Charm or a Clarity Draught (+3 Sanity). Needs herbs. Cooldown: 1 round.",
+          "limit": "needs herbs"
+        },
+        "weakness": "Everything runs on a thin supply of herbs.",
+        "backstory": "Maelis sold tinctures in a village that no longer appears on maps. She is the only customer it has not collected.",
+        "reason": "Her ledger lists every debt of the missing village. One name is hers.",
+        "silver": 3,
+        "start": [
+          "herb",
+          "herb",
+          "tonic"
+        ]
+      },
+      "medium": {
+        "id": "medium",
+        "name": "The Medium",
+        "person": "Wren Calloway",
+        "title": "Listener at the Thin Place",
+        "color": "#6aa3c9",
+        "stats": {
+          "might": 0,
+          "wit": 2,
+          "fate": 4
+        },
+        "vit": 8,
+        "san": 10,
+        "passive": {
+          "name": "Veil-sighted",
+          "text": "+2 to Fate checks against spirits. Investigating always reveals whether a clue remains in that place. Spirits strike you one point harder."
+        },
+        "active": {
+          "name": "Calm the Dead",
+          "text": "Restore 2 Sanity to an ally in your place (or to yourself, 1). The dead notice: the Haunting Clock advances by 1. Cooldown: 2 rounds.",
+          "limit": "cooldown 2 rounds"
+        },
+        "weakness": "Attracts attention from the other side.",
+        "backstory": "Wren held seances for grieving widows until one of the voices answered with her mother's name.",
+        "reason": "The bell rings in her sleep. It keeps asking her to say something back.",
+        "silver": 2,
+        "start": [
+          "candle",
+          "salt"
+        ]
+      },
+      "vagabond": {
+        "id": "vagabond",
+        "name": "The Vagabond",
+        "person": "Jory Quill",
+        "title": "Thief of Back Roads",
+        "color": "#c9a35b",
+        "stats": {
+          "might": 1,
+          "wit": 3,
+          "fate": 2
+        },
+        "vit": 10,
+        "san": 8,
+        "passive": {
+          "name": "Light Step",
+          "text": "Your first Sprint each round is silent. Investigating always finds hidden routes, no roll. -1 to Strike (Might) checks against enemies."
+        },
+        "active": {
+          "name": "Slip Away",
+          "text": "Escape any confrontation with no roll and step to any adjacent open place. Once per Haunting phase.",
+          "limit": "once per phase"
+        },
+        "weakness": "Weak in a straight fight.",
+        "backstory": "Jory has never met a lock, wall or debt that stayed put. The Hollow is the first place that moved back.",
+        "reason": "A fence promised a fortune in grave-silver, paid on delivery. The fence did not say where.",
+        "silver": 5,
+        "start": [
+          "thread",
+          "lamp_oil"
+        ]
+      },
+      "exorcist": {
+        "id": "exorcist",
+        "name": "The Exorcist",
+        "person": "Brother Anselm Vey",
+        "title": "Sealer of Doors",
+        "color": "#d9d2bd",
+        "stats": {
+          "might": 2,
+          "wit": 1,
+          "fate": 3
+        },
+        "vit": 11,
+        "san": 9,
+        "passive": {
+          "name": "Sanctified",
+          "text": "You and allies in your place take 1 less Sanity damage (never below 0). +1 to Fate checks at sanctuaries."
+        },
+        "active": {
+          "name": "Rite of Sealing",
+          "text": "Choose a rite: purify this place, cleanse one curse, seal this place against enemies for the phase, or banish a weak spirit here. Only 3 rites per expedition.",
+          "limit": "3 rites per expedition"
+        },
+        "weakness": "Powerful rites are strictly limited.",
+        "backstory": "Anselm sealed ninety-one hauntings. The ninety-second sealed him inside it for a month.",
+        "reason": "His order is silent. A page in his breviary has begun writing itself, and it is addressed to him.",
+        "silver": 2,
+        "start": [
+          "salt",
+          "chalk"
+        ]
+      }
+    },
+    "items": {
+      "lantern": {
+        "id": "lantern",
+        "name": "Wick Lantern",
+        "kind": "tool",
+        "size": 1,
+        "uses": 5,
+        "equip": true,
+        "glyph": "lantern",
+        "desc": "Equipped: Investigating shows every hidden route and secret next to you, no roll. Burns one charge per use. A lit lantern is loud to beasts: the Hollow Stag and Hounds grow harder to slip past."
+      },
+      "lamp_oil": {
+        "id": "lamp_oil",
+        "name": "Lamp Oil",
+        "kind": "material",
+        "size": 1,
+        "stack": 2,
+        "glyph": "flask",
+        "desc": "Refills three charges of the Wick Lantern. Use it when the lantern is in your pack."
+      },
+      "tonic": {
+        "id": "tonic",
+        "name": "Minor Tonic",
+        "kind": "consumable",
+        "size": 1,
+        "stack": 3,
+        "glyph": "flask",
+        "desc": "Restores 3 Vitality and stops bleeding. Tastes of pennies and rain."
+      },
+      "thread": {
+        "id": "thread",
+        "name": "Silver Thread",
+        "kind": "consumable",
+        "size": 1,
+        "stack": 2,
+        "glyph": "thread",
+        "desc": "Use before moving. Your next move is walked along the thread: it cancels traps and ambushes at the destination, and costs no noise."
+      },
+      "salt": {
+        "id": "salt",
+        "name": "Salt Charm",
+        "kind": "consumable",
+        "size": 1,
+        "stack": 3,
+        "glyph": "salt",
+        "desc": "Ward against the unseen. Cancels the next Sanity loss you would take from any source, and kills a Whisperling outright."
+      },
+      "blade": {
+        "id": "blade",
+        "name": "Grave-Iron Blade",
+        "kind": "weapon",
+        "size": 1,
+        "equip": true,
+        "glyph": "blade",
+        "mods": {
+          "might": 1,
+          "fate": -1
+        },
+        "desc": "Equipped: +1 Might, and +3 more against the undead. The iron dislikes the unseen: -1 Fate while it is drawn."
+      },
+      "moonrelic": {
+        "id": "moonrelic",
+        "name": "Moonbound Relic",
+        "kind": "charm",
+        "size": 1,
+        "equip": true,
+        "glyph": "moon",
+        "rare": true,
+        "desc": "Equipped: once per Haunting phase, reroll a failed check and keep the new result. Each use makes the Hollow notice: the Haunting Clock advances by 1."
+      },
+      "spirit_key": {
+        "id": "spirit_key",
+        "name": "Spirit Key",
+        "kind": "key",
+        "size": 1,
+        "glyph": "key",
+        "rare": true,
+        "desc": "Opens any sealed passage without a roll. Each use costs 1 Sanity: the door remembers who it was keeping out."
+      },
+      "clapper": {
+        "id": "clapper",
+        "name": "Broken Bell Clapper",
+        "kind": "key",
+        "size": 2,
+        "glyph": "clapper",
+        "rare": true,
+        "desc": "Heavy (2 slots). Silences the Bellkeeper, and lets the party ring the bell backward at the Heart. It hums: you lose 1 Sanity at each Haunting phase change while you carry it."
+      },
+      "herb": {
+        "id": "herb",
+        "name": "Gravemoss",
+        "kind": "material",
+        "size": 1,
+        "stack": 4,
+        "glyph": "herb",
+        "desc": "A bitter herb. Chew: +1 Vitality, but the world swims (1 Sanity). Better as an ingredient: an Apothecary can brew two into something useful."
+      },
+      "snare": {
+        "id": "snare",
+        "name": "Hunter's Snare",
+        "kind": "consumable",
+        "size": 1,
+        "stack": 2,
+        "glyph": "snare",
+        "desc": "Use during a confrontation: the enemy is wounded for 2 and cannot act this round."
+      },
+      "chalk": {
+        "id": "chalk",
+        "name": "Ward Chalk",
+        "kind": "consumable",
+        "size": 1,
+        "stack": 2,
+        "glyph": "chalk",
+        "desc": "Draw a circle. For two rounds this place cannot be corrupted, enemies will not ambush it, and you may Rest here even if it is unsafe."
+      },
+      "candle": {
+        "id": "candle",
+        "name": "Offering Candle",
+        "kind": "material",
+        "size": 1,
+        "stack": 2,
+        "glyph": "candle",
+        "desc": "Beeswax stamped with a bell. Needed for the library rite against the Abbey Warden and for certain offerings."
+      },
+      "mirror_shard": {
+        "id": "mirror_shard",
+        "name": "Mirror Shard",
+        "kind": "consumable",
+        "size": 1,
+        "glyph": "shard",
+        "desc": "Hold it up to a Mirror Twin or Whisperling and it sees itself. Destroys one such enemy outright. Cracks after use."
+      },
+      "moonwater": {
+        "id": "moonwater",
+        "name": "Vial of Moonwater",
+        "kind": "consumable",
+        "size": 1,
+        "glyph": "flask",
+        "rare": true,
+        "desc": "Cleanses a curse, or wakes a fallen ally at your feet (counts against the party's limit of two revivals)."
+      },
+      "wardens_key": {
+        "id": "wardens_key",
+        "name": "Warden's Key",
+        "kind": "key",
+        "size": 1,
+        "glyph": "key",
+        "rare": true,
+        "desc": "Iron, cold, shaped like a bell's tongue. Opens the Nameless Door below the Abbey."
+      },
+      "star_lens": {
+        "id": "star_lens",
+        "name": "Star Lens",
+        "kind": "key",
+        "size": 1,
+        "glyph": "lens",
+        "rare": true,
+        "desc": "A ground crystal lens from the observatory. Opens the star-door between the Estate and the Abbey."
+      },
+      "weeping_eye": {
+        "id": "weeping_eye",
+        "name": "Weeping Eye",
+        "kind": "relic",
+        "size": 1,
+        "glyph": "eye",
+        "mods": {
+          "wit": 2,
+          "fate": -1
+        },
+        "rare": true,
+        "desc": "A glass eye that sheds slow tears. +2 Wit, -1 Fate."
+      },
+      "saint_finger": {
+        "id": "saint_finger",
+        "name": "Saint's Finger",
+        "kind": "relic",
+        "size": 1,
+        "glyph": "bone",
+        "mods": {
+          "fate": 2,
+          "might": -1
+        },
+        "rare": true,
+        "desc": "A blackened knuckle in a silver sleeve. +2 Fate, -1 Might."
+      },
+      "gilded_psalter": {
+        "id": "gilded_psalter",
+        "name": "Gilded Psalter",
+        "kind": "relic",
+        "size": 1,
+        "glyph": "book",
+        "mods": {
+          "wit": 1,
+          "fate": 1
+        },
+        "rare": true,
+        "desc": "Pages of beaten gold, hymns of drowned parishes. +1 Wit, +1 Fate. Worth a fortune to the right buyer."
+      },
+      "bone_chalice": {
+        "id": "bone_chalice",
+        "name": "Bone Chalice",
+        "kind": "relic",
+        "size": 1,
+        "glyph": "cup",
+        "mods": {
+          "might": 1,
+          "wit": -1
+        },
+        "rare": true,
+        "desc": "Carved from a pilgrim's skull. +1 Might, -1 Wit."
+      },
+      "ember_locket": {
+        "id": "ember_locket",
+        "name": "Ember Locket",
+        "kind": "relic",
+        "size": 1,
+        "glyph": "locket",
+        "mods": {
+          "fate": 1,
+          "wit": 1
+        },
+        "rare": true,
+        "desc": "Warm as a held hand. Inside, a portrait that changes. +1 Fate, +1 Wit."
+      }
+    },
+    "allies": {
+      "tamsin": {
+        "id": "tamsin",
+        "name": "Tamsin Greaves",
+        "text": "The last living child of Thornwick, found alive in the Abbey cells. She hears the bell as a voice.",
+        "boon": "At every phase change she whispers one wrong name for the bell, which is then eliminated."
+      },
+      "hob": {
+        "id": "hob",
+        "name": "Hob Marl",
+        "text": "A trapper who stayed in the woods because the village would not have him. He knows paths that do not move.",
+        "boon": "At every phase change he mends the party, restoring 2 Vitality to everyone."
+      },
+      "ketterick": {
+        "id": "ketterick",
+        "name": "Old Ketterick",
+        "text": "The herbwife of Thornwick, still tending a garden for customers who are gone.",
+        "boon": "At every phase change she gives each of you a draught: -1 to all your statuses, and one herb."
+      }
+    },
+    "curses": {
+      "rot": {
+        "id": "rot",
+        "name": "The Orchard Rot",
+        "where": "woods",
+        "text": "A grey blight spreads from the Bone Orchard. Where it takes hold, the Woods cannot be rested in."
+      },
+      "cradle": {
+        "id": "cradle",
+        "name": "The Cradle's Lullaby",
+        "where": "village",
+        "text": "A lullaby with no singer drifts through the village at night. It makes the sleeper sing along."
+      },
+      "shrine": {
+        "id": "shrine",
+        "name": "The Shrine's Listening",
+        "where": "woods",
+        "text": "The Whispering Shrine carries every word spoken in the Hollow to something that writes them down."
+      }
+    },
+    "clues": {
+      "ledger": {
+        "pillar": "fate",
+        "title": "The Parish Ledger"
+      },
+      "diary": {
+        "pillar": "fate",
+        "title": "The Magistrate's Diary"
+      },
+      "hunter_tale": {
+        "pillar": "fate",
+        "title": "The Hunter's Account"
+      },
+      "abbey_record": {
+        "pillar": "fate",
+        "title": "The Burial Register"
+      },
+      "ossuary_names": {
+        "pillar": "fate",
+        "title": "The Singing Bones"
+      },
+      "bell_cast": {
+        "pillar": "bell",
+        "title": "Cast in Grave-Iron"
+      },
+      "forge_marks": {
+        "pillar": "bell",
+        "title": "The Struck-off Tongue"
+      },
+      "choir_notes": {
+        "pillar": "bell",
+        "title": "The Remembering Toll"
+      },
+      "shrine_hum": {
+        "pillar": "bell",
+        "title": "The Shrine's Hum"
+      },
+      "clapper_lore": {
+        "pillar": "bell",
+        "title": "Where the Tongue Sleeps"
+      },
+      "entity_name": {
+        "pillar": "entity",
+        "title": "The Remembrancer"
+      },
+      "memory_hunger": {
+        "pillar": "entity",
+        "title": "It Eats the Forgotten"
+      },
+      "venn_confession": {
+        "pillar": "entity",
+        "title": "Venn's Confession"
+      },
+      "mirror_truth": {
+        "pillar": "entity",
+        "title": "The Faces in the Glass"
+      },
+      "silence_rite": {
+        "pillar": "end",
+        "title": "The Rite of Silence"
+      },
+      "reverse_rite": {
+        "pillar": "end",
+        "title": "Under the Hollow Stars"
+      },
+      "pact_terms": {
+        "pillar": "end",
+        "title": "The Terms of the Hush"
+      },
+      "unmaking": {
+        "pillar": "end",
+        "title": "A Cracked Bell"
+      },
+      "warden_oath": {
+        "pillar": "fate",
+        "title": "The Warden's Oath"
+      }
+    },
+    "enemies": {
+      "whisperling": {
+        "id": "whisperling",
+        "name": "Whisperling",
+        "type": "spirit",
+        "hp": 2,
+        "blurb": "A mouthless child-shape that speaks in your own voice. It feeds on Sanity and plants false rumors on the map.",
+        "behavior": "hold"
+      },
+      "drowned_pilgrim": {
+        "id": "drowned_pilgrim",
+        "name": "Drowned Pilgrim",
+        "type": "undead",
+        "hp": 3,
+        "blurb": "It walked to the Abbey in the old floods and never stopped. It follows the nearest living thing along any connected route.",
+        "behavior": "follow"
+      },
+      "hollow_stag": {
+        "id": "hollow_stag",
+        "name": "Hollow Stag",
+        "type": "beast",
+        "hp": 3,
+        "blurb": "An antlered thing with a lantern for a ribcage. It punishes noise: after a Sprint, a lit Lantern or a loud world, every approach is harder.",
+        "behavior": "guard"
+      },
+      "grave_warden": {
+        "id": "grave_warden",
+        "name": "Grave Warden",
+        "type": "construct",
+        "hp": 4,
+        "blurb": "A knight of tomb-iron, bound to protect whatever lies behind it. While it stands, the rewards here stay locked.",
+        "behavior": "guard"
+      },
+      "mirror_twin": {
+        "id": "mirror_twin",
+        "name": "Mirror Twin",
+        "type": "spirit",
+        "hp": 3,
+        "blurb": "It wears your face and does what you did last. Repeat yourself and it counters: using the same approach twice in a row makes it +4 harder.",
+        "behavior": "copy"
+      },
+      "bellkeeper": {
+        "id": "bellkeeper",
+        "name": "The Bellkeeper",
+        "type": "construct",
+        "hp": 5,
+        "blurb": "Rope, rust and a sexton's cassock stitched around an empty frame. Every round it lives, it tolls: the Clock advances and a path closes.",
+        "behavior": "toll"
+      },
+      "carrion_swarm": {
+        "id": "carrion_swarm",
+        "name": "Carrion Swarm",
+        "type": "beast",
+        "hp": 2,
+        "blurb": "Crows that have eaten too many names. They wander the Dying Village in a cloud and scatter from fire and light.",
+        "behavior": "roam"
+      },
+      "hollow_hound": {
+        "id": "hollow_hound",
+        "name": "Hollow Hound",
+        "type": "beast",
+        "hp": 3,
+        "blurb": "A lean dog-shape stuffed with fog. In the later hours it hunts whoever is weakest. It strikes first.",
+        "behavior": "stalk"
+      },
+      "weeping_statue": {
+        "id": "weeping_statue",
+        "name": "Weeping Statue",
+        "type": "construct",
+        "hp": 3,
+        "blurb": "It moves only when unseen. A lone traveller is its only prey: it never advances toward a place where two or more people stand together.",
+        "behavior": "weep"
+      }
+    },
+    "locations": {
+      "square": {
+        "id": "square",
+        "name": "The Silent Square",
+        "region": "village",
+        "kind": "hub",
+        "x": 235,
+        "y": 625,
+        "glyph": "well",
+        "scene": [
+          "dusk",
+          "fog",
+          "well",
+          "houses"
+        ],
+        "occult": false,
+        "safe": true,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "Thornwick's square, exactly as the postcards had it, minus the postcards. The well in the middle drips upward."
+      },
+      "chapel": {
+        "id": "chapel",
+        "name": "Abandoned Chapel",
+        "region": "village",
+        "kind": "sanctuary",
+        "x": 105,
+        "y": 570,
+        "glyph": "chapel",
+        "scene": [
+          "dusk",
+          "chapel",
+          "candles"
+        ],
+        "occult": false,
+        "safe": true,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "The pews have been stacked into a wall facing the door. Whatever was kept out, it was kept out in a hurry."
+      },
+      "nursery": {
+        "id": "nursery",
+        "name": "Bloodstained Nursery",
+        "region": "village",
+        "kind": "haunt",
+        "x": 95,
+        "y": 705,
+        "glyph": "cradle",
+        "scene": [
+          "night",
+          "cradles",
+          "candles"
+        ],
+        "occult": true,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "The nursery door swings inward. Six wooden cradles face the wall. Only one rocks. From inside it, a voice asks whether you have come to collect your child."
+      },
+      "wagon": {
+        "id": "wagon",
+        "name": "Merchant's Wagon",
+        "region": "village",
+        "kind": "market",
+        "x": 345,
+        "y": 735,
+        "glyph": "wagon",
+        "scene": [
+          "dusk",
+          "wagon",
+          "candles",
+          "fog"
+        ],
+        "occult": false,
+        "safe": true,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "A wagon hung with lamps, parked as if the market were still open. The merchant is called Pell, he sells to the dead, and he is very glad to see the living."
+      },
+      "belltower": {
+        "id": "belltower",
+        "name": "Drowned Bell Tower",
+        "region": "village",
+        "kind": "lair",
+        "x": 380,
+        "y": 520,
+        "glyph": "bell",
+        "scene": [
+          "dusk",
+          "tower",
+          "water",
+          "fog"
+        ],
+        "occult": true,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "The tower leans on its own reflection. There is no bell, only a rope that swings by itself, in time with something below the ground."
+      },
+      "graveyard": {
+        "id": "graveyard",
+        "name": "Graveyard",
+        "region": "village",
+        "kind": "grave",
+        "x": 215,
+        "y": 485,
+        "glyph": "grave",
+        "scene": [
+          "dusk",
+          "graves",
+          "fog",
+          "dead_trees"
+        ],
+        "occult": false,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "The headstones lean outward as though something pushed up from beneath. Every grave is empty and carefully tended."
+      },
+      "bridge": {
+        "id": "bridge",
+        "name": "Collapsing Bridge",
+        "region": "village",
+        "kind": "hazard",
+        "x": 500,
+        "y": 640,
+        "glyph": "bridge",
+        "scene": [
+          "dusk",
+          "bridge",
+          "water",
+          "fog"
+        ],
+        "occult": false,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "The span over the black river has been collapsing for forty years and has not finished. Each plank you cross is a decision made by the plank."
+      },
+      "gate": {
+        "id": "gate",
+        "name": "The Escape Gate",
+        "region": "village",
+        "kind": "exit",
+        "x": 200,
+        "y": 770,
+        "glyph": "gate",
+        "scene": [
+          "dusk",
+          "gate",
+          "fog"
+        ],
+        "occult": false,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "Two stone posts, no wall. Beyond them the road is dry and lit by a moon this place does not have. The air between the posts is as thick as glass."
+      },
+      "foyer": {
+        "id": "foyer",
+        "name": "Estate Foyer",
+        "region": "estate",
+        "kind": "hub",
+        "x": 240,
+        "y": 405,
+        "glyph": "door",
+        "scene": [
+          "night",
+          "stairs",
+          "portraits",
+          "candles"
+        ],
+        "occult": false,
+        "safe": true,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "A staircase that climbs into itself. Portraits hang with their faces to the wall; the frames are warm."
+      },
+      "library": {
+        "id": "library",
+        "name": "Forgotten Library",
+        "region": "estate",
+        "kind": "research",
+        "x": 105,
+        "y": 305,
+        "glyph": "book",
+        "scene": [
+          "night",
+          "books",
+          "candles",
+          "columns"
+        ],
+        "occult": true,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "The shelves go up past where the ceiling should be. Dust has been disturbed in the pattern of a person reading, very recently, in a chair that is not there."
+      },
+      "mirror": {
+        "id": "mirror",
+        "name": "Haunted Mirror",
+        "region": "estate",
+        "kind": "haunt",
+        "x": 270,
+        "y": 290,
+        "glyph": "mirror",
+        "scene": [
+          "night",
+          "mirror",
+          "candles"
+        ],
+        "occult": true,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "A mirror the height of the room, in a frame of black silver. Your reflection arrives a moment after you do. Behind you, two more people stand quietly, and you are alone."
+      },
+      "observatory": {
+        "id": "observatory",
+        "name": "Abandoned Observatory",
+        "region": "estate",
+        "kind": "puzzle",
+        "x": 125,
+        "y": 175,
+        "glyph": "telescope",
+        "scene": [
+          "stars",
+          "dome",
+          "telescope"
+        ],
+        "occult": true,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "A dome with the roof off. The stars overhead are arranged correctly for a night forty years ago. A brass telescope points at one of them and has worn a groove in the floor."
+      },
+      "treasury": {
+        "id": "treasury",
+        "name": "Trapped Treasury",
+        "region": "estate",
+        "kind": "vault",
+        "x": 365,
+        "y": 190,
+        "glyph": "chest",
+        "scene": [
+          "night",
+          "vault",
+          "coins",
+          "columns"
+        ],
+        "occult": false,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "A vault with the door left open as bait. Three chests, a stack of ledgers, and a suit of grave-iron armour standing at attention beside them."
+      },
+      "corridor": {
+        "id": "corridor",
+        "name": "Shifting Corridor",
+        "region": "estate",
+        "kind": "shifting",
+        "x": 255,
+        "y": 160,
+        "glyph": "maze",
+        "scene": [
+          "night",
+          "corridor",
+          "doors"
+        ],
+        "occult": true,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "A hallway of identical doors. Each time you look away, there are more of them, and the last door is the one you came through."
+      },
+      "blackmarket": {
+        "id": "blackmarket",
+        "name": "The Black Market",
+        "region": "estate",
+        "kind": "market",
+        "x": 410,
+        "y": 345,
+        "glyph": "market",
+        "scene": [
+          "night",
+          "market",
+          "candles",
+          "mask"
+        ],
+        "occult": false,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "The wine cellar, kept by a masked Broker who sells things that were lost: keys, kisses, afternoons. The lamps burn blue. Silver is accepted. Memories are preferred."
+      },
+      "forest": {
+        "id": "forest",
+        "name": "Living Forest",
+        "region": "woods",
+        "kind": "maze",
+        "x": 600,
+        "y": 590,
+        "glyph": "tree",
+        "scene": [
+          "dusk",
+          "trees",
+          "fog",
+          "eyes"
+        ],
+        "occult": false,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "The trees move when you blink. The path you came by is now somewhere else, and a little embarrassed about it."
+      },
+      "cabin": {
+        "id": "cabin",
+        "name": "Hunter's Cabin",
+        "region": "woods",
+        "kind": "refuge",
+        "x": 565,
+        "y": 725,
+        "glyph": "cabin",
+        "scene": [
+          "dusk",
+          "cabin",
+          "trees",
+          "candles"
+        ],
+        "occult": false,
+        "safe": true,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "Smoke without a fire. Three hounds' collars are nailed over the door, still wet. In the loft, something breathes shallowly, trying to be mistaken for a bag of grain."
+      },
+      "garden": {
+        "id": "garden",
+        "name": "Witch's Garden",
+        "region": "woods",
+        "kind": "craft",
+        "x": 700,
+        "y": 700,
+        "glyph": "herb",
+        "scene": [
+          "dusk",
+          "garden",
+          "trees",
+          "fog"
+        ],
+        "occult": false,
+        "safe": true,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "Rows of herbs in a hedge-maze that smells of rain on hot stone. An old woman is weeding, rows from where you are. She does not look up, but she knows."
+      },
+      "orchard": {
+        "id": "orchard",
+        "name": "Bone Orchard",
+        "region": "woods",
+        "kind": "blight",
+        "x": 725,
+        "y": 560,
+        "glyph": "apple",
+        "scene": [
+          "dusk",
+          "orchard",
+          "fog",
+          "bones"
+        ],
+        "occult": false,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "Apple trees hung with small bones that clink in a wind you cannot feel. Under each, a grave dug for one person and too small for any."
+      },
+      "moonwell": {
+        "id": "moonwell",
+        "name": "Moonwell",
+        "region": "woods",
+        "kind": "fate",
+        "x": 835,
+        "y": 645,
+        "glyph": "moon",
+        "scene": [
+          "stars",
+          "well",
+          "fog",
+          "moon"
+        ],
+        "occult": true,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "A stone well full of a second moon. The water does not reflect the sky; it remembers it."
+      },
+      "battlefield": {
+        "id": "battlefield",
+        "name": "Forgotten Battlefield",
+        "region": "woods",
+        "kind": "ghosts",
+        "x": 640,
+        "y": 465,
+        "glyph": "sword",
+        "scene": [
+          "dusk",
+          "pikes",
+          "fog",
+          "banners"
+        ],
+        "occult": false,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "Rusted pikes stand like iron wheat. Faint voices drill a regiment nobody mustered. Every standard is at half-mast for a different war."
+      },
+      "shrine": {
+        "id": "shrine",
+        "name": "Whispering Shrine",
+        "region": "woods",
+        "kind": "ear",
+        "x": 850,
+        "y": 520,
+        "glyph": "stone",
+        "scene": [
+          "dusk",
+          "shrine",
+          "fog",
+          "eyes"
+        ],
+        "occult": true,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "A waist-high shrine of black stone, set with a hundred small holes. The wind goes into them and does not come out."
+      },
+      "nave": {
+        "id": "nave",
+        "name": "Ruined Nave",
+        "region": "abbey",
+        "kind": "hub",
+        "x": 650,
+        "y": 385,
+        "glyph": "nave",
+        "scene": [
+          "night",
+          "nave",
+          "pews",
+          "candles"
+        ],
+        "occult": true,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "Pews in rows, facing a wall where the altar was. Someone has been sitting here recently, in every pew."
+      },
+      "fountain": {
+        "id": "fountain",
+        "name": "Spirit Fountain",
+        "region": "abbey",
+        "kind": "spirit",
+        "x": 540,
+        "y": 300,
+        "glyph": "fountain",
+        "scene": [
+          "night",
+          "fountain",
+          "fog",
+          "columns"
+        ],
+        "occult": true,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "A cloister fountain with no basin, only a stone figure pouring water into the air. The water arrives in the cloister a moment later than it should, from a different direction."
+      },
+      "altar": {
+        "id": "altar",
+        "name": "Cursed Altar",
+        "region": "abbey",
+        "kind": "bargain",
+        "x": 690,
+        "y": 285,
+        "glyph": "altar",
+        "scene": [
+          "night",
+          "altar",
+          "candles",
+          "eyes"
+        ],
+        "occult": true,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "A black altar with a hollow at its centre, the exact size of a palm. Offerings have been left here for forty years, and every one has been refused: refused things pile up."
+      },
+      "reliquary": {
+        "id": "reliquary",
+        "name": "Cursed Reliquary",
+        "region": "abbey",
+        "kind": "relic",
+        "x": 800,
+        "y": 330,
+        "glyph": "reliquary",
+        "scene": [
+          "night",
+          "reliquary",
+          "candles",
+          "bones"
+        ],
+        "occult": true,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "Gilt cases along a stone aisle, each holding a piece of someone who was holy. The labels are in a cramped hand and have been corrected, and corrected back."
+      },
+      "ritual": {
+        "id": "ritual",
+        "name": "Ritual Chamber",
+        "region": "abbey",
+        "kind": "rite",
+        "x": 570,
+        "y": 175,
+        "glyph": "circle",
+        "scene": [
+          "night",
+          "circle",
+          "candles",
+          "chains"
+        ],
+        "occult": true,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "A circular room with a brass ring set in the floor and eleven chalk sigils around it, one for every bell-stroke the village has rung. The twelfth has been started and not finished."
+      },
+      "prison": {
+        "id": "prison",
+        "name": "Prison of Echoes",
+        "region": "abbey",
+        "kind": "rescue",
+        "x": 715,
+        "y": 165,
+        "glyph": "cell",
+        "scene": [
+          "night",
+          "cells",
+          "chains",
+          "fog"
+        ],
+        "occult": true,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "Cells in a ring, each with a door that opens inward and a voice that answers whatever you say a moment before you finish saying it."
+      },
+      "warden": {
+        "id": "warden",
+        "name": "The Warden's Lair",
+        "region": "abbey",
+        "kind": "boss",
+        "x": 850,
+        "y": 215,
+        "glyph": "chain",
+        "scene": [
+          "blood",
+          "lair",
+          "chains",
+          "eyes"
+        ],
+        "occult": true,
+        "safe": false,
+        "water": false,
+        "boss": true,
+        "finale": false,
+        "desc": "A hall of black iron with a staircase going down behind a seated knight. Three chains run from his armour to the floor, the walls, the ceiling. They sing when he breathes."
+      },
+      "sealed_crypt": {
+        "id": "sealed_crypt",
+        "name": "Sealed Crypt",
+        "region": "crypt",
+        "kind": "puzzle",
+        "x": 940,
+        "y": 440,
+        "glyph": "crypt",
+        "scene": [
+          "night",
+          "crypt",
+          "water",
+          "candles"
+        ],
+        "occult": true,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "The stair from the Warden ends at three stone faces, each carved with a different sigil. Black water laps at the lowest step. A fourth door waits behind them."
+      },
+      "ossuary": {
+        "id": "ossuary",
+        "name": "Ossuary Choir",
+        "region": "crypt",
+        "kind": "sound",
+        "x": 1060,
+        "y": 505,
+        "glyph": "skull",
+        "scene": [
+          "night",
+          "bones",
+          "arches",
+          "fog"
+        ],
+        "occult": true,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "Skulls on shelves, in rows by size. Each skull faces the middle, mouth open. Not singing yet; they are drawing breath."
+      },
+      "sunken_archive": {
+        "id": "sunken_archive",
+        "name": "Sunken Archive",
+        "region": "crypt",
+        "kind": "research",
+        "x": 1005,
+        "y": 610,
+        "glyph": "archive",
+        "scene": [
+          "night",
+          "water",
+          "books",
+          "columns"
+        ],
+        "occult": true,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "The abbey's records, drowned to the shelf-lip. The ink has gone up into the water and hangs there in curtains. Names are suspended at eye height."
+      },
+      "flooded_hall": {
+        "id": "flooded_hall",
+        "name": "Flooded Hall",
+        "region": "crypt",
+        "kind": "water",
+        "x": 915,
+        "y": 705,
+        "glyph": "wave",
+        "scene": [
+          "night",
+          "water",
+          "arches",
+          "pews"
+        ],
+        "occult": false,
+        "safe": false,
+        "water": true,
+        "boss": false,
+        "finale": false,
+        "desc": "The crypt's oldest nave, black water to the waist. At the far end, a stone font in which the water, alone in this hall, runs."
+      },
+      "tomb": {
+        "id": "tomb",
+        "name": "Father Venn's Tomb",
+        "region": "crypt",
+        "kind": "story",
+        "x": 1100,
+        "y": 710,
+        "glyph": "tomb",
+        "scene": [
+          "night",
+          "tomb",
+          "candles",
+          "chains"
+        ],
+        "occult": true,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "A clean white sarcophagus, the only clean thing in the Hollow. On the lid, the carved figure of a priest, hands folded over a bell-rope."
+      },
+      "hidden_passage": {
+        "id": "hidden_passage",
+        "name": "Hidden Passage",
+        "region": "crypt",
+        "kind": "secret",
+        "x": 1130,
+        "y": 590,
+        "glyph": "tunnel",
+        "scene": [
+          "night",
+          "tunnel",
+          "fog"
+        ],
+        "occult": false,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "A crawlspace behind the tomb wall, deep and straight. You can feel the Heart pulling at you like a tide."
+      },
+      "nameless_door": {
+        "id": "nameless_door",
+        "name": "The Nameless Door",
+        "region": "crypt",
+        "kind": "door",
+        "x": 1020,
+        "y": 760,
+        "glyph": "keyhole",
+        "scene": [
+          "night",
+          "door",
+          "fog",
+          "chains"
+        ],
+        "occult": true,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "A door with no handle and no hinge, set in the crypt wall, with a keyhole shaped like a bell. Below the keyhole, in worn letters: SPEAK IT."
+      },
+      "stair": {
+        "id": "stair",
+        "name": "The Weeping Stair",
+        "region": "heart",
+        "kind": "hub",
+        "x": 955,
+        "y": 335,
+        "glyph": "stairs",
+        "scene": [
+          "blood",
+          "stairs",
+          "fog",
+          "eyes"
+        ],
+        "occult": true,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "A stair wide enough for a village, descending. Every step is wet, and every step has a name cut into it. You are walking on people."
+      },
+      "hall_of_names": {
+        "id": "hall_of_names",
+        "name": "Hall of Names",
+        "region": "heart",
+        "kind": "puzzle",
+        "x": 1055,
+        "y": 250,
+        "glyph": "names",
+        "scene": [
+          "blood",
+          "wall",
+          "candles",
+          "columns"
+        ],
+        "occult": true,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "A hall whose walls are all names, floor to ceiling, in a thousand hands. They are not carved; they are growing, like frost. A door at the far end has no keyhole, only a space for one name."
+      },
+      "still_lake": {
+        "id": "still_lake",
+        "name": "The Still Lake",
+        "region": "heart",
+        "kind": "reflection",
+        "x": 945,
+        "y": 205,
+        "glyph": "lake",
+        "scene": [
+          "blood",
+          "lake",
+          "fog",
+          "stars"
+        ],
+        "occult": true,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "A black lake with no wind. The reflection of the cavern roof shows a sky that has never been over this place, and the reflection of you shows a person a little braver than you are."
+      },
+      "pit": {
+        "id": "pit",
+        "name": "Pit of Remembered Things",
+        "region": "heart",
+        "kind": "treasure",
+        "x": 1105,
+        "y": 135,
+        "glyph": "pit",
+        "scene": [
+          "blood",
+          "pit",
+          "fog",
+          "coins"
+        ],
+        "occult": true,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "A round hole the size of a square, full of things people have lost: keys, locks of hair, a child's shoe, a wedding ring, a knife. They glitter faintly. They want to be remembered."
+      },
+      "forge": {
+        "id": "forge",
+        "name": "The Cold Forge",
+        "region": "heart",
+        "kind": "craft",
+        "x": 995,
+        "y": 105,
+        "glyph": "forge",
+        "scene": [
+          "blood",
+          "forge",
+          "chains",
+          "candles"
+        ],
+        "occult": false,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": false,
+        "desc": "The forge where the bell was cast, cold for forty years but still faintly orange at the edges. A great mold of sand stands in the middle, with a bell-shaped hole in it."
+      },
+      "heart_chamber": {
+        "id": "heart_chamber",
+        "name": "The Heart Chamber",
+        "region": "heart",
+        "kind": "finale",
+        "x": 1100,
+        "y": 60,
+        "glyph": "heart",
+        "scene": [
+          "blood",
+          "bell",
+          "chains",
+          "eyes"
+        ],
+        "occult": true,
+        "safe": false,
+        "water": false,
+        "boss": false,
+        "finale": true,
+        "desc": "A cavern the size of a village, and in it a single enormous bell, silent, with a clerk in a long grey coat standing beside it holding a ledger. The Remembrancer looks up and smiles with immense, tired courtesy. \"Ah. You've come to complete the list.\""
+      }
+    },
+    "endings": {
+      "silence": {
+        "id": "silence",
+        "name": "Silence the Bell",
+        "pitch": "Speak the bell's name and every name it has taken. Free the trapped souls.",
+        "stat": "fate",
+        "needsText": "Needs the Rite of Silence, or at least 7 clues shared."
+      },
+      "reverse": {
+        "id": "reverse",
+        "name": "Ring It Backward",
+        "pitch": "Fit the clapper, reverse the swing, and unmake what the bell has spoken. Exposes the entity.",
+        "stat": "wit",
+        "needsText": "Needs the Broken Clapper, and either the Reverse Rite or an understanding of the entity."
+      },
+      "bargain": {
+        "id": "bargain",
+        "name": "Make a Bargain",
+        "pitch": "Speak to the Remembrancer on its own terms. It lets you all walk. It takes one name.",
+        "stat": null,
+        "needsText": "Always open. The more you know of its terms, the fairer the price."
+      },
+      "destroy": {
+        "id": "destroy",
+        "name": "Break the Bell",
+        "pitch": "Smash the heart-bell. The ringing ends, and the Hollow with it. But it was holding something back.",
+        "stat": "might",
+        "needsText": "Always open. Strong arms help, and so does grave-iron."
+      },
+      "escape": {
+        "id": "escape",
+        "name": "Leave Through the Gate",
+        "pitch": "Walk out of the Hollow, with the mystery unsolved.",
+        "stat": null,
+        "needsText": "Needs the Escape Gate open."
+      },
+      "doom": {
+        "id": "doom",
+        "name": "The Thirteenth Toll",
+        "pitch": "",
+        "stat": null,
+        "needsText": ""
+      },
+      "wipe": {
+        "id": "wipe",
+        "name": "The Silence of Graves",
+        "pitch": "",
+        "stat": null,
+        "needsText": ""
+      }
+    },
+    "objectives": {
+      "collector": {
+        "id": "collector",
+        "name": "The Collector"
+      },
+      "truthseeker": {
+        "id": "truthseeker",
+        "name": "The Truthseeker"
+      },
+      "survivor": {
+        "id": "survivor",
+        "name": "The Survivor"
+      },
+      "pactbound": {
+        "id": "pactbound",
+        "name": "The Pactbound"
+      },
+      "redeemer": {
+        "id": "redeemer",
+        "name": "The Redeemer"
+      },
+      "unmaker": {
+        "id": "unmaker",
+        "name": "The Unmaker"
+      },
+      "opportunist": {
+        "id": "opportunist",
+        "name": "The Opportunist"
+      },
+      "wanderer": {
+        "id": "wanderer",
+        "name": "The Wanderer"
+      }
+    },
+    "counts": {
+      "locations": 42
+    }
+  },
+  "playing": {
+    "v": 8,
+    "code": "ARTS",
+    "phase": "playing",
+    "you": "p0",
+    "hostId": "p0",
+    "settings": {
+      "afk": "skip",
+      "turnSec": 150,
+      "solo": false
+    },
+    "policy": "Their turns will be skipped until they return.",
+    "now": 1000000,
+    "cosmetics": {
+      "runId": "ARTS:1000000"
+    },
+    "players": [
+      {
+        "id": "p0",
+        "name": "Isolde",
+        "cls": "occultist",
+        "host": true,
+        "connected": true,
+        "ready": true,
+        "status": "alive",
+        "fate": null,
+        "vit": 9,
+        "maxVit": 9,
+        "san": 7,
+        "maxSan": 7,
+        "level": 1,
+        "glory": 0,
+        "silver": 2,
+        "loc": "square",
+        "sts": [],
+        "inv": [
+          {
+            "id": "lantern",
+            "n": 1,
+            "eq": true,
+            "uses": 5
+          },
+          {
+            "id": "salt",
+            "n": 1,
+            "eq": false
+          }
+        ],
+        "revealed": null,
+        "returns": 0,
+        "stats": {
+          "might": 0,
+          "wit": 3,
+          "fate": 3
+        },
+        "abilityLvl": 0,
+        "fellLoc": null
+      },
+      {
+        "id": "p1",
+        "name": "Corvin",
+        "cls": "hunter",
+        "host": false,
+        "connected": true,
+        "ready": true,
+        "status": "alive",
+        "fate": null,
+        "vit": 12,
+        "maxVit": 12,
+        "san": 8,
+        "maxSan": 8,
+        "level": 1,
+        "glory": 0,
+        "silver": 3,
+        "loc": "square",
+        "sts": [],
+        "inv": [
+          {
+            "id": "snare",
+            "n": 1,
+            "eq": false
+          },
+          {
+            "id": "tonic",
+            "n": 1,
+            "eq": false
+          }
+        ],
+        "revealed": null,
+        "returns": 0,
+        "stats": {
+          "might": 3,
+          "wit": 1,
+          "fate": 1
+        },
+        "abilityLvl": 0,
+        "fellLoc": null
+      }
+    ],
+    "log": [
+      {
+        "n": 1,
+        "r": 0,
+        "k": "story",
+        "t": "Chapter One: The Missing Bell. Thornwick has vanished from every map. Its bell rings every night anyway, though the tower has stood empty for forty years. Each time it tolls, something in the Hollow remembers a new name. You came to find out whose.",
+        "d": {
+          "k": "prologue"
+        }
+      },
+      {
+        "n": 2,
+        "r": 1,
+        "k": "round",
+        "t": "Round 1 begins.",
+        "d": {
+          "k": "round",
+          "round": 1
+        }
+      },
+      {
+        "n": 3,
+        "r": 1,
+        "k": "turn",
+        "t": "Isolde's turn.",
+        "p": "p0",
+        "d": {
+          "k": "turn"
+        }
+      }
+    ],
+    "game": {
+      "round": 1,
+      "clock": 0,
+      "clockMax": 36,
+      "haunt": 1,
+      "noise": 0,
+      "noiseMax": 3,
+      "revivals": 0,
+      "active": "p0",
+      "ap": 3,
+      "order": [
+        "p0",
+        "p1"
+      ],
+      "secLeft": 150
+    },
+    "map": {
+      "locs": {
+        "square": {
+          "v": true,
+          "corrupt": false,
+          "sealed": false,
+          "chalk": false,
+          "inv": false,
+          "ground": 0,
+          "snare": false
+        },
+        "chapel": {
+          "v": false,
+          "corrupt": false,
+          "sealed": false,
+          "chalk": false,
+          "inv": false,
+          "ground": 0,
+          "snare": false
+        },
+        "nursery": {
+          "v": false,
+          "corrupt": false,
+          "sealed": false,
+          "chalk": false,
+          "inv": false,
+          "ground": 0,
+          "snare": false
+        },
+        "wagon": {
+          "v": false,
+          "corrupt": false,
+          "sealed": false,
+          "chalk": false,
+          "inv": false,
+          "ground": 0,
+          "snare": false
+        },
+        "belltower": {
+          "v": false,
+          "corrupt": false,
+          "sealed": false,
+          "chalk": false,
+          "inv": false,
+          "ground": 0,
+          "snare": false
+        },
+        "graveyard": {
+          "v": false,
+          "corrupt": false,
+          "sealed": false,
+          "chalk": false,
+          "inv": false,
+          "ground": 0,
+          "snare": false
+        },
+        "bridge": {
+          "v": false,
+          "corrupt": false,
+          "sealed": false,
+          "chalk": false,
+          "inv": false,
+          "ground": 0,
+          "snare": false
+        },
+        "foyer": {
+          "v": false,
+          "corrupt": false,
+          "sealed": false,
+          "chalk": false,
+          "inv": false,
+          "ground": 0,
+          "snare": false
+        },
+        "library": {
+          "v": false,
+          "corrupt": false,
+          "sealed": false,
+          "chalk": false,
+          "inv": false,
+          "ground": 0,
+          "snare": false
+        },
+        "mirror": {
+          "v": false,
+          "corrupt": false,
+          "sealed": false,
+          "chalk": false,
+          "inv": false,
+          "ground": 0,
+          "snare": false
+        },
+        "corridor": {
+          "v": false,
+          "corrupt": false,
+          "sealed": false,
+          "chalk": false,
+          "inv": false,
+          "ground": 0,
+          "snare": false
+        },
+        "blackmarket": {
+          "v": false,
+          "corrupt": false,
+          "sealed": false,
+          "chalk": false,
+          "inv": false,
+          "ground": 0,
+          "snare": false
+        },
+        "forest": {
+          "v": false,
+          "corrupt": false,
+          "sealed": false,
+          "chalk": false,
+          "inv": false,
+          "ground": 0,
+          "snare": false
+        },
+        "cabin": {
+          "v": false,
+          "corrupt": false,
+          "sealed": false,
+          "chalk": false,
+          "inv": false,
+          "ground": 0,
+          "snare": false
+        },
+        "orchard": {
+          "v": false,
+          "corrupt": false,
+          "sealed": false,
+          "chalk": false,
+          "inv": false,
+          "ground": 0,
+          "snare": false
+        },
+        "battlefield": {
+          "v": false,
+          "corrupt": false,
+          "sealed": false,
+          "chalk": false,
+          "inv": false,
+          "ground": 0,
+          "snare": false
+        },
+        "shrine": {
+          "v": false,
+          "corrupt": false,
+          "sealed": false,
+          "chalk": false,
+          "inv": false,
+          "ground": 0,
+          "snare": false
+        },
+        "nave": {
+          "v": false,
+          "corrupt": false,
+          "sealed": false,
+          "chalk": false,
+          "inv": false,
+          "ground": 0,
+          "snare": false
+        },
+        "fountain": {
+          "v": false,
+          "corrupt": false,
+          "sealed": false,
+          "chalk": false,
+          "inv": false,
+          "ground": 0,
+          "snare": false
+        },
+        "altar": {
+          "v": false,
+          "corrupt": false,
+          "sealed": false,
+          "chalk": false,
+          "inv": false,
+          "ground": 0,
+          "snare": false
+        },
+        "reliquary": {
+          "v": false,
+          "corrupt": false,
+          "sealed": false,
+          "chalk": false,
+          "inv": false,
+          "ground": 0,
+          "snare": false
+        },
+        "warden": {
+          "v": false,
+          "corrupt": false,
+          "sealed": false,
+          "chalk": false,
+          "inv": false,
+          "ground": 0,
+          "snare": false
+        },
+        "sealed_crypt": {
+          "v": false,
+          "corrupt": false,
+          "sealed": false,
+          "chalk": false,
+          "inv": false,
+          "ground": 0,
+          "snare": false
+        },
+        "ossuary": {
+          "v": false,
+          "corrupt": false,
+          "sealed": false,
+          "chalk": false,
+          "inv": false,
+          "ground": 0,
+          "snare": false
+        },
+        "tomb": {
+          "v": false,
+          "corrupt": false,
+          "sealed": false,
+          "chalk": false,
+          "inv": false,
+          "ground": 0,
+          "snare": false
+        }
+      },
+      "edges": [
+        {
+          "k": "chapel|square",
+          "a": "square",
+          "b": "chapel",
+          "type": "path",
+          "state": "open",
+          "why": "",
+          "oneway": false,
+          "label": ""
+        },
+        {
+          "k": "graveyard|square",
+          "a": "square",
+          "b": "graveyard",
+          "type": "hidden",
+          "state": "open",
+          "why": "",
+          "oneway": false,
+          "label": ""
+        },
+        {
+          "k": "belltower|square",
+          "a": "square",
+          "b": "belltower",
+          "type": "path",
+          "state": "locked",
+          "why": "Sample blocked road",
+          "oneway": false,
+          "label": ""
+        },
+        {
+          "k": "nursery|square",
+          "a": "square",
+          "b": "nursery",
+          "type": "path",
+          "state": "guarded",
+          "why": "Sample blocked road",
+          "oneway": false,
+          "label": ""
+        },
+        {
+          "k": "square|wagon",
+          "a": "square",
+          "b": "wagon",
+          "type": "path",
+          "state": "open",
+          "why": "",
+          "oneway": false,
+          "label": ""
+        },
+        {
+          "k": "chapel|graveyard",
+          "a": "chapel",
+          "b": "graveyard",
+          "type": "path",
+          "state": "open",
+          "why": "",
+          "oneway": false,
+          "label": ""
+        },
+        {
+          "k": "belltower|bridge",
+          "a": "belltower",
+          "b": "bridge",
+          "type": "path",
+          "state": "open",
+          "why": "",
+          "oneway": false,
+          "label": ""
+        },
+        {
+          "k": "bridge|wagon",
+          "a": "wagon",
+          "b": "bridge",
+          "type": "path",
+          "state": "open",
+          "why": "",
+          "oneway": false,
+          "label": ""
+        },
+        {
+          "k": "foyer|graveyard",
+          "a": "graveyard",
+          "b": "foyer",
+          "type": "path",
+          "state": "open",
+          "why": "",
+          "oneway": false,
+          "label": "The black road"
+        },
+        {
+          "k": "foyer|library",
+          "a": "foyer",
+          "b": "library",
+          "type": "path",
+          "state": "open",
+          "why": "",
+          "oneway": false,
+          "label": ""
+        },
+        {
+          "k": "foyer|mirror",
+          "a": "foyer",
+          "b": "mirror",
+          "type": "path",
+          "state": "open",
+          "why": "",
+          "oneway": false,
+          "label": ""
+        },
+        {
+          "k": "library|mirror",
+          "a": "library",
+          "b": "mirror",
+          "type": "path",
+          "state": "open",
+          "why": "",
+          "oneway": false,
+          "label": ""
+        },
+        {
+          "k": "corridor|foyer",
+          "a": "foyer",
+          "b": "corridor",
+          "type": "path",
+          "state": "open",
+          "why": "",
+          "oneway": false,
+          "label": ""
+        },
+        {
+          "k": "blackmarket|foyer",
+          "a": "foyer",
+          "b": "blackmarket",
+          "type": "locked",
+          "state": "locked",
+          "why": "Locked",
+          "oneway": false,
+          "label": "The cellar door"
+        },
+        {
+          "k": "bridge|forest",
+          "a": "bridge",
+          "b": "forest",
+          "type": "path",
+          "state": "open",
+          "why": "",
+          "oneway": false,
+          "label": ""
+        },
+        {
+          "k": "cabin|forest",
+          "a": "forest",
+          "b": "cabin",
+          "type": "path",
+          "state": "open",
+          "why": "",
+          "oneway": false,
+          "label": ""
+        },
+        {
+          "k": "forest|orchard",
+          "a": "forest",
+          "b": "orchard",
+          "type": "path",
+          "state": "open",
+          "why": "",
+          "oneway": false,
+          "label": ""
+        },
+        {
+          "k": "battlefield|forest",
+          "a": "forest",
+          "b": "battlefield",
+          "type": "path",
+          "state": "open",
+          "why": "",
+          "oneway": false,
+          "label": ""
+        },
+        {
+          "k": "orchard|shrine",
+          "a": "orchard",
+          "b": "shrine",
+          "type": "path",
+          "state": "open",
+          "why": "",
+          "oneway": false,
+          "label": ""
+        },
+        {
+          "k": "battlefield|shrine",
+          "a": "battlefield",
+          "b": "shrine",
+          "type": "path",
+          "state": "open",
+          "why": "",
+          "oneway": false,
+          "label": ""
+        },
+        {
+          "k": "nave|shrine",
+          "a": "shrine",
+          "b": "nave",
+          "type": "path",
+          "state": "open",
+          "why": "",
+          "oneway": false,
+          "label": "The Pilgrim's Way"
+        },
+        {
+          "k": "fountain|nave",
+          "a": "nave",
+          "b": "fountain",
+          "type": "path",
+          "state": "open",
+          "why": "",
+          "oneway": false,
+          "label": ""
+        },
+        {
+          "k": "altar|nave",
+          "a": "nave",
+          "b": "altar",
+          "type": "path",
+          "state": "open",
+          "why": "",
+          "oneway": false,
+          "label": ""
+        },
+        {
+          "k": "nave|reliquary",
+          "a": "nave",
+          "b": "reliquary",
+          "type": "path",
+          "state": "open",
+          "why": "",
+          "oneway": false,
+          "label": ""
+        },
+        {
+          "k": "reliquary|warden",
+          "a": "reliquary",
+          "b": "warden",
+          "type": "path",
+          "state": "open",
+          "why": "",
+          "oneway": false,
+          "label": ""
+        },
+        {
+          "k": "altar|warden",
+          "a": "altar",
+          "b": "warden",
+          "type": "path",
+          "state": "open",
+          "why": "",
+          "oneway": false,
+          "label": ""
+        },
+        {
+          "k": "sealed_crypt|warden",
+          "a": "warden",
+          "b": "sealed_crypt",
+          "type": "guarded",
+          "state": "guarded",
+          "why": "The Warden bars the stair",
+          "oneway": false,
+          "label": "The Warden's stair"
+        },
+        {
+          "k": "ossuary|sealed_crypt",
+          "a": "sealed_crypt",
+          "b": "ossuary",
+          "type": "path",
+          "state": "open",
+          "why": "",
+          "oneway": false,
+          "label": ""
+        },
+        {
+          "k": "sealed_crypt|tomb",
+          "a": "sealed_crypt",
+          "b": "tomb",
+          "type": "path",
+          "state": "open",
+          "why": "",
+          "oneway": false,
+          "label": ""
+        },
+        {
+          "k": "blackmarket|ossuary",
+          "a": "blackmarket",
+          "b": "ossuary",
+          "type": "locked",
+          "state": "locked",
+          "why": "Locked",
+          "oneway": false,
+          "label": "The cellar stair"
+        },
+        {
+          "k": "corridor~mirror",
+          "a": "corridor",
+          "b": "mirror",
+          "type": "path",
+          "state": "open",
+          "why": "",
+          "oneway": false,
+          "label": "The corridor opens here",
+          "shifting": true
+        }
+      ],
+      "enemies": [
+        {
+          "uid": "n1",
+          "id": "bellkeeper",
+          "loc": "belltower",
+          "hp": 5,
+          "max": 5,
+          "known": false,
+          "weak": null
+        },
+        {
+          "uid": "n2",
+          "id": "carrion_swarm",
+          "loc": "graveyard",
+          "hp": 2,
+          "max": 2,
+          "known": false,
+          "weak": null
+        },
+        {
+          "uid": "n4",
+          "id": "hollow_stag",
+          "loc": "forest",
+          "hp": 3,
+          "max": 3,
+          "known": false,
+          "weak": null
+        }
+      ],
+      "rumors": [],
+      "boss": {
+        "loc": "warden",
+        "hp": 10,
+        "max": 10,
+        "chains": 3,
+        "phase": "Bound",
+        "text": "Three chains hold him upright. He strikes slowly, with the weight of a collapsing roof.",
+        "attack": {
+          "vit": -2
+        },
+        "bypassed": false
+      }
+    },
+    "world": {
+      "pillars": [
+        {
+          "id": "fate",
+          "name": "What became of Thornwick",
+          "need": 2,
+          "have": 0,
+          "done": false
+        },
+        {
+          "id": "bell",
+          "name": "Why the bell rings",
+          "need": 2,
+          "have": 0,
+          "done": false
+        },
+        {
+          "id": "entity",
+          "name": "What waits beneath",
+          "need": 2,
+          "have": 0,
+          "done": false
+        },
+        {
+          "id": "end",
+          "name": "How it might end",
+          "need": 2,
+          "have": 0,
+          "done": false
+        }
+      ],
+      "clues": [],
+      "hints": [],
+      "flags": {},
+      "revivals": 0,
+      "allies": [],
+      "curses": [
+        {
+          "id": "rot",
+          "name": "The Orchard Rot",
+          "text": "A grey blight spreads from the Bone Orchard. Where it takes hold, the Woods cannot be rested in.",
+          "active": true
+        },
+        {
+          "id": "cradle",
+          "name": "The Cradle's Lullaby",
+          "text": "A lullaby with no singer drifts through the village at night. It makes the sleeper sing along.",
+          "active": true
+        },
+        {
+          "id": "shrine",
+          "name": "The Shrine's Listening",
+          "text": "The Whispering Shrine carries every word spoken in the Hollow to something that writes them down.",
+          "active": true
+        }
+      ],
+      "corridor": "mirror",
+      "solved": {}
+    },
+    "me": {
+      "cls": "occultist",
+      "status": "alive",
+      "stats": {
+        "might": 0,
+        "wit": 3,
+        "fate": 3
+      },
+      "eff": {
+        "might": 0,
+        "wit": 3,
+        "fate": 3
+      },
+      "vit": 9,
+      "maxVit": 9,
+      "san": 7,
+      "maxSan": 7,
+      "silver": 2,
+      "xp": 0,
+      "level": 1,
+      "xpNext": 5,
+      "xpPrev": 0,
+      "glory": 0,
+      "inv": [
+        {
+          "id": "lantern",
+          "n": 1,
+          "eq": true,
+          "uses": 5
+        },
+        {
+          "id": "salt",
+          "n": 1,
+          "eq": false
+        }
+      ],
+      "pack": 2,
+      "packMax": 7,
+      "sts": [],
+      "ward": false,
+      "thread": false,
+      "skills": [],
+      "abilityLvl": 0,
+      "hallu": 0,
+      "loc": "square",
+      "unnoticed": false,
+      "rests": 2,
+      "pact": false,
+      "pendingLevels": 0,
+      "returns": 0,
+      "objective": {
+        "id": "collector",
+        "name": "The Collector",
+        "text": "End the expedition holding at least 3 relics.",
+        "progress": "0 / 3 relics",
+        "revealed": false,
+        "done": false
+      },
+      "cluesPrivate": [],
+      "found": 0,
+      "visitedCount": 1,
+      "aided": false,
+      "ability": {
+        "name": "Twist Fate",
+        "text": "After a failed check, reroll it and keep the new result. Costs 1 Sanity. Once per Haunting phase.",
+        "ok": false,
+        "why": "Triggers after a failed check (1 left this phase).",
+        "kind": "occultist",
+        "cd": 0,
+        "left": 1,
+        "passiveOnly": true
+      }
+    },
+    "act": {
+      "interact": {
+        "ok": true,
+        "why": "",
+        "label": "Look for something to do here"
+      },
+      "investigate": {
+        "ok": true
+      },
+      "explore": {
+        "ok": true,
+        "left": 3
+      },
+      "rest": {
+        "ok": true
+      },
+      "echo": {
+        "ok": true,
+        "cost": 1
+      },
+      "endturn": {
+        "ok": true
+      },
+      "moves": [
+        {
+          "to": "chapel",
+          "key": "chapel|square",
+          "label": "",
+          "ok": true,
+          "why": "",
+          "state": "open",
+          "type": "path",
+          "enemy": null,
+          "ways": null
+        },
+        {
+          "to": "graveyard",
+          "key": "graveyard|square",
+          "label": "",
+          "ok": true,
+          "why": "",
+          "state": "open",
+          "type": "path",
+          "enemy": "carrion_swarm",
+          "ways": null,
+          "sneak": {
+            "dc": 10,
+            "chance": 70,
+            "mods": [
+              {
+                "l": "Wit",
+                "v": 3
+              }
+            ]
+          }
+        },
+        {
+          "to": "belltower",
+          "key": "belltower|square",
+          "label": "",
+          "ok": true,
+          "why": "",
+          "state": "open",
+          "type": "path",
+          "enemy": "bellkeeper",
+          "ways": null
+        },
+        {
+          "to": "nursery",
+          "key": "nursery|square",
+          "label": "",
+          "ok": true,
+          "why": "",
+          "state": "open",
+          "type": "path",
+          "enemy": null,
+          "ways": null
+        },
+        {
+          "to": "wagon",
+          "key": "square|wagon",
+          "label": "",
+          "ok": true,
+          "why": "",
+          "state": "open",
+          "type": "path",
+          "enemy": null,
+          "ways": null
+        }
+      ],
+      "sprint": [
+        {
+          "to": "gate",
+          "via": "nursery"
+        },
+        {
+          "to": "bridge",
+          "via": "wagon"
+        }
+      ],
+      "follow": [],
+      "parting": false,
+      "ap": 3
+    }
+  },
+  "endings": {
+    "silence": {
+      "v": 8,
+      "code": "ARTS",
+      "phase": "ended",
+      "you": "p0",
+      "hostId": "p0",
+      "settings": {
+        "afk": "skip",
+        "turnSec": 150,
+        "solo": false
+      },
+      "policy": "Their turns will be skipped until they return.",
+      "now": 1000000,
+      "cosmetics": {
+        "runId": "ARTS:1000000"
+      },
+      "players": [
+        {
+          "id": "p0",
+          "name": "Isolde",
+          "cls": "occultist",
+          "host": true,
+          "connected": true,
+          "ready": true,
+          "status": "alive",
+          "fate": null,
+          "vit": 9,
+          "maxVit": 9,
+          "san": 7,
+          "maxSan": 7,
+          "level": 1,
+          "glory": 0,
+          "silver": 2,
+          "loc": "square",
+          "sts": [],
+          "inv": [
+            {
+              "id": "lantern",
+              "n": 1,
+              "eq": true,
+              "uses": 5
+            },
+            {
+              "id": "salt",
+              "n": 1,
+              "eq": false
+            }
+          ],
+          "revealed": null,
+          "returns": 0,
+          "stats": {
+            "might": 0,
+            "wit": 3,
+            "fate": 3
+          },
+          "abilityLvl": 0,
+          "fellLoc": null
+        },
+        {
+          "id": "p1",
+          "name": "Corvin",
+          "cls": "hunter",
+          "host": false,
+          "connected": true,
+          "ready": true,
+          "status": "alive",
+          "fate": null,
+          "vit": 12,
+          "maxVit": 12,
+          "san": 8,
+          "maxSan": 8,
+          "level": 1,
+          "glory": 0,
+          "silver": 3,
+          "loc": "square",
+          "sts": [],
+          "inv": [
+            {
+              "id": "snare",
+              "n": 1,
+              "eq": false
+            },
+            {
+              "id": "tonic",
+              "n": 1,
+              "eq": false
+            }
+          ],
+          "revealed": null,
+          "returns": 0,
+          "stats": {
+            "might": 3,
+            "wit": 1,
+            "fate": 1
+          },
+          "abilityLvl": 0,
+          "fellLoc": null
+        }
+      ],
+      "log": [
+        {
+          "n": 1,
+          "r": 0,
+          "k": "story",
+          "t": "Chapter One: The Missing Bell. Thornwick has vanished from every map. Its bell rings every night anyway, though the tower has stood empty for forty years. Each time it tolls, something in the Hollow remembers a new name. You came to find out whose.",
+          "d": {
+            "k": "prologue"
+          }
+        },
+        {
+          "n": 2,
+          "r": 1,
+          "k": "round",
+          "t": "Round 1 begins.",
+          "d": {
+            "k": "round",
+            "round": 1
+          }
+        },
+        {
+          "n": 3,
+          "r": 1,
+          "k": "turn",
+          "t": "Isolde's turn.",
+          "p": "p0",
+          "d": {
+            "k": "turn"
+          }
+        },
+        {
+          "n": 4,
+          "r": 7,
+          "k": "ending",
+          "t": "The Last Toll — The expedition succeeds.",
+          "d": {
+            "k": "ending",
+            "id": "silence_true",
+            "outcome": "success"
+          }
+        }
+      ],
+      "game": {
+        "round": 7,
+        "clock": 20,
+        "clockMax": 36,
+        "haunt": 1,
+        "noise": 0,
+        "noiseMax": 3,
+        "revivals": 0,
+        "active": null,
+        "ap": 0,
+        "order": [],
+        "secLeft": 0
+      },
+      "map": {
+        "locs": {
+          "square": {
+            "v": true,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "chapel": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "nursery": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "wagon": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "belltower": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "graveyard": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          }
+        },
+        "edges": [
+          {
+            "k": "chapel|square",
+            "a": "square",
+            "b": "chapel",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "graveyard|square",
+            "a": "square",
+            "b": "graveyard",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "belltower|square",
+            "a": "square",
+            "b": "belltower",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "nursery|square",
+            "a": "square",
+            "b": "nursery",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "square|wagon",
+            "a": "square",
+            "b": "wagon",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "chapel|graveyard",
+            "a": "chapel",
+            "b": "graveyard",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          }
+        ],
+        "enemies": [
+          {
+            "uid": "n1",
+            "id": "bellkeeper",
+            "loc": "belltower",
+            "hp": 5,
+            "max": 5,
+            "known": false,
+            "weak": null
+          },
+          {
+            "uid": "n2",
+            "id": "carrion_swarm",
+            "loc": "graveyard",
+            "hp": 2,
+            "max": 2,
+            "known": false,
+            "weak": null
+          }
+        ],
+        "rumors": []
+      },
+      "world": {
+        "pillars": [
+          {
+            "id": "fate",
+            "name": "What became of Thornwick",
+            "need": 2,
+            "have": 0,
+            "done": false
+          },
+          {
+            "id": "bell",
+            "name": "Why the bell rings",
+            "need": 2,
+            "have": 0,
+            "done": false
+          },
+          {
+            "id": "entity",
+            "name": "What waits beneath",
+            "need": 2,
+            "have": 0,
+            "done": false
+          },
+          {
+            "id": "end",
+            "name": "How it might end",
+            "need": 2,
+            "have": 0,
+            "done": false
+          }
+        ],
+        "clues": [],
+        "hints": [],
+        "flags": {},
+        "revivals": 0,
+        "allies": [],
+        "curses": [
+          {
+            "id": "rot",
+            "name": "The Orchard Rot",
+            "text": "A grey blight spreads from the Bone Orchard. Where it takes hold, the Woods cannot be rested in.",
+            "active": true
+          },
+          {
+            "id": "cradle",
+            "name": "The Cradle's Lullaby",
+            "text": "A lullaby with no singer drifts through the village at night. It makes the sleeper sing along.",
+            "active": true
+          },
+          {
+            "id": "shrine",
+            "name": "The Shrine's Listening",
+            "text": "The Whispering Shrine carries every word spoken in the Hollow to something that writes them down.",
+            "active": true
+          }
+        ],
+        "corridor": null,
+        "solved": {}
+      },
+      "ended": {
+        "id": "silence_true",
+        "endingKey": "silence",
+        "grade": "true",
+        "title": "The Last Toll",
+        "outcome": "success",
+        "text": "You lay a salt-white hand on the rim and say the names, all two hundred and twelve. As each is spoken, something in the dark lets go. The bell does not ring. For the first time in forty years, the Hollow is quiet, and Thornwick walks home through it, in the rain.",
+        "roll": null,
+        "by": "p0",
+        "round": 7,
+        "clock": 20,
+        "results": [
+          {
+            "id": "p0",
+            "name": "Isolde",
+            "cls": "occultist",
+            "fate": "survived",
+            "level": 1,
+            "vit": 9,
+            "san": 7,
+            "objective": {
+              "id": "collector",
+              "name": "The Collector",
+              "text": "End the expedition holding at least 3 relics.",
+              "done": false
+            },
+            "glory": {
+              "earned": 0,
+              "bonus": [
+                {
+                  "l": "Left the Hollow alive",
+                  "v": 3
+                },
+                {
+                  "l": "Expedition success",
+                  "v": 6
+                }
+              ],
+              "total": 9
+            },
+            "relics": [],
+            "allies": [],
+            "clues": [],
+            "title": "Reader of Forbidden Margins",
+            "epilogue": "Isolde walks out of the Hollow into a morning that has no bell in it. The eighth page was a mirror. Isolde keeps it in the margin of every book she opens. What they came for, the Collector, went unfinished.",
+            "tally": {
+              "glory": 0,
+              "xp": 0,
+              "vitLost": 0,
+              "sanLost": 0,
+              "aids": 0,
+              "kills": 0,
+              "clues": 0,
+              "steps": 0
+            }
+          },
+          {
+            "id": "p1",
+            "name": "Corvin",
+            "cls": "hunter",
+            "fate": "survived",
+            "level": 1,
+            "vit": 12,
+            "san": 8,
+            "objective": {
+              "id": "opportunist",
+              "name": "The Opportunist",
+              "text": "Obtain Gilded Psalter and leave the Hollow alive.",
+              "done": false
+            },
+            "glory": {
+              "earned": 0,
+              "bonus": [
+                {
+                  "l": "Left the Hollow alive",
+                  "v": 3
+                },
+                {
+                  "l": "Expedition success",
+                  "v": 6
+                }
+              ],
+              "total": 9
+            },
+            "relics": [],
+            "allies": [],
+            "clues": [],
+            "title": "Warden of the Wolf-Roads",
+            "epilogue": "Corvin walks out of the Hollow into a morning that has no bell in it. Corvin found two of the hounds. The third he will not describe, but he leaves the porch light on. What they came for, the Opportunist, went unfinished.",
+            "tally": {
+              "glory": 0,
+              "xp": 0,
+              "vitLost": 0,
+              "sanLost": 0,
+              "aids": 0,
+              "kills": 0,
+              "clues": 0,
+              "steps": 0
+            }
+          }
+        ]
+      },
+      "me": {
+        "cls": "occultist",
+        "status": "alive",
+        "stats": {
+          "might": 0,
+          "wit": 3,
+          "fate": 3
+        },
+        "eff": {
+          "might": 0,
+          "wit": 3,
+          "fate": 3
+        },
+        "vit": 9,
+        "maxVit": 9,
+        "san": 7,
+        "maxSan": 7,
+        "silver": 2,
+        "xp": 0,
+        "level": 1,
+        "xpNext": 5,
+        "xpPrev": 0,
+        "glory": 0,
+        "inv": [
+          {
+            "id": "lantern",
+            "n": 1,
+            "eq": true,
+            "uses": 5
+          },
+          {
+            "id": "salt",
+            "n": 1,
+            "eq": false
+          }
+        ],
+        "pack": 2,
+        "packMax": 7,
+        "sts": [],
+        "ward": false,
+        "thread": false,
+        "skills": [],
+        "abilityLvl": 0,
+        "hallu": 0,
+        "loc": "square",
+        "unnoticed": false,
+        "rests": 2,
+        "pact": false,
+        "pendingLevels": 0,
+        "returns": 0,
+        "objective": {
+          "id": "collector",
+          "name": "The Collector",
+          "text": "End the expedition holding at least 3 relics.",
+          "progress": "0 / 3 relics",
+          "revealed": false,
+          "done": false
+        },
+        "cluesPrivate": [],
+        "found": 0,
+        "visitedCount": 1,
+        "aided": false,
+        "ability": {
+          "name": "Twist Fate",
+          "text": "After a failed check, reroll it and keep the new result. Costs 1 Sanity. Once per Haunting phase.",
+          "ok": false,
+          "why": "Triggers after a failed check (1 left this phase).",
+          "kind": "occultist",
+          "cd": 0,
+          "left": 1,
+          "passiveOnly": true
+        }
+      }
+    },
+    "reverse": {
+      "v": 8,
+      "code": "ARTS",
+      "phase": "ended",
+      "you": "p0",
+      "hostId": "p0",
+      "settings": {
+        "afk": "skip",
+        "turnSec": 150,
+        "solo": false
+      },
+      "policy": "Their turns will be skipped until they return.",
+      "now": 1000000,
+      "cosmetics": {
+        "runId": "ARTS:1000000"
+      },
+      "players": [
+        {
+          "id": "p0",
+          "name": "Isolde",
+          "cls": "occultist",
+          "host": true,
+          "connected": true,
+          "ready": true,
+          "status": "alive",
+          "fate": null,
+          "vit": 9,
+          "maxVit": 9,
+          "san": 7,
+          "maxSan": 7,
+          "level": 1,
+          "glory": 0,
+          "silver": 2,
+          "loc": "square",
+          "sts": [],
+          "inv": [
+            {
+              "id": "lantern",
+              "n": 1,
+              "eq": true,
+              "uses": 5
+            },
+            {
+              "id": "salt",
+              "n": 1,
+              "eq": false
+            }
+          ],
+          "revealed": null,
+          "returns": 0,
+          "stats": {
+            "might": 0,
+            "wit": 3,
+            "fate": 3
+          },
+          "abilityLvl": 0,
+          "fellLoc": null
+        },
+        {
+          "id": "p1",
+          "name": "Corvin",
+          "cls": "hunter",
+          "host": false,
+          "connected": true,
+          "ready": true,
+          "status": "alive",
+          "fate": null,
+          "vit": 12,
+          "maxVit": 12,
+          "san": 8,
+          "maxSan": 8,
+          "level": 1,
+          "glory": 0,
+          "silver": 3,
+          "loc": "square",
+          "sts": [],
+          "inv": [
+            {
+              "id": "snare",
+              "n": 1,
+              "eq": false
+            },
+            {
+              "id": "tonic",
+              "n": 1,
+              "eq": false
+            }
+          ],
+          "revealed": null,
+          "returns": 0,
+          "stats": {
+            "might": 3,
+            "wit": 1,
+            "fate": 1
+          },
+          "abilityLvl": 0,
+          "fellLoc": null
+        }
+      ],
+      "log": [
+        {
+          "n": 1,
+          "r": 0,
+          "k": "story",
+          "t": "Chapter One: The Missing Bell. Thornwick has vanished from every map. Its bell rings every night anyway, though the tower has stood empty for forty years. Each time it tolls, something in the Hollow remembers a new name. You came to find out whose.",
+          "d": {
+            "k": "prologue"
+          }
+        },
+        {
+          "n": 2,
+          "r": 1,
+          "k": "round",
+          "t": "Round 1 begins.",
+          "d": {
+            "k": "round",
+            "round": 1
+          }
+        },
+        {
+          "n": 3,
+          "r": 1,
+          "k": "turn",
+          "t": "Isolde's turn.",
+          "p": "p0",
+          "d": {
+            "k": "turn"
+          }
+        },
+        {
+          "n": 4,
+          "r": 7,
+          "k": "ending",
+          "t": "The Truth Rung — The expedition succeeds.",
+          "d": {
+            "k": "ending",
+            "id": "reverse_true",
+            "outcome": "success"
+          }
+        }
+      ],
+      "game": {
+        "round": 7,
+        "clock": 20,
+        "clockMax": 36,
+        "haunt": 1,
+        "noise": 0,
+        "noiseMax": 3,
+        "revivals": 0,
+        "active": null,
+        "ap": 0,
+        "order": [],
+        "secLeft": 0
+      },
+      "map": {
+        "locs": {
+          "square": {
+            "v": true,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "chapel": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "nursery": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "wagon": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "belltower": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "graveyard": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          }
+        },
+        "edges": [
+          {
+            "k": "chapel|square",
+            "a": "square",
+            "b": "chapel",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "graveyard|square",
+            "a": "square",
+            "b": "graveyard",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "belltower|square",
+            "a": "square",
+            "b": "belltower",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "nursery|square",
+            "a": "square",
+            "b": "nursery",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "square|wagon",
+            "a": "square",
+            "b": "wagon",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "chapel|graveyard",
+            "a": "chapel",
+            "b": "graveyard",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          }
+        ],
+        "enemies": [
+          {
+            "uid": "n1",
+            "id": "bellkeeper",
+            "loc": "belltower",
+            "hp": 5,
+            "max": 5,
+            "known": false,
+            "weak": null
+          },
+          {
+            "uid": "n2",
+            "id": "carrion_swarm",
+            "loc": "graveyard",
+            "hp": 2,
+            "max": 2,
+            "known": false,
+            "weak": null
+          }
+        ],
+        "rumors": []
+      },
+      "world": {
+        "pillars": [
+          {
+            "id": "fate",
+            "name": "What became of Thornwick",
+            "need": 2,
+            "have": 0,
+            "done": false
+          },
+          {
+            "id": "bell",
+            "name": "Why the bell rings",
+            "need": 2,
+            "have": 0,
+            "done": false
+          },
+          {
+            "id": "entity",
+            "name": "What waits beneath",
+            "need": 2,
+            "have": 0,
+            "done": false
+          },
+          {
+            "id": "end",
+            "name": "How it might end",
+            "need": 2,
+            "have": 0,
+            "done": false
+          }
+        ],
+        "clues": [],
+        "hints": [],
+        "flags": {},
+        "revivals": 0,
+        "allies": [],
+        "curses": [
+          {
+            "id": "rot",
+            "name": "The Orchard Rot",
+            "text": "A grey blight spreads from the Bone Orchard. Where it takes hold, the Woods cannot be rested in.",
+            "active": true
+          },
+          {
+            "id": "cradle",
+            "name": "The Cradle's Lullaby",
+            "text": "A lullaby with no singer drifts through the village at night. It makes the sleeper sing along.",
+            "active": true
+          },
+          {
+            "id": "shrine",
+            "name": "The Shrine's Listening",
+            "text": "The Whispering Shrine carries every word spoken in the Hollow to something that writes them down.",
+            "active": true
+          }
+        ],
+        "corridor": null,
+        "solved": {}
+      },
+      "ended": {
+        "id": "reverse_true",
+        "endingKey": "reverse",
+        "grade": "true",
+        "title": "The Truth Rung",
+        "outcome": "success",
+        "text": "The clapper sings the wrong way. Every name the bell has swallowed comes out of it as a note, and the Remembrancer, stripped of its list, shows you its face: a clerk, hunched, apologetic, immensely old. It asks to be forgotten. You oblige.",
+        "roll": null,
+        "by": "p0",
+        "round": 7,
+        "clock": 20,
+        "results": [
+          {
+            "id": "p0",
+            "name": "Isolde",
+            "cls": "occultist",
+            "fate": "survived",
+            "level": 1,
+            "vit": 9,
+            "san": 7,
+            "objective": {
+              "id": "collector",
+              "name": "The Collector",
+              "text": "End the expedition holding at least 3 relics.",
+              "done": false
+            },
+            "glory": {
+              "earned": 0,
+              "bonus": [
+                {
+                  "l": "Left the Hollow alive",
+                  "v": 3
+                },
+                {
+                  "l": "Expedition success",
+                  "v": 6
+                }
+              ],
+              "total": 9
+            },
+            "relics": [],
+            "allies": [],
+            "clues": [],
+            "title": "Reader of Forbidden Margins",
+            "epilogue": "Isolde walks out of the Hollow into a morning that has no bell in it. The eighth page was a mirror. Isolde keeps it in the margin of every book she opens. What they came for, the Collector, went unfinished.",
+            "tally": {
+              "glory": 0,
+              "xp": 0,
+              "vitLost": 0,
+              "sanLost": 0,
+              "aids": 0,
+              "kills": 0,
+              "clues": 0,
+              "steps": 0
+            }
+          },
+          {
+            "id": "p1",
+            "name": "Corvin",
+            "cls": "hunter",
+            "fate": "survived",
+            "level": 1,
+            "vit": 12,
+            "san": 8,
+            "objective": {
+              "id": "opportunist",
+              "name": "The Opportunist",
+              "text": "Obtain Gilded Psalter and leave the Hollow alive.",
+              "done": false
+            },
+            "glory": {
+              "earned": 0,
+              "bonus": [
+                {
+                  "l": "Left the Hollow alive",
+                  "v": 3
+                },
+                {
+                  "l": "Expedition success",
+                  "v": 6
+                }
+              ],
+              "total": 9
+            },
+            "relics": [],
+            "allies": [],
+            "clues": [],
+            "title": "Warden of the Wolf-Roads",
+            "epilogue": "Corvin walks out of the Hollow into a morning that has no bell in it. Corvin found two of the hounds. The third he will not describe, but he leaves the porch light on. What they came for, the Opportunist, went unfinished.",
+            "tally": {
+              "glory": 0,
+              "xp": 0,
+              "vitLost": 0,
+              "sanLost": 0,
+              "aids": 0,
+              "kills": 0,
+              "clues": 0,
+              "steps": 0
+            }
+          }
+        ]
+      },
+      "me": {
+        "cls": "occultist",
+        "status": "alive",
+        "stats": {
+          "might": 0,
+          "wit": 3,
+          "fate": 3
+        },
+        "eff": {
+          "might": 0,
+          "wit": 3,
+          "fate": 3
+        },
+        "vit": 9,
+        "maxVit": 9,
+        "san": 7,
+        "maxSan": 7,
+        "silver": 2,
+        "xp": 0,
+        "level": 1,
+        "xpNext": 5,
+        "xpPrev": 0,
+        "glory": 0,
+        "inv": [
+          {
+            "id": "lantern",
+            "n": 1,
+            "eq": true,
+            "uses": 5
+          },
+          {
+            "id": "salt",
+            "n": 1,
+            "eq": false
+          }
+        ],
+        "pack": 2,
+        "packMax": 7,
+        "sts": [],
+        "ward": false,
+        "thread": false,
+        "skills": [],
+        "abilityLvl": 0,
+        "hallu": 0,
+        "loc": "square",
+        "unnoticed": false,
+        "rests": 2,
+        "pact": false,
+        "pendingLevels": 0,
+        "returns": 0,
+        "objective": {
+          "id": "collector",
+          "name": "The Collector",
+          "text": "End the expedition holding at least 3 relics.",
+          "progress": "0 / 3 relics",
+          "revealed": false,
+          "done": false
+        },
+        "cluesPrivate": [],
+        "found": 0,
+        "visitedCount": 1,
+        "aided": false,
+        "ability": {
+          "name": "Twist Fate",
+          "text": "After a failed check, reroll it and keep the new result. Costs 1 Sanity. Once per Haunting phase.",
+          "ok": false,
+          "why": "Triggers after a failed check (1 left this phase).",
+          "kind": "occultist",
+          "cd": 0,
+          "left": 1,
+          "passiveOnly": true
+        }
+      }
+    },
+    "bargain": {
+      "v": 8,
+      "code": "ARTS",
+      "phase": "ended",
+      "you": "p0",
+      "hostId": "p0",
+      "settings": {
+        "afk": "skip",
+        "turnSec": 150,
+        "solo": false
+      },
+      "policy": "Their turns will be skipped until they return.",
+      "now": 1000000,
+      "cosmetics": {
+        "runId": "ARTS:1000000"
+      },
+      "players": [
+        {
+          "id": "p0",
+          "name": "Isolde",
+          "cls": "occultist",
+          "host": true,
+          "connected": true,
+          "ready": true,
+          "status": "alive",
+          "fate": "bound",
+          "vit": 9,
+          "maxVit": 9,
+          "san": 7,
+          "maxSan": 7,
+          "level": 1,
+          "glory": 0,
+          "silver": 2,
+          "loc": "square",
+          "sts": [],
+          "inv": [
+            {
+              "id": "lantern",
+              "n": 1,
+              "eq": true,
+              "uses": 5
+            },
+            {
+              "id": "salt",
+              "n": 1,
+              "eq": false
+            }
+          ],
+          "revealed": null,
+          "returns": 0,
+          "stats": {
+            "might": 0,
+            "wit": 3,
+            "fate": 3
+          },
+          "abilityLvl": 0,
+          "fellLoc": null
+        },
+        {
+          "id": "p1",
+          "name": "Corvin",
+          "cls": "hunter",
+          "host": false,
+          "connected": true,
+          "ready": true,
+          "status": "alive",
+          "fate": null,
+          "vit": 12,
+          "maxVit": 12,
+          "san": 8,
+          "maxSan": 8,
+          "level": 1,
+          "glory": 0,
+          "silver": 3,
+          "loc": "square",
+          "sts": [],
+          "inv": [
+            {
+              "id": "snare",
+              "n": 1,
+              "eq": false
+            },
+            {
+              "id": "tonic",
+              "n": 1,
+              "eq": false
+            }
+          ],
+          "revealed": null,
+          "returns": 0,
+          "stats": {
+            "might": 3,
+            "wit": 1,
+            "fate": 1
+          },
+          "abilityLvl": 0,
+          "fellLoc": null
+        }
+      ],
+      "log": [
+        {
+          "n": 1,
+          "r": 0,
+          "k": "story",
+          "t": "Chapter One: The Missing Bell. Thornwick has vanished from every map. Its bell rings every night anyway, though the tower has stood empty for forty years. Each time it tolls, something in the Hollow remembers a new name. You came to find out whose.",
+          "d": {
+            "k": "prologue"
+          }
+        },
+        {
+          "n": 2,
+          "r": 1,
+          "k": "round",
+          "t": "Round 1 begins.",
+          "d": {
+            "k": "round",
+            "round": 1
+          }
+        },
+        {
+          "n": 3,
+          "r": 1,
+          "k": "turn",
+          "t": "Isolde's turn.",
+          "p": "p0",
+          "d": {
+            "k": "turn"
+          }
+        },
+        {
+          "n": 4,
+          "r": 7,
+          "k": "ending",
+          "t": "The Quiet Peace — A partial victory.",
+          "d": {
+            "k": "ending",
+            "id": "bargain_fair",
+            "outcome": "partial"
+          }
+        }
+      ],
+      "game": {
+        "round": 7,
+        "clock": 20,
+        "clockMax": 36,
+        "haunt": 1,
+        "noise": 0,
+        "noiseMax": 3,
+        "revivals": 0,
+        "active": null,
+        "ap": 0,
+        "order": [],
+        "secLeft": 0
+      },
+      "map": {
+        "locs": {
+          "square": {
+            "v": true,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "chapel": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "nursery": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "wagon": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "belltower": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "graveyard": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          }
+        },
+        "edges": [
+          {
+            "k": "chapel|square",
+            "a": "square",
+            "b": "chapel",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "graveyard|square",
+            "a": "square",
+            "b": "graveyard",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "belltower|square",
+            "a": "square",
+            "b": "belltower",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "nursery|square",
+            "a": "square",
+            "b": "nursery",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "square|wagon",
+            "a": "square",
+            "b": "wagon",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "chapel|graveyard",
+            "a": "chapel",
+            "b": "graveyard",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          }
+        ],
+        "enemies": [
+          {
+            "uid": "n1",
+            "id": "bellkeeper",
+            "loc": "belltower",
+            "hp": 5,
+            "max": 5,
+            "known": false,
+            "weak": null
+          },
+          {
+            "uid": "n2",
+            "id": "carrion_swarm",
+            "loc": "graveyard",
+            "hp": 2,
+            "max": 2,
+            "known": false,
+            "weak": null
+          }
+        ],
+        "rumors": []
+      },
+      "world": {
+        "pillars": [
+          {
+            "id": "fate",
+            "name": "What became of Thornwick",
+            "need": 2,
+            "have": 0,
+            "done": false
+          },
+          {
+            "id": "bell",
+            "name": "Why the bell rings",
+            "need": 2,
+            "have": 0,
+            "done": false
+          },
+          {
+            "id": "entity",
+            "name": "What waits beneath",
+            "need": 2,
+            "have": 0,
+            "done": false
+          },
+          {
+            "id": "end",
+            "name": "How it might end",
+            "need": 2,
+            "have": 0,
+            "done": false
+          }
+        ],
+        "clues": [],
+        "hints": [],
+        "flags": {},
+        "revivals": 0,
+        "allies": [],
+        "curses": [
+          {
+            "id": "rot",
+            "name": "The Orchard Rot",
+            "text": "A grey blight spreads from the Bone Orchard. Where it takes hold, the Woods cannot be rested in.",
+            "active": true
+          },
+          {
+            "id": "cradle",
+            "name": "The Cradle's Lullaby",
+            "text": "A lullaby with no singer drifts through the village at night. It makes the sleeper sing along.",
+            "active": true
+          },
+          {
+            "id": "shrine",
+            "name": "The Shrine's Listening",
+            "text": "The Whispering Shrine carries every word spoken in the Hollow to something that writes them down.",
+            "active": true
+          }
+        ],
+        "corridor": null,
+        "solved": {}
+      },
+      "ended": {
+        "id": "bargain_fair",
+        "endingKey": "bargain",
+        "grade": "true",
+        "title": "The Quiet Peace",
+        "outcome": "partial",
+        "text": "You know the terms, and haggle. The Remembrancer takes one name, a willing one, and writes it on the first clean line in a long time. The bell falls quiet. Thornwick stays where it is, safe, and gone.",
+        "roll": null,
+        "by": "p0",
+        "round": 7,
+        "clock": 20,
+        "results": [
+          {
+            "id": "p0",
+            "name": "Isolde",
+            "cls": "occultist",
+            "fate": "bound",
+            "level": 1,
+            "vit": 9,
+            "san": 7,
+            "objective": {
+              "id": "collector",
+              "name": "The Collector",
+              "text": "End the expedition holding at least 3 relics.",
+              "done": false
+            },
+            "glory": {
+              "earned": 0,
+              "bonus": [
+                {
+                  "l": "Left the Hollow alive",
+                  "v": 3
+                },
+                {
+                  "l": "Expedition partial",
+                  "v": 3
+                }
+              ],
+              "total": 6
+            },
+            "relics": [],
+            "allies": [],
+            "clues": [],
+            "title": "The Name in the Ledger",
+            "epilogue": "Isolde stayed, bound to the Remembrancer's ledger. The terms were fair. The terms were fair. The eighth page was blank. Isolde keeps looking for it in the margins of everything. What they came for, the Collector, went unfinished.",
+            "tally": {
+              "glory": 0,
+              "xp": 0,
+              "vitLost": 0,
+              "sanLost": 0,
+              "aids": 0,
+              "kills": 0,
+              "clues": 0,
+              "steps": 0
+            }
+          },
+          {
+            "id": "p1",
+            "name": "Corvin",
+            "cls": "hunter",
+            "fate": "survived",
+            "level": 1,
+            "vit": 12,
+            "san": 8,
+            "objective": {
+              "id": "opportunist",
+              "name": "The Opportunist",
+              "text": "Obtain Gilded Psalter and leave the Hollow alive.",
+              "done": false
+            },
+            "glory": {
+              "earned": 0,
+              "bonus": [
+                {
+                  "l": "Left the Hollow alive",
+                  "v": 3
+                },
+                {
+                  "l": "Expedition partial",
+                  "v": 3
+                }
+              ],
+              "total": 6
+            },
+            "relics": [],
+            "allies": [],
+            "clues": [],
+            "title": "Warden of the Wolf-Roads",
+            "epilogue": "Corvin walks out of the Hollow carrying something that will not be put down. Corvin whistles every night at the edge of the woods. Something whistles back, once, and sounds almost like a dog. What they came for, the Opportunist, went unfinished.",
+            "tally": {
+              "glory": 0,
+              "xp": 0,
+              "vitLost": 0,
+              "sanLost": 0,
+              "aids": 0,
+              "kills": 0,
+              "clues": 0,
+              "steps": 0
+            }
+          }
+        ]
+      },
+      "me": {
+        "cls": "occultist",
+        "status": "alive",
+        "stats": {
+          "might": 0,
+          "wit": 3,
+          "fate": 3
+        },
+        "eff": {
+          "might": 0,
+          "wit": 3,
+          "fate": 3
+        },
+        "vit": 9,
+        "maxVit": 9,
+        "san": 7,
+        "maxSan": 7,
+        "silver": 2,
+        "xp": 0,
+        "level": 1,
+        "xpNext": 5,
+        "xpPrev": 0,
+        "glory": 0,
+        "inv": [
+          {
+            "id": "lantern",
+            "n": 1,
+            "eq": true,
+            "uses": 5
+          },
+          {
+            "id": "salt",
+            "n": 1,
+            "eq": false
+          }
+        ],
+        "pack": 2,
+        "packMax": 7,
+        "sts": [],
+        "ward": false,
+        "thread": false,
+        "skills": [],
+        "abilityLvl": 0,
+        "hallu": 0,
+        "loc": "square",
+        "unnoticed": false,
+        "rests": 2,
+        "pact": false,
+        "pendingLevels": 0,
+        "returns": 0,
+        "objective": {
+          "id": "collector",
+          "name": "The Collector",
+          "text": "End the expedition holding at least 3 relics.",
+          "progress": "0 / 3 relics",
+          "revealed": false,
+          "done": false
+        },
+        "cluesPrivate": [],
+        "found": 0,
+        "visitedCount": 1,
+        "aided": false,
+        "ability": {
+          "name": "Twist Fate",
+          "text": "After a failed check, reroll it and keep the new result. Costs 1 Sanity. Once per Haunting phase.",
+          "ok": false,
+          "why": "Triggers after a failed check (1 left this phase).",
+          "kind": "occultist",
+          "cd": 0,
+          "left": 1,
+          "passiveOnly": true
+        }
+      }
+    },
+    "destroy": {
+      "v": 8,
+      "code": "ARTS",
+      "phase": "ended",
+      "you": "p0",
+      "hostId": "p0",
+      "settings": {
+        "afk": "skip",
+        "turnSec": 150,
+        "solo": false
+      },
+      "policy": "Their turns will be skipped until they return.",
+      "now": 1000000,
+      "cosmetics": {
+        "runId": "ARTS:1000000"
+      },
+      "players": [
+        {
+          "id": "p0",
+          "name": "Isolde",
+          "cls": "occultist",
+          "host": true,
+          "connected": true,
+          "ready": true,
+          "status": "alive",
+          "fate": null,
+          "vit": 9,
+          "maxVit": 9,
+          "san": 7,
+          "maxSan": 7,
+          "level": 1,
+          "glory": 0,
+          "silver": 2,
+          "loc": "square",
+          "sts": [],
+          "inv": [
+            {
+              "id": "lantern",
+              "n": 1,
+              "eq": true,
+              "uses": 5
+            },
+            {
+              "id": "salt",
+              "n": 1,
+              "eq": false
+            }
+          ],
+          "revealed": null,
+          "returns": 0,
+          "stats": {
+            "might": 0,
+            "wit": 3,
+            "fate": 3
+          },
+          "abilityLvl": 0,
+          "fellLoc": null
+        },
+        {
+          "id": "p1",
+          "name": "Corvin",
+          "cls": "hunter",
+          "host": false,
+          "connected": true,
+          "ready": true,
+          "status": "alive",
+          "fate": null,
+          "vit": 12,
+          "maxVit": 12,
+          "san": 8,
+          "maxSan": 8,
+          "level": 1,
+          "glory": 0,
+          "silver": 3,
+          "loc": "square",
+          "sts": [],
+          "inv": [
+            {
+              "id": "snare",
+              "n": 1,
+              "eq": false
+            },
+            {
+              "id": "tonic",
+              "n": 1,
+              "eq": false
+            }
+          ],
+          "revealed": null,
+          "returns": 0,
+          "stats": {
+            "might": 3,
+            "wit": 1,
+            "fate": 1
+          },
+          "abilityLvl": 0,
+          "fellLoc": null
+        }
+      ],
+      "log": [
+        {
+          "n": 1,
+          "r": 0,
+          "k": "story",
+          "t": "Chapter One: The Missing Bell. Thornwick has vanished from every map. Its bell rings every night anyway, though the tower has stood empty for forty years. Each time it tolls, something in the Hollow remembers a new name. You came to find out whose.",
+          "d": {
+            "k": "prologue"
+          }
+        },
+        {
+          "n": 2,
+          "r": 1,
+          "k": "round",
+          "t": "Round 1 begins.",
+          "d": {
+            "k": "round",
+            "round": 1
+          }
+        },
+        {
+          "n": 3,
+          "r": 1,
+          "k": "turn",
+          "t": "Isolde's turn.",
+          "p": "p0",
+          "d": {
+            "k": "turn"
+          }
+        },
+        {
+          "n": 4,
+          "r": 7,
+          "k": "ending",
+          "t": "Something Worse — A partial victory.",
+          "d": {
+            "k": "ending",
+            "id": "destroy_true",
+            "outcome": "partial"
+          }
+        }
+      ],
+      "game": {
+        "round": 7,
+        "clock": 20,
+        "clockMax": 36,
+        "haunt": 1,
+        "noise": 0,
+        "noiseMax": 3,
+        "revivals": 0,
+        "active": null,
+        "ap": 0,
+        "order": [],
+        "secLeft": 0
+      },
+      "map": {
+        "locs": {
+          "square": {
+            "v": true,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "chapel": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "nursery": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "wagon": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "belltower": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "graveyard": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          }
+        },
+        "edges": [
+          {
+            "k": "chapel|square",
+            "a": "square",
+            "b": "chapel",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "graveyard|square",
+            "a": "square",
+            "b": "graveyard",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "belltower|square",
+            "a": "square",
+            "b": "belltower",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "nursery|square",
+            "a": "square",
+            "b": "nursery",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "square|wagon",
+            "a": "square",
+            "b": "wagon",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "chapel|graveyard",
+            "a": "chapel",
+            "b": "graveyard",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          }
+        ],
+        "enemies": [
+          {
+            "uid": "n1",
+            "id": "bellkeeper",
+            "loc": "belltower",
+            "hp": 5,
+            "max": 5,
+            "known": false,
+            "weak": null
+          },
+          {
+            "uid": "n2",
+            "id": "carrion_swarm",
+            "loc": "graveyard",
+            "hp": 2,
+            "max": 2,
+            "known": false,
+            "weak": null
+          }
+        ],
+        "rumors": []
+      },
+      "world": {
+        "pillars": [
+          {
+            "id": "fate",
+            "name": "What became of Thornwick",
+            "need": 2,
+            "have": 0,
+            "done": false
+          },
+          {
+            "id": "bell",
+            "name": "Why the bell rings",
+            "need": 2,
+            "have": 0,
+            "done": false
+          },
+          {
+            "id": "entity",
+            "name": "What waits beneath",
+            "need": 2,
+            "have": 0,
+            "done": false
+          },
+          {
+            "id": "end",
+            "name": "How it might end",
+            "need": 2,
+            "have": 0,
+            "done": false
+          }
+        ],
+        "clues": [],
+        "hints": [],
+        "flags": {},
+        "revivals": 0,
+        "allies": [],
+        "curses": [
+          {
+            "id": "rot",
+            "name": "The Orchard Rot",
+            "text": "A grey blight spreads from the Bone Orchard. Where it takes hold, the Woods cannot be rested in.",
+            "active": true
+          },
+          {
+            "id": "cradle",
+            "name": "The Cradle's Lullaby",
+            "text": "A lullaby with no singer drifts through the village at night. It makes the sleeper sing along.",
+            "active": true
+          },
+          {
+            "id": "shrine",
+            "name": "The Shrine's Listening",
+            "text": "The Whispering Shrine carries every word spoken in the Hollow to something that writes them down.",
+            "active": true
+          }
+        ],
+        "corridor": null,
+        "solved": {}
+      },
+      "ended": {
+        "id": "destroy_true",
+        "endingKey": "destroy",
+        "grade": "true",
+        "title": "Something Worse",
+        "outcome": "partial",
+        "text": "The bell breaks, and the sound it makes while breaking is every name at once. The Hollow comes down around you. You run. You do not look at what comes out of the dust. Whatever it is, it is not hungry for lists. It is hungry.",
+        "roll": null,
+        "by": "p0",
+        "round": 7,
+        "clock": 20,
+        "results": [
+          {
+            "id": "p0",
+            "name": "Isolde",
+            "cls": "occultist",
+            "fate": "survived",
+            "level": 1,
+            "vit": 9,
+            "san": 7,
+            "objective": {
+              "id": "collector",
+              "name": "The Collector",
+              "text": "End the expedition holding at least 3 relics.",
+              "done": false
+            },
+            "glory": {
+              "earned": 0,
+              "bonus": [
+                {
+                  "l": "Left the Hollow alive",
+                  "v": 3
+                },
+                {
+                  "l": "Expedition partial",
+                  "v": 3
+                }
+              ],
+              "total": 6
+            },
+            "relics": [],
+            "allies": [],
+            "clues": [],
+            "title": "Reader of Forbidden Margins",
+            "epilogue": "Isolde walks out of the Hollow carrying something that will not be put down. The eighth page was blank. Isolde keeps looking for it in the margins of everything. What they came for, the Collector, went unfinished.",
+            "tally": {
+              "glory": 0,
+              "xp": 0,
+              "vitLost": 0,
+              "sanLost": 0,
+              "aids": 0,
+              "kills": 0,
+              "clues": 0,
+              "steps": 0
+            }
+          },
+          {
+            "id": "p1",
+            "name": "Corvin",
+            "cls": "hunter",
+            "fate": "survived",
+            "level": 1,
+            "vit": 12,
+            "san": 8,
+            "objective": {
+              "id": "opportunist",
+              "name": "The Opportunist",
+              "text": "Obtain Gilded Psalter and leave the Hollow alive.",
+              "done": false
+            },
+            "glory": {
+              "earned": 0,
+              "bonus": [
+                {
+                  "l": "Left the Hollow alive",
+                  "v": 3
+                },
+                {
+                  "l": "Expedition partial",
+                  "v": 3
+                }
+              ],
+              "total": 6
+            },
+            "relics": [],
+            "allies": [],
+            "clues": [],
+            "title": "Warden of the Wolf-Roads",
+            "epilogue": "Corvin walks out of the Hollow carrying something that will not be put down. Corvin whistles every night at the edge of the woods. Something whistles back, once, and sounds almost like a dog. What they came for, the Opportunist, went unfinished.",
+            "tally": {
+              "glory": 0,
+              "xp": 0,
+              "vitLost": 0,
+              "sanLost": 0,
+              "aids": 0,
+              "kills": 0,
+              "clues": 0,
+              "steps": 0
+            }
+          }
+        ]
+      },
+      "me": {
+        "cls": "occultist",
+        "status": "alive",
+        "stats": {
+          "might": 0,
+          "wit": 3,
+          "fate": 3
+        },
+        "eff": {
+          "might": 0,
+          "wit": 3,
+          "fate": 3
+        },
+        "vit": 9,
+        "maxVit": 9,
+        "san": 7,
+        "maxSan": 7,
+        "silver": 2,
+        "xp": 0,
+        "level": 1,
+        "xpNext": 5,
+        "xpPrev": 0,
+        "glory": 0,
+        "inv": [
+          {
+            "id": "lantern",
+            "n": 1,
+            "eq": true,
+            "uses": 5
+          },
+          {
+            "id": "salt",
+            "n": 1,
+            "eq": false
+          }
+        ],
+        "pack": 2,
+        "packMax": 7,
+        "sts": [],
+        "ward": false,
+        "thread": false,
+        "skills": [],
+        "abilityLvl": 0,
+        "hallu": 0,
+        "loc": "square",
+        "unnoticed": false,
+        "rests": 2,
+        "pact": false,
+        "pendingLevels": 0,
+        "returns": 0,
+        "objective": {
+          "id": "collector",
+          "name": "The Collector",
+          "text": "End the expedition holding at least 3 relics.",
+          "progress": "0 / 3 relics",
+          "revealed": false,
+          "done": false
+        },
+        "cluesPrivate": [],
+        "found": 0,
+        "visitedCount": 1,
+        "aided": false,
+        "ability": {
+          "name": "Twist Fate",
+          "text": "After a failed check, reroll it and keep the new result. Costs 1 Sanity. Once per Haunting phase.",
+          "ok": false,
+          "why": "Triggers after a failed check (1 left this phase).",
+          "kind": "occultist",
+          "cd": 0,
+          "left": 1,
+          "passiveOnly": true
+        }
+      }
+    },
+    "escape": {
+      "v": 8,
+      "code": "ARTS",
+      "phase": "ended",
+      "you": "p0",
+      "hostId": "p0",
+      "settings": {
+        "afk": "skip",
+        "turnSec": 150,
+        "solo": false
+      },
+      "policy": "Their turns will be skipped until they return.",
+      "now": 1000000,
+      "cosmetics": {
+        "runId": "ARTS:1000000"
+      },
+      "players": [
+        {
+          "id": "p0",
+          "name": "Isolde",
+          "cls": "occultist",
+          "host": true,
+          "connected": true,
+          "ready": true,
+          "status": "escaped",
+          "fate": null,
+          "vit": 9,
+          "maxVit": 9,
+          "san": 7,
+          "maxSan": 7,
+          "level": 1,
+          "glory": 0,
+          "silver": 2,
+          "loc": "square",
+          "sts": [],
+          "inv": [
+            {
+              "id": "lantern",
+              "n": 1,
+              "eq": true,
+              "uses": 5
+            },
+            {
+              "id": "salt",
+              "n": 1,
+              "eq": false
+            }
+          ],
+          "revealed": null,
+          "returns": 0,
+          "stats": {
+            "might": 0,
+            "wit": 3,
+            "fate": 3
+          },
+          "abilityLvl": 0,
+          "fellLoc": null
+        },
+        {
+          "id": "p1",
+          "name": "Corvin",
+          "cls": "hunter",
+          "host": false,
+          "connected": true,
+          "ready": true,
+          "status": "escaped",
+          "fate": null,
+          "vit": 12,
+          "maxVit": 12,
+          "san": 8,
+          "maxSan": 8,
+          "level": 1,
+          "glory": 0,
+          "silver": 3,
+          "loc": "square",
+          "sts": [],
+          "inv": [
+            {
+              "id": "snare",
+              "n": 1,
+              "eq": false
+            },
+            {
+              "id": "tonic",
+              "n": 1,
+              "eq": false
+            }
+          ],
+          "revealed": null,
+          "returns": 0,
+          "stats": {
+            "might": 3,
+            "wit": 1,
+            "fate": 1
+          },
+          "abilityLvl": 0,
+          "fellLoc": null
+        }
+      ],
+      "log": [
+        {
+          "n": 1,
+          "r": 0,
+          "k": "story",
+          "t": "Chapter One: The Missing Bell. Thornwick has vanished from every map. Its bell rings every night anyway, though the tower has stood empty for forty years. Each time it tolls, something in the Hollow remembers a new name. You came to find out whose.",
+          "d": {
+            "k": "prologue"
+          }
+        },
+        {
+          "n": 2,
+          "r": 1,
+          "k": "round",
+          "t": "Round 1 begins.",
+          "d": {
+            "k": "round",
+            "round": 1
+          }
+        },
+        {
+          "n": 3,
+          "r": 1,
+          "k": "turn",
+          "t": "Isolde's turn.",
+          "p": "p0",
+          "d": {
+            "k": "turn"
+          }
+        },
+        {
+          "n": 4,
+          "r": 7,
+          "k": "ending",
+          "t": "The Witnesses — A partial victory.",
+          "d": {
+            "k": "ending",
+            "id": "escape_wise",
+            "outcome": "partial"
+          }
+        }
+      ],
+      "game": {
+        "round": 7,
+        "clock": 20,
+        "clockMax": 36,
+        "haunt": 1,
+        "noise": 0,
+        "noiseMax": 3,
+        "revivals": 0,
+        "active": null,
+        "ap": 0,
+        "order": [],
+        "secLeft": 0
+      },
+      "map": {
+        "locs": {
+          "square": {
+            "v": true,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "chapel": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "nursery": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "wagon": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "belltower": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "graveyard": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          }
+        },
+        "edges": [
+          {
+            "k": "chapel|square",
+            "a": "square",
+            "b": "chapel",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "graveyard|square",
+            "a": "square",
+            "b": "graveyard",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "belltower|square",
+            "a": "square",
+            "b": "belltower",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "nursery|square",
+            "a": "square",
+            "b": "nursery",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "square|wagon",
+            "a": "square",
+            "b": "wagon",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "chapel|graveyard",
+            "a": "chapel",
+            "b": "graveyard",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          }
+        ],
+        "enemies": [
+          {
+            "uid": "n1",
+            "id": "bellkeeper",
+            "loc": "belltower",
+            "hp": 5,
+            "max": 5,
+            "known": false,
+            "weak": null
+          },
+          {
+            "uid": "n2",
+            "id": "carrion_swarm",
+            "loc": "graveyard",
+            "hp": 2,
+            "max": 2,
+            "known": false,
+            "weak": null
+          }
+        ],
+        "rumors": []
+      },
+      "world": {
+        "pillars": [
+          {
+            "id": "fate",
+            "name": "What became of Thornwick",
+            "need": 2,
+            "have": 0,
+            "done": false
+          },
+          {
+            "id": "bell",
+            "name": "Why the bell rings",
+            "need": 2,
+            "have": 0,
+            "done": false
+          },
+          {
+            "id": "entity",
+            "name": "What waits beneath",
+            "need": 2,
+            "have": 0,
+            "done": false
+          },
+          {
+            "id": "end",
+            "name": "How it might end",
+            "need": 2,
+            "have": 0,
+            "done": false
+          }
+        ],
+        "clues": [],
+        "hints": [],
+        "flags": {},
+        "revivals": 0,
+        "allies": [],
+        "curses": [
+          {
+            "id": "rot",
+            "name": "The Orchard Rot",
+            "text": "A grey blight spreads from the Bone Orchard. Where it takes hold, the Woods cannot be rested in.",
+            "active": true
+          },
+          {
+            "id": "cradle",
+            "name": "The Cradle's Lullaby",
+            "text": "A lullaby with no singer drifts through the village at night. It makes the sleeper sing along.",
+            "active": true
+          },
+          {
+            "id": "shrine",
+            "name": "The Shrine's Listening",
+            "text": "The Whispering Shrine carries every word spoken in the Hollow to something that writes them down.",
+            "active": true
+          }
+        ],
+        "corridor": null,
+        "solved": {}
+      },
+      "ended": {
+        "id": "escape_wise",
+        "endingKey": "escape",
+        "grade": "true",
+        "title": "The Witnesses",
+        "outcome": "partial",
+        "text": "You carry out enough of the truth to warn the next fools. It is not enough to end it.",
+        "roll": null,
+        "by": "p0",
+        "round": 7,
+        "clock": 20,
+        "results": [
+          {
+            "id": "p0",
+            "name": "Isolde",
+            "cls": "occultist",
+            "fate": "escaped",
+            "level": 1,
+            "vit": 9,
+            "san": 7,
+            "objective": {
+              "id": "collector",
+              "name": "The Collector",
+              "text": "End the expedition holding at least 3 relics.",
+              "done": false
+            },
+            "glory": {
+              "earned": 0,
+              "bonus": [
+                {
+                  "l": "Left the Hollow alive",
+                  "v": 3
+                },
+                {
+                  "l": "Expedition partial",
+                  "v": 3
+                }
+              ],
+              "total": 6
+            },
+            "relics": [],
+            "allies": [],
+            "clues": [],
+            "title": "Wise Enough to Leave",
+            "epilogue": "Isolde left early through the Gate, and heard the Hollow settle behind them. The eighth page was blank. Isolde keeps looking for it in the margins of everything. What they came for, the Collector, went unfinished.",
+            "tally": {
+              "glory": 0,
+              "xp": 0,
+              "vitLost": 0,
+              "sanLost": 0,
+              "aids": 0,
+              "kills": 0,
+              "clues": 0,
+              "steps": 0
+            }
+          },
+          {
+            "id": "p1",
+            "name": "Corvin",
+            "cls": "hunter",
+            "fate": "escaped",
+            "level": 1,
+            "vit": 12,
+            "san": 8,
+            "objective": {
+              "id": "opportunist",
+              "name": "The Opportunist",
+              "text": "Obtain Gilded Psalter and leave the Hollow alive.",
+              "done": false
+            },
+            "glory": {
+              "earned": 0,
+              "bonus": [
+                {
+                  "l": "Left the Hollow alive",
+                  "v": 3
+                },
+                {
+                  "l": "Expedition partial",
+                  "v": 3
+                }
+              ],
+              "total": 6
+            },
+            "relics": [],
+            "allies": [],
+            "clues": [],
+            "title": "Wise Enough to Leave",
+            "epilogue": "Corvin left early through the Gate, and heard the Hollow settle behind them. Corvin whistles every night at the edge of the woods. Something whistles back, once, and sounds almost like a dog. What they came for, the Opportunist, went unfinished.",
+            "tally": {
+              "glory": 0,
+              "xp": 0,
+              "vitLost": 0,
+              "sanLost": 0,
+              "aids": 0,
+              "kills": 0,
+              "clues": 0,
+              "steps": 0
+            }
+          }
+        ]
+      },
+      "me": {
+        "cls": "occultist",
+        "status": "escaped",
+        "stats": {
+          "might": 0,
+          "wit": 3,
+          "fate": 3
+        },
+        "eff": {
+          "might": 0,
+          "wit": 3,
+          "fate": 3
+        },
+        "vit": 9,
+        "maxVit": 9,
+        "san": 7,
+        "maxSan": 7,
+        "silver": 2,
+        "xp": 0,
+        "level": 1,
+        "xpNext": 5,
+        "xpPrev": 0,
+        "glory": 0,
+        "inv": [
+          {
+            "id": "lantern",
+            "n": 1,
+            "eq": true,
+            "uses": 5
+          },
+          {
+            "id": "salt",
+            "n": 1,
+            "eq": false
+          }
+        ],
+        "pack": 2,
+        "packMax": 7,
+        "sts": [],
+        "ward": false,
+        "thread": false,
+        "skills": [],
+        "abilityLvl": 0,
+        "hallu": 0,
+        "loc": "square",
+        "unnoticed": false,
+        "rests": 2,
+        "pact": false,
+        "pendingLevels": 0,
+        "returns": 0,
+        "objective": {
+          "id": "collector",
+          "name": "The Collector",
+          "text": "End the expedition holding at least 3 relics.",
+          "progress": "0 / 3 relics",
+          "revealed": false,
+          "done": false
+        },
+        "cluesPrivate": [],
+        "found": 0,
+        "visitedCount": 1,
+        "aided": false
+      }
+    },
+    "doom": {
+      "v": 8,
+      "code": "ARTS",
+      "phase": "ended",
+      "you": "p0",
+      "hostId": "p0",
+      "settings": {
+        "afk": "skip",
+        "turnSec": 150,
+        "solo": false
+      },
+      "policy": "Their turns will be skipped until they return.",
+      "now": 1000000,
+      "cosmetics": {
+        "runId": "ARTS:1000000"
+      },
+      "players": [
+        {
+          "id": "p0",
+          "name": "Isolde",
+          "cls": "occultist",
+          "host": true,
+          "connected": true,
+          "ready": true,
+          "status": "alive",
+          "fate": null,
+          "vit": 9,
+          "maxVit": 9,
+          "san": 7,
+          "maxSan": 7,
+          "level": 1,
+          "glory": 0,
+          "silver": 2,
+          "loc": "square",
+          "sts": [],
+          "inv": [
+            {
+              "id": "lantern",
+              "n": 1,
+              "eq": true,
+              "uses": 5
+            },
+            {
+              "id": "salt",
+              "n": 1,
+              "eq": false
+            }
+          ],
+          "revealed": null,
+          "returns": 0,
+          "stats": {
+            "might": 0,
+            "wit": 3,
+            "fate": 3
+          },
+          "abilityLvl": 0,
+          "fellLoc": null
+        },
+        {
+          "id": "p1",
+          "name": "Corvin",
+          "cls": "hunter",
+          "host": false,
+          "connected": true,
+          "ready": true,
+          "status": "alive",
+          "fate": null,
+          "vit": 12,
+          "maxVit": 12,
+          "san": 8,
+          "maxSan": 8,
+          "level": 1,
+          "glory": 0,
+          "silver": 3,
+          "loc": "square",
+          "sts": [],
+          "inv": [
+            {
+              "id": "snare",
+              "n": 1,
+              "eq": false
+            },
+            {
+              "id": "tonic",
+              "n": 1,
+              "eq": false
+            }
+          ],
+          "revealed": null,
+          "returns": 0,
+          "stats": {
+            "might": 3,
+            "wit": 1,
+            "fate": 1
+          },
+          "abilityLvl": 0,
+          "fellLoc": null
+        }
+      ],
+      "log": [
+        {
+          "n": 1,
+          "r": 0,
+          "k": "story",
+          "t": "Chapter One: The Missing Bell. Thornwick has vanished from every map. Its bell rings every night anyway, though the tower has stood empty for forty years. Each time it tolls, something in the Hollow remembers a new name. You came to find out whose.",
+          "d": {
+            "k": "prologue"
+          }
+        },
+        {
+          "n": 2,
+          "r": 1,
+          "k": "round",
+          "t": "Round 1 begins.",
+          "d": {
+            "k": "round",
+            "round": 1
+          }
+        },
+        {
+          "n": 3,
+          "r": 1,
+          "k": "turn",
+          "t": "Isolde's turn.",
+          "p": "p0",
+          "d": {
+            "k": "turn"
+          }
+        },
+        {
+          "n": 4,
+          "r": 7,
+          "k": "ending",
+          "t": "The Thirteenth Toll — The expedition fails.",
+          "d": {
+            "k": "ending",
+            "id": "doom",
+            "outcome": "failure"
+          }
+        }
+      ],
+      "game": {
+        "round": 7,
+        "clock": 36,
+        "clockMax": 36,
+        "haunt": 1,
+        "noise": 0,
+        "noiseMax": 3,
+        "revivals": 0,
+        "active": null,
+        "ap": 0,
+        "order": [],
+        "secLeft": 0
+      },
+      "map": {
+        "locs": {
+          "square": {
+            "v": true,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "chapel": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "nursery": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "wagon": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "belltower": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "graveyard": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          }
+        },
+        "edges": [
+          {
+            "k": "chapel|square",
+            "a": "square",
+            "b": "chapel",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "graveyard|square",
+            "a": "square",
+            "b": "graveyard",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "belltower|square",
+            "a": "square",
+            "b": "belltower",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "nursery|square",
+            "a": "square",
+            "b": "nursery",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "square|wagon",
+            "a": "square",
+            "b": "wagon",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "chapel|graveyard",
+            "a": "chapel",
+            "b": "graveyard",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          }
+        ],
+        "enemies": [
+          {
+            "uid": "n1",
+            "id": "bellkeeper",
+            "loc": "belltower",
+            "hp": 5,
+            "max": 5,
+            "known": false,
+            "weak": null
+          },
+          {
+            "uid": "n2",
+            "id": "carrion_swarm",
+            "loc": "graveyard",
+            "hp": 2,
+            "max": 2,
+            "known": false,
+            "weak": null
+          }
+        ],
+        "rumors": []
+      },
+      "world": {
+        "pillars": [
+          {
+            "id": "fate",
+            "name": "What became of Thornwick",
+            "need": 2,
+            "have": 0,
+            "done": false
+          },
+          {
+            "id": "bell",
+            "name": "Why the bell rings",
+            "need": 2,
+            "have": 0,
+            "done": false
+          },
+          {
+            "id": "entity",
+            "name": "What waits beneath",
+            "need": 2,
+            "have": 0,
+            "done": false
+          },
+          {
+            "id": "end",
+            "name": "How it might end",
+            "need": 2,
+            "have": 0,
+            "done": false
+          }
+        ],
+        "clues": [],
+        "hints": [],
+        "flags": {},
+        "revivals": 0,
+        "allies": [],
+        "curses": [
+          {
+            "id": "rot",
+            "name": "The Orchard Rot",
+            "text": "A grey blight spreads from the Bone Orchard. Where it takes hold, the Woods cannot be rested in.",
+            "active": true
+          },
+          {
+            "id": "cradle",
+            "name": "The Cradle's Lullaby",
+            "text": "A lullaby with no singer drifts through the village at night. It makes the sleeper sing along.",
+            "active": true
+          },
+          {
+            "id": "shrine",
+            "name": "The Shrine's Listening",
+            "text": "The Whispering Shrine carries every word spoken in the Hollow to something that writes them down.",
+            "active": true
+          }
+        ],
+        "corridor": null,
+        "solved": {}
+      },
+      "ended": {
+        "id": "doom",
+        "endingKey": "doom",
+        "grade": "true",
+        "title": "The Thirteenth Toll",
+        "outcome": "failure",
+        "text": "The bell rings its thirteenth stroke. Everything left in the Hollow stops and turns, as one, to look at you. The list is finally complete.",
+        "roll": null,
+        "by": "p0",
+        "round": 7,
+        "clock": 36,
+        "results": [
+          {
+            "id": "p0",
+            "name": "Isolde",
+            "cls": "occultist",
+            "fate": "survived",
+            "level": 1,
+            "vit": 9,
+            "san": 7,
+            "objective": {
+              "id": "collector",
+              "name": "The Collector",
+              "text": "End the expedition holding at least 3 relics.",
+              "done": false
+            },
+            "glory": {
+              "earned": 0,
+              "bonus": [
+                {
+                  "l": "Left the Hollow alive",
+                  "v": 3
+                }
+              ],
+              "total": 3
+            },
+            "relics": [],
+            "allies": [],
+            "clues": [],
+            "title": "Reader of Forbidden Margins",
+            "epilogue": "Isolde is carried out of the Hollow by the others, and does not speak for a long time. The eighth page was blank. Isolde keeps looking for it in the margins of everything. What they came for, the Collector, went unfinished.",
+            "tally": {
+              "glory": 0,
+              "xp": 0,
+              "vitLost": 0,
+              "sanLost": 0,
+              "aids": 0,
+              "kills": 0,
+              "clues": 0,
+              "steps": 0
+            }
+          },
+          {
+            "id": "p1",
+            "name": "Corvin",
+            "cls": "hunter",
+            "fate": "survived",
+            "level": 1,
+            "vit": 12,
+            "san": 8,
+            "objective": {
+              "id": "opportunist",
+              "name": "The Opportunist",
+              "text": "Obtain Gilded Psalter and leave the Hollow alive.",
+              "done": false
+            },
+            "glory": {
+              "earned": 0,
+              "bonus": [
+                {
+                  "l": "Left the Hollow alive",
+                  "v": 3
+                }
+              ],
+              "total": 3
+            },
+            "relics": [],
+            "allies": [],
+            "clues": [],
+            "title": "Warden of the Wolf-Roads",
+            "epilogue": "Corvin is carried out of the Hollow by the others, and does not speak for a long time. Corvin whistles every night at the edge of the woods. Something whistles back, once, and sounds almost like a dog. What they came for, the Opportunist, went unfinished.",
+            "tally": {
+              "glory": 0,
+              "xp": 0,
+              "vitLost": 0,
+              "sanLost": 0,
+              "aids": 0,
+              "kills": 0,
+              "clues": 0,
+              "steps": 0
+            }
+          }
+        ]
+      },
+      "me": {
+        "cls": "occultist",
+        "status": "alive",
+        "stats": {
+          "might": 0,
+          "wit": 3,
+          "fate": 3
+        },
+        "eff": {
+          "might": 0,
+          "wit": 3,
+          "fate": 3
+        },
+        "vit": 9,
+        "maxVit": 9,
+        "san": 7,
+        "maxSan": 7,
+        "silver": 2,
+        "xp": 0,
+        "level": 1,
+        "xpNext": 5,
+        "xpPrev": 0,
+        "glory": 0,
+        "inv": [
+          {
+            "id": "lantern",
+            "n": 1,
+            "eq": true,
+            "uses": 5
+          },
+          {
+            "id": "salt",
+            "n": 1,
+            "eq": false
+          }
+        ],
+        "pack": 2,
+        "packMax": 7,
+        "sts": [],
+        "ward": false,
+        "thread": false,
+        "skills": [],
+        "abilityLvl": 0,
+        "hallu": 0,
+        "loc": "square",
+        "unnoticed": false,
+        "rests": 2,
+        "pact": false,
+        "pendingLevels": 0,
+        "returns": 0,
+        "objective": {
+          "id": "collector",
+          "name": "The Collector",
+          "text": "End the expedition holding at least 3 relics.",
+          "progress": "0 / 3 relics",
+          "revealed": false,
+          "done": false
+        },
+        "cluesPrivate": [],
+        "found": 0,
+        "visitedCount": 1,
+        "aided": false,
+        "ability": {
+          "name": "Twist Fate",
+          "text": "After a failed check, reroll it and keep the new result. Costs 1 Sanity. Once per Haunting phase.",
+          "ok": false,
+          "why": "Triggers after a failed check (1 left this phase).",
+          "kind": "occultist",
+          "cd": 0,
+          "left": 1,
+          "passiveOnly": true
+        }
+      }
+    },
+    "wipe": {
+      "v": 8,
+      "code": "ARTS",
+      "phase": "ended",
+      "you": "p0",
+      "hostId": "p0",
+      "settings": {
+        "afk": "skip",
+        "turnSec": 150,
+        "solo": false
+      },
+      "policy": "Their turns will be skipped until they return.",
+      "now": 1000000,
+      "cosmetics": {
+        "runId": "ARTS:1000000"
+      },
+      "players": [
+        {
+          "id": "p0",
+          "name": "Isolde",
+          "cls": "occultist",
+          "host": true,
+          "connected": true,
+          "ready": true,
+          "status": "fallen",
+          "fate": null,
+          "vit": 0,
+          "maxVit": 9,
+          "san": 7,
+          "maxSan": 7,
+          "level": 1,
+          "glory": 0,
+          "silver": 2,
+          "loc": "square",
+          "sts": [],
+          "inv": [
+            {
+              "id": "lantern",
+              "n": 1,
+              "eq": true,
+              "uses": 5
+            },
+            {
+              "id": "salt",
+              "n": 1,
+              "eq": false
+            }
+          ],
+          "revealed": null,
+          "returns": 0,
+          "stats": {
+            "might": 0,
+            "wit": 3,
+            "fate": 3
+          },
+          "abilityLvl": 0,
+          "fellLoc": null
+        },
+        {
+          "id": "p1",
+          "name": "Corvin",
+          "cls": "hunter",
+          "host": false,
+          "connected": true,
+          "ready": true,
+          "status": "fallen",
+          "fate": null,
+          "vit": 0,
+          "maxVit": 12,
+          "san": 8,
+          "maxSan": 8,
+          "level": 1,
+          "glory": 0,
+          "silver": 3,
+          "loc": "square",
+          "sts": [],
+          "inv": [
+            {
+              "id": "snare",
+              "n": 1,
+              "eq": false
+            },
+            {
+              "id": "tonic",
+              "n": 1,
+              "eq": false
+            }
+          ],
+          "revealed": null,
+          "returns": 0,
+          "stats": {
+            "might": 3,
+            "wit": 1,
+            "fate": 1
+          },
+          "abilityLvl": 0,
+          "fellLoc": null
+        }
+      ],
+      "log": [
+        {
+          "n": 1,
+          "r": 0,
+          "k": "story",
+          "t": "Chapter One: The Missing Bell. Thornwick has vanished from every map. Its bell rings every night anyway, though the tower has stood empty for forty years. Each time it tolls, something in the Hollow remembers a new name. You came to find out whose.",
+          "d": {
+            "k": "prologue"
+          }
+        },
+        {
+          "n": 2,
+          "r": 1,
+          "k": "round",
+          "t": "Round 1 begins.",
+          "d": {
+            "k": "round",
+            "round": 1
+          }
+        },
+        {
+          "n": 3,
+          "r": 1,
+          "k": "turn",
+          "t": "Isolde's turn.",
+          "p": "p0",
+          "d": {
+            "k": "turn"
+          }
+        },
+        {
+          "n": 4,
+          "r": 7,
+          "k": "ending",
+          "t": "The Silence of Graves — The expedition fails.",
+          "d": {
+            "k": "ending",
+            "id": "wipe",
+            "outcome": "failure"
+          }
+        }
+      ],
+      "game": {
+        "round": 7,
+        "clock": 20,
+        "clockMax": 36,
+        "haunt": 1,
+        "noise": 0,
+        "noiseMax": 3,
+        "revivals": 0,
+        "active": null,
+        "ap": 0,
+        "order": [],
+        "secLeft": 0
+      },
+      "map": {
+        "locs": {
+          "square": {
+            "v": true,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "chapel": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "nursery": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "wagon": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "belltower": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          },
+          "graveyard": {
+            "v": false,
+            "corrupt": false,
+            "sealed": false,
+            "chalk": false,
+            "inv": false,
+            "ground": 0,
+            "snare": false
+          }
+        },
+        "edges": [
+          {
+            "k": "chapel|square",
+            "a": "square",
+            "b": "chapel",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "graveyard|square",
+            "a": "square",
+            "b": "graveyard",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "belltower|square",
+            "a": "square",
+            "b": "belltower",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "nursery|square",
+            "a": "square",
+            "b": "nursery",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "square|wagon",
+            "a": "square",
+            "b": "wagon",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          },
+          {
+            "k": "chapel|graveyard",
+            "a": "chapel",
+            "b": "graveyard",
+            "type": "path",
+            "state": "open",
+            "why": "",
+            "oneway": false,
+            "label": ""
+          }
+        ],
+        "enemies": [
+          {
+            "uid": "n1",
+            "id": "bellkeeper",
+            "loc": "belltower",
+            "hp": 5,
+            "max": 5,
+            "known": false,
+            "weak": null
+          },
+          {
+            "uid": "n2",
+            "id": "carrion_swarm",
+            "loc": "graveyard",
+            "hp": 2,
+            "max": 2,
+            "known": false,
+            "weak": null
+          }
+        ],
+        "rumors": []
+      },
+      "world": {
+        "pillars": [
+          {
+            "id": "fate",
+            "name": "What became of Thornwick",
+            "need": 2,
+            "have": 0,
+            "done": false
+          },
+          {
+            "id": "bell",
+            "name": "Why the bell rings",
+            "need": 2,
+            "have": 0,
+            "done": false
+          },
+          {
+            "id": "entity",
+            "name": "What waits beneath",
+            "need": 2,
+            "have": 0,
+            "done": false
+          },
+          {
+            "id": "end",
+            "name": "How it might end",
+            "need": 2,
+            "have": 0,
+            "done": false
+          }
+        ],
+        "clues": [],
+        "hints": [],
+        "flags": {},
+        "revivals": 0,
+        "allies": [],
+        "curses": [
+          {
+            "id": "rot",
+            "name": "The Orchard Rot",
+            "text": "A grey blight spreads from the Bone Orchard. Where it takes hold, the Woods cannot be rested in.",
+            "active": true
+          },
+          {
+            "id": "cradle",
+            "name": "The Cradle's Lullaby",
+            "text": "A lullaby with no singer drifts through the village at night. It makes the sleeper sing along.",
+            "active": true
+          },
+          {
+            "id": "shrine",
+            "name": "The Shrine's Listening",
+            "text": "The Whispering Shrine carries every word spoken in the Hollow to something that writes them down.",
+            "active": true
+          }
+        ],
+        "corridor": null,
+        "solved": {}
+      },
+      "ended": {
+        "id": "wipe",
+        "endingKey": "wipe",
+        "grade": "true",
+        "title": "The Silence of Graves",
+        "outcome": "failure",
+        "text": "The last of you lies down in the water. The bell rings, and it has your names, all of them, in order.",
+        "roll": null,
+        "by": "p0",
+        "round": 7,
+        "clock": 20,
+        "results": [
+          {
+            "id": "p0",
+            "name": "Isolde",
+            "cls": "occultist",
+            "fate": "fallen",
+            "level": 1,
+            "vit": 0,
+            "san": 7,
+            "objective": {
+              "id": "collector",
+              "name": "The Collector",
+              "text": "End the expedition holding at least 3 relics.",
+              "done": false
+            },
+            "glory": {
+              "earned": 0,
+              "bonus": [],
+              "total": 0
+            },
+            "relics": [],
+            "allies": [],
+            "clues": [],
+            "title": "A Voice in the Hollow",
+            "epilogue": "Isolde did not leave. The Hollow keeps what it takes. The eighth page was blank. Isolde keeps looking for it in the margins of everything. What they came for, the Collector, went unfinished.",
+            "tally": {
+              "glory": 0,
+              "xp": 0,
+              "vitLost": 0,
+              "sanLost": 0,
+              "aids": 0,
+              "kills": 0,
+              "clues": 0,
+              "steps": 0
+            }
+          },
+          {
+            "id": "p1",
+            "name": "Corvin",
+            "cls": "hunter",
+            "fate": "fallen",
+            "level": 1,
+            "vit": 0,
+            "san": 8,
+            "objective": {
+              "id": "opportunist",
+              "name": "The Opportunist",
+              "text": "Obtain Gilded Psalter and leave the Hollow alive.",
+              "done": false
+            },
+            "glory": {
+              "earned": 0,
+              "bonus": [],
+              "total": 0
+            },
+            "relics": [],
+            "allies": [],
+            "clues": [],
+            "title": "A Voice in the Hollow",
+            "epilogue": "Corvin did not leave. The Hollow keeps what it takes. Corvin whistles every night at the edge of the woods. Something whistles back, once, and sounds almost like a dog. What they came for, the Opportunist, went unfinished.",
+            "tally": {
+              "glory": 0,
+              "xp": 0,
+              "vitLost": 0,
+              "sanLost": 0,
+              "aids": 0,
+              "kills": 0,
+              "clues": 0,
+              "steps": 0
+            }
+          }
+        ]
+      },
+      "me": {
+        "cls": "occultist",
+        "status": "fallen",
+        "stats": {
+          "might": 0,
+          "wit": 3,
+          "fate": 3
+        },
+        "eff": {
+          "might": 0,
+          "wit": 3,
+          "fate": 3
+        },
+        "vit": 0,
+        "maxVit": 9,
+        "san": 7,
+        "maxSan": 7,
+        "silver": 2,
+        "xp": 0,
+        "level": 1,
+        "xpNext": 5,
+        "xpPrev": 0,
+        "glory": 0,
+        "inv": [
+          {
+            "id": "lantern",
+            "n": 1,
+            "eq": true,
+            "uses": 5
+          },
+          {
+            "id": "salt",
+            "n": 1,
+            "eq": false
+          }
+        ],
+        "pack": 2,
+        "packMax": 7,
+        "sts": [],
+        "ward": false,
+        "thread": false,
+        "skills": [],
+        "abilityLvl": 0,
+        "hallu": 0,
+        "loc": "square",
+        "unnoticed": false,
+        "rests": 2,
+        "pact": false,
+        "pendingLevels": 0,
+        "returns": 0,
+        "objective": {
+          "id": "collector",
+          "name": "The Collector",
+          "text": "End the expedition holding at least 3 relics.",
+          "progress": "0 / 3 relics",
+          "revealed": false,
+          "done": false
+        },
+        "cluesPrivate": [],
+        "found": 0,
+        "visitedCount": 1,
+        "aided": false,
+        "spirit": {
+          "used": false,
+          "returns": 0,
+          "whispers": 6,
+          "lending": false,
+          "enemies": [
+            {
+              "uid": "n1",
+              "name": "The Bellkeeper",
+              "loc": "Drowned Bell Tower"
+            },
+            {
+              "uid": "n2",
+              "name": "Carrion Swarm",
+              "loc": "Graveyard"
+            },
+            {
+              "uid": "n3",
+              "name": "Grave Warden",
+              "loc": "Trapped Treasury"
+            },
+            {
+              "uid": "n4",
+              "name": "Hollow Stag",
+              "loc": "Living Forest"
+            },
+            {
+              "uid": "n5",
+              "name": "Drowned Pilgrim",
+              "loc": "Flooded Hall"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

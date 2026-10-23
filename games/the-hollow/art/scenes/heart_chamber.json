@@ -1,0 +1,53 @@
+{
+  "id": "heart_chamber",
+  "region": "heart",
+  "background": "task2_environments_heart_heart_chamber",
+  "moods": {},
+  "viewBox": [
+    1600,
+    900
+  ],
+  "hotspots": [
+    {
+      "id": "look",
+      "x": 148,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "look",
+      "label": "Study the bell",
+      "hidden": false
+    },
+    {
+      "id": "talk",
+      "x": 1268,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "talk",
+      "label": "Speak to the Remembrancer",
+      "hidden": false
+    },
+    {
+      "id": "search_area",
+      "x": 320,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "investigate",
+      "label": "Investigate the surroundings"
+    },
+    {
+      "id": "way_out",
+      "x": 1080,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "travel",
+      "label": "Choose a road"
+    }
+  ],
+  "artDirection": "supplied"
+}

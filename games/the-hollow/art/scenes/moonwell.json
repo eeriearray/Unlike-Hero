@@ -1,0 +1,73 @@
+{
+  "id": "moonwell",
+  "region": "woods",
+  "background": "task2_environments_woods_moonwell",
+  "moods": {},
+  "viewBox": [
+    1600,
+    900
+  ],
+  "hotspots": [
+    {
+      "id": "drink",
+      "x": 148,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "drink",
+      "label": "Drink from the second moon",
+      "hidden": false
+    },
+    {
+      "id": "wish",
+      "x": 521,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "wish",
+      "label": "Cast a coin and wish",
+      "hidden": false
+    },
+    {
+      "id": "vial",
+      "x": 895,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "vial",
+      "label": "Fill a vial",
+      "hidden": false
+    },
+    {
+      "id": "dive",
+      "x": 1268,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "dive",
+      "label": "Look closer into the second moon",
+      "hidden": true
+    },
+    {
+      "id": "search_area",
+      "x": 320,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "investigate",
+      "label": "Investigate the surroundings"
+    },
+    {
+      "id": "way_out",
+      "x": 1080,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "travel",
+      "label": "Choose a road"
+    }
+  ],
+  "artDirection": "supplied"
+}

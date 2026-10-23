@@ -1,0 +1,79 @@
+/* Painted original SVG figures. Texture is static; only transform/opacity animate. */
+.character-art { overflow: visible; }
+.character-figure { transform-box: fill-box; transform-origin: 50% 95%; animation: character-breathe 5.6s ease-in-out infinite; }
+.character-foe .character-figure { animation-duration: 4.8s; }
+.character-portrait .character-figure, .acard .character-figure, .dart .character-figure { animation: none; }
+.character-art[data-character="carrion_swarm"] .character-figure { animation-name: character-swarm; }
+@keyframes character-breathe { 0%,100% { transform: translateY(0) scaleY(1); } 50% { transform: translateY(-1px) scaleY(1.012); } }
+@keyframes character-swarm { 0%,100% { transform: translate(0,0) rotate(-1deg); } 50% { transform: translate(1px,-2px) rotate(1deg); } }
+/* Keep tiny repeated card/HUD icons inexpensive. Full illustrations retain the SVG paint filter. */
+.hud2 .character-paint, .acard .character-paint, .rb .character-paint { filter: none; }
+body[data-screen="game"].combat-active .stg-world { filter: blur(5px) brightness(.48) saturate(.65); }
+body[data-screen="game"].combat-active .stg-world .obj { visibility: hidden; }
+body[data-screen="game"].combat-active .foebox { display: none; }
+.advui > .combat-scene { pointer-events: none; }
+.combat-scene { position: absolute; z-index: 2; inset: 105px 4% calc(var(--combat-cards,var(--trayh,176px)) + 150px); min-height: 100px; isolation: isolate; }
+.battle-ground { position: absolute; left: 6%; right: 6%; bottom: -15px; height: 80px; border-radius: 50%; background: radial-gradient(ellipse,#b7c8a817,transparent 70%); border-bottom: 1px solid #b7c8a82b; }
+.battle-hero, .battle-foe { position: absolute; bottom: 0; display: grid; place-items: end center; height: calc(100% - 65px); max-height: 340px; }
+.battle-hero { left: 14%; width: min(26vw,230px); opacity: .88; filter: drop-shadow(-8px 12px 12px #000b); }
+.battle-foe { right: 13%; width: min(30vw,280px); filter: drop-shadow(-10px 12px 15px #000d); }
+.battle-hero > svg, .battle-foe > svg { display: block; width: 100%; height: 100%; object-fit: contain; overflow: visible; }
+.battle-foe .character-backdrop { display: none; }
+.battle-foe > .portrait { background: transparent; }
+.battle-aura { position: absolute; inset: 10% -10% -10%; z-index: -1; background: radial-gradient(ellipse,#9a3c4240,transparent 68%); }
+.battle-name { position: absolute; top: -5px; left: 15%; right: 15%; text-align: center; text-shadow: 0 2px 12px #000; }
+.battle-name small { color: #bdaf94; text-transform: uppercase; font: 10px/1.4 var(--body,Georgia,serif); letter-spacing: .22em; }
+.battle-name h2 { margin: 4px 0 6px; font-family: var(--display,Georgia,serif); font-weight: 400; font-size: clamp(20px,2.4vw,32px); color: #eadbc3; }
+.battle-health { height: 3px; width: min(230px,80%); margin: 0 auto; background: #a7928133; }
+.battle-health span { display: block; height: 100%; background: #bc7980; transition: width .4s; }
+.battle-name .battle-tell { margin: 8px 0 0; color: #c8beb2; font: 12px/1.4 Georgia,serif; }
+.combat-boss .battle-foe { width: min(33vw,300px); }
+body[data-screen="game"].combat-active .cap { top: auto; bottom: calc(var(--combat-cards,var(--trayh,176px)) + 16px); max-width: min(650px,70vw); z-index: 7; }
+body[data-screen="game"].combat-active .coachcard { display: none; }
+.character-hit { animation: character-hit .42s ease-out both; }
+.character-hit .character-figure { animation-play-state: paused; }
+@keyframes character-hit { 0%,100% { filter: brightness(1); } 20% { filter: brightness(1.8) sepia(.3); } 40% { filter: brightness(1.2); } }
+.character-attacking { animation: character-attack .75s ease-in-out both; }
+@keyframes character-attack { 0% { transform: translateX(0); } 35% { transform: translateX(8px) rotate(2deg); filter: brightness(1.25); } 58% { transform: translateX(-18px) rotate(-2deg); } 100% { transform: translateX(0); } }
+.battle-impact .battle-aura { animation: battle-warn .75s ease-out; }
+@keyframes battle-warn { 0%,100% { opacity: .4; } 35% { opacity: 1; } }
+.character-dying { animation: character-dissolve .9s ease-out forwards; }
+@keyframes character-dissolve { 0% { opacity: 1; filter: brightness(1.1); } 45% { opacity: .5; filter: blur(1px) saturate(.3); } 100% { opacity: 0; filter: blur(4px) saturate(0); transform: translateY(-12px); } }
+.character-fallen #hud-me .character-art { opacity: .15; filter: grayscale(1); transition: opacity .6s; }
+.characters-paused .character-figure { animation-play-state: paused; }
+.reduce-motion .character-figure, .reduced-scares .character-figure { animation: none !important; }
+.reduce-motion .character-hit, .reduced-scares .character-hit { animation: character-gentle .18s linear; }
+.reduce-motion .character-dying, .reduced-scares .character-dying { animation: character-fade .2s linear forwards; }
+@keyframes character-gentle { 50% { opacity: .7; } }
+@keyframes character-fade { to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  body:not(.motion-override) .character-figure { animation: none !important; }
+  .character-attacking, .battle-impact .battle-aura { animation: none !important; }
+  .character-hit { animation: character-gentle .18s linear; }
+  .character-dying { animation: character-fade .2s linear forwards; }
+}
+@media (max-width: 960px) {
+  .combat-scene { inset: 100px 2% calc(var(--combat-cards,var(--trayh,176px)) + 130px); }
+  .battle-hero { left: 10%; width: 26vw; }
+  .battle-foe { right: 8%; width: 32vw; }
+  .combat-boss .battle-foe { width: 35vw; }
+  .battle-name { left: 3%; right: 3%; }
+  .battle-name .battle-tell { font-size: 11px; }
+  body[data-screen="game"].combat-active .cap { max-width: none; right: 12px; left: 12px; padding: 8px 12px; }
+  body[data-screen="game"].combat-active .cap p { font-size: 1rem; line-height: 1.3; max-height: 3.9em; overflow: auto; }
+}
+@media (max-height: 620px) {
+  .combat-scene { top: 78px; bottom: calc(var(--combat-cards,var(--trayh,176px)) + 80px); }
+  .battle-name .battle-tell { display: none; }
+  .battle-name h2 { font-size: 18px; }
+  .battle-hero, .battle-foe { height: calc(100% - 42px); }
+  body[data-screen="game"].combat-active .cap { padding: 4px 10px; }
+  body[data-screen="game"].combat-active .cap p { font-size: .85rem; max-height: 2.6em; overflow: auto; }
+}
+
+.character-fallen #hud-me .character-dying { animation-name: character-fallen-dissolve; }
+@keyframes character-fallen-dissolve { from { opacity: 1; filter: grayscale(0); } to { opacity: .15; filter: grayscale(1) blur(1px); } }
+.reduce-motion.character-fallen #hud-me .character-dying, .reduced-scares.character-fallen #hud-me .character-dying { animation: none; }
+.reduce-motion .character-art *, .reduced-scares .character-art * { animation: none !important; }
+.characters-paused .character-art * { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .character-art * { animation: none !important; } }

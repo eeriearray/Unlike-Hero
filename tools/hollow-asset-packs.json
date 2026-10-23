@@ -1,0 +1,452 @@
+[
+  {
+    "id": "1_mimic_garden_icons",
+    "file": "1-mimic-garden-icons.zip",
+    "author": "Unknown: no author evidence in archive",
+    "license": "Unverified: no bundled license found",
+    "status": "local-only",
+    "regions": [
+      "shared"
+    ],
+    "background": false,
+    "pixel": false
+  },
+  {
+    "id": "64x64_weapons_final",
+    "file": "64x64 weapons final.png",
+    "author": "Unknown: no author evidence in archive",
+    "license": "Unverified: no bundled license found",
+    "status": "local-only",
+    "regions": [
+      "shared"
+    ],
+    "background": false,
+    "pixel": true
+  },
+  {
+    "id": "cursedrelics_eldritchseals_vol11",
+    "file": "CursedRelics_EldritchSeals_Vol11.zip",
+    "author": "M-Xing Studio",
+    "license": "Bundled standard commercial game asset license; no raw asset redistribution",
+    "status": "local-only",
+    "regions": [
+      "shared"
+    ],
+    "background": false,
+    "pixel": false
+  },
+  {
+    "id": "diejars_1_0",
+    "file": "DieJars[1.0].zip",
+    "author": "Unknown: no author evidence in archive",
+    "license": "Unverified: no bundled license found",
+    "status": "local-only",
+    "regions": [
+      "shared"
+    ],
+    "background": false,
+    "pixel": true
+  },
+  {
+    "id": "free_pack_3",
+    "file": "Free Pack #3.zip",
+    "author": "Unknown: no author evidence in archive",
+    "license": "Unverified: no bundled license found",
+    "status": "local-only",
+    "regions": [
+      "shared"
+    ],
+    "background": false,
+    "pixel": true
+  },
+  {
+    "id": "free_survival_horror_items_pack",
+    "file": "Free_Survival_Horror_Items_Pack.zip",
+    "author": "Unknown: not identified in bundled read_me.txt",
+    "license": "Commercial/noncommercial use allowed; redistribution/resale prohibited even if modified",
+    "status": "excluded",
+    "regions": [
+      "shared"
+    ],
+    "background": false,
+    "pixel": false,
+    "reason": "No-redistribution clause. Ask user before public inclusion; excluded until approval and browser distribution rights clarified."
+  },
+  {
+    "id": "graveyard",
+    "file": "Graveyard.zip",
+    "author": "Unknown: no author evidence in archive",
+    "license": "Unverified: no bundled license found",
+    "status": "local-only",
+    "regions": [
+      "village",
+      "woods",
+      "crypt"
+    ],
+    "background": true,
+    "pixel": false
+  },
+  {
+    "id": "haunted_henhouse_pack",
+    "file": "Haunted Henhouse Pack.zip",
+    "author": "Unknown: no author evidence in archive",
+    "license": "Unverified: no bundled license found",
+    "status": "local-only",
+    "regions": [
+      "woods"
+    ],
+    "background": true,
+    "pixel": false
+  },
+  {
+    "id": "haunted_school_tiles",
+    "file": "Haunted_School_Tiles.zip",
+    "author": "Thurraya",
+    "license": "Personal/noncommercial only; no raw redistribution",
+    "status": "excluded",
+    "regions": [
+      "shared"
+    ],
+    "background": false,
+    "pixel": false,
+    "reason": "Noncommercial-only; excluded from commercial-target pipeline."
+  },
+  {
+    "id": "he6y4pkfm0tj2vw4kd_moody_pixel_occult_icons_shaderloom",
+    "file": "He6Y4PkfM0tj2vw4Kd_moody_pixel_occult_icons_SHADERLOOM.zip",
+    "author": "ShaderLoom",
+    "license": "Bundled commercial license; prohibits extractable/raw redistribution",
+    "status": "local-only",
+    "regions": [
+      "shared"
+    ],
+    "background": false,
+    "pixel": true
+  },
+  {
+    "id": "horror_sfx_free",
+    "file": "Horror SFX Free.zip",
+    "author": "Unknown: no author evidence in archive",
+    "license": "Unverified: no bundled license found",
+    "status": "local-only",
+    "regions": [
+      "shared"
+    ],
+    "background": false,
+    "pixel": false,
+    "audioSelection": [
+      "Horror SFX Free/Ambient/Creepy_ambience_3.wav",
+      "Horror SFX Free/Ambient/Vent_airflow.wav",
+      "Horror SFX Free/Ambient/Old House_creeky metal and wood_ambiance_7.wav",
+      "Horror SFX Free/Ambient/Frogs.wav",
+      "Horror SFX Free/Ambient/Drone_doom.wav",
+      "Horror SFX Free/Ambient/Tap_reverb.wav",
+      "Horror SFX Free/Stingers and Spooky Triggers/Piano_drone_low_sustained_2.wav",
+      "Horror SFX Free/Liquids/Liquid_slosh.wav",
+      "Horror SFX Free/House & Office/Door_squeeky_2.wav",
+      "Horror SFX Free/Ambient/Bell_low.wav",
+      "Horror SFX Free/Character/Match_striking.wav",
+      "Horror SFX Free/Character/Flashlight off.wav",
+      "Horror SFX Free/Monsters & Ghosts/Ghost_moan_2.wav",
+      "Horror SFX Free/Character/Coin_Drop on Table_3.wav",
+      "Horror SFX Free/Character/Bag_searching.wav",
+      "Horror SFX Free/House & Office/Shaker_3.wav",
+      "Horror SFX Free/Monsters & Ghosts/Injured.wav",
+      "Horror SFX Free/Stingers and Spooky Triggers/Piano_stinger_dissonent.wav",
+      "Horror SFX Free/Monsters & Ghosts/Monster_growl_1.wav",
+      "Horror SFX Free/Character/Footsteps_walking.wav",
+      "Horror SFX Free/Character/Footsteps_ running.wav",
+      "Horror SFX Free/Stingers and Spooky Triggers/Stinger.wav"
+    ]
+  },
+  {
+    "id": "indie_game_feel_psychological_vignette_overlays",
+    "file": "Indie_Game_Feel_Psychological_Vignette_Overlays.zip",
+    "author": "Indie Game Feel (pack branding)",
+    "license": "Bundled royalty-free personal/commercial license; no standalone redistribution",
+    "status": "local-only",
+    "regions": [
+      "shared"
+    ],
+    "background": false,
+    "pixel": false
+  },
+  {
+    "id": "lesed_gravewire_free",
+    "file": "LESED_Gravewire_Free.zip",
+    "author": "LESED",
+    "license": "Bundled commercial embedding license; no standalone sharing",
+    "status": "local-only",
+    "regions": [
+      "shared"
+    ],
+    "background": false,
+    "pixel": false
+  },
+  {
+    "id": "lesed_lens_screen_damage_free",
+    "file": "LESED_Lens_Screen_Damage_Free.zip",
+    "author": "LESED",
+    "license": "Bundled personal/commercial license; no standalone sharing",
+    "status": "local-only",
+    "regions": [
+      "shared"
+    ],
+    "background": false,
+    "pixel": true
+  },
+  {
+    "id": "lenore_sheet",
+    "file": "Lenore-Sheet.png",
+    "author": "Unknown: no author evidence in archive",
+    "license": "Unverified: no bundled license found",
+    "status": "local-only",
+    "regions": [
+      "shared"
+    ],
+    "background": false,
+    "pixel": true
+  },
+  {
+    "id": "mind_s_eye_loops_v1",
+    "file": "Mind's Eye Loops v1.zip",
+    "author": "Crow Shade / @CrowSilencer",
+    "license": "Unverified: readme identifies author but contains no license grant",
+    "status": "local-only",
+    "regions": [
+      "shared"
+    ],
+    "background": false,
+    "pixel": false,
+    "audioSelection": [
+      "Mind's Eye Loops v1/1 Mind's Eye/2 Mind's Eye In.wav",
+      "Mind's Eye Loops v1/1 Mind's Eye/2 Mind's Eye Loop1.wav",
+      "Mind's Eye Loops v1/1 Mind's Eye/2 Mind's Eye Out.wav",
+      "Mind's Eye Loops v1/3 Something's wrong/2 Something's wrong Loop 1.wav",
+      "Mind's Eye Loops v1/5 Fredelig Sinn/1 Fredelig Sinn Loop 1.wav",
+      "Mind's Eye Loops v1/6 The Veil of Night/2 The Veil of Night Loop 1 Start .wav",
+      "Mind's Eye Loops v1/2 Mental Vortex/Mental Vortex Loop 1.wav"
+    ]
+  },
+  {
+    "id": "skulls_freesample",
+    "file": "Skulls[FreeSample].zip",
+    "author": "Unknown: no author evidence in archive",
+    "license": "Unverified: no bundled license found",
+    "status": "local-only",
+    "regions": [
+      "shared"
+    ],
+    "background": false,
+    "pixel": true
+  },
+  {
+    "id": "uibundlefree",
+    "file": "UIBundleFree.zip",
+    "author": "Unknown: no author evidence in archive",
+    "license": "Unverified: no bundled license found",
+    "status": "local-only",
+    "regions": [
+      "shared"
+    ],
+    "background": false,
+    "pixel": true
+  },
+  {
+    "id": "voidsprite_zip",
+    "file": "VoidSprite.zip.7z",
+    "author": "Unknown: no author evidence in archive",
+    "license": "Unverified: no bundled license found",
+    "status": "excluded",
+    "regions": [
+      "shared"
+    ],
+    "background": false,
+    "pixel": false,
+    "reason": "7z archive unsupported by ZIP pipeline; license unverified. No extraction attempted."
+  },
+  {
+    "id": "weirdhorroassets",
+    "file": "WeirdHorroAssets.zip",
+    "author": "@pixelpata",
+    "license": "Noncommercial only; attribution required; no AI artwork transformation",
+    "status": "excluded",
+    "regions": [
+      "shared"
+    ],
+    "background": false,
+    "pixel": false,
+    "reason": "Noncommercial-only; excluded from commercial-target pipeline."
+  },
+  {
+    "id": "zombieparts_freesample",
+    "file": "ZombieParts[FreeSample].zip",
+    "author": "Unknown: no author evidence in archive",
+    "license": "Unverified: no bundled license found",
+    "status": "local-only",
+    "regions": [
+      "shared"
+    ],
+    "background": false,
+    "pixel": true
+  },
+  {
+    "id": "cemetery",
+    "file": "cemetery.zip",
+    "author": "Unknown: no author evidence in archive",
+    "license": "Unverified: no bundled license found",
+    "status": "local-only",
+    "regions": [
+      "village",
+      "woods",
+      "crypt"
+    ],
+    "background": true,
+    "pixel": false
+  },
+  {
+    "id": "creepy_face_sourcecode",
+    "file": "creepy_face_sourcecode.zip",
+    "author": "isaac daniel cotera",
+    "license": "Unverified: readme contains no license grant",
+    "status": "excluded",
+    "regions": [
+      "shared"
+    ],
+    "background": false,
+    "pixel": false,
+    "reason": "Source-code widget, not an image pack; not executed or imported."
+  },
+  {
+    "id": "cursed_church",
+    "file": "cursed_church.zip",
+    "author": "Unknown: no author evidence in archive",
+    "license": "Unverified: no bundled license found",
+    "status": "local-only",
+    "regions": [
+      "abbey",
+      "crypt",
+      "heart"
+    ],
+    "background": true,
+    "pixel": false
+  },
+  {
+    "id": "dark_street",
+    "file": "dark_street.zip",
+    "author": "Unknown: no author evidence in archive",
+    "license": "Unverified: no bundled license found",
+    "status": "local-only",
+    "regions": [
+      "village"
+    ],
+    "background": true,
+    "pixel": false
+  },
+  {
+    "id": "hollow_hours_free_sample_v1_0",
+    "file": "hollow-hours-free-sample-v1.0.zip",
+    "author": "Jean Swiegers",
+    "license": "Bundled commercial packaged-project license; AI-generated; no standalone redistribution",
+    "status": "excluded",
+    "regions": [
+      "shared"
+    ],
+    "background": false,
+    "pixel": false,
+    "reason": "AI-generated. Ask user before public inclusion; excluded until approval."
+  },
+  {
+    "id": "horror_ui_sfx_lite",
+    "file": "horror-ui-sfx-lite.zip",
+    "author": "Willosuna",
+    "license": "Bundled royalty-free commercial license; no sound-pack redistribution or Content ID registration",
+    "status": "local-only",
+    "regions": [
+      "shared"
+    ],
+    "background": false,
+    "pixel": false,
+    "audioSelection": [
+      "wav/click_01.wav",
+      "wav/hover_01.wav",
+      "wav/select_01.wav",
+      "wav/confirm_01.wav",
+      "wav/transition_01.wav",
+      "wav/page_01.wav",
+      "wav/reward_01.wav",
+      "wav/deny_01.wav",
+      "wav/levelup_01.wav",
+      "wav/error_01.wav",
+      "wav/notify_01.wav",
+      "wav/equip_01.wav",
+      "wav/charge_01.wav",
+      "wav/open_01.wav",
+      "wav/alert_01.wav",
+      "wav/dialogue_01.wav",
+      "wav/unlock_01.wav"
+    ]
+  },
+  {
+    "id": "horror_attic_visual_novel_backgrounds",
+    "file": "horror_attic_visual_novel_backgrounds.zip",
+    "author": "Unknown: no author evidence in archive",
+    "license": "Unverified: no bundled license found",
+    "status": "local-only",
+    "regions": [
+      "estate",
+      "crypt"
+    ],
+    "background": true,
+    "pixel": false
+  },
+  {
+    "id": "horror_hallways_visual_novel_backgrounds",
+    "file": "horror_hallways_visual_novel_backgrounds.zip",
+    "author": "Unknown: no author evidence in archive",
+    "license": "Unverified: no bundled license found",
+    "status": "local-only",
+    "regions": [
+      "estate",
+      "heart"
+    ],
+    "background": true,
+    "pixel": false
+  },
+  {
+    "id": "living_room_visual_novel_backgrounds",
+    "file": "living_room_visual_novel_backgrounds.zip",
+    "author": "Unknown: no author evidence in archive",
+    "license": "Unverified: no bundled license found",
+    "status": "local-only",
+    "regions": [
+      "estate"
+    ],
+    "background": true,
+    "pixel": false
+  },
+  {
+    "id": "spritesheet",
+    "file": "spritesheet.png",
+    "author": "Unknown: no author evidence in archive",
+    "license": "Unverified: no bundled license found",
+    "status": "local-only",
+    "regions": [
+      "shared"
+    ],
+    "background": false,
+    "pixel": true
+  },
+  {
+    "id": "vhs_ui_free_assets",
+    "file": "vhs-ui-free-assets.zip",
+    "author": "heyheythere",
+    "license": "CC BY 4.0; attribution required",
+    "status": "local-only",
+    "regions": [
+      "shared"
+    ],
+    "background": false,
+    "pixel": true
+  }
+]

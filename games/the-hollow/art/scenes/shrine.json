@@ -1,0 +1,73 @@
+{
+  "id": "shrine",
+  "region": "woods",
+  "background": "task2_environments_woods_shrine",
+  "moods": {},
+  "viewBox": [
+    1600,
+    900
+  ],
+  "hotspots": [
+    {
+      "id": "listen",
+      "x": 148,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "listen",
+      "label": "Listen at the shrine",
+      "hidden": false
+    },
+    {
+      "id": "smash",
+      "x": 521,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "smash",
+      "label": "Smash the shrine",
+      "hidden": false
+    },
+    {
+      "id": "offer",
+      "x": 895,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "offer",
+      "label": "Make an offering (2 Silver)",
+      "hidden": false
+    },
+    {
+      "id": "lie",
+      "x": 1268,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "lie",
+      "label": "Tell the shrine a lie",
+      "hidden": false
+    },
+    {
+      "id": "search_area",
+      "x": 320,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "investigate",
+      "label": "Investigate the surroundings"
+    },
+    {
+      "id": "way_out",
+      "x": 1080,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "travel",
+      "label": "Choose a road"
+    }
+  ],
+  "artDirection": "supplied"
+}

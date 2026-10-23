@@ -1,0 +1,63 @@
+{
+  "id": "ossuary",
+  "region": "crypt",
+  "background": "task2_environments_crypt_ossuary",
+  "moods": {},
+  "viewBox": [
+    1600,
+    900
+  ],
+  "hotspots": [
+    {
+      "id": "listen",
+      "x": 148,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "listen",
+      "label": "Listen to the song",
+      "hidden": false
+    },
+    {
+      "id": "conduct",
+      "x": 708,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "conduct",
+      "label": "Conduct the choir",
+      "hidden": false
+    },
+    {
+      "id": "salt",
+      "x": 1268,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "salt",
+      "label": "Salt the shelves and sit awhile",
+      "hidden": false
+    },
+    {
+      "id": "search_area",
+      "x": 320,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "investigate",
+      "label": "Investigate the surroundings"
+    },
+    {
+      "id": "way_out",
+      "x": 1080,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "travel",
+      "label": "Choose a road"
+    }
+  ],
+  "artDirection": "supplied"
+}

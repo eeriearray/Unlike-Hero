@@ -134,7 +134,7 @@
     var cat = St.cat(), id = Object.keys(cat.clues).find(function (k) { return cat.clues[k].title === c.label.replace(/^Clue: /, ''); });
     var meta = id ? cat.clues[id] : { title: c.label.replace(/^Clue: /, '') };
     var ICON = { fate: 'grave', bell: 'bell', entity: 'eye', end: 'book' };
-    sfx('clue'); if (AU()) AU().hush(800);
+    sfx('clue'); St.flash('fx-discovery', 1200); if (AU()) AU().hush(800);
     var paper = opts && opts.paper;
     var html = paper
       ? '<div class="ev-paperbig"><svg viewBox="0 0 200 240" aria-hidden="true"><defs><linearGradient id="evpp" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#efe5c6"/><stop offset="1" stop-color="#bfae86"/></linearGradient></defs><path d="M8 6h184v222l-10 8H8z" fill="url(#evpp)"/><path d="M182 228l10-10v10z" fill="#9a8a68"/>' +
@@ -221,6 +221,7 @@
       }).then(function () {
         var tier = R.tier, fxn = obj && d.fx && d.fx[obj] ? d.fx[obj](null, tier, R) : null;
         if (obj && fxn) { St.objFx(obj, fxn, 2600); objSound(fxn, d); }
+        if (g.HollowCharacters) g.HollowCharacters.result(R);
         tierFx(tier, pointFor(obj));
         return wait(fxn ? 1100 : 700);
       }).then(function () { return consequences(R, obj, opts.mine); })

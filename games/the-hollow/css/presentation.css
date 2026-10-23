@@ -1,0 +1,121 @@
+/* STEP 2 — charred wood, oxidised brass, parchment and imported occult art.
+ * Every image URL is installed only after the central registry has loaded it. */
+body.hollow-skin { --ink: #f1e8ce; --ink2: #d2c8b3; --mute: #ada99b; --gold: #bfa16a; --gold2: #ead29b; --line2: #76654888; }
+body.gravewire-ready { --display: "Gravewire", Georgia, serif; }
+.hollow-skin .hud2 { background: linear-gradient(180deg, #141311f5, #080b0ef2); border-bottom: 1px solid #a38a5c66; box-shadow: 0 6px 30px #0007; }
+.hollow-skin .hud2::after { content: ""; position: absolute; inset: 3px; border: 4px solid #97846544; border-image-source: var(--skin-hud, none); border-image-slice: 2 3 3 2; opacity: .18; pointer-events: none; }
+.hollow-skin .hbtn { min-width: 44px; min-height: 44px; border-radius: 3px; }
+.hollow-skin .h-clock b { color: #ead29b; }
+.hollow-skin .acard, .hollow-skin .icard, .hollow-skin .drawer, .hollow-skin .moresheet,
+.hollow-skin .coachcard, .hollow-skin .modal .box {
+  border: 7px solid #514039; border-image-source: var(--skin-panel, none); border-image-slice: 9; border-image-width: 9px; border-image-repeat: stretch;
+  border-radius: 2px; background-color: #100f0e; box-shadow: 0 12px 38px #000a;
+}
+.hollow-skin .acard { background: linear-gradient(#251e18, #110f0c); }
+.hollow-skin .acard::before, .hollow-skin .icard::before { border-color: #bfa16a22; border-radius: 0; }
+.hollow-skin .acard.travel { background: linear-gradient(#142022, #0a1011); }
+.hollow-skin .ac-name { font-size: 22px; line-height: 1; letter-spacing: .015em; }
+.hollow-skin .ac-txt { padding: 7px 8px 10px; gap: 7px; }
+.hollow-skin .ac-sub { color: #d2c8b3; font-size: .77rem; line-height: 1.4; }
+.hollow-skin .acard[aria-disabled="true"] { filter: saturate(.25); opacity: .68; }
+.hollow-skin .ic-body { padding: 7px 14px 16px; }
+.hollow-skin .ic-body h3 { font-size: 33px; line-height: 1; letter-spacing: 0; }
+.hollow-skin .ic-blurb { line-height: 1.4; }
+.hollow-skin .btn, .hollow-skin .icbtn { border-radius: 2px; min-height: 44px; }
+.hollow-skin .btn:not(.ghost), .hollow-skin .icbtn {
+  border: 5px solid #72584a; border-image-source: var(--skin-button, none); border-image-slice: 6 8; border-image-width: 6px 8px;
+  background-color: #261c18; color: #f1e8ce;
+}
+.hollow-skin .btn.primary { background: linear-gradient(#785832, #493420); color: #fff2cf; }
+.hollow-skin .btn:hover:not(:disabled), .hollow-skin .icbtn:hover:not([aria-disabled="true"]) { background-color: #473429; }
+.hollow-skin :is(button, [role="button"], input, select):focus-visible { outline: 2px solid #ffe3a0; outline-offset: 3px; }
+.hollow-skin .ic-x { width: 44px; height: 44px; background: #0a0b0feb; }
+.hollow-skin .icbtn b { font-size: 22px; line-height: 1; letter-spacing: 0; }
+.hollow-skin .drawer { padding: 18px 16px 32px; }
+.hollow-skin .drawer h3 { font-size: 22px; line-height: 1.2; letter-spacing: 0; }
+.hollow-skin .slot { background: radial-gradient(ellipse at 50% 25%, #303029, #131718); border-radius: 3px; border-color: #806c4988; }
+.hollow-skin .slot .nm { line-height: 1.25; color: #e8dfc8; }
+.hollow-skin .slot.empty { opacity: .35; }
+/* The book remains cream-on-charcoal at its binding; paper itself has dark ink. */
+.hollow-skin .book .tabs { gap: 2px; flex-wrap: wrap; border-bottom-color: #a88d5f66; padding-bottom: 10px; }
+.hollow-skin .book .tab { min-height: 44px; color: #d2c8b3; padding: 7px 10px; }
+.hollow-skin .book .tab[aria-selected="true"] { color: #fff2d0; border-color: #b69a66; background: #4b3a25; }
+.hollow-skin .book .pages {
+  --ink: #2b231b; --ink2: #473b2a; --mute: #62543e; --gold2: #6b391b; --gold: #745022;
+  padding: 18px 14px 26px; background: radial-gradient(ellipse at 12% 8%, #f1e3c4, transparent 64%), repeating-linear-gradient(0deg, #53422d06 0 1px, transparent 1px 4px), #d5bf93;
+  color: #2b231b; border-left: 3px double #7a5a2b88; box-shadow: inset 8px 0 20px #5b3d2120;
+}
+.hollow-skin .pages :is(h3, h4, h5, .gl) { color: #4c301b; }
+.hollow-skin .pages .entry { border: 0; border-left: 2px solid #88663388; background: #f4e8cb44; padding: 8px 10px; }
+.hollow-skin .pages .entry p { color: #30261d; font-size: 1.06rem; line-height: 1.55; }
+.hollow-skin .pages .secret { background: #ba9c6f33; color: #33281c; border-color: #86613b88; }
+.hollow-skin .pages .chip { color: #46341f; background: #bf9b5e33; border-color: #785a3688; }
+.hollow-skin .pages .chip.viol { color: #4a2b66; background: #79578822; }
+.hollow-skin .pages .btn { color: #f8eacb; }
+.hollow-skin .pages .logrow { border-color: #8f714c55; line-height: 1.5; }
+.hollow-skin .pages .logrow .r { color: #6d4f30; }
+.hollow-skin .pages .goal { color: #3e2917; line-height: 1.5; }
+.field-collection { margin-bottom: 22px; padding-bottom: 18px; border-bottom: 1px solid #71513155; }
+.specimen-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.journal-specimen { display: flex; align-items: center; gap: 9px; color: #30261d; font-size: .92rem; line-height: 1.25; }
+.imported-item { position: relative; display: inline-block; flex: none; vertical-align: middle; isolation: isolate; border-radius: 50%; }
+.imported-item > .itemart, .imported-item > .ico, .imported-item-image { display: block; position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.imported-item.raster-ready > svg { visibility: hidden; }
+.imported-item.pixel .imported-item-image { image-rendering: pixelated; }
+.imported-item.rarity-rare { background: radial-gradient(circle, #b5984a28, transparent 70%); box-shadow: 0 0 12px #d7b57122; }
+.imported-item.rarity-relic { background: radial-gradient(circle, #b2a1ed38, transparent 72%); box-shadow: 0 0 13px #b1a0ee33; }
+.hollow-skin .slot.relic { border-color: #aa97cc; }
+.ac-item-badge { position: absolute; right: 6px; bottom: 6px; z-index: 3; width: 50px; height: 50px; display: grid; place-items: center; background: #0b0e13e8; border: 1px solid #bb9c6299; border-radius: 50%; }
+.hollow-skin .ev-item { background: #151311ed; border: 1px solid #aa8b50; padding: 8px 12px; border-radius: 4px; color: #ffedc4; }
+/* Twenty faces stay inside one 100px model, with the existing roll timeline. */
+.physical-d20 { position: relative; display: block; width: 100%; height: 100%; --die-scale: 1; --die-edge: #e4cc92; --die-fill: #243f46; }
+.physical-d20.tone-crit { --die-edge: #ffe9a5; --die-fill: #80622d; }
+.physical-d20.tone-fumble { --die-edge: #ffabab; --die-fill: #5d2530; }
+.d20-solid { display: none; position: absolute; left: 50%; top: 50%; width: 100px; height: 100px; transform-style: preserve-3d; transform: translate(-50%, -50%) scale(var(--die-scale)); }
+.d20-face { position: absolute; left: 50px; top: 50px; width: 100px; height: 86.60254px; transform-origin: 0 0; backface-visibility: hidden; clip-path: polygon(50% 0, 0 100%, 100% 100%); background: var(--die-fill); }
+.d20-face svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.d20-face path { fill: rgba(0,0,0,var(--facet)); stroke: var(--die-edge); stroke-width: 1.5; }
+.d20-face text { fill: #f9eac4; font: bold 24px Georgia, serif; stroke: #0008; stroke-width: .5; paint-order: stroke; }
+.d20-face.face-0 text { font-size: 29px; }
+.d20-legacy, .d20-legacy > svg { width: 100%; height: 100%; display: block; }
+@supports (transform-style: preserve-3d) and (clip-path: polygon(50% 0, 0 100%, 100% 100%)) {
+  .d20-solid { display: block; }
+  .d20-legacy { visibility: hidden; }
+}
+.ev-spin { perspective: 580px; transform-style: preserve-3d; }
+.ev-dice.roll .ev-spin, .ev-dice.landed .ev-spin { animation: none; }
+.ev-dice.roll:not(.landed) .d20-solid { animation: solid-tumble 1.25s cubic-bezier(.12,.55,.25,1) both; }
+.ev-dice.landed .d20-solid { animation: solid-settle .42s ease-out; }
+.ev-dice.roll .ev-die { animation: weighted-throw 1.25s cubic-bezier(.22,.58,.28,1) both; }
+.die3d .physical-d20 { --die-scale: 1.6; }
+.die3d.tumble .d20-solid { animation: solid-tumble 1.15s ease-out both; }
+.die3d.settled .d20-solid { animation: solid-settle .42s ease-out; }
+.ev-tray::after { content: ""; position: absolute; inset: 15px 12px 4px; border: 1px solid #e0c27b44; border-radius: 50%; box-shadow: inset 0 0 20px #0008; pointer-events: none; }
+.dice-jar { position: absolute; width: 64px; height: 64px; left: -20px; bottom: 5px; image-rendering: pixelated; pointer-events: none; }
+.d-stage .dice-jar { left: 12px; bottom: 0; width: 88px; height: 88px; }
+.ev-dice.landed.t-crit .ev-die::after, .ev-dice.landed.t-fumble .ev-die::after { content: ""; position: absolute; inset: -20px; border: 2px solid #ffe4a7; border-radius: 50%; opacity: 0; animation: landing-ring .8s ease-out; pointer-events: none; }
+.ev-dice.landed.t-fumble .ev-die::after { border-color: #eb8691; }
+.ev-dice.landed.t-fumble .d20-solid { animation: solid-fumble .45s ease-out; }
+.hollow-skin .ev-tier { font-size: 33px; letter-spacing: .03em; }
+@keyframes solid-tumble { 0% { transform: translate(-50%,-50%) scale(var(--die-scale)) rotateX(480deg) rotateY(-540deg) rotateZ(-40deg); } 70% { transform: translate(-50%,-50%) scale(var(--die-scale)) rotateX(35deg) rotateY(-50deg) rotateZ(12deg); } 100% { transform: translate(-50%,-50%) scale(var(--die-scale)); } }
+@keyframes solid-settle { 0% { transform: translate(-50%,-50%) scale(var(--die-scale)) rotateY(-9deg); } 55% { transform: translate(-50%,-50%) scale(var(--die-scale)) rotateY(4deg); } 100% { transform: translate(-50%,-50%) scale(var(--die-scale)); } }
+@keyframes solid-fumble { 25% { transform: translate(-53%,-50%) scale(var(--die-scale)) rotateZ(-4deg); } 65% { transform: translate(-48%,-50%) scale(var(--die-scale)) rotateZ(2deg); } }
+@keyframes weighted-throw { 0% { transform: translate(-220px,-100px); opacity: 0; } 12% { opacity: 1; } 40% { transform: translate(-60px,0); } 56% { transform: translate(-25px,-33px); } 73% { transform: translate(10px,0); } 86% { transform: translate(5px,-8px); } 100% { transform: none; } }
+@keyframes landing-ring { from { opacity: .8; transform: scale(.5); } to { opacity: 0; transform: scale(1.6); } }
+body.reduce-motion :is(.physical-d20 *, .ev-dice *, .die3d *, .ac-item-badge), body.no-distort .ev-die::after { animation: none !important; transition: none !important; }
+@media (prefers-reduced-motion: reduce) { :is(.physical-d20 *, .ev-dice *, .die3d *, .ac-item-badge) { animation: none !important; transition: none !important; } }
+@media (max-width: 960px) {
+  .hollow-skin .hud2 { padding: 7px 8px; gap: 7px; }
+  .hollow-skin .ac-name { font-size: 22px; }
+  .hollow-skin .ac-art { height: 82px; }
+  .hollow-skin .ac-sub { font-size: .75rem; }
+  .hollow-skin .drawer { padding: 12px 10px 24px; }
+  .hollow-skin .pages { font-size: 1rem; }
+  .die3d .physical-d20 { --die-scale: 1.3; }
+}
+body.hollow-skin.high-contrast { --ink: #fff; --ink2: #eee; --mute: #d6d0c3; }
+body.hollow-skin.high-contrast .pages { background: #f4e6c7; color: #17130d; --ink: #17130d; --ink2: #30251a; --mute: #463a29; }
+body.reduce-motion .ev-die::after { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .ev-die::after { animation: none !important; } }
+.hollow-skin .hbtn { position: relative; }
+.hollow-skin .hbtn:focus-visible::after { content: ""; position: absolute; inset: -3px; border: 3px solid transparent; border-image-source: var(--skin-focus, none); border-image-slice: 2; opacity: .7; pointer-events: none; }

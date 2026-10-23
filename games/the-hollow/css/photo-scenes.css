@@ -1,0 +1,62 @@
+/* Single-image scenes. Only the camera and two slow image transforms move;
+   markers remain in the stage coordinate system and are never colour-graded. */
+.photo-scene { --photo-tint: #1b454c; --photo-saturation: .68; --photo-brightness: .92; }
+.photo-scene[data-region="estate"] { --photo-tint: #514149; --photo-saturation: .58; }
+.photo-scene[data-region="woods"] { --photo-tint: #105e4d; --photo-saturation: .55; }
+.photo-scene[data-region="abbey"] { --photo-tint: #343c65; --photo-saturation: .58; }
+.photo-scene[data-region="crypt"] { --photo-tint: #163d55; --photo-saturation: .42; --photo-brightness: .78; }
+.photo-scene[data-region="heart"] { --photo-tint: #7b1e57; --photo-saturation: .72; --photo-brightness: .84; }
+.photo-scene[data-phase="2"] { --photo-brightness: .73; }
+.photo-scene[data-phase="3"] { --photo-brightness: .59; }
+.photo-scene .stg-world { filter: none; }
+.photo-scene .lyr-photo-base { overflow: hidden; pointer-events: none; }
+.photo-backdrop { position: absolute; inset: -2%; width: 104%; height: 104%; object-fit: cover; display: block;
+  filter: saturate(var(--photo-saturation)) brightness(var(--photo-brightness)) contrast(1.12);
+  animation: photo-drift 42s ease-in-out infinite alternate; transition: filter 2.4s ease; }
+.photo-loaded > svg { visibility: hidden; }
+.photo-atmosphere { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.photo-atmosphere::before { content: ""; position: absolute; inset: 0; background: var(--photo-tint); mix-blend-mode: color; opacity: .32; }
+.photo-depth { position: absolute; inset: 48% -3% -8%; background-size: 100% auto; background-position: center bottom;
+  filter: blur(9px) brightness(.55) saturate(.45); opacity: .24;
+  mask-image: linear-gradient(transparent, #000); animation: photo-depth 34s ease-in-out infinite alternate; pointer-events: none; }
+.photo-fog { position: absolute; display: block; width: 125%; left: -12%; height: 45%; bottom: -10%; opacity: .24;
+  background: radial-gradient(ellipse at 20% 65%, #9cb7b2 0, transparent 40%), radial-gradient(ellipse at 75% 75%, #647c8c 0, transparent 45%);
+  animation: photo-fog 32s ease-in-out infinite alternate; }
+.photo-fog.fog-back { bottom: 13%; opacity: .12; animation-direction: alternate-reverse; animation-duration: 45s; }
+.photo-dust { position: absolute; inset: 15%; opacity: .3; background-image: radial-gradient(circle, #eee2b9 1px, transparent 2px), radial-gradient(circle, #bfccd1 .7px, transparent 1.6px); background-size: 173px 143px, 227px 191px; animation: photo-dust 32s linear infinite; }
+.photo-grain { position: absolute; inset: 0; opacity: .055; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.88' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' opacity='.65' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.photo-scene .stg-cold { opacity: calc(.08 + var(--k) * .27); }
+.photo-scene .stg-vig { background: radial-gradient(ellipse at 50% 45%, transparent 32%, rgba(3, 6, 13, .65) 100%), linear-gradient(0deg, #04060b99, transparent 26%, transparent 70%, #04060b66); }
+.photo-scene[data-phase="2"] .stg-vig { box-shadow: inset 0 0 100px #3b0f2c66; }
+.photo-scene[data-phase="3"] .stg-vig { box-shadow: inset 0 0 150px #83182d88; animation: photo-haunt 13s ease-in-out infinite; }
+.photo-scene .lyr-objects { inset: 0; } /* Matches the camera's viewBox metrics exactly. */
+.photo-marker { pointer-events: none; }
+.marker-ring { fill: #0b151ae8; stroke: #c1ad7c; stroke-width: 1.7; }
+.marker-number { fill: #f6e6be; font: 20px Georgia, serif; text-anchor: middle; }
+.marker-label { fill: #071017e8; stroke: #9d936c77; stroke-width: 1; }
+.marker-name { fill: #efe6ce; font: 18px Georgia, serif; text-anchor: middle; }
+.photo-scene .obj .hit { stroke: transparent; stroke-width: 2; }
+.photo-scene .obj.can:hover .marker-ring, .photo-scene .obj:focus-visible .marker-ring { stroke: #fff1ba; stroke-width: 3; fill: #3b3430; }
+.photo-scene .obj:focus-visible .hit { stroke: #ffe3a4; stroke-dasharray: 8 6; }
+.photo-scene .obj.spent .marker-ring { stroke-dasharray: 3 4; fill: #22453a; }
+.photo-scene .obj.off .marker-ring { stroke-dasharray: 5 3; }
+.photo-scene .obj.can .halo { animation: none; opacity: .08; }
+.photo-scene .obj.can.hov .halo, .photo-scene .obj:focus-visible .halo { opacity: .5; }
+.photo-loading-note { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); color: #dbd5bd; font: italic 14px Georgia, serif; text-shadow: 0 2px 8px #000; pointer-events: none; }
+.photo-closeup { width: 100%; height: 100%; position: relative; overflow: hidden; background: #080d13; }
+.photo-closeup > svg, .photo-closeup > img { position: absolute; width: 100%; height: 100%; inset: 0; object-fit: cover; }
+.photo-closeup > img { filter: saturate(.65) brightness(.83) contrast(1.12); }
+.photo-closeup.region-heart > img { filter: saturate(.7) brightness(.7) sepia(.15) hue-rotate(310deg); }
+@keyframes photo-drift { from { transform: scale(1.015) translate(-.4%, .2%); } to { transform: scale(1.065) translate(.6%, -.4%); } }
+@keyframes photo-depth { from { transform: translateX(-.5%); } to { transform: translateX(1%); } }
+@keyframes photo-fog { from { transform: translateX(-3%); } to { transform: translateX(4%); } }
+@keyframes photo-dust { to { transform: translate(12px, -32px); } }
+/* One mild dip per cycle, never a rapid strobe. */
+@keyframes photo-haunt { 0%, 88%, 94%, 100% { opacity: .9; } 91% { opacity: 1; } }
+body.reduce-motion .photo-scene *, .photo-scene.photo-still *, body.no-distort .photo-scene .stg-vig { animation: none !important; transition: none !important; }
+@media (prefers-reduced-motion: reduce) { .photo-scene * { animation: none !important; transition: none !important; } }
+@media (max-width: 960px) {
+  .photo-depth { display: none; } /* Avoid an extra blurred texture on phones. */
+  .photo-fog.fog-back { display: none; }
+  .photo-loading-note { bottom: 8px; }
+}

@@ -1,0 +1,73 @@
+{
+  "id": "fountain",
+  "region": "abbey",
+  "background": "task2_environments_abbey_fountain",
+  "moods": {},
+  "viewBox": [
+    1600,
+    900
+  ],
+  "hotspots": [
+    {
+      "id": "offer",
+      "x": 148,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "offer",
+      "label": "Make the offering the spirit wants",
+      "hidden": false
+    },
+    {
+      "id": "drink",
+      "x": 521,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "drink",
+      "label": "Drink from the fountain",
+      "hidden": false
+    },
+    {
+      "id": "drink2",
+      "x": 895,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "drink2",
+      "label": "Drink the calmed water",
+      "hidden": false
+    },
+    {
+      "id": "water",
+      "x": 1268,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "water",
+      "label": "Listen to the water",
+      "hidden": false
+    },
+    {
+      "id": "search_area",
+      "x": 320,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "investigate",
+      "label": "Investigate the surroundings"
+    },
+    {
+      "id": "way_out",
+      "x": 1080,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "travel",
+      "label": "Choose a road"
+    }
+  ],
+  "artDirection": "supplied"
+}

@@ -56,6 +56,8 @@
   M.viewFor = function (pid) {
     var me = this.get(pid), w = this.w, self = this;
     var v = { v: this.ver, code: this.code, phase: this.phase, you: pid, hostId: (this.players.find(function (p) { return p.host; }) || {}).id, settings: this.settings, policy: this.policyText(), now: this.now() };
+    // Optional cosmetic identity for client-only once-per-expedition effects; no RNG state exposed.
+    v.cosmetics = { runId: this.code + ':' + this.created };
     v.players = this.players.map(function (p) { return pubPlayer(self, p); });
     v.log = this.logFor(pid);
     if (this.phase === 'lobby' || !w) return v;
@@ -65,10 +67,12 @@
       active: t ? t.active : null, ap: t ? t.ap : 0, order: t ? t.order : [],
       secLeft: t ? Math.max(0, Math.round((t.deadline - this.now()) / 1000)) : 0
     };
+    v.opening = this.openingObjective();
+    v.game.readingTime = !!this.settings.solo;
     // the shared map
     var locs = {};
     Object.keys(w.locs).forEach(function (id) {
-      var L = w.locs[id]; if (!L.seen) return;
+      var L = w.locs[id]; if (!L.seen || (w.opening && !w.opening.complete && !self.openingPlace(id))) return;
       locs[id] = { v: L.visited, corrupt: !!L.corrupt, sealed: L.seal > w.round, chalk: L.chalk > w.round, inv: L.inv, ground: (L.ground || []).length, snare: L.snare === pid };
     });
     var edges = [];
@@ -188,7 +192,7 @@
       if (ap < cost) return { ok: false, why: 'No actions left this turn.' };
       return extra || { ok: true };
     };
-    a.interact = { ok: !enc, why: enc ? 'Already open.' : '', label: eng ? (eng.kind === 'boss' ? 'Face the Warden' : 'Face the ' + D.enemies[eng.obj.id].name) : 'Look for something to do here' };
+    a.interact = { ok: !enc, why: enc ? 'Already open.' : '', label: eng ? (eng.kind === 'boss' ? 'Face the Warden' : 'Face the ' + D.enemies[eng.obj.id].name) : (w.opening && !w.opening.complete ? 'Examine this place' : 'Look for something to do here') };
     if (!loc.options.length && !loc.boss && !loc.finale) a.interact = { ok: false, why: 'Nothing here calls to you.', label: 'Nothing to do here' };
     a.investigate = gate(1, eng ? { ok: false, why: 'Something is hunting you here.' } : { ok: true });
     var pool = D.regionEvents.filter(function (ev) { return ev.region === loc.region && w.usedEvents.indexOf(ev.id) < 0; });
@@ -214,7 +218,7 @@
     moves.forEach(function (m) {
       if (!m.ok) return;
       self.neighbors(m.to).forEach(function (nb) {
-        if (nb.to === p.loc || !self.edgeVisible(nb.e)) return;
+        if (nb.to === p.loc || !self.edgeVisible(nb.e) || (w.opening && !w.opening.complete && !self.openingPlace(nb.to))) return;
         if (!self.edgeState(nb.e, m.to, false).ok) return;
         if (moves.some(function (x) { return x.to === nb.to; }) || sprint.some(function (x) { return x.to === nb.to; })) return;
         if (w.enemies.some(function (e) { return e.loc === m.to && !e.dead; })) return;

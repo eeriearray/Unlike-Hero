@@ -1,0 +1,63 @@
+{
+  "id": "flooded_hall",
+  "region": "crypt",
+  "background": "task2_environments_crypt_flooded_hall",
+  "moods": {},
+  "viewBox": [
+    1600,
+    900
+  ],
+  "hotspots": [
+    {
+      "id": "font",
+      "x": 148,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "font",
+      "label": "Dive for the sunken font",
+      "hidden": false
+    },
+    {
+      "id": "coax",
+      "x": 708,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "coax",
+      "label": "Coax the current to give it up",
+      "hidden": false
+    },
+    {
+      "id": "pews",
+      "x": 1268,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "pews",
+      "label": "Search the drowned pews",
+      "hidden": false
+    },
+    {
+      "id": "search_area",
+      "x": 320,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "investigate",
+      "label": "Investigate the surroundings"
+    },
+    {
+      "id": "way_out",
+      "x": 1080,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "travel",
+      "label": "Choose a road"
+    }
+  ],
+  "artDirection": "supplied"
+}

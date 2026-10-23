@@ -1,0 +1,63 @@
+{
+  "id": "bridge",
+  "region": "village",
+  "background": "task1_environments_village_bridge",
+  "moods": {},
+  "viewBox": [
+    1600,
+    900
+  ],
+  "hotspots": [
+    {
+      "id": "reinforce",
+      "x": 148,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "reinforce",
+      "label": "Reinforce the span",
+      "hidden": false
+    },
+    {
+      "id": "under",
+      "x": 708,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "under",
+      "label": "Look under the bridge",
+      "hidden": false
+    },
+    {
+      "id": "tollbox",
+      "x": 1268,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "tollbox",
+      "label": "Fish out the toll box",
+      "hidden": false
+    },
+    {
+      "id": "search_area",
+      "x": 320,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "investigate",
+      "label": "Investigate the surroundings"
+    },
+    {
+      "id": "way_out",
+      "x": 1080,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "travel",
+      "label": "Choose a road"
+    }
+  ],
+  "artDirection": "supplied"
+}

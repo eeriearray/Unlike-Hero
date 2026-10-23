@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "heroes": {
+    "occultist": {
+      "portrait": "task3_occultist_portrait",
+      "fullbody": "task3_occultist_fullbody",
+      "silhouette": "task3_occultist_silhouette"
+    },
+    "hunter": {
+      "portrait": "task3_hunter_portrait",
+      "fullbody": "task3_hunter_fullbody",
+      "silhouette": "task3_hunter_silhouette"
+    },
+    "apothecary": {
+      "portrait": "task3_apothecary_portrait",
+      "fullbody": "task3_apothecary_fullbody",
+      "silhouette": "task3_apothecary_silhouette"
+    },
+    "medium": {
+      "portrait": "task3_medium_portrait",
+      "fullbody": "task3_medium_fullbody",
+      "silhouette": "task3_medium_silhouette"
+    },
+    "vagabond": {
+      "portrait": "task3_vagabond_portrait",
+      "fullbody": "task3_vagabond_fullbody",
+      "silhouette": "task3_vagabond_silhouette"
+    },
+    "exorcist": {
+      "portrait": "task3_exorcist_portrait",
+      "fullbody": "task3_exorcist_fullbody",
+      "silhouette": "task3_exorcist_silhouette"
+    }
+  },
+  "enemies": {
+    "bellkeeper": {
+      "portrait": "task3_bellkeeper_portrait",
+      "fullbody": "task3_bellkeeper_fullbody",
+      "silhouette": "task3_bellkeeper_silhouette"
+    },
+    "abbey_warden": {
+      "portrait": "task3_abbey_warden_portrait",
+      "fullbody": "task3_abbey_warden_fullbody",
+      "silhouette": "task3_abbey_warden_silhouette"
+    },
+    "whisperling": {
+      "portrait": "task3_whisperling_portrait",
+      "fullbody": "task3_whisperling_fullbody",
+      "silhouette": "task3_whisperling_silhouette"
+    },
+    "drowned_pilgrim": {
+      "portrait": "task3_drowned_pilgrim_portrait",
+      "fullbody": "task3_drowned_pilgrim_fullbody",
+      "silhouette": "task3_drowned_pilgrim_silhouette"
+    },
+    "hollow_stag": {
+      "portrait": "task3_hollow_stag_portrait",
+      "fullbody": "task3_hollow_stag_fullbody",
+      "silhouette": "task3_hollow_stag_silhouette"
+    },
+    "grave_warden": {
+      "portrait": "task3_grave_warden_portrait",
+      "fullbody": "task3_grave_warden_fullbody",
+      "silhouette": "task3_grave_warden_silhouette"
+    },
+    "mirror_twin": {
+      "portrait": "task3_mirror_twin_portrait",
+      "fullbody": "task3_mirror_twin_fullbody",
+      "silhouette": "task3_mirror_twin_silhouette"
+    },
+    "carrion_swarm": {
+      "portrait": "task3_carrion_swarm_portrait",
+      "fullbody": "task3_carrion_swarm_fullbody",
+      "silhouette": "task3_carrion_swarm_silhouette"
+    },
+    "hollow_hound": {
+      "portrait": "task3_hollow_hound_portrait",
+      "fullbody": "task3_hollow_hound_fullbody",
+      "silhouette": "task3_hollow_hound_silhouette"
+    },
+    "weeping_statue": {
+      "portrait": "task3_weeping_statue_portrait",
+      "fullbody": "task3_weeping_statue_fullbody",
+      "silhouette": "task3_weeping_statue_silhouette"
+    }
+  },
+  "npcs": {
+    "merchant_pell": {
+      "portrait": "task3_npc_merchant_pell_portrait"
+    },
+    "tower_caretaker": {
+      "portrait": "task3_npc_tower_caretaker_portrait"
+    },
+    "village_survivor": {
+      "portrait": "task3_npc_village_survivor_portrait"
+    },
+    "abbey_spirit": {
+      "portrait": "task3_npc_abbey_spirit_portrait"
+    }
+  }
+}

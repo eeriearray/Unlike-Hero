@@ -1,0 +1,113 @@
+{
+  "id": "blackmarket",
+  "region": "estate",
+  "background": "task1_environments_estate_blackmarket",
+  "moods": {},
+  "viewBox": [
+    1600,
+    900
+  ],
+  "hotspots": [
+    {
+      "id": "lantern",
+      "x": 148,
+      "y": 285,
+      "w": 184,
+      "h": 130,
+      "optionId": "lantern",
+      "label": "Buy a Wick Lantern",
+      "hidden": false
+    },
+    {
+      "id": "tonic",
+      "x": 521,
+      "y": 285,
+      "w": 184,
+      "h": 130,
+      "optionId": "tonic",
+      "label": "Buy a Minor Tonic",
+      "hidden": false
+    },
+    {
+      "id": "shard",
+      "x": 895,
+      "y": 285,
+      "w": 184,
+      "h": 130,
+      "optionId": "shard",
+      "label": "Buy a Mirror Shard",
+      "hidden": false
+    },
+    {
+      "id": "key",
+      "x": 1268,
+      "y": 285,
+      "w": 184,
+      "h": 130,
+      "optionId": "key",
+      "label": "Buy the Spirit Key",
+      "hidden": false
+    },
+    {
+      "id": "memory",
+      "x": 148,
+      "y": 465,
+      "w": 184,
+      "h": 130,
+      "optionId": "memory",
+      "label": "Sell a memory (+6 Silver)",
+      "hidden": false
+    },
+    {
+      "id": "clapper",
+      "x": 521,
+      "y": 465,
+      "w": 184,
+      "h": 130,
+      "optionId": "clapper",
+      "label": "Ask where the bell's tongue sleeps (2 Silver)",
+      "hidden": false
+    },
+    {
+      "id": "terms",
+      "x": 895,
+      "y": 465,
+      "w": 184,
+      "h": 130,
+      "optionId": "terms",
+      "label": "Ask for the terms of the Hush",
+      "hidden": false
+    },
+    {
+      "id": "rob",
+      "x": 1268,
+      "y": 465,
+      "w": 184,
+      "h": 130,
+      "optionId": "rob",
+      "label": "Rob the Broker",
+      "hidden": false
+    },
+    {
+      "id": "search_area",
+      "x": 320,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "investigate",
+      "label": "Investigate the surroundings"
+    },
+    {
+      "id": "way_out",
+      "x": 1080,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "travel",
+      "label": "Choose a road"
+    }
+  ],
+  "artDirection": "supplied"
+}

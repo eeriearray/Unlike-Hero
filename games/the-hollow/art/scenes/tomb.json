@@ -1,0 +1,63 @@
+{
+  "id": "tomb",
+  "region": "crypt",
+  "background": "task2_environments_crypt_tomb",
+  "moods": {},
+  "viewBox": [
+    1600,
+    900
+  ],
+  "hotspots": [
+    {
+      "id": "epitaph",
+      "x": 148,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "epitaph",
+      "label": "Read the epitaph",
+      "hidden": false
+    },
+    {
+      "id": "open",
+      "x": 708,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "open",
+      "label": "Open the sarcophagus",
+      "hidden": false
+    },
+    {
+      "id": "wake",
+      "x": 1268,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "wake",
+      "label": "Wake Venn's ghost",
+      "hidden": false
+    },
+    {
+      "id": "search_area",
+      "x": 320,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "investigate",
+      "label": "Investigate the surroundings"
+    },
+    {
+      "id": "way_out",
+      "x": 1080,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "travel",
+      "label": "Choose a road"
+    }
+  ],
+  "artDirection": "supplied"
+}

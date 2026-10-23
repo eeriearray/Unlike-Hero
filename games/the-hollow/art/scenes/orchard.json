@@ -1,0 +1,63 @@
+{
+  "id": "orchard",
+  "region": "woods",
+  "background": "task2_environments_woods_orchard",
+  "moods": {},
+  "viewBox": [
+    1600,
+    900
+  ],
+  "hotspots": [
+    {
+      "id": "cleanse",
+      "x": 148,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "cleanse",
+      "label": "Cleanse the Rot",
+      "hidden": false
+    },
+    {
+      "id": "eat",
+      "x": 708,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "eat",
+      "label": "Eat a bone-apple",
+      "hidden": false
+    },
+    {
+      "id": "dig",
+      "x": 1268,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "dig",
+      "label": "Dig where the grave has no bones",
+      "hidden": false
+    },
+    {
+      "id": "search_area",
+      "x": 320,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "investigate",
+      "label": "Investigate the surroundings"
+    },
+    {
+      "id": "way_out",
+      "x": 1080,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "travel",
+      "label": "Choose a road"
+    }
+  ],
+  "artDirection": "supplied"
+}

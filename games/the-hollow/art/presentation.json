@@ -1,0 +1,165 @@
+{
+  "version": 1,
+  "items": {
+    "lantern": {
+      "asset": "task4_items_256px_lantern",
+      "rarity": "common",
+      "thumb": "task4_items_128px_lantern",
+      "detail": "task4_items_lantern"
+    },
+    "lamp_oil": {
+      "asset": "task4_items_256px_lamp_oil",
+      "rarity": "common",
+      "thumb": "task4_items_128px_lamp_oil",
+      "detail": "task4_items_lamp_oil"
+    },
+    "tonic": {
+      "asset": "task4_items_256px_tonic",
+      "rarity": "common",
+      "thumb": "task4_items_128px_tonic",
+      "detail": "task4_items_tonic"
+    },
+    "thread": {
+      "asset": "task4_items_256px_thread",
+      "rarity": "common",
+      "thumb": "task4_items_128px_thread",
+      "detail": "task4_items_thread"
+    },
+    "salt": {
+      "asset": "task4_items_256px_salt",
+      "rarity": "common",
+      "thumb": "task4_items_128px_salt",
+      "detail": "task4_items_salt"
+    },
+    "blade": {
+      "asset": "task4_items_256px_blade",
+      "rarity": "common",
+      "thumb": "task4_items_128px_blade",
+      "detail": "task4_items_blade"
+    },
+    "moonrelic": {
+      "asset": "task4_items_256px_moonrelic",
+      "rarity": "rare",
+      "thumb": "task4_items_128px_moonrelic",
+      "detail": "task4_items_moonrelic"
+    },
+    "spirit_key": {
+      "asset": "task4_items_256px_spirit_key",
+      "rarity": "rare",
+      "thumb": "task4_items_128px_spirit_key",
+      "detail": "task4_items_spirit_key"
+    },
+    "clapper": {
+      "asset": "task4_items_256px_clapper",
+      "rarity": "rare",
+      "thumb": "task4_items_128px_clapper",
+      "detail": "task4_items_clapper"
+    },
+    "herb": {
+      "asset": "task4_items_256px_herb",
+      "rarity": "common",
+      "thumb": "task4_items_128px_herb",
+      "detail": "task4_items_herb"
+    },
+    "snare": {
+      "asset": "task4_items_256px_snare",
+      "rarity": "common",
+      "thumb": "task4_items_128px_snare",
+      "detail": "task4_items_snare"
+    },
+    "chalk": {
+      "asset": "task4_items_256px_chalk",
+      "rarity": "common",
+      "thumb": "task4_items_128px_chalk",
+      "detail": "task4_items_chalk"
+    },
+    "candle": {
+      "asset": "task4_items_256px_candle",
+      "rarity": "common",
+      "thumb": "task4_items_128px_candle",
+      "detail": "task4_items_candle"
+    },
+    "mirror_shard": {
+      "asset": "task4_items_256px_mirror_shard",
+      "rarity": "common",
+      "thumb": "task4_items_128px_mirror_shard",
+      "detail": "task4_items_mirror_shard"
+    },
+    "moonwater": {
+      "asset": "task4_items_256px_moonwater",
+      "rarity": "rare",
+      "thumb": "task4_items_128px_moonwater",
+      "detail": "task4_items_moonwater"
+    },
+    "wardens_key": {
+      "asset": "task4_items_256px_wardens_key",
+      "rarity": "rare",
+      "thumb": "task4_items_128px_wardens_key",
+      "detail": "task4_items_wardens_key"
+    },
+    "star_lens": {
+      "asset": "task4_items_256px_star_lens",
+      "rarity": "rare",
+      "thumb": "task4_items_128px_star_lens",
+      "detail": "task4_items_star_lens"
+    },
+    "weeping_eye": {
+      "asset": "task4_items_256px_weeping_eye",
+      "rarity": "relic",
+      "thumb": "task4_items_128px_weeping_eye",
+      "detail": "task4_items_weeping_eye"
+    },
+    "saint_finger": {
+      "asset": "task4_items_256px_saint_finger",
+      "rarity": "relic",
+      "thumb": "task4_items_128px_saint_finger",
+      "detail": "task4_items_saint_finger"
+    },
+    "gilded_psalter": {
+      "asset": "task4_items_256px_gilded_psalter",
+      "rarity": "relic",
+      "thumb": "task4_items_128px_gilded_psalter",
+      "detail": "task4_items_gilded_psalter"
+    },
+    "bone_chalice": {
+      "asset": "task4_items_256px_bone_chalice",
+      "rarity": "relic",
+      "thumb": "task4_items_128px_bone_chalice",
+      "detail": "task4_items_bone_chalice"
+    },
+    "ember_locket": {
+      "asset": "task4_items_256px_ember_locket",
+      "rarity": "relic",
+      "thumb": "task4_items_128px_ember_locket",
+      "detail": "task4_items_ember_locket"
+    }
+  },
+  "ui": {
+    "panel": "task4_ui_panels_main_dark_panel",
+    "button": "task4_ui_buttons_primary_button",
+    "hud": "task4_ui_panels_tooltip_panel",
+    "focus": "task4_ui_buttons_keyboard_focus_treatment",
+    "jar": "diejars_1_0_tinyjar_die_empty_cdbd912e",
+    "font": "lesed_gravewire_free_lesed_gravewire_free_fonts_gravewire_regular_dfff698c"
+  },
+  "components": {
+    "buttons_disabled_treatment": "task4_ui_buttons_disabled_treatment",
+    "buttons_hover_treatment": "task4_ui_buttons_hover_treatment",
+    "buttons_keyboard_focus_treatment": "task4_ui_buttons_keyboard_focus_treatment",
+    "buttons_pressed_treatment": "task4_ui_buttons_pressed_treatment",
+    "buttons_primary_button": "task4_ui_buttons_primary_button",
+    "buttons_secondary_button": "task4_ui_buttons_secondary_button",
+    "panels_action_card": "task4_ui_panels_action_card",
+    "panels_action_card_selected": "task4_ui_panels_action_card_selected",
+    "panels_inventory_slot": "task4_ui_panels_inventory_slot",
+    "panels_inventory_slot_selected": "task4_ui_panels_inventory_slot_selected",
+    "panels_journal_parchment": "task4_ui_panels_journal_parchment",
+    "panels_main_dark_panel": "task4_ui_panels_main_dark_panel",
+    "panels_tooltip_panel": "task4_ui_panels_tooltip_panel",
+    "states_dangerous_choice_accent": "task4_ui_states_dangerous_choice_accent",
+    "states_locked_state_accent": "task4_ui_states_locked_state_accent",
+    "states_objective_complete_accent": "task4_ui_states_objective_complete_accent",
+    "states_ornamental_corner": "task4_ui_states_ornamental_corner",
+    "states_thin_divider": "task4_ui_states_thin_divider"
+  }
+}

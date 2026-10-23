@@ -1,0 +1,70 @@
+{
+  "id": "belltower",
+  "region": "village",
+  "background": "task1_environments_village_belltower",
+  "moods": {},
+  "viewBox": [
+    1600,
+    900
+  ],
+  "hotspots": [
+    {
+      "id": "frame",
+      "x": 148,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "frame",
+      "label": "Study the empty bell-frame",
+      "hidden": false,
+      "closeup": "task1_closeups_bell_frame_closeup"
+    },
+    {
+      "id": "climb",
+      "x": 708,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "climb",
+      "label": "Climb to the belfry",
+      "hidden": false,
+      "closeup": "task1_environments_opening_belfry_interior"
+    },
+    {
+      "id": "listen",
+      "x": 1268,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "listen",
+      "label": "Put your ear to the bell-mouth",
+      "hidden": false,
+      "closeup": "task1_closeups_hanging_rope_closeup"
+    },
+    {
+      "id": "search_area",
+      "x": 320,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "investigate",
+      "label": "Investigate the surroundings"
+    },
+    {
+      "id": "way_out",
+      "x": 1080,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "travel",
+      "label": "Choose a road"
+    }
+  ],
+  "artDirection": "supplied",
+  "controlsOnly": [
+    "maintenance",
+    "force_entry"
+  ]
+}

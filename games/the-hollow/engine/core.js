@@ -230,7 +230,7 @@
     return { ok: true };
   };
 
-  P.cmd_start = function (p) {
+  P.cmd_start = function (p, c) {
     if (!p.host) return { error: 'Only the host can set out.' };
     if (this.phase !== 'lobby') return { error: 'Already under way.' };
     var ps = this.players;
@@ -239,6 +239,7 @@
     var waiting = ps.filter(function (x) { return !x.ready && !x.host && x.connected && !x.bot; });
     if (waiting.length) return { error: 'Waiting for ' + waiting.map(function (x) { return x.name; }).join(', ') + ' to be ready.' };
     this.settings.solo = ps.filter(function (x) { return !x.bot; }).length === 1;
+    this.settings.opening = !!c.opening;
     this.begin();
     return { ok: true };
   };
@@ -268,10 +269,10 @@
     if (this.phase !== 'playing' || !this.turn) { if (changed) this.changed(); return; }
     if (!a || a.status !== 'alive') { this.advanceTurn(); this.changed(); return; }
     // a held roll waits for the player to accept or reroll; accept for them after a while
-    if (t.enc && t.enc.hold && now > t.enc.hold.deadline) { this.releaseHold(a); changed = true; }
+    if (!this.settings.solo && t.enc && t.enc.hold && now > t.enc.hold.deadline) { this.releaseHold(a); changed = true; }
     if (this.phase !== 'playing' || !this.turn) { if (changed) this.changed(); return; }
     var away = !a.connected && now - a.disconnectedAt > C.graceSec * 1000;
-    var idle = now > t.deadline;
+    var idle = !this.settings.solo && now > t.deadline;
     if (away || idle) {
       var pol = this.settings.afk;
       if (away && pol === 'wait' && now - a.disconnectedAt < C.waitMaxSec * 1000) { /* the table waits */ }

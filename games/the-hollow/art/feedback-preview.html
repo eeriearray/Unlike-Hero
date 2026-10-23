@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Hollow — Step 3 Feedback Review</title>
+<link rel="stylesheet" href="../css/hollow.css">
+<link rel="stylesheet" href="../css/stage.css">
+<link rel="stylesheet" href="../css/presentation.css">
+<link rel="stylesheet" href="../css/feedback.css">
+<style>
+body { padding:24px; overflow:auto; background:#0b1016; }
+main { max-width:1100px; margin:auto; } h1 { color:#ead29b; font:32px Georgia,serif; }
+.intro { color:#d5c9b1; max-width:65ch; line-height:1.5; margin:12px 0 20px; }
+.controls { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:16px 0; }
+.review-stage { position:relative; height:500px; border:1px solid #6f614b; overflow:hidden; background:#0a1017; }
+.review-world { position:absolute; inset:0; display:grid; place-items:center; color:#ddd0ae; font:22px Georgia,serif; background:radial-gradient(ellipse at 50% 30%,#263e4d,#090d13); }
+.review-world img { width:100%; height:100%; object-fit:cover; position:absolute; inset:0; }
+.review-world span { z-index:1; padding:20px; background:#071018aa; text-align:center; }
+#review-hud { position:relative; min-height:78px; padding:16px; background:#141513; color:#ead29b; border:1px solid #6f614b; }
+#review-hud .feedback-conditions { left:20px; bottom:8px; }
+.preferences { display:flex; flex-wrap:wrap; gap:18px; align-items:center; margin:16px 0; color:#d5c9b1; }
+.preferences label { display:flex; align-items:center; gap:7px; min-height:44px; }
+.review-settings { position:relative; color:#eee2ca; background:#11151b; padding:18px; margin-top:20px; }
+.review-settings .modal { position:static; background:none; display:block; padding:0; } .review-settings .box { max-height:none; width:100%; max-width:100%; }
+@media(max-width:600px){body{padding:14px;} .review-stage{height:360px;} h1{font-size:26px;} }
+</style>
+</head>
+<body data-screen="game" data-feedback-preview="true">
+<main>
+<h1>The Hollow · Feedback Review</h1>
+<p class="intro">Sanity overlays, injury textures, status symbols and scare preferences. This page uses a local demonstration view and never reads or writes an expedition. The optional face appears only when you press its preview button.</p>
+<div class="controls" aria-label="Sanity presets">
+<button class="btn" data-sanity="7">High sanity</button><button class="btn" data-sanity="4">Medium sanity</button><button class="btn" data-sanity="1">Low sanity</button>
+<button class="btn" id="damage-preview">Damage reaction</button><button class="btn" id="sanity-preview">Sanity reaction</button><button class="btn" id="scare-preview">Preview optional scare</button>
+</div>
+<div class="preferences"><label><input type="checkbox" data-feedback-pref="reducedScares" id="review-gentle"> Reduced scares</label><label><input type="checkbox" id="review-motion"> Reduced motion</label><label><input type="checkbox" id="review-jumps" data-feedback-pref="jumpScares" checked> Enable optional scare preview</label><label><input type="checkbox" id="review-mute" checked> Mute preview audio</label></div>
+<header id="review-hud"></header>
+<div class="review-stage stg photo-scene" id="review-stage" aria-label="Effect demonstration scene"><div class="review-world stg-world lyr-photo-base"><span>Choose a sanity level. The scene stays readable.</span></div></div>
+<p class="intro" id="review-summary" role="status">High sanity: subtle edges.</p>
+<div id="captions" aria-live="polite"></div>
+<p class="intro"><a href="../">Open the game</a> · <a href="FEEDBACK.md">Implementation and settings</a> · <a href="CREDITS.md">Credits and licensing audit</a></p>
+</main>
+<script src="../js/assets.js"></script><script src="../js/art.js"></script><script src="../js/art2.js"></script><script src="../js/fx.js"></script><script src="../js/audio.js"></script><script src="../js/ui.js"></script><script src="../engine/data/core.js"></script>
+<script>
+(function(){
+  // Demonstration preferences are memory-only, isolated from the player's saved choices.
+  HollowFx.prefs.jumpScares=true;HollowFx.prefs.reducedScares=false;HollowFx.prefs.motion='auto';
+  var audio={master:.8,sfx:.85,muted:true,captions:true};
+  HollowAudio.settings=function(){return Object.assign({},audio);};
+  HollowAudio.setMuted=function(v){audio.muted=v;};HollowAudio.setVolume=function(k,v){audio[k]=v;};
+  HollowUI.S.ui={tab:'act'};HollowUI.S.cat={statuses:HollowData.statuses};
+  window.HollowStory={bar:function(){return '<header>Active conditions</header>';}};
+  window.HollowStage={el:function(){return document.getElementById('review-stage');},flash:function(name,ms){var h=this.el();h.classList.remove(name);void h.offsetWidth;h.classList.add(name);setTimeout(function(){h.classList.remove(name);},ms||500);}};
+  window.HollowEvents={busy:function(){return false;},after:function(fn){fn();}};
+})();
+</script>
+<script src="../js/feedback-policy.js"></script><script src="../js/scare-face.js"></script><script src="../js/feedback-audio.js"></script><script src="../js/feedback.js"></script>
+<script>
+(function(){
+  var view={phase:'playing',code:'REVIEW',you:'review',cosmetics:{runId:'review-only'},game:{round:4},me:{status:'alive',san:7,maxSan:7,loc:'square',sts:['blessed','cursed','marked','bleeding','hunted']},log:[]};
+  function render(){HollowUI.S.view=view;HollowFeedback.sync(view);document.getElementById('review-hud').innerHTML=HollowStory.bar();}
+  document.querySelectorAll('[data-sanity]').forEach(function(button){button.addEventListener('click',function(){view.me.san=Number(button.dataset.sanity);render();document.getElementById('review-summary').textContent=button.textContent+': '+HollowFeedbackPolicy.tier(view.me)+' overlay.';});});
+  document.getElementById('damage-preview').addEventListener('click',function(){HollowStage.flash('fx-hurt',500);});
+  document.getElementById('sanity-preview').addEventListener('click',function(){HollowStage.flash('fx-san',400);});
+  document.getElementById('scare-preview').addEventListener('click',function(){document.getElementById('review-summary').textContent=HollowFeedback.previewScare()?'Optional scare preview.':'Scare suppressed by the current preferences.';});
+  document.getElementById('review-motion').addEventListener('change',function(e){HollowFx.prefs.motion=e.target.checked?'on':'off';HollowFx.apply();});
+  document.getElementById('review-mute').addEventListener('change',function(e){HollowAudio.setMuted(e.target.checked);});
+  document.getElementById('review-motion').checked=HollowFx.reduced();
+  render();HollowFx.apply();
+  fetch('scenes/square.json').then(function(r){return r.json();}).then(function(c){return HollowAssets.load(c.background);}).then(function(image){if(image){var img=image.cloneNode();img.alt='';document.querySelector('.review-world').prepend(img);}}).catch(function(){});
+})();
+</script>
+</body>
+</html>

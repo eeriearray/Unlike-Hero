@@ -1,0 +1,113 @@
+{
+  "id": "wagon",
+  "region": "village",
+  "background": "task1_environments_village_wagon",
+  "moods": {},
+  "viewBox": [
+    1600,
+    900
+  ],
+  "hotspots": [
+    {
+      "id": "tonic",
+      "x": 148,
+      "y": 285,
+      "w": 184,
+      "h": 130,
+      "optionId": "tonic",
+      "label": "Buy a Minor Tonic",
+      "hidden": false
+    },
+    {
+      "id": "salt",
+      "x": 521,
+      "y": 285,
+      "w": 184,
+      "h": 130,
+      "optionId": "salt",
+      "label": "Buy a Salt Charm",
+      "hidden": false
+    },
+    {
+      "id": "oil",
+      "x": 895,
+      "y": 285,
+      "w": 184,
+      "h": 130,
+      "optionId": "oil",
+      "label": "Buy Lamp Oil",
+      "hidden": false
+    },
+    {
+      "id": "thread",
+      "x": 1268,
+      "y": 285,
+      "w": 184,
+      "h": 130,
+      "optionId": "thread",
+      "label": "Buy Silver Thread",
+      "hidden": false
+    },
+    {
+      "id": "chalk",
+      "x": 148,
+      "y": 465,
+      "w": 184,
+      "h": 130,
+      "optionId": "chalk",
+      "label": "Buy Ward Chalk",
+      "hidden": false
+    },
+    {
+      "id": "snare",
+      "x": 521,
+      "y": 465,
+      "w": 184,
+      "h": 130,
+      "optionId": "snare",
+      "label": "Buy a Hunter's Snare",
+      "hidden": false
+    },
+    {
+      "id": "haggle",
+      "x": 895,
+      "y": 465,
+      "w": 184,
+      "h": 130,
+      "optionId": "haggle",
+      "label": "Haggle, and ask about the road",
+      "hidden": false
+    },
+    {
+      "id": "steal",
+      "x": 1268,
+      "y": 465,
+      "w": 184,
+      "h": 130,
+      "optionId": "steal",
+      "label": "Lift something from the cart",
+      "hidden": false
+    },
+    {
+      "id": "search_area",
+      "x": 320,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "investigate",
+      "label": "Investigate the surroundings"
+    },
+    {
+      "id": "way_out",
+      "x": 1080,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "travel",
+      "label": "Choose a road"
+    }
+  ],
+  "artDirection": "supplied"
+}

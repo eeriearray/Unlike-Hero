@@ -30,7 +30,7 @@
   };
   C.vignette = function (key, extra) { return '<svg class="closeup vg" viewBox="0 0 200 140" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' + VG + (ART[key] || ART.door) + (extra || '') + '</svg>'; };
 
-  function artFor(c, v) {
+  function baseArtFor(c, v) {
     if (c.obj) return St.closeup(c.obj, 'thumb');
     var enc = v.enc;
     if (c.o) {
@@ -42,6 +42,11 @@
     }
     return C.vignette(c.vg || 'door');
   }
+  function itemBadge(option, label) {
+    var id = g.HollowPresentation && g.HollowPresentation.itemForOption(option, label);
+    return id ? '<span class="ac-item-badge">' + A.itemArt(id, 44) + '</span>' : '';
+  }
+  function artFor(c, v) { return baseArtFor(c, v) + itemBadge(c.o, c.label); }
   function risk(o) { return !o || o.kind !== 'check' ? '' : o.chance >= 65 ? 'safe' : o.chance >= 40 ? 'mid' : 'bad'; }
   var RW = { safe: 'Good odds', mid: 'Risky', bad: 'Dangerous' };
   function costWords(c) { if (!c) return ''; var o = []; if (c.silver) o.push(c.silver + ' Silver'); if (c.san) o.push(c.san + ' Sanity'); if (c.vit) o.push(c.vit + ' Vitality'); if (c.maxvit) o.push(c.maxvit + ' max Vit'); if (c.item) o.push(UI.item(c.item).name); return o.join(', '); }
@@ -51,7 +56,8 @@
     if (o.kind === 'check') bits.push('<i class="sk ' + o.stat + '">' + STAT[o.stat] + '</i>', RW[risk(o)]);
     else if (o.kind === 'puzzle') bits.push('<i class="sk puz">Reasoning</i>');
     if (o.cost) bits.push('<em>' + esc(costWords(o.cost)) + '</em>');
-    if (o.kind !== 'check') bits.push(o.ap ? '1 action' : 'Free');
+    bits.push(o.ap ? o.ap + ' action' + (o.ap === 1 ? '' : 's') : 'Free');
+    if (o.kind === 'check') bits.push(o.chance + '% success');
     return bits.join(' · ');
   }
 
@@ -93,6 +99,7 @@
     var G = v.game, enc = v.enc, list = C.list(v);
     var inEnemy = enc && (enc.kind === 'enemy' || enc.kind === 'boss');
     var cap = inEnemy ? 4 : 3;
+    if (v.opening && !v.opening.complete) list.forEach(function (c) { if (['board', 'vestry', 'headstones', 'maintenance', 'force_entry', 'frame'].indexOf(c.id) >= 0 && c.state === 'ok') c.pri = -1; });
     var travel = list.filter(function (c) { return c.travel; })[0];
     var rest = list.filter(function (c) { return !c.travel; });
     var prim = rest.filter(function (c) { return c.state === 'ok' && c.pri < 9; }).sort(function (x, y) { return x.pri - y.pri; }).slice(0, cap);
@@ -112,6 +119,7 @@
     var opt = ic.opt && enc && enc.options ? enc.options.find(function (x) { return x.id === ic.opt; }) : null;
     if (ic.opt && !opt && !ic.waiting) { S.ui.icard = null; return ''; }
     var art = obj ? St.closeup(obj, 'big') : opt && opt.kind === 'check' ? C.vignette(opt.stat) : opt && opt.kind === 'puzzle' ? C.vignette('puzzle') : C.vignette('door');
+    art += itemBadge(opt, opt ? opt.label : o ? o.name : '');
     var name = o ? o.name : opt ? opt.label : '';
     var body = '';
     if (opt && (opt.kind === 'check' || opt.kind === 'puzzle' || opt.needsTarget)) {
@@ -140,7 +148,7 @@
       var top = Math.max(76, Math.min(hr.height - 400, y - 180));
       pos = ' style="left:' + Math.round(left) + 'px;top:' + Math.round(top) + 'px"';
     }
-    return '<div class="icard side-' + side + (opt ? ' commit' : '') + '" role="dialog" aria-label="' + esc(name) + '"' + pos + '><button class="ic-x" data-act="icclose" aria-label="Close">✕</button>' +
+    return '<div class="icard side-' + side + (opt ? ' commit' : '') + (o && o.closeup ? ' has-detail' : '') + '" role="dialog" aria-label="' + esc(name) + '"' + pos + '><button class="ic-x" data-act="icclose" aria-label="Close">✕</button>' +
       '<div class="ic-art">' + art + '</div><div class="ic-body"><h3>' + esc(name) + '</h3>' + (o && o.blurb && !opt ? '<p class="ic-blurb">' + esc(o.blurb) + '</p>' : '') + body + '</div></div>';
   };
   function labelFor() { return 'Look closer'; }

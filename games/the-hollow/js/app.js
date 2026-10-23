@@ -56,7 +56,19 @@
     if (focusKey) { var all = el.querySelectorAll('[data-act]'); for (var i = 0; i < all.length; i++) if (fk(all[i]) === focusKey) { all[i].focus({ preventScroll: true }); break; } }
     else if (ids) { var f = document.getElementById(ids); if (f) f.focus(); }
   }
+  var spentTurn = null, spentSince = 0;
   function timerTick() {
+    var v = S.view;
+    var key = v && v.game && (v.cosmetics && v.cosmetics.runId || v.code) + ':' + v.game.round + ':' + v.game.active;
+    var blocked = S.ui.sending || FX.rolling() || S.ui.icard || S.ui.prep || S.ui.travel || S.ui.modal || S.ui.map || S.ui.drawer || document.hidden || document.querySelector('.modal, dialog[open], .chapter-tip') || (g.HollowEvents && g.HollowEvents.busy()) || (g.HollowCine && g.HollowCine.busy && g.HollowCine.busy());
+    var ready = g.HollowGuidance && g.HollowGuidance.canAdvance(v, blocked);
+
+    if (!ready) { spentSince = 0; }
+    else if (spentTurn !== key) {
+      if (!spentSince) spentSince = Date.now();
+      if (Date.now() - spentSince >= 1800) { spentTurn = key; spentSince = 0; send({ t: 'endturn', auto: true }); }
+    }
+
     var now = Date.now();
     document.querySelectorAll('.timer[data-end]').forEach(function (el) {
       var s = Math.max(0, Math.round((el.dataset.end - now) / 1000));
@@ -169,7 +181,7 @@
   // At the start of your turn the place's choices are simply there: no extra click to "look around".
   function autoOpen() {
     var v = S.view; if (!v || v.phase !== 'playing' || !v.me || v.me.status !== 'alive') return;
-    if (v.game.active !== v.you || v.enc || !v.act || !v.act.interact.ok) return;
+    if (v.game.ap < 1 || v.game.active !== v.you || v.enc || !v.act || !v.act.interact.ok) return;
     var key = v.game.round + '|' + v.me.loc + '|' + v.game.active;
     if (S.ui.autoKey === key) return;
     S.ui.autoKey = key; send({ t: 'interact' });
@@ -190,7 +202,8 @@
     patch('l2top', top);
     // host rules, only when asked for
     var st = v.settings, rules = '';
-    if (host && S.ui.rules) rules = '<div class="l2rules"><div class="field"><label for="f-afk">If a player goes quiet</label><select id="f-afk" data-act="setafk"><option value="skip"' + (st.afk === 'skip' ? ' selected' : '') + '>Skip their turns</option><option value="ai"' + (st.afk === 'ai' ? ' selected' : '') + '>A ghost-hand plays for them</option><option value="wait"' + (st.afk === 'wait' ? ' selected' : '') + '>Wait up to 5 minutes</option></select></div><div class="field"><label for="f-turn">Turn timer</label><select id="f-turn" data-act="setturn">' + [60, 90, 150, 240, 420].map(function (x) { return '<option value="' + x + '"' + (st.turnSec === x ? ' selected' : '') + '>' + (x < 120 ? x + ' s' : x / 60 + ' min') + '</option>'; }).join('') + '</select></div><button class="btn small" data-act="addbot"' + (v.players.length >= 6 ? ' disabled' : '') + '>+ Ghost companion</button>' + v.players.filter(function (p) { return p.id.indexOf('bot') === 0; }).map(function (p) { return '<button class="btn tiny" data-act="kickbot" data-id="' + esc(p.id) + '">Dismiss ' + esc(p.name.replace(' (ghost)', '')) + '</button>'; }).join('') + '</div>';
+    if (host) rules = '<label class="opening-mode"><input type="checkbox" data-act="experience"' + (S.ui.experienced ? ' checked' : '') + '> Experienced players: start with the full expedition</label>';
+    if (host && S.ui.rules) rules += '<div class="l2rules"><div class="field"><label for="f-afk">If a player goes quiet</label><select id="f-afk" data-act="setafk"><option value="skip"' + (st.afk === 'skip' ? ' selected' : '') + '>Skip their turns</option><option value="ai"' + (st.afk === 'ai' ? ' selected' : '') + '>A ghost-hand plays for them</option><option value="wait"' + (st.afk === 'wait' ? ' selected' : '') + '>Wait up to 5 minutes</option></select></div><div class="field"><label for="f-turn">Turn timer</label><select id="f-turn" data-act="setturn">' + [60, 90, 150, 240, 420].map(function (x) { return '<option value="' + x + '"' + (st.turnSec === x ? ' selected' : '') + '>' + (x < 120 ? x + ' s' : x / 60 + ' min') + '</option>'; }).join('') + '</select></div><button class="btn small" data-act="addbot"' + (v.players.length >= 6 ? ' disabled' : '') + '>+ Ghost companion</button>' + v.players.filter(function (p) { return p.id.indexOf('bot') === 0; }).map(function (p) { return '<button class="btn tiny" data-act="kickbot" data-id="' + esc(p.id) + '">Dismiss ' + esc(p.name.replace(' (ghost)', '')) + '</button>'; }).join('') + '</div>';
     patch('l2rules', rules);
     patch('l2stage', Heroes.showcase(cat, h, S.ui));
     if (S.ui.lastHero !== h) { var first = S.ui.lastHero == null; S.ui.lastHero = h; var art = $('#l2stage .hero-art'), gl = $('#l2stage .glow'), inf = $('#l2stage .hero-info'); [art, gl, inf].forEach(function (e) { if (e) { e.classList.remove('enter'); void e.offsetWidth; e.classList.add('enter'); } }); }
@@ -400,7 +413,7 @@
     S.ui.icard = ic; S.ui.icardLoc = S.view.me.loc;
     if (ic.obj) St.focus(ic.obj);
     htmlOf.advui = null;
-    setTimeout(function () { render(); }, FX.reduced() ? 0 : 380);   // let the camera arrive first
+    setTimeout(function () { render(); var first = document.querySelector('.icard [data-act="choose"], .icard button'); if (first) first.focus({ preventScroll: true }); }, FX.reduced() ? 0 : 380);   // let the camera arrive first
   }
   function closeCard(keepCam) { var had = !!S.ui.icard; S.ui.icard = null; S.ui.prep = null; if (!keepCam && !EV.busy()) St.unfocus(); if (had) { htmlOf.advui = null; render(); } }
   // choosing an option: risky ones show their odds first (in the card), safe ones happen at once
@@ -461,7 +474,8 @@
     // lobby
     pick: function (el) { send({ t: 'pick', cls: el.dataset.cls }); AU.sfx('click'); },
     ready: function () { send({ t: 'ready', on: !(UI.me().ready) }); },
-    start: function () { send({ t: 'start' }); },
+    start: function () { send({ t: 'start', opening: S.ui.experienced !== true }); },
+    experience: function (el) { S.ui.experienced = el.checked; },
     addbot: function () { send({ t: 'addbot' }); }, kickbot: function (el) { send({ t: 'kickbot', id: el.dataset.id }); },
     setafk: function (el) { send({ t: 'settings', afk: el.value }); }, setturn: function (el) { send({ t: 'settings', turnSec: +el.value }); },
     // layout
@@ -511,8 +525,14 @@
       if (st) { st.classList.remove('confirm'); void st.offsetWidth; st.classList.add('confirm'); }
       send({ t: 'pick', cls: h });
     },
-    drawer: function (el) { var d = el.dataset.d; S.ui.drawer = S.ui.drawer === d ? null : d; if (d === 'right' && S.ui.drawer) S.ui.newClue = false; var gm = $('.game'); if (gm) gm.setAttribute('data-drawer', S.ui.drawer || ''); htmlOf.hud = null; htmlOf.left = null; htmlOf.right = null; render(); AU.sfx('click'); },
-    tab: function (el) { S.ui.tab = el.dataset.t; if (S.ui.tab === 'map') setTimeout(function () { MAP.fitAll(); }, 80); var gm = $('.game'); if (gm) gm.setAttribute('data-tab', S.ui.tab); htmlOf.nav = null; render(); },
+    drawer: function (el) {
+      var d = el.dataset.d; S.ui.drawer = S.ui.drawer === d ? null : d;
+      if (d === 'right' && S.ui.drawer) S.ui.newClue = false;
+      // Narrow layouts use full panels, not off-screen desktop drawers.
+      if (window.innerWidth <= 960) S.ui.tab = S.ui.drawer ? (d === 'left' ? 'you' : 'log') : 'act';
+      htmlOf.hud = null; htmlOf.left = null; htmlOf.right = null; render(); AU.sfx('click');
+    },
+    tab: function (el) { S.ui.tab = el.dataset.t; S.ui.drawer = S.ui.tab === 'you' ? 'left' : S.ui.tab === 'log' ? 'right' : null; if (S.ui.tab === 'map') setTimeout(function () { MAP.fitAll(); }, 80); var gm = $('.game'); if (gm) gm.setAttribute('data-tab', S.ui.tab); htmlOf.nav = null; render(); },
     jtab: function (el) { S.ui.jtab = el.dataset.t; htmlOf.right = null; render(); },
     zin: function () { MAP.zoomIn(); }, zout: function () { MAP.zoomOut(); }, zme: function () { MAP.center(UI.me().loc); }, zall: function () { MAP.fitAll(); },
     selnode: function (el) { if (MAP.isDragging()) return; var id = el.dataset.loc; S.ui.sel = S.ui.sel === id ? null : id; AU.sfx('click'); htmlOf.stage = null; htmlOf.mapsvg = null; htmlOf.mapsheet = null; render(); },
@@ -585,7 +605,7 @@
     if (el.dataset && el.dataset.act === 'vol') ACTIONS.vol(el);
   });
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { if (S.ui.modal) closeModal(); else if (S.ui.map) ACTIONS.closemap(); else if (S.ui.drawer) ACTIONS.drawer({ dataset: { d: S.ui.drawer } }); else if (S.ui.sel) ACTIONS.desel(); }
+    if (e.key === 'Escape') { if (S.ui.icard) { closeCard(); return; } if (S.ui.modal) closeModal(); else if (S.ui.map) ACTIONS.closemap(); else if (S.ui.drawer) ACTIONS.drawer({ dataset: { d: S.ui.drawer } }); else if (S.ui.sel) ACTIONS.desel(); }
     if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.node[data-act]')) { e.preventDefault(); ACTIONS.selnode(e.target); }
     if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.obj[data-act]')) { e.preventDefault(); ACTIONS.obj(e.target); }
     if (e.key === 'Enter' && e.target.id === 'f-code') ACTIONS.join();

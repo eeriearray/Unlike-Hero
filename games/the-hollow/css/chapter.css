@@ -1,0 +1,84 @@
+/* Title, prologue and epilogues share the same photographic atmosphere. */
+.chapter-title { position: relative; isolation: isolate; min-height: 100dvh; background: #0b1117; }
+.chapter-backdrop { position: fixed; inset: 0; z-index: -1; overflow: hidden; background: radial-gradient(ellipse at 30% 30%,#263431,#080d13 75%); pointer-events: none; }
+.chapter-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(.48) saturate(.6); animation: chapter-drift 32s ease-in-out infinite alternate; }
+.chapter-backdrop::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg,#050b12a8,#050b1240 55%,#050b12c9),linear-gradient(0deg,#050b13db,transparent 60%); }
+.chapter-fog { position: absolute; z-index: 1; inset: 40% -30% -30%; background: radial-gradient(ellipse at 20% 50%,#b9c7b123,transparent 50%),radial-gradient(ellipse at 65% 70%,#b9c7b11a,transparent 45%); filter: blur(20px); animation: chapter-fog 38s ease-in-out infinite alternate; }
+@keyframes chapter-drift { from { transform: scale(1.02) translateX(-.5%); } to { transform: scale(1.08) translateX(.5%); } }
+@keyframes chapter-fog { from { transform: translateX(-4%); } to { transform: translateX(5%); } }
+.chapter-title .title { position: relative; display: grid; grid-template-columns: minmax(0,1fr) minmax(310px,390px); column-gap: 7vw; align-content: center; min-height: 100dvh; max-width: 1260px; padding: 70px 48px 90px; text-align: left; }
+.chapter-title .title-art { display: block; position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; max-width: none; margin: 0; border: 0; border-radius: 0; opacity: .35; }
+.chapter-title:has(> .chapter-art-ready) .title-art { display: none; }
+.chapter-title .logo { grid-column: 1; align-self: end; margin: 0; padding: 0; font-size: clamp(68px,8.5vw,112px); line-height: .95; letter-spacing: .035em; font-weight: 400; color: #eaddb8; background: none; -webkit-text-fill-color: currentColor; text-shadow: 0 3px 24px #000c; }
+.chapter-title .logo-sub { grid-column: 1; margin: 20px 0; color: #cbb78b; letter-spacing: .18em; line-height: 1.7; }
+.chapter-title .tagline { grid-column: 1; max-width: 440px; margin: 0; font-family: var(--story,Georgia,serif); color: #d4cbb7; font-size: 1.2rem; line-height: 1.55; }
+.chapter-title .menu { grid-column: 2; grid-row: 1 / span 4; width: 100%; max-width: none; margin: 0; padding: 24px; border: 1px solid #b5a27542; border-radius: 6px; background: #0a101ad9; box-shadow: 0 16px 60px #0007; }
+.chapter-title .menu .panel { background: transparent; border: 0; padding: 0; }
+.chapter-title .menu input { background: #111b22; }
+.chapter-prologue { position: absolute; left: 48px; bottom: 28px; }
+.chapter-eyebrow { color: #d1b77c; letter-spacing: .18em; text-transform: uppercase; font: 11px/1.6 var(--body,Georgia,serif); }
+.chapter-intro { position: fixed; inset: 0; margin: 0; padding: 24px; width: 100%; height: 100dvh; max-width: none; max-height: none; border: 0; color: #e9dfc7; background: #091018; isolation: isolate; z-index: 120; }
+.chapter-intro[open] { display: grid; place-items: center; }
+.chapter-intro::backdrop { background: #05090f; }
+.chapter-intro-copy { max-width: 660px; text-align: center; }
+.chapter-intro h2 { font-family: var(--display,Georgia,serif); font-weight: 400; font-size: clamp(32px,6vw,64px); line-height: 1.1; }
+.chapter-intro p { font: 1.35rem/1.65 var(--story,Georgia,serif); min-height: 4em; color: #e4ddca; }
+.chapter-intro progress { display: block; width: min(320px,100%); height: 3px; margin: 36px auto; accent-color: #c7ad73; }
+.chapter-tip { position: fixed; z-index: 85; border: 1px solid #bba16a; border-radius: 8px; background: #101b23; color: #e9dfc7; box-shadow: 0 10px 35px #000a; padding: 18px; }
+.chapter-tip h2 { font: 1.15rem/1.2 var(--display,Georgia,serif); margin: 10px 0; }
+.chapter-tip p { font: 1rem/1.5 var(--story,Georgia,serif); margin: 10px 0 18px; }
+.chapter-tipactions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.chapter-tipspot { position: fixed; z-index: 84; pointer-events: none; border: 2px solid #e2c789; border-radius: 7px; box-shadow: 0 0 18px #c8ab674d; }
+.chapter-ending { position: fixed; inset: 0; z-index: 60; overflow-y: auto; isolation: isolate; background: #070b11; padding: 7vh 24px; }
+.chapter-ending .chapter-backdrop { z-index: -1; }
+.chapter-ending .chapter-photo { filter: brightness(.38) saturate(.6); }
+.ending-silence .chapter-photo { filter: brightness(.55) saturate(.5) sepia(.15); }
+.ending-reverse .chapter-photo { filter: brightness(.45) hue-rotate(12deg) saturate(.65); }
+.ending-bargain .chapter-photo { filter: brightness(.4) hue-rotate(330deg) saturate(.8); }
+.ending-destroy .chapter-photo { filter: brightness(.4) sepia(.25) saturate(.9); }
+.ending-escape .chapter-photo { filter: brightness(.5) saturate(.6); }
+.ending-doom .chapter-backdrop::after { background: linear-gradient(90deg,#210a15cc,#09070bbb),linear-gradient(0deg,#10060ee6,transparent); }
+.ending-wipe .chapter-photo { filter: brightness(.3) saturate(.2); }
+.chapter-epilogue { position: relative; max-width: 780px; margin: 0 auto; padding: clamp(24px,5vw,52px); border: 1px solid #c8b48445; background: #0a1119e8; box-shadow: 0 20px 80px #0007; border-radius: 4px; }
+.chapter-epilogue > h1 { color: #e9d5a9; font: 400 clamp(36px,5vw,62px)/1.1 var(--display,Georgia,serif); margin: 18px 0 24px; }
+.chapter-endtext { color: #e2daca; font: 1.2rem/1.75 var(--story,Georgia,serif); }
+.chapter-stats { display: grid; grid-template-columns: repeat(3,1fr); margin: 32px 0 22px; padding: 20px 0; border-block: 1px solid #bc9d6652; gap: 18px; }
+.chapter-stats dt { font: 11px/1.6 var(--body,Georgia,serif); text-transform: uppercase; letter-spacing: .09em; color: #bcb199; }
+.chapter-stats dd { font: 32px/1.3 var(--display,Georgia,serif); color: #e8cd92; margin: 8px 0 0; }
+.chapter-survivors { display: grid; gap: 8px; margin: 24px 0 30px; font-family: var(--story,Georgia,serif); line-height: 1.5; }
+.chapter-survivors b { color: #c0b28f; font-weight: 400; }
+.chapter-endactions { display: flex; flex-wrap: wrap; gap: 12px; }
+.chapter-record { margin-top: 28px; border-top: 1px solid #bba36a40; padding-top: 18px; }
+.chapter-record > summary { cursor: pointer; color: #bbae92; }
+.chapter-record .ending { position: static; padding: 24px 0 0; background: none; overflow: visible; z-index: auto; }
+.chapter-record .ending .in { max-width: none; }
+/* Ink on aged parchment. SVG fog/reveals and route legality still come from the server view. */
+svg.chapter-map { background: #c8b381; }
+svg.chapter-map .node .lbl { fill: #302a1d; stroke: #e9d7ae; stroke-width: 3px; paint-order: stroke; font-family: var(--story,Georgia,serif); }
+svg.chapter-map .node .ring { filter: drop-shadow(0 2px 2px #4e3e2b55); }
+svg.chapter-map .node:focus-visible .ring, svg.chapter-map .node:hover .ring { stroke: #2d6558 !important; }
+svg.chapter-map .region-label { fill: #493c25; stroke: #e4d0a3; stroke-width: 1px; paint-order: stroke; opacity: .85; }
+svg.chapter-map .road-symbol { pointer-events: none; }
+.chapter-map-key { position: absolute; z-index: 3; left: 12px; top: 12px; max-width: 230px; padding: 10px 12px; border: 1px solid #897346; border-radius: 5px; background: #eddfbbed; color: #302a1e; font: 13px/1.5 Georgia,serif; box-shadow: 0 3px 12px #3e2e1a33; }
+.chapter-map-key summary { cursor: pointer; min-height: 24px; }
+.chapter-road-key { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; padding-top: 10px; }
+.chapter-road-key span { display: flex; align-items: center; gap: 6px; }
+.chapter-road-key svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.5; }
+body.reduce-motion .chapter-photo, body.reduce-motion .chapter-fog, body.reduced-scares .chapter-photo, body.reduced-scares .chapter-fog { animation: none; }
+body.chapter-paused .chapter-photo, body.chapter-paused .chapter-fog { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .chapter-photo, .chapter-fog { animation: none !important; } }
+@media (max-width: 760px) {
+  .chapter-title .title { display: block; min-height: auto; padding: 48px 22px 24px; }
+  .chapter-title .logo { font-size: clamp(56px,14vw,86px); }
+  .chapter-title .tagline { margin-bottom: 28px; font-size: 1.1rem; }
+  .chapter-title .menu { padding: 20px; }
+  .chapter-title .logo-sub { font-size: .65rem; }
+  .chapter-prologue { position: static; margin: 0 22px 30px; }
+  .chapter-ending { padding: 20px 12px; }
+  .chapter-epilogue { padding: 26px 22px; }
+  .chapter-stats { gap: 10px; }
+  .chapter-stats dt { font-size: 9px; }
+  .chapter-stats dd { font-size: 26px; }
+  .chapter-endtext { font-size: 1.1rem; }
+}
+svg.chapter-map .node .ring { fill: url(#disc); }

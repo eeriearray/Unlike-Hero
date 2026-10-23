@@ -1,0 +1,113 @@
+{
+  "id": "altar",
+  "region": "abbey",
+  "background": "task2_environments_abbey_altar",
+  "moods": {},
+  "viewBox": [
+    1600,
+    900
+  ],
+  "hotspots": [
+    {
+      "id": "refuse",
+      "x": 148,
+      "y": 285,
+      "w": 184,
+      "h": 130,
+      "optionId": "refuse",
+      "label": "Refuse the bargain",
+      "hidden": false
+    },
+    {
+      "id": "sacmight",
+      "x": 521,
+      "y": 285,
+      "w": 184,
+      "h": 130,
+      "optionId": "sacmight",
+      "label": "Pay 3 Vitality for lasting Might",
+      "hidden": false
+    },
+    {
+      "id": "sacwit",
+      "x": 895,
+      "y": 285,
+      "w": 184,
+      "h": 130,
+      "optionId": "sacwit",
+      "label": "Pay 3 Vitality for lasting Wit",
+      "hidden": false
+    },
+    {
+      "id": "sacfate",
+      "x": 1268,
+      "y": 285,
+      "w": 184,
+      "h": 130,
+      "optionId": "sacfate",
+      "label": "Pay 3 Vitality for lasting Fate",
+      "hidden": false
+    },
+    {
+      "id": "deceive",
+      "x": 148,
+      "y": 465,
+      "w": 184,
+      "h": 130,
+      "optionId": "deceive",
+      "label": "Deceive the altar",
+      "hidden": false
+    },
+    {
+      "id": "together",
+      "x": 521,
+      "y": 465,
+      "w": 184,
+      "h": 130,
+      "optionId": "together",
+      "label": "Make the offering together",
+      "hidden": false
+    },
+    {
+      "id": "pact",
+      "x": 895,
+      "y": 465,
+      "w": 184,
+      "h": 130,
+      "optionId": "pact",
+      "label": "Take the Remembrancer's hand",
+      "hidden": false
+    },
+    {
+      "id": "revive",
+      "x": 1268,
+      "y": 465,
+      "w": 184,
+      "h": 130,
+      "optionId": "revive",
+      "label": "Bargain for a fallen ally",
+      "hidden": false
+    },
+    {
+      "id": "search_area",
+      "x": 320,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "investigate",
+      "label": "Investigate the surroundings"
+    },
+    {
+      "id": "way_out",
+      "x": 1080,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "travel",
+      "label": "Choose a road"
+    }
+  ],
+  "artDirection": "supplied"
+}

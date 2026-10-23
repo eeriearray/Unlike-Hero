@@ -15,29 +15,39 @@
     b.classList.toggle('large-text', !!P.large);
     b.classList.toggle('high-contrast', !!P.contrast);
     b.classList.toggle('no-distort', !P.distort);
+    if (dust && dust.wake) dust.wake();
   }
   if (mq.addEventListener) mq.addEventListener('change', apply);
 
   // ───────────────────────────── dust ─────────────────────────────
   var dust = { c: null, x: null, parts: [], raf: 0, on: false };
   function startDust() {
+    if (dust.c) return;
     dust.c = document.getElementById('dust'); if (!dust.c) return;
-    dust.x = dust.c.getContext('2d');
+    dust.x = dust.c.getContext('2d'); if (!dust.x) return;
+    // Rasterise one mote offscreen once, then reuse it instead of drawing 46 paths/frame.
+    var sprite = g.OffscreenCanvas ? new g.OffscreenCanvas(12, 12) : document.createElement('canvas');
+    sprite.width = sprite.height = 12;
+    var sx = sprite.getContext('2d'); sx.fillStyle = '#d6cdb4'; sx.beginPath(); sx.arc(6, 6, 4, 0, 6.283); sx.fill();
     var resize = function () { dust.c.width = innerWidth; dust.c.height = innerHeight; };
     resize(); addEventListener('resize', resize);
-    for (var i = 0; i < 46; i++) dust.parts.push({ x: Math.random() * innerWidth, y: Math.random() * innerHeight, r: Math.random() * 1.6 + 0.3, vx: (Math.random() - 0.5) * 0.12, vy: -Math.random() * 0.12 - 0.02, a: Math.random() * 0.35 + 0.05, p: Math.random() * 6 });
-    var tick = function () {
-      dust.raf = requestAnimationFrame(tick);
-      if (document.hidden || reduced()) { if (dust.on) { dust.x.clearRect(0, 0, dust.c.width, dust.c.height); dust.on = false; } return; }
+    var count = innerWidth <= 960 ? 24 : 46;
+    for (var i = 0; i < count; i++) dust.parts.push({ x: Math.random() * innerWidth, y: Math.random() * innerHeight, r: Math.random() * 1.6 + .3, vx: (Math.random() - .5) * .12, vy: -Math.random() * .12 - .02, a: Math.random() * .35 + .05, p: Math.random() * 6 });
+    function allowed() { return !document.hidden && !reduced() && !P.reducedScares; }
+    function tick() {
+      dust.raf = 0;
+      if (!allowed()) { dust.x.clearRect(0, 0, dust.c.width, dust.c.height); dust.on = false; return; }
       dust.on = true;
       var x = dust.x, w = dust.c.width, h = dust.c.height; x.clearRect(0, 0, w, h);
       dust.parts.forEach(function (q) {
-        q.x += q.vx + Math.sin(q.p += 0.004) * 0.08; q.y += q.vy;
+        q.x += q.vx + Math.sin(q.p += .004) * .08; q.y += q.vy;
         if (q.y < -4) { q.y = h + 4; q.x = Math.random() * w; } if (q.x < -4) q.x = w + 4; if (q.x > w + 4) q.x = -4;
-        x.beginPath(); x.fillStyle = 'rgba(214,205,180,' + q.a + ')'; x.arc(q.x, q.y, q.r, 0, 6.283); x.fill();
+        x.globalAlpha = q.a; x.drawImage(sprite, q.x - q.r, q.y - q.r, q.r * 2, q.r * 2);
       });
-    };
-    tick();
+      x.globalAlpha = 1; dust.raf = requestAnimationFrame(tick);
+    }
+    dust.wake = function () { if (!allowed()) { cancelAnimationFrame(dust.raf); dust.raf = 0; dust.x.clearRect(0, 0, dust.c.width, dust.c.height); } else if (!dust.raf) dust.raf = requestAnimationFrame(tick); };
+    document.addEventListener('visibilitychange', dust.wake); dust.wake();
   }
 
   // ───────────────────────────── small effects ─────────────────────────────

@@ -1,0 +1,63 @@
+{
+  "id": "hidden_passage",
+  "region": "crypt",
+  "background": "task2_environments_crypt_hidden_passage",
+  "moods": {},
+  "viewBox": [
+    1600,
+    900
+  ],
+  "hotspots": [
+    {
+      "id": "carvings",
+      "x": 148,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "carvings",
+      "label": "Study the carvings",
+      "hidden": false
+    },
+    {
+      "id": "chalk",
+      "x": 708,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "chalk",
+      "label": "Mark the way with chalk",
+      "hidden": false
+    },
+    {
+      "id": "whisper",
+      "x": 1268,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "whisper",
+      "label": "Whisper to the walls",
+      "hidden": false
+    },
+    {
+      "id": "search_area",
+      "x": 320,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "investigate",
+      "label": "Investigate the surroundings"
+    },
+    {
+      "id": "way_out",
+      "x": 1080,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "travel",
+      "label": "Choose a road"
+    }
+  ],
+  "artDirection": "supplied"
+}

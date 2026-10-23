@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Hollow — Step 2 Art Review</title>
+<link rel="stylesheet" href="../css/hollow.css">
+<link rel="stylesheet" href="../css/redesign.css">
+<link rel="stylesheet" href="../css/stage.css">
+<link rel="stylesheet" href="../css/presentation.css">
+<style>
+body { overflow:auto; background:#0d1115; padding:32px 24px; }
+.review { max-width:1120px; margin:auto; }
+h1 { font-size:44px; color:#ead29b; margin:0; } h2 { font-size:33px; }
+.lead { max-width:65ch; color:#c9c2b2; margin:12px 0 28px; line-height:1.5; }
+.review-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(145px,1fr)); gap:12px; }
+.review-item { padding:16px 10px; border:1px solid #7c6b4788; background:#171b1f; text-align:center; display:grid; justify-items:center; gap:10px; }
+.review-item h3 { margin:0; font-size:22px; } .review-item small { font:12px ui-monospace,monospace; color:#bfb7a5; }
+.dice-review { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+.dice-sample { border:1px solid #7c6b4788; padding:20px 8px; text-align:center; background:#13191c; }
+.model { position:relative; height:130px; width:130px; margin:24px auto; perspective:600px; }
+.model .physical-d20 { --die-scale:1.25; }
+.review-tumble .d20-solid { animation:solid-tumble 1.25s ease-out both; }
+.review-settle .d20-solid { animation:solid-settle .42s ease-out; }
+.review-settle:has(.tone-crit)::after, .review-settle:has(.tone-fumble)::after { content:""; position:absolute; inset:0; border:2px solid #ffe4a7; border-radius:50%; opacity:0; animation:landing-ring .8s ease-out; }
+.review-settle:has(.tone-fumble)::after { border-color:#eb8691; }
+.review-settle .tone-fumble .d20-solid { animation:solid-fumble .45s ease-out; }
+body.reduce-motion .model::after { animation:none!important; }
+@media(prefers-reduced-motion:reduce){ .model::after { animation:none!important; } }
+.review-controls { display:flex; flex-wrap:wrap; gap:10px; margin:18px 0; }
+.review-jar { width:70px; height:70px; image-rendering:pixelated; }
+.review-credit { margin-top:30px; color:#a8a394; font-size:.85rem; }
+@media(max-width:600px){ body{padding:22px 14px;} .dice-review{grid-template-columns:1fr;} h1{font-size:33px;} }
+</style>
+</head>
+<body>
+<main class="review">
+<h1>The Hollow · Art Review</h1>
+<p class="lead">Step 2: the full inventory collection and D20 finishes. This review page has no expedition state. Raster assets keep the original SVG as a fallback.</p>
+<div class="review-controls"><button class="btn primary" id="roll-preview">Roll the dice</button><label><input type="checkbox" id="still-preview"> Reduced motion</label><a class="btn" href="../">Open the game</a></div>
+<section aria-label="Dice finishes" class="dice-review" id="dice-review"></section>
+<h2>Inventory &amp; relics</h2>
+<section class="review-grid" id="icon-review" aria-label="All inventory icons"></section>
+<p class="review-credit">VHS UI Free by heyheythere — CC BY 4.0. <a href="CREDITS.md">Full pack credits and local-use licensing audit</a>.</p>
+</main>
+<script src="../js/assets.js"></script>
+<script src="../js/art.js"></script>
+<script src="../js/art2.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../engine/data/core.js"></script>
+<script src="../js/physical-dice.js"></script>
+<script src="../js/presentation.js"></script>
+<script>
+(function () {
+  var A=window.HollowArt, items=window.HollowData.items;
+  window.HollowUI.S.cat={items:items};
+  document.getElementById('icon-review').innerHTML=Object.keys(items).map(function(id){
+    return '<article class="review-item">'+A.itemArt(id,76)+'<h3>'+A.esc(items[id].name)+'</h3><small>'+id+'</small></article>';
+  }).join('');
+  document.getElementById('dice-review').innerHTML=[['ok',12,'A steady hand'],['crit',20,'Critical success'],['fumble',1,'Critical failure']].map(function(d){
+    return '<article class="dice-sample"><h2>'+d[2]+'</h2><div class="model">'+A.die(d[1],d[0])+'</div><span>D20 · '+d[1]+'</span></article>';
+  }).join('');
+  var rolling=false;
+  document.getElementById('roll-preview').addEventListener('click',function(){
+    if(rolling||document.getElementById('still-preview').checked)return;
+    rolling=true;
+    document.querySelectorAll('.model').forEach(function(el){el.classList.remove('review-settle');el.classList.add('review-tumble');});
+    setTimeout(function(){document.querySelectorAll('.model').forEach(function(el){el.classList.remove('review-tumble');el.classList.add('review-settle');});rolling=false;},1250);
+  });
+  document.getElementById('still-preview').addEventListener('change',function(e){document.body.classList.toggle('reduce-motion',e.target.checked);});
+})();
+</script>
+</body>
+</html>

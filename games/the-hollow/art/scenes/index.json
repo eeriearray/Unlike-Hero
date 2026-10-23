@@ -1,0 +1,425 @@
+{
+  "version": 1,
+  "places": {
+    "square": {
+      "file": "art/scenes/square.json",
+      "region": "village",
+      "background": "task1_environments_village_square",
+      "neighbours": [
+        "chapel",
+        "graveyard",
+        "belltower",
+        "nursery",
+        "wagon"
+      ]
+    },
+    "chapel": {
+      "file": "art/scenes/chapel.json",
+      "region": "village",
+      "background": "task1_environments_village_chapel",
+      "neighbours": [
+        "square",
+        "graveyard",
+        "library"
+      ]
+    },
+    "nursery": {
+      "file": "art/scenes/nursery.json",
+      "region": "village",
+      "background": "task1_environments_village_nursery",
+      "neighbours": [
+        "square",
+        "gate"
+      ]
+    },
+    "wagon": {
+      "file": "art/scenes/wagon.json",
+      "region": "village",
+      "background": "task1_environments_village_wagon",
+      "neighbours": [
+        "square",
+        "bridge",
+        "gate"
+      ]
+    },
+    "belltower": {
+      "file": "art/scenes/belltower.json",
+      "region": "village",
+      "background": "task1_environments_village_belltower",
+      "neighbours": [
+        "square",
+        "bridge"
+      ]
+    },
+    "graveyard": {
+      "file": "art/scenes/graveyard.json",
+      "region": "village",
+      "background": "task1_environments_village_graveyard",
+      "neighbours": [
+        "square",
+        "chapel",
+        "foyer"
+      ]
+    },
+    "bridge": {
+      "file": "art/scenes/bridge.json",
+      "region": "village",
+      "background": "task1_environments_village_bridge",
+      "neighbours": [
+        "belltower",
+        "wagon",
+        "forest"
+      ]
+    },
+    "gate": {
+      "file": "art/scenes/gate.json",
+      "region": "village",
+      "background": "task1_environments_village_gate",
+      "neighbours": [
+        "wagon",
+        "nursery"
+      ]
+    },
+    "foyer": {
+      "file": "art/scenes/foyer.json",
+      "region": "estate",
+      "background": "task1_environments_estate_foyer",
+      "neighbours": [
+        "graveyard",
+        "library",
+        "mirror",
+        "corridor",
+        "blackmarket"
+      ]
+    },
+    "library": {
+      "file": "art/scenes/library.json",
+      "region": "estate",
+      "background": "task1_environments_estate_library",
+      "neighbours": [
+        "chapel",
+        "foyer",
+        "mirror",
+        "observatory"
+      ]
+    },
+    "mirror": {
+      "file": "art/scenes/mirror.json",
+      "region": "estate",
+      "background": "task1_environments_estate_mirror",
+      "neighbours": [
+        "foyer",
+        "library",
+        "treasury",
+        "fountain"
+      ]
+    },
+    "observatory": {
+      "file": "art/scenes/observatory.json",
+      "region": "estate",
+      "background": "task1_environments_estate_observatory",
+      "neighbours": [
+        "library",
+        "ritual"
+      ]
+    },
+    "treasury": {
+      "file": "art/scenes/treasury.json",
+      "region": "estate",
+      "background": "task1_environments_estate_treasury",
+      "neighbours": [
+        "mirror",
+        "blackmarket"
+      ]
+    },
+    "corridor": {
+      "file": "art/scenes/corridor.json",
+      "region": "estate",
+      "background": "task1_environments_estate_corridor",
+      "neighbours": [
+        "foyer"
+      ]
+    },
+    "blackmarket": {
+      "file": "art/scenes/blackmarket.json",
+      "region": "estate",
+      "background": "task1_environments_estate_blackmarket",
+      "neighbours": [
+        "treasury",
+        "foyer",
+        "ossuary"
+      ]
+    },
+    "forest": {
+      "file": "art/scenes/forest.json",
+      "region": "woods",
+      "background": "task2_environments_woods_forest",
+      "neighbours": [
+        "bridge",
+        "cabin",
+        "orchard",
+        "battlefield",
+        "moonwell"
+      ]
+    },
+    "cabin": {
+      "file": "art/scenes/cabin.json",
+      "region": "woods",
+      "background": "task2_environments_woods_cabin",
+      "neighbours": [
+        "forest",
+        "garden",
+        "battlefield"
+      ]
+    },
+    "garden": {
+      "file": "art/scenes/garden.json",
+      "region": "woods",
+      "background": "task2_environments_woods_garden",
+      "neighbours": [
+        "cabin",
+        "moonwell"
+      ]
+    },
+    "orchard": {
+      "file": "art/scenes/orchard.json",
+      "region": "woods",
+      "background": "task2_environments_woods_orchard",
+      "neighbours": [
+        "forest",
+        "moonwell",
+        "shrine"
+      ]
+    },
+    "moonwell": {
+      "file": "art/scenes/moonwell.json",
+      "region": "woods",
+      "background": "task2_environments_woods_moonwell",
+      "neighbours": [
+        "garden",
+        "orchard",
+        "forest",
+        "flooded_hall"
+      ]
+    },
+    "battlefield": {
+      "file": "art/scenes/battlefield.json",
+      "region": "woods",
+      "background": "task2_environments_woods_battlefield",
+      "neighbours": [
+        "forest",
+        "shrine",
+        "cabin"
+      ]
+    },
+    "shrine": {
+      "file": "art/scenes/shrine.json",
+      "region": "woods",
+      "background": "task2_environments_woods_shrine",
+      "neighbours": [
+        "orchard",
+        "battlefield",
+        "nave"
+      ]
+    },
+    "nave": {
+      "file": "art/scenes/nave.json",
+      "region": "abbey",
+      "background": "task2_environments_abbey_nave",
+      "neighbours": [
+        "shrine",
+        "fountain",
+        "altar",
+        "reliquary"
+      ]
+    },
+    "fountain": {
+      "file": "art/scenes/fountain.json",
+      "region": "abbey",
+      "background": "task2_environments_abbey_fountain",
+      "neighbours": [
+        "mirror",
+        "nave",
+        "ritual",
+        "prison"
+      ]
+    },
+    "altar": {
+      "file": "art/scenes/altar.json",
+      "region": "abbey",
+      "background": "task2_environments_abbey_altar",
+      "neighbours": [
+        "nave",
+        "ritual",
+        "warden"
+      ]
+    },
+    "reliquary": {
+      "file": "art/scenes/reliquary.json",
+      "region": "abbey",
+      "background": "task2_environments_abbey_reliquary",
+      "neighbours": [
+        "nave",
+        "warden"
+      ]
+    },
+    "ritual": {
+      "file": "art/scenes/ritual.json",
+      "region": "abbey",
+      "background": "task2_environments_abbey_ritual",
+      "neighbours": [
+        "observatory",
+        "fountain",
+        "altar",
+        "prison"
+      ]
+    },
+    "prison": {
+      "file": "art/scenes/prison.json",
+      "region": "abbey",
+      "background": "task2_environments_abbey_prison",
+      "neighbours": [
+        "fountain",
+        "ritual",
+        "sealed_crypt"
+      ]
+    },
+    "warden": {
+      "file": "art/scenes/warden.json",
+      "region": "abbey",
+      "background": "task2_environments_abbey_warden",
+      "neighbours": [
+        "reliquary",
+        "altar",
+        "sealed_crypt"
+      ]
+    },
+    "sealed_crypt": {
+      "file": "art/scenes/sealed_crypt.json",
+      "region": "crypt",
+      "background": "task2_environments_crypt_sealed_crypt",
+      "neighbours": [
+        "warden",
+        "prison",
+        "ossuary",
+        "tomb"
+      ]
+    },
+    "ossuary": {
+      "file": "art/scenes/ossuary.json",
+      "region": "crypt",
+      "background": "task2_environments_crypt_ossuary",
+      "neighbours": [
+        "sealed_crypt",
+        "sunken_archive",
+        "nameless_door",
+        "blackmarket"
+      ]
+    },
+    "sunken_archive": {
+      "file": "art/scenes/sunken_archive.json",
+      "region": "crypt",
+      "background": "task2_environments_crypt_sunken_archive",
+      "neighbours": [
+        "ossuary",
+        "flooded_hall"
+      ]
+    },
+    "flooded_hall": {
+      "file": "art/scenes/flooded_hall.json",
+      "region": "crypt",
+      "background": "task2_environments_crypt_flooded_hall",
+      "neighbours": [
+        "moonwell",
+        "sunken_archive",
+        "tomb"
+      ]
+    },
+    "tomb": {
+      "file": "art/scenes/tomb.json",
+      "region": "crypt",
+      "background": "task2_environments_crypt_tomb",
+      "neighbours": [
+        "flooded_hall",
+        "sealed_crypt",
+        "hidden_passage"
+      ]
+    },
+    "hidden_passage": {
+      "file": "art/scenes/hidden_passage.json",
+      "region": "crypt",
+      "background": "task2_environments_crypt_hidden_passage",
+      "neighbours": [
+        "tomb",
+        "stair"
+      ]
+    },
+    "nameless_door": {
+      "file": "art/scenes/nameless_door.json",
+      "region": "crypt",
+      "background": "task2_environments_crypt_nameless_door",
+      "neighbours": [
+        "ossuary",
+        "stair"
+      ]
+    },
+    "stair": {
+      "file": "art/scenes/stair.json",
+      "region": "heart",
+      "background": "task2_environments_heart_stair",
+      "neighbours": [
+        "hidden_passage",
+        "nameless_door",
+        "hall_of_names",
+        "still_lake"
+      ]
+    },
+    "hall_of_names": {
+      "file": "art/scenes/hall_of_names.json",
+      "region": "heart",
+      "background": "task2_environments_heart_hall_of_names",
+      "neighbours": [
+        "stair",
+        "forge",
+        "heart_chamber"
+      ]
+    },
+    "still_lake": {
+      "file": "art/scenes/still_lake.json",
+      "region": "heart",
+      "background": "task2_environments_heart_still_lake",
+      "neighbours": [
+        "stair",
+        "pit"
+      ]
+    },
+    "pit": {
+      "file": "art/scenes/pit.json",
+      "region": "heart",
+      "background": "task2_environments_heart_pit",
+      "neighbours": [
+        "still_lake",
+        "heart_chamber"
+      ]
+    },
+    "forge": {
+      "file": "art/scenes/forge.json",
+      "region": "heart",
+      "background": "task2_environments_heart_forge",
+      "neighbours": [
+        "hall_of_names",
+        "heart_chamber"
+      ]
+    },
+    "heart_chamber": {
+      "file": "art/scenes/heart_chamber.json",
+      "region": "heart",
+      "background": "task2_environments_heart_heart_chamber",
+      "neighbours": [
+        "forge",
+        "hall_of_names",
+        "pit"
+      ]
+    }
+  }
+}

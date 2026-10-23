@@ -180,6 +180,8 @@
     var w = this.w, loc = enc.loc, out = { id: o.id, label: o.label, stakes: o.stakes || '', ap: 0, state: 'ok', why: '' };
     var ap = o.ap != null ? o.ap : (enc.kind === 'event' ? 0 : (o.shop || o.escape ? 0 : 1));
     out.ap = ap;
+    if (w.opening && !w.opening.complete && ['square:board', 'chapel:vestry', 'graveyard:headstones', 'belltower:frame'].indexOf(loc + ':' + o.id) >= 0) out.stakes += ' The opening lead survives a failed check.';
+    if (w.opening && !w.opening.complete && enc.loc === 'belltower' && ['frame', 'climb', 'listen'].indexOf(o.id) >= 0 && !w.opening.entered) { out.state = 'locked'; out.why = 'Enter the tower first.'; }
     if (o.confirm) out.confirm = o.confirm;
     if (o.needsTarget) out.needsTarget = o.needsTarget;
     // visibility
@@ -329,6 +331,7 @@
     var ctx = { enc: enc, p: p, opt: o, tier: tier, lines: [], chips: [], loc: loc, boss: enc.kind === 'boss', enemy: enc.enemy ? this.enemyByUid(enc.enemy) : null, val: x.val, target: x.target, rollEff: roll };
     var parts = out && out.parts ? out.parts : [out];
     parts.forEach(function (pt) { if (pt) this.applyOutcome(p, pt, ctx); }, this);
+    this.recordOpening(p, enc, o, ctx);
     if (o.escape && p.status === 'alive') this.escapeHollow(p, ctx);
     // claims
     if (o.once || o.stock) {

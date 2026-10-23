@@ -1,5 +1,5 @@
-/* THE HOLLOW — audio. Everything is synthesised with the Web Audio API: there are no audio files, so nothing can be
- * missing, mislicensed or fail to load. Layers: region ambience (wind, drones, creaks, whispers), adaptive music
+/* THE HOLLOW — shared mixer and synthesis fallback. recorded-audio.js adds optional file-backed layers.
+ * Missing or undecodable files retain this synthesis. Layers: region ambience (wind, drones, creaks, whispers), adaptive music
  * (pad, shimmer, tension, drums) and event sound effects. Volumes (master / music / ambient / effects) and mute persist.
  * Audio starts after the first click or key press (browser autoplay rules). The game is fully playable muted: every
  * sound can also be shown as a text caption (Settings → "Show sound captions").
@@ -12,7 +12,7 @@
   var S = Object.assign({}, DEFAULTS);
   try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { /* storage blocked */ }
 
-  var ctx = null, master, comp, busM, busA, busS, rev, noiseBuf, started = false;
+  var ctx = null, master, comp, busM, busA, busS, rev, revA, noiseBuf, synthM, synthA, started = false;
   var capFn = null, lastSfx = {}, voices = 0;
   var region = 'title', level = 0, mood = 'explore';
   var amb = null, music = null, schedTimer = null, ambTimer = null, drumTimer = null;
@@ -50,12 +50,16 @@
     master.connect(comp); comp.connect(ctx.destination);
     busM = ctx.createGain(); busA = ctx.createGain(); busS = ctx.createGain();
     busM.connect(master); busA.connect(master); busS.connect(master);
+    synthM = ctx.createGain(); synthA = ctx.createGain(); synthM.connect(busM); synthA.connect(busA);
     // reverb: a generated impulse response (dark, long)
     rev = ctx.createConvolver();
     var len = ctx.sampleRate * 2.8, ir = ctx.createBuffer(2, len, ctx.sampleRate);
     for (var c = 0; c < 2; c++) { var d = ir.getChannelData(c); for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.6); }
     rev.buffer = ir;
-    var revG = ctx.createGain(); revG.gain.value = 0.35; rev.connect(revG); revG.connect(master);
+    var revG = ctx.createGain(); revG.gain.value = 0.35; rev.connect(revG); revG.connect(busS);
+    // Wet tails obey their own category slider and the shared dialog ducking.
+    revA = ctx.createConvolver(); revA.buffer = ir;
+    var ambientWet = ctx.createGain(); ambientWet.gain.value = .35; revA.connect(ambientWet); ambientWet.connect(busA);
     // noise
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
     var nd = noiseBuf.getChannelData(0); for (var j = 0; j < nd.length; j++) nd[j] = Math.random() * 2 - 1;
@@ -72,7 +76,7 @@
 
   function unlock() {
     if (!init()) return;
-    if (ctx.state === 'suspended') ctx.resume();
+    if (ctx.state === 'suspended') ctx.resume().catch(function () {});
     if (!started) { started = true; buildMusic(); setRegion(region, true); scheduleDrums(); }
   }
 
@@ -87,7 +91,7 @@
     o.type = type || 'sine'; o.frequency.setValueAtTime(f, t);
     if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
     env(gn, t, Math.min(0.02, dur / 4), dur, peak || 0.2);
-    o.connect(gn); gn.connect(dest || busS); if (wet) gn.connect(rev);
+    o.connect(gn); gn.connect(dest || busS); if (wet) gn.connect(dest === busA || dest === synthA ? revA : rev);
     o.start(t); o.stop(t + dur + 0.05);
     return o;
   }
@@ -95,7 +99,7 @@
     var t = when || ctx.currentTime, s = noiseSrc(false), bp = ctx.createBiquadFilter(), gn = ctx.createGain();
     bp.type = type || 'bandpass'; bp.frequency.setValueAtTime(f0, t); if (f1) bp.frequency.exponentialRampToValueAtTime(f1, t + dur); bp.Q.value = q || 1;
     env(gn, t, Math.min(0.015, dur / 3), dur, peak || 0.2);
-    s.connect(bp); bp.connect(gn); gn.connect(dest || busS); if (wet) gn.connect(rev);
+    s.connect(bp); bp.connect(gn); gn.connect(dest || busS); if (wet) gn.connect(dest === busA || dest === synthA ? revA : rev);
     s.start(t, Math.random() * 1.5); s.stop(t + dur + 0.05);
   }
   function bellHit(f, peak, when, dest, long) {
@@ -112,7 +116,7 @@
   }
 
   function buildAmbience(name) {
-    var P = REGIONS[name] || REGIONS.title, srcs = [], out = ctx.createGain(); out.gain.value = 0.0001; out.connect(busA);
+    var P = REGIONS[name] || REGIONS.title, srcs = [], out = ctx.createGain(); out.gain.value = 0.0001; out.connect(synthA);
     out.gain.setTargetAtTime(1, ctx.currentTime, 1.4);
     // wind
     var w = noiseSrc(true), wf = ctx.createBiquadFilter(), wg = ctx.createGain(), lfo = ctx.createOscillator(), lg = ctx.createGain();
@@ -135,7 +139,7 @@
     // choir / heart extras
     var extra = null;
     if (P.choir) {
-      extra = ctx.createGain(); extra.gain.value = 0.05; extra.connect(out); extra.connect(rev);
+      extra = ctx.createGain(); extra.gain.value = 0.05; extra.connect(out); extra.connect(revA);
       [2, 3, 4.5].forEach(function (m, i) { var o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.value = P.root * m * 2; var vg = ctx.createGain(); vg.gain.value = 0.3; var l = ctx.createOscillator(), lgn = ctx.createGain(); l.frequency.value = 0.1 + i * 0.04; lgn.gain.value = 0.35; l.connect(lgn); lgn.connect(vg.gain); o.connect(vg); vg.connect(extra); o.start(); l.start(); srcs.push(o, l); });
     }
     return { name: name, out: out, srcs: srcs, dis: disg, wind: wg, windBase: 0.05 + P.wind * 0.12, df: df, P: P };
@@ -174,7 +178,7 @@
     }, gap);
   }
   var FLAV = {
-    creak: function (d) { var t = ctx.currentTime; var o = ctx.createOscillator(), gn = ctx.createGain(), f = ctx.createBiquadFilter(); o.type = 'sawtooth'; o.frequency.setValueAtTime(70 + Math.random() * 40, t); o.frequency.linearRampToValueAtTime(110 + Math.random() * 60, t + 1.2); f.type = 'bandpass'; f.frequency.value = 520; f.Q.value = 9; env(gn, t, 0.3, 1.1, 0.07); o.connect(f); f.connect(gn); gn.connect(d); gn.connect(rev); o.start(t); o.stop(t + 1.6); },
+    creak: function (d) { var t = ctx.currentTime; var o = ctx.createOscillator(), gn = ctx.createGain(), f = ctx.createBiquadFilter(); o.type = 'sawtooth'; o.frequency.setValueAtTime(70 + Math.random() * 40, t); o.frequency.linearRampToValueAtTime(110 + Math.random() * 60, t + 1.2); f.type = 'bandpass'; f.frequency.value = 520; f.Q.value = 9; env(gn, t, 0.3, 1.1, 0.07); o.connect(f); f.connect(gn); gn.connect(d); gn.connect(revA); o.start(t); o.stop(t + 1.6); },
     whisper: function (d) { var t = ctx.currentTime, p = 0.025 + level * 0.07; for (var i = 0; i < 3 + Math.floor(level * 3); i++) burst(0.5 + Math.random() * 0.5, 'bandpass', 1200 + Math.random() * 1800, 700 + Math.random() * 900, p, t + i * (0.35 + Math.random() * 0.4), 5, d, true); },
     bellFar: function (d) { var t = ctx.currentTime; var dn = ctx.createGain(); dn.gain.value = 0.12; dn.connect(d); bellHit(200 + Math.random() * 40, 0.1, t, dn, true); },
     crow: function (d) { var t = ctx.currentTime; for (var i = 0; i < 2 + Math.floor(Math.random() * 2); i++) burst(0.22, 'bandpass', 900, 450, 0.06, t + i * 0.32, 4, d); },
@@ -192,7 +196,7 @@
   // ───────────────────────────── music ─────────────────────────────
   var CHORDS = [[0, 7, 12, 15], [-2, 5, 10, 14], [-4, 3, 8, 12], [-5, 2, 7, 10]];   // slow, minor, unresolved
   function buildMusic() {
-    var out = ctx.createGain(); out.connect(busM); out.connect(rev);
+    var out = ctx.createGain(); out.connect(synthM);
     var padG = ctx.createGain(), shG = ctx.createGain(), tnG = ctx.createGain(), brG = ctx.createGain(), drG = ctx.createGain();
     [padG, shG, tnG, brG, drG].forEach(function (n) { n.gain.value = 0; n.connect(out); });
     var pf = ctx.createBiquadFilter(); pf.type = 'lowpass'; pf.frequency.value = 900; pf.connect(padG);
@@ -212,7 +216,7 @@
       music.pads.forEach(function (o, i) { o.frequency.setTargetAtTime(root * Math.pow(2, (ch[i] + (i > 1 ? 12 : 0)) / 12) * 2, t, 2.2); });
       if (!S.muted && mood !== 'silence' && Math.random() < 0.6 && MOODS[mood][1] > 0) {
         var note = root * 4 * Math.pow(2, ch[Math.floor(Math.random() * 4)] / 12);
-        tone(note, 2.6, 'sine', 0.05 * (MOODS[mood][1] / 0.2), t + 1, null, busM, true);
+        tone(note, 2.6, 'sine', 0.05 * (MOODS[mood][1] / 0.2), t + 1, null, synthM, false);
       }
     };
     advance(); schedTimer = setInterval(advance, 7000);
@@ -231,9 +235,9 @@
       if (!ctx || S.muted || !started) return;
       var m = MOODS[mood]; if (!m || m[3] <= 0) return;
       var t = ctx.currentTime, boss = mood === 'boss';
-      if (beat % 4 === 0 || (boss && beat % 4 === 2)) { tone(70, 0.28, 'sine', 0.36 * m[3], t, 36, busM); burst(0.08, 'lowpass', 400, 100, 0.12 * m[3], t, 1, busM); }
-      if (beat % 4 === 3 && boss) tone(52, 0.32, 'sine', 0.3, t, 34, busM);
-      if (beat % 2 === 1) burst(0.05, 'highpass', 6000, 6500, 0.04 * m[3], t, 1, busM);
+      if (beat % 4 === 0 || (boss && beat % 4 === 2)) { tone(70, 0.28, 'sine', 0.36 * m[3], t, 36, synthM); burst(0.08, 'lowpass', 400, 100, 0.12 * m[3], t, 1, synthM); }
+      if (beat % 4 === 3 && boss) tone(52, 0.32, 'sine', 0.3, t, 34, synthM);
+      if (beat % 2 === 1) burst(0.05, 'highpass', 6000, 6500, 0.04 * m[3], t, 1, synthM);
       beat++;
     }, 330);
   }
@@ -285,6 +289,11 @@
     end_failure: { cd: 3000, cap: 'The thirteenth toll. Everything stops.', f: function () { var t = ctx.currentTime; [98, 116, 147].forEach(function (f, i) { tone(f, 5, 'sawtooth', 0.12, t + i * 0.2, f * 0.6, null, true); }); for (var i = 0; i < 4; i++) bellHit(62, 0.3, t + i * 1.3, null, true); } }
   };
 
+  // Supplied Task 4 cues retain a synthesised fallback when a file cannot decode.
+  SFX.rope = { cd: 700, cap: 'A rope strains overhead.', f: function () { SFX.creak.f(); } };
+  SFX.bellframe = { cd: 800, cap: 'The empty bell-frame groans.', f: function () { SFX.creak.f(); } };
+  SFX.completion = { cd: 1500, cap: 'Your personal objective is fulfilled.', f: function () { SFX.success.f(); } };
+
   function sfx(name, opt) {
     var d = SFX[name]; if (!d) return;
     if (capFn && S.captions && d.cap) capFn(d.cap);
@@ -293,7 +302,7 @@
     if (lastSfx[name] && now - lastSfx[name] < (d.cd || 80)) return;
     if (voices > 10) return;
     lastSfx[name] = now; voices++; setTimeout(function () { voices = Math.max(0, voices - 1); }, 700);
-    if (ctx.state === 'suspended') ctx.resume();
+    if (ctx.state === 'suspended') ctx.resume().catch(function () {});
     try { d.f(opt); } catch (e) { /* never let a sound break the game */ }
   }
 
@@ -313,6 +322,10 @@
   g.HollowAudio = {
     unlock: unlock, sfx: sfx, setRegion: setRegion, setPlace: setPlace, setLevel: setLevel, setMood: setMood, hush: hush,
     setVolume: setVolume, setMuted: setMuted, setCaptions: setCaptions,
+    // Narrow bridge: recorded layers share the same context, buses, mute and persisted sliders.
+    backend: function () { return ctx ? { ctx: ctx, master: master, music: busM, ambient: busA, sfx: busS, synthMusic: synthM, synthAmbient: synthA } : null; },
+    describeSound: function (name) { var d = SFX[name]; return d ? { caption: d.cap, cooldown: d.cd || 80 } : null; },
+    caption: function (text) { if (S.captions && capFn && text) capFn(text); },
     settings: function () { return Object.assign({}, S); }, onCaption: function (fn) { capFn = fn; },
     regions: Object.keys(REGIONS), moods: Object.keys(MOODS), sfxNames: Object.keys(SFX), supported: !!(g.AudioContext || g.webkitAudioContext)
   };

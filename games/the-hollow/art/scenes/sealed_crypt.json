@@ -1,0 +1,63 @@
+{
+  "id": "sealed_crypt",
+  "region": "crypt",
+  "background": "task2_environments_crypt_sealed_crypt",
+  "moods": {},
+  "viewBox": [
+    1600,
+    900
+  ],
+  "hotspots": [
+    {
+      "id": "sigil",
+      "x": 148,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "sigil",
+      "label": "Press the correct sigil",
+      "hidden": false
+    },
+    {
+      "id": "epitaphs",
+      "x": 708,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "epitaphs",
+      "label": "Read the epitaphs",
+      "hidden": false
+    },
+    {
+      "id": "force",
+      "x": 1268,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "force",
+      "label": "Force the inner vault",
+      "hidden": false
+    },
+    {
+      "id": "search_area",
+      "x": 320,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "investigate",
+      "label": "Investigate the surroundings"
+    },
+    {
+      "id": "way_out",
+      "x": 1080,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "travel",
+      "label": "Choose a road"
+    }
+  ],
+  "artDirection": "supplied"
+}

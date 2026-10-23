@@ -1,0 +1,63 @@
+{
+  "id": "nameless_door",
+  "region": "crypt",
+  "background": "task2_environments_crypt_nameless_door",
+  "moods": {},
+  "viewBox": [
+    1600,
+    900
+  ],
+  "hotspots": [
+    {
+      "id": "speak",
+      "x": 148,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "speak",
+      "label": "Speak the bell's name",
+      "hidden": false
+    },
+    {
+      "id": "key",
+      "x": 708,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "key",
+      "label": "Turn the Warden's Key in the lock",
+      "hidden": false
+    },
+    {
+      "id": "skeleton",
+      "x": 1268,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "skeleton",
+      "label": "Turn the Spirit Key in the lock",
+      "hidden": false
+    },
+    {
+      "id": "search_area",
+      "x": 320,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "investigate",
+      "label": "Investigate the surroundings"
+    },
+    {
+      "id": "way_out",
+      "x": 1080,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "travel",
+      "label": "Choose a road"
+    }
+  ],
+  "artDirection": "supplied"
+}

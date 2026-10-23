@@ -1,0 +1,577 @@
+{
+  "deliveries": {
+    "task1": {
+      "archive": "the_hollow_task1_production_artwork.zip",
+      "sha256": "6bc2b378c34547f76c4300274f631862114ea9c4a2dae1509fa34ecaa4960118",
+      "images": [
+        "task1_environments_estate_blackmarket",
+        "task1_environments_estate_corridor",
+        "task1_environments_estate_foyer",
+        "task1_environments_estate_library",
+        "task1_environments_estate_mirror",
+        "task1_environments_estate_observatory",
+        "task1_environments_estate_treasury",
+        "task1_environments_village_belltower",
+        "task1_environments_village_bridge",
+        "task1_environments_village_chapel",
+        "task1_environments_village_gate",
+        "task1_environments_village_graveyard",
+        "task1_environments_village_nursery",
+        "task1_environments_village_square",
+        "task1_environments_village_wagon",
+        "task1_environments_opening_belfry_interior",
+        "task1_environments_opening_caretaker_room",
+        "task1_closeups_bell_frame_closeup",
+        "task1_closeups_caretaker_note_blank",
+        "task1_closeups_hanging_rope_closeup",
+        "task1_closeups_notice_board_closeup",
+        "task1_closeups_tower_entrance_closeup",
+        "task1_closeups_well_closeup"
+      ],
+      "nativeEnvironmentSize": [
+        1376,
+        768
+      ],
+      "nativeCloseupSize": [
+        1152,
+        896
+      ]
+    },
+    "task2": {
+      "archive": "the_hollow_task2_environments_2560x1440.zip",
+      "sha256": "c7c5372b2601b8cc59f0bbb440bfbfac328b96ed79b4aed3c26f043d21143f10",
+      "images": [
+        "task2_environments_woods_forest",
+        "task2_environments_woods_cabin",
+        "task2_environments_woods_garden",
+        "task2_environments_woods_orchard",
+        "task2_environments_woods_moonwell",
+        "task2_environments_woods_battlefield",
+        "task2_environments_woods_shrine",
+        "task2_environments_abbey_nave",
+        "task2_environments_abbey_fountain",
+        "task2_environments_abbey_altar",
+        "task2_environments_abbey_reliquary",
+        "task2_environments_abbey_ritual",
+        "task2_environments_abbey_prison",
+        "task2_environments_abbey_warden",
+        "task2_environments_crypt_sealed_crypt",
+        "task2_environments_crypt_ossuary",
+        "task2_environments_crypt_sunken_archive",
+        "task2_environments_crypt_flooded_hall",
+        "task2_environments_crypt_tomb",
+        "task2_environments_crypt_hidden_passage",
+        "task2_environments_crypt_nameless_door",
+        "task2_environments_heart_stair",
+        "task2_environments_heart_hall_of_names",
+        "task2_environments_heart_still_lake",
+        "task2_environments_heart_pit",
+        "task2_environments_heart_forge",
+        "task2_environments_heart_heart_chamber",
+        "task2_chapter_chapter_one",
+        "task2_endings_ending_silence",
+        "task2_endings_ending_reverse",
+        "task2_endings_ending_bargain",
+        "task2_endings_ending_destroy",
+        "task2_endings_ending_escape",
+        "task2_endings_ending_doom",
+        "task2_endings_ending_wipe"
+      ],
+      "nativeEnvironmentSize": [
+        1376,
+        768
+      ],
+      "nativeCloseupSize": null
+    }
+  },
+  "scenes": {
+    "blackmarket": "task1_environments_estate_blackmarket",
+    "corridor": "task1_environments_estate_corridor",
+    "foyer": "task1_environments_estate_foyer",
+    "library": "task1_environments_estate_library",
+    "mirror": "task1_environments_estate_mirror",
+    "observatory": "task1_environments_estate_observatory",
+    "treasury": "task1_environments_estate_treasury",
+    "belltower": "task1_environments_village_belltower",
+    "bridge": "task1_environments_village_bridge",
+    "chapel": "task1_environments_village_chapel",
+    "gate": "task1_environments_village_gate",
+    "graveyard": "task1_environments_village_graveyard",
+    "nursery": "task1_environments_village_nursery",
+    "square": "task1_environments_village_square",
+    "wagon": "task1_environments_village_wagon",
+    "forest": "task2_environments_woods_forest",
+    "cabin": "task2_environments_woods_cabin",
+    "garden": "task2_environments_woods_garden",
+    "orchard": "task2_environments_woods_orchard",
+    "moonwell": "task2_environments_woods_moonwell",
+    "battlefield": "task2_environments_woods_battlefield",
+    "shrine": "task2_environments_woods_shrine",
+    "nave": "task2_environments_abbey_nave",
+    "fountain": "task2_environments_abbey_fountain",
+    "altar": "task2_environments_abbey_altar",
+    "reliquary": "task2_environments_abbey_reliquary",
+    "ritual": "task2_environments_abbey_ritual",
+    "prison": "task2_environments_abbey_prison",
+    "warden": "task2_environments_abbey_warden",
+    "sealed_crypt": "task2_environments_crypt_sealed_crypt",
+    "ossuary": "task2_environments_crypt_ossuary",
+    "sunken_archive": "task2_environments_crypt_sunken_archive",
+    "flooded_hall": "task2_environments_crypt_flooded_hall",
+    "tomb": "task2_environments_crypt_tomb",
+    "hidden_passage": "task2_environments_crypt_hidden_passage",
+    "nameless_door": "task2_environments_crypt_nameless_door",
+    "stair": "task2_environments_heart_stair",
+    "hall_of_names": "task2_environments_heart_hall_of_names",
+    "still_lake": "task2_environments_heart_still_lake",
+    "pit": "task2_environments_heart_pit",
+    "forge": "task2_environments_heart_forge",
+    "heart_chamber": "task2_environments_heart_heart_chamber"
+  },
+  "supplemental": {
+    "belfry_interior": "task1_environments_opening_belfry_interior",
+    "caretaker_room": "task1_environments_opening_caretaker_room",
+    "bell_frame_closeup": "task1_closeups_bell_frame_closeup",
+    "caretaker_note_blank": "task1_closeups_caretaker_note_blank",
+    "hanging_rope_closeup": "task1_closeups_hanging_rope_closeup",
+    "notice_board_closeup": "task1_closeups_notice_board_closeup",
+    "tower_entrance_closeup": "task1_closeups_tower_entrance_closeup",
+    "well_closeup": "task1_closeups_well_closeup",
+    "chapter_one": "task2_chapter_chapter_one",
+    "ending_silence": "task2_endings_ending_silence",
+    "ending_reverse": "task2_endings_ending_reverse",
+    "ending_bargain": "task2_endings_ending_bargain",
+    "ending_destroy": "task2_endings_ending_destroy",
+    "ending_escape": "task2_endings_ending_escape",
+    "ending_doom": "task2_endings_ending_doom",
+    "ending_wipe": "task2_endings_ending_wipe"
+  },
+  "retiredEntries": {
+    "cemetery_cemetery_cemetery_2_ded49298": {
+      "file": "art/generated/cemetery_cemetery_cemetery_2_ded49298.webp",
+      "type": "image",
+      "bytes": 318444,
+      "pack": "cemetery",
+      "source": "cemetery/cemetery (2).jpg",
+      "regions": [
+        "village",
+        "woods",
+        "crypt"
+      ],
+      "pixel": false
+    },
+    "cemetery_cemetery_cemetery_3_4715c1ac": {
+      "file": "art/generated/cemetery_cemetery_cemetery_3_4715c1ac.webp",
+      "type": "image",
+      "bytes": 176644,
+      "pack": "cemetery",
+      "source": "cemetery/cemetery (3).jpg",
+      "regions": [
+        "village",
+        "woods",
+        "crypt"
+      ],
+      "pixel": false
+    },
+    "cemetery_cemetery_cemetery_4_0c80d5b1": {
+      "file": "art/generated/cemetery_cemetery_cemetery_4_0c80d5b1.webp",
+      "type": "image",
+      "bytes": 363582,
+      "pack": "cemetery",
+      "source": "cemetery/cemetery (4).jpg",
+      "regions": [
+        "village",
+        "woods",
+        "crypt"
+      ],
+      "pixel": false
+    },
+    "cemetery_cemetery_cemetery_6_c45d0a78": {
+      "file": "art/generated/cemetery_cemetery_cemetery_6_c45d0a78.webp",
+      "type": "image",
+      "bytes": 136038,
+      "pack": "cemetery",
+      "source": "cemetery/cemetery (6).jpg",
+      "regions": [
+        "village",
+        "woods",
+        "crypt"
+      ],
+      "pixel": false
+    },
+    "cemetery_cemetery_cemetery_7_0716c80b": {
+      "file": "art/generated/cemetery_cemetery_cemetery_7_0716c80b.webp",
+      "type": "image",
+      "bytes": 183224,
+      "pack": "cemetery",
+      "source": "cemetery/cemetery (7).jpg",
+      "regions": [
+        "village",
+        "woods",
+        "crypt"
+      ],
+      "pixel": false
+    },
+    "cursed_church_cursed_church_cursed_church_1_16556ee0": {
+      "file": "art/generated/cursed_church_cursed_church_cursed_church_1_16556ee0.webp",
+      "type": "image",
+      "bytes": 224810,
+      "pack": "cursed_church",
+      "source": "cursed_church/cursed_church (1).jpg",
+      "regions": [
+        "abbey",
+        "crypt",
+        "heart"
+      ],
+      "pixel": false
+    },
+    "cursed_church_cursed_church_cursed_church_2_c1b65e44": {
+      "file": "art/generated/cursed_church_cursed_church_cursed_church_2_c1b65e44.webp",
+      "type": "image",
+      "bytes": 105960,
+      "pack": "cursed_church",
+      "source": "cursed_church/cursed_church (2).jpg",
+      "regions": [
+        "abbey",
+        "crypt",
+        "heart"
+      ],
+      "pixel": false
+    },
+    "cursed_church_cursed_church_cursed_church_3_ada0a15d": {
+      "file": "art/generated/cursed_church_cursed_church_cursed_church_3_ada0a15d.webp",
+      "type": "image",
+      "bytes": 115030,
+      "pack": "cursed_church",
+      "source": "cursed_church/cursed_church (3).jpg",
+      "regions": [
+        "abbey",
+        "crypt",
+        "heart"
+      ],
+      "pixel": false
+    },
+    "cursed_church_cursed_church_cursed_church_4_5007d520": {
+      "file": "art/generated/cursed_church_cursed_church_cursed_church_4_5007d520.webp",
+      "type": "image",
+      "bytes": 147852,
+      "pack": "cursed_church",
+      "source": "cursed_church/cursed_church (4).jpg",
+      "regions": [
+        "abbey",
+        "crypt",
+        "heart"
+      ],
+      "pixel": false
+    },
+    "cursed_church_cursed_church_cursed_church_5_7d5a5726": {
+      "file": "art/generated/cursed_church_cursed_church_cursed_church_5_7d5a5726.webp",
+      "type": "image",
+      "bytes": 149906,
+      "pack": "cursed_church",
+      "source": "cursed_church/cursed_church (5).jpg",
+      "regions": [
+        "abbey",
+        "crypt",
+        "heart"
+      ],
+      "pixel": false
+    },
+    "cursed_church_cursed_church_cursed_church_6_37b89da0": {
+      "file": "art/generated/cursed_church_cursed_church_cursed_church_6_37b89da0.webp",
+      "type": "image",
+      "bytes": 179300,
+      "pack": "cursed_church",
+      "source": "cursed_church/cursed_church (6).jpg",
+      "regions": [
+        "abbey",
+        "crypt",
+        "heart"
+      ],
+      "pixel": false
+    },
+    "cursed_church_cursed_church_cursed_church_7_5b7985f4": {
+      "file": "art/generated/cursed_church_cursed_church_cursed_church_7_5b7985f4.webp",
+      "type": "image",
+      "bytes": 156532,
+      "pack": "cursed_church",
+      "source": "cursed_church/cursed_church (7).jpg",
+      "regions": [
+        "abbey",
+        "crypt",
+        "heart"
+      ],
+      "pixel": false
+    },
+    "cursed_church_cursed_church_cursed_church_8_bc3464e6": {
+      "file": "art/generated/cursed_church_cursed_church_cursed_church_8_bc3464e6.webp",
+      "type": "image",
+      "bytes": 205974,
+      "pack": "cursed_church",
+      "source": "cursed_church/cursed_church (8).jpg",
+      "regions": [
+        "abbey",
+        "crypt",
+        "heart"
+      ],
+      "pixel": false
+    },
+    "dark_street_dark_street_dark_street_6_3742cd23": {
+      "file": "art/generated/dark_street_dark_street_dark_street_6_3742cd23.webp",
+      "type": "image",
+      "bytes": 121506,
+      "pack": "dark_street",
+      "source": "dark_street/dark_street (6).jpg",
+      "regions": [
+        "village"
+      ],
+      "pixel": false
+    },
+    "dark_street_dark_street_dark_street_7_5659cf2a": {
+      "file": "art/generated/dark_street_dark_street_dark_street_7_5659cf2a.webp",
+      "type": "image",
+      "bytes": 253912,
+      "pack": "dark_street",
+      "source": "dark_street/dark_street (7).jpg",
+      "regions": [
+        "village"
+      ],
+      "pixel": false
+    },
+    "dark_street_dark_street_dark_street_8_9b63195c": {
+      "file": "art/generated/dark_street_dark_street_dark_street_8_9b63195c.webp",
+      "type": "image",
+      "bytes": 313544,
+      "pack": "dark_street",
+      "source": "dark_street/dark_street (8).jpg",
+      "regions": [
+        "village"
+      ],
+      "pixel": false
+    },
+    "graveyard_graveyard_graveyard_1_3374bccb": {
+      "file": "art/generated/graveyard_graveyard_graveyard_1_3374bccb.webp",
+      "type": "image",
+      "bytes": 34068,
+      "pack": "graveyard",
+      "source": "Graveyard/Graveyard_1.jpg",
+      "regions": [
+        "village",
+        "woods",
+        "crypt"
+      ],
+      "pixel": false
+    },
+    "graveyard_graveyard_graveyard_3_060e9745": {
+      "file": "art/generated/graveyard_graveyard_graveyard_3_060e9745.webp",
+      "type": "image",
+      "bytes": 24062,
+      "pack": "graveyard",
+      "source": "Graveyard/Graveyard_3.jpg",
+      "regions": [
+        "village",
+        "woods",
+        "crypt"
+      ],
+      "pixel": false
+    },
+    "graveyard_graveyard_graveyard_4_47bc7298": {
+      "file": "art/generated/graveyard_graveyard_graveyard_4_47bc7298.webp",
+      "type": "image",
+      "bytes": 24750,
+      "pack": "graveyard",
+      "source": "Graveyard/Graveyard_4.jpg",
+      "regions": [
+        "village",
+        "woods",
+        "crypt"
+      ],
+      "pixel": false
+    },
+    "graveyard_graveyard_graveyard_5_3f717275": {
+      "file": "art/generated/graveyard_graveyard_graveyard_5_3f717275.webp",
+      "type": "image",
+      "bytes": 23140,
+      "pack": "graveyard",
+      "source": "Graveyard/Graveyard_5.jpg",
+      "regions": [
+        "village",
+        "woods",
+        "crypt"
+      ],
+      "pixel": false
+    },
+    "graveyard_graveyard_graveyard_6_eed3d705": {
+      "file": "art/generated/graveyard_graveyard_graveyard_6_eed3d705.webp",
+      "type": "image",
+      "bytes": 28352,
+      "pack": "graveyard",
+      "source": "Graveyard/Graveyard_6.jpg",
+      "regions": [
+        "village",
+        "woods",
+        "crypt"
+      ],
+      "pixel": false
+    },
+    "haunted_henhouse_pack_haunted_henhouse_pack_hauntedhenhouse_1_33dcd13c": {
+      "file": "art/generated/haunted_henhouse_pack_haunted_henhouse_pack_hauntedhenhouse_1_33dcd13c.webp",
+      "type": "image",
+      "bytes": 44922,
+      "pack": "haunted_henhouse_pack",
+      "source": "Haunted Henhouse Pack/HauntedHenhouse_1.jpg",
+      "regions": [
+        "woods"
+      ],
+      "pixel": false
+    },
+    "haunted_henhouse_pack_haunted_henhouse_pack_hauntedhenhouse_8_ceaf12b3": {
+      "file": "art/generated/haunted_henhouse_pack_haunted_henhouse_pack_hauntedhenhouse_8_ceaf12b3.webp",
+      "type": "image",
+      "bytes": 46278,
+      "pack": "haunted_henhouse_pack",
+      "source": "Haunted Henhouse Pack/HauntedHenhouse_8.jpg",
+      "regions": [
+        "woods"
+      ],
+      "pixel": false
+    },
+    "horror_attic_visual_novel_backgrounds_horror_attic_2_66247064": {
+      "file": "art/generated/horror_attic_visual_novel_backgrounds_horror_attic_2_66247064.webp",
+      "type": "image",
+      "bytes": 147810,
+      "pack": "horror_attic_visual_novel_backgrounds",
+      "source": "horror_attic (2).jpg",
+      "regions": [
+        "estate",
+        "crypt"
+      ],
+      "pixel": false
+    },
+    "horror_attic_visual_novel_backgrounds_horror_attic_3_355c0286": {
+      "file": "art/generated/horror_attic_visual_novel_backgrounds_horror_attic_3_355c0286.webp",
+      "type": "image",
+      "bytes": 104044,
+      "pack": "horror_attic_visual_novel_backgrounds",
+      "source": "horror_attic (3).jpg",
+      "regions": [
+        "estate",
+        "crypt"
+      ],
+      "pixel": false
+    },
+    "horror_attic_visual_novel_backgrounds_horror_attic_4_20fdee68": {
+      "file": "art/generated/horror_attic_visual_novel_backgrounds_horror_attic_4_20fdee68.webp",
+      "type": "image",
+      "bytes": 143810,
+      "pack": "horror_attic_visual_novel_backgrounds",
+      "source": "horror_attic (4).jpg",
+      "regions": [
+        "estate",
+        "crypt"
+      ],
+      "pixel": false
+    },
+    "horror_attic_visual_novel_backgrounds_horror_attic_5_a5ba2b0b": {
+      "file": "art/generated/horror_attic_visual_novel_backgrounds_horror_attic_5_a5ba2b0b.webp",
+      "type": "image",
+      "bytes": 29734,
+      "pack": "horror_attic_visual_novel_backgrounds",
+      "source": "horror_attic (5).jpg",
+      "regions": [
+        "estate",
+        "crypt"
+      ],
+      "pixel": false
+    },
+    "horror_attic_visual_novel_backgrounds_horror_attic_7_27a58b48": {
+      "file": "art/generated/horror_attic_visual_novel_backgrounds_horror_attic_7_27a58b48.webp",
+      "type": "image",
+      "bytes": 84410,
+      "pack": "horror_attic_visual_novel_backgrounds",
+      "source": "horror_attic (7).jpg",
+      "regions": [
+        "estate",
+        "crypt"
+      ],
+      "pixel": false
+    },
+    "horror_attic_visual_novel_backgrounds_horror_attic_8_59b89d89": {
+      "file": "art/generated/horror_attic_visual_novel_backgrounds_horror_attic_8_59b89d89.webp",
+      "type": "image",
+      "bytes": 150526,
+      "pack": "horror_attic_visual_novel_backgrounds",
+      "source": "horror_attic (8).jpg",
+      "regions": [
+        "estate",
+        "crypt"
+      ],
+      "pixel": false
+    },
+    "horror_hallways_visual_novel_backgrounds_horror_hallways_1_8a3fc0a2": {
+      "file": "art/generated/horror_hallways_visual_novel_backgrounds_horror_hallways_1_8a3fc0a2.webp",
+      "type": "image",
+      "bytes": 61500,
+      "pack": "horror_hallways_visual_novel_backgrounds",
+      "source": "horror_hallways (1).jpg",
+      "regions": [
+        "estate",
+        "heart"
+      ],
+      "pixel": false
+    },
+    "horror_hallways_visual_novel_backgrounds_horror_hallways_6_c68470d0": {
+      "file": "art/generated/horror_hallways_visual_novel_backgrounds_horror_hallways_6_c68470d0.webp",
+      "type": "image",
+      "bytes": 102838,
+      "pack": "horror_hallways_visual_novel_backgrounds",
+      "source": "horror_hallways (6).jpg",
+      "regions": [
+        "estate",
+        "heart"
+      ],
+      "pixel": false
+    },
+    "horror_hallways_visual_novel_backgrounds_horror_hallways_7_61d05794": {
+      "file": "art/generated/horror_hallways_visual_novel_backgrounds_horror_hallways_7_61d05794.webp",
+      "type": "image",
+      "bytes": 76534,
+      "pack": "horror_hallways_visual_novel_backgrounds",
+      "source": "horror_hallways (7).jpg",
+      "regions": [
+        "estate",
+        "heart"
+      ],
+      "pixel": false
+    },
+    "living_room_visual_novel_backgrounds_living_room_2_15d79dde": {
+      "file": "art/generated/living_room_visual_novel_backgrounds_living_room_2_15d79dde.webp",
+      "type": "image",
+      "bytes": 279256,
+      "pack": "living_room_visual_novel_backgrounds",
+      "source": "Living Room (2).jpg",
+      "regions": [
+        "estate"
+      ],
+      "pixel": false
+    },
+    "living_room_visual_novel_backgrounds_living_room_8_6caacc68": {
+      "file": "art/generated/living_room_visual_novel_backgrounds_living_room_8_6caacc68.webp",
+      "type": "image",
+      "bytes": 134866,
+      "pack": "living_room_visual_novel_backgrounds",
+      "source": "Living Room (8).jpg",
+      "regions": [
+        "estate"
+      ],
+      "pixel": false
+    }
+  },
+  "notes": [
+    "Task 1/2 image resolutions were verified; original native sizes and supplier upscaling disclosure are recorded.",
+    "Caretaker room and blank note are prepared for review, but no new gameplay or lore is invented to force their use.",
+    "Task 3 remains pending; defer the final consolidated gap list."
+  ],
+  "externalManifestMatchesArchive": true,
+  "runtimeBytes": 34848604
+}

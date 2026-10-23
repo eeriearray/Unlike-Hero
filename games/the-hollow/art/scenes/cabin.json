@@ -1,0 +1,73 @@
+{
+  "id": "cabin",
+  "region": "woods",
+  "background": "task2_environments_woods_cabin",
+  "moods": {},
+  "viewBox": [
+    1600,
+    900
+  ],
+  "hotspots": [
+    {
+      "id": "hob",
+      "x": 148,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "hob",
+      "label": "Coax the trapper out of the loft",
+      "hidden": false
+    },
+    {
+      "id": "map",
+      "x": 521,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "map",
+      "label": "Read the trapper's map",
+      "hidden": false
+    },
+    {
+      "id": "traps",
+      "x": 895,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "traps",
+      "label": "Take the snares from the wall",
+      "hidden": false
+    },
+    {
+      "id": "hearth",
+      "x": 1268,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "hearth",
+      "label": "Pry up the hearthstone",
+      "hidden": true
+    },
+    {
+      "id": "search_area",
+      "x": 320,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "investigate",
+      "label": "Investigate the surroundings"
+    },
+    {
+      "id": "way_out",
+      "x": 1080,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "travel",
+      "label": "Choose a road"
+    }
+  ],
+  "artDirection": "supplied"
+}

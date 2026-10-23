@@ -1,0 +1,30 @@
+/* Readability and performance adjustments, scoped to the final presentation. */
+.quality-size { margin: 12px 0; }
+.quality-size select { min-height: 44px; min-width: 120px; }
+.modal .slider { grid-template-columns: minmax(112px, auto) minmax(80px, 1fr) 40px; gap: 8px; }
+#captions { font-size: max(1rem, 16px); line-height: 1.5; }
+.photo-scene .obj:focus-visible .marker-ring { stroke: #fff0bd; stroke-width: 5px; }
+.photo-scene .obj:focus-visible .marker-label { stroke: #fff0bd; stroke-width: 2px; }
+.acard:focus-visible, .icbtn:focus-visible, .hbtn:focus-visible { outline: 3px solid #ffe0a0; outline-offset: 3px; }
+.chapter-ending:focus { outline: none; }
+.chapter-ending h1:focus { outline: 2px solid #ffe0a0; outline-offset: 6px; }
+.chapter-record summary { min-height: 44px; display: flex; align-items: center; }
+.modal .box { overscroll-behavior: contain; }
+body.quality-hidden *, body.quality-hidden *::before, body.quality-hidden *::after { animation-play-state: paused !important; }
+@media (max-width: 960px) {
+  .nav button { min-height: 52px; color: #c8c4b9; }
+  .nav button[aria-selected="true"] { color: #ffe0a0; background: #262a31; }
+  .mapctl .btn, .hbtn { min-width: 44px; min-height: 44px; }
+  .game2 { padding-bottom: calc(62px + env(safe-area-inset-bottom)); }
+}
+@media (max-width: 600px) {
+  .photo-depth { display: none; }
+  .chapter-ending { padding-inline: 12px; }
+  .modal .box { max-height: calc(100dvh - 24px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .photo-scene *, .chapter-title *, .chapter-ending * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+body.reduce-motion .photo-scene *, body.reduce-motion .chapter-title *, body.reduce-motion .chapter-ending * {
+  animation-duration: 0.01ms !important; transition-duration: 0.01ms !important;
+}

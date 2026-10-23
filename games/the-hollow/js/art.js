@@ -32,7 +32,18 @@
   };
   G.undead = G.skull;
 
+  var IMPORTED = {
+    heart: 'player/health', sanity: 'player/sanity', clock: 'player/haunting_clock',
+    chest: 'player/inventory', book: 'player/journal', clue: 'player/clue', key: 'player/key_item',
+    hand: 'player/help', aid: 'player/help', party: 'player/ally',
+    eye: 'actions/examine', search: 'actions/search', explore: 'actions/search',
+    road: 'actions/travel', rest: 'actions/rest', flee: 'actions/flee',
+    talk: 'actions/speak', use: 'actions/use_item', blade: 'actions/force',
+    maze: 'navigation/available_destination', door: 'navigation/exit', keyhole: 'navigation/locked_route'
+  };
   function glyph(id, size, cls) {
+    var imported = g.HollowGlyphs && g.HollowGlyphs[IMPORTED[id] || id];
+    if (imported) return '<svg class="glyph task4-glyph ' + esc(cls || '') + '" viewBox="0 0 128 128" width="' + (Number(size) || 20) + '" height="' + (Number(size) || 20) + '" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + imported + '</svg>';
     var d = G[id] || G.circle;
     return '<svg class="glyph ' + (cls || '') + '" viewBox="0 0 24 24" width="' + (size || 20) + '" height="' + (size || 20) + '" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + d + '"/></svg>';
   }

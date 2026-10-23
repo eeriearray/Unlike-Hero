@@ -1,0 +1,63 @@
+{
+  "id": "sunken_archive",
+  "region": "crypt",
+  "background": "task2_environments_crypt_sunken_archive",
+  "moods": {},
+  "viewBox": [
+    1600,
+    900
+  ],
+  "hotspots": [
+    {
+      "id": "ledger",
+      "x": 148,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "ledger",
+      "label": "Read the waterlogged ledger",
+      "hidden": false
+    },
+    {
+      "id": "dive",
+      "x": 708,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "dive",
+      "label": "Dive for the drowned shelves",
+      "hidden": false
+    },
+    {
+      "id": "desk",
+      "x": 1268,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "desk",
+      "label": "Search the drowned desk",
+      "hidden": true
+    },
+    {
+      "id": "search_area",
+      "x": 320,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "investigate",
+      "label": "Investigate the surroundings"
+    },
+    {
+      "id": "way_out",
+      "x": 1080,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "travel",
+      "label": "Choose a road"
+    }
+  ],
+  "artDirection": "supplied"
+}

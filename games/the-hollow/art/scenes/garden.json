@@ -1,0 +1,73 @@
+{
+  "id": "garden",
+  "region": "woods",
+  "background": "task2_environments_woods_garden",
+  "moods": {},
+  "viewBox": [
+    1600,
+    900
+  ],
+  "hotspots": [
+    {
+      "id": "speak",
+      "x": 148,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "speak",
+      "label": "Speak with the herbwife",
+      "hidden": false
+    },
+    {
+      "id": "herb",
+      "x": 521,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "herb",
+      "label": "Pick the herb that heals",
+      "hidden": false
+    },
+    {
+      "id": "draught",
+      "x": 895,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "draught",
+      "label": "Buy a calming draught (3 Silver)",
+      "hidden": false
+    },
+    {
+      "id": "burn",
+      "x": 1268,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "burn",
+      "label": "Burn the garden",
+      "hidden": false
+    },
+    {
+      "id": "search_area",
+      "x": 320,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "investigate",
+      "label": "Investigate the surroundings"
+    },
+    {
+      "id": "way_out",
+      "x": 1080,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "travel",
+      "label": "Choose a road"
+    }
+  ],
+  "artDirection": "supplied"
+}

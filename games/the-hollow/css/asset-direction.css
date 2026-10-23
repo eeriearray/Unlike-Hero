@@ -1,0 +1,256 @@
+/* A single visual language: supplied illustrations, warm paper, charcoal and brass. */
+body.asset-direction { --display: 'Cinzel', Georgia, serif; --gold: #af9872; --gold2: #d4bea0; --ink: #f1eadc; --ink2: #c5c3bb; --mute: #a7aaa5; }
+.asset-direction .game2 { --trayh: 230px; background: #080d10; }
+.asset-direction .stg { bottom: 0; }
+.asset-direction .stg-world { height: 100%; }
+.asset-direction .photo-scene { --photo-saturation: .62; --photo-brightness: 1; }
+.asset-direction .photo-backdrop { inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 45%; animation: none; filter: saturate(var(--photo-saturation)) brightness(var(--photo-brightness)); }
+.asset-direction .photo-depth, .asset-direction .photo-dust, .asset-direction .photo-fog, .asset-direction .photo-atmosphere::before { display: none; }
+/* Stock backgrounds have no reliable prop coordinates; action controls are below. */
+.asset-direction .photo-scene .lyr-objects { display: none; }
+.asset-direction .photo-grain { opacity: .025; }
+.asset-direction .stg-vig { background: linear-gradient(180deg, #050a10c9 0, #050a1010 28%, #050a1000 49%, #050a10a6 70%, #050a10 100%); }
+.asset-direction .adv::after { display: none; }
+.asset-direction .hud2 { display: flex; flex-wrap: nowrap; align-items: center; gap: 22px; padding: 12px 26px; min-height: 72px; background: #080e13d9; border-bottom: 1px solid #b39a692e; box-shadow: none; }
+.asset-direction .h-party { margin-left: auto; }
+.asset-direction .h-btns { margin-left: auto; }
+.asset-direction .hbtn { border: 1px solid #b39a6933; border-radius: 2px; color: #d4c9b3; }
+.asset-direction .hme, .asset-direction .hp-p { border-color: #b39a6980; border-radius: 50%; background: #141c1d; box-shadow: none; }
+.asset-direction .hbars { width: 105px; gap: 5px; }
+.asset-direction .hbars .hb { border-radius: 0; background: #c6c1ae17; }
+.asset-direction .hbars .hb i { border-radius: 0; opacity: .55; }
+.asset-direction .hbars .hb i.vit { background: #a35b52; }
+.asset-direction .hbars .hb i.san { background: #5d888d; }
+.asset-direction .hturn { font: 11px/1.5 'Inter', sans-serif; }
+.asset-direction .hturn.mine b { font: 500 11px/1.5 'Inter', sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #d8c5a5; }
+.asset-direction .class-seal { display: inline-grid; position: relative; width: 100%; height: 100%; place-items: center; overflow: hidden; font: 500 22px Georgia,serif; color: #d9c49b; }
+.asset-direction .class-seal img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; padding: 3px; }
+.asset-direction .seal-ready .seal-letter { opacity: 0; }
+.asset-direction .class-showcase { width: min(38vw, 420px); height: min(50vh,420px); align-self: center; justify-self: center; background: radial-gradient(circle, #bfa17b18, transparent 65%); border: 1px solid #bfa17b25; border-radius: 50%; padding: 40px; }
+.asset-direction .class-showcase img { padding: 55px; }
+.asset-direction .class-showcase::before { content: ''; position: absolute; inset: 18px; border: 1px solid #bfa17b1c; border-radius: 50%; }
+.asset-direction .place-heading { position: absolute; top: 112px; left: 4%; z-index: 4; pointer-events: none; max-width: 85%; text-shadow: 0 2px 24px #000; }
+.asset-direction .place-heading > span { color: #c3b597; font: 10px/1.5 'Inter',sans-serif; letter-spacing: .2em; text-transform: uppercase; }
+.asset-direction .place-heading h1 { margin: 8px 0; color: #f3ead8; font: 400 clamp(27px,3.4vw,48px)/1.2 'Cinzel',Georgia,serif; letter-spacing: .025em; }
+.asset-direction .cap { top: 211px; left: 4%; max-width: 460px; padding: 0; border: 0; background: none; }
+.asset-direction .cap .ch { font: 500 11px/1.6 'Inter',sans-serif; letter-spacing: .05em; color: #d4c09d; }
+.asset-direction .cap p { font: 400 19px/1.5 'Cormorant Garamond',Georgia,serif; max-width: 43ch; }
+.asset-direction .trayhost { padding: 0 4% 25px; gap: 15px; }
+.asset-direction .expedition-guide { width: 100%; max-width: 1400px; border: 0; border-top: 1px solid #b39a694d; background: #070e13b0; padding: 12px 0 0; grid-template-columns: 1fr 1.1fr auto; gap: 22px; font-size: 12px; }
+.asset-direction .expedition-guide .guide-label { color: #bba681; font-size: 9px; letter-spacing: .17em; }
+.asset-direction .expedition-guide strong { font-weight: 400; color: #e7decb; }
+.asset-direction .expedition-guide p { color: #b7bebd; }
+.asset-direction .guide-next { border-color: #b39a6933; }
+.asset-direction .tray { display: flex; width: 100%; max-width: 1400px; gap: 10px; align-items: stretch; }
+.asset-direction.hollow-skin .acard { flex: 1 1 0; width: auto; min-width: 0; min-height: 92px; grid-template-rows: 1fr; background: linear-gradient(135deg,#1d272bd9,#0b1318ed); border: 1px solid #b39a6959; border-radius: 2px; box-shadow: none; }
+.asset-direction .acard::before, .asset-direction .acard::after, .asset-direction .ac-art, .asset-direction .acard .mstack { display: none; }
+.asset-direction.hollow-skin .ac-txt { padding: 15px 16px; display: flex; flex-direction: column; justify-content: space-between; gap: 12px; }
+.asset-direction.hollow-skin .ac-name { font: 500 16px/1.4 Inter,sans-serif; }
+.asset-direction.hollow-skin .ac-sub { font: 12px/1.5 Inter,sans-serif; color: #c3cecb; }
+.asset-direction .ac-sub .sk { border-radius: 0; padding: 0; border: 0; background: none; font-size: 10px; }
+.asset-direction.hollow-skin .acard:hover:not([aria-disabled="true"]), .asset-direction.hollow-skin .acard.sel { background: #253237f2; border-color: #d9bc85; transform: none; box-shadow: inset 0 2px #d9bc85; }
+.asset-direction.hollow-skin .acard.travel { flex: .7; background: #18272bd9; }
+.asset-direction.hollow-skin .acard.morec { flex: .55; }
+.asset-direction .trayend { display: grid; align-items: center; max-width: 95px; }
+.asset-direction .endbtn { white-space: normal; color: #b5b7ad; font-size: 11px; }
+.asset-direction .ac-badge { position: static; border: 0; border-radius: 0; padding: 3px 12px; font-size: 10px; }
+.asset-direction .icard { top: 24% !important; left: 50% !important; transform: translateX(-50%); width: min(480px,94vw); max-height: 66vh; overflow: auto; background: #0e191ff5; }
+.asset-direction .ic-art { display: none; }
+.asset-direction .ic-body { padding: 24px !important; }
+.asset-direction .ic-body h3 { margin-right: 30px; }
+.asset-direction .moresheet { background: #0e191ff5; }
+.asset-direction .battle-hero, .asset-direction .battle-foe, .asset-direction .battle-ground { display: none; }
+.asset-direction.combat-active .stg-world { filter: none !important; }
+.asset-direction .combat-scene { inset: auto 4% auto auto; top: 115px; width: min(290px,35%); min-height: 100px; }
+.asset-direction .battle-name { position: static; text-align: left; padding: 14px 18px; border-left: 2px solid #aa7564; background: #0c141bd9; }
+.asset-direction .battle-name small { color: #c9917d; }
+.asset-direction .battle-name h2 { font-size: 21px; }
+.asset-direction .battle-health { width: 100%; }
+.asset-direction .battle-name .battle-tell { font: 10px/1.5 'Inter',sans-serif; }
+.asset-direction.combat-active .cap { top: 225px; bottom: auto; left: 4%; right: auto; max-width: 450px; padding: 0; }
+.asset-direction .nav { background: #080f14; border-top: 1px solid #b39a692e; }
+.asset-direction .nav button { font-size: 11px; letter-spacing: .05em; }
+.asset-direction .nav button[aria-selected="true"] { background: #b39a6914; color: #dbc59e; }
+.asset-direction .nav svg { width: 19px; height: 19px; }
+.asset-direction .lobby2 { background: radial-gradient(ellipse at 25% 50%,#253332,#0a1119 70%); }
+.asset-direction .hero-stage .glow { opacity: .2; }
+.asset-direction .hero-info h2 { font-weight: 400; }
+.asset-direction .cta { border: 1px solid #b49b70; border-radius: 2px; box-shadow: none; background: #bca57d; font-size: 14px; }
+.asset-direction .cta.go { background: #293e3e; color: #e0d4bc; box-shadow: none; }
+@media (max-width: 960px) {
+  .asset-direction .game2 { --trayh: 265px; }
+  .asset-direction .hud2 { gap: 12px; padding: 10px 18px; min-height: 66px; }
+  .asset-direction .h-clock { display: flex; margin-left: auto; }
+  .asset-direction .h-clock span, .asset-direction .h-party { display: none; }
+  .asset-direction .h-btns { margin-left: 0; }
+  .asset-direction .place-heading { top: 95px; }
+  .asset-direction .cap { top: 177px; max-width: 54%; }
+  .asset-direction.combat-active .cap { top: 181px; max-width: 54%; }
+  .asset-direction .combat-scene { top: 103px; }
+  .asset-direction .expedition-guide { grid-template-columns: 1fr auto; gap: 7px 15px; font-size: 11px; }
+  .asset-direction .guide-next { padding: 0; border: 0; grid-row: 2; grid-column: 1/-1; }
+  .asset-direction .trayhost { padding: 0 3% 80px; gap: 12px; }
+  .asset-direction .tray { overflow-x: auto; padding: 0 0 5px; }
+  .asset-direction.hollow-skin .acard { flex: 0 0 150px; min-height: 102px; }
+  .asset-direction.hollow-skin .acard.travel { flex: 0 0 100px; }
+  .asset-direction.hollow-skin .acard.morec { flex: 0 0 95px; }
+  .asset-direction .trayend { flex: 0 0 75px; }
+  .asset-direction .class-showcase { width: 190px; height: 190px; max-height: 28vh; }
+  .asset-direction .class-showcase img { padding: 25px; }
+}
+@media (max-width: 600px) {
+  .asset-direction .game2 { height: auto; min-height: 100dvh; overflow: visible; }
+  .asset-direction .game2 .adv { position: relative; min-height: 100dvh; overflow: visible; }
+  .asset-direction .advui { position: relative; padding-top: 210px; }
+  .asset-direction .cap, .asset-direction.combat-active .cap { position: relative; top: auto !important; left: auto; margin: 0 4% 18px; max-width: 92%; }
+  .asset-direction .trayhost { position: relative; bottom: auto; left: auto; right: auto; padding: 0 4% 82px; }
+  .asset-direction .tray { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; }
+  .asset-direction.hollow-skin .acard { min-width: 0; width: 100%; min-height: 110px; }
+  .asset-direction .trayend { max-width: none; }
+  .asset-direction .trayend button { min-height: 44px; }
+  .asset-direction .h-clock { display: none; }
+  .asset-direction .hud2 { gap: 9px; padding: 9px 12px; }
+  .asset-direction .hme { width: 34px; height: 34px; }
+  .asset-direction .h-me { gap: 7px; }
+  .asset-direction .hbars { width: 75px; }
+  .asset-direction .hbars .hb em { font-size: 9px; }
+  .asset-direction .h-clock { display: none; }
+  .asset-direction .h-btns { margin-left: auto; }
+  .asset-direction .hturn { font-size: 9px; }
+  .asset-direction .hturn.mine b { font-size: 9px; }
+  .asset-direction .place-heading { top: 91px; }
+  .asset-direction .place-heading h1 { font-size: 25px; }
+  .asset-direction .place-heading > span { font-size: 8px; }
+  .asset-direction .cap, .asset-direction.combat-active .cap { top: 166px; max-width: 90%; }
+  .asset-direction .cap p { font-size: 17px; }
+  .asset-direction .combat-scene { top: auto; bottom: 360px; width: 55%; }
+  .asset-direction .battle-name { padding: 10px 12px; }
+  .asset-direction .battle-name h2 { font-size: 16px; }
+  .asset-direction .battle-name .battle-tell { display: none; }
+  .asset-direction .expedition-guide { background: #071018df; padding-top: 9px; }
+  .asset-direction .expedition-guide strong { font-size: 15px; }
+  .asset-direction .expedition-guide .btn { font-size: 10px; }
+  .asset-direction .guide-next p { font-size: 14px; }
+  .asset-direction.hollow-skin .ac-name { font-size: 15px; }
+  .asset-direction.hollow-skin .ac-txt { padding: 12px; }
+}
+@media (max-height: 650px) and (min-width: 601px) {
+  .asset-direction .place-heading { top: 82px; }
+  .asset-direction .place-heading h1 { font-size: 28px; }
+  .asset-direction .cap, .asset-direction.combat-active .cap { top: 153px; }
+  .asset-direction .cap p { font-size: 17px; }
+  .asset-direction .trayhost { padding-bottom: 12px; gap: 7px; }
+  .asset-direction .expedition-guide > div:first-child p { display: block; }
+}
+.asset-direction .cap.place-copy .ch { display: none; }
+.asset-direction .icard, .asset-direction .icard.side-c { top: 50% !important; bottom: auto !important; right: auto !important; height: auto; transform: translate(-50%,-50%); animation: none; }
+.asset-direction .icard.commit .ic-body > h3 { display: none; }
+.asset-direction .ic-commit .prep { padding: 0; background: none; border: 0; border-radius: 0; }
+.asset-direction .ic-commit .prep h2 { font-size: 24px; }
+.asset-direction .ic-commit .prow { display: flex; gap: 12px; align-items: center; }
+.asset-direction .ic-commit .prow .primary { flex: 1; }
+.asset-direction .asset-photo-ready > :not(.asset-photo) { display: none; }
+.asset-direction .asset-photo { filter: saturate(.65); }
+.asset-direction .ovp.travel { background: #0b151cf5; border: 1px solid #ad97615c; padding: 22px; max-height: 76vh; overflow: auto; border-radius: 3px; }
+.asset-direction .dest .dart { border-radius: 2px; border-color: #b39a6959; }
+.asset-direction .dname b { font-weight: 400; }
+.asset-direction .dwarn { font-size: 10px; letter-spacing: .03em; }
+.asset-direction .cine.spirit .ghost { display: none; }
+.asset-direction .cine.full { background: #050b12ed; }
+.asset-direction .cf-ico { border-width: 1px; background: none; }
+.asset-direction .travelp .dests { grid-template-columns: repeat(auto-fit,minmax(190px,1fr)); }
+.asset-direction .travelp .dest .dart { height: 155px; }
+.asset-direction .travelp .dmeta { font-size: 11px; }
+@media (max-width: 600px) {
+  .asset-direction .travelp .dests { grid-template-columns: 1fr 1fr; }
+  .asset-direction .travelp .dest .dart { height: 120px; }
+}
+.asset-direction .dest.unknown .dart > svg { filter: none; }
+body.asset-direction[data-screen="game"].combat-active .cap { top: 225px; bottom: auto; left: 4%; right: auto; padding: 0; max-width: 450px; }
+@media (max-width: 960px) { body.asset-direction[data-screen="game"].combat-active .cap { top: 181px; max-width: 54%; } }
+@media (max-width: 600px) { body.asset-direction[data-screen="game"].combat-active .cap { top: 166px; max-width: 90%; } }
+
+/* Task 4: supplied component textures. Insets follow the delivery's nine-slice
+   dimensions; image loading is optional and the earlier solid skin is fallback. */
+body.asset-direction.task4-ready { --gold: #aa9060; --gold2: #e2cea4; }
+.asset-direction.task4-ready .acard {
+  border: 12px solid transparent; border-image: var(--task4-panels-action-card) 16 16 16 22 fill / 12px stretch;
+  background: #171614; min-height: 106px;
+}
+.asset-direction.task4-ready .acard .ac-txt { padding: 4px 7px; }
+.asset-direction.task4-ready .acard:hover:not([aria-disabled="true"]), .asset-direction.task4-ready .acard.sel {
+  border-image-source: var(--task4-panels-action-card-selected); box-shadow: none; background: #28221a;
+}
+.asset-direction.task4-ready .acard.rk-bad { border-image-source: var(--task4-states-dangerous-choice-accent); }
+.asset-direction.task4-ready .acard[aria-disabled="true"] { opacity: .6; }
+.asset-direction.task4-ready :is(.icard, .moresheet, .modal .box, .drawer, .ovp.travel) {
+  border: 16px solid transparent; border-image: var(--task4-panels-main-dark-panel) 24 fill / 16px stretch; background: #151310;
+}
+.asset-direction.task4-ready .modal .box, .asset-direction.task4-ready .drawer { padding: 18px; }
+.asset-direction.task4-ready .ic-body { padding: 10px !important; }
+.asset-direction.task4-ready :is(.btn:not(.ghost), .icbtn, .cta) {
+  border: 10px solid transparent; border-image: var(--task4-buttons-secondary-button) 14 fill / 10px stretch;
+  padding: 5px 12px; background: #24211b; color: #eee3c9; box-shadow: none;
+}
+.asset-direction.task4-ready :is(.btn.primary, .cta.go) { border-image-source: var(--task4-buttons-primary-button); background: #49391e; }
+.asset-direction.task4-ready :is(.btn:not(.ghost), .icbtn, .cta):hover:not(:disabled):not([aria-disabled="true"]) { border-image-source: var(--task4-buttons-hover-treatment); }
+.asset-direction.task4-ready :is(.btn:not(.ghost), .icbtn, .cta):active:not(:disabled) { border-image-source: var(--task4-buttons-pressed-treatment); }
+.asset-direction.task4-ready :is(.btn:not(.ghost), .icbtn, .cta):disabled { border-image-source: var(--task4-buttons-disabled-treatment); }
+.asset-direction.task4-ready :is(.btn, .icbtn, .acard, .hbtn, .cta):focus-visible { outline: 2px solid #f3d797; outline-offset: 4px; }
+.asset-direction.task4-ready .slot {
+  border: 10px solid transparent; border-image: var(--task4-panels-inventory-slot) 14 fill / 10px stretch; padding: 6px; background: #181512;
+}
+.asset-direction.task4-ready .slot:hover { border-image-source: var(--task4-panels-inventory-slot-selected); }
+.asset-direction.task4-ready .stg-tip {
+  border: 10px solid transparent; border-image: var(--task4-panels-tooltip-panel) 16 fill / 10px stretch; padding: 4px 8px;
+}
+.asset-direction.task4-ready .book .pages {
+  --ink: #282117; --ink2: #403426; --mute: #63513b; color: #282117;
+  border: 16px solid transparent; border-image: var(--task4-panels-journal-parchment) 24 fill / 16px stretch; background: #d4c6a3; padding: 16px;
+}
+.asset-direction.task4-ready .book .pages :is(p,li,.small,.muted,.story) { color: #403426; }
+.asset-direction.task4-ready .book .pages a { color: #4c3720; }
+.asset-direction.task4-ready .imported-item { image-rendering: auto; }
+.asset-direction.task4-ready .imported-item.raster-ready > svg { visibility: hidden; }
+.asset-direction.task4-ready .imported-item-image { object-fit: contain; filter: none; }
+.asset-direction .task4-glyph { flex: none; vertical-align: middle; }
+.asset-direction .feedback-hit img { image-rendering: auto; }
+.feedback-mist, .feedback-dust, .feedback-lantern, .feedback-mirror, .feedback-discovery, .feedback-completion { position: absolute; inset: 0; pointer-events: none; }
+.feedback-root :is(.feedback-mist,.feedback-dust,.feedback-lantern,.feedback-mirror,.feedback-discovery,.feedback-completion) img { width: 100%; height: 100%; object-fit: fill; }
+.feedback-root [hidden] { display: none !important; }
+.feedback-mist { top: 55%; opacity: .3; }
+.feedback-dust { opacity: .2; }
+.feedback-lantern { inset: 35% 20% 0; opacity: .15; mix-blend-mode: screen; }
+.feedback-mirror { opacity: .18; }
+.feedback-discovery { inset: 20% 25%; opacity: 0; transition: opacity .5s; }
+.feedback-completion { inset: 58% 10% 15%; opacity: 0; transition: opacity .5s; }
+.stg.fx-discovery .feedback-discovery, .stg.fx-objective .feedback-completion { opacity: .45; }
+body.reduced-scares .feedback-discovery, body.reduced-scares .feedback-completion { opacity: 0 !important; }
+body.reduce-motion .feedback-discovery, body.reduce-motion .feedback-completion { transition: none; }
+@media (prefers-reduced-motion: reduce) { .feedback-discovery, .feedback-completion { transition: none; } }
+@media (max-width: 600px) {
+  .asset-direction.task4-ready :is(.drawer, .modal .box) { padding: 10px; border-width: 12px; }
+  .asset-direction.task4-ready .acard { border-width: 9px; }
+}
+/* Full Sanity leaves the illustration clear; the etched edge texture signals loss. */
+.feedback-root[data-sanity="subtle"] .feedback-sanity { opacity: 0; animation: none; }
+.asset-direction.task4-ready .sheet { background-image: none; }
+.asset-direction.task4-ready .sheet::before { left: 0; right: 0; }
+.asset-direction.task4-ready .slot { min-height: 124px; }
+.asset-direction.task4-ready .slot.is-eq { border-image-source: var(--task4-panels-inventory-slot-selected); }
+.asset-direction .drawer { scrollbar-width: thin; scrollbar-color: #806d49 #181714; }
+.asset-direction .drawer::-webkit-scrollbar { width: 7px; height: 7px; }
+.asset-direction .drawer::-webkit-scrollbar-track { background: #181714; }
+.asset-direction .drawer::-webkit-scrollbar-thumb { background: #806d49; border-radius: 5px; }
+/* The supplied environments already share a deliberate palette and lighting. */
+.asset-direction .photo-scene[data-art-source="supplied"] { --photo-saturation: 1; --photo-brightness: 1; }
+.asset-direction .photo-scene[data-art-source="supplied"][data-phase="2"] { --photo-brightness: .94; }
+.asset-direction .photo-scene[data-art-source="supplied"][data-phase="3"] { --photo-brightness: .86; }
+.asset-direction .asset-photo-ready[data-asset-place] .asset-photo { filter: none; }
+.asset-direction .icard.has-detail .ic-art { display: block; height: 175px; }
+.asset-direction .icard.has-detail .photo-closeup > img { filter: none; object-position: center !important; }
+.asset-direction .icard.has-detail .ic-art::after { display: none; }
+@media (max-height: 650px) { .asset-direction .icard.has-detail .ic-art { height: 110px; } }
+@media (max-width: 600px) { .asset-direction .icard.has-detail .ic-art { height: 135px; } }
+
+.asset-direction .cap:not(.place-copy) { max-height: min(36vh, 340px); overflow-y: auto; padding: 12px; background: #081015db; border-left: 2px solid #bba681; }

@@ -1,5 +1,7 @@
 # The Hollow — scene artwork
 
+Step 0 asset preparation: [PIPELINE.md](PIPELINE.md). Pack licensing inventory: [CREDITS.md](CREDITS.md).
+
 Every scene is drawn in code (`js/scenes/*.js`, layered SVG), so the game never depends on an image file. Painted
 artwork can replace any **backdrop layer** without touching gameplay: the interactive objects (the well, the notice
 board, the lantern, the postcards) stay vector on top, so their states, hit areas and animations keep working.
@@ -9,7 +11,7 @@ board, the lantern, the postcards) stay vector on top, so their states, hit area
 1. Paint the layer at **3200 × 1800** (16:9, the scene's 1600 × 900 coordinate space at 2×), transparent where the
    layers behind should show through. Export as `.webp` (or `.png`).
 2. Save it at the path the scene names, for example `art/square/mid.webp`.
-3. List it in `js/scenes/assets.js` (`'art/square/mid.webp': true`). Unlisted files are never requested.
+3. Register imported media through the central `js/assets.js` registry and generated `art/manifest.json`; `js/scenes/assets.js` is now only a compatibility bridge. See [PIPELINE.md](PIPELINE.md). The paths below describe the original layered-art conventions, not active imported assets.
 
 If a listed file fails to load, the layer falls back to its vector drawing.
 

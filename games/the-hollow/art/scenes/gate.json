@@ -1,0 +1,73 @@
+{
+  "id": "gate",
+  "region": "village",
+  "background": "task1_environments_village_gate",
+  "moods": {},
+  "viewBox": [
+    1600,
+    900
+  ],
+  "hotspots": [
+    {
+      "id": "leave",
+      "x": 148,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "leave",
+      "label": "Walk through the Gate and leave the Hollow",
+      "hidden": false
+    },
+    {
+      "id": "study",
+      "x": 521,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "study",
+      "label": "Study the seal",
+      "hidden": false
+    },
+    {
+      "id": "force",
+      "x": 895,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "force",
+      "label": "Force the Gate",
+      "hidden": false
+    },
+    {
+      "id": "key",
+      "x": 1268,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "key",
+      "label": "Turn the Spirit Key in the air",
+      "hidden": false
+    },
+    {
+      "id": "search_area",
+      "x": 320,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "investigate",
+      "label": "Investigate the surroundings"
+    },
+    {
+      "id": "way_out",
+      "x": 1080,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "travel",
+      "label": "Choose a road"
+    }
+  ],
+  "artDirection": "supplied"
+}

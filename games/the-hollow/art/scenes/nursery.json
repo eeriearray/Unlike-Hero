@@ -1,0 +1,73 @@
+{
+  "id": "nursery",
+  "region": "village",
+  "background": "task1_environments_village_nursery",
+  "moods": {},
+  "viewBox": [
+    1600,
+    900
+  ],
+  "hotspots": [
+    {
+      "id": "rocker",
+      "x": 148,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "answer",
+      "label": "Answer the voice in the cradle",
+      "hidden": false
+    },
+    {
+      "id": "cradles",
+      "x": 521,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "inspect",
+      "label": "Inspect the six cradles",
+      "hidden": false
+    },
+    {
+      "id": "hearth",
+      "x": 895,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "burn",
+      "label": "Burn the rocking cradle",
+      "hidden": false
+    },
+    {
+      "id": "saucer",
+      "x": 1268,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "gift",
+      "label": "Leave a coin in the cradle",
+      "hidden": false
+    },
+    {
+      "id": "search_area",
+      "x": 320,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "investigate",
+      "label": "Investigate the surroundings"
+    },
+    {
+      "id": "way_out",
+      "x": 1080,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "travel",
+      "label": "Choose a road"
+    }
+  ],
+  "artDirection": "supplied"
+}

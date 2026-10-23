@@ -1,0 +1,64 @@
+/* Restrained book typography and a readable, always-available play objective. */
+body.hollow-skin, body.gravewire-ready { --display: 'Cinzel', Georgia, serif; }
+.hollow-skin .acard, .hollow-skin .icard, .hollow-skin .moresheet { border: 1px solid #897852; border-image: none; border-radius: 4px; box-shadow: 0 8px 24px #0008; }
+.hollow-skin .ac-name { font: 600 1rem/1.35 'Inter', sans-serif; letter-spacing: 0; text-transform: none; }
+.hollow-skin .ac-sub { font-size: .8rem; }
+.hollow-skin .ic-body h3 { font-size: 1.35rem; line-height: 1.35; }
+.hollow-skin .icbtn b { font: 600 1rem/1.4 'Inter', sans-serif; }
+.hollow-skin .hud2::after { display: none; }
+.hollow-skin .btn:not(.ghost), .hollow-skin .icbtn { border: 1px solid #897852; border-image: none; border-radius: 3px; }
+.game2 { --trayh: 280px; }
+.expedition-guide { display: grid; grid-template-columns: 1fr 1.2fr auto; gap: 18px; align-items: center; width: min(1100px, 100%); padding: 12px 16px; border: 1px solid #8c79594d; border-left: 3px solid #c6ac70; background: #101619f5; color: #eee5d0; font: .82rem/1.5 'Inter', sans-serif; }
+.guide-label { display: block; color: #c6ac70; font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 3px; }
+.expedition-guide strong { display: block; font-weight: 500; }
+.expedition-guide p { margin: 0; color: #c9cec9; }
+.expedition-guide > div:first-child p { font-size: .75rem; margin-top: 3px; }
+.guide-next { border-left: 1px solid #8c79594d; padding-left: 18px; }
+.guide-primer { padding: 12px 0; border-bottom: 1px solid #897852; line-height: 1.6; }
+.guide-primer li { margin-bottom: 8px; }
+.hollow-skin .acard .ac-art { height: 65px; }
+.hollow-skin .acard { min-height: 150px; }
+.hollow-skin .acard:hover:not([aria-disabled="true"]), .hollow-skin .acard.sel { transform: translateY(-3px); }
+@media (max-width: 960px) {
+  .game2 { --trayh: 300px; }
+  .expedition-guide { grid-template-columns: 1fr auto; gap: 8px 12px; padding: 10px 12px; }
+  .guide-next { grid-column: 1 / -1; grid-row: 2; padding: 0; border: 0; }
+  .expedition-guide > div:first-child p { display: block; }
+  .trayhost { padding-inline: 10px; gap: 6px; }
+}
+@media (max-width: 600px) {
+  .expedition-guide { font-size: .75rem; }
+  .expedition-guide .btn { font-size: .72rem; padding: 5px 8px; }
+  .hollow-skin .ac-name { font-size: .88rem; }
+  .hollow-skin .acard .ac-art { height: 44px; }
+  .hollow-skin .acard { min-height: 130px; }
+}
+.hbars { width: 100px; }
+.hbars .hb { height: 17px; }
+.hbars .hb em { top: 0; font: 500 11px/17px 'Inter', sans-serif; }
+/* Keep the location legible in combat; figures use the same muted ink palette. */
+body[data-screen="game"].combat-active .stg-world { filter: brightness(.7) saturate(.6); }
+.battle-hero { opacity: .35; filter: grayscale(1) brightness(.4); }
+.battle-foe { filter: saturate(.35) drop-shadow(0 12px 16px #000a); }
+.battle-hero, .battle-foe { display: block; min-height: 0; }
+.battle-hero > svg, .battle-foe > svg { max-height: 100%; }
+
+.opening-mode { display: flex; align-items: center; gap: 10px; font: .85rem/1.5 Inter, sans-serif; padding: 12px 0; color: #d7d9cf; }
+.opening-mode input { width: 20px; height: 20px; }
+.expedition-guide details { font-size: .78rem; }
+.expedition-guide summary { cursor: pointer; min-height: 32px; display: flex; align-items: center; color: #d8c397; }
+.guide-help { max-width: 180px; }
+.reading-time { font-size: .8rem; color: #d8c397; }
+.hollow-skin .ac-sub { line-height: 1.5; }
+.hollow-skin .acard:focus-visible, summary:focus-visible, button:focus-visible { outline: 2px solid #ead7a7; outline-offset: 4px; }
+@media (max-width: 600px) {
+  .expedition-guide { grid-template-columns: 1fr auto; }
+  .expedition-guide > div:first-child p { font-size: .78rem; }
+  .guide-next { font-size: .8rem; }
+  .game2 { --trayh: 365px; }
+  .expedition-guide summary, .expedition-guide button { min-height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) { .hollow-skin .acard:hover:not([aria-disabled="true"]) { transform: none; } }
+
+.opening-upgrade { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; background: #101b20f5; padding: 12px; border: 1px solid #c6ac70; width: 100%; font: .85rem/1.5 Inter,sans-serif; }
+.opening-upgrade b { flex: 1 1 100%; }

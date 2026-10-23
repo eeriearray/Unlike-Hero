@@ -30,7 +30,19 @@
     };
   }
   St.cat = function () { return g.HollowUI.S.cat; };
-  St.def = function (id) { return SC.defs[id] || (St.cat() && St.cat().locations[id] ? genericDef(id) : null); };
+  St.def = function (id) {
+    var fallback = SC.defs[id] || (St.cat() && St.cat().locations[id] ? genericDef(id) : null);
+    return g.HollowPhotoScenes ? g.HollowPhotoScenes.resolve(id, fallback) : fallback;
+  };
+  // Optional metadata may arrive after first paint. Never interrupt a card or event.
+  var refreshPending = false;
+  St.refresh = function () {
+    refreshPending = true;
+    if (view && host && !holdN && !focusId) {
+      St.sync(view);
+      if (g.HollowEvents && !g.HollowEvents.busy() && g.HollowEvents.onIdle) g.HollowEvents.onIdle();
+    }
+  };
   St.defFor = function () { return def; };
   St.place = function () { return lid; };
 
@@ -61,6 +73,7 @@
         (L.objects ? objectsSvg(def) : (L.raw ? L.svg.replace('<svg ', '<svg preserveAspectRatio="xMidYMid slice" ') : svgOpen(def) + (def.defs || '') + L.svg + '</svg>')) + '</div>';
     });
     world.innerHTML = html;
+    if (g.HollowPhotoScenes) g.HollowPhotoScenes.entered(id, host);
     host.setAttribute('data-place', id);
     host.classList.toggle('generic', !!def.generic);
     panX = null; resetCam(true);
@@ -127,8 +140,12 @@
   St.sync = function (v) {
     if (!host) return;
     view = v;
+    if (g.HollowCharacters) g.HollowCharacters.sync(v);
+    if (g.HollowAudio.setState) g.HollowAudio.setState(v);
     var place = v.me && (v.me.loc || v.me.fellLoc); if (!place) return;
-    if (place !== lid || built !== place) { built = place; build(place); }
+    if (place !== lid || built !== place || (refreshPending && !holdN && !focusId)) {
+      refreshPending = false; built = place; build(place);
+    }
     if (!def) return;
     var st = stateOf(v);
     if (holdN > 0) { pendingSt = st; return; }
@@ -157,6 +174,7 @@
       el.setAttribute('aria-label', def.objects[id].name + (a.state === 'ok' ? '' : a.state === 'done' ? ' (already examined)' : ' (' + (a.why || 'not now') + ')'));
     });
     try { def.state(root, st); } catch (e) { /* a scene's decoration must never break the game */ }
+    try { if (g.HollowFeedback) g.HollowFeedback.sync(view); } catch (e) { /* Optional screen effects never interrupt play. */ }
     // the Haunting in the picture: windows go dark (far ones first), the lantern string gutters out
     var wins = root.querySelectorAll('.win.lit'), n = wins.length, dark = Math.round(st.k * 1.25 * n);
     wins.forEach(function (w) { var i = +w.getAttribute('data-w'); w.classList.toggle('dark', i < dark); });
@@ -179,7 +197,7 @@
   function sizeWorld() {
     if (!host || !world) return;
     var hw = host.clientWidth || 1, hh = host.clientHeight || 1, vb = def ? def.vb : [1600, 900];
-    var ww = hw / hh < 1.3 ? Math.round(Math.min(hh * vb[0] / vb[1], hw * 2.6)) : hw;
+    var ww = !(def && def.photo) && hw / hh < 1.3 ? Math.round(Math.min(hh * vb[0] / vb[1], hw * 2.6)) : hw;
     world.style.width = ww > hw ? ww + 'px' : '';
     host.classList.toggle('pannable', ww > hw);
   }
@@ -201,6 +219,8 @@
   }
   St.focus = function (id, opt) {
     if (!def || !def.objects[id]) return;
+    // Background packs illustrate a place, not precise prop positions. Keep the full composition.
+    if (def.photo) return;
     opt = opt || {};
     var o = def.objects[id], m = metrics(), small = m.hw < 760;
     var z = Math.min(2.4, (o.z || 1.8) * (small ? 0.75 : 1) * (opt.zoom || 1));
@@ -212,7 +232,7 @@
     host.style.setProperty('--fx', (T.x / m.W * 100).toFixed(1) + '%'); host.style.setProperty('--fy', (T.y / m.H * 100).toFixed(1) + '%');
     setCam(tx, ty, z, opt.instant);
   };
-  St.unfocus = function () { if (!host) return; resetCam(false); };
+  St.unfocus = function () { if (!host) return; resetCam(false); if (refreshPending) St.refresh(); };
   St.focused = function () { return focusId; };
   function markFocus() { if (!world) return; world.querySelectorAll('.obj').forEach(function (e) { e.classList.toggle('foc', e.getAttribute('data-obj') === focusId); }); }
   // where an object is on screen, after the camera (for anchoring cards and launching particles)
@@ -251,6 +271,9 @@
     var el = e.target.closest && e.target.closest('.obj'); if (!el || !def) return;
     var id = el.getAttribute('data-obj'), o = def.objects[id], a = lastSt && lastSt.avail[id];
     var r = St.rectOf(id), hr = host.getBoundingClientRect(); if (!r) return;
+    if (def.photo && e.type === 'focusin' && el.matches(':focus-visible') && (r.left < hr.left || r.left + r.width > hr.right)) {
+      St.focus(id, { center: true }); r = St.rectOf(id);
+    }
     tip.innerHTML = '<b>' + A.esc(o.name) + '</b>' + (a && a.state === 'done' ? '<small>examined</small>' : a && a.state !== 'ok' && a.why ? '<small>' + A.esc(a.why) + '</small>' : '');
     tip.style.left = (r.left - hr.left + r.width / 2) + 'px'; tip.style.top = Math.max(8, r.top - hr.top - 8) + 'px';
     tip.classList.add('on'); el.classList.add('hov');
@@ -263,6 +286,7 @@
   // ───────────── small framed views of objects (interaction cards, action cards) ─────────────
   St.closeup = function (id, cls) {
     var d = def; if (!d || !d.objects[id]) return '';
+    if (d.photo && g.HollowPhotoScenes) return g.HollowPhotoScenes.closeup(d, id, cls);
     var o = d.objects[id], c = o.crop, body = '';
     if (d.generic) body = d.layers({})[0].svg.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
     else {

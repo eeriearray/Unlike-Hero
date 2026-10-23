@@ -33,11 +33,12 @@
       boss: { hp: D.boss.hp, chains: D.boss.chains, dead: false }, corridor: 'observatory', vote: null, spiritAid: null, whispers: 0, uid: 0,
       allFallen: 0, jam: 0, bossLog: []
     };
+    if (this.settings.opening) { w.opening = { version: 1, board: false, record: false, route: false, entered: false, complete: false }; w.flags.opening_active = true; }
     var self = this;
     Object.keys(D.secrets).forEach(function (k) { w.secrets[k] = self.pick(D.secrets[k].vals); });
     Object.keys(D.locations).forEach(function (id) { w.locs[id] = { seen: false, visited: false, inv: false, corrupt: 0, seal: 0, chalk: 0, ground: [], snare: null }; });
     Object.keys(this.graph.edges).forEach(function (k) { w.edges[k] = { rev: self.graph.edges[k].type !== 'hidden', open: false, closedUntil: 0 }; });
-    Object.keys(D.locations).forEach(function (id) { var l = D.locations[id]; if (l.enemy) self.spawnEnemy(l.enemy, id, null, false); });
+    Object.keys(D.locations).forEach(function (id) { var l = D.locations[id]; if (l.enemy && !(w.opening && ['belltower', 'graveyard'].indexOf(id) >= 0)) self.spawnEnemy(l.enemy, id, null, false); });
     w.corridor = this.pick(D.corridorTargets);
     this.phase = 'playing';
     // characters, objectives
@@ -56,6 +57,37 @@
     this.startRound();
   };
 
+  M.openingPlace = function (id) { return ['square', 'chapel', 'graveyard', 'belltower'].indexOf(id) >= 0; };
+  M.openingObjective = function () {
+    var o = this.w.opening;
+    if (!o) return null;
+    if (o.complete) return { id: 'complete', title: 'Follow the bell beneath Thornwick', context: 'The bell was cast from grave markers. Every toll remembers a name. The wider expedition is now open.', hint: 'Travel back through the graveyard to reach the Black Estate, or cross the bridge.', target: 'graveyard', complete: true };
+    if (o.entered) return { id: 'frame', title: 'Examine the empty bell-frame', context: 'You are inside. Something rings where no bell hangs.', hint: 'Study the empty bell-frame in the tower.', target: 'belltower' };
+    if (o.route) return { id: 'enter', title: 'Enter the bell tower', context: 'The graveyard marker shows a dry maintenance entrance.', hint: 'Travel to the tower and use the maintenance entrance.', target: 'belltower' };
+    if (o.record) return { id: 'route', title: 'Find the maintenance marker', context: 'The chapel record describes a passage marked by a bell on a grave.', hint: 'Read the headstones in the graveyard. You can also force the tower entrance.', target: 'graveyard' };
+    if (o.board) return { id: 'record', title: 'Find a way into the bell tower', context: 'The notice says the chapel kept the tower maintenance records.', hint: 'Search the vestry in the chapel, or try forcing the tower entrance.', target: 'chapel' };
+    return { id: 'arrival', title: 'Find a way into the bell tower', context: 'You followed a summons to abandoned Thornwick. Its bell rings from a tower whose bell is missing.', hint: 'Read the notice board in the Silent Square. It costs 1 action.', target: 'square' };
+  };
+  // Shared evidence is recorded even on a failed roll or if the finder falls.
+  M.recordOpening = function (p, enc, opt, ctx) {
+    var o = this.w.opening; if (!o || o.complete || enc.kind !== 'loc') return;
+    var before = this.openingObjective().id, key = enc.loc + ':' + opt.id, text = '';
+    if (key === 'square:board' && !o.board) { o.board = true; text = 'The notice names the chapel as the keeper of tower records. You look back: your name has appeared beneath the date.'; }
+    if (key === 'chapel:vestry' && !o.record) { o.record = true; text = 'A surviving maintenance record mentions a dry passage beside a grave marked with a bell.'; }
+    if (key === 'graveyard:headstones' && !o.route) { o.route = true; this.w.flags.opening_route = true; text = 'A bell is cut into the last stone. Behind it, a diagram marks the tower maintenance entrance. The route is shared with the party.'; }
+    if ((key === 'belltower:maintenance' || key === 'belltower:force_entry') && !o.entered) { o.entered = true; this.w.flags.opening_entered = true; text = 'Inside, a rope moves without wind. The iron frame above it holds no bell.'; }
+    if (key === 'belltower:frame' && o.entered) {
+      o.complete = true; this.w.flags.opening_active = false;
+      if (!this.w.clues.bell_cast) this.addClue('bell_cast', p, false, ctx);
+      if (this.w.clues.bell_cast) this.w.clues.bell_cast.shared = true;
+      ['foyer', 'bridge', 'wagon', 'nursery'].forEach(function (id) { this.w.locs[id].seen = true; }, this);
+      text = 'A bell sounds beneath your feet. Opening complete: the roads beyond Thornwick are now available.';
+    }
+    if (text) { this.say(ctx, text, 'story'); this.addLog('story', text, { p: p.id, loc: enc.loc }); }
+    var next = this.openingObjective();
+    if (before !== next.id) { this.say(ctx, 'New objective: ' + next.title, 'info'); this.addLog('story', 'New objective: ' + next.title, { loc: enc.loc }); }
+  };
+
   M.autoEquip = function (p, e) {
     var d = D.items[e.id];
     if (!d.equip) return;
@@ -69,7 +101,7 @@
     this.players.forEach(function (p) { if (p.cd.ability > 0) p.cd.ability--; });
     this.addLog('round', 'Round ' + w.round + ' begins.', { d: { k: 'round', round: w.round } });
     this.players.forEach(function (b) { if (b.bot && b.status === 'fallen') { var r = this.cmd_spirit(b, { kind: b.returns > 0 ? 'return' : 'whisper' }); } }, this);
-    if (w.round > 1) this.drawOmen();
+    if (w.round > 1 && !(w.opening && !w.opening.complete)) this.drawOmen();
     this.checkEnd();
     if (this.phase !== 'playing') return;
     this.turn.order = this.players.filter(function (p) { return p.status === 'alive'; }).map(function (p) { return p.id; });
@@ -110,9 +142,11 @@
     if (this.turn && this.turn.active === p.id) this.closeEnc(p, true);
     this.advanceTurn();
   };
-  M.cmd_endturn = function (p) {
+  M.cmd_endturn = function (p, c) {
     var e = this.requireTurn(p); if (e) return { error: e };
     if (this.turn.enc && this.turn.enc.hold) return { error: 'Decide about your roll first.' };
+    if (c && c.auto && (!this.settings.solo || this.turn.ap > 0 || p.pendingLevels || this.w.vote || (this.turn.enc && !(this.turn.enc.kind === 'loc' && this.turn.enc.result)))) return { error: 'Finish the pending decision before advancing.' };
+    if (c && c.auto) this.addLog('system', 'Your actions are spent. The next turn begins; the Haunting Clock advances between rounds.');
     this.endTurnFor(p);
     return { ok: true };
   };
@@ -296,6 +330,8 @@
   // Can this road be walked from `from`? (players: p given; monsters: monster = true)
   M.edgeState = function (e, from, monster) {
     var w = this.w, s = w.edges[e.key] || { rev: true, open: true, closedUntil: 0 };
+    if (monster && w.opening && !w.opening.complete && this.openingPlace(e.a) !== this.openingPlace(e.b)) return { ok: false, state: 'closed', why: 'The village is still.' };
+    if (!monster && w.opening && !w.opening.complete && (!this.openingPlace(e.a) || !this.openingPlace(e.b))) return { ok: false, state: 'closed', why: 'Follow the missing bell first. The wider expedition opens after you examine the tower frame.' };
     if (e.virtual) return { ok: true, state: 'open' };
     if (e.type === 'hidden' && !s.rev) return { ok: false, state: 'hidden', why: 'Hidden' };
     if (e.oneway && e.a !== from) return { ok: false, state: 'oneway', why: 'A one-way drop' };
@@ -392,6 +428,7 @@
     var self = this, out = [];
     this.neighbors(p.loc).forEach(function (nb) {
       if (!self.edgeVisible(nb.e)) return;
+      if (self.w.opening && !self.w.opening.complete && !self.openingPlace(nb.to)) return;
       var st = self.edgeState(nb.e, p.loc, false);
       var o = { to: nb.to, key: nb.e.key, label: nb.e.label || '', state: st.state, ok: st.ok, why: st.why || '', type: nb.e.type, oneway: nb.e.oneway };
       if (st.state === 'oneway') return;      // the far end of a drop is not a road

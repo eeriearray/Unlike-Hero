@@ -51,7 +51,7 @@
     var V = v(), G = V.game, cc = cat().cfg, ph = G.haunt, m = V.me, mine = G.active === V.you, a = g.HollowAudio.settings(), act = UI.pl(G.active);
     var c = UI.cls(m.cls), tone = ['Quiet', 'Uneasy', 'Awake'][ph - 1], d = S.ui.drawer, slv = m.silver;
     var me = '<div class="h-me" style="--ac:' + c.color + '"><button id="hud-me" class="hme" data-act="drawer" data-d="left" aria-label="Character sheet">' + A.portrait(m.cls, c.color) + (m.offer ? '<i class="dotnote"></i>' : '') + '</button>' +
-      '<div class="hbars"><span class="hb" title="Vitality"><i class="vit" style="width:' + pct(m.vit, m.maxVit) + '%"></i><em>' + m.vit + '</em></span><span class="hb" title="Sanity"><i class="san" style="width:' + pct(m.san, m.maxSan) + '%"></i><em>' + m.san + '</em></span></div>' +
+      '<div class="hbars"><span class="hb" title="Vitality"><i class="vit" style="width:' + pct(m.vit, m.maxVit) + '%"></i><em>' + 'Vitality ' + m.vit + '</em></span><span class="hb" title="Sanity"><i class="san" style="width:' + pct(m.san, m.maxSan) + '%"></i><em>' + 'Sanity ' + m.san + '</em></span></div>' +
       '<div class="hturn' + (mine ? ' mine' : '') + '">' + (mine ? '<b>Your turn</b>' + UI.apPips() : '<span>' + (act ? esc(act.name.replace(' (ghost)', '')) + '\'s turn' : '') + '</span>') + '</div></div>';
     var clock = '<div id="hud-clock" class="h-clock" data-phase="' + ph + '" role="img" aria-label="The Haunting Clock: ' + G.clock + ' of ' + cc.clockMax + ', phase ' + ph + '">' + clockDial(G, cc) + '<span><small>The Haunting</small><b>' + tone + '</b></span></div>';
     var party = '<div class="h-party" aria-label="The party">' + V.players.map(function (p) {
@@ -112,7 +112,7 @@
       var R = enc.result, who = R.by === V.you ? '' : (UI.pl(R.by) || {}).name;
       var st = (R.lines || []).filter(function (x) { return x.k === 'story'; })[0];
       head = (who ? esc(who) + ' · ' : '') + esc(R.opt);
-      text = st ? sentences(st.t, 2) : '';
+      text = (R.lines || []).filter(function (line) { return (line.k === 'story' || line.k === 'info') && line.t.indexOf('You already knew this:') !== 0; }).map(function (line) { return line.t; }).join(' ');
       chips = (R.chips || []).filter(function (c) { return c.k !== 'enemy'; }).map(function (c) { return '<i class="cc ' + (c.tone === 'bad' ? 'bad' : 'good') + '">' + esc(c.label) + '</i>'; }).join('');
       var tw = { crit: 'Critical success', ok: 'Success', fail: 'Failure', fumble: 'Critical failure', auto: '' }[R.tier];
       if (tw) head += ' <em class="t-' + R.tier + '">' + tw + (R.roll ? ' · ' + R.roll.total + ' vs ' + R.roll.dc : '') + '</em>';
@@ -140,10 +140,10 @@
 
   // before a roll: what am I attempting, how hard, what is at stake
   Story.prep = function (o, enc) {
-    var V = v(), out = '<div class="prep"><h2>' + esc(o.label) + '</h2>';
+    var V = v(), out = '<div class="prep"><h2>' + esc(o.label) + '</h2><p class="choice-cost">Costs ' + (o.ap || 0) + ' action' + (o.ap === 1 ? '' : 's') + (o.cost ? ' · ' + esc(g.HollowCards.costWords(o.cost)) : '') + '</p>';
     if (o.kind === 'check') {
       var odds = o.chance >= 75 ? 'You are likely to manage this.' : o.chance >= 50 ? 'It could go either way.' : o.chance >= 30 ? 'The odds are against you.' : 'This is a long shot.';
-      out += '<div class="pcheck"><span class="sk ' + o.stat + '">' + STAT[o.stat] + ' check</span> <b>Difficulty ' + o.dc + '</b> <span class="muted">(' + esc(o.dcName) + ')</span></div><p class="odds">' + odds + '</p>';
+      out += '<div class="pcheck"><span class="sk ' + o.stat + '">' + STAT[o.stat] + ' check</span> <b>Difficulty ' + o.dc + '</b> <span class="muted">(' + esc(o.dcName) + ')</span></div><p class="odds">' + o.chance + '% success · ' + odds + '</p>';
       if (o.stakes) out += '<p class="stakes">' + esc(o.stakes) + '</p>';
       out += '<details class="why"><summary>Why these odds?</summary><div class="mods">' + o.mods.map(function (mm) { return '<span class="dm ' + (mm.v < 0 ? 'neg' : 'pos') + '">' + esc(mm.l) + ' ' + (mm.v > 0 ? '+' : '−') + Math.abs(mm.v) + '</span>'; }).join('') + o.dcMods.map(function (mm) { return '<span class="dm ' + (mm.v > 0 ? 'neg' : 'pos') + '">' + esc(mm.l) + ' (difficulty ' + (mm.v > 0 ? '+' : '−') + Math.abs(mm.v) + ')</span>'; }).join('') + '</div></details>';
       // can a companion help?
@@ -174,14 +174,15 @@
     var V = v(), a = V.act, G = V.game, enemy = !!a.parting, mv = a.moves;
     var vis = function (id) { return V.map.locs[id] && V.map.locs[id].v; };
     var ok = mv.filter(function (r) { return r.ok; }).sort(function (x, y) { return (vis(x.to) ? 1 : 0) - (vis(y.to) ? 1 : 0) || (x.enemy ? 1 : 0) - (y.enemy ? 1 : 0); });
-    var top = ok.slice(0, 4);
+    // Every open road stays visible, including the fifth road to the Bell Tower.
+    var top = ok;
     var row = function (r) {
       var l = loc(r.to), reg = region(r.to), seen = vis(r.to), dis = G.ap < 1 ? ' disabled' : '';
       return '<div class="dest' + (seen ? ' seen' : ' unknown') + (r.enemy ? ' danger' : '') + '"><button class="dart" data-act="move" data-mode="step" data-to="' + r.to + '"' + dis + ' aria-label="Go to ' + esc(l.name) + '">' + A.scene(l.scene, r.to, reg.color, l.region, l.glyph) + '<span class="dname"><small style="color:' + reg.color + '">' + esc(reg.name) + '</small><b>' + esc(l.name) + '</b></span>' + (r.enemy ? '<span class="dwarn">' + esc(S.cat.enemies[r.enemy].name) + '</span>' : '') + '</button>' +
         '<div class="dmeta">' + (seen ? 'Visited' : 'Unexplored') + (r.oneway ? ' · one-way' : '') + (r.type === 'hidden' ? ' · hidden way' : '') + (r.enemy && r.sneak ? ' <button class="btn tiny" data-act="move" data-mode="sneak" data-to="' + r.to + '"' + dis + '>Sneak (' + (r.sneak.chance >= 60 ? 'likely' : r.sneak.chance >= 35 ? 'risky' : 'unlikely') + ')</button>' : '') + '</div></div>';
     };
     var out = '<div class="travelp"><div class="tph"><h2>' + (enemy ? 'Where do you flee?' : 'Where to?') + '</h2><span class="muted small">' + (G.ap < 1 ? 'No actions left this turn.' : '1 action' + (enemy ? ' · it strikes as you leave' : '')) + '</span><button class="btn ghost small" data-act="untravel">Stay</button></div><div class="dests">' + (top.length ? top.map(row).join('') : '<p class="note">No road is open from here. Search for hidden ways, or unlock a road below.</p>') + '</div>';
-    var rest = ok.slice(4), locked = mv.filter(function (r) { return !r.ok; }), spr = a.sprint, fol = a.follow;
+    var rest = [], locked = mv.filter(function (r) { return !r.ok; }), spr = a.sprint, fol = a.follow;
     if (rest.length || locked.length || spr.length || fol.length) out += '<details class="more"><summary>More ways to travel</summary>' + rest.map(row).join('') + (spr.length ? '<h3>Further afield (sprint: two roads for one action, noisy, hazards bite)</h3>' + spr.map(function (s) { return '<div class="dline"><div class="dg">' + A.glyph('bridge', 24) + '</div><div class="di"><b>' + esc(loc(s.to).name) + '</b><span>Past ' + esc(loc(s.via).name) + '.</span></div><div class="db"><button class="btn" data-act="move" data-mode="sprint" data-to="' + s.to + '"' + (G.ap < 1 ? ' disabled' : '') + '>Sprint</button></div></div>'; }).join('') : '') + (fol.length ? '<h3>Follow a companion</h3><div class="chips-row">' + fol.map(function (f) { return '<button class="btn small" data-act="follow" data-to="' + f.id + '"' + (G.ap < 1 ? ' disabled' : '') + '>Follow ' + esc(f.name) + '</button>'; }).join('') + '</div>' : '') + (locked.length ? '<h3>Blocked roads</h3>' + locked.map(function (r) { return '<div class="dline off"><div class="dg">' + A.glyph(r.state === 'locked' ? 'keyhole' : 'chain', 24) + '</div><div class="di"><b>' + esc(loc(r.to).name) + '</b><span>' + esc(r.label || '') + ' ' + esc(r.why) + '</span><div class="chips-row">' + (r.ways || []).map(function (w) { return w.flag ? '' : '<button class="btn small" data-act="unlock" data-edge="' + r.key + '" data-way="' + w.id + '"' + (w.ok && G.ap >= w.ap ? '' : ' disabled') + ' title="' + esc(w.why) + '">' + esc(w.label) + (w.stat ? ' (' + (w.chance >= 60 ? 'likely' : w.chance >= 35 ? 'risky' : 'unlikely') + ')' : '') + '</button>'; }).join('') + '</div></div></div>'; }).join('') : '') + '</details>';
     out += '<div class="prow"><button class="btn small" data-act="map">Open the full map</button></div></div>';
     return out;

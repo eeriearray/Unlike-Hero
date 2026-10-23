@@ -1,0 +1,83 @@
+{
+  "id": "mirror",
+  "region": "estate",
+  "background": "task1_environments_estate_mirror",
+  "moods": {},
+  "viewBox": [
+    1600,
+    900
+  ],
+  "hotspots": [
+    {
+      "id": "inspect",
+      "x": 148,
+      "y": 285,
+      "w": 184,
+      "h": 130,
+      "optionId": "inspect",
+      "label": "Inspect the reflection",
+      "hidden": false
+    },
+    {
+      "id": "speak",
+      "x": 521,
+      "y": 285,
+      "w": 184,
+      "h": 130,
+      "optionId": "speak",
+      "label": "Speak to the reflection",
+      "hidden": false
+    },
+    {
+      "id": "break",
+      "x": 895,
+      "y": 285,
+      "w": 184,
+      "h": 130,
+      "optionId": "break",
+      "label": "Break the mirror",
+      "hidden": false
+    },
+    {
+      "id": "through",
+      "x": 1268,
+      "y": 285,
+      "w": 184,
+      "h": 130,
+      "optionId": "through",
+      "label": "Step through the true reflection",
+      "hidden": false
+    },
+    {
+      "id": "salt",
+      "x": 148,
+      "y": 465,
+      "w": 184,
+      "h": 130,
+      "optionId": "salt",
+      "label": "Salt the glass and read the dust",
+      "hidden": false
+    },
+    {
+      "id": "search_area",
+      "x": 320,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "investigate",
+      "label": "Investigate the surroundings"
+    },
+    {
+      "id": "way_out",
+      "x": 1080,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "travel",
+      "label": "Choose a road"
+    }
+  ],
+  "artDirection": "supplied"
+}

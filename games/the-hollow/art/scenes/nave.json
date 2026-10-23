@@ -1,0 +1,73 @@
+{
+  "id": "nave",
+  "region": "abbey",
+  "background": "task2_environments_abbey_nave",
+  "moods": {},
+  "viewBox": [
+    1600,
+    900
+  ],
+  "hotspots": [
+    {
+      "id": "register",
+      "x": 148,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "register",
+      "label": "Read the burial register",
+      "hidden": false
+    },
+    {
+      "id": "pew",
+      "x": 521,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "pew",
+      "label": "Sit among the congregation and listen",
+      "hidden": false
+    },
+    {
+      "id": "candles",
+      "x": 895,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "candles",
+      "label": "Light the nave candles",
+      "hidden": false
+    },
+    {
+      "id": "pray",
+      "x": 1268,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "pray",
+      "label": "Pray for the dead",
+      "hidden": false
+    },
+    {
+      "id": "search_area",
+      "x": 320,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "investigate",
+      "label": "Investigate the surroundings"
+    },
+    {
+      "id": "way_out",
+      "x": 1080,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "travel",
+      "label": "Choose a road"
+    }
+  ],
+  "artDirection": "supplied"
+}

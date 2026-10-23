@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "sanity": {
+    "subtle": "task4_effects_sanity_distortion_texture",
+    "asymmetric": "task4_effects_sanity_distortion_texture",
+    "panic": "task4_effects_sanity_distortion_texture"
+  },
+  "damage": [
+    "task4_effects_injury_edge_stain"
+  ],
+  "impact": "horror_sfx_free_horror_sfx_free_stingers_and_spooky_triggers_stinger_dfe1c4a8",
+  "atmosphere": {
+    "mist": "task4_effects_thin_ground_mist",
+    "dust": "task4_effects_sparse_drifting_dust",
+    "rain": "task4_effects_light_rain",
+    "lantern": "task4_effects_gentle_lantern_glow",
+    "mirror": "task4_effects_mirror_crack_texture",
+    "discovery": "task4_effects_discovery_light_accent",
+    "completion": "task4_effects_objective_completion_accent"
+  }
+}

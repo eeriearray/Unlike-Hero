@@ -1,0 +1,73 @@
+{
+  "id": "battlefield",
+  "region": "woods",
+  "background": "task2_environments_woods_battlefield",
+  "moods": {},
+  "viewBox": [
+    1600,
+    900
+  ],
+  "hotspots": [
+    {
+      "id": "scavenge",
+      "x": 148,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "scavenge",
+      "label": "Scavenge the fallen",
+      "hidden": false
+    },
+    {
+      "id": "salute",
+      "x": 521,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "salute",
+      "label": "Salute the colours",
+      "hidden": false
+    },
+    {
+      "id": "chest",
+      "x": 895,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "chest",
+      "label": "Open the standard-bearer's chest",
+      "hidden": true
+    },
+    {
+      "id": "watch",
+      "x": 1268,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "watch",
+      "label": "Dig in for the night",
+      "hidden": false
+    },
+    {
+      "id": "search_area",
+      "x": 320,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "investigate",
+      "label": "Investigate the surroundings"
+    },
+    {
+      "id": "way_out",
+      "x": 1080,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "travel",
+      "label": "Choose a road"
+    }
+  ],
+  "artDirection": "supplied"
+}

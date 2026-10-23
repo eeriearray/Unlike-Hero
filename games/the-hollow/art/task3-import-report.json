@@ -1,0 +1,878 @@
+{
+  "archive": "the_hollow_task3_full_cast_55files.zip",
+  "sha256": "b4d326a4c9beae4b290b8bffb655b1f45aa85e2e9a329d85e720a1e29f80b536",
+  "images": {
+    "task3_occultist_portrait": {
+      "source": "characters/playable/occultist/occultist_portrait.png",
+      "sourceSha256": "ecb9d19793c23c439f50c4602165ef8d08fe16785e3ed2a15419c7c313ab1175",
+      "dimensions": [
+        1024,
+        1280
+      ],
+      "runtimeDimensions": [
+        384,
+        480
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "WebP quality 88"
+    },
+    "task3_occultist_fullbody": {
+      "source": "characters/playable/occultist/occultist_fullbody.png",
+      "sourceSha256": "eeda548a7b29fd91fd13868f59154505bb1ad3b0e7ce4aa2f7a44a3b14249a2d",
+      "dimensions": [
+        1600,
+        2400
+      ],
+      "runtimeDimensions": [
+        800,
+        1200
+      ],
+      "transparent": true,
+      "alphaBounds": [
+        389,
+        120,
+        1211,
+        2280
+      ],
+      "encoding": "WebP quality 88"
+    },
+    "task3_occultist_silhouette": {
+      "source": "characters/playable/occultist/occultist_silhouette.png",
+      "sourceSha256": "21d76c23dd1ceab79c71e1f6471be2beae9c2c017f7f6596bcedda6b99c30db5",
+      "dimensions": [
+        400,
+        600
+      ],
+      "runtimeDimensions": [
+        400,
+        600
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "lossless WebP"
+    },
+    "task3_hunter_portrait": {
+      "source": "characters/playable/hunter/hunter_portrait.png",
+      "sourceSha256": "685a665a6644c805ce35c5ece2d6d1e27da2fa9f8871ffba051e5728d58300ce",
+      "dimensions": [
+        1024,
+        1280
+      ],
+      "runtimeDimensions": [
+        384,
+        480
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "WebP quality 88"
+    },
+    "task3_hunter_fullbody": {
+      "source": "characters/playable/hunter/hunter_fullbody.png",
+      "sourceSha256": "f20c60b20cf3c6e1cf86385081954015832aa083b1d6bcf7c75ba5c40affa6af",
+      "dimensions": [
+        1600,
+        2400
+      ],
+      "runtimeDimensions": [
+        800,
+        1200
+      ],
+      "transparent": true,
+      "alphaBounds": [
+        408,
+        120,
+        1192,
+        2280
+      ],
+      "encoding": "WebP quality 88"
+    },
+    "task3_hunter_silhouette": {
+      "source": "characters/playable/hunter/hunter_silhouette.png",
+      "sourceSha256": "cd70b26a633a6f1caec9cac033f8cdb67391c9f2dd3388e03c843c6ca685f021",
+      "dimensions": [
+        400,
+        600
+      ],
+      "runtimeDimensions": [
+        400,
+        600
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "lossless WebP"
+    },
+    "task3_apothecary_portrait": {
+      "source": "characters/playable/apothecary/apothecary_portrait.png",
+      "sourceSha256": "7b2145fa9656e91e23c7d94a83e8c82021ebd2e1225b833584e58a6cdbe69fc3",
+      "dimensions": [
+        1024,
+        1280
+      ],
+      "runtimeDimensions": [
+        384,
+        480
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "WebP quality 88"
+    },
+    "task3_apothecary_fullbody": {
+      "source": "characters/playable/apothecary/apothecary_fullbody.png",
+      "sourceSha256": "816322317c54cebab5b400978d5f26a3df8c38855180b18505baa1e4a92f33e5",
+      "dimensions": [
+        1600,
+        2400
+      ],
+      "runtimeDimensions": [
+        800,
+        1200
+      ],
+      "transparent": true,
+      "alphaBounds": [
+        387,
+        120,
+        1212,
+        2280
+      ],
+      "encoding": "WebP quality 88"
+    },
+    "task3_apothecary_silhouette": {
+      "source": "characters/playable/apothecary/apothecary_silhouette.png",
+      "sourceSha256": "2c16b042a3248fb06ff482d593e86eaae228b642be65f6d2b254ddfb16b183f4",
+      "dimensions": [
+        400,
+        600
+      ],
+      "runtimeDimensions": [
+        400,
+        600
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "lossless WebP"
+    },
+    "task3_medium_portrait": {
+      "source": "characters/playable/medium/medium_portrait.png",
+      "sourceSha256": "c956d37fc6ffc665a581df5888a075beba90ca9cab426e9d516618586f25e154",
+      "dimensions": [
+        1024,
+        1280
+      ],
+      "runtimeDimensions": [
+        384,
+        480
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "WebP quality 88"
+    },
+    "task3_medium_fullbody": {
+      "source": "characters/playable/medium/medium_fullbody.png",
+      "sourceSha256": "1b8c3adbd0a2af7d6f0a660817cbad7fed9a74ed7eba16935ace113058289a8b",
+      "dimensions": [
+        1600,
+        2400
+      ],
+      "runtimeDimensions": [
+        800,
+        1200
+      ],
+      "transparent": true,
+      "alphaBounds": [
+        441,
+        120,
+        1159,
+        2280
+      ],
+      "encoding": "WebP quality 88"
+    },
+    "task3_medium_silhouette": {
+      "source": "characters/playable/medium/medium_silhouette.png",
+      "sourceSha256": "8a47df78d08abe1003c608737be4e5bff5b0d3a4b984551daf4f5c57019b7535",
+      "dimensions": [
+        400,
+        600
+      ],
+      "runtimeDimensions": [
+        400,
+        600
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "lossless WebP"
+    },
+    "task3_vagabond_portrait": {
+      "source": "characters/playable/vagabond/vagabond_portrait.png",
+      "sourceSha256": "13c332cc1c60885ba95c11693a0c4a642fc939ff270d1db926da697b9ed93ee0",
+      "dimensions": [
+        1024,
+        1280
+      ],
+      "runtimeDimensions": [
+        384,
+        480
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "WebP quality 88"
+    },
+    "task3_vagabond_fullbody": {
+      "source": "characters/playable/vagabond/vagabond_fullbody.png",
+      "sourceSha256": "64cabf25af829c3232c9ff0e903a33d82273e88958aeec57809648693358b3f0",
+      "dimensions": [
+        1600,
+        2400
+      ],
+      "runtimeDimensions": [
+        800,
+        1200
+      ],
+      "transparent": true,
+      "alphaBounds": [
+        322,
+        120,
+        1278,
+        2280
+      ],
+      "encoding": "WebP quality 88"
+    },
+    "task3_vagabond_silhouette": {
+      "source": "characters/playable/vagabond/vagabond_silhouette.png",
+      "sourceSha256": "d4c067a1d86c7bb4c5c9fe948939278f7f4fc1391baeaf8bb83e1cea28000e61",
+      "dimensions": [
+        400,
+        600
+      ],
+      "runtimeDimensions": [
+        400,
+        600
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "lossless WebP"
+    },
+    "task3_exorcist_portrait": {
+      "source": "characters/playable/exorcist/exorcist_portrait.png",
+      "sourceSha256": "f5322dc465b0d654f554afb114c69c57b075cfd341bea584eaa0a9d01c60c895",
+      "dimensions": [
+        1024,
+        1280
+      ],
+      "runtimeDimensions": [
+        384,
+        480
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "WebP quality 88"
+    },
+    "task3_exorcist_fullbody": {
+      "source": "characters/playable/exorcist/exorcist_fullbody.png",
+      "sourceSha256": "5d52c1c5a84d5e5dc5f4261386942ae482391242d9b0260325ed3d285b54baac",
+      "dimensions": [
+        1600,
+        2400
+      ],
+      "runtimeDimensions": [
+        800,
+        1200
+      ],
+      "transparent": true,
+      "alphaBounds": [
+        314,
+        120,
+        1286,
+        2280
+      ],
+      "encoding": "WebP quality 88"
+    },
+    "task3_exorcist_silhouette": {
+      "source": "characters/playable/exorcist/exorcist_silhouette.png",
+      "sourceSha256": "44139186825f8e02bfecd236e6c7cfd6d822b6fbe59419db0d0ab062ea10e440",
+      "dimensions": [
+        400,
+        600
+      ],
+      "runtimeDimensions": [
+        400,
+        600
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "lossless WebP"
+    },
+    "task3_bellkeeper_portrait": {
+      "source": "characters/enemies/bellkeeper/bellkeeper_portrait.png",
+      "sourceSha256": "6513d60bb164f05e97425e53d20ba6122db1fa632151cb2a382532e11cb08ee7",
+      "dimensions": [
+        1024,
+        1280
+      ],
+      "runtimeDimensions": [
+        384,
+        480
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "WebP quality 88"
+    },
+    "task3_bellkeeper_fullbody": {
+      "source": "characters/enemies/bellkeeper/bellkeeper_fullbody.png",
+      "sourceSha256": "375726370fedd5d9a288ac88acc68152c88ff1fe85d6686085ce78042a186a65",
+      "dimensions": [
+        1600,
+        2400
+      ],
+      "runtimeDimensions": [
+        800,
+        1200
+      ],
+      "transparent": true,
+      "alphaBounds": [
+        199,
+        120,
+        1400,
+        2280
+      ],
+      "encoding": "WebP quality 88"
+    },
+    "task3_bellkeeper_silhouette": {
+      "source": "characters/enemies/bellkeeper/bellkeeper_silhouette.png",
+      "sourceSha256": "8499430727f7a1df940381ad165e263103f6918719a3da1c0b0206428dbb7710",
+      "dimensions": [
+        400,
+        600
+      ],
+      "runtimeDimensions": [
+        400,
+        600
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "lossless WebP"
+    },
+    "task3_abbey_warden_portrait": {
+      "source": "characters/enemies/abbey_warden/abbey_warden_portrait.png",
+      "sourceSha256": "40c3067b92a980bc0477c81e33307325d913147535ce4c327b1d2965941fa1d6",
+      "dimensions": [
+        1024,
+        1280
+      ],
+      "runtimeDimensions": [
+        384,
+        480
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "WebP quality 88"
+    },
+    "task3_abbey_warden_fullbody": {
+      "source": "characters/enemies/abbey_warden/abbey_warden_fullbody.png",
+      "sourceSha256": "cd165f46b265e0c254ed720c15b4cda0a21660306040057f96d134b40d60c94c",
+      "dimensions": [
+        1600,
+        2400
+      ],
+      "runtimeDimensions": [
+        800,
+        1200
+      ],
+      "transparent": true,
+      "alphaBounds": [
+        178,
+        90,
+        1422,
+        2280
+      ],
+      "encoding": "WebP quality 88"
+    },
+    "task3_abbey_warden_silhouette": {
+      "source": "characters/enemies/abbey_warden/abbey_warden_silhouette.png",
+      "sourceSha256": "75b78978f1484cfd8725a54efdb0e635796fed3c7423d028264ed38f6dd24633",
+      "dimensions": [
+        400,
+        600
+      ],
+      "runtimeDimensions": [
+        400,
+        600
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "lossless WebP"
+    },
+    "task3_whisperling_portrait": {
+      "source": "characters/enemies/whisperling/whisperling_portrait.png",
+      "sourceSha256": "b595cb590dea787ca13ded35992ea6bd0af86eb85fe5734d689e44968bfd0db2",
+      "dimensions": [
+        1024,
+        1280
+      ],
+      "runtimeDimensions": [
+        384,
+        480
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "WebP quality 88"
+    },
+    "task3_whisperling_fullbody": {
+      "source": "characters/enemies/whisperling/whisperling_fullbody.png",
+      "sourceSha256": "ac921564c292e136d4592343ca852a53cdb7d50df9fdc3953da5e2f15050739c",
+      "dimensions": [
+        1600,
+        2400
+      ],
+      "runtimeDimensions": [
+        800,
+        1200
+      ],
+      "transparent": true,
+      "alphaBounds": [
+        280,
+        520,
+        1320,
+        2280
+      ],
+      "encoding": "WebP quality 88"
+    },
+    "task3_whisperling_silhouette": {
+      "source": "characters/enemies/whisperling/whisperling_silhouette.png",
+      "sourceSha256": "8c5cbfe1a5d3b288ff82bf1eed33836472e5c4cd65b6967fc6305b9413de0938",
+      "dimensions": [
+        400,
+        600
+      ],
+      "runtimeDimensions": [
+        400,
+        600
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "lossless WebP"
+    },
+    "task3_drowned_pilgrim_portrait": {
+      "source": "characters/enemies/drowned_pilgrim/drowned_pilgrim_portrait.png",
+      "sourceSha256": "fd06b123eafb4cb12b76da781471a101fa5fa9f22f336a1619fe31d95f191e72",
+      "dimensions": [
+        1024,
+        1280
+      ],
+      "runtimeDimensions": [
+        384,
+        480
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "WebP quality 88"
+    },
+    "task3_drowned_pilgrim_fullbody": {
+      "source": "characters/enemies/drowned_pilgrim/drowned_pilgrim_fullbody.png",
+      "sourceSha256": "c1f027a5e29ef4ceced617ee8d40d88e6b40441b0d628833839184d0d7917168",
+      "dimensions": [
+        1600,
+        2400
+      ],
+      "runtimeDimensions": [
+        800,
+        1200
+      ],
+      "transparent": true,
+      "alphaBounds": [
+        278,
+        110,
+        1322,
+        2280
+      ],
+      "encoding": "WebP quality 88"
+    },
+    "task3_drowned_pilgrim_silhouette": {
+      "source": "characters/enemies/drowned_pilgrim/drowned_pilgrim_silhouette.png",
+      "sourceSha256": "f079bf1a522caf4f1e8478a325e18e4a64d223a825dfddf1e157a24bea99ea36",
+      "dimensions": [
+        400,
+        600
+      ],
+      "runtimeDimensions": [
+        400,
+        600
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "lossless WebP"
+    },
+    "task3_hollow_stag_portrait": {
+      "source": "characters/enemies/hollow_stag/hollow_stag_portrait.png",
+      "sourceSha256": "9386af8ff685a569932b8100daa17df758203c840e157d35a531da72cba276ba",
+      "dimensions": [
+        1024,
+        1280
+      ],
+      "runtimeDimensions": [
+        384,
+        480
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "WebP quality 88"
+    },
+    "task3_hollow_stag_fullbody": {
+      "source": "characters/enemies/hollow_stag/hollow_stag_fullbody.png",
+      "sourceSha256": "6df19b118b8088b2f859a23c7cf555c01318d8499667679d0d384b8449d9015a",
+      "dimensions": [
+        1600,
+        2400
+      ],
+      "runtimeDimensions": [
+        800,
+        1200
+      ],
+      "transparent": true,
+      "alphaBounds": [
+        181,
+        80,
+        1419,
+        2280
+      ],
+      "encoding": "WebP quality 88"
+    },
+    "task3_hollow_stag_silhouette": {
+      "source": "characters/enemies/hollow_stag/hollow_stag_silhouette.png",
+      "sourceSha256": "88d6b3d7dd432e545b04143537cde40cac6de078e24e5192070de94a15c55392",
+      "dimensions": [
+        400,
+        600
+      ],
+      "runtimeDimensions": [
+        400,
+        600
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "lossless WebP"
+    },
+    "task3_grave_warden_portrait": {
+      "source": "characters/enemies/grave_warden/grave_warden_portrait.png",
+      "sourceSha256": "ee5943b658fc551db568a10efa34955662d180f860072e5d0071912d2d522238",
+      "dimensions": [
+        1024,
+        1280
+      ],
+      "runtimeDimensions": [
+        384,
+        480
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "WebP quality 88"
+    },
+    "task3_grave_warden_fullbody": {
+      "source": "characters/enemies/grave_warden/grave_warden_fullbody.png",
+      "sourceSha256": "14813f9798b7e432ff5aae20abe9c35ff06cdd260c3d42bfdbe145fe50175d1c",
+      "dimensions": [
+        1600,
+        2400
+      ],
+      "runtimeDimensions": [
+        800,
+        1200
+      ],
+      "transparent": true,
+      "alphaBounds": [
+        263,
+        180,
+        1336,
+        2280
+      ],
+      "encoding": "WebP quality 88"
+    },
+    "task3_grave_warden_silhouette": {
+      "source": "characters/enemies/grave_warden/grave_warden_silhouette.png",
+      "sourceSha256": "9d51cec73e23595a12f7ead1c1b658570fda00d309073a91000a3087bb78732d",
+      "dimensions": [
+        400,
+        600
+      ],
+      "runtimeDimensions": [
+        400,
+        600
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "lossless WebP"
+    },
+    "task3_mirror_twin_portrait": {
+      "source": "characters/enemies/mirror_twin/mirror_twin_portrait.png",
+      "sourceSha256": "f51684ba60d3abae740dd78a66e6cf7e5fcbd188882649ade2516aa626e72a4c",
+      "dimensions": [
+        1024,
+        1280
+      ],
+      "runtimeDimensions": [
+        384,
+        480
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "WebP quality 88"
+    },
+    "task3_mirror_twin_fullbody": {
+      "source": "characters/enemies/mirror_twin/mirror_twin_fullbody.png",
+      "sourceSha256": "a5a2b4c1cdf767e8ab4d791e5cf0f9d97394e4b078987b4add0d9b5d3dcadc60",
+      "dimensions": [
+        1600,
+        2400
+      ],
+      "runtimeDimensions": [
+        800,
+        1200
+      ],
+      "transparent": true,
+      "alphaBounds": [
+        325,
+        100,
+        1274,
+        2280
+      ],
+      "encoding": "WebP quality 88"
+    },
+    "task3_mirror_twin_silhouette": {
+      "source": "characters/enemies/mirror_twin/mirror_twin_silhouette.png",
+      "sourceSha256": "ad5463d7d35675ac930c7004a72f03c3ae49ca0b465d3df2d06cfe25a3b7e8e9",
+      "dimensions": [
+        400,
+        600
+      ],
+      "runtimeDimensions": [
+        400,
+        600
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "lossless WebP"
+    },
+    "task3_carrion_swarm_portrait": {
+      "source": "characters/enemies/carrion_swarm/carrion_swarm_portrait.png",
+      "sourceSha256": "2d6a1caafaf0f6a2b200ff33ef2e7221fe17264d2f6eb87e04e531b37b00c224",
+      "dimensions": [
+        1024,
+        1280
+      ],
+      "runtimeDimensions": [
+        384,
+        480
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "WebP quality 88"
+    },
+    "task3_carrion_swarm_fullbody": {
+      "source": "characters/enemies/carrion_swarm/carrion_swarm_fullbody.png",
+      "sourceSha256": "58bf3d184c6ef3464f212456e36a34fc385f6bf26cc837811683babaa760e032",
+      "dimensions": [
+        2400,
+        1800
+      ],
+      "runtimeDimensions": [
+        1200,
+        900
+      ],
+      "transparent": true,
+      "alphaBounds": [
+        383,
+        120,
+        2016,
+        1680
+      ],
+      "encoding": "WebP quality 88"
+    },
+    "task3_carrion_swarm_silhouette": {
+      "source": "characters/enemies/carrion_swarm/carrion_swarm_silhouette.png",
+      "sourceSha256": "b4c717573409da2cd35082737a026be4139e52d205320c44c3db6aa7e66ae505",
+      "dimensions": [
+        600,
+        450
+      ],
+      "runtimeDimensions": [
+        600,
+        450
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "lossless WebP"
+    },
+    "task3_hollow_hound_portrait": {
+      "source": "characters/enemies/hollow_hound/hollow_hound_portrait.png",
+      "sourceSha256": "b47f6b6ede25fad1f888a23af931410417caf2b23dbe286864573bbe69b0e60f",
+      "dimensions": [
+        1024,
+        1280
+      ],
+      "runtimeDimensions": [
+        384,
+        480
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "WebP quality 88"
+    },
+    "task3_hollow_hound_fullbody": {
+      "source": "characters/enemies/hollow_hound/hollow_hound_fullbody.png",
+      "sourceSha256": "3100fcb2b4e5030d833c3c16cd51c53f5dba0b93fe3f9995c4c57b4c52aac59f",
+      "dimensions": [
+        2400,
+        1800
+      ],
+      "runtimeDimensions": [
+        1200,
+        900
+      ],
+      "transparent": true,
+      "alphaBounds": [
+        127,
+        220,
+        2272,
+        1680
+      ],
+      "encoding": "WebP quality 88"
+    },
+    "task3_hollow_hound_silhouette": {
+      "source": "characters/enemies/hollow_hound/hollow_hound_silhouette.png",
+      "sourceSha256": "71e072658de84a4409ce80c4bcd971632a8be4351d597a5b527024c0c11900e5",
+      "dimensions": [
+        600,
+        450
+      ],
+      "runtimeDimensions": [
+        600,
+        450
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "lossless WebP"
+    },
+    "task3_weeping_statue_portrait": {
+      "source": "characters/enemies/weeping_statue/weeping_statue_portrait.png",
+      "sourceSha256": "2074aa259abea6b29de00f9c465a486a4ad6ee045dc44701193c4e86ce07a2dd",
+      "dimensions": [
+        1024,
+        1280
+      ],
+      "runtimeDimensions": [
+        384,
+        480
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "WebP quality 88"
+    },
+    "task3_weeping_statue_fullbody": {
+      "source": "characters/enemies/weeping_statue/weeping_statue_fullbody.png",
+      "sourceSha256": "1feebe0838967edaf770266c5f900b9de945a35e8a0000a6fbf217c5f36f54b6",
+      "dimensions": [
+        1600,
+        2400
+      ],
+      "runtimeDimensions": [
+        800,
+        1200
+      ],
+      "transparent": true,
+      "alphaBounds": [
+        388,
+        120,
+        1212,
+        2280
+      ],
+      "encoding": "WebP quality 88"
+    },
+    "task3_weeping_statue_silhouette": {
+      "source": "characters/enemies/weeping_statue/weeping_statue_silhouette.png",
+      "sourceSha256": "56a4dd2e55889e4b2f2360c29e76b4b99c49cb69ab7d42a547ec55f248c95605",
+      "dimensions": [
+        400,
+        600
+      ],
+      "runtimeDimensions": [
+        400,
+        600
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "lossless WebP"
+    },
+    "task3_npc_merchant_pell_portrait": {
+      "source": "characters/npcs/npc_merchant_pell.png",
+      "sourceSha256": "06f81c164b2ff1a1646e800b6579efdf5cf2846b244d0323478e770e76534b69",
+      "dimensions": [
+        1024,
+        1280
+      ],
+      "runtimeDimensions": [
+        384,
+        480
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "WebP quality 88"
+    },
+    "task3_npc_tower_caretaker_portrait": {
+      "source": "characters/npcs/npc_tower_caretaker.png",
+      "sourceSha256": "45ef9ccb43f496c97af700e83f4c19bb5096676cdaeb7a5806dbd722a892c7f1",
+      "dimensions": [
+        1024,
+        1280
+      ],
+      "runtimeDimensions": [
+        384,
+        480
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "WebP quality 88"
+    },
+    "task3_npc_village_survivor_portrait": {
+      "source": "characters/npcs/npc_village_survivor.png",
+      "sourceSha256": "8703c3e79c0e98d35f251f1aa6e89758c01d326649f33df53ff9fa297e1fa60a",
+      "dimensions": [
+        1024,
+        1280
+      ],
+      "runtimeDimensions": [
+        384,
+        480
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "WebP quality 88"
+    },
+    "task3_npc_abbey_spirit_portrait": {
+      "source": "characters/npcs/npc_abbey_spirit.png",
+      "sourceSha256": "011e190b4b8fb83b7c61a2a8db80f9e1947f1a36a10c3eefb6b5e34d0c9eddc5",
+      "dimensions": [
+        1024,
+        1280
+      ],
+      "runtimeDimensions": [
+        384,
+        480
+      ],
+      "transparent": false,
+      "alphaBounds": null,
+      "encoding": "WebP quality 88"
+    }
+  },
+  "notes": [
+    "Native generation dimensions are not disclosed.",
+    "Silhouettes are opaque reference previews; not used as transparent cutouts.",
+    "Runtime copies are resized with Lanczos; original PNG masters remain in the source ZIP."
+  ],
+  "runtimeBytes": 2309004,
+  "combinedRuntimeBytes": 37157608,
+  "coverage": {
+    "heroes": 6,
+    "enemies": 10,
+    "npcs": 4
+  }
+}

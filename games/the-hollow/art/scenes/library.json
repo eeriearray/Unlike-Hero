@@ -1,0 +1,73 @@
+{
+  "id": "library",
+  "region": "estate",
+  "background": "task1_environments_estate_library",
+  "moods": {},
+  "viewBox": [
+    1600,
+    900
+  ],
+  "hotspots": [
+    {
+      "id": "shelf",
+      "x": 148,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "shelf",
+      "label": "Find the choir book",
+      "hidden": false
+    },
+    {
+      "id": "desk",
+      "x": 521,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "desk",
+      "label": "Search the reading desk",
+      "hidden": false
+    },
+    {
+      "id": "falsebottom",
+      "x": 895,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "falsebottom",
+      "label": "Work the false bottom of the desk",
+      "hidden": true
+    },
+    {
+      "id": "weepingeye",
+      "x": 1268,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "weepingeye",
+      "label": "Take the glass eye from the librarian's skull",
+      "hidden": true
+    },
+    {
+      "id": "search_area",
+      "x": 320,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "investigate",
+      "label": "Investigate the surroundings"
+    },
+    {
+      "id": "way_out",
+      "x": 1080,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "travel",
+      "label": "Choose a road"
+    }
+  ],
+  "artDirection": "supplied"
+}

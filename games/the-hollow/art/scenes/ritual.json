@@ -1,0 +1,73 @@
+{
+  "id": "ritual",
+  "region": "abbey",
+  "background": "task2_environments_abbey_ritual",
+  "moods": {},
+  "viewBox": [
+    1600,
+    900
+  ],
+  "hotspots": [
+    {
+      "id": "circle",
+      "x": 148,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "circle",
+      "label": "Study the chalk circle",
+      "hidden": false
+    },
+    {
+      "id": "prepare",
+      "x": 521,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "prepare",
+      "label": "Prepare the banishing rite",
+      "hidden": false
+    },
+    {
+      "id": "read",
+      "x": 895,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "read",
+      "label": "Read the unfinished invocation aloud",
+      "hidden": false
+    },
+    {
+      "id": "keystone",
+      "x": 1268,
+      "y": 445,
+      "w": 184,
+      "h": 130,
+      "optionId": "keystone",
+      "label": "Pull the keystone",
+      "hidden": false
+    },
+    {
+      "id": "search_area",
+      "x": 320,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "investigate",
+      "label": "Investigate the surroundings"
+    },
+    {
+      "id": "way_out",
+      "x": 1080,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "travel",
+      "label": "Choose a road"
+    }
+  ],
+  "artDirection": "supplied"
+}

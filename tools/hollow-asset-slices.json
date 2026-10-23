@@ -1,0 +1,16 @@
+[
+  {
+    "id": "ui_horror_panel",
+    "pack": "uibundlefree",
+    "source": "UIBundleFree/FreeHorrorUi.png",
+    "crop": [128, 128, 64, 80],
+    "border": [9, 9, 9, 9]
+  },
+  {
+    "id": "ui_horror_button",
+    "pack": "uibundlefree",
+    "source": "UIBundleFree/FreeHorrorUi.png",
+    "crop": [0, 224, 64, 24],
+    "border": [6, 8, 6, 8]
+  }
+]

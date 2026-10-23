@@ -10,7 +10,7 @@
     desc: 'Thornwick\'s square, exactly as the postcards had it, minus the postcards. The well in the middle drips upward.',
     forage: true, safe: true,
     options: [
-      { id: 'board', label: 'Read the notice board', stat: 'wit', dc: 8, once: 'party', retry: 1, stakes: 'Low risk. Failure leaves its mark on the map.',
+      { id: 'board', label: 'Read the notice board', stat: 'wit', dc: 8, once: 'party', retry: 1, stakes: '1 action. Failure costs 1 Sanity. A critical failure also advances the Clock.',
         ok: { t: 'Every notice is dated the same day and signed by the same hand. One of them lists, in order, who voted to sell what.', clue: 'ledger', xp: 1 },
         fail: { t: 'The paper crumbles to names. For a moment yours is on it, in small, careful letters.', san: -1, rumor: true } },
       { id: 'well', label: 'Lean over the well', stat: 'fate', dc: 11, spirit: true, once: 'player', stakes: 'Fail: it says a name and expects you to answer.',
@@ -29,7 +29,7 @@
     options: [
       { id: 'pray', label: 'Pray at the broken altar', once: 'player', hide: { flag: 'chapel_robbed' }, stakes: 'Free. Restores Sanity and lifts a curse. Once each.',
         auto: { t: 'The altar is broken, but the silence around it is whole. You kneel in it for a while.', san: 2, status: '-cursed' } },
-      { id: 'vestry', label: 'Search the vestry', stat: 'wit', dc: 10, once: 'party', retry: 1, stakes: 'Fail: the shelves are older than they look.',
+      { id: 'vestry', label: 'Search the vestry', stat: 'wit', dc: 10, once: 'party', retry: 1, stakes: '1 action. Failure costs 1 Health and adds 1 noise. Critical failure also advances the Clock.',
         ok: { t: 'Under a chasuble the moths have been unraveling for decades: a salt charm and a beeswax candle stamped with a bell.', item: ['salt', 'candle'], xp: 1 },
         fail: { t: 'A shelf comes down in a long wooden sigh. Everything that falls is dust.', vit: -1, noise: 1 } },
       { id: 'plate', label: 'Take the collection (3 Silver)', once: 'party', stakes: 'Free. The chapel will not forgive it.',
@@ -85,7 +85,11 @@
     desc: 'The tower leans on its own reflection. There is no bell, only a rope that swings by itself, in time with something below the ground.',
     enemy: 'bellkeeper', guard: 'bellkeeper', safe: false,
     options: [
-      { id: 'frame', label: 'Study the empty bell-frame', stat: 'wit', dc: 11, once: 'party', retry: 1, stakes: 'Fail: the frame sings when you touch it.',
+      { id: 'maintenance', label: 'Use the maintenance entrance', show: { flag: 'opening_route' }, hide: { flag: 'opening_entered' }, once: 'party', stakes: '1 action. No roll. Follow the marked dry passage.',
+        auto: { t: 'The maintenance passage leads safely beneath the flooded threshold.' } },
+      { id: 'force_entry', label: 'Force the tower entrance', show: { flag: 'opening_active' }, hide: { flag: 'opening_entered' }, stat: 'might', dc: 11, once: 'party', stakes: '1 action. Failure costs 2 Health, but the door opens either way. A critical failure also advances the Clock.',
+        ok: { t: 'The swollen door gives under your shoulder.' }, fail: { t: 'The rotten hinge tears free. You stumble inside over the broken wood.', vit: -2 } },
+      { id: 'frame', label: 'Study the empty bell-frame', stat: 'wit', dc: 11, once: 'party', retry: 1, stakes: '1 action. Failure costs 1 Sanity and advances the Clock by 1. Critical failure adds another Clock tick.',
         ok: { t: 'The yoke is cast with a founder\'s mark and a dozen smaller marks: grave-markers, melted down. Every toll remembers someone.', clue: 'bell_cast', xp: 2 },
         fail: { t: 'The frame sings one low note. Far below, something turns over in its sleep.', san: -1, clock: 1 } },
       { id: 'climb', label: 'Climb to the belfry', stat: 'might', dc: 13, once: 'party', stakes: 'Fail: a rotten rung. Success reveals the surrounding land.',
@@ -101,7 +105,7 @@
     id: 'graveyard', name: 'Graveyard', region: 'village', kind: 'grave', x: 215, y: 485, glyph: 'grave', scene: ['dusk', 'graves', 'fog', 'dead_trees'], enemy: 'carrion_swarm',
     desc: 'The headstones lean outward as though something pushed up from beneath. Every grave is empty and carefully tended.',
     options: [
-      { id: 'headstones', label: 'Read the headstones', stat: 'wit', dc: 9, once: 'player', stakes: 'Low risk.',
+      { id: 'headstones', label: 'Read the headstones', stat: 'wit', dc: 9, once: 'player', stakes: '1 action. Failure advances the Clock by 1. Critical failure adds another tick.',
         ok: { t: 'Names, birth years, and below each in a different hand: "voted yes", "voted no", "abstained". The last stone is blank except for a bell.', hint: 'heartName', xp: 1 },
         fail: { t: 'You lose your place among the dead. By the time you find it again, the light has gone.', clock: 1 } },
       { id: 'dig', label: 'Dig the oldest grave', stat: 'might', dc: 11, once: 'party', stakes: 'Fail: you wake what was put there, and it is wet.',

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>The Hollow · Task 4 asset review</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#101414;color:#e9dfc8;font:15px/1.6 system-ui,sans-serif}main{max-width:1250px;margin:auto;padding:36px 24px}h1,h2{font-family:Georgia,serif;font-weight:400}h1{font-size:36px;margin:5px 0}h2{font-size:27px;border-top:1px solid #89754d;padding-top:25px;margin-top:35px}p,small{color:#babaaa}nav{display:flex;gap:22px;flex-wrap:wrap;margin:22px 0}a{color:#e2cea4}a:focus-visible,audio:focus-visible{outline:3px solid #eed29b;outline-offset:4px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:15px}figure{margin:0;background:#1b1c19;border:1px solid #6c5d3e;padding:12px;border-radius:3px}figure img{width:100%;height:140px;object-fit:contain;display:block;margin-bottom:10px}figcaption{font:15px/1.4 Georgia,serif}figure small{display:block;font:11px/1.5 system-ui;margin-top:5px}.icons{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}.icons img{height:56px}.effects img{background:repeating-conic-gradient(#202422 0 25%,#353a34 0 50%) 0/20px 20px}.audio{display:grid;grid-template-columns:repeat(auto-fit,minmax(285px,1fr));gap:16px}.audio article{padding:16px;border:1px solid #6c5d3e}audio{display:block;width:100%;margin-top:12px}header small{letter-spacing:.15em;text-transform:uppercase}button{font:inherit}.status{padding:12px;border-left:2px solid #c3aa78}footer{margin-top:35px;color:#a8aa9d}
+</style></head><body><main><header><small>The Hollow / Production review</small><h1>Task 4 · Updated production assets</h1><p>Version 2: painted item replacements, recalibrated sound cues, and revised effects. Connected to the existing environment and character artwork.</p><nav aria-label="Asset categories"><a href="#items">Items</a><a href="#ui">Interface</a><a href="#icons">Symbols</a><a href="#effects">Effects</a><a href="#audio">Audio</a><a href="environments-preview.html">Tasks 1 &amp; 2 artwork</a><a href="../">Open the game</a></nav></header><p id="status" class="status" role="status">Loading installed asset catalogue…</p><div id="catalogue"></div><footer>Effects are shown here for inspection; the game applies only relevant layers at restrained opacity. Sprite sheets are displayed as delivered, without pretending they are full-frame animations.</footer></main><script src="../js/assets.js"></script><script>
+(async function(){
+ await HollowAssets.ready;
+ const [manifest,presentation]=await Promise.all(['manifest.json','presentation.json'].map(p=>fetch(p).then(r=>{if(!r.ok)throw Error('Catalogue unavailable');return r.json();})));
+ const assets=Object.entries(manifest.assets).filter(([id,a])=>a.pack==='the_hollow_task4');
+ const labels=Object.fromEntries(Object.entries(presentation.items).map(([item,p])=>[p.detail,item.replaceAll('_',' ')]));
+ const groups={items:assets.filter(([id,a])=>/^items\/[^/]+\.png$/.test(a.source)),ui:assets.filter(([id,a])=>a.source.startsWith('ui/')),icons:assets.filter(([id,a])=>a.source.startsWith('icons/')),effects:assets.filter(([id,a])=>a.source.startsWith('effects/')),audio:assets.filter(([id,a])=>a.type==='audio')};
+ const names={items:'22 item illustrations',ui:'18 interface components',icons:'29 symbols and markers',effects:'12 effects and sprite sheets',audio:'12 sound cues'};
+ for(const [group,list]of Object.entries(groups)){
+  const section=document.createElement('section');section.id=group;
+  const heading=document.createElement('h2');heading.textContent=names[group];section.append(heading);
+  const grid=document.createElement('div');grid.className=group==='audio'?'audio':'grid '+group;section.append(grid);
+  for(const[id,a]of list){
+   const name=labels[id]||a.source.split('/').at(-1).replace(/\.[^.]+$/,'').replaceAll('_',' ');
+   if(group==='audio'){
+    const article=document.createElement('article');const title=document.createElement('strong');title.textContent=name;
+    const meta=document.createElement('small');meta.textContent=` · ${a.seconds}s · ${a.channels===2?'stereo':'mono'}${a.loop?' · loop':''}`;
+    const player=document.createElement('audio');player.controls=true;player.preload='none';player.src=HollowAssets.url(id);player.setAttribute('aria-label',name);player.loop=!!a.loop;
+    player.addEventListener('play',()=>document.querySelectorAll('audio').forEach(other=>{if(other!==player)other.pause();}));article.append(title,meta,player);grid.append(article);
+   }else{
+    const figure=document.createElement('figure');const img=document.createElement('img');img.alt=name;img.loading='lazy';
+    img.src=HollowAssets.url(group==='items'?presentation.items[labels[id].replaceAll(' ','_')].asset:id);
+    const caption=document.createElement('figcaption');caption.textContent=name;const meta=document.createElement('small');meta.textContent=group==='items'?'256px preview · 1024px detail master':`${a.width} × ${a.height} · transparent WebP`;
+    figure.append(img,caption,meta);grid.append(figure);
+   }
+  }
+  document.getElementById('catalogue').append(section);
+ }
+ document.getElementById('status').textContent=`${assets.length} prepared media files installed, including all three item resolutions. Vector symbols are also embedded in the game interface.`;
+})().catch(error=>{document.getElementById('status').textContent=error.message;});
+</script></body></html>

@@ -5,3 +5,8 @@ node_modules/
 Unlike-Hero/
 games/casino/server/data/
 games/the-hollow/server/.data/
+
+# Local licensed media: review CREDITS.md before any public distribution.
+games/the-hollow/art/generated/
+games/the-hollow/art/.generated-backup/
+games/the-hollow/art/manifest.json.tmp

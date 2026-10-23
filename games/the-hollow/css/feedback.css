@@ -1,0 +1,63 @@
+/* Screen effects sit inside the illustrated stage, below cards, HUD and dice.
+   They never intercept a pointer, change a number or obscure an action button. */
+.feedback-root { position: absolute; inset: 0; pointer-events: none; z-index: 3; overflow: hidden; }
+.feedback-root[hidden], body:not([data-screen="game"]) .feedback-root { display: none; }
+.feedback-sanity, .feedback-aura, .feedback-hit, .feedback-sanity-hit, .feedback-scare { position: absolute; inset: 0; pointer-events: none; }
+.feedback-sanity { opacity: var(--sanity-strength, .12); background: radial-gradient(ellipse at 50% 45%, transparent 40%, #06030f 100%); transition: opacity 1.6s ease; }
+.feedback-sanity img, .feedback-hit img { width: 100%; height: 100%; object-fit: fill; display: block; }
+.feedback-pulse .feedback-sanity { animation: sanity-breath 9s ease-in-out infinite; }
+.feedback-root[data-sanity="panic"] .feedback-sanity { transform-origin: 50% 50%; }
+.feedback-root[data-sanity="asymmetric"] .feedback-sanity { transform-origin: 35% 55%; }
+.feedback-aura { opacity: .12; background: radial-gradient(ellipse, transparent 48%, var(--aura, transparent)); transition: background 1.2s; }
+.feedback-root[data-aura="blessed"] { --aura: #84b9a3; }
+.feedback-root[data-aura="cursed"] { --aura: #784da5; }
+.feedback-root[data-aura="marked"] { --aura: #b36f8d; }
+.feedback-root[data-aura="hunted"] { --aura: #bb9753; }
+.feedback-root[data-aura="bleeding"] { --aura: #c33447; }
+.feedback-hit { opacity: 0; background: radial-gradient(ellipse, transparent 45%, #b22035); }
+.feedback-hit.on { opacity: var(--hit-strength, .55); }
+.feedback-hit img { image-rendering: pixelated; }
+.feedback-sanity-hit { opacity: 0; background: radial-gradient(ellipse at 40% 45%, transparent 30%, #573d7a); transition: opacity .25s; }
+.feedback-sanity-hit.on { opacity: .24; }
+/* Channel separation is static, subpixel and confined to the background image. */
+body.feedback-panic:not(.reduce-motion):not(.reduced-scares):not(.no-distort) .photo-scene .lyr-photo-base { filter: url("#hollow-fray"); }
+.feedback-scare { display: none; place-items: center; background: #020309b8; }
+.feedback-scare.on { display: grid; }
+.feedback-scare > canvas { display: block; width: min(90%, 800px); max-height: 85%; aspect-ratio: 16/9; object-fit: contain; border-radius: 50%; }
+.feedback-scare > svg { width: min(75%, 400px); height: 75%; }
+.feedback-conditions { position: absolute; bottom: 1px; left: 76px; display: flex; gap: 7px; max-width: calc(100% - 150px); align-items: center; pointer-events: auto; }
+.feedback-condition { display: inline-flex; align-items: center; gap: 4px; color: #e8dfc9; font: 11px Georgia, serif; white-space: nowrap; outline-offset: 3px; }
+.feedback-condition svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.feedback-condition.status-blessed { color: #b9e6cf; }
+.feedback-condition.status-cursed { color: #d4b7f3; }
+.feedback-condition.status-marked { color: #f0b4d3; }
+.feedback-condition.status-bleeding { color: #ffa8a8; }
+.feedback-condition.status-hunted { color: #f3d18a; }
+.feedback-condition:focus-visible { outline: 2px solid #ffe3a0; }
+.feedback-settings { border: 1px solid #88704b99; padding: 12px 14px; margin: 18px 0; border-radius: 3px; }
+.feedback-settings legend { padding: 0 7px; color: var(--gold2, #e9d39b); font-family: var(--display, Georgia); font-size: 22px; }
+.feedback-settings .switch { align-items: start; gap: 10px; }
+.feedback-settings input[type="checkbox"] { flex: none; width: 20px; height: 20px; margin-top: 4px; }
+.feedback-settings label { line-height: 1.5; cursor: pointer; }
+.feedback-settings p { margin-bottom: 0; }
+@keyframes sanity-breath { 0%,100% { opacity: var(--sanity-strength); } 50% { opacity: calc(var(--sanity-strength) * .78); } }
+/* Existing reaction classes also respect the expanded preferences immediately. */
+body.reduce-motion .stg, body.reduced-scares .stg { animation: none !important; }
+body.reduced-scares .feedback-sanity, body.reduce-motion .feedback-sanity { animation: none !important; transition: none !important; }
+body.reduced-scares .feedback-sanity-hit.on, body.reduce-motion .feedback-sanity-hit.on { opacity: .1; }
+body.reduced-scares .stg :is(.stg-vig, .stg-world, .ghostline), body.reduced-scares :is(.cap.hallu1 p, .cap.hallu2 p, .hallu1 .narr, .hallu2 .narr) { animation: none !important; text-shadow: none; }
+body.reduced-scares .stg .stg-fx::after, body.reduce-motion .stg .stg-fx::after { opacity: .12 !important; animation: none !important; }
+body.reduced-scares .flash, body.reduced-scares .ev-glow, body.reduced-scares .ev-mote { display: none !important; }
+body.reduced-scares .shake, body.reduced-scares .ev-die::after { animation: none !important; }
+body.no-distort .stg.fx-san .stg-world { animation: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .feedback-sanity, .stg { animation: none !important; transition: none !important; }
+  .feedback-panic .lyr-photo-base { filter: none !important; }
+}
+@media (max-width: 960px) {
+  .hud2:has(.feedback-conditions) { padding-bottom: 25px; }
+  .feedback-conditions { left: 57px; bottom: 4px; gap: 12px; }
+  .feedback-condition svg { width: 18px; height: 18px; }
+  .feedback-condition > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+}
+@media (max-width: 960px) { body.feedback-panic .photo-scene .lyr-photo-base { filter: none !important; } }

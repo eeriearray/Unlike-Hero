@@ -142,7 +142,7 @@
     m.inv.forEach(function (e) {
       var d = item(e.id), sz = d.size || 1;
       var uses = e.uses != null ? '<span class="q" title="charges">' + e.uses + '</span>' : (e.n > 1 ? '<span class="q">×' + e.n + '</span>' : '');
-      out.push('<button class="slot ' + (d.kind === 'relic' ? 'relic ' : d.kind === 'key' ? 'key ' : '') + (e.eq ? 'is-eq ' : '') + '" data-act="item" data-item="' + e.id + '" data-slot="' + e.id + '" aria-label="' + esc(d.name) + (e.n > 1 ? ', ' + e.n : '') + (e.eq ? ', equipped' : '') + '">' + A.itemArt(e.id, 42) + '<span class="nm">' + esc(d.name) + '</span>' + (e.eq ? '<span class="eq">equipped</span>' : '') + uses + '</button>');
+      out.push('<button class="slot ' + (d.kind === 'relic' ? 'relic ' : d.kind === 'key' ? 'key ' : '') + (e.eq ? 'is-eq ' : '') + '" data-act="item" data-item="' + e.id + '" data-slot="' + e.id + '" aria-label="' + esc(d.name) + (e.n > 1 ? ', ' + e.n : '') + (e.eq ? ', equipped' : '') + '">' + A.itemArt(e.id, 72) + '<span class="nm">' + esc(d.name) + '</span>' + (e.eq ? '<span class="eq">equipped</span>' : '') + uses + '</button>');
       used += sz;
       if (sz > 1) out.push('<div class="slot empty" aria-hidden="true">heavy</div>');
     });
@@ -250,6 +250,7 @@
 
   UI.timerLine = function () {
     var G = view().game, a = pl(G.active), s = G.secLeft;
+    if (G.readingTime) return '<span class="reading-time">Solo · take your time</span>';
     var txt = Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2);
     return '<span class="timer' + (s < 20 ? ' low' : '') + '" data-end="' + (Date.now() + s * 1000) + '" title="Turn timer">⏱ ' + txt + '</span>';
   };
@@ -378,7 +379,7 @@
   UI.holdPanel = function (h) {
     var r = h.roll, srcs = h.sources;
     return '<div class="votebox"><b>Fate hangs in the balance.</b><div>You rolled <b>' + r.d + '</b> ' + sgn(r.mod) + ' = <b>' + r.total + '</b> against DC ' + r.dc + '. It is not enough.</div><div class="row wrap">' +
-      (srcs.indexOf('twist') >= 0 ? '<button class="btn small" data-act="reroll" data-src="twist">Twist Fate · reroll · −1 Sanity</button>' : '') + (srcs.indexOf('moon') >= 0 ? '<button class="btn small" data-act="reroll" data-src="moon">Moonbound Relic · reroll · the Haunting +1</button>' : '') + '<button class="btn small primary" data-act="accept">Accept the result</button><span class="timer" data-end="' + (Date.now() + h.secLeft * 1000) + '">⏱ ' + h.secLeft + 's</span></div></div>';
+      (srcs.indexOf('twist') >= 0 ? '<button class="btn small" data-act="reroll" data-src="twist">Twist Fate · reroll · −1 Sanity</button>' : '') + (srcs.indexOf('moon') >= 0 ? '<button class="btn small" data-act="reroll" data-src="moon">Moonbound Relic · reroll · the Haunting +1</button>' : '') + '<button class="btn small primary" data-act="accept">Accept the result</button>' + (view().game.readingTime ? '<span>Take your time.</span>' : '<span class="timer" data-end="' + (Date.now() + h.secLeft * 1000) + '">⏱ ' + h.secLeft + 's</span>') + '</div></div>';
   };
 
   UI.aidHtml = function (enc, active) {

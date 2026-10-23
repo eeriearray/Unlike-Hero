@@ -1,0 +1,83 @@
+{
+  "id": "prison",
+  "region": "abbey",
+  "background": "task2_environments_abbey_prison",
+  "moods": {},
+  "viewBox": [
+    1600,
+    900
+  ],
+  "hotspots": [
+    {
+      "id": "tamsin",
+      "x": 148,
+      "y": 285,
+      "w": 184,
+      "h": 130,
+      "optionId": "tamsin",
+      "label": "Free the child in cell 7",
+      "hidden": false
+    },
+    {
+      "id": "tamsinforce",
+      "x": 521,
+      "y": 285,
+      "w": 184,
+      "h": 130,
+      "optionId": "tamsinforce",
+      "label": "Break the cell door",
+      "hidden": false
+    },
+    {
+      "id": "echo",
+      "x": 895,
+      "y": 285,
+      "w": 184,
+      "h": 130,
+      "optionId": "echo",
+      "label": "Comfort the echo in the empty cell",
+      "hidden": false
+    },
+    {
+      "id": "listen",
+      "x": 1268,
+      "y": 285,
+      "w": 184,
+      "h": 130,
+      "optionId": "listen",
+      "label": "Listen to the echoes",
+      "hidden": false
+    },
+    {
+      "id": "cot",
+      "x": 148,
+      "y": 465,
+      "w": 184,
+      "h": 130,
+      "optionId": "cot",
+      "label": "Check under the guard's cot",
+      "hidden": true
+    },
+    {
+      "id": "search_area",
+      "x": 320,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "investigate",
+      "label": "Investigate the surroundings"
+    },
+    {
+      "id": "way_out",
+      "x": 1080,
+      "y": 600,
+      "w": 200,
+      "h": 100,
+      "optionId": null,
+      "action": "travel",
+      "label": "Choose a road"
+    }
+  ],
+  "artDirection": "supplied"
+}
