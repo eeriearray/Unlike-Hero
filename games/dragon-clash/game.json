@@ -6,7 +6,7 @@
   "sdk": "1.x",
   "entry": "index.html",
   "server": "server/index.mjs",
-  "thumbnail": "thumbnail.svg",
+  "thumbnail": "thumbnail.jpg",
   "accent": "#ff7a2f",
   "players": { "min": 1, "max": 8 },
   "roles": [
