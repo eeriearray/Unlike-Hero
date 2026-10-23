@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-22T06:46:32.956Z",
+  "generated": "2026-10-23T20:33:53.569Z",
   "games": [
     {
       "id": "casino",
@@ -52,7 +52,7 @@
       "sdk": "1.x",
       "entry": "index.html",
       "server": "server/index.mjs",
-      "thumbnail": "thumbnail.jpg",
+      "thumbnail": "thumbnail.svg",
       "accent": "#ff7a2f",
       "players": {
         "min": 1,

@@ -1,37 +1,38 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
   <defs>
     <radialGradient id="bg" cx="50%" cy="0%" r="100%">
-      <stop offset="0" stop-color="#2a1530"/>
-      <stop offset=".55" stop-color="#0f0c18"/>
-      <stop offset="1" stop-color="#08070d"/>
+      <stop offset="0" stop-color="#243238"/>
+      <stop offset=".5" stop-color="#11191c"/>
+      <stop offset="1" stop-color="#080b0c"/>
     </radialGradient>
     <radialGradient id="felt" cx="50%" cy="100%" r="80%">
-      <stop offset="0" stop-color="#1d7a4a"/>
-      <stop offset="1" stop-color="#0c2a1c"/>
+      <stop offset="0" stop-color="#1f6a50"/>
+      <stop offset="1" stop-color="#0b2925"/>
     </radialGradient>
     <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6"/></filter>
   </defs>
   <rect width="800" height="500" fill="url(#bg)"/>
-  <ellipse cx="400" cy="560" rx="470" ry="260" fill="url(#felt)" stroke="#f5c451" stroke-opacity=".35" stroke-width="4"/>
+  <ellipse cx="400" cy="570" rx="485" ry="260" fill="url(#felt)" stroke="#d8ba70" stroke-opacity=".42" stroke-width="3"/>
+  <path d="M88 390Q400 292 712 390" fill="none" stroke="#d8ba70" stroke-opacity=".2" stroke-width="2"/>
   <!-- cards -->
   <g transform="translate(300 215) rotate(-12)">
-    <rect width="120" height="168" rx="12" fill="#f8f5ee" stroke="#d9d2c2"/>
-    <text x="16" y="38" font-family="Georgia, serif" font-size="30" font-weight="700" fill="#14121c">A</text>
-    <text x="60" y="110" font-family="Georgia, serif" font-size="56" text-anchor="middle" fill="#14121c">♠</text>
+    <rect width="120" height="168" rx="12" fill="#f4f0e6" stroke="#d8ba70" stroke-opacity=".65"/>
+    <text x="16" y="38" font-family="Georgia, serif" font-size="30" font-weight="700" fill="#182126">A</text>
+    <text x="60" y="110" font-family="Georgia, serif" font-size="56" text-anchor="middle" fill="#182126">♠</text>
   </g>
   <g transform="translate(390 200) rotate(9)">
-    <rect width="120" height="168" rx="12" fill="#f8f5ee" stroke="#d9d2c2"/>
-    <text x="16" y="38" font-family="Georgia, serif" font-size="30" font-weight="700" fill="#d8283f">K</text>
-    <text x="60" y="110" font-family="Georgia, serif" font-size="56" text-anchor="middle" fill="#d8283f">♥</text>
+    <rect width="120" height="168" rx="12" fill="#f4f0e6" stroke="#d8ba70" stroke-opacity=".65"/>
+    <text x="16" y="38" font-family="Georgia, serif" font-size="30" font-weight="700" fill="#a94b4d">K</text>
+    <text x="60" y="110" font-family="Georgia, serif" font-size="56" text-anchor="middle" fill="#a94b4d">♥</text>
   </g>
   <!-- chips -->
   <g>
-    <circle cx="210" cy="395" r="44" fill="#ff4d5e"/><circle cx="210" cy="395" r="30" fill="none" stroke="#fff" stroke-width="6" stroke-dasharray="10 9"/>
-    <circle cx="590" cy="400" r="44" fill="#4d8dff"/><circle cx="590" cy="400" r="30" fill="none" stroke="#fff" stroke-width="6" stroke-dasharray="10 9"/>
-    <circle cx="650" cy="350" r="36" fill="#f5c451"/><circle cx="650" cy="350" r="24" fill="none" stroke="#241a02" stroke-width="5" stroke-dasharray="8 8"/>
+    <circle cx="210" cy="395" r="44" fill="#ae5255"/><circle cx="210" cy="395" r="30" fill="none" stroke="#ead9b4" stroke-width="5" stroke-dasharray="10 9"/>
+    <circle cx="590" cy="400" r="44" fill="#416f86"/><circle cx="590" cy="400" r="30" fill="none" stroke="#ead9b4" stroke-width="5" stroke-dasharray="10 9"/>
+    <circle cx="650" cy="350" r="36" fill="#d8ba70"/><circle cx="650" cy="350" r="24" fill="none" stroke="#273237" stroke-width="5" stroke-dasharray="8 8"/>
   </g>
   <!-- title -->
-  <text x="400" y="118" text-anchor="middle" font-family="'Bricolage Grotesque', 'Arial Black', sans-serif" font-size="92" font-weight="800" fill="#f5c451" filter="url(#glow)" opacity=".5">NEON CASINO</text>
-  <text x="400" y="118" text-anchor="middle" font-family="'Bricolage Grotesque', 'Arial Black', sans-serif" font-size="92" font-weight="800" fill="#ffe6a6">NEON CASINO</text>
-  <text x="400" y="160" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="22" letter-spacing="6" fill="#d4cee6">ONE WALLET · EVERY TABLE</text>
+  <text x="400" y="112" text-anchor="middle" font-family="Georgia, serif" font-size="76" font-weight="700" letter-spacing="4" fill="#d8ba70" filter="url(#glow)" opacity=".25">NEON CASINO</text>
+  <text x="400" y="112" text-anchor="middle" font-family="Georgia, serif" font-size="76" font-weight="700" letter-spacing="4" fill="#f2d797">NEON CASINO</text>
+  <text x="400" y="154" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" letter-spacing="5" fill="#b8c6c3">PRIVATE TABLES · SHARED STAKES</text>
 </svg>

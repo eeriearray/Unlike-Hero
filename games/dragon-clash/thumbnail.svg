@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#111c27"/>
+      <stop offset=".56" stop-color="#263e4a"/>
+      <stop offset="1" stop-color="#c06d43"/>
+    </linearGradient>
+    <linearGradient id="stone" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8d735b"/>
+      <stop offset="1" stop-color="#2c2724"/>
+    </linearGradient>
+    <linearGradient id="fire" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffd27a"/>
+      <stop offset=".4" stop-color="#f2793b"/>
+      <stop offset="1" stop-color="#8e2c20"/>
+    </linearGradient>
+    <filter id="soft"><feGaussianBlur stdDeviation="18"/></filter>
+  </defs>
+  <rect width="800" height="500" fill="url(#sky)"/>
+  <circle cx="604" cy="214" r="88" fill="#f6c17c" opacity=".18" filter="url(#soft)"/>
+  <path d="M0 300Q160 230 330 292T800 246V500H0Z" fill="#15262d" opacity=".9"/>
+  <path d="M0 355Q180 305 340 345T800 310V500H0Z" fill="#101a20"/>
+  <path d="M-40 405L170 365 290 395 414 350 540 388 850 345V500H-40Z" fill="url(#stone)"/>
+  <path d="M170 365L290 395 414 350 540 388" fill="none" stroke="#d6af72" stroke-width="8" stroke-linecap="round"/>
+  <path d="M170 378L290 408 414 363 540 401" fill="none" stroke="#2a2521" stroke-width="7"/>
+  <g transform="translate(398 214)">
+    <path d="M-20 126Q-54 76-34 17L-8-42 12 5 38-34 50 22Q72 78 32 126Z" fill="url(#fire)" stroke="#1b1311" stroke-width="7"/>
+    <path d="M-22 14L-104-32-82 18-138 22-56 58M37 12L102-37 94 13 146 28 64 62" fill="#b84831" stroke="#271719" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M-8-42L-28-100 6-76 25-128 40-62" fill="#d96539" stroke="#271719" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M-38 126L-66 165M28 126L56 163M-34 88L-82 120" fill="none" stroke="#e68a42" stroke-width="13" stroke-linecap="round"/>
+    <circle cx="-2" cy="-18" r="7" fill="#ffe6a1"/>
+  </g>
+  <g fill="#f1c47b" opacity=".75">
+    <circle cx="120" cy="114" r="2"/><circle cx="194" cy="82" r="2"/><circle cx="672" cy="104" r="2"/><circle cx="734" cy="164" r="2"/>
+  </g>
+  <text x="42" y="76" font-family="Georgia, serif" font-size="55" font-weight="700" letter-spacing="5" fill="#f5ead6">DRAGON</text>
+  <text x="45" y="125" font-family="Arial, sans-serif" font-size="20" font-weight="700" letter-spacing="8" fill="#e6b874">CLASH</text>
+</svg>

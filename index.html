@@ -18,7 +18,7 @@
 html,body{min-height:100%;margin:0}
 body{background:var(--paper);color:var(--ink);font:16px/1.5 var(--f-ui);-webkit-font-smoothing:antialiased}
 .ambience{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;background-color:var(--paper);
-  background-image:linear-gradient(135deg,rgba(212,240,106,.035),transparent 38%,rgba(241,92,63,.018)),repeating-linear-gradient(0deg,transparent 0 55px,rgba(222,238,203,.022) 56px),repeating-linear-gradient(90deg,transparent 0 55px,rgba(222,238,203,.022) 56px)}
+  background-image:radial-gradient(900px 500px at 50% -18%,rgba(212,240,106,.08),transparent 70%),linear-gradient(135deg,rgba(212,240,106,.025),transparent 38%,rgba(241,92,63,.014)),repeating-linear-gradient(0deg,transparent 0 55px,rgba(222,238,203,.014) 56px),repeating-linear-gradient(90deg,transparent 0 55px,rgba(222,238,203,.014) 56px)}
 .ambience::after{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(212,240,106,.18) .55px,transparent .7px);background-size:9px 9px;opacity:.1;mask-image:linear-gradient(180deg,#000 0%,transparent 76%)}
 .shape{position:absolute;display:block;opacity:.58}
 .shape-purple{top:-108px;left:-88px;width:230px;height:230px;border-radius:50%;background:#5147d3;opacity:.36}
@@ -64,8 +64,8 @@ button:focus-visible,input:focus-visible,a:focus-visible,summary:focus-visible,s
 .intro{display:flex;align-items:end;justify-content:space-between;gap:24px;padding:43px 0 27px;border-bottom:1px solid var(--line)}
 .eyebrow{color:var(--muted);font:600 11px/1 var(--f-mono);letter-spacing:0;text-transform:uppercase}
 .intro .eyebrow{display:block;margin-bottom:8px}
-.intro h1{margin:0;color:#ffd166;font:400 52px/1.1 'Bungee',var(--f-display);letter-spacing:0;text-shadow:2px 3px 0 #68437d;text-transform:uppercase}
-.intro h1 em{color:#5ce4cf;font-style:normal;font-weight:400;text-shadow:2px 3px 0 #294c91}
+.intro h1{margin:0;color:var(--ink);font:400 52px/1.1 'Bungee',var(--f-display);letter-spacing:0;text-shadow:0 8px 30px rgba(212,240,106,.12);text-transform:uppercase}
+.intro h1 em{color:var(--acid);font-style:normal;font-weight:400;text-shadow:none}
 .collection-count{display:flex;align-items:baseline;gap:10px;padding-bottom:5px;color:var(--muted);font:500 11px var(--f-mono);letter-spacing:0;text-transform:uppercase;white-space:nowrap}
 .collection-count strong{color:var(--acid);font:400 28px/1 var(--f-display);letter-spacing:0}
 .library{padding-top:24px}
@@ -73,16 +73,16 @@ button:focus-visible,input:focus-visible,a:focus-visible,summary:focus-visible,s
 .section-head h2{margin:0;color:var(--ink);font:700 17px/1.2 var(--f-ui);letter-spacing:0;text-transform:uppercase}
 .section-index{color:var(--muted);font:500 11px var(--f-mono);letter-spacing:0;text-transform:uppercase}
 .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:stretch}
-.card{min-width:0;display:grid;grid-template-rows:auto 1fr;overflow:hidden;border:1px solid var(--line);border-radius:5px;background:rgba(26,32,24,.97);transition:border-color .18s,box-shadow .18s}
-.card:hover{border-color:#85916d;box-shadow:0 8px 24px rgba(0,0,0,.28)}
-.thumb-wrap{position:relative;overflow:hidden;background:var(--surface-2);aspect-ratio:1.68}
+.card{min-width:0;display:grid;grid-template-rows:auto 1fr;overflow:hidden;border:1px solid rgba(148,163,132,.26);border-radius:12px;background:linear-gradient(145deg,rgba(31,39,29,.96),rgba(19,24,18,.98));box-shadow:0 14px 34px rgba(0,0,0,.16);transition:border-color .2s,box-shadow .2s,transform .2s}
+.card:hover{border-color:rgba(212,240,106,.62);box-shadow:0 18px 42px rgba(0,0,0,.3);transform:translateY(-3px)}
+.thumb-wrap{position:relative;overflow:hidden;background:var(--surface-2);aspect-ratio:1.8}
 .thumb{display:block;width:100%;height:100%;object-fit:cover;transition:transform .35s ease}
 .card:hover .thumb{transform:scale(1.025)}
 .status{position:absolute;top:12px;left:12px;padding:6px 9px;background:#11160f;color:var(--acid);border:1px solid rgba(212,240,106,.5);font:500 10px var(--f-mono);letter-spacing:0;text-transform:uppercase}
 .card-body{display:flex;flex-direction:column;align-items:flex-start;padding:20px 21px 18px;min-height:236px}
 .card-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;margin-bottom:11px;color:var(--muted);font:500 11px var(--f-mono);letter-spacing:0;text-transform:uppercase}
 .card-meta .players{color:var(--ink)}
-.game-title{margin:0 0 8px;color:var(--ink);font:400 32px/1.05 var(--f-display);letter-spacing:0;text-transform:uppercase}
+.game-title{margin:0 0 8px;color:var(--ink);font:400 30px/1.05 var(--f-display);letter-spacing:0;text-transform:uppercase}
 .game-title-mafia{font-family:'Special Elite',serif;font-size:29px;color:#ff7772;text-transform:none}
 .game-title-party-pack{font-family:'DynaPuff',var(--f-display);font-size:31px;font-weight:700}
 .party-word{display:inline-block;background-clip:text;-webkit-background-clip:text;color:transparent;-webkit-text-fill-color:transparent;filter:drop-shadow(0 1px 0 #fff1a6) drop-shadow(3px 3px 0 #a84772) drop-shadow(5px 5px 0 #382050)}
@@ -114,6 +114,16 @@ button:focus-visible,input:focus-visible,a:focus-visible,summary:focus-visible,s
 .add-game p{max-width:76ch;margin:10px 0 0;line-height:1.7}
 code{padding:2px 5px;border:1px solid var(--line);border-radius:3px;background:var(--surface);color:var(--ink);font:12px var(--f-mono)}
 .empty{margin:0;color:var(--muted);font-size:13px}
+.card-casino .thumb-wrap{background:#0c1112}
+.card-casino .thumb{object-position:center}
+.card-casino .game-title{color:#f1d28a}
+.card-casino .btn.primary{background:#d7b66b;border-color:#d7b66b;color:#15130e}
+.card-casino .btn.primary:hover{background:#f0d998;border-color:#f0d998;color:#15130e}
+.card-dragon-clash .thumb-wrap{background:#111716}
+.card-dragon-clash .thumb{object-position:center 58%}
+.card-dragon-clash .game-title{color:#f0e6cf}
+.card-dragon-clash .btn.primary{background:#d68a46;border-color:#d68a46;color:#1e140d}
+.card-dragon-clash .btn.primary:hover{background:#efb271;border-color:#efb271;color:#1e140d}
 /* full-window player */
 .player{position:fixed;inset:0;z-index:20;background:#000;display:flex;flex-direction:column}
 .pbar{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:8px 12px;background:#111;border-bottom:1px solid #333;flex-wrap:wrap}
@@ -238,7 +248,7 @@ function renderGames() {
         </select>
       </div>` : `<span class="single-role">${esc(firstRole.name || 'Play')}</span>`;
     return `
-      <article class="card">
+      <article class="card card-${esc(g.id)}">
         <div class="thumb-wrap">
           <img class="thumb" src="${esc(g.path + (g.thumbnail || ''))}" alt="" loading="lazy" decoding="async">
           ${g.status && g.status !== 'playable' ? `<span class="status">${esc(g.status)}</span>` : ''}
