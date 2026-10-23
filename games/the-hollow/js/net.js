@@ -14,43 +14,122 @@
   function get(store, k) { try { return JSON.parse(store.getItem(k) || 'null'); } catch (e) { return null; } }
 
   function createOnline(h) {
-    var socket = g.io({ path: basePath() + 'socket.io', transports: ['websocket', 'polling'], tryAllTransports: true, reconnectionDelayMax: 4000 });
-    var seat = null, closedByUs = false;
-    function emit(ev, data) {
+    var socket = g.io({ path: basePath() + 'socket.io', transports: ['websocket', 'polling'], tryAllTransports: true, reconnectionDelayMax: 4000, timeout: 12000 });
+    // ready: connected AND this socket holds our seat on the server. Commands wait for it, so a command made during
+    // a drop is sent after the seat is back instead of failing (and a retry carries the same id, so it never applies twice).
+    var seat = null, closedByUs = false, ready = false, waiters = [], resuming = null, retryT = 0;
+    var CMD_PATIENCE = 60000;
+    function emit(ev, data, ms) {
       return new Promise(function (resolve) {
         var done = false;
-        var timer = setTimeout(function () { if (!done) { done = true; resolve({ error: 'The server did not answer. Check your connection.', offline: true }); } }, 9000);
+        var timer = setTimeout(function () { if (!done) { done = true; resolve({ error: 'The server did not answer. Check your connection.', offline: true }); } }, ms || 9000);
         socket.emit(ev, data, function (res) { if (done) return; done = true; clearTimeout(timer); resolve(res || { error: 'No response.' }); });
       });
     }
+    function setReady(on) {
+      ready = on;
+      if (!on) return;
+      var w = waiters; waiters = [];
+      w.forEach(function (f) { f(); });
+    }
+    function whenReady(until) {
+      if (ready || closedByUs) return Promise.resolve();
+      return new Promise(function (resolve) {
+        var t = setTimeout(function () { waiters = waiters.filter(function (f) { return f !== go; }); resolve(); }, Math.max(0, until - Date.now()));
+        function go() { clearTimeout(t); resolve(); }
+        waiters.push(go);
+      });
+    }
+    function forget() { seat = null; setReady(false); put(sessionStorage, SEAT, null); put(localStorage, LAST, null); }
     function take(res) {
       if (res && res.ok && res.token) {
         seat = { code: res.code, playerId: res.playerId, token: res.token };
         put(sessionStorage, SEAT, seat); put(localStorage, LAST, Object.assign({ at: Date.now() }, seat));
         if (res.catalog) h.onCatalog(res.catalog);
+        if (socket.connected) setReady(true);
       }
       return res;
     }
+    // Ask the server for our seat on this socket. notify: tell the UI if the seat is gone (an automatic resume).
+    function resumeSeat(notify) {
+      if (!seat) return Promise.resolve({ error: 'No seat.' });
+      if (resuming) return resuming;
+      var mine = seat;
+      resuming = emit('room:resume', mine, 8000).then(function (res) {
+        resuming = null;
+        if (closedByUs || seat !== mine) return res;
+        if (res.ok) { take(res); h.onStatus('connected'); }
+        else if (!res.offline) { forget(); if (notify) h.onClosed(res.error); }
+        else if (socket.connected) { clearTimeout(retryT); retryT = setTimeout(function () { if (!ready) resumeSeat(notify); }, 1500); }
+        return res;
+      });
+      return resuming;
+    }
     socket.on('connect', function () {
-      h.onStatus('connected');
-      if (seat) emit('room:resume', seat).then(function (res) { if (res.error && !res.offline) { put(sessionStorage, SEAT, null); put(localStorage, LAST, null); seat = null; h.onClosed(res.error); } else if (res.ok) take(res); });
+      if (seat) resumeSeat(true);
+      else h.onStatus('connected');
     });
-    socket.on('disconnect', function () { if (!closedByUs) h.onStatus('reconnecting'); });
+    socket.on('disconnect', function () { setReady(false); if (!closedByUs) h.onStatus('reconnecting'); });
     socket.on('connect_error', function () { if (!closedByUs) h.onStatus('reconnecting'); });
     socket.on('state', function (v) { h.onState(v); });
     socket.on('closed', function (d) {
       var r = d && d.reason;
-      if (r === 'replaced') { seat = null; put(sessionStorage, SEAT, null); h.onClosed('This seat was opened in another tab or device.'); return; }
-      put(sessionStorage, SEAT, null); put(localStorage, LAST, null); seat = null;
+      if (r === 'shutdown') { setReady(false); return; }   // the server is restarting; our seat comes back with it
+      if (r === 'replaced') { seat = null; setReady(false); put(sessionStorage, SEAT, null); h.onClosed('This seat was opened in another tab or device.'); return; }
+      forget();
       h.onClosed(r === 'idle' ? 'The expedition closed after being idle.' : r === 'ended' ? 'The expedition has ended.' : 'The expedition was closed.');
     });
+
+    // Phones drop or freeze the connection while the screen is off or the tab is in the background, and Wi-Fi can come
+    // back before the socket notices. When the page is back, reconnect at once, or check the link is alive and refresh.
+    var lastWake = 0;
+    function wake() {
+      if (closedByUs || document.visibilityState === 'hidden') return;
+      if (Date.now() - lastWake < 2000) return;
+      lastWake = Date.now();
+      if (!socket.connected) { if (!socket.active) socket.connect(); return; }
+      if (!seat || resuming) return;
+      emit('room:resume', seat, 5000).then(function (res) {
+        if (closedByUs) return;
+        if (res.ok) take(res);
+        else if (res.offline) { setReady(false); h.onStatus('reconnecting'); socket.disconnect(); socket.connect(); }   // a dead link that still looked open
+        else { forget(); h.onClosed(res.error); }
+      });
+    }
+    document.addEventListener('visibilitychange', wake);
+    g.addEventListener('online', wake);
+    g.addEventListener('pageshow', wake);
+    g.addEventListener('focus', wake);
+    g.addEventListener('offline', function () { if (!closedByUs) h.onStatus('reconnecting'); });
+
     return {
       kind: 'online',
-      create: function (profile) { return emit('room:create', profile).then(take); },
-      join: function (code, profile) { return emit('room:join', { code: code, name: profile.name }).then(take); },
-      resume: function (s) { seat = s; return emit('room:resume', s).then(function (res) { if (res.error && !res.offline) { seat = null; put(sessionStorage, SEAT, null); } return take(res); }); },
-      send: function (cmd) { cmd.cid = cmd.cid || (Date.now().toString(36) + Math.random().toString(36).slice(2, 7)); return emit('cmd', cmd); },
-      leave: function () { closedByUs = true; put(sessionStorage, SEAT, null); put(localStorage, LAST, null); seat = null; emit('room:leave', {}); setTimeout(function () { socket.close(); }, 200); },
+      create: function (profile) { return emit('room:create', profile, 15000).then(take); },
+      join: function (code, profile) { return emit('room:join', { code: code, name: profile.name }, 15000).then(take); },
+      resume: function (s) { seat = s; return resumeSeat(false); },
+      send: function (cmd) {
+        cmd.cid = cmd.cid || (Date.now().toString(36) + Math.random().toString(36).slice(2, 7));
+        var until = Date.now() + CMD_PATIENCE;
+        function attempt() {
+          return whenReady(until).then(function () {
+            if (closedByUs) return { error: 'You have left the expedition.' };
+            if (!ready) return { error: 'Could not reach the Hollow. Your seat is kept: try again when you are back online.', offline: true };
+            return emit('cmd', cmd).then(function (res) { return res.offline && !closedByUs && Date.now() < until ? attempt() : res; });
+          });
+        }
+        return attempt();
+      },
+      // keepSeat: leaving a game under way keeps the seat on the server, so the title screen can offer the way back
+      leave: function (keepSeat) {
+        closedByUs = true; clearTimeout(retryT);
+        document.removeEventListener('visibilitychange', wake);
+        g.removeEventListener('online', wake); g.removeEventListener('pageshow', wake); g.removeEventListener('focus', wake);
+        put(sessionStorage, SEAT, null);
+        put(localStorage, LAST, keepSeat && seat ? Object.assign({ at: Date.now() }, seat) : null);   // ours, not another tab's
+        seat = null; setReady(true);   // let any waiting command finish (with an error)
+        if (socket.connected) emit('room:leave', {}, 2000).then(function () { socket.close(); });
+        else socket.close();
+      },
       get playerId() { return seat && seat.playerId; }
     };
   }

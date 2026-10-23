@@ -29,7 +29,7 @@ Open **The Hollow** from the hub, or go straight to `http://localhost:8080/games
 | --- | --- |
 | **Online** (2–6 players) | One player chooses **Host an expedition** and shares the 4-letter code or the *Copy invite link* button. Others choose **Join with a code**. Pick distinct characters, press *Ready*, the host presses *Set out*. |
 | **Solo** | **Play solo** runs the same engine in your browser tab, offline, and saves to your browser after every move (refresh-safe, resume from the title screen). The host can add AI **ghost companions** in the lobby. |
-| **Reconnecting** | Refresh, lose Wi-Fi, close the tab: your seat is kept. The title screen offers *Return to expedition* and the page reconnects automatically. |
+| **Reconnecting** | Refresh, lose Wi-Fi, lock the phone, close the tab, even restart the server: your seat is kept and the page reconnects by itself. Moves made while the connection is down are sent once it is back (never twice). The title screen offers *Return to expedition*. On another device, or after clearing the browser, join with the code and the **same name** to take your seat back. In the lobby a seat is held for two minutes. |
 | **Phones** | The layout switches to four tabs (Map · Act · You · Journal) below 960 px. |
 
 Opening the game with `?dev=1` exposes the live solo engine as `HollowDev.game()` in the console (for testing and demos).
