@@ -372,17 +372,23 @@
   function nameVal() { var el = $('#f-name'); var n = (el ? el.value : S.ui.name || '').trim().slice(0, 20); S.ui.name = n; try { localStorage.setItem('hollow.name', n); } catch (e) { /* ignore */ } return n || 'Wanderer'; }
   function setErr(t) { S.ui.err = t || ''; htmlOf.title = null; renderTitle(); }
 
-  function startOnline(fn) {
+  // keepTrying: returning to a seat we hold. If the server cannot be reached yet, keep the seat and let the
+  // connection retry on its own (the banner says so) instead of giving up.
+  function startOnline(fn, keepTrying) {
     if (!Net.onlineAvailable()) { setErr('Online expeditions need the hub server (npm start).'); return; }
+    if (S.net) { try { S.net.leave(); } catch (e) { /* closed */ } S.net = null; }
     var net = Net.createOnline(handlers);
     S.net = net;
     fn(net).then(function (res) {
-      if (res.error) { setErr(res.error); net.leave(); S.net = null; return; }
+      if (S.net !== net) return;
+      if (res.error && res.offline && keepTrying) return;
+      if (res.error) { setErr(res.offline ? 'Could not reach the Hollow\'s server. Check that you are on the same Wi-Fi as the host, then try again.' : res.error); net.leave(); S.net = null; render(); return; }
       S.ui.err = '';
     });
   }
 
   function startSolo(snap) {
+    if (S.net) { try { S.net.leave(); } catch (e) { /* closed */ } S.net = null; }
     Net.loadEngine().then(function () {
       var name = nameVal();
       S.net = Net.createOffline(handlers, { name: name }, snap ? { snap: snap.snap } : {});
@@ -392,6 +398,7 @@
   function leave() {
     var solo = S.net && S.net.kind === 'offline';
     if (solo && S.view && S.view.phase === 'playing') { if (S.net.abandon) S.net.abandon(); }
+    if (!solo && S.net && S.view && S.view.phase === 'playing') { var n = S.net; S.net = null; n.leave(true); }   // the seat is kept: offer the way back
     toTitle();
   }
 
@@ -437,7 +444,7 @@
       if (code.length !== 4) return setErr('Enter the 4-letter expedition code.');
       var n = nameVal(); startOnline(function (net) { return net.join(code, { name: n }); });
     },
-    rejoin: function () { var s = Net.lastSeat(); if (!s) return; startOnline(function (net) { return net.resume(s); }); },
+    rejoin: function () { var s = Net.lastSeat(); if (!s) return; startOnline(function (net) { return net.resume(s); }, true); },
     solo: function () { startSolo(null); },
     'solo-continue': function () { var s = Net.savedSolo(); if (s) startSolo(s); },
     hub: function () { if (hub) hub.exit(); else location.href = '../../index.html'; },
@@ -455,7 +462,7 @@
     disbox: function (el) { FX.prefs.distort = el.checked; FX.save(); FX.apply(); render(); },
     vol: function (el) { AU.setVolume(el.dataset.bus, el.value / 100); var sp = el.parentNode.querySelector('span'); if (sp) sp.textContent = el.value; },
     copylink: function () {
-      var link = location.origin + location.pathname + '?room=' + S.view.code;
+      var link = inviteBase + '?room=' + S.view.code;
       (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject()).then(function () { toast('Invite link copied.', 'good'); }, function () { prompt('Copy this invite link:', link); });
     },
     // lobby
@@ -602,11 +609,18 @@
   }, { passive: true });
 
   // ───────────────────────────── start ─────────────────────────────
+  // A host on localhost would copy an invite only this computer can open: use its Wi-Fi address instead.
+  var inviteBase = location.origin + location.pathname;
+  if (location.protocol !== 'file:' && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) && g.fetch) {
+    fetch('net-info', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      var ip = j && j.addresses && j.addresses[0];
+      if (ip) inviteBase = location.protocol + '//' + ip + ':' + (j.port || location.port) + location.pathname;
+    }).catch(function () { /* older hub server */ });
+  }
   var saved = Net.savedSeat();
   render();
   if (saved && Net.onlineAvailable()) {
-    var net0 = Net.createOnline(handlers); S.net = net0;
-    net0.resume(saved).then(function (res) { if (res.error) { S.net = null; try { net0.leave(); } catch (e) { /* closed */ } Net.clearSeat(); render(); } });
+    startOnline(function (net) { return net.resume(saved); }, true);   // a refresh during a Wi-Fi drop keeps the seat and keeps trying
   }
   g.HollowApp = { state: S, actions: ACTIONS };   // handy for debugging in the console
 })(window);

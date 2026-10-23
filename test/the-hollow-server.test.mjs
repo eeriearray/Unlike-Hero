@@ -146,3 +146,54 @@ test('rooms that have ended or never existed give clear errors', async () => {
     a.close(); b.close();
   } finally { s.close(); }
 });
+
+test('a player who lost their seat key takes the seat back by joining with the same name', async () => {
+  const s = await boot({ persist: false });
+  try {
+    const a = client(s.port), b = client(s.port); await a.opened; await b.opened;
+    const ca = await a.emit('room:create', { name: 'Ann' });
+    const cb = await b.emit('room:join', { code: ca.code, name: 'Bob' });
+    await a.emit('cmd', { t: 'pick', cls: 'hunter' }); await b.emit('cmd', { t: 'pick', cls: 'medium' }); await b.emit('cmd', { t: 'ready' });
+    assert.ok((await a.emit('cmd', { t: 'start' })).ok);
+    await b.until((v) => v.phase === 'playing');
+    const c = client(s.port); await c.opened;
+    assert.match((await c.emit('room:join', { code: ca.code, name: 'Bob' })).error, /same name/, 'a seat whose player is here cannot be taken');
+    b.close(); await new Promise((r) => setTimeout(r, 100));
+    assert.match((await c.emit('room:join', { code: ca.code, name: 'Stranger' })).error, /same name/);
+    const back = await c.emit('room:join', { code: ca.code, name: ' bob ' });
+    assert.ok(back.ok, back.error); assert.equal(back.playerId, cb.playerId);
+    const v = await c.until((x) => x.phase === 'playing' && x.you === cb.playerId);
+    assert.equal(v.me.cls, 'medium');
+    const old = client(s.port); await old.opened;
+    assert.match((await old.emit('room:resume', { code: ca.code, playerId: cb.playerId, token: cb.token })).error, /seat is gone/, 'the old key no longer works');
+    a.close(); c.close(); old.close();
+  } finally { s.close(); }
+});
+
+test('a refreshed live seat is not announced as a return, and a server shutdown does not tell players the room closed', async () => {
+  const s = await boot();
+  const a = client(s.port); await a.opened;
+  const ca = await a.emit('room:create', { name: 'Ann' });
+  await a.emit('cmd', { t: 'pick', cls: 'hunter' }); await a.emit('cmd', { t: 'start' });
+  await a.until((v) => v.phase === 'playing');
+  const returns = () => a.last().log.filter((e) => /returned/.test(e.t)).length;
+  const n0 = returns();
+  assert.ok((await a.emit('room:resume', { code: ca.code, playerId: ca.playerId, token: ca.token })).ok);
+  await new Promise((r) => setTimeout(r, 50));
+  assert.equal(returns(), n0);
+  let closed = null; a.on('closed', (d) => { closed = d; });
+  s.game.close(); await new Promise((r) => setTimeout(r, 50));
+  assert.equal(closed, null);
+  assert.equal(JSON.parse(readFileSync(join(s.dataDir, 'rooms.json'), 'utf8')).rooms.length, 1, 'the room is saved for the restart');
+  a.close(); s.http.close(); rmSync(s.dataDir, { recursive: true, force: true });
+});
+
+test('net-info gives this computer its Wi-Fi address for invite links', async () => {
+  const s = await boot({ persist: false });
+  try {
+    const r = await fetch(`http://localhost:${s.port}${BASE}net-info`);
+    assert.equal(r.status, 200);
+    const j = await r.json(); assert.ok(Array.isArray(j.addresses)); assert.equal(j.port, s.port);
+    assert.equal((await fetch(`http://localhost:${s.port}/other`)).status, 404, 'other requests still reach the hub');
+  } finally { s.close(); }
+});
