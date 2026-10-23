@@ -6,7 +6,7 @@
 <title>Unlike Hero</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Bungee&family=Chakra+Petch:wght@400;500;600;700&family=DynaPuff:wght@400;500;600;700&family=Fredoka:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Michroma&family=Orbitron:wght@500;600;700&family=Pirata+One&family=Racing+Sans+One&family=Saira+Stencil+One&family=Share+Tech+Mono&family=Special+Elite&family=Teko:wght@500;600;700&display=swap" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Bungee&family=Cinzel+Decorative:wght@900&family=Chakra+Petch:wght@400;500;600;700&family=DynaPuff:wght@400;500;600;700&family=Fredoka:wght@400;500;600;700&family=Limelight&family=IBM+Plex+Mono:wght@400;500;600&family=Michroma&family=Monoton&family=Orbitron:wght@500;600;700&family=Pirata+One&family=Racing+Sans+One&family=Saira+Stencil+One&family=Share+Tech+Mono&family=Special+Elite&family=Teko:wght@500;600;700&display=swap" media="print" onload="this.media='all'">
 <style>
 :root{
   --paper:#10140f; --surface:#1a2018; --surface-2:#252d22; --line:#475141;
@@ -93,6 +93,10 @@ button:focus-visible,input:focus-visible,a:focus-visible,summary:focus-visible,s
 .game-title-sea-of-chaos{font-family:'Pirata One',var(--f-display);font-size:30px;color:#6fddd5;text-transform:none}
 .game-title-recess{font-family:'Fredoka','DynaPuff',var(--f-display);font-size:34px;font-weight:700;background:linear-gradient(135deg,#ffb347,#ff6b6b,#74b9ff,#55efc4);background-size:300% 300%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:recessGrad 4s ease infinite;filter:drop-shadow(2px 2px 0 rgba(0,0,0,.3))}
 @keyframes recessGrad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.game-title-casino{display:inline-flex;align-items:baseline;flex-wrap:wrap;gap:0 10px;text-transform:uppercase}
+.game-title-casino .casino-neon{font-family:'Monoton','Limelight',var(--f-display);font-size:30px;font-weight:400;color:#ffd9ec;letter-spacing:.02em;text-shadow:0 0 4px #ff4d8d,0 0 12px #ff4d8d,0 0 26px rgba(255,77,141,.7)}
+.game-title-casino .casino-deco{font-family:'Limelight',Georgia,serif;font-size:30px;font-weight:400;color:#f5c451;letter-spacing:.06em;text-shadow:0 0 14px rgba(245,196,81,.35),2px 2px 0 #3a2606}
+.game-title-dragon-clash{font-family:'Cinzel Decorative','Cinzel',Georgia,serif;font-size:27px;font-weight:900;letter-spacing:.02em;text-transform:none;background:linear-gradient(180deg,#fff3d2 0%,#ffc56a 45%,#ff7a2f 75%,#b8320e 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(2px 2px 0 #2a0804) drop-shadow(0 0 12px rgba(255,122,47,.3))}
 .game-title-short-fuse{display:inline-flex;align-items:baseline;gap:8px;margin:0 0 8px;font-size:31px;line-height:1;text-transform:uppercase}
 .game-title-short-fuse .fuse-short{font-family:'Black Ops One','Saira Stencil One',var(--f-display);font-size:31px;font-weight:400;color:#ff3326;letter-spacing:.04em;text-shadow:0 0 18px rgba(255,51,38,.5),2px 2px 0 #280805,3px 3px 6px rgba(0,0,0,.75)}
 .game-title-short-fuse .fuse-fuse{font-family:'Share Tech Mono',var(--f-mono);font-size:29px;font-weight:700;color:#ffffff;letter-spacing:.14em;text-shadow:0 0 10px rgba(255,255,255,.6),0 0 20px rgba(255,60,45,.3),2px 2px 0 #0d1215,3px 3px 6px rgba(0,0,0,.75)}
@@ -226,6 +230,8 @@ function renderGames() {
       ? '<span class="party-word party-word-a">PARTY</span><span class="party-word party-word-b">PACK</span>'
       : g.id === 'short-fuse'
       ? '<span class="fuse-short">SHORT</span><span class="fuse-fuse">FUSE</span>'
+      : g.id === 'casino'
+      ? '<span class="casino-neon">Neon</span><span class="casino-deco">Casino</span>'
       : g.id === 'recess'
       ? 'RECESS'
       : esc(g.title);
@@ -245,7 +251,7 @@ function renderGames() {
         </div>
         <div class="card-body">
           <div class="card-meta"><span class="players">${esc(players)}</span></div>
-          <h2 class="game-title game-title-${esc(g.id)}"${g.id === 'party-pack' || g.id === 'short-fuse' ? ` aria-label="${esc(g.title)}"` : ''}>${titleMarkup}</h2>
+          <h2 class="game-title game-title-${esc(g.id)}"${g.id === 'party-pack' || g.id === 'short-fuse' || g.id === 'casino' ? ` aria-label="${esc(g.title)}"` : ''}>${titleMarkup}</h2>
           <p class="tagline">${esc(g.tagline || '')}</p>
           <div class="tags">${(g.tags || []).slice(0, 2).map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>
           <div class="card-action">${roleControl}<button class="btn primary" data-game="${esc(g.id)}" data-title="${esc(g.title)}" data-role="${esc(firstRole.id)}" aria-label="Play ${esc(g.title)} as ${esc(firstRole.name)}">Play <span aria-hidden="true">→</span></button></div>
