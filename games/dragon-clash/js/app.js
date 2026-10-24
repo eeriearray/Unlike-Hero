@@ -214,8 +214,9 @@
     var order = D.ELEMENT_ORDER, n = order.length, r = size * 0.36, c = size / 2, nr = size * 0.105;
     var pts = order.map(function (e, i) { var a = -Math.PI / 2 + i * Math.PI * 2 / n; return [c + Math.cos(a) * r, c + Math.sin(a) * r]; });
     var s = '<svg class="wheel" width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '">';
-    ['n', 'g', 'b'].forEach(function (k) {
-      var col = k === 'g' ? GOOD : k === 'b' ? BAD : '#fff';
+    // One arrowhead per colour: green / red for the picked element's relations, else the winner's element colour
+    [['g', GOOD], ['b', BAD]].concat(order.map(function (e) { return [e, D.ELEMENTS[e].color]; })).forEach(function (kc) {
+      var k = kc[0], col = kc[1];
       s += '<defs><marker id="arr-' + k + '" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="' + col + '"/></marker></defs>';
     });
     var edges = [];
@@ -228,9 +229,9 @@
       var strong = D.matchupTier(ea, eb) === 'strong';
       var a = pts[from], bp = pts[to], dx = bp[0] - a[0], dy = bp[1] - a[1], l = Math.sqrt(dx * dx + dy * dy), k = (nr + 3) / l;
       var inc = highlight && (ea === highlight || eb === highlight), win = inc && order[from] === highlight, lose = inc && !win;
-      var col = win ? GOOD : lose ? BAD : '#fff', w = (strong ? 3 : 1.6) + (inc ? 0.6 : 0), op = !highlight ? (strong ? 0.7 : 0.4) : inc ? 1 : 0.15;
+      var src = order[from], col = win ? GOOD : lose ? BAD : D.ELEMENTS[src].color, w = (strong ? 3 : 2) + (inc ? 0.6 : 0), op = !highlight ? 0.9 : inc ? 1 : 0.5;
       s += '<line x1="' + (a[0] + dx * k) + '" y1="' + (a[1] + dy * k) + '" x2="' + (bp[0] - dx * k) + '" y2="' + (bp[1] - dy * k) + '" stroke="' + col + '" stroke-opacity="' + op + '" stroke-width="' + w + '"' +
-        (strong ? '' : ' stroke-dasharray="5 3"') + ' marker-end="url(#arr-' + (win ? 'g' : lose ? 'b' : 'n') + ')"/>';
+        (strong ? '' : ' stroke-dasharray="5 3"') + ' marker-end="url(#arr-' + (win ? 'g' : lose ? 'b' : src) + ')"/>';
     });
     order.forEach(function (e, i) {
       var el = D.ELEMENTS[e], p = pts[i], on = e === highlight, ring = '#fff', rw = 0;
