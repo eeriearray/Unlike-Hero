@@ -26,7 +26,7 @@
     this.mode = opts.mode || 'cpu';
     this.cfg = LEVELS[opts.level || 2] || LEVELS[2];
     this.rand = Sim.rng((opts.seed || 7) * 7919 + index * 104729);
-    this.hold = 0; this.tap = 0; this.tapT = 0; this.wait = 0; this.plan = null;
+    this.hold = 0; this.tap = 0; this.tapT = 0; this.wait = 0; this.plan = null; this.stuck = 0; this.lastX = 0; this.planHold = 0;
   }
 
   Bot.prototype.press = function (bits, ticks) { this.tap = bits; this.tapT = ticks || 2; };
@@ -95,6 +95,10 @@
       }
       return 0;
     }
+    // Stuck detector: grounded, far from the rival and barely moving for a while -> force a hop toward them
+    var ft = this.target(me);
+    if (me.grounded && ft && Math.abs(ft.x - me.x) > 150 && Math.abs(me.x - this.lastX) < 2) this.stuck++; else this.stuck = 0;
+    this.lastX = me.x;
     if (this.wait > 0) { this.wait--; this.hold = this.planHold || 0; return 0; }
     this.wait = Math.round(this.cfg.react * (0.6 + r() * 0.8));
 
@@ -177,12 +181,32 @@
       this.press(B.sig, 2);
       return 0;
     }
-    // Approach, but don't run off the stage
-    var safe = this.safeStep(me, dx > 0 ? 1 : -1);
-    this.planHold = safe ? face : 0;
-    this.hold = this.planHold;
-    if (dy < -90 && me.grounded && r() < 0.4) this.press(B.jump, 7);
-    else if (!me.grounded && dy < -60 && me.airJumps > 0 && me.vy > 0 && r() < 0.3) this.press(B.jump, 2);
+    // Approach. On another platform: walk to the edge, jump across, steer in the air. Never walk off into the void.
+    var dir = dx > 0 ? 1 : -1;
+    if (me.grounded) {
+      var plat = sim.arena.platforms[me.plat];
+      var onTargetPlat = t.grounded && t.plat === me.plat;
+      var needHop = plat && !onTargetPlat && (dy < -70 || adx > 40 && (dx > 0 ? t.x > plat.x + plat.w : t.x < plat.x));
+      var edgeDist = plat ? (dir > 0 ? plat.x + plat.w - me.x : me.x - plat.x) : 999;
+      var wallBlocked = plat && (dir > 0 ? me.x > plat.x + plat.w - 10 : me.x < plat.x + 10);
+      if (needHop || this.stuck > 40) {
+        this.planHold = face; this.hold = face;
+        var hopNow = edgeDist < 70 || wallBlocked || this.stuck > 40 || dy < -90 && this.overStage(me.x + dir * 80) === false;
+        if (hopNow && this.tapT === 0 && me.dodgeCd >= 0) { this.press(B.jump, 8); this.wait = 4; }
+        else if (dy < -90 && adx < 120 && this.tapT === 0 && r() < 0.5) this.press(B.jump, 8);
+        return 0;
+      }
+      if (dy > 80 && adx < 140 && plat && !plat.solid && this.tapT === 0) { this.hold = B.down; this.planHold = B.down; this.wait = 6; return 0; }
+      var safe = this.safeStep(me, dir);
+      this.planHold = safe ? face : 0;
+      this.hold = this.planHold;
+      if (dy < -90 && r() < 0.4) this.press(B.jump, 7);
+      return 0;
+    }
+    // Airborne: drift toward the rival, air-jump when we are falling short of them
+    this.planHold = face; this.hold = face;
+    if (dy < -40 && me.airJumps > 0 && me.vy > 0 && this.tapT === 0) this.press(B.jump, 2);
+    if (dy > 70 && adx < 90) this.hold |= B.down;
     return 0;
   };
 
