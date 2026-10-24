@@ -342,7 +342,7 @@
   // Abilities: their own button, cooldowns in ticks (60 = 1 s). All are visible and have a counter.
   var GEAR_ABILITIES = {
     none:  { name: 'No ability', cost: 0, icon: 'none', cooldown: 0, desc: 'Bank the points.' },
-    fade:  { name: 'Fade',       cost: 10, icon: 'fade', cooldown: 840, duration: 90,  ambush: 1.4, desc: 'Turn to a faint shimmer for 1.5 s. Ends when you attack or are hit. The attack that breaks it hits 40% harder.' },
+    fade:  { name: 'Fade',       cost: 10, icon: 'fade', cooldown: 720, duration: 135, ambush: 1.6, desc: 'Turn to a faint shimmer for 2.25 s. Ends when you attack or are hit. The attack that breaks it hits 60% harder.' },
     aegis: { name: 'Aegis',      cost: 12, icon: 'aegis', cooldown: 720, duration: 180, desc: 'A shield that absorbs one hit within 3 s, then bursts and blasts the attacker away.' },
     phase: { name: 'Phase Dash', cost: 8,  icon: 'phase', cooldown: 480, duration: 14,  ambush: 1.25, desc: 'A fast dash through attacks (invulnerable while dashing). Your next hit within 1.2 s deals +25%.' },
     decoy: { name: 'Decoy',      cost: 10, icon: 'decoy', cooldown: 720, duration: 180, desc: 'Leave a copy that bursts when struck: a wide, hard-hitting blast on nearby enemies.' },
