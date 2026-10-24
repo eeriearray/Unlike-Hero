@@ -5,7 +5,7 @@
 .warning-background::after { content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 65% 45%,transparent,#000 80%); }
 .warning-door { position:absolute; top:8%; right:12%; height:84%; width:30%; border:1px solid #8f9c9a25; background:linear-gradient(90deg,#020507,#091015); box-shadow:inset -2px 0 2px #b7c2b933, -20px 0 90px #000; transform:perspective(900px) rotateY(-8deg); }
 .warning-door::after { content:""; position:absolute; right:10%; top:55%; width:7px; height:28px; background:#b8aa7b33; box-shadow:0 0 16px #c3a96d22; }
-.warning-message { position:relative;z-index:2;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;max-width:640px;height:100%;padding:70px 6vw; }
+.warning-message { position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;box-sizing:border-box;width:100%;max-width:800px;height:100%;margin-inline:auto;padding:70px 32px;text-align:center;text-shadow:0 2px 14px #000; }
 .warning-eyebrow { font:10px/1.5 Inter,sans-serif;letter-spacing:.3em;color:#a5a28f; }
 .warning-message h1 { font:400 clamp(32px,4.5vw,62px)/1.15 'Cormorant Garamond',Georgia,serif;margin:22px 0;color:#e8e2d6; }
 .warning-copy { font:clamp(17px,1.6vw,22px)/1.7 Georgia,serif;min-height:150px;text-shadow:0 2px 12px #000; }
