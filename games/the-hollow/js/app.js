@@ -60,7 +60,7 @@
   function timerTick() {
     var v = S.view;
     var key = v && v.game && (v.cosmetics && v.cosmetics.runId || v.code) + ':' + v.game.round + ':' + v.game.active;
-    var blocked = S.ui.sending || FX.rolling() || S.ui.icard || S.ui.prep || S.ui.travel || S.ui.modal || S.ui.map || S.ui.drawer || document.hidden || document.querySelector('.modal, dialog[open], .chapter-tip') || (g.HollowEvents && g.HollowEvents.busy()) || (g.HollowCine && g.HollowCine.busy && g.HollowCine.busy());
+    var blocked = S.ui.sending || FX.rolling() || S.ui.icard || S.ui.prep || S.ui.travel || S.ui.modal || S.ui.map || S.ui.drawer || document.hidden || document.querySelector('.modal, dialog[open], .chapter-tip, .discovery-reading[open], .mission-context[open]') || (g.HollowEvents && g.HollowEvents.busy()) || (g.HollowCine && g.HollowCine.busy && g.HollowCine.busy());
     var ready = g.HollowGuidance && g.HollowGuidance.canAdvance(v, blocked);
 
     if (!ready) { spentSince = 0; }

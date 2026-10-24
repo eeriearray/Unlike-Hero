@@ -107,9 +107,10 @@
   // one or two short sentences: where you are, or what just happened
   Story.caption = function () {
     var V = v(), m = V.me, enc = V.enc, lid = m.loc, l = loc(lid), r = region(lid), mine = V.game.active === V.you;
-    var head = '', text = '', q = '', chips = '';
+    var head = '', text = '', q = '', chips = '', discovery = false;
     if (enc && enc.result && (enc.result.by === V.you || enc.loc === lid) && !enc.hold) {
       var R = enc.result, who = R.by === V.you ? '' : (UI.pl(R.by) || {}).name;
+      discovery = true;
       var st = (R.lines || []).filter(function (x) { return x.k === 'story'; })[0];
       head = (who ? esc(who) + ' · ' : '') + esc(R.opt);
       text = (R.lines || []).filter(function (line) { return (line.k === 'story' || line.k === 'info') && line.t.indexOf('You already knew this:') !== 0; }).map(function (line) { return line.t; }).join(' ');
@@ -125,7 +126,9 @@
       if (mine && QUESTIONS[lid]) q = QUESTIONS[lid];
     }
     var hal = m.hallu ? ' hallu' + m.hallu : '';
-    return '<div class="cap' + hal + '" aria-live="polite"><div class="ch">' + head + '</div>' + (text ? '<p>' + esc(text) + '</p>' : '') + (q ? '<p class="cq">' + esc(q) + '</p>' : '') + (chips ? '<div class="cchips">' + chips + '</div>' : '') + (m.hallu && m.ghost ? '<p class="ghostline">' + esc(m.ghost) + '</p>' : '') + '</div>';
+    var copy = text ? '<p>' + esc(text) + '</p>' : '';
+    if (discovery && text.length > 180) copy = '<p class="discovery-preview">' + esc(sentences(text, 1)) + '</p><details class="discovery-reading"><summary>Read the full discovery</summary><p>' + esc(text) + '</p></details>';
+    return '<div class="cap' + hal + (discovery ? ' discovery-caption' : '') + '" aria-live="polite"><div class="ch">' + head + '</div>' + copy + (q ? '<p class="cq">' + esc(q) + '</p>' : '') + (chips ? '<div class="cchips">' + chips + '</div>' : '') + (m.hallu && m.ghost ? '<p class="ghostline">' + esc(m.ghost) + '</p>' : '') + '</div>';
   };
   Story.outcome = function () { return ''; };
   Story.hot = function () { return []; };

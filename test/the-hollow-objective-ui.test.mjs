@@ -26,8 +26,16 @@ test('a failed first check advances the recommendation to travel and keeps its r
  const result=game.command('p',{t:'choose',enc:game.turn.enc.id,opt:'board'});assert.ok(result.ok);
  const v=view();assert.equal(v.opening.id,'record');
  const rec=window.HollowGuidance.recommend(v);assert.equal(rec.id,'travel');
- assert.match(window.HollowCards.tray(v),/data-v="travel"/);assert.match(window.HollowCards.tray(v),/Next:/);
+ assert.match(window.HollowCards.tray(v),/data-v="travel"/);assert.doesNotMatch(window.HollowCards.tray(v),/class="result-next"/);
  assert.match(window.HollowGuidance.mission(v),/Choose Travel, then go to the Chapel/);
+});
+test('level-up choices replace action cards and repeated help until the upgrade is picked',()=>{
+ const {window,view}=setup(),v=view();v.me.pendingLevels=1;v.me.offer=[{id:'vitality',name:'+3 Max Vitality',text:'More health'}];
+ const tray=window.HollowCards.tray(v);
+ assert.match(tray,/data-act="levelup"/);assert.match(tray,/Choose one improvement/);
+ assert.doesNotMatch(tray,/class="tray"|guide-support|result-next|morecards|endturn/);
+ assert.match(window.HollowGuidance.mission(v),/<details class="mission-context"><summary>/);
+ assert.doesNotMatch(window.HollowGuidance.mission(v),/mission-context" open/);
 });
 test('guidance follows shared progress and never recommends an action during a blocking choice',()=>{
  const {window,view}=setup(),v=view();
@@ -49,6 +57,13 @@ test('the location caption leads with purpose and travel highlights the actual n
  assert.match(panel,/recommended-road/);assert.match(panel,/Next objective/);
  assert.ok(panel.indexOf('data-to="chapel"')<panel.indexOf('data-to="belltower"'));
  assert.match(window.HollowStory.caption(),/Critical failure/);assert.doesNotMatch(window.HollowStory.caption(),/mission-focus/);
+ const result=window.HollowUI.S.view.enc.result;
+ result.lines=[{k:'story',t:'You find the certificate. '+ 'The keeper recorded the route beneath the bell. '.repeat(8)}];
+ const caption=window.HollowStory.caption();
+ assert.match(caption,/class="discovery-preview">You find the certificate\./);
+ assert.match(caption,/<details class="discovery-reading"><summary>Read the full discovery/);
+ assert.match(caption,/The keeper recorded the route/);
+ assert.doesNotMatch(caption,/discovery-reading" open/);
 });
 
 test('the expedition letter explains scene interaction, solo pacing and can be closed or reopened',()=>{

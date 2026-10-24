@@ -142,6 +142,10 @@ Everything is data; no engine edits are needed for new places, items, events or 
 * **A region's sound:** a profile in `REGIONS` in `js/audio.js`. **A scene:** a keyword list on the place; new layer keywords go in `js/art.js`.
 * The test suite validates references, forbids farmable rewards, requires every failed check to have a consequence, and re-proves that the map has no softlocks.
 
+## Simpler scene layout
+
+Location headings and arrival cards are centered across the whole viewport. Arrival cards temporarily hide duplicate headings and objective copy. The objective shows a short goal; its reasoning, instructions and character observations expand on request. Long results show a short preview with the complete story behind “Read the full discovery”. Open discovery or objective reading pauses automatic solo turn advancement. Upgrade choices replace the normal action tray until resolved, and repeated result instructions and overlapping memory captions are removed. Desktop and 390-pixel mobile views were checked; the Graveyard screenshot is `art/validation/graveyard-simplified.png`.
+
 ## Warning from tomorrow and discovery effects
 
 New expeditions begin with a short, gesture-started warning from the player's future self. The warning waits for the player to turn each page. Only after “Listen at the door” does an eight-second sequence of spaced knocks, a brief blackout and a close-up Whisperling lunge begin. A short camera jolt accompanies the reveal before the expedition letter. The final beat gives the player a concrete goal: trace the missing bell beneath the Abbey and recover the names it took.
@@ -150,7 +154,7 @@ New expeditions begin with a short, gesture-started warning from the player's fu
 
 Skip/Escape immediately continues to the expedition letter. Reduced motion, reduced scares or disabled jump scares provide a readable static opening. Hidden tabs pause the buildup. Supplied scene artwork, the Whisperling portrait and existing audio assets are reused through the shared mixer.
 
-Validation: all 181 Hollow tests pass, including seven dedicated dread lifecycle tests and indefinite reading-page checks. Desktop opening-to-letter and mobile Skip-to-letter flows were exercised in the browser; screenshots are in `art/validation/warning-opening.png` and `warning-mobile.png`. Subjective audio mixing still benefits from listening on the player's own speakers or headphones.
+Validation: all 182 Hollow tests pass, including seven dedicated dread lifecycle tests and indefinite reading-page checks. Desktop opening-to-letter and mobile Skip-to-letter flows were exercised in the browser; screenshots are in `art/validation/warning-opening.png` and `warning-mobile.png`. Subjective audio mixing still benefits from listening on the player's own speakers or headphones.
 
 ## Tests
 
