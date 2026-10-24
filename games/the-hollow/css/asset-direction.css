@@ -4,10 +4,10 @@ body.asset-direction { --display: 'Cinzel', Georgia, serif; --gold: #af9872; --g
 .asset-direction .stg { bottom: 0; }
 .asset-direction .stg-world { height: 100%; }
 .asset-direction .photo-scene { --photo-saturation: .62; --photo-brightness: 1; }
-.asset-direction .photo-backdrop { inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 45%; animation: none; filter: saturate(var(--photo-saturation)) brightness(var(--photo-brightness)); }
+.asset-direction .photo-backdrop { inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; animation: none; filter: saturate(var(--photo-saturation)) brightness(var(--photo-brightness)); }
 .asset-direction .photo-depth, .asset-direction .photo-dust, .asset-direction .photo-fog, .asset-direction .photo-atmosphere::before { display: none; }
-/* Stock backgrounds have no reliable prop coordinates; action controls are below. */
-.asset-direction .photo-scene .lyr-objects { display: none; }
+/* Keep scene interactions above the supplied background. */
+.asset-direction .photo-scene .lyr-objects { display: block; }
 .asset-direction .photo-grain { opacity: .025; }
 .asset-direction .stg-vig { background: linear-gradient(180deg, #050a10c9 0, #050a1010 28%, #050a1000 49%, #050a10a6 70%, #050a10 100%); }
 .asset-direction .adv::after { display: none; }
@@ -183,10 +183,10 @@ body.asset-direction.task4-ready { --gold: #aa9060; --gold2: #e2cea4; }
 }
 .asset-direction.task4-ready .acard.rk-bad { border-image-source: var(--task4-states-dangerous-choice-accent); }
 .asset-direction.task4-ready .acard[aria-disabled="true"] { opacity: .6; }
-.asset-direction.task4-ready :is(.icard, .moresheet, .modal .box, .drawer, .ovp.travel) {
+.asset-direction.task4-ready :is(.icard, .moresheet, .modal .box:not(.field-letter), .drawer, .ovp.travel) {
   border: 16px solid transparent; border-image: var(--task4-panels-main-dark-panel) 24 fill / 16px stretch; background: #151310;
 }
-.asset-direction.task4-ready .modal .box, .asset-direction.task4-ready .drawer { padding: 18px; }
+.asset-direction.task4-ready .modal .box:not(.field-letter), .asset-direction.task4-ready .drawer { padding: 18px; }
 .asset-direction.task4-ready .ic-body { padding: 10px !important; }
 .asset-direction.task4-ready :is(.btn:not(.ghost), .icbtn, .cta) {
   border: 10px solid transparent; border-image: var(--task4-buttons-secondary-button) 14 fill / 10px stretch;
@@ -229,7 +229,7 @@ body.reduced-scares .feedback-discovery, body.reduced-scares .feedback-completio
 body.reduce-motion .feedback-discovery, body.reduce-motion .feedback-completion { transition: none; }
 @media (prefers-reduced-motion: reduce) { .feedback-discovery, .feedback-completion { transition: none; } }
 @media (max-width: 600px) {
-  .asset-direction.task4-ready :is(.drawer, .modal .box) { padding: 10px; border-width: 12px; }
+  .asset-direction.task4-ready :is(.drawer, .modal .box:not(.field-letter)) { padding: 10px; border-width: 12px; }
   .asset-direction.task4-ready .acard { border-width: 9px; }
 }
 /* Full Sanity leaves the illustration clear; the etched edge texture signals loss. */
@@ -254,3 +254,65 @@ body.reduce-motion .feedback-discovery, body.reduce-motion .feedback-completion 
 @media (max-width: 600px) { .asset-direction .icard.has-detail .ic-art { height: 135px; } }
 
 .asset-direction .cap:not(.place-copy) { max-height: min(36vh, 340px); overflow-y: auto; padding: 12px; background: #081015db; border-left: 2px solid #bba681; }
+
+/* A small objective HUD leaves the illustrated objects available to touch. */
+.asset-direction .cap.mission-caption { max-width: 380px; padding: 12px 16px; background: #081015d6; border-left: 2px solid #bba681; }
+.asset-direction .mission-focus h2 { margin: 4px 0 8px; font: 500 19px/1.3 'Cormorant Garamond',Georgia,serif; color: #f3ead8; }
+.asset-direction .mission-focus p { max-width: none; font: 400 13px/1.5 Inter,sans-serif; margin: 6px 0 0; color: #d1d6d2; }
+.asset-direction .mission-purpose { display: block; }
+.asset-direction .mission-step { margin-top: 8px; padding-top: 8px; border-top: 1px solid #bba68140; }
+.asset-direction .mission-step strong { font: 500 14px/1.4 Inter,sans-serif; color: #eeddb8; }
+.asset-direction .expedition-guide.guide-support { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; padding: 8px 0; border: 0; background: #081015b8; font-size: 13px; }
+.asset-direction .guide-support details { max-width: 560px; }
+.asset-direction .guide-support summary { min-height: 44px; }
+.asset-direction .guide-support p { margin-bottom: 10px; font-size: 14px; }
+.asset-direction .result-next { width: 100%; margin: 0; padding: 10px 14px; color: #e9deca; background: #081015e6; font: 14px/1.5 Inter,sans-serif; }
+.asset-direction.hollow-skin .acard.recommended { flex-grow: 2; border-color: #e0c586; background: linear-gradient(120deg,#3c3526f2,#172322f5); }
+.asset-direction .ac-recommend { display: block; margin-bottom: 6px; font: 600 10px/1.5 Inter,sans-serif; text-transform: uppercase; letter-spacing: .12em; color: #ead29b; }
+@media (max-width: 960px) {
+  .asset-direction .cap.mission-caption { max-width: 340px; }
+}
+@media (max-width: 600px) {
+  .asset-direction .cap.mission-caption { max-width: 92%; padding: 12px 16px; }
+  .asset-direction .tray .recommended { grid-column: 1 / -1; }
+}
+.asset-direction .recommended-road .dart { border-color: #e0c586; }
+.asset-direction .recommended-road .dmeta b { color: #ead29b; }
+/* Markers invite exploration; labels appear when useful, rather than carpeting the scene. */
+.asset-direction .photo-scene .marker-label, .asset-direction .photo-scene .marker-name { opacity: 0; }
+.asset-direction .photo-scene .obj:is(:hover,:focus-visible,.recommended-object) :is(.marker-label,.marker-name) { opacity: 1; }
+.asset-direction .photo-scene .recommended-object .marker-ring { stroke: #ffe4a1; stroke-width: 3; fill: #403522; }
+.asset-direction .photo-scene .obj .hit { cursor: pointer; }
+.asset-direction .photo-scene .obj.spent .photo-marker { opacity: .55; }
+.field-letter-modal { z-index: 110; padding: 24px; background: #03080cbb; backdrop-filter: blur(10px); }
+body.asset-direction .field-letter-modal .box.field-letter { position: relative; width: min(660px,100%); max-height: calc(100dvh - 48px); overflow-y: auto; padding: 38px 46px; border: 1px solid #b09a6a; border-image: none; border-radius: 3px; background: #efe3c5; box-shadow: 0 24px 100px #000b,inset 0 0 60px #75603935; color: #252219; font: 16px/1.7 Inter,sans-serif; text-shadow: none; }
+.field-letter .letter-kicker { display: block; padding-right: 30px; font: 500 12px/1.5 Inter,sans-serif; letter-spacing: .14em; text-transform: uppercase; color: #655238; }
+.field-letter h2 { margin: 18px 0 12px; font: 500 30px/1.2 'Cormorant Garamond',Georgia,serif; color: #352c20; }
+.field-letter h3 { font: 600 19px/1.4 'Cormorant Garamond',Georgia,serif; color: #403321; border-top: 1px solid #74603a66; padding-top: 16px; }
+.field-letter p { margin: 12px 0; }
+.field-letter ol { padding-left: 20px; }
+.field-letter li { padding-left: 5px; margin: 12px 0; font: 400 16px/1.7 Inter,sans-serif; }
+.field-letter .letter-close { position: absolute; top: 12px; right: 12px; width: 44px; height: 44px; border: 1px solid #78613b66; border-radius: 50%; color: #3d3020; background: transparent; cursor: pointer; font: 26px Georgia,serif; }
+.field-letter .letter-first { padding: 12px 14px; border-left: 2px solid #7a603c; background: #ab925d22; }
+.field-letter .letter-signature { font-style: italic; }
+body.asset-direction .field-letter .letter-begin { width: 100%; margin: 10px 0; min-height: 48px; background: #352f24; color: #f3e7c9; border: 1px solid #594b32; border-image: none; font: 500 14px/1.4 Inter,sans-serif; }
+.field-letter small { display: block; font: 13px/1.5 Inter,sans-serif; color: #5a4a31; }
+.field-letter :is(button,summary):focus-visible { outline: 2px solid #564322; outline-offset: 3px; }
+@media (max-width: 600px) {
+  .field-letter-modal { padding: 12px; }
+  body.asset-direction .field-letter-modal .box.field-letter { padding: 26px 22px; max-height: calc(100dvh - 24px); }
+}
+/* On phones, give the interactive painting its own space before the objective. */
+.asset-direction .character-observation { pointer-events: auto; }
+@media (max-width: 600px) {
+  .asset-direction .advui { padding-top: 440px; }
+  .asset-direction .game2 .stg { top: 60px; bottom: auto; height: 370px; }
+  .asset-direction .cap.mission-caption { pointer-events: auto; max-height: none; }
+}
+.asset-direction .opening-scene-memory { bottom: calc(var(--trayh) + 60px); }
+.asset-direction .opening-echo .stg-fx::after { opacity: .7; }
+.asset-direction .opening-bound .stg-fx::after { opacity: .25; }
+body.evt-on .opening-scene-memory { opacity: 0; }
+@media (max-width: 600px) {
+  .asset-direction .opening-scene-memory { bottom: 8px; }
+}

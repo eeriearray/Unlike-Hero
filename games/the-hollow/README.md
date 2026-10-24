@@ -1,10 +1,18 @@
 # THE HOLLOW — a multiplayer horror expedition
 
-*Chapter One: The Missing Bell.* Thornwick has vanished from every map. Its bell rings every night anyway, though the tower
+*Chapter One: The Missing Bell.* New games offer a focused village opening; experienced players can select the full expedition in the character lobby. The title screen includes the supplied optional 60-second trailer.
+
+ Thornwick has vanished from every map. Its bell rings every night anyway, though the tower
 has stood empty for forty years, and each toll remembers a new name. One to six players explore a cursed, interconnected
 realm, collect clues and relics, make bargains, and decide the bell's fate before the Haunting Clock runs out.
 
 A 30–45 minute dark-fantasy tabletop RPG with dice, stats, secret objectives and nine possible conclusions.
+
+The play screen keeps a compact objective HUD beside the scene. Click or tap marked objects to inspect them and review real encounter choices; the next objective is highlighted. Narrow screens can pan sideways to reach objects, and action cards remain available. The square’s notice board and well use positions from the supplied illustration. During the village opening, one available action is marked **Next step**; optional choices stay under **Other actions**. The travel panel marks the next objective, and guidance follows shared discoveries even after failed rolls.
+
+The opening now ties a personal warning to the removal records, the empty graves, and a bell ringing beneath the Abbey. Each character has a safe alternative at a relevant obstacle. Companions offer +2 aid, or +3 when their opening expertise applies, for 1 Sanity. At the empty frame, choose to delay a toll or risk one to recover a name. See [the opening beat sheet](art/OPENING-REDESIGN.md) for rules and validation.
+
+A dismissible expedition letter opens as play begins after character selection. It explains the goal, scene interaction, costs and dice, health and sanity, and solo or party turn pacing. Close it with ×, Escape or **Fold the letter**, and reopen it under **How this works**.
 
 ## Play
 
@@ -32,7 +40,9 @@ Opening the game with `?dev=1` exposes the live solo engine as `HollowDev.game()
 * `PORT` — hub port (default 8080).
 * `HOLLOW_DATA_DIR` — where online expeditions are saved (default `games/the-hollow/server/.data/`, git-ignored). On a restart the
   server restores every unfinished room, and players reconnect to their seats automatically.
-* The page loads its fonts from Google Fonts when online and falls back to system serif/sans fonts offline. All art and sound is generated in code: there are **no image or audio files** to fetch, license or lose. Painted scene layers are optional drop-ins (`art/README.md`).
+* The page loads its fonts from Google Fonts when online and falls back to system serif/sans fonts offline. Supplied paintings, cast, items, interface assets, recorded/prepared audio, and the trailer load through the local asset registry. Procedural artwork and synthesis remain fallbacks. See `art/FINAL-ASSET-GAPS.md` and `art/OPENING-MEDIA.md` for current coverage.
+
+The scene interaction pass adds magnifiable inspections, explicit scene panning, object-aligned opening hotspots and a clickable tower door. New writing, quiet-knock and iron sounds come from the supplied asset folder; changing village rooms preserves the music. See [asset audit and validation](art/PRESENCE-PASS.md).
 
 ## The scene is the game
 
@@ -132,6 +142,16 @@ Everything is data; no engine edits are needed for new places, items, events or 
 * **A region's sound:** a profile in `REGIONS` in `js/audio.js`. **A scene:** a keyword list on the place; new layer keywords go in `js/art.js`.
 * The test suite validates references, forbids farmable rewards, requires every failed check to have a consequence, and re-proves that the map has no softlocks.
 
+## Warning from tomorrow and discovery effects
+
+New expeditions begin with a short, gesture-started warning from the player's future self. A dark doorway, timed narration text, knocks and a sudden Whisperling appearance establish the mystery before the expedition letter. The final beat gives the player a concrete goal: trace the missing bell beneath the Abbey and recover the names it took.
+
+`js/dread.js` and `css/dread.css` also add moving-ink, graveyard apparition and bell-tower resonance effects to fresh local story discoveries. These are cosmetic: they do not send commands, spend actions or consume gameplay randomness. Each beat is claimed once per run, with a cooldown and deferral while other panels are open. Loaded history and remote discoveries do not replay scares in the wrong scene.
+
+Skip/Escape immediately continues to the expedition letter. Reduced motion, reduced scares or disabled jump scares provide a readable static opening. Hidden tabs pause the buildup. Supplied scene artwork, the Whisperling portrait and existing audio assets are reused through the shared mixer.
+
+Validation: all 176 Hollow tests pass, including six dedicated dread lifecycle tests. Desktop opening-to-letter and mobile Skip-to-letter flows were exercised in the browser; screenshots are in `art/validation/warning-opening.png` and `warning-mobile.png`. Subjective audio mixing still benefits from listening on the player's own speakers or headphones.
+
 ## Tests
 
 ```bash
@@ -147,7 +167,7 @@ Covered: content minimums and integrity, farmable rewards, clue redundancy, map 
 **Honest limits:**
 * One chapter. The data format is built for more.
 * Balance is tuned by simulation and rules analysis, not by large-scale human play: expect to adjust DCs, damage and the clock speed (`CFG` in `engine/core.js`) after real sessions.
-* The art is original procedural SVG, not hand-painted illustration; the audio is synthesised, not recorded or composed in a DAW. Both are modular: drop-in replacements would only touch `art.js` / `audio.js`.
+* Supplied painted art and prepared audio are integrated. Some procedural fallbacks remain. Subjective sound mixing and first-session pacing still need human playtesting.
 * The ghost-hand is a competent-but-simple heuristic player, not a strategist.
 * No accounts, chat or matchmaking (play on voice chat). Rooms live in server memory plus a JSON file, not a database.
 * Audio was exercised for correctness (no errors across every sound, region and mood) but this environment cannot judge how it *sounds*: expect to tune gains in `js/audio.js`.

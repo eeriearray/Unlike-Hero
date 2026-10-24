@@ -58,6 +58,7 @@
     if (o.cost) bits.push('<em>' + esc(costWords(o.cost)) + '</em>');
     bits.push(o.ap ? o.ap + ' action' + (o.ap === 1 ? '' : 's') : 'Free');
     if (o.kind === 'check') bits.push(o.chance + '% success');
+    if (o.summary) bits.push(esc(o.summary));
     return bits.join(' · ');
   }
 
@@ -87,11 +88,11 @@
   };
 
   function cardHtml(c, v, small) {
-    var cls = 'acard st-' + c.state + (c.risk ? ' rk-' + c.risk : '') + (c.travel ? ' travel' : '') + (small ? ' small' : '') + (S.ui.icard && ((c.k === 'opt' && S.ui.icard.opt === c.id) || (c.obj && S.ui.icard.obj === c.obj)) ? ' sel' : '');
+    var cls = 'acard st-' + c.state + (c.recommended ? ' recommended' : '') + (c.risk ? ' rk-' + c.risk : '') + (c.travel ? ' travel' : '') + (small ? ' small' : '') + (S.ui.icard && ((c.k === 'opt' && S.ui.icard.opt === c.id) || (c.obj && S.ui.icard.obj === c.obj)) ? ' sel' : '');
     var badge = c.state === 'done' ? '<span class="ac-badge done">' + A.glyph('eye', 14) + ' Examined</span>' : c.state === 'off' && !/actions left/.test(c.why || '') ? '<span class="ac-badge lock">' + A.glyph('keyhole', 14) + ' Locked</span>' : c.risk === 'bad' ? '<span class="ac-badge bad">Dangerous</span>' : '';
     return '<button class="' + cls + '" data-act="card" data-k="' + c.k + '" data-v="' + esc(c.id) + '"' + (c.state === 'off' ? ' aria-disabled="true"' : '') + ' title="' + esc(c.state === 'off' ? c.why || 'Not now' : c.label) + '">' +
       '<span class="ac-art">' + artFor(c, v) + '</span>' + badge +
-      '<span class="ac-txt"><span class="ac-name">' + esc(c.label) + '</span><span class="ac-sub">' + (c.state === 'off' ? esc(c.why || 'Not now') : c.state === 'done' ? 'Already done' : c.sub) + '</span></span></button>';
+      '<span class="ac-txt"><span class="ac-name">' + (c.recommended ? '<small class="ac-recommend">' + (v.opening && v.opening.id === 'response' ? 'Choose a response' : 'Next step') + '</small>' : '') + esc(c.label) + '</span><span class="ac-sub">' + (c.state === 'off' ? esc(c.why || 'Not now') : c.state === 'done' ? 'Already done' : c.sub) + '</span></span></button>';
   }
 
   // ───────────── the tray ─────────────
@@ -99,13 +100,21 @@
     var G = v.game, enc = v.enc, list = C.list(v);
     var inEnemy = enc && (enc.kind === 'enemy' || enc.kind === 'boss');
     var cap = inEnemy ? 4 : 3;
-    if (v.opening && !v.opening.complete) list.forEach(function (c) { if (['board', 'vestry', 'headstones', 'maintenance', 'force_entry', 'frame'].indexOf(c.id) >= 0 && c.state === 'ok') c.pri = -1; });
+    var guided = v.opening && !v.opening.complete && !inEnemy && !(enc && enc.hold);
+    var rec = g.HollowGuidance && g.HollowGuidance.recommend(v);
+    var recommended = rec && list.find(function (c) { return c.k === rec.k && c.id === rec.id && c.state === 'ok'; });
+    if (recommended) { recommended.recommended = true; recommended.pri = -2; }
     var travel = list.filter(function (c) { return c.travel; })[0];
     var rest = list.filter(function (c) { return !c.travel; });
     var prim = rest.filter(function (c) { return c.state === 'ok' && c.pri < 9; }).sort(function (x, y) { return x.pri - y.pri; }).slice(0, cap);
-    var more = rest.filter(function (c) { return prim.indexOf(c) < 0; }).sort(function (x, y) { return (x.state === 'ok' ? 0 : x.state === 'done' ? 1 : 2) - (y.state === 'ok' ? 0 : y.state === 'done' ? 1 : 2); });
+    // The opening offers a single next step; every alternative stays available.
+    if (guided && recommended) { prim = recommended.travel ? [] : [recommended]; travel = recommended.travel ? recommended : null;
+      if (v.opening.id === 'response') list.forEach(function (c) { if (c.id === 'muffle' || c.id === 'answer_echo') c.recommended = true; });
+      if (!recommended.travel) rest.forEach(function (c) { if (c.state === 'ok' && ['expertise', 'muffle', 'answer_echo'].indexOf(c.id) >= 0 && prim.indexOf(c) < 0) prim.push(c); });
+    }
+    var more = list.filter(function (c) { return prim.indexOf(c) < 0 && c !== travel; }).sort(function (x, y) { return (x.state === 'ok' ? 0 : x.state === 'done' ? 1 : 2) - (y.state === 'ok' ? 0 : y.state === 'done' ? 1 : 2); });
     var out = '<div class="tray" role="group" aria-label="Your choices">' + prim.map(function (c) { return cardHtml(c, v); }).join('') + (travel ? cardHtml(travel, v) : '');
-    if (more.length) out += '<button class="acard morec' + (S.ui.more ? ' sel' : '') + '" data-act="morecards" aria-expanded="' + !!S.ui.more + '"><span class="mstack"><i></i><i></i><i></i></span><span class="ac-txt"><span class="ac-name">More</span><span class="ac-sub">' + more.length + ' other choice' + (more.length === 1 ? '' : 's') + '</span></span></button>';
+    if (more.length) out += '<button class="acard morec' + (S.ui.more ? ' sel' : '') + '" data-act="morecards" aria-expanded="' + !!S.ui.more + '"><span class="mstack"><i></i><i></i><i></i></span><span class="ac-txt"><span class="ac-name">Other actions</span><span class="ac-sub">' + more.length + ' other choice' + (more.length === 1 ? '' : 's') + '</span></span></button>';
     out += '<div class="trayend">' + (G.ap < 1 ? '<button class="btn primary endbtn" data-act="endturn">End turn</button>' : '<button class="btn ghost small endbtn" data-act="endturn">End turn early</button>') + '</div></div>';
     if (S.ui.more && more.length) out += '<div class="moresheet" role="dialog" aria-label="More choices"><div class="ms-h"><b>More choices</b><button class="btn ghost small" data-act="morecards">Close</button></div><div class="ms-grid">' + more.map(function (c) { return cardHtml(c, v, true); }).join('') + '</div></div>';
     return out;
@@ -121,6 +130,7 @@
     var art = obj ? St.closeup(obj, 'big') : opt && opt.kind === 'check' ? C.vignette(opt.stat) : opt && opt.kind === 'puzzle' ? C.vignette('puzzle') : C.vignette('door');
     art += itemBadge(opt, opt ? opt.label : o ? o.name : '');
     var name = o ? o.name : opt ? opt.label : '';
+    var observation = obj && g.HollowPhotoScenes && g.HollowPhotoScenes.describe(v.me.loc, obj, v) || o && o.blurb || '';
     var body = '';
     if (opt && (opt.kind === 'check' || opt.kind === 'puzzle' || opt.needsTarget)) {
       body = '<div class="ic-commit">' + g.HollowStory.prep(opt, enc) + '</div>';
@@ -130,7 +140,7 @@
       var av = St.avail(obj, v);
       body = '<div class="ic-choices">' + av.acts.map(function (x) {
         var label, sub = '', big = true;
-        if (x.k === 'opt') { var oo = x.o; label = oo ? oo.label : labelFor(x.id); sub = oo && oo.state === 'ok' ? subFor(oo) : ''; if (oo && oo.kind === 'check') sub += ' · ' + oo.chance + '%'; }
+        if (x.k === 'opt') { var oo = x.o; label = oo ? oo.label : labelFor(x.id); sub = oo && oo.state === 'ok' ? subFor(oo) + (oo.kind === 'auto' && oo.stakes ? ' · ' + esc(oo.stakes) : '') : ''; }
         else if (x.id === 'investigate') { label = 'Search for hidden things'; sub = '<i class="sk wit">Wit</i> · 1 action'; }
         else if (x.id === 'travel') { label = 'Choose a road'; sub = '1 action'; }
         else if (x.k === 'move') { label = 'Go to ' + St.cat().locations[x.id].name; sub = '1 action' + (x.mv && x.mv.enemy ? ' · <u>something lurks there</u>' : ''); }
@@ -148,8 +158,8 @@
       var top = Math.max(76, Math.min(hr.height - 400, y - 180));
       pos = ' style="left:' + Math.round(left) + 'px;top:' + Math.round(top) + 'px"';
     }
-    return '<div class="icard side-' + side + (opt ? ' commit' : '') + (o && o.closeup ? ' has-detail' : '') + '" role="dialog" aria-label="' + esc(name) + '"' + pos + '><button class="ic-x" data-act="icclose" aria-label="Close">✕</button>' +
-      '<div class="ic-art">' + art + '</div><div class="ic-body"><h3>' + esc(name) + '</h3>' + (o && o.blurb && !opt ? '<p class="ic-blurb">' + esc(o.blurb) + '</p>' : '') + body + '</div></div>';
+    return '<div class="icard side-' + side + (opt ? ' commit' : '') + (o && (o.closeup || d.photo) ? ' has-detail' : '') + (ic.magnify ? ' detail-magnified' : '') + '" role="dialog" aria-label="' + esc(name) + '"' + pos + '><button class="ic-x" data-act="icclose" aria-label="Close">✕</button>' +
+      '<div class="ic-art">' + art + (obj ? '<button class="detail-lens" data-act="detailzoom" aria-pressed="' + !!ic.magnify + '">' + (ic.magnify ? 'Full detail' : 'Magnify') + '</button>' : '') + '</div><div class="ic-body"><h3>' + esc(name) + '</h3>' + (observation && !opt ? '<small class="inspection-free">Inspection · no action spent</small><p class="ic-blurb">' + esc(observation) + '</p>' : '') + body + '</div></div>';
   };
   function labelFor() { return 'Look closer'; }
 })(window);

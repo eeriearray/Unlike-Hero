@@ -32,7 +32,7 @@
   }
   var title = UI.title;
   UI.title = function () {
-    return '<div class="chapter-title">' + backdrop(art.title) + title.apply(this, arguments) + '<button class="chapter-prologue btn ghost small" data-chapter="prologue">Watch the prologue · 60 seconds</button></div>';
+    return '<div class="chapter-title">' + backdrop(art.title) + title.apply(this, arguments) + '<div class="chapter-prologue"><button class="btn" data-trailer="open">Watch trailer · 60 seconds</button></div></div>';
   };
   var ending = UI.ending;
   UI.ending = function () {

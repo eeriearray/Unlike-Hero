@@ -1,0 +1,39 @@
+.warning-prologue { width:100vw; height:100dvh; max-width:none; max-height:none; inset:0; margin:0; padding:0; border:0; overflow:hidden; color:#e8e0ce; background:#03070a; }
+.warning-prologue::backdrop { background:#000; }
+.warning-background { position:absolute; inset:0; opacity:.2; filter:brightness(.4) saturate(.45); }
+.warning-background img { width:100%; height:100%; object-fit:cover; }
+.warning-background::after { content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 65% 45%,transparent,#000 80%); }
+.warning-door { position:absolute; top:8%; right:12%; height:84%; width:30%; border:1px solid #8f9c9a25; background:linear-gradient(90deg,#020507,#091015); box-shadow:inset -2px 0 2px #b7c2b933, -20px 0 90px #000; transform:perspective(900px) rotateY(-8deg); }
+.warning-door::after { content:""; position:absolute; right:10%; top:55%; width:7px; height:28px; background:#b8aa7b33; box-shadow:0 0 16px #c3a96d22; }
+.warning-message { position:relative;z-index:2;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;max-width:640px;height:100%;padding:70px 6vw; }
+.warning-eyebrow { font:10px/1.5 Inter,sans-serif;letter-spacing:.3em;color:#a5a28f; }
+.warning-message h1 { font:400 clamp(32px,4.5vw,62px)/1.15 'Cormorant Garamond',Georgia,serif;margin:22px 0;color:#e8e2d6; }
+.warning-copy { font:clamp(17px,1.6vw,22px)/1.7 Georgia,serif;min-height:150px;text-shadow:0 2px 12px #000; }
+.warning-promise { font:12px/1.7 Inter,sans-serif;color:#aaa893;max-width:440px; }
+.warning-message .btn { margin-top:24px;background:#101b1c;border:1px solid #aea17b;color:#e8e0ce;min-height:48px;padding:12px 20px; }
+.warning-message [hidden] { display:none; }
+.warning-mode { font:11px/1.5 Inter,sans-serif;margin-top:16px;color:#9a9c94; }
+.warning-skip { position:absolute;z-index:5;top:22px;right:24px;min-height:44px;background:#070d11b8;border:1px solid #86877a66;color:#ddd4c0;padding:10px 15px;cursor:pointer; }
+.warning-listening .warning-door { animation:warning-creep 12s ease-in forwards; }
+.warning-prologue[data-beat="3"] .warning-door { border-color:#c7c3ab88; box-shadow:inset -3px 0 1px #ddd3ac99,-22px 0 100px #000; }
+.warning-finished .warning-door { opacity:.15; }
+.dread-shock { position:fixed;inset:0;z-index:200;display:grid;place-items:center;background:radial-gradient(ellipse,#24252ad9,#020305 73%);pointer-events:none;overflow:hidden; }
+.dread-shock img { width:min(85vw,480px);height:min(88dvh,600px);object-fit:cover;object-position:50% 24%;filter:contrast(1.3) saturate(.3);animation:dread-lunge .62s cubic-bezier(.12,.8,.24,1) both; }
+.dread-shock canvas { width:min(94vw,1000px);height:auto;animation:dread-lunge .62s ease-out both; }
+.dread-trace { position:absolute;inset:0;z-index:4;pointer-events:none;overflow:hidden;box-shadow:inset 0 0 120px #02030a; }
+.dread-trace p { position:absolute;left:50%;bottom:calc(var(--trayh) + 75px);transform:translateX(-50%);max-width:80%;padding:10px 16px;background:#060c12ed;color:#d4d9d6;border-left:1px solid #a59c7d;font:14px/1.5 Georgia,serif;z-index:2; }
+.dread-apparition { position:absolute;right:12%;top:12%;height:60%;max-width:35%;opacity:.2;mask-image:linear-gradient(#000 45%,transparent);animation:dread-recede 2.8s ease-out forwards; }
+.dread-apparition img,.dread-apparition canvas { width:100%;height:100%;object-fit:contain;filter:grayscale(1) brightness(.75); }
+.dread-board .dread-apparition { display:none; }
+.dread-revealed { background:radial-gradient(ellipse at 50% 70%,#71849125,transparent 50%); }
+@keyframes warning-creep { from { transform:perspective(900px) rotateY(-8deg); } to { transform:perspective(900px) rotateY(-24deg); } }
+@keyframes dread-lunge { 0% { transform:scale(.76) translateY(12px);opacity:.6; } 18%,72% { transform:scale(1.08);opacity:1; } 100% { transform:scale(1.12);opacity:0; } }
+@keyframes dread-recede { from { opacity:.3;transform:translateY(0); } to { opacity:0;transform:translateY(-12px); } }
+.warning-gentle *,body.reduce-motion .dread-trace *,body.reduced-scares .dread-trace * { animation:none!important;transition:none!important; }
+body.reduced-scares .dread-shock,body.reduce-motion .dread-shock { display:none!important; }
+@media(max-width:600px) { .warning-message { padding:65px 25px 30px;max-width:none; } .warning-copy { min-height:180px;font-size:17px; } .warning-door { right:5%;width:65%;opacity:.5; } .warning-message h1 { font-size:38px; } .warning-promise { max-width:90%; } .dread-trace p { bottom:8px;font-size:12px;width:85%; } .warning-skip { top:12px;right:12px; } }
+@media(prefers-reduced-motion:reduce) { .warning-prologue *, .dread-trace * { animation:none!important;transition:none!important; } .dread-shock { display:none!important; } }
+/* Short phones can scroll the story; Skip remains reachable above it. */
+.warning-prologue { overflow-y:auto; }
+.warning-message { min-height:100%;height:auto; }
+.warning-skip { position:fixed; }

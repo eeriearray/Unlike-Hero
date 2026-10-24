@@ -10,10 +10,10 @@
   "hotspots": [
     {
       "id": "frame",
-      "x": 148,
-      "y": 445,
-      "w": 184,
-      "h": 130,
+      "x": 830,
+      "y": 105,
+      "w": 170,
+      "h": 150,
       "optionId": "frame",
       "label": "Study the empty bell-frame",
       "hidden": false,
@@ -21,21 +21,21 @@
     },
     {
       "id": "climb",
-      "x": 708,
-      "y": 445,
-      "w": 184,
-      "h": 130,
+      "x": 950,
+      "y": 315,
+      "w": 170,
+      "h": 210,
       "optionId": "climb",
       "label": "Climb to the belfry",
       "hidden": false,
-      "closeup": "task1_environments_opening_belfry_interior"
+      "closeup": "opening_belfry_interior"
     },
     {
       "id": "listen",
-      "x": 1268,
-      "y": 445,
-      "w": 184,
-      "h": 130,
+      "x": 800,
+      "y": 480,
+      "w": 180,
+      "h": 160,
       "optionId": "listen",
       "label": "Put your ear to the bell-mouth",
       "hidden": false,
@@ -43,28 +43,95 @@
     },
     {
       "id": "search_area",
-      "x": 320,
-      "y": 600,
-      "w": 200,
-      "h": 100,
+      "x": 660,
+      "y": 650,
+      "w": 190,
+      "h": 110,
       "optionId": null,
       "action": "investigate",
       "label": "Investigate the surroundings"
     },
     {
       "id": "way_out",
-      "x": 1080,
-      "y": 600,
-      "w": 200,
-      "h": 100,
+      "x": 410,
+      "y": 580,
+      "w": 190,
+      "h": 130,
       "optionId": null,
       "action": "travel",
       "label": "Choose a road"
+    },
+    {
+      "id": "entrance",
+      "x": 805,
+      "y": 490,
+      "w": 180,
+      "h": 165,
+      "optionId": "force_entry",
+      "hidden": false,
+      "label": "Tower entrance",
+      "closeup": "task1_closeups_tower_entrance_closeup",
+      "sfx": "door"
     }
   ],
   "artDirection": "supplied",
   "controlsOnly": [
-    "maintenance",
-    "force_entry"
+    "maintenance"
+  ],
+  "interiorBackground": "opening_belfry_interior",
+  "interiorHotspots": [
+    {
+      "id": "frame",
+      "x": 905,
+      "y": 220,
+      "w": 310,
+      "h": 200,
+      "optionId": "frame",
+      "label": "Study the empty bell-frame",
+      "hidden": false,
+      "closeup": "task1_closeups_bell_frame_closeup"
+    },
+    {
+      "id": "climb",
+      "x": 1350,
+      "y": 405,
+      "w": 160,
+      "h": 260,
+      "optionId": "climb",
+      "label": "Climb to the belfry",
+      "hidden": false,
+      "closeup": "opening_belfry_interior"
+    },
+    {
+      "id": "listen",
+      "x": 1000,
+      "y": 470,
+      "w": 180,
+      "h": 240,
+      "optionId": "listen",
+      "label": "Put your ear to the bell-mouth",
+      "hidden": false,
+      "closeup": "task1_closeups_hanging_rope_closeup"
+    },
+    {
+      "id": "search_area",
+      "x": 700,
+      "y": 690,
+      "w": 180,
+      "h": 110,
+      "optionId": null,
+      "action": "investigate",
+      "label": "Investigate the surroundings"
+    },
+    {
+      "id": "way_out",
+      "x": 205,
+      "y": 450,
+      "w": 200,
+      "h": 190,
+      "optionId": null,
+      "action": "travel",
+      "label": "Choose a road"
+    }
   ]
 }

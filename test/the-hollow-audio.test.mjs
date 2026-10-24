@@ -76,10 +76,39 @@ test('Task 4 well ambience follows the place and completion keeps its full durat
   await h.a.setRegion('village'); await h.a.setPlace('square'); await h.flush();
   assert.deepEqual(Array.from(h.a.diagnostics().ambience), [h.map.placeBeds.square]);
   await h.a.setPlace('chapel'); await h.flush();
-  assert.deepEqual(Array.from(h.a.diagnostics().ambience), [h.map.beds.village]);
+  assert.deepEqual(Array.from(h.a.diagnostics().ambience), [h.map.placeBeds.chapel]);
   await h.a.prepareAsset(h.map.sfx.completion); h.a.sfx('completion');
   const cue = h.nodes.filter(n => n.started && n.buffer).at(-1);
   assert.equal(cue.started[2], 3.5);
   assert.equal(cue.loop, false);
   assert.equal(h.created(), 1);
+});
+
+test('trailer focus silences the game mix without altering saved volume or mute preferences',async()=>{
+ const h=harness();h.a.unlock();await h.flush();const before=h.a.settings();
+ h.a.setMediaFocus(true);assert.equal(h.a.backend().master.gain.value,0);
+ assert.deepEqual(h.a.settings(),before);
+ h.a.setMediaFocus(false);assert.equal(h.a.backend().master.gain.value,before.master);
+ h.a.setMuted(true);h.a.setMediaFocus(true);h.a.setMediaFocus(false);assert.equal(h.a.backend().master.gain.value,0);
+});
+
+test('room ambience changes without restarting the current music or replaying its introduction',async()=>{
+ const h=harness();h.a.unlock();await h.flush();await h.a.setRegion('village');await h.a.setPlace('square');await h.flush();
+ const scheduledMusic=h.nodes.filter(n=>n.buffer&&n.loop&&n.started?.[0]>0);
+ assert.equal(scheduledMusic.length,1);
+ const before=h.nodes.filter(n=>n.buffer&&n.loop&&n.started).length;
+ await h.a.setPlace('chapel');await h.flush();
+ assert.equal(scheduledMusic[0].stopped,undefined,'the same music source continues');
+ assert.equal(h.nodes.filter(n=>n.buffer&&n.loop&&n.started).length,before+1,'only a new ambient bed starts');
+ assert.equal(h.a.diagnostics().ambience[0],h.map.placeBeds.chapel);
+});
+test('supplied interaction recordings preserve duration, spatial placement, captions and mute controls',async()=>{
+ const h=harness();h.a.unlock();await h.flush();h.a.setCaptions(true);
+ for(const [name,duration] of [['ink',1.5],['knock',2],['iron',1]]) {
+  await h.a.prepareAsset(h.map.sfx[name]);h.a.sfx(name,{pan:.6});
+  const cue=h.nodes.filter(n=>n.buffer&&n.started).at(-1);assert.equal(cue.started[2],duration);
+  assert.ok(h.captions.at(-1).length>0);
+ }
+ assert.ok(h.nodes.some(n=>n.pan.value===.6));
+ h.a.setMuted(true);assert.equal(h.a.playAsset(h.map.sfx.ink),false);
 });

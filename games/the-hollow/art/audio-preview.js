@@ -17,6 +17,7 @@
   $('start').onclick = function () { audio.unlock(); started = true; update(); $('start').textContent = 'Audio started'; };
   $('pause').onclick = function () { var b = audio.backend(); if (b) b.ctx.suspend().catch(function () {}); $('start').textContent = 'Resume audio'; };
   $('region').onchange = function () { audio.setRegion(this.value); update(); };
+  $('place').onchange = function () { $('region').value = 'village'; audio.setRegion('village'); audio.setPlace(this.value || null); update(); };
   $('mood').onchange = function () { audio.setMood(this.value); };
   $('phase').onchange = $('sanity').onchange = update;
   $('play').onclick = async function () { if (!started) return; await audio.prepareAsset(window.HollowAudioMap.sfx[$('cue').value]); audio.sfx($('cue').value); };

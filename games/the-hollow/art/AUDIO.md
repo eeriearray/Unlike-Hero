@@ -89,3 +89,7 @@ npm start
 ```
 
 If the server is already running on port 8080, keep it running and refresh the game after rebuilding. No client build step is required. Public distribution remains gated by `art/CREDITS.md`; this step is a local preview only.
+
+## Scene interaction update — 24 October 2026
+
+See `PRESENCE-PASS.md` for the latest audit and validation. Added the supplied Writing, Door_knocking_quiet and Metal scrape_scratch recordings; chapel and belfry now have distinct interior ambience profiles. Location changes crossfade ambience while preserving ongoing music. The preview includes a village-location selector and new sound choices. All controls, captions and fallback synthesis remain connected.

@@ -1,0 +1,40 @@
+/* Keep supplied paintings crisp; make inspecting them feel like handling evidence. */
+.asset-direction .photo-scene { --photo-saturation: .82; }
+.asset-direction .photo-scene[data-region="abbey"] { --photo-saturation: .7; }
+.asset-direction .photo-scene[data-region="heart"] { --photo-saturation: .76; }
+.asset-direction .photo-backdrop { transition: opacity .7s ease, filter 1.4s ease; }
+.asset-direction .photo-scene .obj .halo { transition: opacity .2s, fill .2s; }
+.asset-direction .photo-scene .obj.can:is(:hover,:focus-visible,.foc) .halo { opacity: .3; }
+.asset-direction .photo-scene .marker-ring { stroke-width: 2; fill: #0b151bd9; }
+.asset-direction .photo-scene .marker-label { fill: #101c23ee; stroke: #c7b58c66; }
+.asset-direction .photo-scene .marker-name { font: 17px Georgia,serif; }
+.asset-direction .photo-scene .obj:is(.hov,.foc,:focus-visible) :is(.marker-label,.marker-name) { opacity: 1; }
+.asset-direction .photo-scene .obj .hit { cursor: zoom-in; }
+.asset-direction .photo-scene .obj:focus-visible .hit { stroke-width: 3; }
+.asset-direction .icard.has-detail .ic-art { position: relative; height: 210px; overflow: hidden; background: #070c10; }
+.asset-direction .icard.has-detail .ic-art > .photo-closeup { height:100%; }
+.asset-direction .icard .photo-closeup > :is(img,svg) { transition: transform .45s ease; transform-origin: 50% 50%; }
+.asset-direction .icard.detail-magnified .photo-closeup > :is(img,svg) { transform: scale(1.6); }
+.detail-lens { position:absolute; z-index:3; right:12px; bottom:12px; min-height:36px; padding:7px 12px; border:1px solid #c6b18899; border-radius:20px; color:#f0e5d0; background:#0b1822ec; font:12px/1.2 Inter,sans-serif; cursor:zoom-in; }
+.detail-lens[aria-pressed="true"] { background:#413a29; cursor:zoom-out; }
+.inspection-free { display:block; margin:4px 0 10px; color:#cbb78c; font:10px/1.5 Inter,sans-serif; letter-spacing:.14em; text-transform:uppercase; }
+.asset-direction .icard .ic-blurb { font:16px/1.5 Georgia,serif; color:#e3dfd3; margin-bottom:15px; }
+.asset-direction .icard .icbtn { min-height:58px; }
+.scene-navigation { display:none; position:absolute; z-index:6; right:24px; bottom:calc(var(--trayh) + 125px); align-items:center; gap:8px; padding:4px; color:#ddcfb5; background:#0a151bdc; border:1px solid #bfa87844; border-radius:28px; pointer-events:auto; font:11px/1.4 Inter,sans-serif; }
+.pannable .scene-navigation { display:flex; }
+.scene-navigation button { min-width:44px; min-height:44px; border:0; border-radius:50%; background:#c7b58c15; color:#f2e7cf; font-size:20px; cursor:pointer; }
+.scene-navigation button:hover { background:#c7b58c38; }
+body.evt-on .scene-navigation { visibility:hidden; }
+@media(max-width:600px) {
+ .asset-direction .icard.has-detail .ic-art { height:170px; }
+ .detail-lens { min-height:44px; }
+ .scene-navigation { right:12px; bottom:65px; }
+ .asset-direction .icard .ic-blurb { font-size:15px; }
+}
+@media(max-height:650px) { .asset-direction .icard.has-detail .ic-art { height:125px; } }
+body.reduce-motion .icard *, .photo-still .photo-backdrop { transition:none!important; }
+@media(prefers-reduced-motion:reduce) { .icard *, .photo-backdrop { transition:none!important; } }
+.game2:has(.icard) .scene-navigation { visibility:hidden; }
+@media(max-width:600px) {
+ .asset-direction .icard, .asset-direction .icard.side-c { position:fixed; top:50%!important; left:50%!important; width:calc(100vw - 24px); max-height:calc(100dvh - 96px); overflow:auto; z-index:35; }
+}

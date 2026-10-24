@@ -161,7 +161,7 @@
 
   var settings = UI.settingsModal;
   UI.settingsModal = function () {
-    var controls = '<fieldset class="feedback-settings"><legend>Scares &amp; screen effects</legend><div class="switch"><input type="checkbox" id="s-jumps" data-feedback-pref="jumpScares"' + (FX.prefs.jumpScares ? ' checked' : '') + '><label for="s-jumps">Rare jump scares (at most one per expedition)</label></div><div class="switch"><input type="checkbox" id="s-gentle" data-feedback-pref="reducedScares"' + (FX.prefs.reducedScares ? ' checked' : '') + '><label for="s-gentle">Reduced scares: gentler overlays, no jump scares</label></div><p class="small muted">Reduced motion also disables jump scares, shaking and distortion.</p></fieldset>';
+    var controls = '<fieldset class="feedback-settings"><legend>Scares &amp; screen effects</legend><div class="switch"><input type="checkbox" id="s-jumps" data-feedback-pref="jumpScares"' + (FX.prefs.jumpScares ? ' checked' : '') + '><label for="s-jumps">Jump scares: opening, story discoveries, and rare danger</label></div><div class="switch"><input type="checkbox" id="s-gentle" data-feedback-pref="reducedScares"' + (FX.prefs.reducedScares ? ' checked' : '') + '><label for="s-gentle">Reduced scares: gentler overlays, no jump scares</label></div><p class="small muted">Reduced motion also disables jump scares, shaking and distortion.</p></fieldset>';
     return settings.apply(this, arguments).replace('<hr class="div">', controls + '<hr class="div">');
   };
   var apply = FX.apply;

@@ -14,8 +14,8 @@
     if (!manifest || manifest.version !== 1 || !manifest.assets) return;
     Object.keys(manifest.assets).forEach(function (id) {
       var entry = manifest.assets[id];
-      if (!entry || !/^art\/generated\/[a-z0-9_]+\.(webp|ogg|mp3|ttf)$/.test(entry.file)) return;
-      if (!['image', 'audio', 'font'].includes(entry.type)) return;
+      if (!entry || !/^art\/generated\/[a-z0-9_]+\.(webp|ogg|mp3|ttf|mp4)$/.test(entry.file)) return;
+      if (!['image', 'audio', 'font', 'video'].includes(entry.type)) return;
       entries[id] = Object.freeze(Object.assign({}, entry));
       allowed[entry.file] = true;
       (entry.regions || []).forEach(function (region) { (groups[region] || (groups[region] = [])).push(id); });
@@ -46,7 +46,7 @@
   function load(id) {
     return ready.then(function () {
       var e = get(id);
-      if (!e) return null;
+      if (!e || e.type === 'video') return null;
       if (cache.has(id)) { var hit = cache.get(id); cache.delete(id); cache.set(id, hit); return hit; }
       var request;
       if (e.type === 'image') {

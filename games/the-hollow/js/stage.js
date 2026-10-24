@@ -59,6 +59,7 @@
       if (o.under) s += '<g class="ofx">' + o.under() + '</g>';
       if (o.art) s += '<g class="oart">' + o.art({}) + '</g>';
       if (o.over) s += '<g class="ofx">' + o.over() + '</g>';
+      s += '<g class="opening-object-memory" aria-hidden="true"></g>';
       s += '<rect class="hit" x="' + b[0] + '" y="' + b[1] + '" width="' + b[2] + '" height="' + b[3] + '" rx="18"/></g>';
     });
     return s + '</svg>';
@@ -86,7 +87,7 @@
   St.mount = function (el) {
     if (host === el && host.isConnected) return;
     host = el; built = '';
-    host.innerHTML = '<div class="stg-world"></div><div class="stg-dim"></div><div class="stg-cold"></div><div class="stg-vig"></div><div class="stg-fx"></div><div class="stg-tip" role="tooltip"></div>';
+    host.innerHTML = '<div class="stg-world"></div><div class="stg-dim"></div><div class="stg-cold"></div><div class="stg-vig"></div><div class="stg-fx"></div><div class="stg-tip" role="tooltip"></div><div class="scene-navigation" aria-label="Look around the scene"><button data-act="scenepan" data-dir="-1" aria-label="Look left">←</button><span>Look around</span><button data-act="scenepan" data-dir="1" aria-label="Look right">→</button></div>';
     world = host.querySelector('.stg-world'); tip = host.querySelector('.stg-tip');
     host.addEventListener('pointerover', onOver); host.addEventListener('pointerout', onOut);
     host.addEventListener('focusin', onOver); host.addEventListener('focusout', onOut);
@@ -100,7 +101,11 @@
     v = v || view; var o = def && def.objects[objId]; if (!o || !v) return { state: 'off', acts: [] };
     var G = v.game, mine = G && G.active === v.you && v.me.status === 'alive', enc = v.enc, a = v.act;
     var who = g.HollowUI.pl(G && G.active);
-    var acts = o.actions.map(function (x) {
+    var actions = o.actions.slice();
+    if (enc && enc.kind === 'loc' && enc.options) enc.options.forEach(function (q) {
+      if (q.attach && o.actions.some(function (x) { return x.opt === q.attach; })) actions.push({ opt: q.id });
+    });
+    var acts = actions.map(function (x) {
       if (x.opt) {
         var op = enc && enc.kind === 'loc' && enc.loc === lid && enc.options ? enc.options.find(function (q) { return q.id === x.opt; }) : null;
         if (!mine) return { k: 'opt', id: x.opt, o: op, ok: false, done: !!memo[lid + '|' + x.opt], why: who ? who.name.replace(' (ghost)', '') + ' is taking a turn.' : 'Not your turn.' };
@@ -131,6 +136,8 @@
   function remember(opt) { memo[lid + '|' + opt] = true; }
   St.objectFor = function (key) {           // which object stands for an option id or action
     if (!def) return null;
+    var q = view && view.enc && view.enc.options && view.enc.options.find(function (x) { return x.id === key; });
+    if (q && q.attach) key = q.attach;
     var ids = Object.keys(def.objects);
     for (var i = 0; i < ids.length; i++) if (def.objects[ids[i]].actions.some(function (x) { return x.opt === key || x.act === key || x.move === key; })) return ids[i];
     return null;
@@ -143,8 +150,10 @@
     if (g.HollowCharacters) g.HollowCharacters.sync(v);
     if (g.HollowAudio.setState) g.HollowAudio.setState(v);
     var place = v.me && (v.me.loc || v.me.fellLoc); if (!place) return;
-    if (place !== lid || built !== place || (refreshPending && !holdN && !focusId)) {
-      refreshPending = false; built = place; build(place);
+    var layoutKey = place + (place === 'belltower' && (!v.opening || v.opening.evidence && v.opening.evidence.entered || v.world && v.world.flags && v.world.flags.opening_entered) ? ':inner' : ':outer');
+    if (holdN > 0 && place === lid && built !== layoutKey) { refreshPending = true; return; }
+    if (place !== lid || built !== layoutKey || (refreshPending && !holdN && !focusId)) {
+      refreshPending = false; built = layoutKey; build(place);
     }
     if (!def) return;
     var st = stateOf(v);
@@ -160,16 +169,49 @@
     var curses = {}; (v.world.curses || []).forEach(function (c) { curses[c.id] = !!c.active; });
     var avail = {};
     Object.keys(def.objects).forEach(function (id) { avail[id] = St.avail(id, v); });
-    return { k: k, phase: G ? G.haunt : 1, done: done, flags: { ledger: !!clues.ledger }, wflags: v.world.flags || {}, curses: curses, inv: !!(v.map.locs[lid] && v.map.locs[lid].inv), avail: avail, mine: G && G.active === v.you };
+    return { evidence: v.opening && v.opening.evidence, k: k, phase: G ? G.haunt : 1, done: done, flags: { ledger: !!clues.ledger }, wflags: v.world.flags || {}, curses: curses, inv: !!(v.map.locs[lid] && v.map.locs[lid].inv), avail: avail, mine: G && G.active === v.you };
   }
   function apply(st) {
     var root = world, prev = lastSt; lastSt = st;
     host.style.setProperty('--k', st.k.toFixed(3));
     host.setAttribute('data-phase', st.phase);
+    var e = st.evidence || {}, old = prev && prev.evidence || {};
+    host.classList.toggle('opening-echo', lid === 'belltower' && !!e.revealed);
+    host.classList.toggle('opening-bound', e.response === 'muffle');
+    host.classList.toggle('opening-still', !!FX.reduced());
+    var reactions = {
+      square: e.board ? 'Fresh ink beneath the removal notice: your name. The well answers with a single drip.' : '',
+      chapel: e.record ? 'The recovered entry points to the bell-marked grave. One wooden knock, then silence.' : '',
+      graveyard: e.route ? 'Cut-away nameplates. Empty graves. Wet prints now lead to the dry passage.' : '',
+      belltower: e.response === 'muffle' ? 'The rope is bound. The next toll waits; the bell beneath the Abbey remains.' : e.response === 'answer_echo' ? 'Your answer sinks down the shaft. A name returns. Something below heard you.' : e.revealed ? 'The empty frame shudders. Dust lifts in a ring. The toll rises through the floor.' : e.entered ? 'The rope pulls down into the floor. No bell hangs above it.' : ''
+    };
+    var note = host.querySelector('.opening-scene-memory');
+    if (!note) { note = document.createElement('div'); note.className = 'opening-scene-memory'; note.setAttribute('role', 'status'); host.appendChild(note); }
+    note.textContent = reactions[lid] || ''; note.hidden = !note.textContent;
+    if (prev && g.HollowAudio) {
+      if (lid === 'square' && e.board && !old.board) g.HollowAudio.sfx('ink');
+      if (lid === 'chapel' && e.record && !old.record) g.HollowAudio.sfx('knock');
+      if (lid === 'graveyard' && e.route && !old.route) g.HollowAudio.sfx('step');
+      if (lid === 'belltower' && e.revealed && !old.revealed) { g.HollowAudio.sfx('bellframe'); g.HollowAudio.sfx('bell'); }
+    }
+
+    // Small changes are anchored to the inspected object; re-created from shared state on reconnect.
+    var memory = lid === 'square' && e.board ? ['board', 'YOUR NAME', '#d8bb7c'] : lid === 'graveyard' && e.route ? ['headstones', 'IRON CUT AWAY · PASSAGE FOUND', '#a5c9c2'] : lid === 'belltower' && e.revealed ? ['frame', e.response === 'muffle' ? 'ROPE BOUND' : 'THE TOLL COMES FROM BELOW', '#b9d4df'] : null;
+    if (memory) {
+      var objectId = St.objectFor(memory[0]), object = def.objects[objectId], detail = objectId && root.querySelector('.obj-' + objectId + ' .opening-object-memory');
+      if (detail && object) {
+        var x = object.at[0], y = object.at[1] + object.box[3] * .65;
+        detail.innerHTML = '<path d="M' + (x - 80) + ' ' + y + ' q80 18 160 0" fill="none" stroke="' + memory[2] + '" stroke-width="2"/><text x="' + x + '" y="' + (y + 28) + '" text-anchor="middle" fill="' + memory[2] + '" font-size="17" font-family="Georgia">' + memory[1] + '</text>';
+      }
+    }
     // objects: usable, spent, unavailable
     Object.keys(st.avail).forEach(function (id) {
       var el = root.querySelector('.obj-' + id); if (!el) return;
       var a = st.avail[id];
+      var rec = g.HollowGuidance && g.HollowGuidance.recommend(view);
+      var recOpt = rec && view.enc && view.enc.options && view.enc.options.find(function (q) { return q.id === rec.id; });
+      var recommended = rec && def.objects[id].actions.some(function (x) { return (rec.k === 'opt' && (x.opt === rec.id || (recOpt && x.opt === recOpt.attach))) || (rec.k === 'act' && x.act === rec.id); });
+      el.classList.toggle('recommended-object', !!recommended && a.state === 'ok');
       el.classList.toggle('can', a.state === 'ok'); el.classList.toggle('spent', a.state === 'done'); el.classList.toggle('off', a.state === 'off' || a.state === 'wait');
       el.setAttribute('aria-label', def.objects[id].name + (a.state === 'ok' ? '' : a.state === 'done' ? ' (already examined)' : ' (' + (a.why || 'not now') + ')'));
     });
@@ -188,7 +230,7 @@
   }
   // hold back visual state changes while an event is being shown, so the picture changes at the right beat
   St.hold = function () { holdN++; };
-  St.release = function (all) { if (all) holdN = 0; else holdN = Math.max(0, holdN - 1); if (pendingSt && (all || holdN === 0)) { var s = pendingSt; pendingSt = null; apply(s); } };
+  St.release = function (all) { if (all) holdN = 0; else holdN = Math.max(0, holdN - 1); if (pendingSt && (all || holdN === 0)) { var s = pendingSt; pendingSt = null; apply(s); } if (!holdN && refreshPending) { focusId = null; St.sync(view); } };
   St.flush = function () { if (pendingSt) { var s = pendingSt; pendingSt = null; apply(s); } };
 
   // ───────────── camera ─────────────
@@ -197,7 +239,7 @@
   function sizeWorld() {
     if (!host || !world) return;
     var hw = host.clientWidth || 1, hh = host.clientHeight || 1, vb = def ? def.vb : [1600, 900];
-    var ww = !(def && def.photo) && hw / hh < 1.3 ? Math.round(Math.min(hh * vb[0] / vb[1], hw * 2.6)) : hw;
+    var ww = hw / hh < 1.3 ? Math.round(Math.min(hh * vb[0] / vb[1], hw * 2.6)) : hw;
     world.style.width = ww > hw ? ww + 'px' : '';
     host.classList.toggle('pannable', ww > hw);
   }
@@ -219,8 +261,12 @@
   }
   St.focus = function (id, opt) {
     if (!def || !def.objects[id]) return;
-    // Background packs illustrate a place, not precise prop positions. Keep the full composition.
-    if (def.photo) return;
+    // Paintings pan to the selected object without magnifying the whole background.
+    if (def.photo) {
+      sizeWorld(); var pm = metrics(), po = def.objects[id];
+      panX = clampX(pm.hw / 2 - (pm.ox + po.at[0] * pm.k), 1, pm);
+      setCam(panX, 0, 1, opt && opt.instant); focusId = id; markFocus(); return;
+    }
     opt = opt || {};
     var o = def.objects[id], m = metrics(), small = m.hw < 760;
     var z = Math.min(2.4, (o.z || 1.8) * (small ? 0.75 : 1) * (opt.zoom || 1));
@@ -232,6 +278,7 @@
     host.style.setProperty('--fx', (T.x / m.W * 100).toFixed(1) + '%'); host.style.setProperty('--fy', (T.y / m.H * 100).toFixed(1) + '%');
     setCam(tx, ty, z, opt.instant);
   };
+  St.pan = function (direction) { if (!host || holdN) return; sizeWorld(); var m = metrics(); focusId = null; host.classList.remove('focused'); markFocus(); panX = clampX(cam.tx - Number(direction) * m.hw * .6, 1, m); setCam(panX, 0, 1, FX.reduced()); };
   St.unfocus = function () { if (!host) return; resetCam(false); if (refreshPending) St.refresh(); };
   St.focused = function () { return focusId; };
   function markFocus() { if (!world) return; world.querySelectorAll('.obj').forEach(function (e) { e.classList.toggle('foc', e.getAttribute('data-obj') === focusId); }); }
@@ -250,7 +297,7 @@
   addEventListener('resize', function () { if (!host || !world) return; if (focusId) { sizeWorld(); St.focus(focusId, { instant: true }); } else resetCam(true); });
   // drag the wide world sideways (phones); a short tap still touches an object
   var drag = null;
-  function onDown(e) { if (!host.classList.contains('pannable') || focusId || e.button > 0) return; drag = { x: e.clientX, tx: cam.tx, moved: false }; }
+  function onDown(e) { if (!host.classList.contains('pannable') || focusId || e.button > 0 || e.target.closest('button')) return; drag = { x: e.clientX, tx: cam.tx, moved: false }; }
   function onMove(e) {
     if (!drag) return; var dx = e.clientX - drag.x; if (!drag.moved && Math.abs(dx) < 8) return;
     drag.moved = true; if (tip) tip.classList.remove('on'); var m = metrics(); panX = clampX(drag.tx + dx, 1, m); setCam(panX, 0, 1, true);
@@ -277,7 +324,7 @@
     tip.innerHTML = '<b>' + A.esc(o.name) + '</b>' + (a && a.state === 'done' ? '<small>examined</small>' : a && a.state !== 'ok' && a.why ? '<small>' + A.esc(a.why) + '</small>' : '');
     tip.style.left = (r.left - hr.left + r.width / 2) + 'px'; tip.style.top = Math.max(8, r.top - hr.top - 8) + 'px';
     tip.classList.add('on'); el.classList.add('hov');
-    if (e.type === 'pointerover' && a && a.state === 'ok' && g.HollowAudio) g.HollowAudio.sfx('hover');
+    if (e.type === 'pointerover' && !(e.relatedTarget && el.contains(e.relatedTarget)) && a && a.state === 'ok' && g.HollowAudio) g.HollowAudio.sfx('hover');
   }
   function onOut(e) { var el = e.target.closest && e.target.closest('.obj'); if (el) el.classList.remove('hov'); if (tip) tip.classList.remove('on'); }
   // (no mouse parallax: moving the scene's layers independently needs one GPU texture per layer, which ran past the

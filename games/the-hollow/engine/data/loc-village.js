@@ -83,6 +83,7 @@
   L.belltower = {
     id: 'belltower', name: 'Drowned Bell Tower', region: 'village', kind: 'lair', x: 380, y: 520, glyph: 'bell', scene: ['dusk', 'tower', 'water', 'fog'], occult: true,
     desc: 'The tower leans on its own reflection. There is no bell, only a rope that swings by itself, in time with something below the ground.',
+    interiorDesc: 'Inside the belfry, an empty iron yoke hangs above a rope that moves without wind. A lantern lights the rotten beams. Something below keeps time.',
     enemy: 'bellkeeper', guard: 'bellkeeper', safe: false,
     options: [
       { id: 'maintenance', label: 'Use the maintenance entrance', show: { flag: 'opening_route' }, hide: { flag: 'opening_entered' }, once: 'party', stakes: '1 action. No roll. Follow the marked dry passage.',

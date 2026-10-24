@@ -9,7 +9,7 @@
   ['unlock', 'setRegion', 'setPlace', 'setMood', 'setLevel', 'sfx', 'hush'].forEach(function (k) { original[k] = A[k]; });
   var place = null, region = 'title', mood = 'explore', level = 0, sanity = 1, phase = 1, alive = false;
   var cache = new Map(), pending = new Map(), cacheBytes = 0, maxBytes = 32 * 1024 * 1024;
-  var music = [], ambience = [], effects = [], desired = '', generation = 0, first = true;
+  var music = [], ambience = [], effects = [], desired = '', currentMusic = '', currentBed = '', generation = 0, first = true;
   var duckUntil = 0, dialog = false, nextBeat = 0, nextWhisper = 0, nextBell = 0, last = {};
   var transition = 2, limit = 12;
   function ramp(param, value, seconds) {
@@ -69,27 +69,30 @@
   function refresh() {
     if (!ctx) return Promise.resolve();
     var bedId = map.placeBeds && map.placeBeds[place] || map.beds[region];
-    var p = profile(), key = [region, mood, p.id, bedId].join('|');
+    var mix = map.placeMix && map.placeMix[place] || {}, bedGain = mix.gain == null ? (region === 'heart' ? .16 : .2) : mix.gain, bedFilter = mix.filter || (region === 'village' ? 900 : 6500);
+    var bedKey = [bedId, bedGain, bedFilter].join('|');
+    var p = profile(), key = [region, mood, p.id, bedKey].join('|');
     if (desired === key) return Promise.resolve();
     desired = key; var token = ++generation;
     if (mood === 'silence') { fadeOut(music); music = []; ramp(backend.synthMusic.gain, 0, transition); return Promise.resolve(); }
     var intro = first && !p.ending ? map.tracks.intro : null;
     return Promise.all([prepare(p.id), prepare(bedId), prepare(intro)]).then(function (buffers) {
       if (token !== generation) return;
-      if (buffers[0]) {
+      var nextMusic = [p.id, mood, p.rate, p.filter].join('|');
+      if (buffers[0] && (currentMusic !== nextMusic || !music.length)) {
         var fresh = [], when = ctx.currentTime;
         if (intro && buffers[2]) {
           var entry = source(buffers[2], backend.music, { gain: p.gain, fade: transition, id: intro }); fresh.push(entry);
           when = Math.max(when + .02, entry.end - .04);
         }
         fresh.push(source(buffers[0], backend.music, { loop: !p.ending, when: when, gain: p.gain, rate: p.rate, filter: p.filter, fade: intro && buffers[2] ? .04 : transition, id: p.id }));
-        fadeOut(music); music = fresh; first = false; ramp(backend.synthMusic.gain, 0, transition);
-      } else { fadeOut(music); music = []; ramp(backend.synthMusic.gain, 1, transition); }
-      if (!ambience.length || ambience[0].id !== bedId) {
+        fadeOut(music); music = fresh; currentMusic = nextMusic; first = false; ramp(backend.synthMusic.gain, 0, transition);
+      } else if (!buffers[0]) { fadeOut(music); music = []; currentMusic = ''; ramp(backend.synthMusic.gain, 1, transition); }
+      if (!ambience.length || currentBed !== bedKey) {
         if (buffers[1]) {
-          var bed = source(buffers[1], backend.ambient, { loop: true, gain: region === 'heart' ? .16 : .2, filter: region === 'village' ? 900 : 6500, fade: transition, id: bedId });
-          fadeOut(ambience); ambience = [bed]; ramp(backend.synthAmbient.gain, 0, transition);
-        } else { fadeOut(ambience); ambience = []; ramp(backend.synthAmbient.gain, 1, transition); }
+          var bed = source(buffers[1], backend.ambient, { loop: true, gain: bedGain, filter: bedFilter, fade: transition, id: bedId });
+          fadeOut(ambience); ambience = [bed]; currentBed = bedKey; ramp(backend.synthAmbient.gain, 0, transition);
+        } else { fadeOut(ambience); ambience = []; currentBed = ''; ramp(backend.synthAmbient.gain, 1, transition); }
       }
     }).catch(function () { /* Synthesis remains audible if audio setup fails. */ });
   }
@@ -146,7 +149,7 @@
     backend.ambient.connect(duckA); duckA.connect(backend.master);
     refresh();
     // Small cues decode only after unlock; region music/beds are otherwise lazy.
-    ['click', 'hover', 'paper', 'dice', 'damage', 'sanity', 'whisper', 'bell', 'distantBell', 'clue', 'enemy', 'completion', 'impact'].forEach(function (name) { prepare(map.sfx[name]); });
+    ['click', 'hover', 'paper', 'dice', 'damage', 'sanity', 'whisper', 'bell', 'distantBell', 'clue', 'enemy', 'completion', 'impact', 'ink', 'knock', 'iron'].forEach(function (name) { prepare(map.sfx[name]); });
     setInterval(tick, 250);
   };
   A.setRegion = function (name) { region = A.regions.indexOf(name) >= 0 ? name : 'title'; if (region === 'title') alive = false; original.setRegion(region); return refresh(); };
@@ -168,7 +171,7 @@
     if (!info || !id || !ctx || !cache.get(id)) { if (id && ctx) prepare(id); return original.sfx(name, options); }
     var now = performance.now(); if (last[name] != null && now - last[name] < info.cooldown) return;
     last[name] = now; A.caption(info.caption);
-    playAsset(id, Object.assign({ gain: name === 'hover' ? .12 : .32, duration: name === 'bell' || name === 'toll' ? 5 : 2.5, pan: name === 'whisper' ? Math.random() * 1.6 - .8 : 0, voice: name === 'whisper' || name === 'sanity' }, (map.cueOptions || {})[name] || {}));
+    playAsset(id, Object.assign({ gain: name === 'hover' ? .12 : .32, duration: name === 'bell' || name === 'toll' ? 5 : 2.5, pan: name === 'whisper' ? Math.random() * 1.6 - .8 : 0, voice: name === 'whisper' || name === 'sanity' }, (map.cueOptions || {})[name] || {}, options || {}, { pan: options && Number.isFinite(options.pan) ? Math.max(-.75, Math.min(.75, options.pan)) : name === 'whisper' ? Math.random() * 1.6 - .8 : 0 }));
   };
   A.playImpact = function (id) {
     if (!ctx || ctx.state !== 'running' || document.hidden || A.settings().muted || !A.settings().master || !A.settings().sfx) return false;

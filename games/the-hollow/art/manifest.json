@@ -2,7 +2,7 @@
   "version": 1,
   "mode": "local-preview-not-cleared-for-publication",
   "maxBytes": 40000000,
-  "totalBytes": 35866261,
+  "totalBytes": 39343807,
   "assets": {
     "1_mimic_garden_icons_mimic_garden_carrot_4a98a1b4": {
       "file": "art/generated/1_mimic_garden_icons_mimic_garden_carrot_4a98a1b4.webp",
@@ -5084,7 +5084,7 @@
     "task3_occultist_fullbody": {
       "file": "art/generated/task3_occultist_fullbody.webp",
       "type": "image",
-      "bytes": 72752,
+      "bytes": 74638,
       "pack": "the_hollow_task3",
       "source": "characters/playable/occultist/occultist_fullbody.png",
       "regions": [
@@ -5098,7 +5098,9 @@
         2400
       ],
       "transparent": true,
-      "encoding": "WebP quality 88"
+      "encoding": "WebP quality 88",
+      "sha256": "dc43a4806c31941804ea98b016c490cc2fe1634e660519676bbef438f8a266e8",
+      "alphaCleanup": "character-alpha-cleanup.json"
     },
     "task3_occultist_silhouette": {
       "file": "art/generated/task3_occultist_silhouette.webp",
@@ -5141,7 +5143,7 @@
     "task3_hunter_fullbody": {
       "file": "art/generated/task3_hunter_fullbody.webp",
       "type": "image",
-      "bytes": 79932,
+      "bytes": 80176,
       "pack": "the_hollow_task3",
       "source": "characters/playable/hunter/hunter_fullbody.png",
       "regions": [
@@ -5155,7 +5157,9 @@
         2400
       ],
       "transparent": true,
-      "encoding": "WebP quality 88"
+      "encoding": "WebP quality 88",
+      "sha256": "6a2937fd82d129a5cc27cb4067df4c474b614cf27469bc40fe07cc63dc6c9632",
+      "alphaCleanup": "character-alpha-cleanup.json"
     },
     "task3_hunter_silhouette": {
       "file": "art/generated/task3_hunter_silhouette.webp",
@@ -5198,7 +5202,7 @@
     "task3_apothecary_fullbody": {
       "file": "art/generated/task3_apothecary_fullbody.webp",
       "type": "image",
-      "bytes": 76214,
+      "bytes": 78606,
       "pack": "the_hollow_task3",
       "source": "characters/playable/apothecary/apothecary_fullbody.png",
       "regions": [
@@ -5212,7 +5216,9 @@
         2400
       ],
       "transparent": true,
-      "encoding": "WebP quality 88"
+      "encoding": "WebP quality 88",
+      "sha256": "d2dbd74689c03ad1b89aa6e965d289f5683308b2d1f823ad92d491cdf4db8b92",
+      "alphaCleanup": "character-alpha-cleanup.json"
     },
     "task3_apothecary_silhouette": {
       "file": "art/generated/task3_apothecary_silhouette.webp",
@@ -5255,7 +5261,7 @@
     "task3_medium_fullbody": {
       "file": "art/generated/task3_medium_fullbody.webp",
       "type": "image",
-      "bytes": 73762,
+      "bytes": 78296,
       "pack": "the_hollow_task3",
       "source": "characters/playable/medium/medium_fullbody.png",
       "regions": [
@@ -5269,7 +5275,9 @@
         2400
       ],
       "transparent": true,
-      "encoding": "WebP quality 88"
+      "encoding": "WebP quality 88",
+      "sha256": "dca60484051bccecd738eb32dd75afe085a0636334a20bf128149473d09adf4f",
+      "alphaCleanup": "character-alpha-cleanup.json"
     },
     "task3_medium_silhouette": {
       "file": "art/generated/task3_medium_silhouette.webp",
@@ -5312,7 +5320,7 @@
     "task3_vagabond_fullbody": {
       "file": "art/generated/task3_vagabond_fullbody.webp",
       "type": "image",
-      "bytes": 79980,
+      "bytes": 80858,
       "pack": "the_hollow_task3",
       "source": "characters/playable/vagabond/vagabond_fullbody.png",
       "regions": [
@@ -5326,7 +5334,9 @@
         2400
       ],
       "transparent": true,
-      "encoding": "WebP quality 88"
+      "encoding": "WebP quality 88",
+      "sha256": "9a9622e260266d85915e1d8c93e49961e32b40199c99cc52b851a323c2f775d7",
+      "alphaCleanup": "character-alpha-cleanup.json"
     },
     "task3_vagabond_silhouette": {
       "file": "art/generated/task3_vagabond_silhouette.webp",
@@ -5369,7 +5379,7 @@
     "task3_exorcist_fullbody": {
       "file": "art/generated/task3_exorcist_fullbody.webp",
       "type": "image",
-      "bytes": 81980,
+      "bytes": 82154,
       "pack": "the_hollow_task3",
       "source": "characters/playable/exorcist/exorcist_fullbody.png",
       "regions": [
@@ -5383,7 +5393,9 @@
         2400
       ],
       "transparent": true,
-      "encoding": "WebP quality 88"
+      "encoding": "WebP quality 88",
+      "sha256": "8c9c10d937791add6db1c8db2fac5c624873790c47605f747920eb7b1aefd0cb",
+      "alphaCleanup": "character-alpha-cleanup.json"
     },
     "task3_exorcist_silhouette": {
       "file": "art/generated/task3_exorcist_silhouette.webp",
@@ -5426,7 +5438,7 @@
     "task3_bellkeeper_fullbody": {
       "file": "art/generated/task3_bellkeeper_fullbody.webp",
       "type": "image",
-      "bytes": 125312,
+      "bytes": 125656,
       "pack": "the_hollow_task3",
       "source": "characters/enemies/bellkeeper/bellkeeper_fullbody.png",
       "regions": [
@@ -5440,7 +5452,9 @@
         2400
       ],
       "transparent": true,
-      "encoding": "WebP quality 88"
+      "encoding": "WebP quality 88",
+      "sha256": "2f237eac6e7f2e8ab6915c1451ff565969e2369a945dc2f3dc5131ac3e16f196",
+      "alphaCleanup": "character-alpha-cleanup.json"
     },
     "task3_bellkeeper_silhouette": {
       "file": "art/generated/task3_bellkeeper_silhouette.webp",
@@ -5483,7 +5497,7 @@
     "task3_abbey_warden_fullbody": {
       "file": "art/generated/task3_abbey_warden_fullbody.webp",
       "type": "image",
-      "bytes": 116162,
+      "bytes": 116280,
       "pack": "the_hollow_task3",
       "source": "characters/enemies/abbey_warden/abbey_warden_fullbody.png",
       "regions": [
@@ -5497,7 +5511,9 @@
         2400
       ],
       "transparent": true,
-      "encoding": "WebP quality 88"
+      "encoding": "WebP quality 88",
+      "sha256": "a1082f175f732ee7ded14a3443589e4242124ebea3527a0fbedff7c466ee024f",
+      "alphaCleanup": "character-alpha-cleanup.json"
     },
     "task3_abbey_warden_silhouette": {
       "file": "art/generated/task3_abbey_warden_silhouette.webp",
@@ -5540,7 +5556,7 @@
     "task3_whisperling_fullbody": {
       "file": "art/generated/task3_whisperling_fullbody.webp",
       "type": "image",
-      "bytes": 96494,
+      "bytes": 96714,
       "pack": "the_hollow_task3",
       "source": "characters/enemies/whisperling/whisperling_fullbody.png",
       "regions": [
@@ -5554,7 +5570,9 @@
         2400
       ],
       "transparent": true,
-      "encoding": "WebP quality 88"
+      "encoding": "WebP quality 88",
+      "sha256": "e81c03bd54016d11bcbcba6e278a0e816d3ffdef250d35b9ee792bf8477e4baf",
+      "alphaCleanup": "character-alpha-cleanup.json"
     },
     "task3_whisperling_silhouette": {
       "file": "art/generated/task3_whisperling_silhouette.webp",
@@ -5597,7 +5615,7 @@
     "task3_drowned_pilgrim_fullbody": {
       "file": "art/generated/task3_drowned_pilgrim_fullbody.webp",
       "type": "image",
-      "bytes": 102088,
+      "bytes": 102362,
       "pack": "the_hollow_task3",
       "source": "characters/enemies/drowned_pilgrim/drowned_pilgrim_fullbody.png",
       "regions": [
@@ -5611,7 +5629,9 @@
         2400
       ],
       "transparent": true,
-      "encoding": "WebP quality 88"
+      "encoding": "WebP quality 88",
+      "sha256": "87fe7d457efaac17307ea160db9bcc326ed46faa89a3fa8b787950ff04d3d941",
+      "alphaCleanup": "character-alpha-cleanup.json"
     },
     "task3_drowned_pilgrim_silhouette": {
       "file": "art/generated/task3_drowned_pilgrim_silhouette.webp",
@@ -5654,7 +5674,7 @@
     "task3_hollow_stag_fullbody": {
       "file": "art/generated/task3_hollow_stag_fullbody.webp",
       "type": "image",
-      "bytes": 132468,
+      "bytes": 132730,
       "pack": "the_hollow_task3",
       "source": "characters/enemies/hollow_stag/hollow_stag_fullbody.png",
       "regions": [
@@ -5668,7 +5688,9 @@
         2400
       ],
       "transparent": true,
-      "encoding": "WebP quality 88"
+      "encoding": "WebP quality 88",
+      "sha256": "8fd14e2b56fa801501f4fcc29364d937a6cb532a5b6d05c740244933f479c255",
+      "alphaCleanup": "character-alpha-cleanup.json"
     },
     "task3_hollow_stag_silhouette": {
       "file": "art/generated/task3_hollow_stag_silhouette.webp",
@@ -5711,7 +5733,7 @@
     "task3_grave_warden_fullbody": {
       "file": "art/generated/task3_grave_warden_fullbody.webp",
       "type": "image",
-      "bytes": 114314,
+      "bytes": 114642,
       "pack": "the_hollow_task3",
       "source": "characters/enemies/grave_warden/grave_warden_fullbody.png",
       "regions": [
@@ -5725,7 +5747,9 @@
         2400
       ],
       "transparent": true,
-      "encoding": "WebP quality 88"
+      "encoding": "WebP quality 88",
+      "sha256": "7742a7ea41e07b1d7631fa452a4ca2c5a7b8501c676469d7929876a5fb4a1984",
+      "alphaCleanup": "character-alpha-cleanup.json"
     },
     "task3_grave_warden_silhouette": {
       "file": "art/generated/task3_grave_warden_silhouette.webp",
@@ -5768,7 +5792,7 @@
     "task3_mirror_twin_fullbody": {
       "file": "art/generated/task3_mirror_twin_fullbody.webp",
       "type": "image",
-      "bytes": 75600,
+      "bytes": 79134,
       "pack": "the_hollow_task3",
       "source": "characters/enemies/mirror_twin/mirror_twin_fullbody.png",
       "regions": [
@@ -5782,7 +5806,9 @@
         2400
       ],
       "transparent": true,
-      "encoding": "WebP quality 88"
+      "encoding": "WebP quality 88",
+      "sha256": "37302630b2115d5d0825539887561ee80cb12b8808f775d6fb2df71086d74821",
+      "alphaCleanup": "character-alpha-cleanup.json"
     },
     "task3_mirror_twin_silhouette": {
       "file": "art/generated/task3_mirror_twin_silhouette.webp",
@@ -5825,7 +5851,7 @@
     "task3_carrion_swarm_fullbody": {
       "file": "art/generated/task3_carrion_swarm_fullbody.webp",
       "type": "image",
-      "bytes": 158252,
+      "bytes": 158306,
       "pack": "the_hollow_task3",
       "source": "characters/enemies/carrion_swarm/carrion_swarm_fullbody.png",
       "regions": [
@@ -5839,7 +5865,9 @@
         1800
       ],
       "transparent": true,
-      "encoding": "WebP quality 88"
+      "encoding": "WebP quality 88",
+      "sha256": "7ba64a74046ac0ba925b1a7cc11a5364a8a987f4204a1267bbd0d33af3b69940",
+      "alphaCleanup": "character-alpha-cleanup.json"
     },
     "task3_carrion_swarm_silhouette": {
       "file": "art/generated/task3_carrion_swarm_silhouette.webp",
@@ -5882,7 +5910,7 @@
     "task3_hollow_hound_fullbody": {
       "file": "art/generated/task3_hollow_hound_fullbody.webp",
       "type": "image",
-      "bytes": 123042,
+      "bytes": 123576,
       "pack": "the_hollow_task3",
       "source": "characters/enemies/hollow_hound/hollow_hound_fullbody.png",
       "regions": [
@@ -5896,7 +5924,9 @@
         1800
       ],
       "transparent": true,
-      "encoding": "WebP quality 88"
+      "encoding": "WebP quality 88",
+      "sha256": "fba168db1117236ef6808779471076298efc8be9213c99dea9c69a9c70f91a6e",
+      "alphaCleanup": "character-alpha-cleanup.json"
     },
     "task3_hollow_hound_silhouette": {
       "file": "art/generated/task3_hollow_hound_silhouette.webp",
@@ -5939,7 +5969,7 @@
     "task3_weeping_statue_fullbody": {
       "file": "art/generated/task3_weeping_statue_fullbody.webp",
       "type": "image",
-      "bytes": 77824,
+      "bytes": 77938,
       "pack": "the_hollow_task3",
       "source": "characters/enemies/weeping_statue/weeping_statue_fullbody.png",
       "regions": [
@@ -5953,7 +5983,9 @@
         2400
       ],
       "transparent": true,
-      "encoding": "WebP quality 88"
+      "encoding": "WebP quality 88",
+      "sha256": "880ff691869816fdd1d963c57ae1305c28355f372cf4d6904787656519d48155",
+      "alphaCleanup": "character-alpha-cleanup.json"
     },
     "task3_weeping_statue_silhouette": {
       "file": "art/generated/task3_weeping_statue_silhouette.webp",
@@ -8741,6 +8773,99 @@
       "file": "art/generated/task4_ui_states_thin_divider.webp",
       "bytes": 612,
       "sha256": "700d0ac0c9d51e45dc1434b6957f85fd9eb9ded0f8684a78d1400999bf202ec7"
+    },
+    "opening_belfry_interior": {
+      "file": "art/generated/opening_belfry_interior.webp",
+      "type": "image",
+      "bytes": 293552,
+      "pack": "the_hollow_opening_media",
+      "source": "Gemini_Generated_Image_mbbecumbbecumbbe.png",
+      "sourceSha256": "7e6a0a3543bd2c01acccfb0c126f7351975ec634ca759c22bc84c2a86a8aa5e1",
+      "sha256": "c592427420e04c6656823672869fa8e8be1404d2d0875c9b607f3a8bfcaad467",
+      "pixel": false,
+      "width": 2752,
+      "height": 1536,
+      "regions": [
+        "village"
+      ]
+    },
+    "opening_trailer": {
+      "file": "art/generated/opening_trailer.mp4",
+      "type": "video",
+      "bytes": 3012829,
+      "pack": "the_hollow_opening_media",
+      "source": "thornwick_cinematic_trailer.mp4",
+      "sourceSha256": "b498af0393a60e002701ffdae8bcbbdc60173a60462333e9b5d93e4e5865d1cf",
+      "sha256": "fac9d84332d866953aa84b5d7ebb199752f23b9970765dd0285d7201a9fc3bbe",
+      "pixel": false,
+      "seconds": 60,
+      "width": 1280,
+      "height": 536,
+      "codec": "h264/aac",
+      "onDemand": true,
+      "regions": [
+        "shared"
+      ]
+    },
+    "opening_trailer_poster": {
+      "file": "art/generated/opening_trailer_poster.webp",
+      "type": "image",
+      "bytes": 126222,
+      "pack": "the_hollow_opening_media",
+      "source": "thornwick_cinematic_trailer.mp4",
+      "sourceSha256": "b498af0393a60e002701ffdae8bcbbdc60173a60462333e9b5d93e4e5865d1cf",
+      "sha256": "4893f103bd7e7536927f3bcba9e2047b8084f70895e609f278b423a4a8bcd3f3",
+      "pixel": false,
+      "width": 1280,
+      "height": 536,
+      "regions": [
+        "shared"
+      ]
+    },
+    "interaction_ink": {
+      "type": "audio",
+      "pack": "horror_sfx_free",
+      "source": "Horror SFX Free/House & Office/Writing.wav",
+      "sourceSha256": "1df2c72ea54f015e6ac471c51cc5219bd912877bc2a8a765abd5ddb815643383",
+      "sha256": "d26382deb314331e369e8415a795f753899250cf15138af1ec34958c405ddd06",
+      "file": "art/generated/interaction_ink.mp3",
+      "bytes": 12624,
+      "seconds": 1.5,
+      "channels": 1,
+      "loop": false,
+      "regions": [
+        "village"
+      ]
+    },
+    "interaction_knock": {
+      "type": "audio",
+      "pack": "horror_sfx_free",
+      "source": "Horror SFX Free/House & Office/Door_knocking_quiet.wav",
+      "sourceSha256": "b52c1ee2a3f897651d96f0595a38bcf939848b0db9daa16eb3da3e4cbf6d2f77",
+      "sha256": "4e867c5d420f790f5d54e47f2348edc0b11fb0eb717fc48f828bb62a5256d699",
+      "file": "art/generated/interaction_knock.mp3",
+      "bytes": 10910,
+      "seconds": 1.296576,
+      "channels": 1,
+      "loop": false,
+      "regions": [
+        "village"
+      ]
+    },
+    "interaction_iron": {
+      "type": "audio",
+      "pack": "horror_sfx_free",
+      "source": "Horror SFX Free/House & Office/Metal scrape_scratch.wav",
+      "sourceSha256": "172b593c69dc994031943839fa4daf129b3e60cb21ccaa087031e83bfa36ee81",
+      "sha256": "8ae7cb0d8d06e200edf54bea44c34fc53259c91cfe63957ff76aa9aa490241f2",
+      "file": "art/generated/interaction_iron.mp3",
+      "bytes": 5519,
+      "seconds": 0.619683,
+      "channels": 1,
+      "loop": false,
+      "regions": [
+        "village"
+      ]
     }
   },
   "regions": {
@@ -9280,7 +9405,9 @@
       "task4_ui_states_locked_state_accent",
       "task4_ui_states_objective_complete_accent",
       "task4_ui_states_ornamental_corner",
-      "task4_ui_states_thin_divider"
+      "task4_ui_states_thin_divider",
+      "opening_trailer",
+      "opening_trailer_poster"
     ],
     "village": [
       "graveyard_graveyard_graveyard_2_31cb50e5",
@@ -9301,7 +9428,11 @@
       "task1_environments_village_graveyard",
       "task1_environments_village_nursery",
       "task1_environments_village_square",
-      "task1_environments_village_wagon"
+      "task1_environments_village_wagon",
+      "opening_belfry_interior",
+      "interaction_ink",
+      "interaction_knock",
+      "interaction_iron"
     ],
     "woods": [
       "graveyard_graveyard_graveyard_2_31cb50e5",
@@ -9475,7 +9606,7 @@
       "author": "Unknown: no author evidence in archive",
       "license": "Unverified: no bundled license found",
       "status": "local-only",
-      "included": 22
+      "included": 25
     },
     {
       "id": "indie_game_feel_psychological_vignette_overlays",
@@ -9680,6 +9811,12 @@
       "license": "User-supplied generated assets; source delivery retained by user",
       "status": "local-only",
       "included": 137
+    },
+    {
+      "id": "the_hollow_opening_media",
+      "source": "User-supplied belfry PNG and Thornwick trailer MP4",
+      "status": "local-only",
+      "included": 3
     }
   ],
   "skipped": [

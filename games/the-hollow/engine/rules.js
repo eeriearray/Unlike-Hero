@@ -180,6 +180,12 @@
     var w = this.w, loc = enc.loc, out = { id: o.id, label: o.label, stakes: o.stakes || '', ap: 0, state: 'ok', why: '' };
     var ap = o.ap != null ? o.ap : (enc.kind === 'event' ? 0 : (o.shop || o.escape ? 0 : 1));
     out.ap = ap;
+    if (o.attach) out.attach = o.attach;
+    if (o.id === 'maintenance' && w.opening && !w.opening.entered) out.attach = 'force_entry';
+    if (o.summary) out.summary = o.summary;
+    var openingOpt = o.openingAs || o.id;
+    if (w.opening && !w.opening.complete && loc === 'belltower' && (openingOpt === 'frame') && !w.opening.entered) { out.state = 'locked'; out.why = 'Enter the tower first.'; }
+    if (w.opening && !w.opening.complete && w.opening.revealed && loc === 'belltower' && openingOpt === 'frame') { out.state = 'done'; out.why = 'Choose your response to the echo.'; }
     if (w.opening && !w.opening.complete && ['square:board', 'chapel:vestry', 'graveyard:headstones', 'belltower:frame'].indexOf(loc + ':' + o.id) >= 0) out.stakes += ' The opening lead survives a failed check.';
     if (w.opening && !w.opening.complete && enc.loc === 'belltower' && ['frame', 'climb', 'listen'].indexOf(o.id) >= 0 && !w.opening.entered) { out.state = 'locked'; out.why = 'Enter the tower first.'; }
     if (o.confirm) out.confirm = o.confirm;
@@ -332,6 +338,7 @@
     var parts = out && out.parts ? out.parts : [out];
     parts.forEach(function (pt) { if (pt) this.applyOutcome(p, pt, ctx); }, this);
     this.recordOpening(p, enc, o, ctx);
+    if (w.opening && enc.kind === 'loc' && o.id === 'expertise') this.say(ctx, D.classes[p.cls].passive.name + ' contributed a safe alternative; the shared evidence updates for everyone.', 'info');
     if (o.escape && p.status === 'alive') this.escapeHollow(p, ctx);
     // claims
     if (o.once || o.stock) {
@@ -729,9 +736,16 @@
   };
 
   // ───────────────────────────── cooperation: asking for and giving aid ─────────────────────────────
+  M.openingAid = function (p, enc) {
+    var x = this.openingExpertise(p), o = this.w.opening;
+    return o && !o.complete && enc.kind === 'loc' && x && x.loc === enc.loc
+      ? { bonus: 3, text: D.classes[p.cls].passive.name + ': compare your specialist observation with the investigator.' }
+      : { bonus: 2, text: 'Keep the investigator steady.' };
+  };
   M.cmd_askaid = function (p) {
     var e = this.requireTurn(p); if (e) return { error: e };
-    var enc = this.turn.enc; if (!enc) return { error: 'Open an encounter first.' };
+    var enc = this.turn.enc; if (!enc || enc.hold || enc.over) return { error: 'Open an unresolved encounter first.' };
+    if (enc.aid && enc.aid.asked) return { ok: true };
     var helpers = this.here(p.loc).filter(function (x) { return x.id !== p.id && x.connected && x.san >= 2 && x.aidedRound !== this.w.round; }, this);
     if (!helpers.length) return { error: 'No one here can help right now.' };
     enc.aid = enc.aid || { asked: false, bonus: 0, helpers: [] };
@@ -740,17 +754,18 @@
     return { ok: true };
   };
   M.cmd_aid = function (p) {
-    if (this.phase !== 'playing' || p.status !== 'alive') return { error: 'You cannot help right now.' };
+    if (this.phase !== 'playing' || p.status !== 'alive' || !p.connected) return { error: 'You cannot help right now.' };
     var enc = this.turn && this.turn.enc;
     var a = enc && this.get(enc.pid);
-    if (!enc || !enc.aid || !enc.aid.asked || !a || a.loc !== p.loc || a.id === p.id) return { error: 'No one is asking for your help.' };
+    if (!enc || enc.hold || enc.over || !enc.aid || !enc.aid.asked || !a || a.loc !== p.loc || a.id === p.id) return { error: 'No one is asking for your help.' };
     if (p.aidedRound === this.w.round) return { error: 'You have already helped this round.' };
     if (p.san < 2) return { error: 'You are too shaken to help.' };
     if (enc.aid.bonus >= 4) return { error: 'They have all the help they can use.' };
     this.hurt(p, 'san', 1, { raw: true, src: 'aid' });
     p.aidedRound = this.w.round; p.tally.aids++;
-    enc.aid.bonus += 2; enc.aid.helpers.push(p.id);
-    this.addLog('world', p.name + ' lends a hand to ' + a.name + ', at the cost of their own composure.', { p: p.id, loc: p.loc, d: { k: 'aid' } });
+    var help = this.openingAid(p, enc);
+    enc.aid.bonus = Math.min(4, enc.aid.bonus + help.bonus); enc.aid.helpers.push(p.id);
+    this.addLog('world', p.name + ' lends a hand to ' + a.name + ', at the cost of 1 Sanity. ' + help.text + ' +' + help.bonus + ' to the next check.', { p: p.id, loc: p.loc, d: { k: 'aid' } });
     return { ok: true };
   };
 

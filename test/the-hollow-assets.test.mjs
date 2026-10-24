@@ -19,7 +19,7 @@ test('manifest entries exist, byte counts match, payload stays below 40 MB', asy
   let total = 0;
   for (const [id, asset] of Object.entries(manifest.assets)) {
     assert.match(id, /^[a-z0-9_]+$/);
-    assert.match(asset.file, /^art\/generated\/[a-z0-9_]+\.(webp|mp3|ogg|ttf)$/);
+    assert.match(asset.file, /^art\/generated\/[a-z0-9_]+\.(webp|mp3|ogg|ttf|mp4)$/);
     const size = (await fs.stat(new URL(asset.file, game))).size;
     assert.equal(size, asset.bytes);
     total += size;
@@ -89,4 +89,10 @@ test('replaced media uses content-versioned URLs while legacy assets retain thei
   assert.equal(new URL(a.url('item')).searchParams.get('v'),'a'.repeat(16));
   assert.equal(new URL(a.url('legacy')).search,'');
   assert.equal(a.url('missing'),null);
+});
+
+test('video URLs are allowlisted but video bytes are never globally prefetched', async () => {
+ const {api,calls}=browser({version:1,assets:{trailer:{file:'art/generated/trailer.mp4',type:'video',regions:['shared']}}});
+ await api.ready;assert.ok(api.url('trailer').endsWith('/art/generated/trailer.mp4'));
+ assert.equal(await api.load('trailer'),null);await api.preloadRegion('shared');assert.equal(calls.length,1);
 });

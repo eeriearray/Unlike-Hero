@@ -2,8 +2,21 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import vm from 'node:vm';
+import { createHash } from 'node:crypto';
 const game = new URL('../games/the-hollow/', import.meta.url);
 const source = await fs.readFile(new URL('js/character-assets.js',game),'utf8');
+test('all sixteen reviewed alpha fixes are the runtime cutouts and bypass stale image caches',async()=>{
+ const m=JSON.parse(await fs.readFile(new URL('art/manifest.json',game)));
+ const fixes=JSON.parse(await fs.readFile(new URL('art/character-alpha-cleanup.json',game)));
+ assert.equal(Object.keys(fixes.files).length,16);
+ for(const f of Object.values(fixes.files)){
+  const a=m.assets[f.assetId], bytes=await fs.readFile(new URL(a.file,game));
+  assert.equal(createHash('sha256').update(bytes).digest('hex'),f.runtimeSha256,f.assetId);
+  assert.equal(a.sha256,f.runtimeSha256);
+  assert.equal(a.bytes,bytes.length);
+  assert.equal(a.transparent,true);
+ }
+});
 test('full delivery covers six heroes, ten enemies and four NPCs with budgeted derivatives',async()=>{
  const m=JSON.parse(await fs.readFile(new URL('art/manifest.json',game)));
  const map=JSON.parse(await fs.readFile(new URL('art/character-art.json',game)));

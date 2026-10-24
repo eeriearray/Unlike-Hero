@@ -67,7 +67,7 @@
       active: t ? t.active : null, ap: t ? t.ap : 0, order: t ? t.order : [],
       secLeft: t ? Math.max(0, Math.round((t.deadline - this.now()) / 1000)) : 0
     };
-    v.opening = this.openingObjective();
+    v.opening = this.openingObjective(me);
     v.game.readingTime = !!this.settings.solo;
     // the shared map
     var locs = {};
@@ -135,6 +135,7 @@
     var effStat = {}; ['might', 'wit', 'fate'].forEach(function (s) { effStat[s] = self.baseStat(p, s); });
     var hallu = p.status === 'alive' ? (p.san <= p.maxSan * 0.25 ? 2 : (p.san <= p.maxSan * 0.5 ? 1 : 0)) : 0;
     var o = {
+      description: this.descFor(p.loc),
       cls: p.cls, status: p.status, stats: p.stats, eff: effStat, vit: p.vit, maxVit: p.maxVit, san: p.san, maxSan: p.maxSan, silver: p.silver, xp: p.xp, level: p.level,
       xpNext: D.levels[p.level] != null ? D.levels[p.level] : null, xpPrev: D.levels[p.level - 1] || 0, glory: p.glory,
       inv: p.inv.map(function (e) { return { id: e.id, n: e.n, eq: !!e.eq, uses: e.uses }; }), pack: this.packUsed(p), packMax: C.packSize,
@@ -238,7 +239,7 @@
     if (enc.aid) o.aid = { asked: enc.aid.asked, bonus: enc.aid.bonus, helpers: enc.aid.helpers.map(function (id) { return (self.get(id) || {}).name; }) };
     if (active) {
       var allies = this.here(enc.loc).filter(function (x) { return x.id !== active.id; });
-      o.allies = allies.map(function (x) { return { id: x.id, name: x.name, canAid: x.connected && x.san >= 2 && x.aidedRound !== w.round && enc.aid && enc.aid.asked }; });
+      o.allies = allies.map(function (x) { return { id: x.id, name: x.name, aidBonus: self.openingAid(x, enc).bonus, aidText: self.openingAid(x, enc).text, canAid: x.connected && x.san >= 2 && x.aidedRound !== w.round && enc.aid && enc.aid.asked }; });
       o.canAsk = allies.some(function (x) { return x.connected && x.san >= 2 && x.aidedRound !== w.round; });
       o.options = this.encOptions(active, enc).map(function (x) { return x.ev; });
     }

@@ -61,11 +61,16 @@ window.HollowAudioMap = {
     "distantBell": "task4_audio_distant_bell_variation",
     "rope": "task4_audio_rope_strain",
     "bellframe": "task4_audio_rusted_bell_frame_movement",
-    "completion": "task4_audio_objective_completion"
+    "completion": "task4_audio_objective_completion",
+    "ink": "interaction_ink",
+    "knock": "interaction_knock",
+    "iron": "interaction_iron"
   },
   "placeBeds": {
     "square": "task4_audio_dark_well_ambience",
-    "moonwell": "task4_audio_dark_well_ambience"
+    "moonwell": "task4_audio_dark_well_ambience",
+    "chapel": "horror_sfx_free_horror_sfx_free_ambient_old_house_creeky_metal_and_wood_ambiance_7_f45a0ae6",
+    "belltower": "horror_sfx_free_horror_sfx_free_ambient_old_house_creeky_metal_and_wood_ambiance_7_f45a0ae6"
   },
   "cueOptions": {
     "bell": {
@@ -115,6 +120,32 @@ window.HollowAudioMap = {
     "completion": {
       "duration": 3.5,
       "gain": 0.18
+    },
+    "ink": {
+      "duration": 1.5,
+      "gain": 0.23
+    },
+    "knock": {
+      "duration": 2,
+      "gain": 0.2
+    },
+    "iron": {
+      "duration": 1,
+      "gain": 0.19
+    },
+    "hover": {
+      "duration": 0.12,
+      "gain": 0.06
+    }
+  },
+  "placeMix": {
+    "chapel": {
+      "gain": 0.14,
+      "filter": 3600
+    },
+    "belltower": {
+      "gain": 0.16,
+      "filter": 2200
     }
   }
 };

@@ -266,7 +266,7 @@
     var enc = '';
     var out = '<div class="card"><div class="cbody"><div class="row"><h3 style="font-size:1rem">' + (a ? esc(a.name) + '\'s turn' : 'Waiting…') + '</h3>' + UI.timerLine() + UI.apPips() + '</div>' +
       (away ? '<div class="note bad">' + esc(a.name) + ' has lost the thread. ' + esc(v.policy) + (G.awayLeft != null && v.settings.afk !== 'wait' ? ' (' + G.awayLeft + 's until the table\'s rule applies)' : '') + '</div>' : '<p class="small muted" style="margin:0">Watch the map. If they are in your place, you can lend them a hand during their encounter.</p>') + '</div></div>';
-    out += '<div class="card">' + UI.locBanner(m.loc, null, 'You are here') + '<div class="cbody"><p class="narr">' + esc(l.desc) + '</p>' + UI.groundHtml() + UI.enemiesHere() + '</div></div>';
+    out += '<div class="card">' + UI.locBanner(m.loc, null, 'You are here') + '<div class="cbody"><p class="narr">' + esc(UI.descNow()) + '</p>' + UI.groundHtml() + UI.enemiesHere() + '</div></div>';
     return out;
   };
 
@@ -295,7 +295,7 @@
     out += UI.travelPanel();
     return out;
   };
-  UI.descNow = function () { return loc(view().me.loc).desc; };
+  UI.descNow = function () { return view().me.description || loc(view().me.loc).desc; };
 
   UI.travelPanel = function () {
     var v = view(), a = v.act, m = v.me, G = v.game;
@@ -388,7 +388,7 @@
     if (a.bonus) out += '<div class="chips-row"><span class="chip good">Allies lend +' + a.bonus + ' to the next roll (' + esc(a.helpers.join(', ')) + ')</span></div>';
     if (active && enc.allies && enc.allies.length && !a.asked && enc.canAsk && enc.options && enc.options.some(function (o) { return o.kind === 'check'; })) out += '<div class="row"><button class="btn small teal" data-act="askaid">Call for help (' + enc.allies.map(function (x) { return esc(x.name); }).join(', ') + ' are here)</button></div>';
     if (active && a.asked && !a.bonus) out += '<div class="small muted">You have called for help. Allies here can answer.</div>';
-    if (!active && iHelp && a.asked && v.me.status === 'alive') out += '<div class="votebox"><b>' + esc(pl(enc.pid).name) + ' needs help with this roll.</b><div class="small">Aiding adds +2 and costs you 1 Sanity. Once per round.</div><button class="btn small teal" data-act="aid"' + (v.me.aided || v.me.san < 2 || a.bonus >= 4 ? ' disabled' : '') + '>Lend a hand (+2, −1 Sanity)</button>' + (v.me.aided ? '<div class="why">You have already helped this round.</div>' : '') + '</div>';
+    if (!active && iHelp && a.asked && v.me.status === 'alive') out += '<div class="votebox"><b>' + esc(pl(enc.pid).name) + ' needs help with this roll.</b><div class="small">' + esc(iHelp.aidText || 'Keep the investigator steady.') + ' Aiding adds +' + (iHelp.aidBonus || 2) + ' to the next check (total cap +4), costs 1 Sanity, once per round. No actions spent.</div><button class="btn small teal" data-act="aid"' + (v.me.aided || v.me.san < 2 || a.bonus >= 4 || !iHelp.canAid || enc.hold ? ' disabled' : '') + '>Lend a hand (+' + (iHelp.aidBonus || 2) + ', −1 Sanity)</button>' + (v.me.aided ? '<div class="why">You have already helped this round.</div>' : '') + '</div>';
     return out;
   };
 

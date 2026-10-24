@@ -28,7 +28,7 @@ test('opening can finish with every check failing, and widens the authoritative 
  act(g,'chapel','vestry');assert.equal(g.viewFor('p0').opening.id,'route');
  act(g,'graveyard','headstones');assert.equal(g.viewFor('p0').opening.id,'enter');
  act(g,'belltower','maintenance');assert.equal(g.viewFor('p0').opening.id,'frame');
- act(g,'belltower','frame');
+ act(g,'belltower','frame');act(g,'belltower','muffle');
  assert.equal(g.viewFor('p0').opening.complete,true);
  assert.ok(g.path('square','foyer',false));
  assert.ok(g.w.clues.bell_cast.shared);
@@ -38,7 +38,7 @@ test('alternative entrance works before any clues, including a failed force chec
  const {g}=make(); const p=g.get('p0'),vit=p.vit;
  act(g,'belltower','force_entry');
  assert.equal(p.vit,vit-2);assert.ok(g.w.opening.entered);
- act(g,'belltower','frame');assert.ok(g.w.opening.complete);
+ act(g,'belltower','frame');act(g,'belltower','muffle');assert.ok(g.w.opening.complete);
 });
 test('tower interior cannot be studied before entering, and wider shortcuts stay blocked',()=>{
  const {g}=make();g.get('p0').loc='belltower';g.command('p0',{t:'interact'});
@@ -53,7 +53,7 @@ test('out-of-order party discoveries are shared and survive snapshot/reconnect e
  assert.equal(g.viewFor('p0').opening.id,'enter');
  const restored=HollowGame.restore(g.snapshot());restored.setConnected('p0',true);
  assert.deepEqual(restored.w.opening,g.w.opening);
- act(restored,'belltower','maintenance');act(restored,'belltower','frame');
+ act(restored,'belltower','maintenance');act(restored,'belltower','frame');act(restored,'belltower','muffle');
  const count=restored.log.filter(e=>e.t.includes('Opening complete')).length;
  const before=restored.get('p0').tally.clues;
  restored.turn.ap=3;
@@ -105,4 +105,17 @@ test('automatic end turn is engine validated and advances a spent, resolved solo
  assert.ok(g.command('p0',{t:'endturn',auto:true}).ok);
  assert.equal(g.w.round,round+1);assert.ok(g.turn.ap>0);
  assert.ok(g.log.some(e=>e.t.includes('Your actions are spent')));
+});
+
+test('tower narration changes after authoritative entry and survives restore',()=>{
+ const {g}=make();g.get('p0').loc='belltower';
+ assert.match(g.viewFor('p0').me.description,/leans/);
+ act(g,'belltower','force_entry');assert.match(g.viewFor('p0').me.description,/Inside the belfry/);
+ assert.equal(HollowGame.restore(g.snapshot()).viewFor('p0').me.description,g.viewFor('p0').me.description);
+});
+
+test('the shared mission becomes a concrete final decision when a player reaches the Heart',()=>{
+ const {g}=make();act(g,'belltower','force_entry');act(g,'belltower','frame');act(g,'belltower','muffle');
+ g.get('p0').loc='heart_chamber';
+ const v=g.viewFor('p0');assert.equal(v.opening.id,'decision');assert.equal(v.opening.target,'heart_chamber');assert.match(v.opening.hint,/propose an ending/);
 });

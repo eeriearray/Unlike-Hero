@@ -62,3 +62,19 @@ body[data-screen="game"].combat-active .stg-world { filter: brightness(.7) satur
 
 .opening-upgrade { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; background: #101b20f5; padding: 12px; border: 1px solid #c6ac70; width: 100%; font: .85rem/1.5 Inter,sans-serif; }
 .opening-upgrade b { flex: 1 1 100%; }
+
+/* Environmental memory is readable with sound, animation and scares disabled. */
+.opening-scene-memory { position:absolute; bottom:18px; left:50%; transform:translateX(-50%); width:max-content; max-width:min(540px,85%); padding:9px 14px; border-left:2px solid #d8bb7c; background:#101b20ed; color:#f0e6d0; font:13px/1.5 Georgia,serif; pointer-events:none; z-index:4; }
+.opening-scene-memory[hidden] { display:none; }
+.opening-echo .obj-frame .halo { opacity:.8; fill:#9ebcc7; }
+.opening-bound .obj-frame .halo { fill:#d8bb7c; opacity:.4; }
+.opening-echo:not(.opening-still) .obj-frame .halo { animation:opening-toll 4s ease-in-out 2; }
+@keyframes opening-toll { 50% { opacity:.3; } }
+.character-observation { margin-top:8px; font-size:12px; color:#e4cc99; }
+.character-observation summary { cursor:pointer; min-height:32px; }
+@media(max-width:600px) { .opening-scene-memory { bottom:8px; font-size:12px; padding:6px 10px; } .character-observation summary { min-height:44px; } }
+@media(prefers-reduced-motion:reduce) { .opening-echo .obj-frame .halo { animation:none!important; } }
+
+.opening-object-memory { pointer-events:none; filter:drop-shadow(0 2px 3px #000); }
+.opening-echo .stg-fx::after { content:""; position:absolute; left:32%; top:62%; width:36%; height:12%; border:2px solid #b5d5df66; border-radius:50%; box-shadow:0 0 24px #b5d5df25,inset 0 0 18px #b5d5df25; }
+.opening-bound .stg-fx::after { opacity:.25; border-color:#d8bb7c; }

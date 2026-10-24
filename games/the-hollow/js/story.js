@@ -119,8 +119,9 @@
     } else if (enc && enc.kind !== 'loc' && (enc.pid === V.you || enc.loc === lid)) {
       head = esc(enc.title); text = sentences(enc.text, 2);
     } else {
+      if (g.HollowGuidance && m.status === 'alive') return '<div class="cap mission-caption" aria-live="polite">' + g.HollowGuidance.mission(V) + '</div>';
       head = '<span style="color:' + r.color + '">' + esc(r.name) + '</span> · ' + esc(l.name);
-      text = sentences(l.desc, 1);
+      text = sentences(m.description || l.desc, 1);
       if (mine && QUESTIONS[lid]) q = QUESTIONS[lid];
     }
     var hal = m.hallu ? ' hallu' + m.hallu : '';
@@ -148,9 +149,9 @@
       out += '<details class="why"><summary>Why these odds?</summary><div class="mods">' + o.mods.map(function (mm) { return '<span class="dm ' + (mm.v < 0 ? 'neg' : 'pos') + '">' + esc(mm.l) + ' ' + (mm.v > 0 ? '+' : '−') + Math.abs(mm.v) + '</span>'; }).join('') + o.dcMods.map(function (mm) { return '<span class="dm ' + (mm.v > 0 ? 'neg' : 'pos') + '">' + esc(mm.l) + ' (difficulty ' + (mm.v > 0 ? '+' : '−') + Math.abs(mm.v) + ')</span>'; }).join('') + '</div></details>';
       // can a companion help?
       if (enc.allies && enc.allies.length && enc.canAsk) {
-        var names = enc.allies.map(function (x) { return esc(x.name.replace(' (ghost)', '')); }).join(' and ');
-        if (!enc.aid.asked) out += '<div class="aidask"><span>' + names + ' can help with this. Helping adds +2 to your roll and costs them 1 Sanity.</span><button class="btn" data-act="askaid">Ask ' + names + ' for help</button></div>';
-        else out += '<p class="muted">' + (enc.aid.bonus ? esc(enc.aid.helpers.join(', ')) + ' lend a hand: +' + enc.aid.bonus + ' to your roll.' : 'Waiting to see if they will help…') + '</p>';
+        var names = enc.allies.map(function (x) { return esc(x.name.replace(' (ghost)', '')) + ' (+' + (x.aidBonus || 2) + ')'; }).join(' and ');
+        if (!enc.aid.asked) out += '<div class="aidask"><span>' + names + ' can help with this. Helping costs 1 Sanity, once per round. +2 to your next roll; a relevant specialist gives +3 (total help capped at +4). You can roll immediately without waiting.</span><button class="btn" data-act="askaid">Ask ' + names + ' for help</button></div>';
+        else out += '<p class="muted">' + (enc.aid.bonus ? esc(enc.aid.helpers.join(', ')) + ' lend a hand: +' + enc.aid.bonus + ' to your roll.' : 'Help is optional. Roll whenever you are ready; no need to wait.') + '</p>';
       }
       out += '<div class="prow"><button class="btn primary big" data-act="choose" data-opt="' + o.id + '"' + (o.confirm ? ' data-confirm="' + esc(o.confirm) + '"' : '') + '>Roll the D20</button><button class="btn ghost" data-act="unprep">Back</button></div>';
     } else if (o.kind === 'puzzle') {
@@ -162,6 +163,7 @@
   };
 
   Story.coach = function () {
+    if (v().opening && !v().opening.complete) return '';
     if (S.ui.coach == null || S.ui.coach === 'done') return '';
     var V = v();
     if (S.ui.coach === 0) return '<div class="coachcard"><b>Thornwick is missing from every map.</b><p>Touch what glows in the square, or pick a card below. Risky things show their odds before you roll.</p><div class="prow"><button class="btn primary" data-act="coach" data-s="1">Begin</button><button class="btn ghost" data-act="coach" data-s="done">Skip</button></div></div>';
@@ -175,11 +177,12 @@
     var vis = function (id) { return V.map.locs[id] && V.map.locs[id].v; };
     var ok = mv.filter(function (r) { return r.ok; }).sort(function (x, y) { return (vis(x.to) ? 1 : 0) - (vis(y.to) ? 1 : 0) || (x.enemy ? 1 : 0) - (y.enemy ? 1 : 0); });
     // Every open road stays visible, including the fifth road to the Bell Tower.
-    var top = ok;
+    var destination = V.opening && (V.opening.nextTarget || V.opening.target);
+    var top = ok.sort(function (x, y) { return (y.to === destination ? 1 : 0) - (x.to === destination ? 1 : 0); });
     var row = function (r) {
       var l = loc(r.to), reg = region(r.to), seen = vis(r.to), dis = G.ap < 1 ? ' disabled' : '';
-      return '<div class="dest' + (seen ? ' seen' : ' unknown') + (r.enemy ? ' danger' : '') + '"><button class="dart" data-act="move" data-mode="step" data-to="' + r.to + '"' + dis + ' aria-label="Go to ' + esc(l.name) + '">' + A.scene(l.scene, r.to, reg.color, l.region, l.glyph) + '<span class="dname"><small style="color:' + reg.color + '">' + esc(reg.name) + '</small><b>' + esc(l.name) + '</b></span>' + (r.enemy ? '<span class="dwarn">' + esc(S.cat.enemies[r.enemy].name) + '</span>' : '') + '</button>' +
-        '<div class="dmeta">' + (seen ? 'Visited' : 'Unexplored') + (r.oneway ? ' · one-way' : '') + (r.type === 'hidden' ? ' · hidden way' : '') + (r.enemy && r.sneak ? ' <button class="btn tiny" data-act="move" data-mode="sneak" data-to="' + r.to + '"' + dis + '>Sneak (' + (r.sneak.chance >= 60 ? 'likely' : r.sneak.chance >= 35 ? 'risky' : 'unlikely') + ')</button>' : '') + '</div></div>';
+      return '<div class="dest' + (seen ? ' seen' : ' unknown') + (r.enemy ? ' danger' : '') + (r.to === destination ? ' recommended-road' : '') + '"><button class="dart" data-act="move" data-mode="step" data-to="' + r.to + '"' + dis + ' aria-label="Go to ' + esc(l.name) + '">' + A.scene(l.scene, r.to, reg.color, l.region, l.glyph) + '<span class="dname"><small style="color:' + reg.color + '">' + esc(reg.name) + '</small><b>' + esc(l.name) + '</b></span>' + (r.enemy ? '<span class="dwarn">' + esc(S.cat.enemies[r.enemy].name) + '</span>' : '') + '</button>' +
+        '<div class="dmeta">' + (r.to === destination ? '<b>Next objective</b> · ' : '') + (seen ? 'Visited' : 'Unexplored') + (r.oneway ? ' · one-way' : '') + (r.type === 'hidden' ? ' · hidden way' : '') + (r.enemy && r.sneak ? ' <button class="btn tiny" data-act="move" data-mode="sneak" data-to="' + r.to + '"' + dis + '>Sneak (' + (r.sneak.chance >= 60 ? 'likely' : r.sneak.chance >= 35 ? 'risky' : 'unlikely') + ')</button>' : '') + '</div></div>';
     };
     var out = '<div class="travelp"><div class="tph"><h2>' + (enemy ? 'Where do you flee?' : 'Where to?') + '</h2><span class="muted small">' + (G.ap < 1 ? 'No actions left this turn.' : '1 action' + (enemy ? ' · it strikes as you leave' : '')) + '</span><button class="btn ghost small" data-act="untravel">Stay</button></div><div class="dests">' + (top.length ? top.map(row).join('') : '<p class="note">No road is open from here. Search for hidden ways, or unlock a road below.</p>') + '</div>';
     var rest = [], locked = mv.filter(function (r) { return !r.ok; }), spr = a.sprint, fol = a.follow;

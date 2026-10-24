@@ -83,11 +83,18 @@
     onState: function (v) {
       if (!S.net) return;          // a late message from a transport we have already left
       S.view = v;
-      if (v.phase !== 'lobby' && !started) { started = true; reported = false; setTimeout(function () { var L = S.view && S.view.me && S.cat.locations[S.view.me.loc]; if (L && S.view.game.round <= 1) g.HollowCine.play('arrive', { title: L.name, region: S.cat.regions[L.region].name, color: S.cat.regions[L.region].color, hook: 'Your expedition begins.' }); }, 600); if (hub) hub.report('session-start', { game: 'the-hollow' }); }
+      if (v.phase !== 'lobby' && !started) { started = true; reported = false; S.ui.fieldLetterPending = v.phase === 'playing' && v.game.round <= 1; if (hub) hub.report('session-start', { game: 'the-hollow' }); }
       if (v.phase === 'lobby') { started = false; seen.init = false; }
       handleLog(v);
       render();
       autoOpen();
+      if (g.HollowDread) g.HollowDread.sync(v);
+      if (S.ui.fieldLetterPending && v.phase === 'playing' && S.cat) {
+        S.ui.fieldLetterPending = false;
+        var introRun = v.cosmetics && v.cosmetics.runId;
+        var readLetter = function () { if (S.view && S.view.phase === 'playing' && (!introRun || S.view.cosmetics.runId === introRun)) openModal({ type: 'fieldletter' }); };
+        if (!g.HollowDread || !g.HollowDread.open(v, readLetter)) readLetter();
+      }
       syncAudio();
       if (S.ui.busy) S.ui.busy = false;
     },
@@ -107,6 +114,7 @@
   };
 
   function toTitle(msg) {
+    if (g.HollowDread) g.HollowDread.cancel();
     if (S.net) { try { S.net.leave(); } catch (e) { /* closed */ } }
     S.net = null; S.view = null; S.ui.sel = null; S.ui.modal = null; S.ui.err = typeof msg === 'string' ? msg : '';
     seen = { n: 0, init: false }; htmlOf = {}; started = false; MAP.reset();
@@ -270,6 +278,7 @@
     if (m) {
       if (m.type === 'settings') html = UI.settingsModal();
       else if (m.type === 'howto') html = UI.howtoModal();
+      else if (m.type === 'fieldletter') html = UI.fieldLetterModal(S.view);
       else if (m.type === 'item') html = UI.itemModal(m.id);
       else if (m.type === 'give') html = UI.giveModal(m.to);
       else if (m.type === 'confirm') html = UI.confirmModal(m.text);
@@ -444,7 +453,12 @@
   }
 
   var ACTIONS = {
-    host: function () { var n = nameVal(); startOnline(function (net) { return net.create({ name: n }); }); },
+    host: function () {
+      var n = nameVal();
+      var proceed = function () { startOnline(function (net) { return net.create({ name: n }); }); };
+      if (g.HollowTrailer) g.HollowTrailer.open({ autoplay: true, after: proceed });
+      else proceed();
+    },
     join: function () {
       var code = ($('#f-code') ? $('#f-code').value : S.ui.code || '').trim().toUpperCase(); S.ui.code = code;
       if (code.length !== 4) return setErr('Enter the 4-letter expedition code.');
@@ -457,6 +471,7 @@
     leave: function () { closeModal(); leave(); },
     again: function () { if (S.net && S.net.kind === 'offline') Net.clearSolo(); leave(); },
     howto: function () { openModal({ type: 'howto' }); }, settings: function () { openModal({ type: 'settings' }); }, menu: function () { openModal({ type: 'menu' }); },
+    fieldletter: function () { openModal({ type: 'fieldletter' }); },
     closemodal: closeModal,
     mute: function () { AU.setMuted(!AU.settings().muted); render(); },
     mutebox: function (el) { AU.setMuted(el.checked); render(); },
@@ -485,7 +500,8 @@
       var id = el.getAttribute('data-obj'); if (!id || EV.busy()) return;
       var av = St.avail(id, S.view);
       if (av.acts.length === 1 && av.acts[0].k === 'act' && av.acts[0].id === 'travel' && av.acts[0].ok) { AU.sfx('step'); St.focus(id); setTimeout(function () { St.unfocus(); ACTIONS.travel(); }, 420); return; }
-      AU.sfx('zoom'); S.ui.more = false; S.ui.soundpop = false;
+      var detail = St.defFor() && St.defFor().objects[id], rect = St.rectOf(id);
+      AU.sfx(detail && detail.sfx || 'zoom', { pan: rect ? Math.max(-.7, Math.min(.7, ((rect.left + rect.width / 2) / innerWidth - .5) * 1.4)) : 0 }); S.ui.more = false; S.ui.soundpop = false;
       openCard({ obj: id });
     },
     // a choice inside the object's card
@@ -497,6 +513,8 @@
       if (id === 'travel') { closeCard(); ACTIONS.travel(); return; }
       if (k === 'move') { closeCard(true); EV.intent(ic.obj, 'act'); send({ t: 'move', mode: 'step', to: id }); }
     },
+    scenepan: function (el) { closeCard(); St.pan(el.dataset.dir); },
+    detailzoom: function () { if (!S.ui.icard) return; S.ui.icard.magnify = !S.ui.icard.magnify; AU.sfx('paper', { gain: .08 }); htmlOf.advui = null; render(); },
     icclose: function () { closeCard(); },
     // an action card in the tray
     card: function (el) {

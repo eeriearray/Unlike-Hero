@@ -9,6 +9,7 @@
   'use strict';
   var KEY = 'hollow.audio.v1';
   var DEFAULTS = { master: 0.8, music: 0.55, ambient: 0.75, sfx: 0.85, muted: false, captions: false };
+  var mediaFocus = false;
   var S = Object.assign({}, DEFAULTS);
   try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { /* storage blocked */ }
 
@@ -70,7 +71,7 @@
   function applyVolumes(instant) {
     if (!ctx) return;
     var t = ctx.currentTime, k = instant ? 0.01 : 0.12;
-    master.gain.setTargetAtTime(S.muted ? 0 : S.master, t, k);
+    master.gain.setTargetAtTime(S.muted || mediaFocus ? 0 : S.master, t, k);
     busM.gain.setTargetAtTime(S.music, t, k); busA.gain.setTargetAtTime(S.ambient, t, k); busS.gain.setTargetAtTime(S.sfx, t, k);
   }
 
@@ -294,6 +295,10 @@
   SFX.bellframe = { cd: 800, cap: 'The empty bell-frame groans.', f: function () { SFX.creak.f(); } };
   SFX.completion = { cd: 1500, cap: 'Your personal objective is fulfilled.', f: function () { SFX.success.f(); } };
 
+  SFX.ink = { cd: 1200, cap: 'A pen scratches across paper.', f: function () { SFX.paper.f(); } };
+  SFX.knock = { cd: 1800, cap: 'A quiet knock from the chapel woodwork.', f: function () { SFX.creak.f(); } };
+  SFX.iron = { cd: 900, cap: 'An iron nameplate scrapes against stone.', f: function () { SFX.lock.f(); } };
+
   function sfx(name, opt) {
     var d = SFX[name]; if (!d) return;
     if (capFn && S.captions && d.cap) capFn(d.cap);
@@ -326,6 +331,7 @@
     backend: function () { return ctx ? { ctx: ctx, master: master, music: busM, ambient: busA, sfx: busS, synthMusic: synthM, synthAmbient: synthA } : null; },
     describeSound: function (name) { var d = SFX[name]; return d ? { caption: d.cap, cooldown: d.cd || 80 } : null; },
     caption: function (text) { if (S.captions && capFn && text) capFn(text); },
+    setMediaFocus: function (on) { mediaFocus = !!on; applyVolumes(); },
     settings: function () { return Object.assign({}, S); }, onCaption: function (fn) { capFn = fn; },
     regions: Object.keys(REGIONS), moods: Object.keys(MOODS), sfxNames: Object.keys(SFX), supported: !!(g.AudioContext || g.webkitAudioContext)
   };

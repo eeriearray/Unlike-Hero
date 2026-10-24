@@ -8,7 +8,7 @@ The 137 prepared media files and 29 sanitized vector symbols are installed. Pain
 
 All 126 Hollow tests pass, including delivery provenance, prepared-file integrity, cache invalidation, alpha/dimensions, sound mappings, and opening progression. The source WAV peaks are now all below -3 dBFS (village bell: -3.5 dBFS); the existing 0.85 preparation gain remains. No waveform was clipped.
 
-The manifest’s “Task 3 pending” note is stale: the installed character cast remains complete. The new pack supplies no belfry interior, maintenance-passage illustration, or distant-crow recording, so those gaps are not marked resolved. The updated painted items supersede the flat-item observations below.
+The manifest’s “Task 3 pending” note is stale: the installed character cast remains complete. The new pack supplies no belfry interior, maintenance-passage illustration, or distant-crow recording, so that delivery alone did not resolve those gaps. The belfry interior and trailer have since been supplied separately and integrated; see OPENING-MEDIA.md. The updated painted items supersede the flat-item observations below.
 
 Rebuild this delivery with:
 

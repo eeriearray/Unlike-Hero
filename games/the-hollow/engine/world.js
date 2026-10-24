@@ -33,7 +33,7 @@
       boss: { hp: D.boss.hp, chains: D.boss.chains, dead: false }, corridor: 'observatory', vote: null, spiritAid: null, whispers: 0, uid: 0,
       allFallen: 0, jam: 0, bossLog: []
     };
-    if (this.settings.opening) { w.opening = { version: 1, board: false, record: false, route: false, entered: false, complete: false }; w.flags.opening_active = true; }
+    if (this.settings.opening) { w.opening = { version: 2, board: false, record: false, route: false, entered: false, complete: false }; w.flags.opening_active = true; }
     var self = this;
     Object.keys(D.secrets).forEach(function (k) { w.secrets[k] = self.pick(D.secrets[k].vals); });
     Object.keys(D.locations).forEach(function (id) { w.locs[id] = { seen: false, visited: false, inv: false, corrupt: 0, seal: 0, chalk: 0, ground: [], snare: null }; });
@@ -58,30 +58,67 @@
   };
 
   M.openingPlace = function (id) { return ['square', 'chapel', 'graveyard', 'belltower'].indexOf(id) >= 0; };
-  M.openingObjective = function () {
-    var o = this.w.opening;
-    if (!o) return null;
-    if (o.complete) return { id: 'complete', title: 'Follow the bell beneath Thornwick', context: 'The bell was cast from grave markers. Every toll remembers a name. The wider expedition is now open.', hint: 'Travel back through the graveyard to reach the Black Estate, or cross the bridge.', target: 'graveyard', complete: true };
-    if (o.entered) return { id: 'frame', title: 'Examine the empty bell-frame', context: 'You are inside. Something rings where no bell hangs.', hint: 'Study the empty bell-frame in the tower.', target: 'belltower' };
-    if (o.route) return { id: 'enter', title: 'Enter the bell tower', context: 'The graveyard marker shows a dry maintenance entrance.', hint: 'Travel to the tower and use the maintenance entrance.', target: 'belltower' };
-    if (o.record) return { id: 'route', title: 'Find the maintenance marker', context: 'The chapel record describes a passage marked by a bell on a grave.', hint: 'Read the headstones in the graveyard. You can also force the tower entrance.', target: 'graveyard' };
-    if (o.board) return { id: 'record', title: 'Find a way into the bell tower', context: 'The notice says the chapel kept the tower maintenance records.', hint: 'Search the vestry in the chapel, or try forcing the tower entrance.', target: 'chapel' };
-    return { id: 'arrival', title: 'Find a way into the bell tower', context: 'You followed a summons to abandoned Thornwick. Its bell rings from a tower whose bell is missing.', hint: 'Read the notice board in the Silent Square. It costs 1 action.', target: 'square' };
+  // The same expertise definition supplies observations, optional approaches and aid.
+  M.openingExpertise = function (p) {
+    return {
+      occultist: { loc: 'chapel', opt: 'vestry', label: 'Isolde: read the erased maintenance entry', observation: 'The erased lines use the same cipher as your forbidden footnotes. You can recover the record without disturbing the shelves.', outcome: { t: 'Margin Notes: you read the erased instructions without touching the unstable shelves. You leave the supplies undisturbed.' } },
+      hunter: { loc: 'graveyard', opt: 'headstones', label: 'Corvin: follow the keeper’s bootprints', observation: 'Bootprints stop at the bell-marked stone, not at a burial. Tracking them avoids losing time among the names.', outcome: { t: 'Tracker: a keeper walked this path carrying tools. You follow the dry prints straight to the passage.' } },
+      apothecary: { loc: 'chapel', opt: 'vestry', label: 'Maelis: lift the ink with a herbal wash', observation: 'The vestry ink is stained with burial salts. One herb will lift it without bringing the shelf down.', cost: { item: 'herb' }, outcome: { t: 'Forager: your herbal wash lifts the maintenance entry intact. The shelves and their supplies stay untouched.' } },
+      medium: { loc: 'belltower', opt: 'frame', label: 'Wren: hear the last keeper’s echo', observation: 'The frame carries a human echo beneath its note. Listening costs 1 Sanity, but avoids a dangerous check and Clock loss.', cost: { san: 1 }, outcome: { t: 'Veil-sighted: you hear the keeper say, “We lowered it. We did not silence it.” The echo guides your hand to the inscription.' } },
+      vagabond: { loc: 'belltower', opt: 'force_entry', label: 'Jory: slip through the drainage gap', observation: 'A dry gap beneath the swollen door is wide enough. Your Light Step can open it from within without forcing the hinges.', outcome: { t: 'Light Step: you slip under the door and lift its latch. No injury, no broken hinge; the entrance is open for everyone.' } },
+      exorcist: { loc: 'belltower', opt: 'frame', label: 'Anselm: trace a protective ward on the frame', observation: 'Your order’s ward fits the empty yoke. One Ward Chalk lets you read it safely without spending a limited Rite of Sealing.', cost: { item: 'chalk' }, outcome: { t: 'Sanctified: the chalk catches the frame’s note. You read the inscription safely; none of your three rites is spent.' } }
+    }[p.cls];
   };
-  // Shared evidence is recorded even on a failed roll or if the finder falls.
+  M.openingOptions = function (p, enc, raws) {
+    var o = this.w.opening; if (!o || o.complete || enc.kind !== 'loc') return raws;
+    var x = this.openingExpertise(p), extra = [];
+    if (x && x.loc === enc.loc) extra.push({ id: 'expertise', openingAs: x.opt, attach: x.opt, label: x.label, once: 'party', onceKey: x.opt,
+      cost: x.cost, summary: 'No roll · avoids check consequences', stakes: '1 action. No roll. ' + x.observation, auto: x.outcome });
+    if (enc.loc === 'belltower' && o.revealed) {
+      extra.push({ id: 'muffle', summary: 'Clock −1 · no extra name', attach: 'frame', label: 'Bind the rope: buy time for the expedition', once: 'party', onceKey: 'opening_response', stakes: '1 action. No roll. Clock −1; no extra name recovered.', auto: { t: 'You bind the rope to the yoke. The next pull comes slowly. One toll bought back, not a cure.', clock: -1 } });
+      extra.push({ id: 'answer_echo', summary: 'Clock +1 · bell-name hint', attach: 'frame', label: 'Answer the echo: recover a name', once: 'party', onceKey: 'opening_response', stakes: '1 action. No roll. Gain a bell-name hint; Clock +1. The sound carries below.', auto: { t: 'You answer with the names on the marker. The echo returns a fragment of the bell’s true name. Below, something hears you.', hint: 'bellName', clock: 1 } });
+    }
+    return raws.concat(extra);
+  };
+  M.openingObjective = function (p) {
+    var o = this.w.opening; if (!o) return null;
+    var goal;
+    if (o.complete && p && p.loc === 'heart_chamber') goal = { id: 'decision', title: 'Decide the bell’s fate', context: 'You reached the Heart. Your discoveries will shape the final decision.', hint: 'Open the Heart encounter and propose an ending. Your party votes together.', target: 'heart_chamber', complete: true };
+    else if (o.complete) goal = { id: 'complete', title: 'Find the magistrate’s account in the Black Estate', context: 'The bell was lowered beneath the Abbey, not destroyed. The tower inscription says the magistrate kept the transfer agreement. It may explain how to stop the taking of names.', hint: 'Return through the graveyard to the Black Estate foyer, then seek its library. The agreement is your lead toward the Abbey.', target: p && p.loc === 'foyer' ? 'library' : 'foyer', complete: true };
+    else if (o.revealed) goal = { id: 'response', title: 'Choose how to leave the ringing frame', context: 'The rope pulls downward as a toll rises through the floor. The bell is below the Abbey; this tower is only its echo. Your name begins forming in the iron.', hint: 'Touch the frame: bind the rope to delay a toll, or answer the echo for a name at the cost of time.', target: 'belltower' };
+    else if (o.entered) goal = { id: 'frame', title: 'Find what is ringing in an empty tower', context: 'The rope vanishes into the floor. The empty yoke bears the same missing names as the grave marker.', hint: 'Study the empty bell-frame for the destination of the missing bell.', target: 'belltower' };
+    else if (o.route) goal = { id: 'enter', title: 'Trace the bell’s removal into the tower', context: 'The graves hold no bodies. Their iron nameplates were taken for the bell. A keeper’s diagram marks a dry entrance.', hint: 'Use the maintenance entrance at the tower to find where the bell went.', target: 'belltower' };
+    else if (o.record) goal = { id: 'route', title: 'Find the keeper’s bell-marked grave', context: 'The record says the main entrance flooded when the bell was lowered. The keeper left a dry passage diagram on the bell-marked stone.', hint: 'Read the graveyard headstones to find the keeper’s diagram. Forcing the tower remains possible.', target: 'graveyard' };
+    else if (o.board) goal = { id: 'record', title: 'Find who removed the bell', context: 'The notice certifies the bell was removed forty years ago, yet you heard it on arrival. The chapel kept the removal and maintenance records.', hint: 'Search the chapel vestry for the record of the bell’s removal.', target: 'chapel' };
+    else goal = { id: 'arrival', title: 'Test the warning in your summons', context: 'A letter in your own handwriting warned: “Come to Thornwick before the bell learns your name.” You came to stop it. A toll just sounded from a tower with no bell.', hint: 'Read the square’s notice board: its tower notice may explain who still rings it.', target: 'square' };
+    if (p) { var x = this.openingExpertise(p); if (x && p.loc === x.loc && !o.complete && !(x.opt === 'vestry' && o.record) && !(x.opt === 'headstones' && o.route) && !(x.opt === 'force_entry' && o.entered) && !(x.opt === 'frame' && o.revealed)) goal.observation = x.observation; }
+    if (p && p.loc !== goal.target) {
+      var route = this.path(p.loc, goal.target, false);
+      if (route && route.length) { goal.nextTarget = route[0]; if (route.length > 1) goal.hint = 'Travel via ' + D.locations[route[0]].name + ' toward ' + D.locations[goal.target].name + '. ' + goal.hint; }
+    }
+    goal.complete = !!o.complete;
+    goal.evidence = { board: !!o.board, record: !!o.record, route: !!o.route, entered: !!o.entered, revealed: !!o.revealed, response: o.response || null };
+    return goal;
+  };
+  // Shared evidence survives failure, falling, snapshots and reconnects.
   M.recordOpening = function (p, enc, opt, ctx) {
     var o = this.w.opening; if (!o || o.complete || enc.kind !== 'loc') return;
-    var before = this.openingObjective().id, key = enc.loc + ':' + opt.id, text = '';
-    if (key === 'square:board' && !o.board) { o.board = true; text = 'The notice names the chapel as the keeper of tower records. You look back: your name has appeared beneath the date.'; }
-    if (key === 'chapel:vestry' && !o.record) { o.record = true; text = 'A surviving maintenance record mentions a dry passage beside a grave marked with a bell.'; }
-    if (key === 'graveyard:headstones' && !o.route) { o.route = true; this.w.flags.opening_route = true; text = 'A bell is cut into the last stone. Behind it, a diagram marks the tower maintenance entrance. The route is shared with the party.'; }
-    if ((key === 'belltower:maintenance' || key === 'belltower:force_entry') && !o.entered) { o.entered = true; this.w.flags.opening_entered = true; text = 'Inside, a rope moves without wind. The iron frame above it holds no bell.'; }
-    if (key === 'belltower:frame' && o.entered) {
-      o.complete = true; this.w.flags.opening_active = false;
+    var before = this.openingObjective().id, key = enc.loc + ':' + (opt.openingAs || opt.id), text = '';
+    if (key === 'square:board' && !o.board) { o.board = true; text = 'REMOVAL CERTIFICATE — forty years ago. The chapel vestry holds the keeper’s account. As you read, fresh ink writes your name beneath the date. Your summons was a warning, not an invitation.'; }
+    if (key === 'chapel:vestry' && !o.record) { o.record = true; text = 'The keeper’s entry survives: “Bell lowered; front entrance flooded. Dry service passage marked on my bell-stone in the graveyard.” Someone meant a later keeper to get back inside. A single wooden knock comes from the direction of the graves.'; }
+    if (key === 'graveyard:headstones' && !o.route) { o.route = true; this.w.flags.opening_route = true; text = 'Behind the bell-marked stone is the dry passage diagram. Its iron nameplate has been cut away, as on every other grave. No bodies were buried here: the bell was made from their names. Wet prints now lead toward the tower.'; }
+    if ((key === 'belltower:maintenance' || key === 'belltower:force_entry') && !o.entered) { o.entered = true; this.w.flags.opening_entered = true; text = 'Inside, the rope pulls down into a shaft beneath an empty iron yoke. The floor trembles before you hear the toll. Look at the founder’s inscription on the frame.'; }
+    if (key === 'belltower:frame' && o.entered && !o.revealed) {
+      o.revealed = true; this.w.flags.opening_revealed = true;
       if (!this.w.clues.bell_cast) this.addClue('bell_cast', p, false, ctx);
       if (this.w.clues.bell_cast) this.w.clues.bell_cast.shared = true;
-      ['foyer', 'bridge', 'wagon', 'nursery'].forEach(function (id) { this.w.locs[id].seen = true; }, this);
-      text = 'A bell sounds beneath your feet. Opening complete: the roads beyond Thornwick are now available.';
+      text = 'The empty yoke shudders. Dust lifts from the floor in a perfect ring; the toll rises from BELOW. Beneath the grave-marks you read: “Lowered to the Abbey foundations. Transfer agreement: magistrate’s library.” There is no hidden bell here. The missing bell is still ringing underground. In the iron, the first letter of your name begins to glow. Bind the rope to buy time, or answer its echo to recover a name.';
+    }
+    if (o.revealed && (opt.id === 'muffle' || opt.id === 'answer_echo')) {
+      o.response = opt.id; o.complete = true; this.w.flags.opening_active = false;
+      this.w.flags.opening_muffled = opt.id === 'muffle';
+      ['foyer', 'library', 'bridge', 'wagon', 'nursery'].forEach(function (id) { this.w.locs[id].seen = true; }, this);
+      text = 'Opening complete: the wider roads are open. The magistrate’s library in the Black Estate holds the transfer agreement. Find who ordered the bell lowered before it finishes learning your name; then follow its trail beneath the Abbey.';
     }
     if (text) { this.say(ctx, text, 'story'); this.addLog('story', text, { p: p.id, loc: enc.loc }); }
     var next = this.openingObjective();
@@ -752,6 +789,7 @@
 
   M.descFor = function (loc) {
     var l = D.locations[loc], txt = l.desc;
+    if (loc === 'belltower' && (!this.w.opening || this.w.opening.entered)) return l.interiorDesc;
     (l.descAlt || []).forEach(function (a) { if (this.test(a.if, null)) txt = a.text; }, this);
     return txt;
   };
@@ -808,7 +846,7 @@
   M.encOptions = function (p, enc) {
     if (enc.over) return [];
     var raws, base = { aid: enc.aid && enc.aid.bonus, spiritAid: this.w.spiritAid ? 2 : 0 };
-    if (enc.kind === 'loc') raws = D.locations[enc.loc].options || [];
+    if (enc.kind === 'loc') raws = this.openingOptions(p, enc, D.locations[enc.loc].options || []);
     else if (enc.kind === 'event') raws = D.regionEvents.find(function (e) { return e.id === enc.event; }).options;
     else if (enc.kind === 'enemy') {
       var en = this.enemyByUid(enc.enemy);

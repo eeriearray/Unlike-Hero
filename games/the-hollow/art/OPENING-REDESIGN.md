@@ -1,42 +1,50 @@
-# The Missing Bell — opening redesign
+# The Missing Bell — playable opening
 
-New browser expeditions default to the guided opening. The host can select **Experienced players: start with the full expedition** in the character lobby. Existing saves and engine callers that omit `opening: true` retain the full game.
+The opening follows a personal warning into a concrete investigation. Existing paintings, closeups, belfry interior, recorded cues, trailer, private goals and the wider game remain in use. New guided expeditions use opening state version 2. Existing complete saves remain complete; incomplete saves tolerate the new optional fields and acquire the response beat after inspecting the frame. Full expedition mode does not use these rules.
 
-## Playable flow
+## Beat sheet
 
-1. Arrive at the Silent Square after following a summons. Read the notice board: a chapel maintenance lead survives even a failed check. Your name appears on the notice in the action result and journal.
-2. Search the existing chapel vestry. Whether the roll succeeds or fails, a record points to a bell-marked grave. Normal item rewards still require success.
-3. Read the existing graveyard headstones. Even on failure, discover a maintenance passage. Travel to the tower and take its certain, one-action entrance.
-4. Alternatively, go straight to the tower and force its entrance. Success opens the door; failure also opens it, costing 2 Health. Critical failure adds the engine's normal Clock complication.
-5. Examine the empty frame. Success or failure reveals the shared grave-iron clue, completes the opening, and opens the wider expedition. The unsettling sound is communicated in text, so audio and effects are optional.
+| Place | Motivation and action | Discovery / consequence | Next lead |
+| --- | --- | --- | --- |
+| Silent Square | A summons in your own handwriting warns that the bell is learning your name. Read the removal notice to test the contradiction. | The bell was removed forty years ago. Fresh ink adds your name to the notice; the well answers. Failed checks retain the lead. | The chapel kept the removal records. |
+| Chapel | Recover the keeper’s maintenance entry from the vestry. | The bell was lowered, flooding the front entrance. A dry entrance was marked on the keeper’s grave. A knock points toward the graves. | Find the bell-marked stone. |
+| Graveyard | Read the marked stone or follow the keeper’s tracks. | The graves hold no bodies; their nameplates were cut away for the bell. The diagram supplies a safe passage. | Enter the tower to trace the missing bell. |
+| Tower entrance | Use the passage, force the door, or use Jory’s drainage gap. | A rope pulls down into the floor beneath an empty yoke. Force failure still opens the door and costs Health. | Read the founder’s inscription. |
+| Empty frame | Inspect the grave-iron or use Wren’s / Anselm’s approach. | The empty frame reacts; the toll comes from below. The inscription identifies the Abbey foundations and the magistrate’s transfer record. The bell was lowered, not destroyed. | Respond before following the transfer record. |
+| Tower response | Bind the rope or answer the echo. Both choices are shown together on the frame and in action cards. | Binding reduces the Clock by 1; answering advances it by 1 and recovers a bell-name hint. Choices are mutually exclusive. | Return through the graveyard to the Black Estate foyer and seek the library record, then follow the trail toward the Abbey. |
 
-Four existing locations replace the proposed five-location structure: the chapel contains the maintenance records, avoiding an invented caretaker or unnecessary new house. Discoveries can happen in any order, and the force entrance permits a short route. Duration has not been calibrated with new-player sessions; the direct route can be much shorter than 10–15 minutes.
+The direct forced-entry route is still available; discoveries may occur out of order. The opening is not artificially timed. A fresh-player study is still needed to establish a 10–15-minute duration.
 
-## Authority and persistence
+## Character approaches
 
-`w.opening` holds versioned, party-shared booleans. `recordOpening` runs inside normal authoritative option resolution, even if a failed action makes the finder fall. `openingObjective()` derives current context and hints from that state; clients do not infer clues from animation history. Existing claims, command IDs, snapshots, and reconnect views retain exactly-once rewards. Private objectives and unrelated clues retain their original privacy rules.
+Every roster member has a relevant observation and an optional certain approach, offered on the same scene object as its normal check. Normal checks remain available to everyone.
 
-All normal travel modes use the engine's restricted graph during the opening; the view limits map nodes, moves, and sprint destinations to the four locations. The map marks the known objective. Completion widens the available graph; the rest of its fog of war remains intact.
+- **Isolde / Margin Notes:** read the chapel entry without disturbing the shelves. Avoid injury/noise; leave normal supply rewards untouched.
+- **Corvin / Tracker:** follow the keeper’s prints instead of rolling among the headstones. Avoid losing time.
+- **Maelis / Forager:** spend one herb to lift the chapel ink safely. Avoid injury/noise; forgo the normal supply search.
+- **Wren / Veil-sighted:** spend one Sanity to hear the keeper’s echo and inspect the frame without a check or Clock complication.
+- **Jory / Light Step:** slip through the drainage gap and open the tower for everyone, without the maintenance clue or a force check.
+- **Anselm / Sanctified:** spend one Ward Chalk to read the frame safely. This does not consume a limited Rite of Sealing.
 
-Village starting enemies at the graveyard and tower are omitted in guided mode, cross-boundary enemy movement is blocked, and round omens wait until the milestone. The Clock still advances between rounds and from explicit costs. Experienced mode retains the original encounters. This is a deliberate quieter tutorial, not a combat tutorial.
+Approaches use the normal authoritative option resolver, cost checks and one-time claims. Their contribution is named in the result. They grant no extra XP/item rewards to farm. The shared expedition goal remains separate from private objectives.
 
-Solo idle and held-roll deadlines are disabled. The client requests automatic advancement only after animations settle and the player leaves decisions, maps, drawers, upgrades, and modal choices. A resolved location result may close automatically. Other encounters require Continue. The engine independently validates automatic requests: solo only, zero actions, no pending upgrade/vote/held roll/unresolved encounter. Manual turn ending remains available. One human with ghost companions also uses this reading-time policy; multiplayer keeps timed turns.
+## Companions
 
-## Presentation
+The existing optional aid system now previews each companion’s contribution: +2 normally, +3 for a relevant opening specialist, total help capped at +4. Aid costs the helper 1 Sanity, zero actions, once a round. Checks consume it. The active investigator can proceed immediately; no minor vote or waiting state is required. Held rolls and disconnected helpers cannot receive late contributions. Existing ghosts and solo turn pacing remain in place.
 
-Supplied environment paintings, closeups, item assets, cast, and registry are retained. New entrance actions use labelled controls; no invented hotspot is placed over an absent prop. The persistent objective shows arrival context, concrete next steps, action count, Clock, and optional mechanics help. A roll confirmation includes cost, numeric chance, and authored failure stakes. Result text retains story and information lines; the journal preserves the record. The prologue and HUD tips remain replayable but no longer interrupt a new game. Upgrade choices appear beside the mission when earned. Phone choices use two columns and normal vertical scrolling.
+## Presentation and persistence
 
-## Validation
+The HUD shows the current objective, why it matters / current evidence, and a separate suggested action. The production skin now displays the explanation it previously hid. Character observations use an optional disclosure. The parchment letter remains dismissible with its button or Escape and can be reopened under How this works.
 
-- 124 Hollow tests pass, including eight added opening/turn tests: failed-roll completion, alternate entry, gated tower interior, shared out-of-order discoveries, snapshot/reconnect, duplicate reward prevention, fallen finder, old-save compatibility, solo/multiplayer deadlines, and automatic-turn guards.
-- Browser: start without forced prologue; opening actions and numeric risk confirmation; force entrance; frame milestone; expanded roads; refresh and resume; upgrade selection; automatic turn reset from 0 to 3 actions and Clock 1 to 2; 390 × 844 iframe inspection.
-- Existing feedback tests exercise reduced motion/scares. No new jump-scare animation is introduced.
-- Full repository suite: 531/533 pass. Two failures are outside this game: `putt-club-courses` (cove-1 resting token) and `putt-club-physics` (sand versus metal).
-- Screenshots are in `art/validation/`. Browser testing used port 8081 to preserve the pre-existing game/save on port 8080.
+Scene objects expose the same new approaches as cards, including their costs before committing. Discoveries leave persistent scene captions, marks beneath inspected objects, and an illuminated empty-frame / floor ring at the tower. Binding dims that ring. Location-specific existing water, wood, footsteps and bell cues accompany authoritative discoveries. Text and persistent static marks retain all essential information without sound or motion. Phone layouts reserve space for the painting before placing the objective and cards in the scrolling flow. Engine-derived next-road guidance handles multi-road trips (including Graveyard → Square → Tower) instead of highlighting an unreachable final destination.
 
-## Remaining limitations and genuine asset priorities
+`w.opening` owns discoveries, reveal and response. Public views project that state into environmental memory for all players. Snapshots / reconnects reconstruct it rather than replaying client history. All existing normal reward, claim and command deduplication rules are retained.
 
-1. **P1: wide belfry interior.** The supplied tower exterior and frame closeup exist, but the location backdrop remains an exterior after entry. Request a 2560 × 1440 (16:9) painted interior matching the supplied slate/amber village: empty iron yoke, rope descending out of frame, grave-iron marks, no hanging bell. Opaque WebP/PNG, no transparency; keep upper left quiet for location/result copy and lower third calm for controls. This is a continuity improvement; do not replace the supplied art with a procedural scene.
-2. **P2: maintenance-passage closeup.** Optional 1024 × 1024 opaque WebP/PNG, same painterly slate/amber lighting. A dry, narrow stone passage beside a grave with a bell mark; no key, character, readable text, or UI. Center the threshold with uncluttered edges. Current labelled controls fully support this route without it.
+## Validation — 24 October 2026
 
-The supplied cast is complete; no generic request for new hero or enemy art is needed. Identity/portrait continuity concerns and optional audio improvements remain documented in FINAL-ASSET-GAPS.md. A timed human playtest and fresh two-browser party walkthrough remain useful; party authority, turn order, persistence, and reconnect have automated coverage.
+- **165 / 165 Hollow tests pass.** Includes 15 new rules tests: actual-road solo journeys for every character with all required checks failing; safe approaches and exact costs; duplicate prevention; specialist aid; disconnected companions; held-roll guards; restore during reveal; exclusive responses and understandable onward objective.
+- **Full suite: 573 / 575 pass.** Existing failures are `putt-club-courses` (cove-1 resting token) and `putt-club-physics` (sand versus metal), already documented before this change.
+- Browser checked on isolated port 8082: production-skin parchment contrast, Escape/close, notice-board closeup and roll, discovery narrative, travel to chapel, Isolde’s alternative through the scene object, automatic solo turn advance, refresh/resume, a 390 × 844 phone viewport, phone scene travel into the graveyard, its marker check, restored next-road guidance, tower entry/interior, the empty-frame reveal, mid-reveal refresh/resume, both response previews, and binding the rope to open the wider roads. The phone objective initially covered objects; its layout now follows a dedicated scene area.
+- The entire opening and both tower responses are verified by engine tests. The browser journey used Isolde and the binding response; the answer response is engine-tested. A fresh human playtest of all characters, timing calibration and sound-mix review remain outstanding.
+
+No new media assets are required. Optional passage closeup and distant-crow recording remain documented in `FINAL-ASSET-GAPS.md`; labelled entrance controls and the existing sound system are the playable fallbacks.

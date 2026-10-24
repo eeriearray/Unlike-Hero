@@ -38,7 +38,8 @@ test('specific interaction close-ups render their delivered artwork and retain f
  const api=window.HollowPhotoScenes;
  for(const [loc,id,expected] of [['square','board','notice_board_closeup'],['square','well','well_closeup'],['belltower','frame','bell_frame_closeup'],['belltower','climb','belfry_interior'],['belltower','listen','hanging_rope_closeup']]){
   await api.ensure(loc);const scene=api.resolve(loc,{objects:{}}),detail=scene.objects[id].closeup;
-  assert.ok(manifest.assets[detail].source.includes(expected));
+  assert.ok(detail.includes(expected));
+  assert.equal(manifest.assets[detail].type,'image');
   assert.ok(api.closeup(scene,id,'big').includes(manifest.assets[detail].file));
   delete window.HollowAssets.allowedPaths[manifest.assets[detail].file];
   const fallback=api.closeup(scene,id,'big');

@@ -23,3 +23,8 @@ test('authored bell tower has matching real encounter choices and travel', () =>
   assert.ok(Object.values(scene.objects).some(o => o.actions.some(a => a.act === 'travel')));
   assert.ok(scene.layers()[0].svg.includes('bt-stone'));
 });
+
+test('completed opening guidance does not send Heart or Estate players back to the village',()=>{
+ const v={...view(null,3,'heart_chamber'),opening:{complete:true,hint:'Return to the graveyard'}};
+ assert.match(next(v),/propose/);assert.doesNotMatch(next({...v,me:{loc:'foyer'}}),/Return to the graveyard/);
+});

@@ -42,6 +42,8 @@ test('title and seven ending images exist, are unique, and use registry IDs',asy
 test('title keeps solo, host, join and save controls; ending wrappers retain full legacies',()=>{
  const h=harness(),UI=h.w.HollowUI;const title=UI.title({online:true,solo:true,last:{code:'TEST'}});
  for(const action of ['solo','host','join','solo-continue','rejoin'])assert.ok(title.includes('data-act="'+action+'"'));
+ assert.doesNotMatch(title,/Read the prologue|data-chapter="prologue"/);
+ assert.match(title,/Watch trailer/);
  for(const [key,v]of Object.entries(fixture.endings)){h.view(v);const before=JSON.stringify(UI.S.view),html=UI.ending();assert.ok(html.includes('data-ending="'+key+'"'));assert.match(html,/Complete expedition record/);assert.match(html,/Personal legacies/);assert.match(html,/Play again/);assert.equal(JSON.stringify(UI.S.view),before);}
 });
 test('ending variants keep the right photograph, and unknown IDs have a safe fallback',()=>{
@@ -56,7 +58,7 @@ test('prologue lasts 60 visible seconds, pauses when hidden, and completion fire
  const h=harness();let completed=0;h.c.openIntro(()=>completed++);assert.equal(h.doc.querySelector('progress').value,0);h.advance(15000);assert.equal(h.doc.querySelector('h2').textContent,'A bell with no keeper');
  h.doc.hidden=true;h.advance(90000);assert.equal(completed,0);h.doc.hidden=false;h.advance(44000);assert.equal(completed,0);h.advance(1000);assert.equal(completed,1);assert.equal(h.intervals.size,0);h.c.finishIntro();assert.equal(completed,1);assert.ok(h.memory.get('hollow.prologue.v1'));
 });
-test('new games begin immediately; prologue remains available on request',()=>{
+test('legacy prose intro does not intercept title controls',()=>{
  const h=harness();
  for(const action of ['host','solo','join','rejoin','solo-continue']){const b=h.doc.body.appendChild(new h.El('button'));b.dataset.act=action;assert.equal(h.dispatch('click',b).stopped,undefined);}
  assert.equal(h.doc.querySelector('.chapter-intro'),null);

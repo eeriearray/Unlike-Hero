@@ -1,0 +1,312 @@
+{
+  "sourceArchive": "the_hollow_task3_full_cast_55files.zip",
+  "sourceSha256": "b4d326a4c9beae4b290b8bffb655b1f45aa85e2e9a329d85e720a1e29f80b536",
+  "method": "Targeted neutral white-island removal plus local color-based matte decontamination at alpha boundaries. No generative repainting.",
+  "files": {
+    "occultist": {
+      "assetId": "task3_occultist_fullbody",
+      "source": "characters/playable/occultist/occultist_fullbody.png",
+      "master": "masters/characters/playable/occultist/occultist_fullbody.png",
+      "runtime": "runtime/art/generated/task3_occultist_fullbody.webp",
+      "runtimeBytes": 74638,
+      "sourceDimensions": [
+        1600,
+        2400
+      ],
+      "runtimeDimensions": [
+        800,
+        1200
+      ],
+      "whiteIslandPixelsRemoved": 3345,
+      "fringePixelsCorrected": 214,
+      "changedPixels": 13007,
+      "runtimeSha256": "dc43a4806c31941804ea98b016c490cc2fe1634e660519676bbef438f8a266e8"
+    },
+    "hunter": {
+      "assetId": "task3_hunter_fullbody",
+      "source": "characters/playable/hunter/hunter_fullbody.png",
+      "master": "masters/characters/playable/hunter/hunter_fullbody.png",
+      "runtime": "runtime/art/generated/task3_hunter_fullbody.webp",
+      "runtimeBytes": 80176,
+      "sourceDimensions": [
+        1600,
+        2400
+      ],
+      "runtimeDimensions": [
+        800,
+        1200
+      ],
+      "whiteIslandPixelsRemoved": 303,
+      "fringePixelsCorrected": 162,
+      "changedPixels": 11098,
+      "runtimeSha256": "6a2937fd82d129a5cc27cb4067df4c474b614cf27469bc40fe07cc63dc6c9632"
+    },
+    "apothecary": {
+      "assetId": "task3_apothecary_fullbody",
+      "source": "characters/playable/apothecary/apothecary_fullbody.png",
+      "master": "masters/characters/playable/apothecary/apothecary_fullbody.png",
+      "runtime": "runtime/art/generated/task3_apothecary_fullbody.webp",
+      "runtimeBytes": 78606,
+      "sourceDimensions": [
+        1600,
+        2400
+      ],
+      "runtimeDimensions": [
+        800,
+        1200
+      ],
+      "whiteIslandPixelsRemoved": 3388,
+      "fringePixelsCorrected": 169,
+      "changedPixels": 12878,
+      "runtimeSha256": "d2dbd74689c03ad1b89aa6e965d289f5683308b2d1f823ad92d491cdf4db8b92"
+    },
+    "medium": {
+      "assetId": "task3_medium_fullbody",
+      "source": "characters/playable/medium/medium_fullbody.png",
+      "master": "masters/characters/playable/medium/medium_fullbody.png",
+      "runtime": "runtime/art/generated/task3_medium_fullbody.webp",
+      "runtimeBytes": 78296,
+      "sourceDimensions": [
+        1600,
+        2400
+      ],
+      "runtimeDimensions": [
+        800,
+        1200
+      ],
+      "whiteIslandPixelsRemoved": 10035,
+      "fringePixelsCorrected": 325,
+      "changedPixels": 20388,
+      "runtimeSha256": "dca60484051bccecd738eb32dd75afe085a0636334a20bf128149473d09adf4f"
+    },
+    "vagabond": {
+      "assetId": "task3_vagabond_fullbody",
+      "source": "characters/playable/vagabond/vagabond_fullbody.png",
+      "master": "masters/characters/playable/vagabond/vagabond_fullbody.png",
+      "runtime": "runtime/art/generated/task3_vagabond_fullbody.webp",
+      "runtimeBytes": 80858,
+      "sourceDimensions": [
+        1600,
+        2400
+      ],
+      "runtimeDimensions": [
+        800,
+        1200
+      ],
+      "whiteIslandPixelsRemoved": 1686,
+      "fringePixelsCorrected": 186,
+      "changedPixels": 11939,
+      "runtimeSha256": "9a9622e260266d85915e1d8c93e49961e32b40199c99cc52b851a323c2f775d7"
+    },
+    "exorcist": {
+      "assetId": "task3_exorcist_fullbody",
+      "source": "characters/playable/exorcist/exorcist_fullbody.png",
+      "master": "masters/characters/playable/exorcist/exorcist_fullbody.png",
+      "runtime": "runtime/art/generated/task3_exorcist_fullbody.webp",
+      "runtimeBytes": 82154,
+      "sourceDimensions": [
+        1600,
+        2400
+      ],
+      "runtimeDimensions": [
+        800,
+        1200
+      ],
+      "whiteIslandPixelsRemoved": 0,
+      "fringePixelsCorrected": 222,
+      "changedPixels": 12400,
+      "runtimeSha256": "8c9c10d937791add6db1c8db2fac5c624873790c47605f747920eb7b1aefd0cb"
+    },
+    "bellkeeper": {
+      "assetId": "task3_bellkeeper_fullbody",
+      "source": "characters/enemies/bellkeeper/bellkeeper_fullbody.png",
+      "master": "masters/characters/enemies/bellkeeper/bellkeeper_fullbody.png",
+      "runtime": "runtime/art/generated/task3_bellkeeper_fullbody.webp",
+      "runtimeBytes": 125656,
+      "sourceDimensions": [
+        1600,
+        2400
+      ],
+      "runtimeDimensions": [
+        800,
+        1200
+      ],
+      "whiteIslandPixelsRemoved": 0,
+      "fringePixelsCorrected": 612,
+      "changedPixels": 24988,
+      "runtimeSha256": "2f237eac6e7f2e8ab6915c1451ff565969e2369a945dc2f3dc5131ac3e16f196"
+    },
+    "abbey_warden": {
+      "assetId": "task3_abbey_warden_fullbody",
+      "source": "characters/enemies/abbey_warden/abbey_warden_fullbody.png",
+      "master": "masters/characters/enemies/abbey_warden/abbey_warden_fullbody.png",
+      "runtime": "runtime/art/generated/task3_abbey_warden_fullbody.webp",
+      "runtimeBytes": 116280,
+      "sourceDimensions": [
+        1600,
+        2400
+      ],
+      "runtimeDimensions": [
+        800,
+        1200
+      ],
+      "whiteIslandPixelsRemoved": 0,
+      "fringePixelsCorrected": 259,
+      "changedPixels": 17286,
+      "runtimeSha256": "a1082f175f732ee7ded14a3443589e4242124ebea3527a0fbedff7c466ee024f"
+    },
+    "whisperling": {
+      "assetId": "task3_whisperling_fullbody",
+      "source": "characters/enemies/whisperling/whisperling_fullbody.png",
+      "master": "masters/characters/enemies/whisperling/whisperling_fullbody.png",
+      "runtime": "runtime/art/generated/task3_whisperling_fullbody.webp",
+      "runtimeBytes": 96714,
+      "sourceDimensions": [
+        1600,
+        2400
+      ],
+      "runtimeDimensions": [
+        800,
+        1200
+      ],
+      "whiteIslandPixelsRemoved": 0,
+      "fringePixelsCorrected": 423,
+      "changedPixels": 13423,
+      "runtimeSha256": "e81c03bd54016d11bcbcba6e278a0e816d3ffdef250d35b9ee792bf8477e4baf"
+    },
+    "drowned_pilgrim": {
+      "assetId": "task3_drowned_pilgrim_fullbody",
+      "source": "characters/enemies/drowned_pilgrim/drowned_pilgrim_fullbody.png",
+      "master": "masters/characters/enemies/drowned_pilgrim/drowned_pilgrim_fullbody.png",
+      "runtime": "runtime/art/generated/task3_drowned_pilgrim_fullbody.webp",
+      "runtimeBytes": 102362,
+      "sourceDimensions": [
+        1600,
+        2400
+      ],
+      "runtimeDimensions": [
+        800,
+        1200
+      ],
+      "whiteIslandPixelsRemoved": 0,
+      "fringePixelsCorrected": 404,
+      "changedPixels": 22060,
+      "runtimeSha256": "87fe7d457efaac17307ea160db9bcc326ed46faa89a3fa8b787950ff04d3d941"
+    },
+    "hollow_stag": {
+      "assetId": "task3_hollow_stag_fullbody",
+      "source": "characters/enemies/hollow_stag/hollow_stag_fullbody.png",
+      "master": "masters/characters/enemies/hollow_stag/hollow_stag_fullbody.png",
+      "runtime": "runtime/art/generated/task3_hollow_stag_fullbody.webp",
+      "runtimeBytes": 132730,
+      "sourceDimensions": [
+        1600,
+        2400
+      ],
+      "runtimeDimensions": [
+        800,
+        1200
+      ],
+      "whiteIslandPixelsRemoved": 0,
+      "fringePixelsCorrected": 424,
+      "changedPixels": 30278,
+      "runtimeSha256": "8fd14e2b56fa801501f4fcc29364d937a6cb532a5b6d05c740244933f479c255"
+    },
+    "grave_warden": {
+      "assetId": "task3_grave_warden_fullbody",
+      "source": "characters/enemies/grave_warden/grave_warden_fullbody.png",
+      "master": "masters/characters/enemies/grave_warden/grave_warden_fullbody.png",
+      "runtime": "runtime/art/generated/task3_grave_warden_fullbody.webp",
+      "runtimeBytes": 114642,
+      "sourceDimensions": [
+        1600,
+        2400
+      ],
+      "runtimeDimensions": [
+        800,
+        1200
+      ],
+      "whiteIslandPixelsRemoved": 0,
+      "fringePixelsCorrected": 304,
+      "changedPixels": 19331,
+      "runtimeSha256": "7742a7ea41e07b1d7631fa452a4ca2c5a7b8501c676469d7929876a5fb4a1984"
+    },
+    "mirror_twin": {
+      "assetId": "task3_mirror_twin_fullbody",
+      "source": "characters/enemies/mirror_twin/mirror_twin_fullbody.png",
+      "master": "masters/characters/enemies/mirror_twin/mirror_twin_fullbody.png",
+      "runtime": "runtime/art/generated/task3_mirror_twin_fullbody.webp",
+      "runtimeBytes": 79134,
+      "sourceDimensions": [
+        1600,
+        2400
+      ],
+      "runtimeDimensions": [
+        800,
+        1200
+      ],
+      "whiteIslandPixelsRemoved": 7987,
+      "fringePixelsCorrected": 187,
+      "changedPixels": 21506,
+      "runtimeSha256": "37302630b2115d5d0825539887561ee80cb12b8808f775d6fb2df71086d74821"
+    },
+    "carrion_swarm": {
+      "assetId": "task3_carrion_swarm_fullbody",
+      "source": "characters/enemies/carrion_swarm/carrion_swarm_fullbody.png",
+      "master": "masters/characters/enemies/carrion_swarm/carrion_swarm_fullbody.png",
+      "runtime": "runtime/art/generated/task3_carrion_swarm_fullbody.webp",
+      "runtimeBytes": 158306,
+      "sourceDimensions": [
+        2400,
+        1800
+      ],
+      "runtimeDimensions": [
+        1200,
+        900
+      ],
+      "whiteIslandPixelsRemoved": 0,
+      "fringePixelsCorrected": 293,
+      "changedPixels": 29886,
+      "runtimeSha256": "7ba64a74046ac0ba925b1a7cc11a5364a8a987f4204a1267bbd0d33af3b69940"
+    },
+    "hollow_hound": {
+      "assetId": "task3_hollow_hound_fullbody",
+      "source": "characters/enemies/hollow_hound/hollow_hound_fullbody.png",
+      "master": "masters/characters/enemies/hollow_hound/hollow_hound_fullbody.png",
+      "runtime": "runtime/art/generated/task3_hollow_hound_fullbody.webp",
+      "runtimeBytes": 123576,
+      "sourceDimensions": [
+        2400,
+        1800
+      ],
+      "runtimeDimensions": [
+        1200,
+        900
+      ],
+      "whiteIslandPixelsRemoved": 0,
+      "fringePixelsCorrected": 227,
+      "changedPixels": 23164,
+      "runtimeSha256": "fba168db1117236ef6808779471076298efc8be9213c99dea9c69a9c70f91a6e"
+    },
+    "weeping_statue": {
+      "assetId": "task3_weeping_statue_fullbody",
+      "source": "characters/enemies/weeping_statue/weeping_statue_fullbody.png",
+      "master": "masters/characters/enemies/weeping_statue/weeping_statue_fullbody.png",
+      "runtime": "runtime/art/generated/task3_weeping_statue_fullbody.webp",
+      "runtimeBytes": 77938,
+      "sourceDimensions": [
+        1600,
+        2400
+      ],
+      "runtimeDimensions": [
+        800,
+        1200
+      ],
+      "whiteIslandPixelsRemoved": 0,
+      "fringePixelsCorrected": 109,
+      "changedPixels": 7760,
+      "runtimeSha256": "880ff691869816fdd1d963c57ae1305c28355f372cf4d6904787656519d48155"
+    }
+  },
+  "liveGameFilesChanged": false
+}

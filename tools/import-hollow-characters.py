@@ -14,6 +14,9 @@ ENEMIES = {'bellkeeper','abbey_warden','whisperling','drowned_pilgrim','hollow_s
 NPCS = {'merchant_pell','tower_caretaker','village_survivor','abbey_spirit'}
 def save(path, data): path.write_text(json.dumps(data, indent=2) + '\n')
 archive = Path(sys.argv[1]); pack = 'the_hollow_task3'
+archive_sha = hashlib.sha256(archive.read_bytes()).hexdigest()
+cleanup_path = ART/'character-alpha-cleanup.json'
+cleanup = json.loads(cleanup_path.read_text()) if cleanup_path.exists() else None
 m = json.loads((ART/'manifest.json').read_text())
 entries = {}; prepared = {}; docs = {}; mappings = {'version':1,'heroes':{},'enemies':{},'npcs':{}}
 report = {'archive':archive.name,'sha256':hashlib.sha256(archive.read_bytes()).hexdigest(),'images':{},'notes':['Native generation dimensions are not disclosed.','Silhouettes are opaque reference previews; not used as transparent cutouts.','Runtime copies are resized with Lanczos; original PNG masters remain in the source ZIP.']}
@@ -53,8 +56,21 @@ with zipfile.ZipFile(archive) as z:
         aid = 'task3_' + ('npc_' if group == 'npcs' else '') + who + '_' + variant
         if aid in entries: raise ValueError('Duplicate character asset')
         filename = aid+'.webp';prepared[filename] = out.getvalue()
+        # Keep the reviewed cutouts when reimporting the original delivery. The
+        # original ZIP contains white matte islands; importing it must not undo
+        # the correction already shipped in this checkout.
+        fixed = cleanup and cleanup['files'].get(who) if variant == 'fullbody' else None
+        if fixed:
+            if archive_sha != cleanup['sourceSha256']:
+                raise ValueError('Character delivery changed; review alpha cleanup before replacing '+aid)
+            corrected = (ART/'generated'/filename).read_bytes()
+            if hashlib.sha256(corrected).hexdigest() != fixed['runtimeSha256']:
+                raise ValueError('Restore the reviewed cutout from Git before importing: '+filename)
+            prepared[filename] = corrected
         entry = {'file':'art/generated/'+filename,'type':'image','bytes':len(out.getvalue()),'pack':pack,'source':info.filename,'regions':['shared'],'pixel':False,'width':runtime[0],'height':runtime[1],'sourceDimensions':dimensions,'transparent':transparent,'encoding':'lossless WebP' if variant == 'silhouette' else 'WebP quality 88'}
         entries[aid] = entry;mappings[group].setdefault(who,{})[variant] = aid
+        if fixed:
+            entry.update(bytes=len(corrected), sha256=fixed['runtimeSha256'], alphaCleanup='character-alpha-cleanup.json')
         report['images'][aid] = {'source':info.filename,'sourceSha256':hashlib.sha256(raw).hexdigest(),'dimensions':dimensions,'runtimeDimensions':runtime,'transparent':transparent,'alphaBounds':alpha_bbox,'encoding':entry['encoding']}
 for group in ('heroes','enemies'):
     for who,variants in mappings[group].items():

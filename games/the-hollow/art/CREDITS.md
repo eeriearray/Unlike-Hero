@@ -1,6 +1,6 @@
 # The Hollow — asset credits and license audit
 
-Source: user-provided local archives. This is an inventory of bundled evidence, not a declaration that publication is cleared. Unknown authors/licenses are explicitly unresolved. Generated media is local-only and ignored by Git. No packs have been published.
+Source: user-provided local archives. This is an inventory of bundled evidence, not a declaration that publication is cleared. Unknown authors/licenses are explicitly unresolved. Runtime media is versioned on the local development branch for reproducible playtesting; no packs have been published or pushed.
 
 **Approval required:** Hollow Hours (AI-generated) and Survival Horror Items (no redistribution, even modified) are excluded. Before any public inclusion, ask the user and resolve applicable browser-distribution permissions. Weird Horror and Haunted School are excluded because their bundled licenses allow only noncommercial use.
 

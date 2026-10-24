@@ -1,60 +1,37 @@
-# The Hollow — combined asset review after Tasks 1–4
+# The Hollow — current asset coverage and remaining gaps
 
-Reviewed against actual archives, the runtime manifest and current game mappings. The replacement full-cast Task 3 delivery contains 52 individual PNGs, two comparison sheets and one manifest, replacing the earlier six-file sample. No supplied document is treated as an instruction to change the game rules.
+Updated 24 October 2026 after the audited Task 4 pack, supplied belfry interior, and supplied cinematic trailer. Delivery manifests and their comments are reference data; current runtime files and engine behavior determine the status below.
 
-## Coverage now installed
+## Installed and connected
 
-| Category | Delivered | Status |
-| --- | --- | --- |
-| World locations | 42 matching environment images | Connected to all 42 locations |
-| Supporting scene art | 2 opening interiors, 6 close-ups | Matching investigations connected; caretaker room/note reserved for the opening |
-| Chapter and endings | 1 chapter image, 7 ending images | Connected |
-| Characters | 6 heroes and 10 enemies, 3 variants each, plus 4 NPC portraits | Cast connected; NPC portraits registered for story use; opaque silhouettes retained as reference |
-| Items | 22 items at 1024, 256, 128 px | Connected to inventory IDs |
-| UI | 18 texture components; 29 PNG/SVG icon pairs | Components and matching symbols connected; legacy fallback for unsupported symbols |
-| Effects | 12 textures/sheets | Contextual static layers connected; some sheets/layers reserved |
-| Audio | 12 Task 4 WAV masters plus existing 46 audio entries | Prepared cues and existing music/ambience connected |
+| Category | Coverage |
+| --- | --- |
+| World | 42 location paintings, opening closeups, chapter and ending art |
+| Belfry interior | New 2752 × 1536 supplied PNG prepared as WebP; replaces the tower exterior after shared entry, including resume/reconnect. Full expedition mode uses the interior at the tower. |
+| Trailer | Supplied 60-second film, prepared as 1280 × 536 H.264/AAC MP4; title-screen player; hosting plays it first with Skip/Escape/end continuation, plus standalone viewing and readable story text |
+| Cast | Six heroes, ten enemies, four NPC portraits; no missing cast category |
+| Items | All 22 painted v2 items at 1024, 256, and 128 px |
+| Interface | 18 component textures and 29 validated vector symbols |
+| Effects | 12 registered textures/sheets; context-appropriate effects connected, some sheets reserved |
+| Sound | 58 existing audio entries; nine Task 4 sources updated in v2 |
 
-## Character cast gap — resolved by the full delivery
+Total registered media: 39,327,917 bytes, plus the JSON manifest, within the 40 MB budget. The trailer is not fetched on game startup; it streams after the player opens it. Hosting starts playback after the host click; standalone viewing waits for Play. Reduced effects hold playback until explicitly played. Original source files remain untouched in Downloads.
 
-The replacement `the_hollow_task3_full_cast_55files.zip` supplies all previously missing sets. No playable-class or enemy images remain missing: six heroes and ten enemies each have a portrait/full figure/silhouette, plus four NPC portraits. The earlier request for 28 more character images is superseded.
+## Genuinely missing assets — optional, not blockers
 
-Current technical result: all 52 individual PNG assets validate. Full figures have alpha; the Swarm and Hound correctly use wide canvases. The silhouette files are opaque reference previews, intentionally not used as cutouts. Runtime derivatives preserve aspect ratio and remain within the media budget; original masters remain in the ZIP.
+1. **Maintenance-passage closeup.** The route works through real engine choices and labelled controls. Optional 1024 × 1024 opaque WebP/PNG: a dry stone passage beside a grave marked with a bell; slate-blue shadows and warm amber light matching the village; centered threshold, quiet edges; no key, character, UI, or generated writing.
+2. **Identified distant-crow recording.** No registered source is identified as a crow recording. Optional 48 kHz WAV: distant outdoor crow calls with space between them, no music, speech, or clipping; peaks at or below -3 dBFS. A short wing/flock cue is secondary.
 
-### Remaining continuity and quality considerations
+No new generic item, interface, environment, character, enemy, or bell-sound pack is needed. The belfry interior and trailer are now supplied and integrated; do not regenerate them because older notes list them as missing.
 
-- Occultist art is male-presenting under existing Isolde story copy. Apothecary art is male-presenting while Maelis copy uses “she”. Settle intended identities before selective regeneration or copy edits; do not silently change named characters.
-- Confirm the intended Exorcist/Anselm depiction if named-character visual continuity matters.
-- Tasks 1–2 disclose upscaling; the full cast delivery gives exported dimensions but no native generation dimensions. Do not infer native detail from export size alone.
-- The cast is more finely rendered than the broad-brush scenery, and the original Task 4 items were flatter than both. The audited v2 pack now replaces all 22 items with painted illustrations; those are installed at all three sizes. Review them in actual gameplay before selectively polishing material/brushwork. No need to regenerate the whole cast on technical grounds.
+## Decisions and quality checks still needed
 
-## Priority 3 — optional sound improvements, not missing playback
+- **Character identity continuity:** Occultist art is male-presenting under Isolde copy; Apothecary art is male-presenting where Maelis copy uses “she”. Decide intended identities before changing named-character lore or commissioning corrections. Confirm Anselm’s intended depiction too.
+- **Human playtesting:** calibrate the first-session duration, difficulty, combat readability, and sound mix. The direct tower approach is deliberately shorter than the chapel/graveyard route; a 10–15-minute duration has not been established by a fresh-player study.
+- **Video accessibility:** a selectable text version of on-screen story copy is included. A full audio-caption/flash review has not been performed. Reduced-effects players get a warning and text alternative, with no autoplay.
+- **Browser verification:** the opening story update received local browser spot checks on port 8082, including the letter, scene interaction, character approach, save/resume and a 390 × 844 phone layout. The full opening is covered by engine tests; a complete human visual playthrough and sound-mix review remain outstanding. See `OPENING-REDESIGN.md`.
+- **Existing imagery polish:** the supplied belfry image includes a small generation mark in its lower-right corner. Its pixels were retained; a clean export would be optional polish rather than a missing scene.
 
-The installed runtime has 58 audio entries, so another generic UI/door/bell pack is unnecessary. Task 4 explicitly omitted distant crows; none of the existing registered source filenames identifies a crow recording. A dedicated crow asset remains unverified/absent as an identified file, rather than a claim that every existing recording was aurally re-audited in this pass.
+The opening mission is implemented. The chapel now holds the maintenance evidence, so no caretaker house or additional caretaker character is required. Existing caretaker room/note illustrations remain spare art rather than promises of new game content.
 
-If improving the sound direction, request these individually:
-
-1. Distant crow calls and a short crow wing/swarm movement cue for the village/Carrion Swarm.
-2. Outdoor wind without mechanical/vent character; current wind uses a vent-airflow substitute.
-3. Sparse crypt water drips with real reverberant decay; current drip bed uses a tap recording and synthesis.
-4. Optional night-insect bed for woods; current bed is frogs, which is already usable.
-5. Optional wordless breath/whisper layer; current substitute is a ghost moan. No dialogue recording is required by current gameplay.
-6. Optional dedicated combat, boss and ending music cues; existing exploration loops and intro/outro already provide playback.
-
-For new sound: 48 kHz WAV masters, documented channels/duration/peak, peaks no higher than -3 dBFS, no clipping. State actual loop boundaries, provide seamless beds and short clean tails on one-shots. Label generated/synthesized sound accurately; do not call it recorded foley. These upgrades are optional; the character cast is now complete.
-
-## Existing assets that might need polish, not wholesale replacement
-
-The 22 item icons and supporting UI are recognizable but flat/stylized compared with the painted scenes. Check them at actual 32–72px gameplay sizes before requesting selective replacements. Prioritize inconsistent silhouettes, unreadable materials and overly decorative frames. The existing library bundle includes alternatives, but unrelated pixel packs should not dictate the game's final style. No additional generic item, UI-frame, scenery or overlay pack is currently needed to fill a category gap.
-
-## Game work that more assets will not solve
-
-- The objective guide explains the current turn, but the game still needs a deliberately paced opening with one concrete first objective and a visible step-by-step trail. A stronger first ten minutes requires writing, state progression and playtesting.
-- Caretaker room/note art exists; the corresponding opening sequence, readable note text and progression still need implementation. Blank paper art should receive real selectable game text rather than generated lettering.
-- Frame scenery for narrow screens so essential landmarks remain visible; a wide illustration alone cannot guarantee this with `object-fit: cover`.
-- Test the completed cast for combat readability and evaluate effects/audio in context. Registered effects/sheets do not automatically mean every animation is implemented.
-- Final in-game visual consistency and sound mixing need a human playthrough. Automated checks verify mappings/fallbacks, not subjective art quality.
-
-## Next request to Gemini, if needed
-
-The full cast is complete. Do not generate the previously missing 28 images again. Resolve character/story identity choices first, then request only confirmed corrections. Optional audio improvements are listed above. Existing item/UI categories are already covered; prioritize the playable opening, clearer immediate objectives and cohesive in-game presentation before ordering another broad asset pack.
+The scene interaction/audio pass reuses the supplied paintings and adds three exact Horror SFX recordings (29,053 bytes). See `PRESENCE-PASS.md` for provenance, presentation changes and current checks. No additional media is needed for this pass.
