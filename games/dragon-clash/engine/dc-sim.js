@@ -414,7 +414,7 @@
   };
 
   S.startMove = function (f, key, def, ex) {
-    if (f.fade > 0) { f.fade = 0; f.ambush = 60; f.ambushMult = D.GEAR_ABILITIES.fade.ambush; this.emit({ type: 'unfade', f: f.i, x: f.x, y: f.y }); }
+    if (f.fade > 0) { f.fade = 0; f.ambush = 90; f.ambushMult = D.GEAR_ABILITIES.fade.ambush; this.emit({ type: 'unfade', f: f.i, x: f.x, y: f.y }); }
     var cancelled = f.state === 'attack' ? f.move : null;
     f.move = key; f.moveDef = def; f.moveT = 0; f.multiN = 0;
     f.moveKind = key === 'sig' ? 'sig' : key === 'ability' ? 'ability' : def.kind;
