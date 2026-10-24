@@ -103,6 +103,13 @@ select.sel{background:#2a1a5c;border:1px solid var(--line);border-radius:10px;pa
 
 /* Counter wheel */
 .wheel{display:block;margin:0 auto}
+.web-card{position:absolute;right:10px;top:10px;padding:4px;border-radius:16px;background:rgba(10,6,24,.55);backdrop-filter:blur(2px);pointer-events:none}
+.mlist{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:5px;margin:8px 0 2px}
+.mrow{display:flex;align-items:center;gap:8px;border-radius:10px;padding:5px 9px;font-size:13px;background:rgba(255,255,255,.05)}
+.mrow span{margin-left:auto;font-weight:800;font-size:12px}
+.mrow.advantage{background:rgba(90,240,138,.14)} .mrow.advantage span{color:#8affb0}
+.mrow.disadvantage{background:rgba(255,77,90,.14)} .mrow.disadvantage span{color:#ff9aa2}
+.mrow.neutral span{color:var(--muted)}
 .matchup{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:2px 8px;font-weight:900;font-size:12px}
 .matchup.advantage{background:rgba(90,240,138,.18);color:#8affb0} .matchup.disadvantage{background:rgba(255,77,90,.18);color:#ff9aa2} .matchup.neutral{background:rgba(255,255,255,.08);color:var(--muted)}
 

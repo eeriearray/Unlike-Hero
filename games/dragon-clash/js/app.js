@@ -205,27 +205,58 @@
 
   function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
 
-  // ─────────────── element wheel (SVG) ───────────────
+  // ─────────────── element web (SVG) ───────────────
+  // Every pairing is drawn: arrows around the rim for who beats whom, dashed chords across the middle for the
+  // neutral pairs. With an element picked, its four relations light up green (it beats), red (beats it) or grey.
+  var GOOD = '#6be38a', BAD = '#ff6a6a';
   App.wheel = function (highlight, size) {
     size = size || 220;
-    var order = ['fire', 'ice', 'earth', 'lightning', 'water'];
-    var r = size * 0.36, c = size / 2;
-    var pts = order.map(function (e, i) { var a = -Math.PI / 2 + i * Math.PI * 2 / 5; return [c + Math.cos(a) * r, c + Math.sin(a) * r]; });
+    var order = D.ELEMENT_ORDER, n = order.length, r = size * 0.36, c = size / 2, nr = size * 0.105;
+    var pts = order.map(function (e, i) { var a = -Math.PI / 2 + i * Math.PI * 2 / n; return [c + Math.cos(a) * r, c + Math.sin(a) * r]; });
     var s = '<svg class="wheel" width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '">';
-    s += '<defs><marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#fff"/></marker></defs>';
-    order.forEach(function (e, i) {
-      var a = pts[i], b = pts[(i + 1) % 5];
-      var dx = b[0] - a[0], dy = b[1] - a[1], l = Math.sqrt(dx * dx + dy * dy), k = 26 / l;
-      var on = highlight && (e === highlight || order[(i + 1) % 5] === highlight);
-      s += '<line x1="' + (a[0] + dx * k) + '" y1="' + (a[1] + dy * k) + '" x2="' + (b[0] - dx * k) + '" y2="' + (b[1] - dy * k) + '" stroke="' + (on ? '#fff' : 'rgba(255,255,255,.35)') + '" stroke-width="' + (on ? 3 : 2) + '" marker-end="url(#arr)"/>';
+    ['n', 'g', 'b', 'w'].forEach(function (k) {
+      var col = k === 'g' ? GOOD : k === 'b' ? BAD : '#fff';
+      s += '<defs><marker id="arr-' + k + '" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="' + col + '"/></marker></defs>';
+    });
+    var edges = [];
+    for (var i = 0; i < n; i++) for (var j = i + 1; j < n; j++) edges.push([i, j]);
+    // Neutral chords first (underneath), then the arrows
+    edges.sort(function (A, B) { return (D.matchup(order[A[0]], order[A[1]]) === 'neutral' ? 0 : 1) - (D.matchup(order[B[0]], order[B[1]]) === 'neutral' ? 0 : 1); });
+    edges.forEach(function (e) {
+      var ea = order[e[0]], eb = order[e[1]], m = D.matchup(ea, eb), from = e[0], to = e[1];
+      if (m === 'disadvantage') { from = e[1]; to = e[0]; }
+      var a = pts[from], bp = pts[to], dx = bp[0] - a[0], dy = bp[1] - a[1], l = Math.sqrt(dx * dx + dy * dy), k = (nr + 3) / l;
+      var x1 = a[0] + dx * k, y1 = a[1] + dy * k, x2 = bp[0] - dx * k, y2 = bp[1] - dy * k;
+      var inc = highlight && (ea === highlight || eb === highlight), col, w, op, mk = '', dash = '';
+      if (m === 'neutral') { col = '#fff'; w = inc ? 2 : 1.2; op = inc ? 0.45 : 0.22; dash = ' stroke-dasharray="3 4"'; }
+      else {
+        var win = highlight && D.BEATS[highlight] === (from === e[0] ? eb : ea) && (ea === highlight || eb === highlight);
+        var lose = inc && !win;
+        col = win ? GOOD : lose ? BAD : '#fff'; w = inc ? 3 : 2; op = !highlight ? 0.55 : inc ? 1 : 0.2;
+        mk = ' marker-end="url(#arr-' + (win ? 'g' : lose ? 'b' : 'w') + ')"';
+      }
+      s += '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" stroke="' + col + '" stroke-opacity="' + op + '" stroke-width="' + w + '"' + dash + mk + '/>';
     });
     order.forEach(function (e, i) {
-      var el = D.ELEMENTS[e], p = pts[i], on = e === highlight;
-      s += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + (on ? 24 : 20) + '" fill="' + el.color + '" fill-opacity="' + (on ? 1 : 0.55) + '" stroke="#fff" stroke-width="' + (on ? 3 : 0) + '"/>';
-      s += window.DCIcons.svg(e, '#fff', 22).replace('<svg ', '<svg x="' + (p[0] - 11) + '" y="' + (p[1] - 11) + '" ');
+      var el = D.ELEMENTS[e], p = pts[i], on = e === highlight, ring = '#fff', rw = 0;
+      if (highlight && !on) { var m = D.matchup(highlight, e); if (m !== 'neutral') { ring = m === 'advantage' ? GOOD : BAD; rw = 3; } }
+      if (on) rw = 3;
+      s += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + (on ? nr + 4 : nr) + '" fill="' + el.color + '" fill-opacity="' + (!highlight || on || rw ? 1 : 0.45) + '" stroke="' + ring + '" stroke-width="' + rw + '"/>';
+      s += window.DCIcons.svg(e, '#fff', nr * 1.1).replace('<svg ', '<svg x="' + (p[0] - nr * 0.55) + '" y="' + (p[1] - nr * 0.55) + '" ');
     });
-    s += '<text x="' + c + '" y="' + (c + 4) + '" text-anchor="middle" font-size="11" font-weight="800" fill="#b9acdf">beats →</text></svg>';
+    s += '</svg>';
     return s;
+  };
+
+  /** The web's key and, for a picked element, its four relations in words. */
+  App.matchupList = function (el) {
+    var pct = Math.round(D.ELEMENT_CONFIG.counterBonus * 100), pen = Math.round(D.ELEMENT_CONFIG.counterPenalty * 100);
+    var rows = D.ELEMENT_ORDER.filter(function (e) { return e !== el; }).map(function (e) {
+      var m = D.matchup(el, e);
+      return '<div class="mrow ' + m + '">' + App.elIcon(e, 18) + '<b>' + D.ELEMENTS[e].name + '</b><span>' +
+        (m === 'advantage' ? '▲ you deal +' + pct + '% elemental' : m === 'disadvantage' ? '▼ you deal −' + pen + '% elemental' : '= even') + '</span></div>';
+    });
+    return '<div class="mlist">' + rows.join('') + '</div>';
   };
 
   /** An element's glyph in its colour, for HTML. */

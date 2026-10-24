@@ -36,6 +36,7 @@
           '<div style="display:grid;gap:12px;align-content:start">' +
           '<div class="stage-card"><canvas data-preview></canvas>' +
           '<div class="elem-badge">' + App.elIcon(b.element, 22) + '' + D.ELEMENTS[b.element].name + ' · ' + esc(D.BODIES[b.body].name) + '</div>' +
+          '<div class="web-card" title="Type web: green arrows are what you beat, red are what beat you">' + App.wheel(b.element, 170) + '</div>' +
           '</div>' +
           '<div class="panel budget">' + budgetHtml(v) + '</div>' +
           '<div class="panel">' + statsHtml(v) + '</div>' +
@@ -84,10 +85,10 @@
 
       function styleHtml() {
         var el = b.element;
-        return '<div class="section-title">Element <small>Beats ' + App.elIcon(D.BEATS[el]) + ' ' + D.ELEMENTS[D.BEATS[el]].name + ' · weak to ' + weakTo(el) + ' (elemental damage ±10% only)</small></div>' +
-          '<div class="row" style="align-items:center"><div class="cards grow" style="grid-template-columns:repeat(5,1fr)">' +
+        return '<div class="section-title">Element <small>Beats ' + App.elIcon(D.BEATS[el]) + ' ' + D.ELEMENTS[D.BEATS[el]].name + ' · weak to ' + weakTo(el) + ' (elemental damage only)</small></div>' +
+          '<div class="cards" style="grid-template-columns:repeat(5,1fr)">' +
           D.ELEMENT_ORDER.map(function (e) { var E = D.ELEMENTS[e]; return '<button class="card el' + (el === e ? ' on' : '') + '" data-act="element" data-id="' + e + '" style="' + (el === e ? 'box-shadow:inset 0 0 0 999px ' + Art.alpha(E.color, 0.18) : '') + '"><span class="big">' + App.elIcon(e, 34) + '</span><b>' + E.name + '</b></button>'; }).join('') +
-          '</div><div>' + App.wheel(el, 150) + '</div></div>' +
+          '</div>' + App.matchupList(el) +
           '<div class="section-title">Body <small>durability vs size and speed</small></div>' + cards(D.BODIES, 'body') +
           '<div class="section-title">Mobility</div>' + cards(D.MOBILITY, 'mobility') +
           '<div class="section-title">Signature move <small><kbd>L</kbd> / B button</small></div>' + cards(D.SIGNATURES, 'signature', function (s) { return s.element === el; }) +
