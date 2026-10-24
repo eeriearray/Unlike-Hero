@@ -24,25 +24,38 @@
     water:     { id: 'water',     name: 'Water',     icon: 'water', color: '#2fd3c8', glow: '#a8fff4', dark: '#0d4a6a' },
   };
   var ELEMENT_ORDER = ['fire', 'ice', 'earth', 'lightning', 'water'];
-  // Fire → Ice → Earth → Lightning → Water → Fire
+  // Two interlocking cycles, so every pairing has a winner (only a mirror is even):
+  //   main cycle (strong):  Fire → Ice → Earth → Lightning → Water → Fire
+  //   star cycle (edge):    Fire → Earth → Water → Ice → Lightning → Fire
+  // Each element strongly beats one, edges out another, is strongly beaten by one and edged by another.
   var BEATS = { fire: 'ice', ice: 'earth', earth: 'lightning', lightning: 'water', water: 'fire' };
+  var BEATS_EDGE = { fire: 'earth', earth: 'water', water: 'ice', ice: 'lightning', lightning: 'fire' };
 
   // Tunable. Applied ONLY to the elemental portion of a hit's damage. Never to knockback, hitstun, speed or recovery.
-  var ELEMENT_CONFIG = { counterBonus: 0.10, counterPenalty: 0.10 };
+  var ELEMENT_CONFIG = { counterBonus: 0.10, counterPenalty: 0.10, edgeBonus: 0.05, edgePenalty: 0.05 };
 
   function elementMultiplier(attacker, defender, config) {
     var c = config || ELEMENT_CONFIG;
     if (!attacker || !defender || attacker === defender) return 1;
     if (BEATS[attacker] === defender) return 1 + c.counterBonus;
     if (BEATS[defender] === attacker) return 1 - c.counterPenalty;
+    if (BEATS_EDGE[attacker] === defender) return 1 + (c.edgeBonus || 0);
+    if (BEATS_EDGE[defender] === attacker) return 1 - (c.edgePenalty || 0);
     return 1;
   }
 
-  /** 'advantage' | 'disadvantage' | 'neutral' (for UI badges). */
+  /** 'advantage' | 'disadvantage' | 'neutral' (for UI badges; neutral is only a mirror). */
   function matchup(a, b) {
-    if (BEATS[a] === b) return 'advantage';
-    if (BEATS[b] === a) return 'disadvantage';
+    if (BEATS[a] === b || BEATS_EDGE[a] === b) return 'advantage';
+    if (BEATS[b] === a || BEATS_EDGE[b] === a) return 'disadvantage';
     return 'neutral';
+  }
+
+  /** 'strong' for the main cycle, 'edge' for the star cycle, '' for a mirror. */
+  function matchupTier(a, b) {
+    if (BEATS[a] === b || BEATS[b] === a) return 'strong';
+    if (BEATS_EDGE[a] === b || BEATS_EDGE[b] === a) return 'edge';
+    return '';
   }
 
   /**
@@ -489,7 +502,7 @@
   var TEAM_NAMES = ['Red', 'Blue', 'Green', 'Gold'];
 
   return {
-    TICK_RATE: TICK_RATE, ELEMENTS: ELEMENTS, ELEMENT_ORDER: ELEMENT_ORDER, BEATS: BEATS, ELEMENT_CONFIG: ELEMENT_CONFIG,
+    TICK_RATE: TICK_RATE, ELEMENTS: ELEMENTS, ELEMENT_ORDER: ELEMENT_ORDER, BEATS: BEATS, BEATS_EDGE: BEATS_EDGE, matchupTier: matchupTier, ELEMENT_CONFIG: ELEMENT_CONFIG,
     elementMultiplier: elementMultiplier, matchup: matchup, INTERACTIONS: INTERACTIONS, STATUS: STATUS,
     PHYSICS: PHYSICS, MOVES: MOVES, pickMove: pickMove, SIGNATURES: SIGNATURES, ABILITIES: ABILITIES,
     GEAR_BUDGET: GEAR_BUDGET, SIZES: SIZES, INSTINCTS: INSTINCTS, GEAR_ABILITIES: GEAR_ABILITIES,

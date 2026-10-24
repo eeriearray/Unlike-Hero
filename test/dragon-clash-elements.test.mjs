@@ -10,20 +10,23 @@ test('the counter cycle is Fire > Ice > Earth > Lightning > Water > Fire', () =>
   assert.deepEqual(D.BEATS, { fire: 'ice', ice: 'earth', earth: 'lightning', lightning: 'water', water: 'fire' });
 });
 
-test('matchup matrix: every one of the 25 pairings gets the right modifier', () => {
+test('the star cycle is Fire > Earth > Water > Ice > Lightning > Fire', () => {
+  assert.deepEqual(D.BEATS_EDGE, { fire: 'earth', earth: 'water', water: 'ice', ice: 'lightning', lightning: 'fire' });
+});
+
+test('matchup matrix: every one of the 25 pairings gets the right modifier, and only mirrors are neutral', () => {
   const counts = { advantage: 0, disadvantage: 0, neutral: 0 };
   for (const a of ELS) for (const b of ELS) {
     const m = D.elementMultiplier(a, b);
-    const expected = D.BEATS[a] === b ? 1.1 : D.BEATS[b] === a ? 0.9 : 1;
+    const expected = a === b ? 1 : D.BEATS[a] === b ? 1.1 : D.BEATS[b] === a ? 0.9 : D.BEATS_EDGE[a] === b ? 1.05 : 0.95;
     assert.equal(Math.round(m * 1000) / 1000, expected, `${a} vs ${b}`);
     counts[D.matchup(a, b)]++;
   }
-  // 5 counters, 5 countered, and 15 neutral (including the 5 mirrors): every element has exactly one of each.
-  assert.deepEqual(counts, { advantage: 5, disadvantage: 5, neutral: 15 });
+  assert.deepEqual(counts, { advantage: 10, disadvantage: 10, neutral: 5 });
   for (const a of ELS) {
-    const row = ELS.map((b) => D.matchup(a, b));
-    assert.equal(row.filter((x) => x === 'advantage').length, 1, a + ' beats exactly one element');
-    assert.equal(row.filter((x) => x === 'disadvantage').length, 1, a + ' loses to exactly one element');
+    const row = ELS.filter((b) => b !== a).map((b) => D.matchup(a, b));
+    assert.equal(row.filter((x) => x === 'advantage').length, 2, a + ' beats exactly two elements');
+    assert.equal(row.filter((x) => x === 'disadvantage').length, 2, a + ' loses to exactly two elements');
   }
 });
 
@@ -31,7 +34,8 @@ test('only the elemental portion of a hit is modified', () => {
   assert.equal(Sim.hitDamage(10, 0, 'fire', 'ice'), 10, 'physical damage ignores the counter');
   assert.equal(Sim.hitDamage(0, 10, 'fire', 'ice'), 11, 'counter: +10% elemental');
   assert.equal(Sim.hitDamage(0, 10, 'ice', 'fire'), 9, 'countered: −10% elemental');
-  assert.equal(Sim.hitDamage(0, 10, 'fire', 'earth'), 10, 'neutral: no change');
+  assert.equal(Sim.hitDamage(0, 10, 'fire', 'earth'), 10.5, 'edge: +5% elemental');
+  assert.equal(Sim.hitDamage(0, 10, 'earth', 'fire'), 9.5, 'edged: −5% elemental');
   assert.equal(Sim.hitDamage(0, 10, 'fire', 'fire'), 10, 'mirror: no change');
   assert.equal(Sim.hitDamage(4, 6, 'fire', 'ice'), 10.6, 'mixed hit: only the 6 elemental is boosted');
 });
