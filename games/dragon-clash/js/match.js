@@ -896,16 +896,12 @@
 
   M.drawHud = function (x) {
     var v = this.view, fs = this.setupInfo.fighters, W = this.W, H = this.H, self = this;
-    // Cards are laid out at a fixed 290 x 120 and scaled as a unit, so six fighters on a small screen stay tidy.
-    // Big screens get them up to 1.25x; every number and meter carries a small caption saying what it is.
-    var n = v.f.length, gap = 8, cw = 290, ch = 120, sc = Math.min(W >= 1500 ? 1.25 : 1, (W - 24 - (n - 1) * gap) / (n * cw));
+    // Compact cards laid out at a fixed 250 x 94 and scaled as a unit, so six fighters on a small screen stay tidy.
+    // Only the power meter carries a caption; the rest reads from its icon, colour and fill.
+    var n = v.f.length, gap = 8, cw = 250, ch = 94, sc = Math.min(W >= 1500 ? 1.25 : 1, (W - 24 - (n - 1) * gap) / (n * cw));
     // On touch screens the cards move to the top (thumbs and buttons own the bottom corners) and shrink on phones
-    if (this.touch) sc = Math.min(sc, (W - 120) / (n * cw + (n - 1) * gap), H < 500 ? 0.5 : 0.62);
+    if (this.touch) sc = Math.min(sc, (W - 120) / (n * cw + (n - 1) * gap), H < 500 ? 0.55 : 0.7);
     var total = n * cw * sc + (n - 1) * gap, X0 = (W - total) / 2, Y0 = this.touch ? 8 : H - ch * sc - 12;
-    function cap(txt, tx, ty, align, col) {
-      x.font = '800 9px Barlow, system-ui, sans-serif'; x.textAlign = align; x.fillStyle = col || 'rgba(255,255,255,0.6)';
-      x.fillText(txt, tx, ty);
-    }
     v.f.forEach(function (f, i) {
       var info = fs[i], b = info.build, el = D.ELEMENTS[b.element];
       var cx = 0, y0 = 0;
@@ -916,61 +912,49 @@
       x.fillStyle = 'rgba(14,8,30,0.82)'; roundRect(x, cx, y0, cw, ch, 14); x.fill();
       x.fillStyle = team; roundRect(x, cx, y0, 6, ch, 3); x.fill();
       // Portrait
-      x.save(); roundRect(x, cx + 12, y0 + 10, 66, 70, 10); x.clip();
-      x.fillStyle = Art.alpha(el.color, 0.25); x.fillRect(cx + 12, y0 + 10, 66, 70);
-      x.translate(cx + 45, y0 + 160); x.scale(0.95, 0.95);
+      x.save(); roundRect(x, cx + 12, y0 + 9, 58, 60, 10); x.clip();
+      x.fillStyle = Art.alpha(el.color, 0.25); x.fillRect(cx + 12, y0 + 9, 58, 60);
+      x.translate(cx + 41, y0 + 138); x.scale(0.82, 0.82);
       Art.draw(x, b.look, b.body, { time: self.time + i, facing: 1, frame: 0, gear: b.gear });
       x.restore();
-      // Name and element
-      x.font = '800 15px Barlow, system-ui, sans-serif'; x.textAlign = 'left'; x.fillStyle = '#e6e0fa';
-      window.DCIcons.draw(x, b.element, cx + 92, y0 + 18, 15, el.color);
-      x.fillText(self.tagFor(i, info).slice(0, 14), cx + 106, y0 + 23);
+      // Name and element, with the instinct this dragon fights with
+      x.font = '800 14px Barlow, system-ui, sans-serif'; x.textAlign = 'left'; x.fillStyle = '#e6e0fa';
+      window.DCIcons.draw(x, b.element, cx + 82, y0 + 16, 14, el.color);
+      x.fillText(self.tagFor(i, info).slice(0, 12), cx + 95, y0 + 21);
       var ins = b.gear && D.INSTINCTS[b.gear.instinct];
-      if (ins) window.DCIcons.draw(x, ins.icon, cx + cw - 20, y0 + 18, 16, '#ffcf3a', 2.4);   // the instinct this dragon fights with
-      // Damage: the number that decides knockback, so it is the biggest thing on the card
+      if (ins) window.DCIcons.draw(x, ins.icon, cx + cw - 16, y0 + 16, 15, '#ffcf3a', 2.4);
+      // Damage: the biggest thing on the card
       var shakeX = f.hl > 0 ? (Math.random() - 0.5) * 4 : 0;
-      x.font = 'italic 800 48px "Barlow Condensed", Barlow, sans-serif'; x.textAlign = 'left';
+      x.font = 'italic 800 44px "Barlow Condensed", Barlow, sans-serif';
       x.lineWidth = 6; x.strokeStyle = 'rgba(10,6,20,0.9)';
       var txt = f.st === 'out' ? 'OUT' : Math.floor(f.d) + '%';
-      x.strokeText(txt, cx + 90 + shakeX, y0 + 66); x.fillStyle = f.st === 'out' ? '#8a8aa0' : dmgColor(f.d); x.fillText(txt, cx + 90 + shakeX, y0 + 66);
-      cap('DAMAGE', cx + 92, y0 + 78, 'left');
+      x.strokeText(txt, cx + 80 + shakeX, y0 + 58); x.fillStyle = f.st === 'out' ? '#8a8aa0' : dmgColor(f.d); x.fillText(txt, cx + 80 + shakeX, y0 + 58);
       // Lives
       var stocks = Math.min(f.s, 9);
-      if (!(self.o.training)) {
-        cap('LIVES', cx + 12, y0 + 94, 'left');
-        for (var k = 0; k < stocks; k++) { x.fillStyle = el.color; x.beginPath(); x.arc(cx + 56 + k * 13, y0 + 91, 5, 0, Math.PI * 2); x.fill(); }
-      }
-      // Cooldown rings: each says what it is; it fills back up and lights when the move is ready
+      if (!(self.o.training)) for (var k = 0; k < stocks; k++) { x.fillStyle = el.color; x.beginPath(); x.arc(cx + 84 + k * 12, y0 + 69, 4.5, 0, Math.PI * 2); x.fill(); }
+      // Cooldown rings: gear (if any), ability, special; each lights up when the move is ready
       var sigCd = D.SIGNATURES[b.signature].cooldown, abCd = D.ABILITIES[b.ability].cooldown;
       var gearAb = b.gear && b.gear.ability !== 'none' && D.GEAR_ABILITIES[b.gear.ability];
-      var rx = cx + cw - 22, ry = y0 + 52, rr = 14, rs = 40, rings = [
-        [f.sc / sigCd, el.color, 'L', 'SPECIAL'],
-        [f.ac / abCd, el.glow, '↓L', 'ABILITY']];
-      if (gearAb) rings.unshift([(f.gc || 0) / gearAb.cooldown, '#ffd36a', gearAb.icon, 'GEAR', f.fd || f.ag || f.rg]);
-      rings.forEach(function (rg, ri) {
-        var px = rx - (rings.length - 1 - ri) * rs;
-        ring(x, px, ry, rr, rg[0], rg[1], rg[2], rg[4]);
-        cap(rg[3], px, ry + rr + 13, 'center', rg[0] <= 0 ? '#fff' : null);
-      });
+      var rings = [[f.sc / sigCd, el.color, 'L'], [f.ac / abCd, el.glow, '↓L']];
+      if (gearAb) rings.unshift([(f.gc || 0) / gearAb.cooldown, '#ffd36a', gearAb.icon, f.fd || f.ag || f.rg]);
+      rings.forEach(function (rg, ri) { ring(x, cx + cw - 20 - (rings.length - 1 - ri) * 33, y0 + 47, 13, rg[0], rg[1], rg[2], rg[3]); });
+      // Guard bar: only shown while it is not full; red when close to breaking
+      var PH = D.PHYSICS, gfr = (f.gh != null ? f.gh : PH.guardMax) / (f.gm || PH.guardMax);
+      if (gfr < 0.995) {
+        x.fillStyle = 'rgba(255,255,255,0.12)'; x.fillRect(cx + 80, y0 + 75, 100, 3);
+        x.fillStyle = gfr < 0.3 ? '#ff5a3a' : '#9fdcff'; x.fillRect(cx + 80, y0 + 75, 100 * gfr, 3);
+      }
       // Super meter: three bars (EX costs one, Dragon Fury all three), glowing when full
-      var PH = D.PHYSICS, bars = PH.meterMax / PH.meterBar, mw = (cw - 24 - (bars - 1) * 4) / bars, mt = f.mt || 0, full = mt >= PH.meterMax;
-      cap('POWER', cx + 12, y0 + 107, 'left');
+      var bars = PH.meterMax / PH.meterBar, bx = cx + 50, mw = (cw - 12 - bx - (bars - 1) * 4) / bars, mt = f.mt || 0, full = mt >= PH.meterMax;
+      x.font = '800 9px Barlow, system-ui, sans-serif'; x.textAlign = 'left'; x.fillStyle = full ? '#fff' : 'rgba(255,255,255,0.6)';
+      x.fillText('POWER', cx + 12, y0 + 87);
       for (var mb = 0; mb < bars; mb++) {
-        var fill = Math.max(0, Math.min(1, (mt - mb * PH.meterBar) / PH.meterBar)), mx = cx + 12 + mb * (mw + 4);
-        x.fillStyle = 'rgba(255,255,255,0.12)'; roundRect(x, mx, y0 + 111, mw, 7, 3); x.fill();
+        var fill = Math.max(0, Math.min(1, (mt - mb * PH.meterBar) / PH.meterBar)), mx = bx + mb * (mw + 4);
+        x.fillStyle = 'rgba(255,255,255,0.12)'; roundRect(x, mx, y0 + 81, mw, 7, 3); x.fill();
         if (fill > 0) {
           x.fillStyle = full ? 'hsl(' + ((self.time * 200) % 360) + ',90%,65%)' : fill >= 1 ? el.color : Art.alpha(el.color, 0.6);
-          roundRect(x, mx, y0 + 111, mw * fill, 7, 3); x.fill();
+          roundRect(x, mx, y0 + 81, mw * fill, 7, 3); x.fill();
         }
-      }
-      var ex = Math.floor(mt / PH.meterBar);
-      cap(full ? 'DRAGON FURY READY' : ex ? 'EX MOVE READY ×' + ex : '', cx + cw - 12, y0 + 107, 'right', full ? '#fff' : '#ffe98a');
-      // Guard bar: only shown while it is not full; red when close to breaking
-      var gfr = (f.gh != null ? f.gh : PH.guardMax) / (f.gm || PH.guardMax);
-      if (gfr < 0.995) {
-        cap('GUARD', cx + 190, y0 + 94, 'left', gfr < 0.3 ? '#ff8a6a' : '#9fdcff');
-        x.fillStyle = 'rgba(255,255,255,0.12)'; x.fillRect(cx + 226, y0 + 90, 52, 5);
-        x.fillStyle = gfr < 0.3 ? '#ff5a3a' : '#9fdcff'; x.fillRect(cx + 226, y0 + 90, 52 * gfr, 5);
       }
       x.restore();
     });
