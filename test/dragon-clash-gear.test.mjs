@@ -99,17 +99,17 @@ test('Fade breaks when you attack', () => {
   assert.ok(ev.some((e) => e.type === 'unfade'));
 });
 
-test('Rage adds 15% damage', () => {
+test('Rage adds 30% damage', () => {
   const dmg = (rage) => { const { sim, T } = duel(geared('fire', { ability: 'rage' }), plain('ice'), { gap: 55 }); if (rage) press(sim, 0, B.gear, 2); press(sim, 0, B.heavy, 40); return T.dmg; };
   const ratio = dmg(true) / dmg(false);
-  assert.ok(ratio > 1.1 && ratio < 1.2, String(ratio));
+  assert.ok(ratio > 1.25 && ratio < 1.35, String(ratio));
 });
 
-test('Gust pushes enemies away without damage', () => {
+test('Gust shoves enemies away for only chip damage', () => {
   const { sim, T } = duel(geared('fire', { ability: 'gust' }), plain('ice'), { gap: 120 });
   const x0 = T.x;
   press(sim, 0, B.gear, 20);
-  assert.equal(T.dmg, 0);
+  assert.ok(T.dmg > 0 && T.dmg <= 4, String(T.dmg));
   assert.ok(T.x > x0 + 40, `${T.x - x0}`);
 });
 

@@ -317,24 +317,24 @@
   };
   // Instinct: a priced, exclusive choice made before every fight that changes how a dragon wants to play.
   var INSTINCTS = {
-    fury:      { name: 'Fury',      icon: 'fury', cost: 4, meterHit: 1.5, meterTaken: 1, guardMax: 0.65, scaleOffset: 1,
-                 desc: 'All-out offence. +50% meter from landing hits, combos keep full damage one hit longer, but your guard bar is 35% smaller.' },
-    bastion:   { name: 'Bastion',   icon: 'bastion', cost: 6, meterHit: 0.75, meterTaken: 1, guardMax: 1.5, parryWindow: 8, guardCounterCost: 25,
-                 desc: 'Wall of scales. Guard bar +50%, an 8-frame parry window and Guard Counters for a quarter bar, but 25% less meter from hits.' },
-    tempest:   { name: 'Tempest',   icon: 'tempest', cost: 8, meterHit: 1, meterTaken: 1, guardMax: 1, airJumps: 1, dodgeCd: 0.7, kbTaken: 1.08, windCancel: 50,
-                 desc: 'Never still. +1 air jump, dodges recover 30% sooner, and Dodge cancels a move that connected into a dash (half a bar). Takes 8% more knockback.' },
-    vengeance: { name: 'Vengeance', icon: 'vengeance', cost: 10, meterHit: 1, meterTaken: 2, guardMax: 1, rageDamage: 0.3,
-                 desc: 'Hurt it and it hurts back. Deals up to +30% damage as its own damage % climbs (full at 120%), and builds double meter from taking hits.' },
+    fury:      { name: 'Fury',      icon: 'fury', cost: 4, meterHit: 1.5, meterTaken: 1, guardMax: 0.65, scaleOffset: 1, cdRefund: 30, finisherKb: 1.15,
+                 desc: 'All-out offence. Every hit you land trims 0.5 s off your Special and Ability cooldowns, +50% meter from hits, combos keep full damage one hit longer and combo finishers launch 15% harder. Your guard bar is 35% smaller.' },
+    bastion:   { name: 'Bastion',   icon: 'bastion', cost: 6, meterHit: 0.75, meterTaken: 1, guardMax: 1.5, parryWindow: 8, guardCounterCost: 25, parryStunBonus: 24, parryRefill: true,
+                 desc: 'Wall of scales. Guard bar +50%, an 8-frame parry window and Guard Counters for a quarter bar. A perfect parry refills your guard and leaves the attacker reeling much longer. 25% less meter from hits.' },
+    tempest:   { name: 'Tempest',   icon: 'tempest', cost: 8, meterHit: 1, meterTaken: 1, guardMax: 1, airJumps: 1, dodgeCd: 0.7, kbTaken: 1.08, windCancel: 50, airDamage: 1.2,
+                 desc: 'Never still. +1 air jump, dodges recover 30% sooner, hits landed while airborne deal +20%, and Dodge cancels a move that connected into a dash (half a bar). Takes 8% more knockback.' },
+    vengeance: { name: 'Vengeance', icon: 'vengeance', cost: 10, meterHit: 1, meterTaken: 2, guardMax: 1, rageDamage: 0.3, lastStand: 0.85,
+                 desc: 'Hurt it and it hurts back. Deals up to +30% damage as its own damage % climbs (full at 120%), builds double meter from taking hits, and past 100% damage takes 15% less knockback (Last Stand).' },
   };
   // Abilities: their own button, cooldowns in ticks (60 = 1 s). All are visible and have a counter.
   var GEAR_ABILITIES = {
     none:  { name: 'No ability', cost: 0, icon: 'none', cooldown: 0, desc: 'Bank the points.' },
-    fade:  { name: 'Fade',       cost: 10, icon: 'fade', cooldown: 840, duration: 90,  desc: 'Turn to a faint shimmer for 1.5 s. Ends when you attack or are hit.' },
-    aegis: { name: 'Aegis',      cost: 12, icon: 'aegis', cooldown: 720, duration: 180, desc: 'A shield that absorbs one hit within 3 s.' },
-    phase: { name: 'Phase Dash', cost: 8,  icon: 'phase', cooldown: 480, duration: 14,  desc: 'A fast dash through attacks (invulnerable while dashing).' },
-    decoy: { name: 'Decoy',      cost: 10, icon: 'decoy', cooldown: 720, duration: 180, desc: 'Leave a copy that bursts when struck, hitting nearby enemies.' },
-    rage:  { name: 'Rage',       cost: 10, icon: 'rage', cooldown: 900, duration: 300, mult: 1.15, desc: '5 s of +15% damage dealt and +15% knockback taken.' },
-    gust:  { name: 'Gust',       cost: 8,  icon: 'gust', cooldown: 420, range: 230, desc: 'A wing blast that shoves enemies in front away. No damage.' },
+    fade:  { name: 'Fade',       cost: 10, icon: 'fade', cooldown: 840, duration: 90,  ambush: 1.4, desc: 'Turn to a faint shimmer for 1.5 s. Ends when you attack or are hit. The attack that breaks it hits 40% harder.' },
+    aegis: { name: 'Aegis',      cost: 12, icon: 'aegis', cooldown: 720, duration: 180, desc: 'A shield that absorbs one hit within 3 s, then bursts and blasts the attacker away.' },
+    phase: { name: 'Phase Dash', cost: 8,  icon: 'phase', cooldown: 480, duration: 14,  ambush: 1.25, desc: 'A fast dash through attacks (invulnerable while dashing). Your next hit within 1.2 s deals +25%.' },
+    decoy: { name: 'Decoy',      cost: 10, icon: 'decoy', cooldown: 720, duration: 180, desc: 'Leave a copy that bursts when struck: a wide, hard-hitting blast on nearby enemies.' },
+    rage:  { name: 'Rage',       cost: 10, icon: 'rage', cooldown: 900, duration: 300, mult: 1.3, takenMult: 1.15, desc: '5 s of +30% damage dealt and +15% knockback taken.' },
+    gust:  { name: 'Gust',       cost: 8,  icon: 'gust', cooldown: 420, range: 230, desc: 'A wing blast that shoves enemies in front away and throws their projectiles back at them.' },
   };
 
   // ─────────────────────────────── Cosmetics (no combat effect) ───────────────────────────────

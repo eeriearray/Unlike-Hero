@@ -105,7 +105,7 @@
         airJumps: st.airJumps, usedRecovery: false, usedBlink: false, airDodged: false, fastFall: false,
         dmg: 0, stocks: self.stocks, hitlag: 0, hitstun: 0, tumble: false, invuln: 0, landLag: 0,
         dodgeCd: 0, sigCd: 0, abilityCd: 0, ledge: null, ledgeRegrab: 0, ledgeInvulnUsed: false,
-        status: { chill: 0, burn: 0, burnNext: 0, soaked: 0 }, buffs: { stoneSkin: 0 }, gearCd: 0, fade: 0, aegis: 0, rage: 0, phaseBoost: 1,
+        status: { chill: 0, burn: 0, burnNext: 0, soaked: 0 }, buffs: { stoneSkin: 0 }, gearCd: 0, fade: 0, aegis: 0, rage: 0, ambush: 0, ambushMult: 1, phaseBoost: 1,
         buf: null, held: 0, prevHeld: 0, jumpT: 0, squat: 0, squatFromUp: false, dropT: 0, respawnT: 0,
         techWindow: 0, lastHitBy: -1, lastHitTick: -9999, prevDown: false, prevHeld2: 0, tapJump: spec.tapJump !== false,
         kos: 0, falls: 0, dealt: 0, taken: 0,
@@ -210,6 +210,7 @@
     if (f.fade > 0) f.fade--;
     if (f.aegis > 0) f.aegis--;
     if (f.rage > 0) f.rage--;
+    if (f.ambush > 0) f.ambush--;
     if (f.armor > 0) f.armor--;
     if (f.wallJumpCd > 0) f.wallJumpCd--;
     if (f.state !== 'guard' && f.state !== 'blockstun' && f.guardHp < f.stats.guardMax) f.guardHp = Math.min(f.stats.guardMax, f.guardHp + P.guardRegen);
@@ -413,7 +414,7 @@
   };
 
   S.startMove = function (f, key, def, ex) {
-    if (f.fade > 0) { f.fade = 0; this.emit({ type: 'unfade', f: f.i, x: f.x, y: f.y }); }
+    if (f.fade > 0) { f.fade = 0; f.ambush = 60; f.ambushMult = D.GEAR_ABILITIES.fade.ambush; this.emit({ type: 'unfade', f: f.i, x: f.x, y: f.y }); }
     var cancelled = f.state === 'attack' ? f.move : null;
     f.move = key; f.moveDef = def; f.moveT = 0; f.multiN = 0;
     f.moveKind = key === 'sig' ? 'sig' : key === 'ability' ? 'ability' : def.kind;
@@ -628,8 +629,9 @@
       B.hitlag = 10; this.addMeter(B, P.meterOnParry);
       if (lagSrc && lagSrc !== B) {
         lagSrc.hitlag = 10; lagSrc.move = null; lagSrc.moveDef = null; lagSrc.moveEx = false;
-        lagSrc.staggerT = P.parryStun; this.setState(lagSrc, 'stagger');
+        lagSrc.staggerT = P.parryStun + B.stats.parryStunBonus; this.setState(lagSrc, 'stagger');
       }
+      if (B.stats.parryRefill) B.guardHp = B.stats.guardMax;
       this.emit({ type: 'parry', f: B.i, by: src ? src.i : -1, x: B.x + B.facing * 24, y: B.y - B.stats.hurt.h * 0.55 });
       return 'parry';
     }
@@ -1013,6 +1015,7 @@
     else if (id === 'rage') f.rage = G.duration;
     else if (id === 'phase') {
       f.invuln = Math.max(f.invuln, G.duration + 2);
+      f.ambush = 72; f.ambushMult = G.ambush;
       if (f.grounded) { f.dodgeDir = f.facing; f.phaseBoost = 1.7; this.setState(f, 'dodge'); }
       else { f.vx = f.facing * 12; f.vy = Math.min(f.vy, -1); f.kbx = f.kby = 0; this.setState(f, 'airdodge'); }
     } else if (id === 'decoy') {
@@ -1022,7 +1025,14 @@
         if (!self.opponents(f, B) || !self.hittable(B)) return;
         var ahead = (B.x - f.x) * f.facing;
         if (ahead < -20 || ahead > G.range || Math.abs((B.y - B.stats.hurt.h / 2) - (f.y - f.stats.hurt.h / 2)) > 140) return;
-        self.applyHit(f, B, { phys: 0, elem: 0, element: f.element, kb: 9.5, growth: 0, angle: 16, kind: 'gear' }, f.facing, null);
+        self.applyHit(f, B, { phys: 3, elem: 0, element: f.element, kb: 10.5, growth: 0, angle: 16, kind: 'gear' }, f.facing, null);
+      });
+      // Throw incoming projectiles back at their owners
+      this.projectiles.forEach(function (p) {
+        if (p.team === f.team || p.hit.harmless || p.type === 'whirlpool' || p.type === 'chillField') return;
+        var ahead = (p.x - f.x) * f.facing;
+        if (ahead < -20 || ahead > G.range || Math.abs(p.y - (f.y - f.stats.hurt.h / 2)) > 140) return;
+        p.vx = -p.vx || f.facing * 8; p.team = f.team; p.owner = f.i; p.element = f.element; p.life = Math.max(p.life, 40);
       });
     }
     this.emit({ type: 'gear', ability: id, f: f.i, x: f.x, y: f.y, facing: f.facing });
@@ -1039,8 +1049,8 @@
       if (!struck) return true;
       var owner = self.fighters[d.owner];
       self.fighters.forEach(function (B) {
-        if (B.team === d.team || !self.hittable(B) || Math.abs(B.x - d.x) > 110 || Math.abs(B.y - d.y) > 130) return;
-        self.applyHit(owner, B, { phys: 5, elem: 0, element: owner.element, kb: 6, growth: 0.05, angle: 50, kind: 'gear' }, B.x >= d.x ? 1 : -1, null);
+        if (B.team === d.team || !self.hittable(B) || Math.abs(B.x - d.x) > 140 || Math.abs(B.y - d.y) > 150) return;
+        self.applyHit(owner, B, { phys: 9, elem: 0, element: owner.element, kb: 8, growth: 0.07, angle: 50, kind: 'gear' }, B.x >= d.x ? 1 : -1, null);
       });
       self.emit({ type: 'decoyPop', x: d.x, y: d.y - d.h / 2, owner: d.owner });
       return false;
@@ -1136,12 +1146,17 @@
       B.aegis = 0;
       if (lagSrc) lagSrc.hitlag = 8;
       this.emit({ type: 'absorb', target: B.i, by: src ? src.i : -1, x: B.x, y: B.y - B.stats.hurt.h * 0.55 });
+      // The shield bursts: whoever struck it, if close, is blasted away
+      if (src && src !== B && this.opponents(B, src) && this.hittable(src) && Math.abs(src.x - B.x) < 200 && Math.abs(src.y - B.y) < 160)
+        this.applyHit(B, src, { phys: 4, elem: 0, element: B.element, kb: 8, growth: 0.06, angle: 45, kind: 'gear' }, src.x >= B.x ? 1 : -1, null);
       return 'absorb';
     }
     if (B.fade > 0) { B.fade = 0; this.emit({ type: 'unfade', f: B.i, x: B.x, y: B.y }); }
     this.releaseGrab(B);
-    var rage = D.GEAR_ABILITIES.rage.mult;
+    var rage = D.GEAR_ABILITIES.rage.mult, rageTaken = D.GEAR_ABILITIES.rage.takenMult;
     if (src && src.rage > 0) spec = Object.assign({}, spec, { phys: spec.phys * rage, elem: spec.elem * rage });
+    if (src && src.ambush > 0 && spec.kind !== 'gear') { spec = Object.assign({}, spec, { phys: spec.phys * src.ambushMult, elem: spec.elem * src.ambushMult }); src.ambush = 0; }
+    if (src && src.stats.airDamage > 1 && !src.grounded && spec.kind !== 'gear') spec = Object.assign({}, spec, { phys: spec.phys * src.stats.airDamage, elem: spec.elem * src.stats.airDamage });
     // Counter hit: struck during an attack's startup. Punish: struck while recovering from a whiffed action.
     var counter = B.state === 'attack' && B.moveDef && B.moveT < B.moveDef.startup;
     var punish = !counter && ((B.state === 'attack' && B.moveDef && B.moveT >= B.moveDef.startup + B.moveDef.active) ||
@@ -1163,6 +1178,7 @@
     var dmg = r1((spec.phys + elem) * scale * venge * (counter ? CB.counterDamage : 1));
     B.dmg = Math.min(P.maxDamage, r1(B.dmg + dmg));
     B.taken += dmg; C.dmg += dmg;
+    if (src && src !== B && src.stats.cdRefund && spec.kind !== 'gear') { src.sigCd = Math.max(0, src.sigCd - src.stats.cdRefund); src.abilityCd = Math.max(0, src.abilityCd - src.stats.cdRefund); }
     if (src) { src.dealt += dmg; if (src !== B) this.addMeter(src, dmg * P.meterOnHit * src.stats.meterHit); }
     this.addMeter(B, dmg * P.meterOnTaken * B.stats.meterTaken);
     if (lagSrc) lagSrc.hitConfirm = true;
@@ -1188,7 +1204,9 @@
     // Knockback: grows with the target's damage, shrinks with weight. Elements never touch this.
     var kb = (spec.kb + spec.growth * B.dmg) * (200 / (B.stats.weight + 100)) * B.stats.kbTaken;
     if (B.buffs.stoneSkin > 0) kb *= D.ABILITIES.stoneSkin.buff.kbMult;
-    if (B.rage > 0) kb *= rage;
+    if (B.rage > 0) kb *= rageTaken;
+    if (B.stats.lastStand < 1 && B.dmg >= 100) kb *= B.stats.lastStand;
+    if (src && src.stats.finisherKb > 1 && step >= 2) kb *= src.stats.finisherKb;
     var ang = spec.angle;
     if (B.grounded && ang < 0) ang = 24;  // a spike on the ground pops the target up instead
     // Directional influence
@@ -1345,7 +1363,7 @@
     this.endCombo(f);
     if (!(this.training && this.training.infinite)) f.stocks--;
     this.emit({ type: 'ko', f: f.i, by: by, x: clamp(f.x, bz.left, bz.right), y: clamp(f.y, bz.top, bz.bottom), stocks: f.stocks });
-    f.move = null; f.moveDef = null; f.status = { chill: 0, burn: 0, burnNext: 0, soaked: 0 }; f.buffs.stoneSkin = 0; f.fade = f.aegis = f.rage = 0;
+    f.move = null; f.moveDef = null; f.status = { chill: 0, burn: 0, burnNext: 0, soaked: 0 }; f.buffs.stoneSkin = 0; f.fade = f.aegis = f.rage = f.ambush = 0;
     if (f.stocks > 0) { f.state = 'dead'; f.respawnT = P.respawnTicks; }
     else { f.state = 'out'; f.x = -9999; }
   };
@@ -1411,7 +1429,7 @@
     this.projectiles = []; this.structures = []; this.ledgeOwners = {}; this.decoys = []; this.freeze = 0;
     this.fighters.forEach(function (f, i) {
       self.placeAtSpawn(f, i); f.dmg = 0; f.hitlag = 0; f.invuln = 0;
-      f.status = { chill: 0, burn: 0, burnNext: 0, soaked: 0 }; f.buffs.stoneSkin = 0; f.sigCd = f.abilityCd = f.dodgeCd = f.gearCd = 0; f.fade = f.aegis = f.rage = 0;
+      f.status = { chill: 0, burn: 0, burnNext: 0, soaked: 0 }; f.buffs.stoneSkin = 0; f.sigCd = f.abilityCd = f.dodgeCd = f.gearCd = 0; f.fade = f.aegis = f.rage = f.ambush = 0;
       f.meter = 0; f.move = null; f.moveDef = null;
     });
   };
