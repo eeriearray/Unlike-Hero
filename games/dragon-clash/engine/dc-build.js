@@ -165,6 +165,9 @@
     st.guardCounterCost = ins && ins.guardCounterCost || D.MOVES.guardCounter.meter;
     st.windCancel = ins && ins.windCancel || 0;
     st.rageDamage = ins && ins.rageDamage || 0;
+    st.cdRefund = ins && ins.cdRefund || 0; st.finisherKb = ins && ins.finisherKb || 1;
+    st.parryStunBonus = ins && ins.parryStunBonus || 0; st.parryRefill = !!(ins && ins.parryRefill);
+    st.airDamage = ins && ins.airDamage || 1; st.lastStand = ins && ins.lastStand || 1;
     if (ins && ins.airJumps) st.airJumps += ins.airJumps;
     if (ins && ins.dodgeCd) st.dodgeCd = Math.round(st.dodgeCd * ins.dodgeCd);
     if (ins && ins.kbTaken) st.kbTaken *= ins.kbTaken;

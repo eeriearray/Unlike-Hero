@@ -89,7 +89,7 @@ test('a fireball melts a Frost Wall', () => {
 });
 
 test('lightning arcs once through a soaked target (+2%)', () => {
-  const { sim, T } = duel(plain('lightning'), plain('fire'), { gap: 200 });
+  const { sim, T } = duel(plain('lightning'), plain('lightning'), { gap: 200 });
   T.status.soaked = 100;
   const h = hits(press(sim, 0, B.sig, 40))[0];
   assert.ok(h.conduct);

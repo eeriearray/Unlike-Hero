@@ -896,10 +896,11 @@
 
   M.drawHud = function (x) {
     var v = this.view, fs = this.setupInfo.fighters, W = this.W, H = this.H, self = this;
-    // Cards are laid out at a fixed 200 x 76 and scaled as a unit, so six fighters on a small screen stay tidy.
-    var n = v.f.length, gap = 8, sc = Math.min(1, (W - 24 - (n - 1) * gap) / (n * 200)), cw = 200, ch = 92;
+    // Compact cards laid out at a fixed 250 x 94 and scaled as a unit, so six fighters on a small screen stay tidy.
+    // Only the power meter carries a caption; the rest reads from its icon, colour and fill.
+    var n = v.f.length, gap = 8, cw = 250, ch = 94, sc = Math.min(W >= 1500 ? 1.25 : 1, (W - 24 - (n - 1) * gap) / (n * cw));
     // On touch screens the cards move to the top (thumbs and buttons own the bottom corners) and shrink on phones
-    if (this.touch) sc = Math.min(sc, (W - 120) / (n * 200 + (n - 1) * gap), H < 500 ? 0.62 : 0.8);
+    if (this.touch) sc = Math.min(sc, (W - 120) / (n * cw + (n - 1) * gap), H < 500 ? 0.55 : 0.7);
     var total = n * cw * sc + (n - 1) * gap, X0 = (W - total) / 2, Y0 = this.touch ? 8 : H - ch * sc - 12;
     v.f.forEach(function (f, i) {
       var info = fs[i], b = info.build, el = D.ELEMENTS[b.element];
@@ -908,52 +909,52 @@
       x.save();
       x.translate(X0 + i * (cw * sc + gap), Y0); x.scale(sc, sc);
       x.globalAlpha = f.st === 'out' ? 0.45 : 1;
-      x.fillStyle = 'rgba(14,8,30,0.72)'; roundRect(x, cx, y0, cw, ch, 14); x.fill();
+      x.fillStyle = 'rgba(14,8,30,0.82)'; roundRect(x, cx, y0, cw, ch, 14); x.fill();
       x.fillStyle = team; roundRect(x, cx, y0, 6, ch, 3); x.fill();
       // Portrait
-      x.save(); roundRect(x, cx + 10, y0 + 8, 58, 60, 10); x.clip();
-      x.fillStyle = Art.alpha(el.color, 0.25); x.fillRect(cx + 10, y0 + 8, 58, 60);
-      x.translate(cx + 32, y0 + 140); x.scale(0.82, 0.82);
+      x.save(); roundRect(x, cx + 12, y0 + 9, 58, 60, 10); x.clip();
+      x.fillStyle = Art.alpha(el.color, 0.25); x.fillRect(cx + 12, y0 + 9, 58, 60);
+      x.translate(cx + 41, y0 + 138); x.scale(0.82, 0.82);
       Art.draw(x, b.look, b.body, { time: self.time + i, facing: 1, frame: 0, gear: b.gear });
       x.restore();
-      // Name and element
-      x.font = '700 13px Barlow, system-ui, sans-serif'; x.textAlign = 'left'; x.fillStyle = '#d8d0f0';
-      window.DCIcons.draw(x, b.element, cx + 80, y0 + 16, 13, el.color);
-      x.fillText(self.tagFor(i, info).slice(0, 14), cx + 91, y0 + 20);
-      // Damage
-      var shakeX = f.hl > 0 ? (Math.random() - 0.5) * 4 : 0;
-      x.font = 'italic 800 38px "Barlow Condensed", Barlow, sans-serif';
-      x.lineWidth = 5; x.strokeStyle = 'rgba(10,6,20,0.9)';
-      var txt = f.st === 'out' ? 'OUT' : Math.floor(f.d) + '%';
-      x.strokeText(txt, cx + 74 + shakeX, y0 + 54); x.fillStyle = f.st === 'out' ? '#8a8aa0' : dmgColor(f.d); x.fillText(txt, cx + 74 + shakeX, y0 + 54);
-      // Stocks
-      var stocks = Math.min(f.s, 9);
-      if (!(self.o.training)) for (var k = 0; k < stocks; k++) { x.fillStyle = el.color; x.beginPath(); x.arc(cx + 78 + k * 12, y0 + 66, 4.5, 0, Math.PI * 2); x.fill(); }
-      // Cooldown rings: signature and ability
-      var sigCd = D.SIGNATURES[b.signature].cooldown, abCd = D.ABILITIES[b.ability].cooldown;
-      ring(x, cx + cw - 20, y0 + 22, 11, f.sc / sigCd, el.color, 'L');
-      ring(x, cx + cw - 20, y0 + 52, 11, f.ac / abCd, el.glow, '↓L');
-      var gearAb = b.gear && b.gear.ability !== 'none' && D.GEAR_ABILITIES[b.gear.ability];
-      if (gearAb) ring(x, cx + cw - 48, y0 + 52, 11, (f.gc || 0) / gearAb.cooldown, '#ffd36a', gearAb.icon, f.fd || f.ag || f.rg);
+      // Name and element, with the instinct this dragon fights with
+      x.font = '800 14px Barlow, system-ui, sans-serif'; x.textAlign = 'left'; x.fillStyle = '#e6e0fa';
+      window.DCIcons.draw(x, b.element, cx + 82, y0 + 16, 14, el.color);
+      x.fillText(self.tagFor(i, info).slice(0, 12), cx + 95, y0 + 21);
       var ins = b.gear && D.INSTINCTS[b.gear.instinct];
-      if (ins) window.DCIcons.draw(x, ins.icon, cx + cw - 48, y0 + 22, 15, '#ffcf3a', 2.4);   // the instinct this dragon fights with
-      // Super meter: three bars (EX costs one, Dragon Fury all three), glowing when full
-      var PH = D.PHYSICS, bars = PH.meterMax / PH.meterBar, mw = (cw - 22 - (bars - 1) * 4) / bars, mt = f.mt || 0, full = mt >= PH.meterMax;
-      for (var mb = 0; mb < bars; mb++) {
-        var fill = Math.max(0, Math.min(1, (mt - mb * PH.meterBar) / PH.meterBar)), mx = cx + 12 + mb * (mw + 4);
-        x.fillStyle = 'rgba(255,255,255,0.1)'; roundRect(x, mx, y0 + 74, mw, 7, 3); x.fill();
-        if (fill > 0) {
-          x.fillStyle = full ? 'hsl(' + ((self.time * 200) % 360) + ',90%,65%)' : fill >= 1 ? el.color : Art.alpha(el.color, 0.55);
-          roundRect(x, mx, y0 + 74, mw * fill, 7, 3); x.fill();
-        }
-      }
-      x.font = '800 9px Barlow, system-ui, sans-serif'; x.textAlign = 'right'; x.fillStyle = full ? '#fff' : 'rgba(255,255,255,0.55)';
-      x.fillText(full ? 'FURY READY' : Math.floor(mt / PH.meterBar) ? 'EX ×' + Math.floor(mt / PH.meterBar) : '', cx + cw - 12, y0 + 70);
+      if (ins) window.DCIcons.draw(x, ins.icon, cx + cw - 16, y0 + 16, 15, '#ffcf3a', 2.4);
+      // Damage: the biggest thing on the card
+      var shakeX = f.hl > 0 ? (Math.random() - 0.5) * 4 : 0;
+      x.font = 'italic 800 44px "Barlow Condensed", Barlow, sans-serif';
+      x.lineWidth = 6; x.strokeStyle = 'rgba(10,6,20,0.9)';
+      var txt = f.st === 'out' ? 'OUT' : Math.floor(f.d) + '%';
+      x.strokeText(txt, cx + 80 + shakeX, y0 + 58); x.fillStyle = f.st === 'out' ? '#8a8aa0' : dmgColor(f.d); x.fillText(txt, cx + 80 + shakeX, y0 + 58);
+      // Lives
+      var stocks = Math.min(f.s, 9);
+      if (!(self.o.training)) for (var k = 0; k < stocks; k++) { x.fillStyle = el.color; x.beginPath(); x.arc(cx + 84 + k * 12, y0 + 69, 4.5, 0, Math.PI * 2); x.fill(); }
+      // Cooldown rings: gear (if any), ability, special; each lights up when the move is ready
+      var sigCd = D.SIGNATURES[b.signature].cooldown, abCd = D.ABILITIES[b.ability].cooldown;
+      var gearAb = b.gear && b.gear.ability !== 'none' && D.GEAR_ABILITIES[b.gear.ability];
+      var rings = [[f.sc / sigCd, el.color, 'L'], [f.ac / abCd, el.glow, '↓L']];
+      if (gearAb) rings.unshift([(f.gc || 0) / gearAb.cooldown, '#ffd36a', gearAb.icon, f.fd || f.ag || f.rg]);
+      rings.forEach(function (rg, ri) { ring(x, cx + cw - 20 - (rings.length - 1 - ri) * 33, y0 + 47, 13, rg[0], rg[1], rg[2], rg[3]); });
       // Guard bar: only shown while it is not full; red when close to breaking
-      var gfr = (f.gh != null ? f.gh : PH.guardMax) / (f.gm || PH.guardMax);
+      var PH = D.PHYSICS, gfr = (f.gh != null ? f.gh : PH.guardMax) / (f.gm || PH.guardMax);
       if (gfr < 0.995) {
-        x.fillStyle = 'rgba(255,255,255,0.1)'; x.fillRect(cx + 12, y0 + 85, cw - 24, 3);
-        x.fillStyle = gfr < 0.3 ? '#ff5a3a' : '#9fdcff'; x.fillRect(cx + 12, y0 + 85, (cw - 24) * gfr, 3);
+        x.fillStyle = 'rgba(255,255,255,0.12)'; x.fillRect(cx + 80, y0 + 75, 100, 3);
+        x.fillStyle = gfr < 0.3 ? '#ff5a3a' : '#9fdcff'; x.fillRect(cx + 80, y0 + 75, 100 * gfr, 3);
+      }
+      // Super meter: three bars (EX costs one, Dragon Fury all three), glowing when full
+      var bars = PH.meterMax / PH.meterBar, bx = cx + 50, mw = (cw - 12 - bx - (bars - 1) * 4) / bars, mt = f.mt || 0, full = mt >= PH.meterMax;
+      x.font = '800 9px Barlow, system-ui, sans-serif'; x.textAlign = 'left'; x.fillStyle = full ? '#fff' : 'rgba(255,255,255,0.6)';
+      x.fillText('POWER', cx + 12, y0 + 87);
+      for (var mb = 0; mb < bars; mb++) {
+        var fill = Math.max(0, Math.min(1, (mt - mb * PH.meterBar) / PH.meterBar)), mx = bx + mb * (mw + 4);
+        x.fillStyle = 'rgba(255,255,255,0.12)'; roundRect(x, mx, y0 + 81, mw, 7, 3); x.fill();
+        if (fill > 0) {
+          x.fillStyle = full ? 'hsl(' + ((self.time * 200) % 360) + ',90%,65%)' : fill >= 1 ? el.color : Art.alpha(el.color, 0.6);
+          roundRect(x, mx, y0 + 81, mw * fill, 7, 3); x.fill();
+        }
       }
       x.restore();
     });
