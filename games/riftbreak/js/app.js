@@ -122,6 +122,7 @@
     document.body.appendChild(m);
     return m;
   }
+  function lvlName(l) { l = String(l).replace(/_/g, ' '); return l[0].toUpperCase() + l.slice(1); }
   function closeModal() { $$('.modal').forEach(function (m) { m.remove(); }); }
 
   var TIPS = {
@@ -278,7 +279,7 @@
   function routeFromView() {
     var v = app.view;
     if (!v) return;
-    if (v.phase === 'lobby') { if (app.screen !== 'lobby') show('lobby'); else renderLobby(); }
+    if (v.phase === 'lobby') { closeModal(); if (app.screen !== 'lobby') show('lobby'); else renderLobby(); }
     else if (app.screen !== 'game') show('game');
   }
 
@@ -351,7 +352,7 @@
     for (var i = 0; i < Math.max(total, 2); i++) {
       var p = v.seats[i];
       if (p) {
-        var sub = p.isBot ? 'Bot · ' + p.level : (p.id === v.host ? 'Host' : 'Player') + (p.waiting ? ' · joins next match' : '');
+        var sub = p.isBot ? 'Bot · ' + lvlName(p.level) : (p.id === v.host ? 'Host' : 'Player') + (p.waiting ? ' · joins next match' : '');
         var row = el('<div class="seat"><div class="avatar">' + A.avatar(p.avatar, A.SEAT_HUES[i % 8]) + '</div><div><div class="nm">' + esc(p.name) + (p.id === v.you ? ' <span class="chip">you</span>' : '') + '</div><div class="sub">' + (p.isBot ? '' : '<span class="dot ' + (p.connected ? '' : 'off') + '"></span> ') + esc(sub) + (p.wins ? ' · ★ ' + p.wins : '') + '</div></div></div>');
         if (host && p.id !== v.you && (p.isBot || online)) {
           var x = el('<button class="btn icon ghost x" aria-label="Remove ' + esc(p.name) + '">' + ICON.close + '</button>');
@@ -371,7 +372,7 @@
     };
     set.innerHTML =
       '<div class="setting"><span class="label">Seats</span><span class="stepper"><button class="btn icon ghost minus"' + (host ? '' : ' disabled') + '>−</button><b>' + st.seats + '</b><button class="btn icon ghost plus"' + (host ? '' : ' disabled') + '>+</button></span></div>' +
-      '<div class="setting"><span class="label">Bots</span>' + segs('botLevel', [['easy', 'Easy'], ['normal', 'Normal'], ['hard', 'Hard']], st.botLevel) + '</div>' +
+      '<div class="setting"><span class="label">Bots</span>' + segs('botLevel', [['super_easy', 'Super easy'], ['easy', 'Easy'], ['normal', 'Normal'], ['hard', 'Hard']], st.botLevel) + '</div>' +
       '<div class="setting"><span class="label">Bot speed</span>' + segs('botSpeed', [['fast', 'Fast'], ['normal', 'Normal'], ['relaxed', 'Relaxed']], st.botSpeed) + '</div>' +
       '<div class="setting"><span class="label">Turn timer</span>' + segs('turnTimer', [[0, 'Off'], [15, '15s'], [25, '25s'], [40, '40s']], st.turnTimer) + '</div>' +
       '<div class="setting"><span class="label">Last-card calls</span>' + segs('lastCall', [['true', 'On'], ['false', 'Off']], String(st.lastCall)) + '</div>' +
@@ -509,7 +510,7 @@
       if (m.events.length) app.lastSeq = Math.max(app.lastSeq, m.events[m.events.length - 1].seq);
       if (!fresh && prevView && prevView.round !== view.round) events = [];
     }
-    if (view.phase === 'lobby') { if (app.screen !== 'lobby') show('lobby'); else renderLobby(); return; }
+    if (view.phase === 'lobby') { closeModal(); if (app.screen !== 'lobby') show('lobby'); else renderLobby(); return; }
     if (app.screen !== 'game') {
       show('game');
       if (fresh) dealFx(m);
@@ -613,7 +614,7 @@
       var active = m.turn === p.id && v.phase === 'playing';
       if (active) chips = '<span class="chip turn">' + (m.phase === 'attack' ? 'Facing +' + m.stack : 'Playing…') + '</span>' + chips;
       var cnt = p.count === 1 ? 'one' : p.count <= 3 ? 'low' : '';
-      setTip(s, p.name, (info.isBot ? info.level[0].toUpperCase() + info.level.slice(1) + ' bot' : info.autopilot ? 'Disconnected — a bot is playing for them' : 'Player') +
+      setTip(s, p.name, (info.isBot ? lvlName(info.level) + ' bot' : info.autopilot ? 'Disconnected — a bot is playing for them' : 'Player') +
         ' · ' + p.count + ' card' + (p.count === 1 ? '' : 's') + (info.wins ? ' · ' + info.wins + ' win' + (info.wins === 1 ? '' : 's') : '') +
         (active ? '\nIt is their turn' + (m.phase === 'attack' ? ' — facing +' + m.stack + '.' : '.') : '') + (p.count === 1 ? '\nOne card left!' : ''));
       s.innerHTML = '<div class="avatar">' + avatarSvg(p.id) + timerRing(p.id) + (p.called && p.count === 1 ? '<span class="lastflag">LAST</span>' : '') + '</div>' +
@@ -1387,7 +1388,7 @@
       '<div class="row"><span class="label">Audio</span><div class="seg"><button class="unm ' + (S.prefs.muted ? '' : 'on') + '">On</button><button class="mt ' + (S.prefs.muted ? 'on' : '') + '">Muted</button></div></div>' +
       '<div class="row"><span class="label">Motion</span><div class="seg mot">' + [['auto', 'System'], ['full', 'Full'], ['reduced', 'Reduced']].map(function (o) { return '<button data-v="' + o[0] + '" class="' + (prefs.motion === o[0] ? 'on' : '') + '">' + o[1] + '</button>'; }).join('') + '</div></div>' +
       '<div class="row"><span class="label">Tips</span><div class="seg tips"><button data-v="1" class="' + (prefs.tips ? 'on' : '') + '">Show</button><button data-v="0" class="' + (prefs.tips ? '' : 'on') + '">Hide</button><button data-v="r">Show again</button></div></div>' +
-      '<div class="row"><span class="label">Default bots</span><div class="seg bl">' + E.LEVELS.map(function (l) { return '<button data-v="' + l + '" class="' + (prefs.botLevel === l ? 'on' : '') + '">' + l[0].toUpperCase() + l.slice(1) + '</button>'; }).join('') + '</div></div>' +
+      '<div class="row"><span class="label">Default bots</span><div class="seg bl">' + E.LEVELS.map(function (l) { return '<button data-v="' + l + '" class="' + (prefs.botLevel === l ? 'on' : '') + '">' + lvlName(l) + '</button>'; }).join('') + '</div></div>' +
       '</div><p style="font-size:12px;color:var(--ink3);margin-top:16px">Bot difficulty for a running room is set by its host in the lobby.</p>';
     var m = modal(html);
     $('.mus', m).oninput = function (e) { S.setPref('music', Number(e.target.value)); };

@@ -80,7 +80,8 @@
     blockStabilize: -2, rift: 1, overload: 1, surge: 1, overcharge: 1, zero: -1, chain: 2, breakingBonus: 1
   };
   var MIN_PLAYERS = 2, MAX_PLAYERS = 8;
-  var LEVELS = ['easy', 'normal', 'hard'];
+  var LEVELS = ['super_easy', 'easy', 'normal', 'hard'];
+  function isEasy(l) { return l === 'easy' || l === 'super_easy'; }
   var TIMERS = [0, 15, 25, 40];
   var AVATARS = ['comet', 'prism', 'orbit', 'flare', 'quark', 'nova', 'vortex', 'glyph'];
   var BOT_NAMES = ['Vex', 'Juno', 'Kestrel', 'Nyx', 'Orrin', 'Pixel', 'Sable', 'Tamsin', 'Quill', 'Rook', 'Zephyr', 'Lumen', 'Echo-7', 'Moth', 'Brisk', 'Halcyon'];
@@ -727,7 +728,7 @@
     var mAfter = Math.max(0, view.meltdown + md);
     if (mAfter >= 10) {
       s += this.collapseValue(view, view.nextCollapse, rest.length) * W.collapse;
-    } else if (this.level !== 'easy') {
+    } else if (!isEasy(this.level)) {
       // Near the top, raising the meter hands the collapse to whoever plays next.
       var nextCollapseVal = this.collapseValue(view, view.nextCollapse, rest.length);
       if (mAfter >= 8 && md > 0) s -= (nextCollapseVal < 0 ? 1.5 : 0.8) * W.nearTopRaise;
@@ -791,7 +792,7 @@
     var byId = {};
     hand.forEach(function (k) { byId[k.id] = k; });
     var legal = view.legal.map(function (id) { return byId[id]; }).filter(Boolean);
-    var callIt = hand.length === 2 && (this.level !== 'easy' || rng() < 0.7);
+    var callIt = hand.length === 2 && (this.level === 'hard' || this.level === 'normal' || rng() < (this.level === 'super_easy' ? 0.3 : 0.7));
 
     var cands = [];
     legal.forEach(function (card) {
@@ -805,9 +806,10 @@
     else cands.push({ type: 'draw' });
 
     var choice;
-    if (this.level === 'easy') {
+    if (isEasy(this.level)) {
+      var sup = this.level === 'super_easy';
       var plays = cands.filter(function (c) { return c.type === 'play' && !c.overcharge; });
-      if (!plays.length || rng() < 0.08 && view.phase === 'turn') choice = cands[cands.length - 1];
+      if (!plays.length || rng() < (sup ? 0.25 : 0.08) && view.phase === 'turn') choice = cands[cands.length - 1];
       else {
         var plain = plays.filter(function (c) { return !isWild(c.card); });
         var pickFrom = plain.length && rng() < 0.75 ? plain : plays;
@@ -815,7 +817,7 @@
         if (choice.color) {
           var cc = counts(hand.filter(function (k) { return k.id !== choice.card.id; }));
           var best = SUITS.slice().sort(function (a, b) { return cc[b] - cc[a]; })[0];
-          choice = { type: 'play', card: choice.card, color: rng() < 0.65 ? best : SUITS[Math.floor(rng() * 4)], overcharge: false };
+          choice = { type: 'play', card: choice.card, color: !sup && rng() < 0.65 ? best : SUITS[Math.floor(rng() * 4)], overcharge: false };
         }
       }
     } else {
@@ -835,9 +837,9 @@
 
   /** Should this bot catch an exposed player? Returns a delay in ms, or -1. */
   B.catchDelay = function () {
-    var p = { easy: 0.35, normal: 0.7, hard: 0.95 }[this.level];
+    var p = { super_easy: 0.12, easy: 0.35, normal: 0.7, hard: 0.95 }[this.level];
     if (this.rng() > p) return -1;
-    var base = { easy: 1300, normal: 850, hard: 450 }[this.level];
+    var base = { super_easy: 2200, easy: 1300, normal: 850, hard: 450 }[this.level];
     return base + this.rng() * 900;
   };
 
