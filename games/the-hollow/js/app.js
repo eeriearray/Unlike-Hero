@@ -261,16 +261,16 @@
   function mapSheet() {
     var v = S.view, id = S.ui.sel; if (!id || !v.map.locs[id]) return '';
     var l = S.cat.locations[id], st = v.map.locs[id], a = v.act, me = UI.me();
-    var btn = '';
+    var btn = '', note = '';
     if (a && v.game.active === v.you && me.loc !== id) {
       var mv = a.moves.find(function (r) { return r.to === id; }), sp = a.sprint.find(function (r) { return r.to === id; });
       if (mv && mv.ok) btn += '<button class="btn small teal" data-act="move" data-mode="step" data-to="' + id + '">Step carefully</button>';
       if (mv && mv.ok && mv.enemy) btn += '<button class="btn small" data-act="move" data-mode="sneak" data-to="' + id + '">Sneak past</button>';
-      if (sp) btn += '<button class="btn small" data-act="move" data-mode="sprint" data-to="' + id + '">Sprint</button>';
+      if (sp) { btn += '<button class="btn small" data-act="move" data-mode="sprint" data-to="' + id + '">Sprint</button>'; note = '<p class="map-choice-note">Sprint: up to two roads for 1 action. It is noisy, and road hazards still apply.</p>'; }
       if (mv && !mv.ok) btn += '<span class="chip bad">' + esc(mv.why) + '</span>';
     }
     var here = me.loc === id;
-    return '<div class="sheet"><div class="row"><b>' + esc(l.name) + '</b><span class="chip ' + (st.v ? 'teal' : '') + '">' + (st.v ? 'visited' : 'unexplored') + '</span>' + (here ? '<span class="chip gold">you are here</span>' : '') + '<button class="btn tiny ghost right" data-act="desel" aria-label="Close">✕</button></div>' + (btn ? '<div class="row wrap" style="margin-top:6px">' + btn + '</div>' : '') + '</div>';
+    return '<section class="sheet map-choice" role="region" aria-labelledby="map-destination-title"><button class="btn tiny ghost map-choice-close" data-act="desel" aria-label="Close destination">✕</button><span class="guide-label">Choose your route</span><h2 id="map-destination-title">' + esc(l.name) + '</h2><div class="map-choice-status"><span class="chip ' + (st.v ? 'teal' : '') + '">' + (st.v ? 'visited' : 'unexplored') + '</span>' + (here ? '<span class="chip gold">you are here</span>' : '') + '</div>' + note + (btn ? '<div class="map-choice-actions">' + btn + '</div>' : '') + '</section>';
   }
 
   function renderModal() {
@@ -560,7 +560,7 @@
     tab: function (el) { S.ui.tab = el.dataset.t; S.ui.drawer = S.ui.tab === 'you' ? 'left' : S.ui.tab === 'log' ? 'right' : null; if (S.ui.tab === 'map') setTimeout(function () { MAP.fitAll(); }, 80); var gm = $('.game'); if (gm) gm.setAttribute('data-tab', S.ui.tab); htmlOf.nav = null; render(); },
     jtab: function (el) { S.ui.jtab = el.dataset.t; htmlOf.right = null; render(); },
     zin: function () { MAP.zoomIn(); }, zout: function () { MAP.zoomOut(); }, zme: function () { MAP.center(UI.me().loc); }, zall: function () { MAP.fitAll(); },
-    selnode: function (el) { if (MAP.isDragging()) return; var id = el.dataset.loc; S.ui.sel = S.ui.sel === id ? null : id; AU.sfx('click'); htmlOf.stage = null; htmlOf.mapsvg = null; htmlOf.mapsheet = null; render(); },
+    selnode: function (el) { if (MAP.isDragging()) return; var id = el.dataset.loc; S.ui.sel = S.ui.sel === id ? null : id; AU.sfx('click'); htmlOf.stage = null; htmlOf.mapsvg = null; htmlOf.mapsheet = null; render(); var choice = S.ui.sel && (document.querySelector('#mapsheet [data-act="move"]') || document.querySelector('#mapsheet [data-act="desel"]')); if (choice) choice.focus({ preventScroll: true }); },
     desel: function () { S.ui.sel = null; htmlOf.stage = null; htmlOf.mapsvg = null; htmlOf.mapsheet = null; render(); },
     // turn
     interact: function () { send({ t: 'interact' }); }, investigate: function () { search(St.objectFor('investigate')); },

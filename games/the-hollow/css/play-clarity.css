@@ -1,4 +1,16 @@
 /* One location, one immediate decision. Supporting copy stays available on demand. */
+body.asset-direction .mapsheet { position:absolute;left:50%;top:50%;right:auto;bottom:auto;transform:translate(-50%,-50%);width:min(480px,calc(100% - 100px));max-height:calc(100dvh - 130px);overflow-y:auto;z-index:6; }
+body.asset-direction .mapsheet .map-choice { position:relative;margin:0;padding:30px 28px 26px;background:#0c151c;color:#eee6d5;border:1px solid #b9a474;border-radius:8px;box-shadow:0 24px 90px #000b;text-align:center; }
+body.asset-direction .map-choice h2 { margin:8px 20px 12px;font:400 clamp(23px,3vw,32px)/1.3 'Cinzel',Georgia,serif;color:#f4ead4; }
+body.asset-direction .map-choice-close { position:absolute;top:8px;right:8px;min-width:40px;min-height:40px; }
+body.asset-direction .map-choice-status,body.asset-direction .map-choice-actions { display:flex;flex-wrap:wrap;justify-content:center;gap:10px; }
+body.asset-direction .map-choice-actions { margin-top:22px; }
+body.asset-direction .map-choice-actions .btn { min-height:48px;min-width:140px;font:600 15px/1.4 Inter,sans-serif; }
+body.asset-direction .map-choice-note { margin:18px auto 0;max-width:36ch;font:14px/1.6 Inter,sans-serif;color:#c5c9c5; }
+body.asset-direction .mapview:has(.mapsheet:not(:empty))::after { content:"";position:absolute;inset:0;background:#0005;pointer-events:none;z-index:2; }
+body.asset-direction .mapview:has(.mapsheet:not(:empty)) .maptip { display:none; }
+body.asset-direction .mapctl,body.asset-direction .chapter-map-key { z-index:8; }
+body.asset-direction .ovp:is(.travel,.hold) { top:50%;bottom:auto;left:50%;transform:translate(-50%,-50%);max-height:calc(100% - 130px);animation:none; }
 body.asset-direction .place-heading { left:50%;right:auto;top:94px;width:min(680px,90%);max-width:none;transform:translateX(-50%);text-align:center; }
 body.asset-direction .place-heading h1 { font-size:clamp(23px,2.5vw,34px);margin:5px 0; }
 body.asset-direction .place-heading > span { font-size:9px; }
@@ -34,6 +46,10 @@ body.asset-direction .game2:has(.opening-upgrade) .scene-navigation { visibility
  body.asset-direction .game2 { --trayh:220px; }
 }
 @media(max-width:600px) {
+ body.asset-direction .mapsheet { width:calc(100% - 32px);max-height:calc(100dvh - 150px); }
+ body.asset-direction .mapsheet .map-choice { padding:28px 18px 22px; }
+ body.asset-direction .map-choice-actions .btn { flex:1 1 100%; }
+ body.asset-direction .ovp:is(.travel,.hold) { position:fixed;top:50%;max-height:calc(100dvh - 150px);width:calc(100% - 28px);box-sizing:border-box; }
  body.asset-direction .place-heading { top:82px; }
  body.asset-direction .place-heading h1 { font-size:25px; }
  body.asset-direction .cine.arrive { top:92px;height:260px; }

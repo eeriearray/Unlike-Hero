@@ -146,6 +146,8 @@ Everything is data; no engine edits are needed for new places, items, events or 
 
 Location headings and arrival cards are centered across the whole viewport. Arrival cards temporarily hide duplicate headings and objective copy. The objective shows a short goal; its reasoning, instructions and character observations expand on request. Long results show a short preview with the complete story behind “Read the full discovery”. Open discovery or objective reading pauses automatic solo turn advancement. Upgrade choices replace the normal action tray until resolved, and repeated result instructions and overlapping memory captions are removed. Desktop and 390-pixel mobile views were checked; the Graveyard screenshot is `art/validation/graveyard-simplified.png`.
 
+Map destination choices, including Sprint, open in a centered, opaque panel with large action buttons, destination status and the sprint cost/risk. Keyboard focus moves to the available action. The map tooltip is hidden while that panel is open. Travel and blocking-choice panels also use centered placement. Preview: `art/validation/sprint-centered.png`.
+
 ## Warning from tomorrow and discovery effects
 
 New expeditions begin with a short, gesture-started warning from the player's future self. The warning waits for the player to turn each page. Only after “Listen at the door” does an eight-second sequence of spaced knocks, a brief blackout and a close-up Whisperling lunge begin. A short camera jolt accompanies the reveal before the expedition letter. The final beat gives the player a concrete goal: trace the missing bell beneath the Abbey and recover the names it took.
@@ -175,3 +177,9 @@ Covered: content minimums and integrity, farmable rewards, clue redundancy, map 
 * The ghost-hand is a competent-but-simple heuristic player, not a strategist.
 * No accounts, chat or matchmaking (play on voice chat). Rooms live in server memory plus a JSON file, not a database.
 * Audio was exercised for correctness (no errors across every sound, region and mood) but this environment cannot judge how it *sounds*: expect to tune gains in `js/audio.js`.
+
+### Animated scare encounters
+
+Opening, discovery and rare danger scares now use a procedural, articulated creature instead of a portrait zoom. Eyes emerge for 420 ms, followed by a 150 ms rush toward the camera, independently moving jaw and fingers, a decaying jolt, and a dark aftermath. The shared impact mixer fires at the lunge; the entire encounter ends after 1.5 seconds. Graveyard encounters approach from the opposite side. Reduced motion/scares, hidden tabs, Skip and scene teardown cancel the animation. No gameplay state is changed.
+
+Use `art/feedback-preview.html` on a local static server for a repeatable, muted-by-default preview. Animation timing and cancellation are covered in `test/the-hollow-scare-animation.test.mjs`.
