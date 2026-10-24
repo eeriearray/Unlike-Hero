@@ -18,6 +18,8 @@ body.asset-direction .cine.arrive { left:0;right:0;width:100%;box-sizing:border-
 body.asset-direction .cine.arrive .ca-title { width:min(820px,100%);margin-inline:auto; }
 body.asset-direction:has(.cine.arrive:not(.out)) :is(.place-heading,.cap,.opening-scene-memory) { visibility:hidden; }
 body.asset-direction .cap.mission-caption { top:176px;max-width:320px;padding:10px 14px; }
+/* These captions now contain controls; decorative captions still pass clicks through. */
+body.asset-direction:not(.evt-on) .advui:not(:has(.icard)) .cap:is(.mission-caption,.discovery-caption) { pointer-events:auto; }
 body.asset-direction .mission-focus h2 { font-size:19px;margin-bottom:4px; }
 body.asset-direction :is(.mission-context,.discovery-reading) summary { cursor:pointer;min-height:36px;align-content:center;color:#d5c49e;font:12px/1.5 Inter,sans-serif; }
 body.asset-direction .mission-context[open] { max-height:32vh;overflow-y:auto; }
