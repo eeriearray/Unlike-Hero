@@ -9,7 +9,7 @@
     ['You received this tomorrow.', 'A letter in your own handwriting. Dated tomorrow. The first line has been pressed so hard into the paper that it almost tears.'],
     ['I have already been here.', '“I found the bell. I heard my own voice beneath it. If you can still read this, there is time.”'],
     ['Do not let it finish your name.', '“At the last toll, I forgot the way home. Find what rings beneath Thornwick. Bring the names it took back into the light.”'],
-    ['Someone is outside.', 'Three knocks at the door. Then a fourth. From inside the room.'],
+    ['Someone is outside.', 'Two knocks at the door. Then a third. From inside the room.'],
     ['It heard you.', 'You still remember your name. Find why an empty tower rings, follow its trail beneath the Abbey, and decide the bell’s fate before it takes you.']
   ];
   function allowed() { return FX.prefs.jumpScares !== false && !FX.prefs.reducedScares && !FX.reduced(); }
@@ -52,12 +52,12 @@
   function shock(intro) {
     if (!allowed() || document.hidden) return false;
     clearShock(); elapsedSinceShock = performance.now();
-    var el = document.createElement('div'); el.className = 'dread-shock'; el.setAttribute('aria-hidden', 'true'); portrait(el);
+    var el = document.createElement('div'); el.className = 'dread-shock' + (intro ? ' dread-closeup' : ''); el.setAttribute('aria-hidden', 'true'); portrait(el);
     (intro && active ? active.el : document.body).appendChild(el); shockLayer = el;
     if (intro && active) active.el.classList.add('warning-impact');
     g.HollowFeedbackAudio.play();
     if (A.caption) A.caption('A sharp impact. A figure lunges from the dark.');
-    shockTimer = setTimeout(clearShock, 620); return true;
+    shockTimer = setTimeout(clearShock, intro ? 1100 : 620); return true;
   }
   function finish(continueGame) {
     if (!active) return;
@@ -71,36 +71,46 @@
     s.beat = n; s.el.dataset.beat = n;
     s.heading.textContent = beats[n][0]; s.copy.textContent = beats[n][1];
     if (n === 2) A.sfx('paper', { gain: .13 });
-    if (n === 3) { A.hush(2200); A.sfx('knock', { pan: -.5, gain: .2 }); }
-    if (n === 4) { s.el.classList.add('warning-finished'); s.enter.hidden = false; s.enter.focus({ preventScroll: true }); }
+    if (n === 3) { A.hush(8500); A.sfx('knock', { pan: -.65, gain: .2 }); }
+    if (n === 4) { s.el.classList.remove('warning-blackout'); s.el.classList.add('warning-finished'); s.enter.hidden = false; s.enter.focus({ preventScroll: true }); }
+    if (s.next) { s.next.hidden = !s.started || n >= 3; s.next.textContent = n === 2 ? 'Listen at the door' : 'Turn the page'; }
   }
   function tick() {
     var s = active; if (!s || !s.running) return;
     var now = performance.now(), dt = Math.max(0, Math.min(300, now - s.last)); s.last = now;
     if (document.hidden) return;
-    if (!allowed()) { clearShock(); s.el.classList.add('warning-gentle'); }
+    if (!allowed()) { clearShock(); s.el.classList.add('warning-gentle'); showBeat(s, 4); s.running = false; clearInterval(s.timer); return; }
     s.elapsed += dt;
-    var n = s.elapsed < 3300 ? 0 : s.elapsed < 6700 ? 1 : s.elapsed < 9700 ? 2 : s.elapsed < 11900 ? 3 : 4;
-    showBeat(s, n);
-    if (s.elapsed >= 11100 && !s.struck) { s.struck = true; shock(true); }
+    // Reading is player-paced. Only the final knock sequence uses a clock.
+    if (s.elapsed >= 1900 && !s.secondKnock) { s.secondKnock = true; A.sfx('knock', { pan: .65, gain: .25 }); }
+    if (s.elapsed >= 3800 && !s.inside) { s.inside = true; A.sfx('knock', { pan: 0, gain: .32 }); }
+    if (s.elapsed >= 4800 && !s.dark) { s.dark = true; s.el.classList.add('warning-blackout'); }
+    if (s.elapsed >= 6400 && !s.struck) { s.struck = true; shock(true); }
+    if (s.elapsed >= 8000) { showBeat(s, 4); s.running = false; clearInterval(s.timer); }
   }
   function open(v, after) {
     if (active) return true;
     if (!freshArrival(v) || !claimIntro(identity(v))) return false;
     var el = document.createElement('dialog'); el.className = 'warning-prologue'; el.setAttribute('aria-label', 'A warning from tomorrow');
-    el.innerHTML = '<div class="warning-background" aria-hidden="true"></div><div class="warning-door" aria-hidden="true"></div><article class="warning-message"><span class="warning-eyebrow">THORNWICK · ONE DAY TOO LATE</span><h1 id="warning-heading"></h1><p class="warning-copy" aria-live="polite"></p><p class="warning-promise">Find the bell. Recover the names. Come home while you still remember who you are.</p><button class="btn warning-listen">Listen to your warning</button><button class="btn warning-enter" hidden>Enter Thornwick</button><small class="warning-mode">' + (allowed() ? 'Sound and sudden scares enabled · change this in Settings' : 'Gentle version · sudden scares disabled') + '</small></article><button class="warning-skip" aria-label="Skip opening">Skip opening · Esc</button>';
+    el.innerHTML = '<div class="warning-background" aria-hidden="true"></div><div class="warning-door" aria-hidden="true"></div><article class="warning-message"><span class="warning-eyebrow">THORNWICK · ONE DAY TOO LATE</span><h1 id="warning-heading"></h1><p class="warning-copy" aria-live="polite"></p><p class="warning-promise">Find the bell. Recover the names. Come home while you still remember who you are.</p><button class="btn warning-listen">Listen to your warning</button><button class="btn warning-next" hidden>Turn the page</button><button class="btn warning-enter" hidden>Enter Thornwick</button><small class="warning-mode">' + (allowed() ? 'Read at your own pace · sound and sudden scares enabled' : 'Gentle version · sudden scares disabled') + '</small></article><button class="warning-skip" aria-label="Skip opening">Skip opening · Esc</button>';
     var s = active = { el: el, after: after, returnTo: document.activeElement, elapsed: 0, last: performance.now(), running: false, beat: -1,
-      backdrop: el.querySelector('.warning-background'), heading: el.querySelector('h1'), copy: el.querySelector('.warning-copy'), enter: el.querySelector('.warning-enter') };
+      backdrop: el.querySelector('.warning-background'), heading: el.querySelector('h1'), copy: el.querySelector('.warning-copy'), next: el.querySelector('.warning-next'), enter: el.querySelector('.warning-enter') };
     el.classList.toggle('warning-gentle', !allowed()); document.body.appendChild(el);
     if (el.showModal) el.showModal(); else { el.setAttribute('open', ''); el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); }
     showBeat(s, 0);
     el.querySelector('.warning-listen').onclick = function () {
-      if (active !== s || s.running) return;
+      if (active !== s || s.started) return;
+      s.started = true;
       A.unlock(); load(faceId); load('task1_environments_village_square');
-      g.HollowFeedbackAudio.prepare(impactId); A.hush(14000); s.el.classList.add('warning-listening');
+      g.HollowFeedbackAudio.prepare(impactId); s.el.classList.add('warning-listening');
       this.hidden = true;
       if (!allowed()) { s.copy.textContent = beats[1][1] + ' ' + beats[2][1] + ' ' + beats[4][1]; s.enter.hidden = false; s.enter.focus(); return; }
-      s.running = true; s.last = performance.now(); s.timer = setInterval(tick, 100);
+      s.next.hidden = false; s.next.focus({ preventScroll: true });
+    };
+    s.next.onclick = function () {
+      if (active !== s || !s.started || s.running || s.beat >= 3) return;
+      showBeat(s, s.beat + 1);
+      if (s.beat === 3) { s.running = true; s.el.classList.add('warning-suspense'); s.last = performance.now(); s.timer = setInterval(tick, 100); }
     };
     s.enter.onclick = function () { finish(true); }; el.querySelector('.warning-skip').onclick = function () { finish(true); };
     el.addEventListener('cancel', function (e) { e.preventDefault(); finish(true); });

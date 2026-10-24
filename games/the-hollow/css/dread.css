@@ -14,12 +14,18 @@
 .warning-message [hidden] { display:none; }
 .warning-mode { font:11px/1.5 Inter,sans-serif;margin-top:16px;color:#9a9c94; }
 .warning-skip { position:absolute;z-index:5;top:22px;right:24px;min-height:44px;background:#070d11b8;border:1px solid #86877a66;color:#ddd4c0;padding:10px 15px;cursor:pointer; }
-.warning-listening .warning-door { animation:warning-creep 12s ease-in forwards; }
+.warning-suspense .warning-door { animation:warning-creep 6.4s ease-in forwards; }
+.warning-blackout .warning-message,.warning-blackout .warning-door,.warning-blackout .warning-background { opacity:0;transition:opacity .35s ease-in; }
+.warning-impact { animation:warning-hit .24s linear both; }
 .warning-prologue[data-beat="3"] .warning-door { border-color:#c7c3ab88; box-shadow:inset -3px 0 1px #ddd3ac99,-22px 0 100px #000; }
 .warning-finished .warning-door { opacity:.15; }
 .dread-shock { position:fixed;inset:0;z-index:200;display:grid;place-items:center;background:radial-gradient(ellipse,#24252ad9,#020305 73%);pointer-events:none;overflow:hidden; }
 .dread-shock img { width:min(85vw,480px);height:min(88dvh,600px);object-fit:cover;object-position:50% 24%;filter:contrast(1.3) saturate(.3);animation:dread-lunge .62s cubic-bezier(.12,.8,.24,1) both; }
 .dread-shock canvas { width:min(94vw,1000px);height:auto;animation:dread-lunge .62s ease-out both; }
+.dread-closeup { background:#010203; }
+.dread-closeup img { width:100vw;height:100dvh;max-width:none;object-fit:cover;object-position:62% 25%;transform-origin:62% 28%;filter:contrast(1.8) saturate(.16) brightness(1.1);animation:dread-rush 1.1s cubic-bezier(.08,.85,.2,1) both; }
+.dread-closeup canvas { width:100vw;height:100dvh;object-fit:cover;animation:dread-rush 1.1s ease-out both; }
+.dread-closeup::after { content:"";position:absolute;inset:0;box-shadow:inset 0 0 14vw 4vw #000; }
 .dread-trace { position:absolute;inset:0;z-index:4;pointer-events:none;overflow:hidden;box-shadow:inset 0 0 120px #02030a; }
 .dread-trace p { position:absolute;left:50%;bottom:calc(var(--trayh) + 75px);transform:translateX(-50%);max-width:80%;padding:10px 16px;background:#060c12ed;color:#d4d9d6;border-left:1px solid #a59c7d;font:14px/1.5 Georgia,serif;z-index:2; }
 .dread-apparition { position:absolute;right:12%;top:12%;height:60%;max-width:35%;opacity:.2;mask-image:linear-gradient(#000 45%,transparent);animation:dread-recede 2.8s ease-out forwards; }
@@ -29,6 +35,8 @@
 @keyframes warning-creep { from { transform:perspective(900px) rotateY(-8deg); } to { transform:perspective(900px) rotateY(-24deg); } }
 @keyframes dread-lunge { 0% { transform:scale(.76) translateY(12px);opacity:.6; } 18%,72% { transform:scale(1.08);opacity:1; } 100% { transform:scale(1.12);opacity:0; } }
 @keyframes dread-recede { from { opacity:.3;transform:translateY(0); } to { opacity:0;transform:translateY(-12px); } }
+@keyframes dread-rush { 0% { transform:scale(1.4) rotate(-5deg);opacity:1; } 13% { transform:scale(2.65) rotate(3deg); } 27% { transform:scale(2.45) rotate(-2deg); } 65% { transform:scale(2.8) rotate(0deg);opacity:1; } 100% { transform:scale(3.1);opacity:0; } }
+@keyframes warning-hit { 0%,100% { transform:translate(0); } 20% { transform:translate(-9px,5px); } 45% { transform:translate(8px,-4px); } 70% { transform:translate(-4px,2px); } }
 .warning-gentle *,body.reduce-motion .dread-trace *,body.reduced-scares .dread-trace * { animation:none!important;transition:none!important; }
 body.reduced-scares .dread-shock,body.reduce-motion .dread-shock { display:none!important; }
 @media(max-width:600px) { .warning-message { padding:65px 25px 30px;max-width:none; } .warning-copy { min-height:180px;font-size:17px; } .warning-door { right:5%;width:65%;opacity:.5; } .warning-message h1 { font-size:38px; } .warning-promise { max-width:90%; } .dread-trace p { bottom:8px;font-size:12px;width:85%; } .warning-skip { top:12px;right:12px; } }

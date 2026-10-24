@@ -21,6 +21,7 @@ class El {
 }
 function store(){const data=new Map();return {getItem:k=>data.get(k),setItem:(k,v)=>data.set(k,v)};}
 function arrival(){return {phase:'playing',code:'TEST',cosmetics:{runId:'TEST:1'},game:{round:1},you:'p',me:{loc:'square',status:'alive'},opening:{evidence:{}}};}
+function startSuspense(h){const d=h.dialog();d.querySelector('.warning-listen').onclick();for(let i=0;i<3;i++)d.querySelector('.warning-next').onclick();}
 function harness(storage=store()){
  let now=0,id=0,blocked=false;const timers=new Map(),listeners={},played=[];const body=new El('body'),host=body.appendChild(new El());
  const document={body,hidden:false,activeElement:null,createElement:t=>new El(t),querySelector:()=>blocked?{}:null,addEventListener:(k,f)=>(listeners[k]||=[]).push(f)};
@@ -35,11 +36,22 @@ function harness(storage=store()){
 test('the warning needs a Listen gesture, builds to one scare, and continues exactly once',()=>{
  const h=harness(),v=arrival(),before=JSON.stringify(v);let continued=0;
  assert.ok(h.d.open(v,()=>continued++));h.advance(20000);assert.equal(h.played.includes('IMPACT'),false);
- const dialog=h.dialog();dialog.querySelector('.warning-listen').onclick();h.advance(11200);assert.equal(h.played.filter(x=>x==='IMPACT').length,1);
- h.advance(1000);assert.equal(dialog.querySelector('.warning-enter').hidden,false);dialog.querySelector('.warning-enter').onclick();dialog.querySelector('.warning-enter').onclick();assert.equal(continued,1);assert.equal(JSON.stringify(v),before);
+ const dialog=h.dialog();startSuspense(h);h.advance(6500);assert.equal(h.played.filter(x=>x==='IMPACT').length,1);
+ assert.ok(dialog.querySelector('.dread-closeup'));h.advance(1500);assert.equal(dialog.querySelector('.warning-enter').hidden,false);dialog.querySelector('.warning-enter').onclick();dialog.querySelector('.warning-enter').onclick();assert.equal(continued,1);assert.equal(JSON.stringify(v),before);
+});
+test('each warning page waits indefinitely for the reader; only the door sequence is timed',()=>{
+ const h=harness();h.d.open(arrival(),()=>{});const d=h.dialog();d.querySelector('.warning-listen').onclick();
+ for(let page=0;page<3;page++){
+  h.advance(60000);assert.equal(d.dataset.beat,page);assert.equal(h.played.includes('IMPACT'),false);
+  assert.equal(d.querySelector('.warning-next').hidden,false);d.querySelector('.warning-next').onclick();
+ }
+ assert.equal(d.dataset.beat,3);assert.equal(d.querySelector('.warning-next').hidden,true);
+ h.advance(4900);assert.ok(d.className.includes('warning-blackout'));assert.equal(h.played.includes('IMPACT'),false);
+ h.advance(1500);assert.equal(h.played.filter(x=>x==='IMPACT').length,1);
+ h.advance(1600);assert.equal(d.dataset.beat,4);h.advance(60000);assert.equal(d.dataset.beat,4);
 });
 test('Skip and Escape cancel pending scares and do not replay the warning after reload',()=>{
- const storage=store(),h=harness(storage);let continued=0;h.d.open(arrival(),()=>continued++);h.dialog().querySelector('.warning-listen').onclick();h.advance(5000);
+ const storage=store(),h=harness(storage);let continued=0;h.d.open(arrival(),()=>continued++);startSuspense(h);h.advance(5000);
  h.dispatch('keydown',{key:'Escape',preventDefault(){},stopImmediatePropagation(){}});h.advance(20000);assert.equal(continued,1);assert.equal(h.played.includes('IMPACT'),false);
  assert.equal(harness(storage).d.open(arrival(),()=>{}),false);
  const h2=harness();h2.d.open(arrival(),()=>continued++);h2.dialog().querySelector('.warning-skip').onclick();assert.equal(continued,2);
@@ -51,7 +63,7 @@ test('gentle preferences preserve the hook and continuation without a surprise o
  }
 });
 test('backgrounding pauses the build-up; changing effects cancels a shown scare immediately',()=>{
- const h=harness();h.d.open(arrival(),()=>{});h.dialog().querySelector('.warning-listen').onclick();h.advance(9000);
+ const h=harness();h.d.open(arrival(),()=>{});startSuspense(h);h.advance(4200);
  h.document.hidden=true;h.dispatch('visibilitychange');h.advance(30000);assert.equal(h.played.includes('IMPACT'),false);
  h.document.hidden=false;h.dispatch('visibilitychange');h.advance(2300);assert.equal(h.played.filter(x=>x==='IMPACT').length,1);
  h.prefs.reducedScares=true;h.window.HollowFx.apply();assert.equal(h.body.querySelector('.dread-shock'),null);assert.equal(h.dialog().querySelector('.dread-shock'),null);

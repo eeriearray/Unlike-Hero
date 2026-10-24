@@ -144,13 +144,13 @@ Everything is data; no engine edits are needed for new places, items, events or 
 
 ## Warning from tomorrow and discovery effects
 
-New expeditions begin with a short, gesture-started warning from the player's future self. A dark doorway, timed narration text, knocks and a sudden Whisperling appearance establish the mystery before the expedition letter. The final beat gives the player a concrete goal: trace the missing bell beneath the Abbey and recover the names it took.
+New expeditions begin with a short, gesture-started warning from the player's future self. The warning waits for the player to turn each page. Only after “Listen at the door” does an eight-second sequence of spaced knocks, a brief blackout and a close-up Whisperling lunge begin. A short camera jolt accompanies the reveal before the expedition letter. The final beat gives the player a concrete goal: trace the missing bell beneath the Abbey and recover the names it took.
 
 `js/dread.js` and `css/dread.css` also add moving-ink, graveyard apparition and bell-tower resonance effects to fresh local story discoveries. These are cosmetic: they do not send commands, spend actions or consume gameplay randomness. Each beat is claimed once per run, with a cooldown and deferral while other panels are open. Loaded history and remote discoveries do not replay scares in the wrong scene.
 
 Skip/Escape immediately continues to the expedition letter. Reduced motion, reduced scares or disabled jump scares provide a readable static opening. Hidden tabs pause the buildup. Supplied scene artwork, the Whisperling portrait and existing audio assets are reused through the shared mixer.
 
-Validation: all 176 Hollow tests pass, including six dedicated dread lifecycle tests. Desktop opening-to-letter and mobile Skip-to-letter flows were exercised in the browser; screenshots are in `art/validation/warning-opening.png` and `warning-mobile.png`. Subjective audio mixing still benefits from listening on the player's own speakers or headphones.
+Validation: all 181 Hollow tests pass, including seven dedicated dread lifecycle tests and indefinite reading-page checks. Desktop opening-to-letter and mobile Skip-to-letter flows were exercised in the browser; screenshots are in `art/validation/warning-opening.png` and `warning-mobile.png`. Subjective audio mixing still benefits from listening on the player's own speakers or headphones.
 
 ## Tests
 
