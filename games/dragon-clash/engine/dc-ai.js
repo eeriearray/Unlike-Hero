@@ -241,15 +241,18 @@
   /** Off the stage: steer home, jump, then use the recovery move. Returns held bits or null when safe. */
   Bot.prototype.recover = function (me) {
     if (me.grounded || me.state === 'ledge' || me.state === 'ledgeclimb' || me.state === 'hitstun') return null;
-    var main = null;
-    var self = this;
+    var main = null, self = this, foe = this.target(me), best = 1e9;
+    // Head for the nearest edge of a solid platform, favouring the one our rival stands on (so a gap hop lands there)
     this.sim.arena.platforms.forEach(function (p) {
-      if (!p.solid) return;
-      if (!main || Math.abs(p.x + p.w / 2 - me.x) < Math.abs(main.x + main.w / 2 - me.x)) main = p;
+      if (!p.solid || p.wall) return;
+      var d = me.x < p.x ? p.x - me.x : me.x > p.x + p.w ? me.x - p.x - p.w : 0;
+      if (foe && foe.x > p.x && foe.x < p.x + p.w) d -= 90;
+      if (d < best) { best = d; main = p; }
     });
     if (!main) return null;
-    if (this.overStage(me.x) && me.y < main.y) return null;
-    var toward = me.x < main.x + main.w / 2 ? B.right : B.left;
+    if (this.overStage(me.x) && me.y < main.y + 2) return null;
+    if (me.y < main.y - 5 && best < 70) return null;   // still above the platform and near it: mid-hop, the approach logic steers
+    var toward = me.x < main.x + 40 ? B.right : me.x > main.x + main.w - 40 ? B.left : me.x < main.x + main.w / 2 ? B.right : B.left;
     var held = toward;
     if (me.vy > 0 || me.y > main.y + 40) {
       if (me.airJumps > 0 && this.tapT === 0 && me.y > main.y - 60) self.press(B.jump, 2);
