@@ -9,7 +9,8 @@ import { createRequire } from 'node:module';
 import { randomBytes, randomInt } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { readFileSync, writeFileSync, mkdirSync, existsSync, renameSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
+import { networkInterfaces } from 'node:os';
 
 const require = createRequire(import.meta.url);
 const Engine = require('../engine/index.js');
@@ -17,7 +18,7 @@ const { HollowGame } = Engine;
 const CATALOG = Engine.catalog();
 
 const DATA_DIR = process.env.HOLLOW_DATA_DIR || fileURLToPath(new URL('./.data/', import.meta.url));
-const LOBBY_GRACE_MS = 20_000;            // a lobby seat survives a refresh / brief drop
+const LOBBY_GRACE_MS = 2 * 60_000;        // a lobby seat survives a refresh, a locked phone or a Wi-Fi drop
 const LOBBY_IDLE_MS = 15 * 60_000;        // an empty lobby is closed after this
 const GAME_IDLE_MS = 6 * 60 * 60_000;     // an abandoned expedition is closed after this
 const ENDED_KEEP_MS = 30 * 60_000;        // finished expeditions linger so late players can read the results
@@ -25,8 +26,31 @@ const MAX_ROOMS = 300;
 const RATE = { burst: 24, perSecond: 8 }; // per-socket command budget
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 
+/** IPv4 addresses other devices on the same Wi-Fi can reach (private ranges and Wi-Fi/Ethernet first). */
+function lanAddresses() {
+  const out = [];
+  for (const [nic, list] of Object.entries(networkInterfaces())) for (const a of list || []) {
+    if ((a.family !== 'IPv4' && a.family !== 4) || a.internal || /^(127\.|169\.254\.|192\.0\.0\.)/.test(a.address)) continue;
+    out.push({ address: a.address, nic, private: /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(a.address) });
+  }
+  return out.sort((x, y) => (y.private - x.private) || (/^en|^wl|^eth/.test(y.nic) - /^en|^wl|^eth/.test(x.nic))).map((a) => a.address);
+}
+
 export default function attach({ httpServer, basePath, log = console.log, dataDir = DATA_DIR, persist = true }) {
   const path = `${basePath}socket.io`;
+
+  // <basePath>net-info: this computer's Wi-Fi address, so a host who opened the game on localhost copies an invite
+  // link the other devices can open. Answered only to this computer.
+  const previous = httpServer.listeners('request').slice();
+  httpServer.removeAllListeners('request');
+  httpServer.on('request', (req, res) => {
+    if ((req.url || '').split('?')[0] !== `${basePath}net-info`) { for (const l of previous) l.call(httpServer, req, res); return; }
+    const a = req.socket.remoteAddress || '';
+    const local = a === '127.0.0.1' || a === '::1' || a === '::ffff:127.0.0.1';
+    res.writeHead(local ? 200 : 403, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+    res.end(JSON.stringify(local ? { addresses: lanAddresses(), port: httpServer.address() && httpServer.address().port } : { error: 'localhost only' }));
+  });
+
   const io = new Server(httpServer, {
     path, serveClient: true, destroyUpgrade: false, maxHttpBufferSize: 16 * 1024, pingInterval: 15_000, pingTimeout: 20_000,
   });
@@ -68,7 +92,8 @@ export default function attach({ httpServer, basePath, log = console.log, dataDi
   function closeRoom(room, reason) {
     room.game.destroy();
     for (const t of room.grace.values()) clearTimeout(t);
-    for (const s of room.sockets.values()) { s.emit('closed', { reason }); s.leave(`room:${room.code}`); s.data = {}; }
+    // on shutdown nobody is told the room closed: it is saved, and their seats come back when the server does
+    for (const s of room.sockets.values()) { if (reason !== 'shutdown') s.emit('closed', { reason }); s.leave(`room:${room.code}`); s.data = {}; }
     rooms.delete(room.code);
     if (reason !== 'shutdown') save(true);   // on shutdown the file keeps every room, so a restart can bring them back
   }
@@ -80,7 +105,8 @@ export default function attach({ httpServer, basePath, log = console.log, dataDi
     room.sockets.set(playerId, socket);
     socket.data = { code: room.code, playerId };
     socket.join(`room:${room.code}`);
-    room.game.setConnected(playerId, true);
+    const p = room.game.get(playerId);
+    if (p && !p.connected) room.game.setConnected(playerId, true);   // a refresh of a live seat (page back from the background) is not a "return"
     room.touched = Date.now();
     queueSync(room);
   }
@@ -141,7 +167,18 @@ export default function attach({ httpServer, basePath, log = console.log, dataDi
       const room = rooms.get(String(data && data.code || '').trim().toUpperCase());
       if (!room) return reply(ack, { error: 'No expedition with that code. It may have ended or expired.' });
       if (room.game.phase === 'ended') return reply(ack, { error: 'That expedition has already ended.' });
-      if (room.game.phase !== 'lobby') return reply(ack, { error: 'That expedition has already set out. Ask the host for the rejoin link, or use the device you started on.' });
+      if (room.game.phase !== 'lobby') {
+        // Lost your seat's key (another device, cleared browser, phone died)? Joining with the same name takes back a
+        // seat whose player is away. The old key stops working, so the seat is never held twice.
+        const want = name(data).trim().replace(/\s+/g, ' ').toLowerCase();
+        const p = want && room.game.players.find((x) => !x.bot && x.name.toLowerCase() === want && !room.sockets.has(x.id));
+        if (!p) return reply(ack, { error: 'That expedition has already set out. To take back your seat, join with the same name you played under.' });
+        unbind(socket, { leaving: true });
+        room.tokens.delete(p.id);
+        bind(socket, room, p.id);
+        log(`[the-hollow] ${p.name} took back a seat in ${room.code}`);
+        return reply(ack, seat(room, p.id));
+      }
       unbind(socket, { leaving: true });
       const res = room.game.addPlayer({ id: 'p' + randomBytes(6).toString('hex'), name: name(data) });
       if (res.error) return reply(ack, res);
