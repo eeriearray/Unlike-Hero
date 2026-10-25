@@ -183,3 +183,11 @@ Covered: content minimums and integrity, farmable rewards, clue redundancy, map 
 Opening, discovery and rare danger scares now use a procedural, articulated creature instead of a portrait zoom. Eyes emerge for 420 ms, followed by a 150 ms rush toward the camera, independently moving jaw and fingers, a decaying jolt, and a dark aftermath. The shared impact mixer fires at the lunge; the entire encounter ends after 1.5 seconds. Graveyard encounters approach from the opposite side. Reduced motion/scares, hidden tabs, Skip and scene teardown cancel the animation. No gameplay state is changed.
 
 Use `art/feedback-preview.html` on a local static server for a repeatable, muted-by-default preview. Animation timing and cancellation are covered in `test/the-hollow-scare-animation.test.mjs`.
+
+### Textured mask scare
+
+The scare renderer now uses `art/generated/scare-mask-v2.png`, a photographic-style weathered theatrical mask, instead of geometric anatomy. The textured face bends continuously below the nose during the lunge, with an off-axis approach, decaying camera jolt and dark aftermath. It preloads at script startup; missing artwork suppresses the impact sound. Existing reduced-scare and cancellation controls still apply.
+
+### Scare direction and variety
+
+The opening mask uses a glimpse, empty frame, 85 ms attack and abrupt head movement. The graveyard statue is distant before a blackout relocates it beside the camera; the Bellkeeper drops vertically into an iron-cage close-up at the tower; rare danger sends a Whisperling across the lens. These use four separate local textures, different impact times, and different impact pitch/panning through the existing mixer. Captions arrive with the reveal. All sequences are bounded to 1.5 seconds, with existing run claims, cooldowns and reduced-scare controls. The feedback review page has an encounter selector for replaying each one.

@@ -45,3 +45,9 @@ body.reduced-scares .dread-shock,body.reduce-motion .dread-shock { display:none!
 .warning-prologue { overflow-y:auto; }
 .warning-message { min-height:100%;height:auto; }
 .warning-skip { position:fixed; }
+/* The creature is articulated in canvas; never animate it as a flat portrait. */
+.dread-shock canvas.scare-creature,.dread-closeup canvas.scare-creature { width:100%;height:100%;max-width:none;object-fit:fill;animation:none;transform:none; }
+.warning-impact { animation:none; }
+
+/* The statue can occupy the existing scene before the empty-frame cut. */
+.dread-shock[data-scare="graveyard"] { background:transparent; }

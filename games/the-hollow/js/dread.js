@@ -4,6 +4,7 @@
   var FX = g.HollowFx, A = g.HollowAudio, UI = g.HollowUI;
   var active = null, serial = 0, previous = null, run = '', traceTimer = null, shockTimer = null, pendingTimer = null;
   var elapsedSinceShock = -Infinity, introMemory = new Set(), trace = null, traceLoc = null, shockLayer = null, images = {};
+  var stopCreature = null;
   var faceId = 'task3_whisperling_portrait', impactId = 'horror_sfx_free_horror_sfx_free_stingers_and_spooky_triggers_stinger_dfe1c4a8';
   var beats = [
     ['You received this tomorrow.', 'A letter in your own handwriting. Dated tomorrow. The first line has been pressed so hard into the paper that it almost tears.'],
@@ -45,19 +46,27 @@
     if (img && img.cloneNode && !s.backdrop.querySelector('img')) { var copy = img.cloneNode(); copy.alt = ''; s.backdrop.appendChild(copy); }
   }
   function clearShock() {
-    clearTimeout(shockTimer); if (shockLayer) shockLayer.remove(); shockLayer = null;
+    clearTimeout(shockTimer); if (stopCreature) stopCreature(); stopCreature = null; if (shockLayer) shockLayer.remove(); shockLayer = null;
     if (active) active.el.classList.remove('warning-impact');
     g.HollowFeedbackAudio.stop();
   }
-  function shock(intro) {
+  function shock(intro, variant) {
     if (!allowed() || document.hidden) return false;
     clearShock(); elapsedSinceShock = performance.now();
-    var el = document.createElement('div'); el.className = 'dread-shock' + (intro ? ' dread-closeup' : ''); el.setAttribute('aria-hidden', 'true'); portrait(el);
+    var el = document.createElement('div'); el.className = 'dread-shock' + (intro ? ' dread-closeup' : ''); el.setAttribute('aria-hidden', 'true');
     (intro && active ? active.el : document.body).appendChild(el); shockLayer = el;
     if (intro && active) active.el.classList.add('warning-impact');
-    g.HollowFeedbackAudio.play();
-    if (A.caption) A.caption('A sharp impact. A figure lunges from the dark.');
-    shockTimer = setTimeout(clearShock, intro ? 1100 : 620); return true;
+    variant = intro ? 'door' : variant || 'graveyard';
+    function impact() {
+      g.HollowFeedbackAudio.play(variant);
+      var profile = g.HollowScareFace.profiles && g.HollowScareFace.profiles[variant];
+      if (A.caption) A.caption(profile ? profile.caption : 'A sharp impact. Something rushes into your face.');
+    }
+    A.hush(1500);
+    if (g.HollowScareFace.play) {
+      stopCreature = g.HollowScareFace.play(el, { variant: variant, onImpact: impact });
+    } else { portrait(el); impact(); }
+    shockTimer = setTimeout(clearShock, g.HollowScareFace.duration || (intro ? 1100 : 620)); return true;
   }
   function finish(continueGame) {
     if (!active) return;
@@ -134,12 +143,12 @@
       clearTrace(); trace = document.createElement('div'); trace.className = 'dread-trace dread-' + key;
       var messages = { board: 'The ink is still moving. It knows the first letter.', route: 'For a moment, someone stands between the empty graves.', revealed: 'The empty frame answers. The sound rises through the floor.' };
       var caption = document.createElement('p'); caption.setAttribute('role', 'status'); caption.textContent = messages[key]; trace.appendChild(caption);
-      if (allowed()) { var silhouette = document.createElement('div'); silhouette.className = 'dread-apparition'; portrait(silhouette); trace.appendChild(silhouette); }
+      if (allowed() && key === 'board') { var silhouette = document.createElement('div'); silhouette.className = 'dread-apparition'; portrait(silhouette); trace.appendChild(silhouette); }
       traceLoc = v.me.loc; host.appendChild(trace); A.hush(1800);
       if (key === 'board') A.sfx('ink', { pan: -.45, gain: .2 });
       if (key === 'route') A.sfx('whisper', { pan: .65, gain: .15 });
       if (key === 'revealed') A.sfx('bellframe', { gain: .24 });
-      if (key !== 'board' && allowed() && performance.now() - elapsedSinceShock >= 20000) shock(false);
+      if (key !== 'board' && allowed() && performance.now() - elapsedSinceShock >= 20000) shock(false, key === 'revealed' ? 'tower' : 'graveyard');
       traceTimer = setTimeout(clearTrace, allowed() ? 2800 : 4200);
     }
     if (g.HollowEvents && g.HollowEvents.busy()) g.HollowEvents.after(perform); else pendingTimer = setTimeout(perform, 300);

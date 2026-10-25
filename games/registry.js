@@ -432,12 +432,12 @@ window.GAME_REGISTRY = [
   {
     "id": "the-hollow",
     "title": "The Hollow",
-    "tagline": "A dark-fantasy horror expedition for 1–6. Explore a vanished village, make terrible bargains, and decide whether the bell is silenced, rung backward, sold, or broken.",
-    "version": "1.0.0",
+    "tagline": "Enter Thornwick together. Follow the missing villagers, brave what waits in the bell tower, and decide how the haunting ends.",
+    "version": "1.1.0",
     "sdk": "1.x",
     "entry": "index.html",
     "server": "server/index.mjs",
-    "thumbnail": "thumbnail.svg",
+    "thumbnail": "art/generated/task1_environments_village_belltower.webp",
     "accent": "#c9a35b",
     "players": {
       "min": 1,

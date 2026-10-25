@@ -23,15 +23,15 @@ function store(){const data=new Map();return {getItem:k=>data.get(k),setItem:(k,
 function arrival(){return {phase:'playing',code:'TEST',cosmetics:{runId:'TEST:1'},game:{round:1},you:'p',me:{loc:'square',status:'alive'},opening:{evidence:{}}};}
 function startSuspense(h){const d=h.dialog();d.querySelector('.warning-listen').onclick();for(let i=0;i<3;i++)d.querySelector('.warning-next').onclick();}
 function harness(storage=store()){
- let now=0,id=0,blocked=false;const timers=new Map(),listeners={},played=[];const body=new El('body'),host=body.appendChild(new El());
+ let now=0,id=0,blocked=false;const timers=new Map(),listeners={},played=[],scenes=[];const body=new El('body'),host=body.appendChild(new El());
  const document={body,hidden:false,activeElement:null,createElement:t=>new El(t),querySelector:()=>blocked?{}:null,addEventListener:(k,f)=>(listeners[k]||=[]).push(f)};
  const prefs={jumpScares:true,reducedScares:false};
  const window={localStorage:storage,HollowFx:{prefs,reduced:()=>prefs.motion===true,apply(){}},HollowUI:{S:{ui:{},view:arrival()}},
- HollowAssets:{load:async()=>null},HollowScareFace:{draw:()=>true},HollowAudio:{sfx:n=>played.push(n),hush(){},caption(){},unlock(){}},HollowFeedbackAudio:{prepare(){},play:()=>played.push('IMPACT'),stop:()=>played.push('stop')},HollowStage:{el:()=>host},HollowEvents:{busy:()=>false}};
+ HollowAssets:{load:async()=>null},HollowScareFace:{draw:()=>true,duration:1500,play:(el,options)=>{scenes.push(options.variant);options.onImpact();return ()=>{};}},HollowAudio:{sfx:n=>played.push(n),hush(){},caption(){},unlock(){}},HollowFeedbackAudio:{prepare(){},play:()=>played.push('IMPACT'),stop:()=>played.push('stop')},HollowStage:{el:()=>host},HollowEvents:{busy:()=>false}};
  const context={window,document,Set,Array,performance:{now:()=>now},setTimeout:(fn,ms)=>{const k=++id;timers.set(k,{fn,at:now+ms});return k;},clearTimeout:k=>timers.delete(k),setInterval:(fn,ms)=>{const k=++id;timers.set(k,{fn,at:now+ms,repeat:ms});return k;},clearInterval:k=>timers.delete(k)};
  for(const file of ['feedback-policy.js','dread.js'])vm.runInNewContext(fs.readFileSync(new URL(file,base),'utf8'),context);
  function advance(ms){for(let t=0;t<ms;t+=100){now+=Math.min(100,ms-t);for(const [k,v]of [...timers])if(v.at<=now){if(v.repeat)v.at=now+v.repeat;else timers.delete(k);v.fn();}}}
- return {d:window.HollowDread,window,document,body,host,prefs,played,advance,block:b=>blocked=b,dialog:()=>body.children.find(e=>e.tagName==='DIALOG'),dispatch:(k,e={})=>(listeners[k]||[]).forEach(f=>f(e))};
+ return {d:window.HollowDread,window,document,body,host,prefs,played,scenes,advance,block:b=>blocked=b,dialog:()=>body.children.find(e=>e.tagName==='DIALOG'),dispatch:(k,e={})=>(listeners[k]||[]).forEach(f=>f(e))};
 }
 test('the warning needs a Listen gesture, builds to one scare, and continues exactly once',()=>{
  const h=harness(),v=arrival(),before=JSON.stringify(v);let continued=0;
@@ -79,4 +79,15 @@ test('remote discoveries and old arrivals do not inject an unrelated local scare
  const h=harness(),v=arrival();h.d.sync(v);v.opening.evidence.route=true;h.window.HollowUI.S.view=v;h.d.sync(v);h.advance(20000);assert.equal(h.played.includes('IMPACT'),false);
  assert.equal(h.d.open({...arrival(),game:{round:3}},()=>{}),false);
  assert.equal(h.d.open({...arrival(),opening:{evidence:{entered:true}}},()=>{}),false);
+});
+
+test('the opening, graves and tower route to distinct encounters and discoveries do not replay',()=>{
+ const intro=harness();intro.d.open(arrival(),()=>{});startSuspense(intro);intro.advance(6500);
+ assert.deepEqual(intro.scenes,['door']);
+ const h=harness(),v=arrival();h.d.sync(v);
+ v.me.loc='graveyard';v.opening.evidence.route=true;h.window.HollowUI.S.view=v;h.d.sync(v);h.advance(300);
+ assert.deepEqual(h.scenes,['graveyard']);h.advance(21000);
+ v.me.loc='belltower';v.opening.evidence.revealed=true;h.d.sync(v);h.advance(300);
+ assert.deepEqual(h.scenes,['graveyard','tower']);h.advance(21000);h.d.sync(v);h.advance(1000);
+ assert.deepEqual(h.scenes,['graveyard','tower']);
 });

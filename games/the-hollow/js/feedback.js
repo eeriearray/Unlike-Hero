@@ -4,6 +4,7 @@
   'use strict';
   var UI = g.HollowUI, FX = g.HollowFx, St = g.HollowStage, A = g.HollowArt, P = g.HollowFeedbackPolicy;
   var base = new URL('../', document.currentScript.src), config = { sanity: {}, damage: [] };
+  var stopCreature = null;
   var root = null, host = null, view = null, run = '', born = 0, cursor = null, used = false, pending = false;
   var hitTimer = null, scareTimer = null, hitToken = 0, sanityToken = 0, ticket = 0, lastHit = -Infinity, objectiveDone = null, completionShown = false;
   if (typeof FX.prefs.jumpScares !== 'boolean') FX.prefs.jumpScares = true;
@@ -23,6 +24,7 @@
     host.appendChild(root); return true;
   }
   function clearScare() {
+    if (stopCreature) stopCreature(); stopCreature = null;
     ticket++; pending = false; clearTimeout(scareTimer);
     if (root) root.querySelector('.feedback-scare').classList.remove('on');
     g.HollowFeedbackAudio.stop();
@@ -110,22 +112,38 @@
       blocked: blocked(), used: used, danger: danger, event: event };
   }
   function claimRun() { try { return P.claim(g.localStorage, run); } catch (e) { return false; } }
-  function scare(preview) {
+  function scare(preview, requestedVariant) {
     if (!view || !mount() || document.hidden || FX.prefs.jumpScares === false || P.gentle(FX.prefs, FX.reduced())) return false;
     if (!preview) {
       if (blocked() || used || !claimRun()) return false;
       used = true; // Persist BEFORE showing anything; reload cannot replay it.
     } else if (document.body.dataset.feedbackPreview !== 'true') return false;
+    clearScare();
+    var variant = preview && ['door', 'graveyard', 'tower', 'danger'].includes(requestedVariant) ? requestedVariant : 'danger';
     var el = root.querySelector('.feedback-scare'); el.replaceChildren();
-    var face = document.createElement('canvas'); face.setAttribute('aria-hidden', 'true');
-    if (g.HollowScareFace && g.HollowScareFace.draw(face)) el.appendChild(face);
-    else el.innerHTML = A.enemy('whisperling');
-    el.classList.add('on'); g.HollowFeedbackAudio.play();
-    if (g.HollowAudio.settings().captions) {
-      var captions = document.getElementById('captions');
-      if (captions) { var caption = document.createElement('span'); caption.textContent = '(A sharp impact. A face in the mist.)'; captions.appendChild(caption); setTimeout(function () { caption.remove(); }, 2400); }
+    function impact() {
+      g.HollowFeedbackAudio.play(variant);
+      if (g.HollowAudio.settings().captions) {
+        var captions = document.getElementById('captions');
+        var profile = g.HollowScareFace && g.HollowScareFace.profiles && g.HollowScareFace.profiles[variant];
+        if (captions) {
+          var caption = document.createElement('span');
+          caption.textContent = '(' + (profile ? profile.caption : 'A sharp impact. Something moves in the dark.') + ')';
+          captions.appendChild(caption); setTimeout(function () { caption.remove(); }, 2400);
+        }
+      }
     }
-    clearTimeout(scareTimer); scareTimer = setTimeout(clearScare, 560); return true;
+    el.classList.add('on');
+    if (g.HollowScareFace && g.HollowScareFace.play) {
+      g.HollowAudio.hush(1500);
+      stopCreature = g.HollowScareFace.play(el, { variant: variant, onImpact: impact });
+    } else {
+      var face = document.createElement('canvas'); face.setAttribute('aria-hidden', 'true');
+      if (g.HollowScareFace && g.HollowScareFace.draw(face)) el.appendChild(face);
+      else el.innerHTML = A.enemy('whisperling');
+      impact();
+    }
+    clearTimeout(scareTimer); scareTimer = setTimeout(clearScare, g.HollowScareFace.duration || 560); return true;
   }
   function sync(v) {
     view = v;
@@ -183,5 +201,5 @@
   var media = g.matchMedia && g.matchMedia('(prefers-reduced-motion: reduce)');
   if (media && media.addEventListener) media.addEventListener('change', function () { FX.apply(); });
   g.HollowFeedback = { ready: ready, sync: sync, react: react, badges: badgeHtml,
-    previewScare: function () { return scare(true); } };
+    previewScare: function (variant) { return scare(true, variant); } };
 })(window);

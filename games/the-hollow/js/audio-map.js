@@ -75,15 +75,21 @@ window.HollowAudioMap = {
   "cueOptions": {
     "bell": {
       "duration": 4.5,
-      "gain": 0.28
+      "gain": 0.34
     },
     "toll": {
       "duration": 4.5,
-      "gain": 0.28
+      "gain": 0.38
     },
     "distantBell": {
       "duration": 5.5,
       "gain": 0.28
+    },
+    "turn": {
+      "duration": 1.0,
+      "gain": 0.22,
+      "rate": 0.5,
+      "filter": 700
     },
     "step": {
       "duration": 2.4,

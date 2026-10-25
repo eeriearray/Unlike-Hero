@@ -32,7 +32,7 @@ main { max-width:1100px; margin:auto; } h1 { color:#ead29b; font:32px Georgia,se
 <p class="intro">Sanity overlays, injury textures, status symbols and scare preferences. This page uses a local demonstration view and never reads or writes an expedition. The optional face appears only when you press its preview button.</p>
 <div class="controls" aria-label="Sanity presets">
 <button class="btn" data-sanity="7">High sanity</button><button class="btn" data-sanity="4">Medium sanity</button><button class="btn" data-sanity="1">Low sanity</button>
-<button class="btn" id="damage-preview">Damage reaction</button><button class="btn" id="sanity-preview">Sanity reaction</button><button class="btn" id="scare-preview">Preview optional scare</button>
+<button class="btn" id="damage-preview">Damage reaction</button><button class="btn" id="sanity-preview">Sanity reaction</button><label for="review-scare-scene">Encounter</label><select id="review-scare-scene"><option value="door">Opening · mask at the door</option><option value="graveyard">Graveyard · moving statue</option><option value="tower">Tower · iron cage</option><option value="danger">Danger · passing Whisperling</option></select><button class="btn" id="scare-preview">Preview optional scare</button>
 </div>
 <div class="preferences"><label><input type="checkbox" data-feedback-pref="reducedScares" id="review-gentle"> Reduced scares</label><label><input type="checkbox" id="review-motion"> Reduced motion</label><label><input type="checkbox" id="review-jumps" data-feedback-pref="jumpScares" checked> Enable optional scare preview</label><label><input type="checkbox" id="review-mute" checked> Mute preview audio</label></div>
 <header id="review-hud"></header>
@@ -63,7 +63,7 @@ main { max-width:1100px; margin:auto; } h1 { color:#ead29b; font:32px Georgia,se
   document.querySelectorAll('[data-sanity]').forEach(function(button){button.addEventListener('click',function(){view.me.san=Number(button.dataset.sanity);render();document.getElementById('review-summary').textContent=button.textContent+': '+HollowFeedbackPolicy.tier(view.me)+' overlay.';});});
   document.getElementById('damage-preview').addEventListener('click',function(){HollowStage.flash('fx-hurt',500);});
   document.getElementById('sanity-preview').addEventListener('click',function(){HollowStage.flash('fx-san',400);});
-  document.getElementById('scare-preview').addEventListener('click',function(){document.getElementById('review-summary').textContent=HollowFeedback.previewScare()?'Optional scare preview.':'Scare suppressed by the current preferences.';});
+  document.getElementById('scare-preview').addEventListener('click',function(){document.getElementById('review-summary').textContent=HollowFeedback.previewScare(document.getElementById('review-scare-scene').value)?'Optional scare preview.':'Scare suppressed by the current preferences.';});
   document.getElementById('review-motion').addEventListener('change',function(e){HollowFx.prefs.motion=e.target.checked?'on':'off';HollowFx.apply();});
   document.getElementById('review-mute').addEventListener('change',function(e){HollowAudio.setMuted(e.target.checked);});
   document.getElementById('review-motion').checked=HollowFx.reduced();

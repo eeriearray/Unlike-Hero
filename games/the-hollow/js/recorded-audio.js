@@ -173,11 +173,14 @@
     last[name] = now; A.caption(info.caption);
     playAsset(id, Object.assign({ gain: name === 'hover' ? .12 : .32, duration: name === 'bell' || name === 'toll' ? 5 : 2.5, pan: name === 'whisper' ? Math.random() * 1.6 - .8 : 0, voice: name === 'whisper' || name === 'sanity' }, (map.cueOptions || {})[name] || {}, options || {}, { pan: options && Number.isFinite(options.pan) ? Math.max(-.75, Math.min(.75, options.pan)) : name === 'whisper' ? Math.random() * 1.6 - .8 : 0 }));
   };
-  A.playImpact = function (id) {
+  A.playImpact = function (id, options) {
     if (!ctx || ctx.state !== 'running' || document.hidden || A.settings().muted || !A.settings().master || !A.settings().sfx) return false;
-    if (playAsset(id, { group: 'scare', gain: .6, duration: .54 })) return true;
+    options = options || {};
+    var rate = Number.isFinite(options.rate) ? Math.max(.5, Math.min(1.5, options.rate)) : 1;
+    var pan = Number.isFinite(options.pan) ? Math.max(-.75, Math.min(.75, options.pan)) : 0;
+    if (playAsset(id, { group: 'scare', gain: .6, duration: .54, rate: rate, pan: pan })) return true;
     var osc = ctx.createOscillator(), gain = ctx.createGain(), now = ctx.currentTime;
-    osc.type = 'triangle'; osc.frequency.setValueAtTime(115, now); osc.frequency.exponentialRampToValueAtTime(35, now + .22);
+    osc.type = 'triangle'; osc.frequency.setValueAtTime(115 * rate, now); osc.frequency.exponentialRampToValueAtTime(35, now + .22);
     gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(.3, now + .012); gain.gain.linearRampToValueAtTime(0, now + .24);
     osc.connect(gain); gain.connect(backend.sfx); var track = { source: osc, gain: gain, group: 'scare' }; effects.push(track);
     osc.onended = function () { osc.disconnect(); gain.disconnect(); effects = effects.filter(function (e) { return e !== track; }); };

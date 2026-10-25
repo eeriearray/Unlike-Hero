@@ -6,7 +6,7 @@
 <title>Unlike Hero</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Bungee&family=Cinzel+Decorative:wght@900&family=Chakra+Petch:wght@400;500;600;700&family=DynaPuff:wght@400;500;600;700&family=Fredoka:wght@400;500;600;700&family=Limelight&family=IBM+Plex+Mono:wght@400;500;600&family=Michroma&family=Monoton&family=Orbitron:wght@500;600;700&family=Pirata+One&family=Racing+Sans+One&family=Saira+Stencil+One&family=Share+Tech+Mono&family=Special+Elite&family=Teko:wght@500;600;700&display=swap" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Bungee&family=Cinzel+Decorative:wght@900&family=Cormorant+Garamond:wght@600;700&family=Chakra+Petch:wght@400;500;600;700&family=DynaPuff:wght@400;500;600;700&family=Fredoka:wght@400;500;600;700&family=Limelight&family=IBM+Plex+Mono:wght@400;500;600&family=Michroma&family=Monoton&family=Orbitron:wght@500;600;700&family=Pirata+One&family=Racing+Sans+One&family=Saira+Stencil+One&family=Share+Tech+Mono&family=Special+Elite&family=Teko:wght@500;600;700&display=swap" media="print" onload="this.media='all'">
 <style>
 :root{
   --paper:#10140f; --surface:#1a2018; --surface-2:#252d22; --line:#475141;
@@ -83,6 +83,16 @@ button:focus-visible,input:focus-visible,a:focus-visible,summary:focus-visible,s
 .card-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;margin-bottom:11px;color:var(--muted);font:500 11px var(--f-mono);letter-spacing:0;text-transform:uppercase}
 .card-meta .players{color:var(--ink)}
 .game-title{margin:0 0 8px;color:var(--ink);font:400 32px/1.05 var(--f-display);letter-spacing:0;text-transform:uppercase}
+.game-title-the-hollow{font-family:'Cormorant Garamond',Georgia,serif;font-size:36px;font-weight:700;line-height:1.12;letter-spacing:.075em;color:#efe1bb;text-shadow:0 2px 1px #080c0d,0 0 20px rgba(201,163,91,.15)}
+.thumb-wrap-the-hollow{background:#0c1215;isolation:isolate}
+.thumb-wrap-the-hollow .thumb{object-position:58% 44%}
+.thumb-wrap-the-hollow::after{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(5,10,12,.05) 15%,rgba(5,10,12,.25) 43%,rgba(5,10,12,.94) 100%);pointer-events:none}
+.hollow-banner{position:absolute;inset:auto 16px 19px;z-index:2;display:grid;justify-items:center;gap:5px;text-align:center;pointer-events:none}
+.hollow-banner-kicker{font:500 9px/1.4 var(--f-mono);letter-spacing:.22em;color:#dbcaa1;text-transform:uppercase}
+.hollow-banner-title{font:600 clamp(30px,3.3vw,48px)/1.05 'Cormorant Garamond',Georgia,serif;letter-spacing:.12em;color:#f5e8c8;text-shadow:0 2px 8px #000}
+.hollow-banner-rule{width:72px;height:1px;margin:4px 0;background:linear-gradient(90deg,transparent,#c9a35b,transparent)}
+.hollow-banner-caption{font:500 9px/1.4 var(--f-mono);letter-spacing:.14em;color:#c4cdd0;text-transform:uppercase}
+@media(max-width:640px){.hollow-banner-title{font-size:42px}.game-title.game-title-the-hollow{font-size:34px}}
 .game-title-mafia{font-family:'Special Elite',serif;font-size:29px;color:#ff7772;text-transform:none}
 .game-title-party-pack{font-family:'DynaPuff',var(--f-display);font-size:31px;font-weight:700}
 .party-word{display:inline-block;background-clip:text;-webkit-background-clip:text;color:transparent;-webkit-text-fill-color:transparent;filter:drop-shadow(0 1px 0 #fff1a6) drop-shadow(3px 3px 0 #a84772) drop-shadow(5px 5px 0 #382050)}
@@ -245,8 +255,9 @@ function renderGames() {
       </div>` : `<span class="single-role">${esc(firstRole.name || 'Play')}</span>`;
     return `
       <article class="card">
-        <div class="thumb-wrap">
+        <div class="thumb-wrap thumb-wrap-${esc(g.id)}">
           <img class="thumb" src="${esc(g.path + (g.thumbnail || ''))}" alt="" loading="lazy" decoding="async">
+          ${g.id === 'the-hollow' ? '<div class="hollow-banner" aria-hidden="true"><span class="hollow-banner-kicker">A co-op horror expedition</span><span class="hollow-banner-title">THE HOLLOW</span><span class="hollow-banner-rule"></span><span class="hollow-banner-caption">Thornwick is waiting.</span></div>' : ''}
           ${g.status && g.status !== 'playable' ? `<span class="status">${esc(g.status)}</span>` : ''}
         </div>
         <div class="card-body">

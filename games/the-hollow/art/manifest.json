@@ -2,7 +2,7 @@
   "version": 1,
   "mode": "local-preview-not-cleared-for-publication",
   "maxBytes": 40000000,
-  "totalBytes": 39343807,
+  "totalBytes": 39379685,
   "assets": {
     "1_mimic_garden_icons_mimic_garden_carrot_4a98a1b4": {
       "file": "art/generated/1_mimic_garden_icons_mimic_garden_carrot_4a98a1b4.webp",
@@ -1553,7 +1553,7 @@
     "horror_sfx_free_horror_sfx_free_ambient_bell_low_560be0e3": {
       "file": "art/generated/horror_sfx_free_horror_sfx_free_ambient_bell_low_560be0e3.mp3",
       "type": "audio",
-      "bytes": 139389,
+      "bytes": 180525,
       "pack": "horror_sfx_free",
       "source": "Horror SFX Free/Ambient/Bell_low.wav",
       "regions": [
@@ -6111,8 +6111,8 @@
       "channels": 2,
       "loop": false,
       "file": "art/generated/task4_audio_distant_bell_variation.ogg",
-      "bytes": 81253,
-      "sha256": "47050e78b1f056ace044afcad696821049017b3012b8c393e9018b28d0b5413b"
+      "bytes": 83621,
+      "sha256": "cf05650a0a482d52d16e1f67fdea17878ab518c2f2c97eee254dac249abce33a"
     },
     "task4_audio_footsteps_on_stone": {
       "sourceSha256": "990fc8b88de9e7c82cc320e50b676705da79700cb673b0948a146311f8702338",
@@ -6271,8 +6271,8 @@
       "channels": 1,
       "loop": false,
       "file": "art/generated/task4_audio_village_bell.ogg",
-      "bytes": 60647,
-      "sha256": "a1f9a687af9a3a596068e0a59d853ac9ec33f0c95491288237b68949c6e2b39b"
+      "bytes": 53021,
+      "sha256": "97133159a7088ce028f5ecc561bfdd5a04dc7e13122ffb319f59a1d1467340ee"
     },
     "task4_effects_discovery_light_accent": {
       "sourceSha256": "5cf49e7cc66ecc01538cb8bdc01ad1b10b135142afe3d531ef3ba4624bb173e0",
