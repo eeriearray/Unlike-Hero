@@ -57,7 +57,10 @@
     var upgrades = v.me.offer ? '<section class="opening-upgrade" aria-label="Choose an improvement"><b>You learned something. Choose one improvement · free</b>' + v.me.offer.map(function (u) { return '<button class="btn small" data-act="levelup" data-pick="' + esc(u.id) + '" title="' + esc(u.text) + '">' + esc(u.name) + '</button>'; }).join('') + '</section>' : '';
     // One decision at a time: upgrades replace the normal tray until resolved.
     if (upgrades) return upgrades;
-    return '<section class="expedition-guide guide-support" aria-label="Turn and help"><span>' + v.game.ap + ' actions left · Haunting Clock ' + v.game.clock + '/' + v.game.clockMax + '</span><details><summary>How this works</summary><button class="btn ghost small" data-act="fieldletter">Read the expedition letter</button><p>Choose a card, read what it costs, then confirm. Your lanterns are actions. Each normal action spends one.</p><p>' + (v.game.readingTime ? 'Take your time reading. When your actions run out, close any results or choices and the next turn starts automatically.' : 'The active player takes a timed turn. Discoveries belong to the whole party.') + '</p><p>Vitality is health. Sanity is mental strength. Both can be restored. The Haunting Clock advances between rounds and makes the Hollow more dangerous.</p><button class="btn ghost small" data-act="howto">Full instructions</button></details></section>';
+    return '';
+  }
+  function support(v) {
+    return '<section class="expedition-guide guide-support" aria-label="Turn and help"><span>' + v.game.ap + ' actions left · Haunting Clock ' + v.game.clock + '/' + v.game.clockMax + '</span><details class="hud-help"><summary>How this works</summary><div class="hud-help-content"><button class="btn ghost small" data-act="fieldletter">Read the expedition letter</button><p>Choose a card, read what it costs, then confirm. Your lanterns are actions. Each normal action spends one.</p><p>' + (v.game.readingTime ? 'Take your time reading. When your actions run out, close any results or choices and the next turn starts automatically.' : 'The active player takes a timed turn. Discoveries belong to the whole party.') + '</p><p>Vitality is health. Sanity is mental strength. Both can be restored. The Haunting Clock advances between rounds and makes the Hollow more dangerous.</p><button class="btn ghost small" data-act="howto">Full instructions</button></div></details></section>';
 
   }
   UI.fieldLetterModal = function (v) {
@@ -74,5 +77,5 @@
   function canAdvance(v, blocked) {
     return !!(v && v.phase === 'playing' && v.game && v.game.readingTime && v.game.active === v.you && v.game.ap === 0 && v.me && v.me.status === 'alive' && !v.me.pendingLevels && (!v.enc || (v.enc.kind === 'loc' && v.enc.result && !v.enc.hold)) && !v.vote && !blocked);
   }
-  g.HollowGuidance = { next: next, mission: mission, recommend: recommend, canAdvance: canAdvance };
+  g.HollowGuidance = { next: next, mission: mission, support: support, recommend: recommend, canAdvance: canAdvance };
 })(window);

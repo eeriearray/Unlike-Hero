@@ -44,15 +44,7 @@
         el.appendChild(img); el.classList.add('seal-ready');
       });
     });
-    // Supplemental title is always a real current location, even during combat.
-    var v = UI.S.view, host = document.querySelector('.game2');
-    if (host && v && v.me && UI.S.cat) {
-      var title = document.getElementById('place-heading');
-      if (!title) { title = document.createElement('div'); title.id = 'place-heading'; title.className = 'place-heading'; document.getElementById('adv').appendChild(title); }
-      var loc = UI.S.cat.locations[v.me.loc], region = UI.S.cat.regions[loc.region];
-      var html = '<span>' + esc(region.name) + ' / Chapter I</span><h1>' + esc(loc.name) + '</h1>';
-      if (title.dataset.place !== v.me.loc) { title.innerHTML = html; title.dataset.place = v.me.loc; }
-    }
+
   }
   function schedule() { if (!scheduled) { scheduled = true; requestAnimationFrame(scan); } }
   fetch(new URL('art/class-insignia.json', base)).then(function (r) { return r.ok ? r.json() : {}; }).then(function (data) { seals = data; return assets.ready; }).then(schedule).catch(function () {});

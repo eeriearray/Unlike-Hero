@@ -54,7 +54,7 @@
       '<div class="hbars"><span class="hb" title="Vitality"><i class="vit" style="width:' + pct(m.vit, m.maxVit) + '%"></i><em>' + 'Vitality ' + m.vit + '</em></span><span class="hb" title="Sanity"><i class="san" style="width:' + pct(m.san, m.maxSan) + '%"></i><em>' + 'Sanity ' + m.san + '</em></span></div>' +
       '<div class="hturn' + (mine ? ' mine' : '') + '">' + (mine ? '<b>Your turn</b>' + UI.apPips() : '<span>' + (act ? esc(act.name.replace(' (ghost)', '')) + '\'s turn' : '') + '</span>') + '</div></div>';
     var clock = '<div id="hud-clock" class="h-clock" data-phase="' + ph + '" role="img" aria-label="The Haunting Clock: ' + G.clock + ' of ' + cc.clockMax + ', phase ' + ph + '">' + clockDial(G, cc) + '<span><small>The Haunting</small><b>' + tone + '</b></span></div>';
-    var party = '<div class="h-party" aria-label="The party">' + V.players.map(function (p) {
+    var party = '<div class="h-party" aria-label="The party">' + V.players.filter(function (p) { return p.id !== V.you; }).map(function (p) {
       var pc = UI.cls(p.cls), on = G.active === p.id;
       return '<span class="hp-p' + (on ? ' on' : '') + (p.status !== 'alive' ? ' down' : '') + (p.id === V.you ? ' you' : '') + (!p.connected && p.id.indexOf('bot') !== 0 ? ' away' : '') + '" data-pid="' + esc(p.id) + '" style="--ac:' + pc.color + '" title="' + esc(p.name + ' — ' + pc.name + (p.loc ? ', ' + loc(p.loc).name : '') + (p.status === 'alive' ? ', ' + p.vit + ' Vitality, ' + p.san + ' Sanity' : ', ' + p.status)) + '">' + A.portrait(p.cls, pc.color) + (p.status === 'alive' ? '<i class="pv" style="width:' + pct(p.vit, p.maxVit) + '%"></i>' : '') + '</span>';
     }).join('') + '</div>';
@@ -71,7 +71,9 @@
       var sl = function (k, lab) { return '<label class="sl"><span>' + lab + '</span><input type="range" min="0" max="100" value="' + Math.round(a[k] * 100) + '" data-act="vol" data-bus="' + k + '" aria-label="' + lab + ' volume"></label>'; };
       pop = '<div class="soundpop" role="dialog" aria-label="Sound"><button class="btn small' + (a.muted ? ' primary' : '') + '" data-act="mute">' + (a.muted ? 'Unmute' : 'Mute all') + '</button>' + sl('master', 'Master') + sl('ambient', 'Ambience') + sl('sfx', 'Effects') + sl('music', 'Music') + '<button class="btn ghost small" data-act="settings">More settings…</button></div>';
     }
-    return '<header class="hud2" data-phase="' + ph + '">' + me + clock + party + btns + pop + '</header>';
+    var center = '<div class="hud-location"><h1>' + esc(loc(m.loc).name) + '</h1>' + (g.HollowGuidance ? g.HollowGuidance.support(V) : '') + '</div>';
+    var companions = V.players.length > 1 ? party : '';
+    return '<header class="hud2" data-phase="' + ph + '"><div class="hud-left">' + me + clock + '</div>' + center + '<div class="hud-right">' + btns + companions + '</div>' + pop + '</header>';
   };
   Story.party = function () { return ''; };
 
