@@ -17,7 +17,7 @@
     } else {
       UI.S.view = clone(data.playing);
       if (mode === 'map') {
-        $('review').innerHTML = '<section class="review-map" aria-label="Sample parchment map"><div class="mapwrap"><div id="mapsvg"></div><div id="maptip" class="maptip"></div></div></section>';
+        $('review').innerHTML = '<section class="review-map" aria-label="Sample night atlas"><div class="mapwrap"><div id="mapsvg"></div><div id="maptip" class="maptip"></div></div></section>';
         var host = document.querySelector('.mapwrap'); g.HollowMap.reset(); g.HollowMap.attach(host); $('mapsvg').innerHTML = g.HollowMap.render(); g.HollowMap.ensureFit(UI.S.view.me.loc); g.HollowMap.apply();
       } else {
         $('review').innerHTML = '<section class="review-guide">' + g.HollowStory.bar() + '<div class="review-guide-copy"><h2>Five things to keep close.</h2><p>The same HUD and tips used by the game. No turn timer is running in this sample.</p></div><nav class="nav" aria-label="Sections"><button data-act="tab" data-t="act">Adventure</button><button data-act="tab" data-t="map">Map</button><button data-act="tab" data-t="you">You</button><button data-act="tab" data-t="journal">Journal</button></nav></section>';

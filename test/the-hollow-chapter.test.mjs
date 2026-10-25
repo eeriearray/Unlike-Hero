@@ -69,7 +69,7 @@ test('five HUD tips finish and persist; blocked storage does not break intro or 
  for(let i=0;i<5;i++)h.dispatch('click',h.doc.querySelector('[data-chapter="tip-next"]'));
  assert.equal(h.doc.querySelector('.chapter-tip'),null);if(!denied)assert.ok(h.memory.get('hollow.hud-guide.v1'));assert.doesNotThrow(()=>{h.c.openIntro();h.c.finishIntro();});}
 });
-test('parchment map preserves the authoritative graph and fog, with four distinct route symbols',()=>{
+test('night atlas preserves the authoritative graph and fog, with four distinct route symbols',()=>{
  const h=harness();h.view(fixture.playing);const v=h.w.HollowUI.S.view,before=JSON.stringify(v),svg=h.w.HollowMap.render();assert.match(svg,/chapter-map/);assert.match(svg,/fogmask/);assert.match(svg,/data-bg="1"/);
  const nodes=[...svg.matchAll(/data-act="selnode" data-loc="([^"]+)"/g)].map(m=>m[1]);assert.deepEqual(nodes.sort(),Object.keys(v.map.locs).sort());
  for(const kind of ['path','hidden','locked','guarded'])assert.ok(svg.includes('data-route="'+kind+'"'));
@@ -77,4 +77,17 @@ test('parchment map preserves the authoritative graph and fog, with four distinc
 });
 test('HUD tips replace legacy coaching and can be replayed from in-game Settings only',()=>{
  const h=harness();assert.equal(h.w.HollowStory.coach(),'');assert.doesNotMatch(h.w.HollowUI.settingsModal(),/Show the five HUD tips/);h.view(fixture.playing);assert.match(h.w.HollowUI.settingsModal(),/Show the five HUD tips/);assert.equal(h.c.tips.length,5);assert.equal(h.c.scenes.length,4);
+});
+
+test('atlas uses location glyphs and hides undiscovered places in both map sizes',()=>{
+ const h=harness();h.view(fixture.playing);const S=h.w.HollowUI.S;
+ for(const mini of [false,true]) {
+  const svg=h.w.HollowMap.render({mini});
+  assert.equal([...svg.matchAll(/class="location-glyph"/g)].length,Object.keys(S.view.map.locs).length);
+  for(const id of Object.keys(S.cat.locations).filter(id=>!S.view.map.locs[id])) {
+   assert.ok(!svg.includes('data-loc="'+id+'"'));
+   assert.ok(!svg.includes('>'+S.cat.locations[id].name+'<'));
+  }
+  assert.match(svg,/atlas-terrain/);assert.doesNotMatch(svg,/doodad/);
+ }
 });

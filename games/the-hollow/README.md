@@ -14,6 +14,10 @@ The opening now ties a personal warning to the removal records, the empty graves
 
 A dismissible expedition letter opens as play begins after character selection. It explains the goal, scene interaction, costs and dice, health and sanity, and solo or party turn pacing. Close it with ×, Escape or **Fold the letter**, and reopen it under **How this works**.
 
+## Field atlas
+
+The map uses dark contour terrain, distinct location glyphs, readable serif labels, and a gold next-clue marker. Open travel routes are pale green; locked, hidden and guarded routes retain separate symbols. Discovered places fit the viewport, with pan, zoom and party markers still available. Locations and roads come from the authoritative player view.
+
 ## Play
 
 From the repository root:
