@@ -12,7 +12,7 @@ npm start
 
 Open `http://localhost:8080/games/crownfall-kart/`, or choose **Crownfall Kart** in the hub. If the server was already running when this folder was added, restart it to load the new online server. Static solo play needs no server simulation; the classic scripts and bundled assets are served over local HTTP. Online rooms require the Node hub server and HTTP/HTTPS.
 
-Version 1.2 defaults to **Rift Sprint**, a short start-to-finish run. Auto acceleration and steering assist start enabled; both can be switched off in the garage. Manual left/right input always overrides assistance. Use **Explore the courses** to inspect the actual route maps, terrain and soundtrack tempo. Choose a weight class, mode and track, then **Take the crown** to play solo. **Host online** creates a four-letter room code; friends open the same hub server and choose **Join race**. The host starts when the lobby is ready. Up to eight humans can join, and AI fills remaining seats. Races already in progress reject late joins. Disconnecting turns that seat into an AI; the next connected human inherits host controls. Reconnection/seat reclamation and cross-server matchmaking are not included.
+The game defaults to a three-lap **Lap race** driven from the cockpit. Driving is manual by default on keyboard and gamepad; touch screens start with **Auto accelerate** and **Gentle steering assist** on, and both are options in the garage on every device. Manual left/right input always overrides assistance. Use **Explore the courses** to inspect the actual route maps, terrain and soundtrack tempo. Choose a weight class, mode and track, then **Take the crown** to play solo. **Host online** creates a four-letter room code; friends open the same hub server and choose **Join race**. The host starts when the lobby is ready. Up to eight humans can join, and AI fills remaining seats. Races already in progress reject late joins. Disconnecting turns that seat into an AI; the next connected human inherits host controls. Reconnection/seat reclamation and cross-server matchmaking are not included.
 
 | Control | Action |
 | --- | --- |
@@ -22,26 +22,26 @@ Version 1.2 defaults to **Rift Sprint**, a short start-to-finish run. Auto accel
 | Space while airborne | Tap in the last 0.16 seconds before a ramp landing for a trick boost |
 | E or item slot | Use held item |
 | R | Return to last validated checkpoint; invalidates a time-trial record |
-| C or View button | Cycle camera: Chase → Close chase → Cockpit → Hood (remembered on this device) |
+| C or View button | Switch between the Cockpit and Hood views (remembered on this device) |
 | Escape | Pause/resume solo; open/close menu online while racing continues |
 | Gamepad | Left stick steer; R2 accelerate; L2 brake; A drift; X item; Y camera view |
 | Touch | Steering arrows, Go, Brake, Drift and tappable item; View button in the top bar; optional auto acceleration |
 
 | Camera | View |
 | --- | --- |
-| Chase (default) | Spring-damped follow cam a few metres behind, looking into the next bend |
-| Close chase | Lower and tighter behind the kart |
-| Cockpit | Driver's eye inside the kart: glazing and roof hidden, a steering wheel that turns with your input and a dashboard showing speed and drift charge |
+| Cockpit (default) | Driver's eye inside the kart: a windscreen frame and mirror in your paint colour, a racing wheel that turns with your input, and a dash display with a rev arc, gear, speed and turbo charge. A row of lights above it shows revs, or fills in the tier colour while you charge a drift |
 | Hood | Just above the bonnet, with nothing of the car in front of the road |
 
-After finishing, every mode hands over to a slow orbit around your kart. Spectating in Battle always uses the chase camera.
+You race in first person. Short third-person cutscenes take over at set moments and then ease back into the cockpit: a sweep around your kart during the countdown, a chase shot through ramp jumps, a pulled-back shot when you spin out, a drone shot when you fall off the road, and a slow orbit at the finish. Spectating in Battle uses the chase camera.
+
+From the driver's seat the road is seen at a low angle, so road features also stand up off it. Ramps are drawn as glowing kickers with painted approach chevrons, striped lip pylons and a JUMP AHEAD gantry. Gaps have a red edge where the road ends and an amber line where it resumes. Boost pads have chevron posts on both sides, and hex mines carry a tall beacon. Markers are merged into one draw call per colour.
 
 Three presets trade acceleration/turning against speed and collision mass. Light Wisp is agile, medium Revenant is balanced, heavy Colossus has a higher top speed and sends lighter karts sideways. Driving explicitly controls acceleration and lateral grip; it does not simulate wheels or tire friction. Bumps use inverse-mass impulse sharing. Thin edge rails bounce normal departures; larger airborne departures fall into the void and respawn.
 
 ## Modes
 
-- **Rift Sprint (default):** ten validated checkpoints, finishing at a different location before returning to the start. AI-driven checks finish the courses in roughly 26–65 seconds; player times vary.
-- **Lap race:** two laps against an eight-kart grid.
+- **Rift Sprint:** ten validated checkpoints, finishing at a different location before returning to the start. AI-driven checks finish the courses in roughly 26–65 seconds; player times vary.
+- **Lap race (default):** three laps against an eight-kart grid, with a named rival (the bot that starts beside you). A banner shows the rival's gap in seconds and whether to chase or hold. Races time out after six minutes.
 - **Grand Prix:** four consecutive races, starting at the selected track and wrapping through the eight-map catalog below. Points `[15,12,10,8,6,4,2,1]` persist between rounds. Final standings sort by points, then the final race's place. Every map has its own road layout. Unfinished racers are placed by validated progress when every connected human finishes; each race has a four-minute limit.
 - **Time trial:** three laps, one kart, no AI/items/dynamic hazards. Record a clean run to save a personal-best pose ghost per track and class in local storage. The format is versioned; samples contain elapsed simulation time, position and heading. Replay interpolates the short heading arc, with no collision or race participation. Respawning invalidates the run. A four-minute limit bounds recording size. Saved ghosts are local to this browser/device, not a global leaderboard.
 - **Battle:** an enclosed arena, three balloons per kart, independent battle loot. Accepted hits remove one balloon; immunity and hit grace prevent repeated damage from a single contact. Eliminated players spectate the leading survivor. Last survivor wins; after three minutes, remaining balloons determine standings (ties currently use stable racer ID).
@@ -50,7 +50,7 @@ Three presets trade acceleration/turning against speed and collision mass. Light
 
 Version 1.2 replaces the broad loop variants with figure-eight crossings, technical switchbacks, substantial elevation, gap jumps and a spiral climb. Driving acceleration is stronger; drift tiers charge sooner; edge contact preserves more momentum. Cyan road pads grant a short boost. Staying close behind another kart for 0.85 seconds grants a slipstream boost, with a cooldown. Gap ramps launch the kart, and trick timing remains a separate player action.
 
-Steering remains consistent with the chase camera: D/Right, right touch input and positive gamepad input steer right on screen. The optional steering assistant follows the course while no direction is held; it never fires items or overrides active manual steering. Keyboard and touch steering ramp in over a few frames so taps make small corrections. New local ghosts use version 4; old ghosts remain stored but are excluded because the geometry and handling changed.
+Steering is screen-relative: D/Right, right touch input and positive gamepad input steer right on screen. The optional gentle steering assistant follows the course while no direction is held, using about two thirds of full steering and firming up over the last 50 m before a ramp so it never misses a gap; it never fires items or overrides active manual steering. Keyboard and touch steering ramp in over a few frames so taps make small corrections. New local ghosts use version 4; old ghosts remain stored but are excluded because the geometry and handling changed.
 
 ## Maps
 
@@ -69,7 +69,7 @@ Rift Sprint, lap race and time trial can select any of the eight courses; online
 
 ## Handling and items
 
-Drift time charges only while grounded with a signed slip angle, at 0.35 / 0.8 / 1.3 seconds. Releasing grants a bounded forward velocity impulse and temporary extra speed. Holding a straight line, falling through the air, or taking a hit does not charge a turbo. A controller hop cannot farm a ramp trick. Discrete hop/use/reset inputs are latched through network packet coalescing. Boosts bypass mud, expire using simulation time, and cannot add unbounded velocity.
+Drift time charges only while grounded with a signed slip angle, at 0.35 / 0.8 / 1.3 seconds. Releasing grants a bounded forward velocity impulse and temporary extra speed that grow clearly with the tier: about 8 / 12 / 16 m/s of push for 1.1 / 1.6 / 2.2 seconds. Bots get 60% of that, so a clean player drift wins. Charge is visible as blue, orange and purple sparks on the kart, the dash lights and a screen-edge glow. A trick press within 0.2 seconds of a ramp landing gives a 1.2-second landing boost. Holding a straight line, falling through the air, or taking a hit does not charge a turbo. A controller hop cannot farm a ramp trick. Discrete hop/use/reset inputs are latched through network packet coalescing. Boosts bypass mud, expire using simulation time, and cannot add unbounded velocity.
 
 | Placement | Default loot weights |
 | --- | --- |
@@ -79,7 +79,7 @@ Drift time charges only while grounded with a signed slip angle, at 0.35 / 0.8 /
 
 Last place takes precedence for a two-racer race; the current game fills an eight-kart grid. Battle uses its own offensive table. Shards grant a small boost every three collected. Invincibility blocks damage and bumps other racers into spin-outs. Phantom drive temporarily hands control to the waypoint driver, supplies a large boost and protects the kart. Crown breaker reacquires the current leader every physics tick and ignores every other racer; this super item can float across the void. Ordinary bolts sweep their travelled segment against karts and disappear off the road/at the arena boundary. Homing items retain the slot if no legal target is available. Full inventories leave item boxes available.
 
-The spline is sampled into an arc-length table. Each kart projects only near its prior segment, validates twelve checkpoint sectors in order and stores unwrapped progress. Respawns resume a few metres behind the last on-road progress with a rolling start, never before the last validated gate, and back off before a ramp so the run-up is long enough; jumping to another part of the track cannot award a lap. Ramps launch on a ballistic arc aimed at the road beyond the gap, so gap jumps on bends land on the road. Bots run at 91% of their class pace. Rubber banding uses unwrapped distance from a human reference, with a 16-metre dead zone: a bot far behind recovers up to +5%, a bot far ahead eases off up to −12%, smoothly blended. In a multi-human room, the first active human is the explicit reference. Only AI receives these modifiers.
+The spline is sampled into an arc-length table. Each kart projects only near its prior segment, validates twelve checkpoint sectors in order and stores unwrapped progress. Respawns resume a few metres behind the last on-road progress with a rolling start, never before the last validated gate, and back off before a ramp so the run-up is long enough; jumping to another part of the track cannot award a lap. Ramps launch on a ballistic arc aimed at the road beyond the gap, so gap jumps on bends land on the road. Bots run at 91% of their class pace. Rubber banding uses unwrapped distance from a human reference, with an 8-metre dead zone, so the pack stays in reach: a bot behind recovers up to +8%, a bot ahead eases off up to −8%, smoothly blended, and no bot ever exceeds its class's own pace. The named rival has a tighter leash (4-metre dead zone, up to +12% catch-up and only −5% easing), so there is nearly always a close duel. In a multi-human room, the first active human is the explicit reference. Only AI receives these modifiers.
 
 ## Sound and presentation
 
@@ -97,7 +97,7 @@ Sound effects are procedural Web Audio voices:
 
 Cues come from comparing your kart with the previous frame, so solo and online sound the same and the shared simulation is untouched. Audio unlocks on the first pointer gesture, Sound mutes everything, the context suspends while the tab is hidden, and one-shot voices share a 90-voice budget and are disconnected when they finish. Persistent loops (engine, tyres, wind, scrape, boulder, two rival engines) are built once and only change level.
 
-The chase cameras use critically damped springs, with separate stiffness for position and look target, and aim toward the road 16–30 m ahead. They roll slightly into corners, dip briefly under hard braking, pull back with a small FOV kick on boost (72° at most), rise and pull back to frame ramp landings, and cast a ray from the kart against invisible road, rail and bridge shells so the camera pulls in instead of clipping through scenery. Respawns and view changes ease over about 0.6 s instead of cutting. First-person views add a speed-based FOV of 75–85°, a light head bob from speed and road roughness, head tilt into corners and a landing jolt. With `prefers-reduced-motion`, the cameras skip roll, tilt, bob, jolts, shake, FOV kicks and speed streaks, and the first-person FOV stays at 78°.
+The cutscene cameras use critically damped springs on their offset from the kart (so speed never drags them back), with separate stiffness for position and look target, and aim toward the road 16–30 m ahead. They roll slightly into corners, dip briefly under hard braking, pull back with a small FOV kick on boost (72° at most), rise and pull back to frame ramp landings, and cast a ray from the kart against invisible road, rail and bridge shells so the camera pulls in instead of clipping through scenery. Respawns and view changes ease over about 0.6 s instead of cutting. First-person views add a speed-based FOV of 75–85°, a light head bob from speed and road roughness, head tilt into corners and a landing jolt. With `prefers-reduced-motion`, the cameras skip roll, tilt, bob, jolts, shake, FOV kicks and speed streaks, and the first-person FOV stays at 78°.
 
 Presentation includes fine-grain asphalt with tire wear, rounded metallic bodywork, detailed alloy wheels, sunset environment reflections, a player-following soft shadow map, continuous bridge decks, guardrails, structural piers, track lighting, red-and-white curbs and boost-pad arrows, named sector gates, turn boards, biome monuments, themed lava/snow/tunnels, drift sparks, landing bursts, exhaust trails and boost speed streaks. Close signboards are culled near the camera. Racers use normal camera-frustum clipping so overtakes do not trigger proximity-based hide/show popping. Road ribbons share vertices at segment boundaries to prevent overlapping surfaces and flickering at bends. The course atlas makes the layouts visible before starting.
 

@@ -79,16 +79,28 @@ test('the final-stretch flag covers the last two checkpoints of a sprint and lap
   assert.ok(KartAudio.finalStretch({mode:'race',laps:2,trackIndex:1,racers:[]},{gate:2*track.gates-2}));
 });
 
-test('camera modes cycle Chase -> Close chase -> Cockpit -> Hood and reject unknown values',()=>{
+test('racing is first person: C toggles Cockpit and Hood, and unknown values fall back to Cockpit',()=>{
   const {KartCamera:C}=browserScript('camera.js');
-  assert.deepEqual([...C.MODES],['chase','close','cockpit','hood']);
-  let mode='chase';const seen=[];for(let i=0;i<4;i++){mode=C.nextMode(mode);seen.push(mode);}
-  assert.deepEqual(seen,['close','cockpit','hood','chase']);
-  assert.equal(C.validMode('drone'),'chase');assert.equal(C.nextMode(undefined),'close');
-  assert.ok(C.firstPerson('cockpit')&&C.firstPerson('hood')&&!C.firstPerson('chase')&&!C.firstPerson('close'));
-  assert.ok(C.RIGS.close.distance<C.RIGS.chase.distance&&C.RIGS.close.height<C.RIGS.chase.height);
+  assert.deepEqual([...C.MODES],['cockpit','hood']);
+  assert.equal(C.nextMode('cockpit'),'hood');assert.equal(C.nextMode('hood'),'cockpit');
+  assert.equal(C.validMode('chase'),'cockpit');assert.equal(C.validMode(undefined),'cockpit');
+  assert.ok(C.MODES.every(C.firstPerson));
   // The cockpit eye sits behind the windscreen; the hood eye sits ahead of it, low over the bonnet.
   assert.ok(C.EYES.cockpit.z<0&&C.EYES.hood.z>.85&&C.EYES.hood.y<C.EYES.cockpit.y);
+});
+
+test('third-person cutscenes cover the countdown, spins, falls, ramp jumps, the finish and spectating',()=>{
+  const {KartCamera:C}=browserScript('camera.js');
+  const kart={grounded:true,spin:0,launchedAt:null,airStart:0},race={phase:'racing',time:10};
+  assert.equal(C.shotFor(kart,race),null);
+  assert.equal(C.shotFor(kart,{phase:'countdown',time:0}),'intro');
+  assert.equal(C.shotFor({...kart,spin:.8},race),'spin');
+  assert.equal(C.shotFor({...kart,grounded:false,launchedAt:120,airStart:9.8},race),'jump');
+  // A hop is short air time and stays in the cockpit; a long unplanned drop is a fall.
+  assert.equal(C.shotFor({...kart,grounded:false,airStart:9.8},race),null);
+  assert.equal(C.shotFor({...kart,grounded:false,airStart:9.2},race),'fall');
+  assert.equal(C.shotFor(kart,race,{finished:true}),'finish');assert.equal(C.shotFor(kart,race,{spectating:true}),'spectate');
+  for(const shot of ['spin','jump','fall'])assert.ok(C.HOLD[shot]>0&&C.HOLD[shot]<1);
 });
 
 test('camera spring settles without overshoot and is stable for long frames',()=>{

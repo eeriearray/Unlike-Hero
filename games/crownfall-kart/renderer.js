@@ -17,7 +17,7 @@
       this.environment=new THREE.Group();this.scene.add(this.environment);this.dynamic=new THREE.Group();this.scene.add(this.dynamic);
       this.karts=new Map();this.entities=new Map();this.trackKey='';this.follow=new THREE.Vector3();this.look=new THREE.Vector3();this.readyCamera=false;
       this.reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-      this.cameraMode='chase';this.raycaster=new THREE.Raycaster();this.colliders=[];this.colliderMaterial=new THREE.MeshBasicMaterial({side:THREE.DoubleSide});this.eyeRig=new THREE.Object3D();
+      this.cameraMode='cockpit';this.raycaster=new THREE.Raycaster();this.colliders=[];this.colliderMaterial=new THREE.MeshBasicMaterial({side:THREE.DoubleSide});this.eyeRig=new THREE.Object3D();
       this.camPos=new THREE.Vector3();this.camOffset=new THREE.Vector3();this.camVel=new THREE.Vector3();this.lookPos=new THREE.Vector3();this.lookOffset=new THREE.Vector3();this.lookVel=new THREE.Vector3();this.tmp=[0,1,2,3].map(()=>new THREE.Vector3());
       this.camRoll=0;this.camDip=0;this.airBlend=0;this.jolt=0;this.joltVel=0;this.headTilt=0;
       this.materials=new Map();this.materialDisposalHooks=new WeakSet();this.unitBox=new THREE.BoxGeometry(1,1,1);this.unitRock=new THREE.DodecahedronGeometry(1,0);
@@ -172,6 +172,7 @@
           this.box(group,0,0,0,pad.width,.12,4.5,'#143d4f');
           for(let i=0;i<3;i++)for(const side of [-1,1]){const arrow=this.box(group,side*pad.width*.18,.12,(i-1)*1.2,pad.width*.42,.07,.26,'#73ffdf',true);arrow.rotation.y=side*.45;}
         }
+        this.buildRoadMarkers(track);
         for(const u of [.08,.26,.43,.6,.77,.92]){
           const p=T.sample(track,u*track.length,track.width/2+5),turn=D.angle(T.sample(track,u*track.length+30).heading-p.heading);
           if(!this.clearOfRoad(track,p.x,p.z,p.y,p.y+5,2,p.s))continue;
@@ -218,6 +219,53 @@
       this.scenery.build(track,battle);
       this.environment.traverse(m=>{if(m.isMesh)m.receiveShadow=true;});
       this.buildColliders(track,battle);
+    }
+    // From the driver's seat the road is seen at a grazing angle, so every feature also gets something standing up off it.
+    buildRoadMarkers(track){
+      const pad='#73ffdf',warn='#ffb347',danger='#ff5a4f';
+      // A softer glow than the scenery's emissive trim, so amber, red and cyan stay recognisable instead of blooming to white.
+      const glow=(g,x,y,z,sx,sy,sz,color)=>{const key='marker:'+color;if(!this.materials.has(key))this.materials.set(key,new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:1.1,roughness:.6}));const m=new THREE.Mesh(this.unitBox,this.materials.get(key));m.position.set(x,y,z);m.scale.set(sx,sy,sz);g.add(m);return m;};
+      const root=new THREE.Group();this.environment.add(root);
+      const place=(s,lane=0,lift=0)=>{const g=new THREE.Group(),p=T.sample(track,s,lane);g.position.set(p.x,p.y+lift,p.z);g.rotation.y=p.heading;root.add(g);return g;};
+      // Upward chevrons on a panel that faces oncoming drivers.
+      const chevrons=(g,y,color,count=3,size=.32)=>{for(let i=0;i<count;i++)for(const side of [-1,1]){const bar=glow(g,side*size*.32,y+i*size*.95,-.07,size*.75,size*.22,.04,color);bar.rotation.z=-side*.62;}};
+      for(const p of T.padPoses(track))for(const side of [-1,1]){
+        const g=place(p.s,(track.pads[p.id].lane||0)+side*(p.width/2+.4));
+        this.box(g,0,.75,0,.1,1.5,.1,'#1d3a44');this.box(g,0,.75,-.03,.62,1.25,.04,'#0e2129');chevrons(g,.38,pad);glow(g,0,1.55,0,.22,.1,.22,pad);
+      }
+      const half=track.width/2;
+      for(const u of track.ramps||[]){
+        const r=u*track.length,a=T.sample(track,r-7),b=T.sample(track,r),rise=.32;
+        // The kicker itself: a low wedge across the road with glowing arrows, ending at the launch line.
+        const ramp=new THREE.Group();ramp.position.set((a.x+b.x)/2,(a.y+b.y+rise)/2+.02,(a.z+b.z)/2);ramp.rotation.set(-Math.atan2(b.y+rise-a.y,7),Math.atan2(b.x-a.x,b.z-a.z),0,'YXZ');root.add(ramp);
+        this.box(ramp,0,-.05,0,track.width-1.2,.1,7.05,'#2b2733');
+        for(let i=0;i<3;i++)for(const side of [-1,1]){const bar=glow(ramp,side*.9,.02,-2.2+i*2,2.1,.03,.32,warn);bar.rotation.y=side*.55;}
+        glow(ramp,0,.03,3.4,track.width-1.4,.035,.18,warn);
+        // Lip pylons and an overhead gantry make the launch visible from far down the road.
+        for(const side of [-1,1]){const g=place(r,side*(half+.45));this.box(g,0,1.2,0,.24,2.4,.24,'#2b2733');for(let i=0;i<3;i++){if(i%2)this.box(g,0,.55+i*.7,0,.27,.22,.27,'#f0ede6');else glow(g,0,.55+i*.7,0,.27,.22,.27,warn);}}
+        const gantry=place(r-32);for(const side of [-1,1])this.box(gantry,side*(half+.7),3,0,.3,6,.3,'#2b2733');this.box(gantry,0,5.8,0,track.width+1.8,.3,.3,'#2b2733');
+        const board=this.sign('JUMP AHEAD','HOLD YOUR LINE · TAP SPACE BEFORE LANDING',warn,7,1.6);board.position.set(0,5,-.2);board.rotation.y=Math.PI;gantry.add(board);
+        // Painted approach chevrons count down to the kicker.
+        for(let d=12;d<=40;d+=7){const g=place(r-d,0,.03);for(const side of [-1,1]){const bar=glow(g,side*.75,0,0,1.9,.03,.3,warn);bar.rotation.y=side*.55;}}
+      }
+      // Gaps: a red lip where the road ends and a bright landing line where it resumes.
+      for(const gap of track.gaps||[]){
+        for(const [u,color] of [[gap.start,danger],[gap.end,warn]]){const g=place(u*track.length+(color===danger?-.3:.3),0,.04);glow(g,0,0,0,track.width,.05,.35,color);for(const side of [-1,1])glow(g,side*(half+.45),.9,0,.22,1.8,.22,color);}
+      }
+      // Hundreds of small boxes become one mesh per material; signboards keep their own canvas materials.
+      root.updateMatrixWorld(true);const buckets=new Map(),keep=[];
+      root.traverse(o=>{if(!o.isMesh)return;if(this.signBoards.includes(o)){keep.push(o);return;}const list=buckets.get(o.material)||[];list.push(o);buckets.set(o.material,list);});
+      const merged=[];
+      for(const [material,meshes] of buckets){
+        const positions=[],normals=[],indices=[],v=new THREE.Vector3();let offset=0;
+        for(const mesh of meshes){const g=mesh.geometry,p=g.attributes.position,n=g.attributes.normal,normal=new THREE.Matrix3().getNormalMatrix(mesh.matrixWorld);
+          for(let i=0;i<p.count;i++){v.fromBufferAttribute(p,i).applyMatrix4(mesh.matrixWorld);positions.push(v.x,v.y,v.z);v.fromBufferAttribute(n,i).applyMatrix3(normal).normalize();normals.push(v.x,v.y,v.z);}
+          for(let i=0;i<g.index.count;i++)indices.push(offset+g.index.getX(i));offset+=p.count;}
+        const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));geometry.setAttribute('uv',new THREE.Float32BufferAttribute(new Float32Array(positions.length/3*2),2));geometry.setIndex(indices);
+        merged.push(new THREE.Mesh(geometry,material));
+      }
+      for(const board of keep){board.getWorldPosition(board.position);board.getWorldQuaternion(board.quaternion);}
+      root.clear();root.position.set(0,0,0);root.add(...merged,...keep);
     }
     buildSky(){this.scenery.buildSky();}
     buildTrackDetails(track,battle){
@@ -336,7 +384,9 @@
       const needed=new Set();
       const sync=(id,type,p,color)=>{
         needed.add(id);let mesh=this.entities.get(id);
-        if(!mesh){mesh=type==='hazard'?this.makeHazard():this.mesh(type==='box'?new THREE.OctahedronGeometry(.8):type==='trap'?new THREE.OctahedronGeometry(.65):new THREE.SphereGeometry(.32,8,6),color,this.dynamic,true);this.entities.set(id,mesh);}
+        if(!mesh){mesh=type==='hazard'?this.makeHazard():this.mesh(type==='box'?new THREE.OctahedronGeometry(.8):type==='trap'?new THREE.OctahedronGeometry(.65):new THREE.SphereGeometry(.32,8,6),color,this.dynamic,true);this.entities.set(id,mesh);
+          // Mines get a tall glowing beacon so they read from the cockpit, not just from above.
+          if(type==='trap'){this.beaconGeometry??=new THREE.CylinderGeometry(.06,.06,3.2,6);const beacon=new THREE.Mesh(this.beaconGeometry,this.mat(color,true));beacon.position.y=1.6;mesh.add(beacon);}}
         if(type==='hazard'){
           // Roll across the road: spin follows the sideways travel, the warning ring stays flat on the asphalt.
           mesh.position.set(p.x,p.y,p.z);mesh.rotation.y=p.heading;const u=mesh.userData;u.stone.rotation.z=-(p.lane||0)/1.35;u.stone.rotation.x=time*.15;
@@ -459,38 +509,60 @@
     }
     setCabin(mesh,mode){
       const u=mesh.userData,inside=mode==='cockpit';for(const part of u.cabin||[])part.visible=!inside;
-      if(inside&&!u.cockpit)u.cockpit=this.makeCockpit(u.visual);if(u.cockpit)u.cockpit.group.visible=inside;
+      if(inside&&!u.cockpit)u.cockpit=this.makeCockpit(u.visual,u.cabin.find(o=>o.material!==this.scenery.glass&&o.material?.isMeshPhysicalMaterial)?.material);if(u.cockpit)u.cockpit.group.visible=inside;
     }
-    makeCockpit(visual){
+    makeCockpit(visual,paint){
       const group=new THREE.Group();visual.add(group);
-      const dash=new THREE.Mesh(this.unitBox,this.mat('#1b1d21'));dash.position.set(0,.47,.5);dash.scale.set(1.02,.08,.3);group.add(dash);
-      const column=new THREE.Mesh(this.unitBox,this.mat('#1b1d21'));column.position.set(0,.43,.32);column.rotation.x=-.35;column.scale.set(.045,.045,.3);group.add(column);
+      const add=(geometry,material,x,y,z,sx=1,sy=1,sz=1)=>{const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.scale.set(sx,sy,sz);group.add(m);return m;};
+      const trim=paint||this.mat('#ffc66d'),dark=this.mat('#17191d'),soft=this.mat('#24262b');
+      // Windscreen frame in the body colour: header, A-pillars and mirror. It frames the road without covering it.
+      add(this.unitBox,trim,0,1.02,.5,1.16,.04,.1);
+      for(const side of [-1,1]){const pillar=add(this.unitBox,trim,side*.57,.75,.6,.035,.6,.045);pillar.rotation.set(-.45,0,side*.1);}
+      const mirror=add(this.unitBox,this.scenery.metal,0,.96,.48,.17,.045,.02);mirror.rotation.x=.25;
+      // Dash: a dark cowl with a painted trim line, door sills along both sides.
+      add(this.unitBox,dark,0,.43,.55,1.06,.07,.34);add(this.unitBox,soft,0,.47,.62,1.0,.02,.16);add(this.unitBox,trim,0,.455,.72,1.04,.02,.02);
+      for(const side of [-1,1])add(this.unitBox,trim,side*.6,.46,-.05,.07,.07,1.1);
+      // Steering wheel: rim with thick grips, flat-bottom bar and a painted hub carrying a glowing crown marker.
       const wheel=new THREE.Group();wheel.position.set(0,.4,.16);wheel.rotation.x=.55;group.add(wheel);
       const spin=new THREE.Group();wheel.add(spin);
-      spin.add(new THREE.Mesh(new THREE.TorusGeometry(.135,.018,8,36),this.scenery.rubber));
-      // The wheel sits low and the display sits above its rim, so spokes never cover the readout.
-      for(const a of [0,Math.PI,-Math.PI/2]){const spoke=new THREE.Mesh(this.unitBox,this.scenery.metal);spoke.position.set(Math.cos(a)*.068,Math.sin(a)*.068,0);spoke.rotation.z=a;spoke.scale.set(.135,.026,.016);spin.add(spoke);}
-      const hub=new THREE.Mesh(new THREE.CylinderGeometry(.036,.036,.035,16),this.mat('#2a2c30'));hub.rotation.x=Math.PI/2;spin.add(hub);
-      const marker=new THREE.Mesh(this.unitBox,this.mat('#ffc66d',true));marker.position.set(0,.135,0);marker.scale.set(.03,.035,.03);spin.add(marker);
-      const canvas=document.createElement('canvas');canvas.width=256;canvas.height=112;const texture=new THREE.CanvasTexture(canvas);texture.encoding=THREE.sRGBEncoding;
-      const screen=new THREE.Mesh(new THREE.PlaneGeometry(.24,.105),new THREE.MeshBasicMaterial({map:texture,toneMapped:false}));screen.position.set(0,.57,.5);screen.rotation.set(-.25,Math.PI,0,'YXZ');screen.userData.ownedMaterial=true;screen.userData.ownedTexture=true;group.add(screen);
+      spin.add(new THREE.Mesh(new THREE.TorusGeometry(.135,.016,8,40),this.scenery.rubber));
+      for(const side of [-1,1]){const grip=new THREE.Mesh(new THREE.CylinderGeometry(.024,.024,.1,10),this.scenery.rubber);grip.position.set(side*.135,0,0);spin.add(grip);}
+      const bottom=new THREE.Mesh(this.unitBox,this.scenery.rubber);bottom.position.set(0,-.125,0);bottom.scale.set(.15,.026,.03);spin.add(bottom);
+      for(const a of [0,Math.PI,-Math.PI/2]){const spoke=new THREE.Mesh(this.unitBox,this.scenery.metal);spoke.position.set(Math.cos(a)*.068,Math.sin(a)*.068,0);spoke.rotation.z=a;spoke.scale.set(.135,.024,.014);spin.add(spoke);}
+      const hub=new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,.035,20),trim);hub.rotation.x=Math.PI/2;spin.add(hub);
+      const marker=new THREE.Mesh(this.unitBox,this.mat('#ffc66d',true));marker.position.set(0,.135,0);marker.scale.set(.03,.03,.034);spin.add(marker);
+      // Centre display, with a row of lights above it: revs normally, turbo charge in tier colours while drifting.
+      const canvas=document.createElement('canvas');canvas.width=320;canvas.height=150;const texture=new THREE.CanvasTexture(canvas);texture.encoding=THREE.sRGBEncoding;
+      const screen=new THREE.Mesh(new THREE.PlaneGeometry(.22,.1),new THREE.MeshBasicMaterial({map:texture,toneMapped:false}));screen.position.set(0,.51,.5);screen.rotation.set(-.25,Math.PI,0,'YXZ');screen.userData.ownedMaterial=true;screen.userData.ownedTexture=true;group.add(screen);
+      const lights=[];for(let i=0;i<10;i++)lights.push(add(this.unitBox,soft,(i-4.5)*.022,.57,.5,.015,.01,.01));
       group.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;}});
-      return {group,spin,canvas,context:canvas.getContext('2d'),texture,key:'',drawn:0};
+      return {group,spin,canvas,context:canvas.getContext('2d'),texture,lights,key:'',drawn:0,lightKey:''};
     }
     drawDash(cockpit,k,now){
-      const speed=Math.round(k.speed*3.6),charge=D.clamp(k.driftTime/1.5,0,1),key=`${speed}|${Math.round(charge*24)}|${k.driftLevel}|${k.boost>0}`;
-      if(key===cockpit.key||now-cockpit.drawn<.08)return;cockpit.key=key;cockpit.drawn=now;
-      const ctx=cockpit.context,tier=k.driftLevel===3?'#bd73ff':k.driftLevel===2?'#ff963c':'#65cfff';
-      ctx.fillStyle='#071019';ctx.fillRect(0,0,256,112);ctx.strokeStyle=k.boost>0?'#8ffff0':'#2c4a5e';ctx.lineWidth=4;ctx.strokeRect(2,2,252,108);
-      ctx.fillStyle='#f4f8ff';ctx.font='italic bold 54px Impact, Arial Narrow, sans-serif';ctx.textAlign='right';ctx.fillText(String(speed),160,62);
-      ctx.font='bold 16px Arial';ctx.textAlign='left';ctx.fillStyle='#8de8ed';ctx.fillText('KM/H',170,40);ctx.fillText(k.boost>0?'BOOST':['','I','II','III'][k.driftLevel]?`TURBO ${['','I','II','III'][k.driftLevel]}`:'',170,62);
-      ctx.fillStyle='#1d3346';ctx.fillRect(16,80,224,16);ctx.fillStyle=tier;ctx.fillRect(16,80,224*charge,16);
+      const top=D.CLASSES[k.classId]?.speed||35,{gear,rpm}=root.KartAudio?.engineRpm(k.speed,top)||{gear:1,rpm:0},charge=D.clamp(k.driftTime/1.3,0,1);
+      const tier=['#65cfff','#65cfff','#ff963c','#bd73ff'][k.driftLevel],drifting=k.drift&&k.grounded;
+      // Lights: a rev bar (green, amber, red), or the drift charge filling in the tier colour.
+      const lit=Math.round((drifting?charge:rpm)*10),lightKey=`${lit}|${drifting?k.driftLevel:'r'}`;
+      if(lightKey!==cockpit.lightKey){cockpit.lightKey=lightKey;cockpit.lights.forEach((light,i)=>{light.material=i<lit?this.mat(drifting?tier:i<6?'#5dff9a':i<8?'#ffc34d':'#ff4b4b',true):this.mat('#24262b');});}
+      const speed=Math.round(k.speed*3.6),key=`${speed}|${gear}|${Math.round(rpm*30)}|${Math.round(charge*24)}|${k.driftLevel}|${k.boost>0}`;
+      if(key===cockpit.key||now-cockpit.drawn<.06)return;cockpit.key=key;cockpit.drawn=now;
+      const ctx=cockpit.context;
+      ctx.fillStyle='#060b12';ctx.fillRect(0,0,320,150);ctx.strokeStyle=k.boost>0?'#8ffff0':'#1f3a4d';ctx.lineWidth=5;ctx.strokeRect(3,3,314,144);
+      // Rev arc with the gear in its centre.
+      ctx.lineCap='round';ctx.lineWidth=11;ctx.strokeStyle='#16283a';ctx.beginPath();ctx.arc(78,84,52,Math.PI*.8,Math.PI*2.2);ctx.stroke();
+      ctx.strokeStyle=rpm>.85?'#ff5a4f':rpm>.65?'#ffc34d':'#65e0ff';ctx.beginPath();ctx.arc(78,84,52,Math.PI*.8,Math.PI*(.8+1.4*rpm));ctx.stroke();
+      ctx.fillStyle='#f4f8ff';ctx.textAlign='center';ctx.font='bold 42px Arial';ctx.fillText(String(gear),78,98);ctx.font='bold 11px Arial';ctx.fillStyle='#8de8ed';ctx.fillText('GEAR',78,124);
+      ctx.textAlign='right';ctx.fillStyle='#f4f8ff';ctx.font='italic bold 58px Impact, Arial Narrow, sans-serif';ctx.fillText(String(speed),262,80);
+      ctx.textAlign='left';ctx.font='bold 13px Arial';ctx.fillStyle='#8de8ed';ctx.fillText('KM/H',268,78);
+      const label=k.boost>0?'BOOST':k.driftLevel?`TURBO ${['','I','II','III'][k.driftLevel]}`:drifting?'CHARGING':'';
+      ctx.fillStyle=k.boost>0?'#8ffff0':tier;ctx.font='bold 15px Arial';ctx.textAlign='right';ctx.fillText(label,300,104);
+      ctx.fillStyle='#16283a';ctx.fillRect(146,114,154,14);ctx.fillStyle=tier;ctx.fillRect(146,114,154*charge,14);
+      for(const t of [.35/1.3,.8/1.3]){ctx.fillStyle='#060b12';ctx.fillRect(146+154*t,114,2,14);}
       cockpit.texture.needsUpdate=true;
     }
     updateCamera(world,track,own,player,dt,now){
       const C=root.KartCamera,mesh=this.karts.get(player.id),speed=player.speed;
-      const finished=own.finishTime!=null&&!own.eliminated,mode=finished||player!==own||!mesh?'chase':this.cameraMode,firstPerson=C.firstPerson(mode);
-      this.applyCockpit(mesh,mode);
+      const finished=own.finishTime!=null&&!own.eliminated;
       // The heading the camera follows sits between where the kart points and where it travels, so taps and drifts don't whip the view.
       const travel=speed>3?Math.atan2(player.vx,player.vz):player.yaw,aim=player.yaw+D.angle(travel-player.yaw)*.45,snap=!this.readyCamera;
       if(this.cameraYaw==null||snap)this.cameraYaw=aim;
@@ -499,11 +571,18 @@
       // Respawns and view changes ease from the previous framing instead of cutting.
       const last=this.lastViewed,moved=last&&last.id===player.id&&Math.hypot(player.x-last.x,player.y-last.y,player.z-last.z)>10;
       this.lastViewed={id:player.id,x:player.x,y:player.y,z:player.z};
-      if(!snap&&(moved||this.lastCameraMode!==mode))this.cameraBlend={position:this.camera.position.clone(),quaternion:this.camera.quaternion.clone(),fov:this.camera.fov,t:0};
-      if(snap)this.cameraBlend=null;this.lastCameraMode=mode;
+      // Driving is first person; spins, falls, ramp jumps, the countdown and the finish cut to a third-person shot.
+      // A fall holds a fixed drone position behind and above where the kart left the road, watching it drop.
+      let shot=C.shotFor(player,world,{finished,spectating:player!==own||!mesh});
+      if(shot){if(shot==='fall'&&this.shot!=='fall')this.fallAnchor=new THREE.Vector3(player.x-Math.sin(this.cameraYaw)*7,player.y+4,player.z-Math.cos(this.cameraYaw)*7);this.shot=shot;this.shotUntil=now+(C.HOLD[shot]||0);}
+      else if(this.shot&&now<this.shotUntil&&!moved&&world.phase==='racing')shot=this.shot;else this.shot=null;
+      const mode=shot?'chase':this.cameraMode,firstPerson=!shot,view=shot||mode;
+      this.applyCockpit(mesh,mode);
+      if(!snap&&(moved||this.lastCameraMode!==view))this.cameraBlend={position:this.camera.position.clone(),quaternion:this.camera.quaternion.clone(),fov:this.camera.fov,t:0};
+      if(snap)this.cameraBlend=null;this.lastCameraMode=view;
       let fov;
       if(firstPerson){fov=this.firstPersonCamera(world,track,player,mesh,mode,yawRate,dt,now);this.chaseStale=true;}
-      else fov=this.chaseCamera(world,track,player,mode,yawRate,acceleration,dt,now,finished,snap||moved||this.chaseStale);
+      else fov=this.chaseCamera(world,track,player,mode,yawRate,acceleration,dt,now,shot,snap||moved||this.chaseStale);
       if(this.cameraBlend){
         const b=this.cameraBlend,e=C.ease(b.t+=dt/.6);this.camera.position.lerpVectors(b.position,this.camera.position,e);this.camera.quaternion.slerpQuaternions(b.quaternion,this.camera.quaternion.clone(),e);
         fov=b.fov+(fov-b.fov)*e;if(b.t>=1)this.cameraBlend=null;else this.camera.fov=fov;
@@ -514,7 +593,8 @@
       if(this.headlight.intensity>0){this.headlight.position.set(player.x-Math.sin(yaw)*1.5,player.y+3.4,player.z-Math.cos(yaw)*1.5);this.headlight.target.position.set(player.x+Math.sin(yaw)*24,player.y-.6,player.z+Math.cos(yaw)*24);this.headlight.target.updateMatrixWorld();}
       if(mesh?.userData.cockpit?.group.visible){mesh.userData.cockpit.spin.rotation.z=mesh.userData.steer*2.2;this.drawDash(mesh.userData.cockpit,player,now);}
     }
-    chaseCamera(world,track,player,mode,yawRate,acceleration,dt,now,finished,snap){
+    chaseCamera(world,track,player,mode,yawRate,acceleration,dt,now,shot,snap){
+      const finished=shot==='finish';
       const C=root.KartCamera,rig=C.RIGS[mode]||C.RIGS.chase,speed=player.speed,boosting=player.boost>0,yaw=this.cameraYaw,fx=Math.sin(yaw),fz=Math.cos(yaw);
       const [desired,look,origin,direction]=this.tmp;this.chaseStale=false;
       // Ramp launches raise and pull the camera back to frame the landing, then settle once the wheels are down.
@@ -533,11 +613,16 @@
         if(this.orbit==null)this.orbit=Math.atan2(this.camPos.x-player.x,this.camPos.z-player.z);this.orbit+=this.reduced?0:dt*.35;
         desired.set(player.x+Math.sin(this.orbit)*8,player.y+3,player.z+Math.cos(this.orbit)*8);look.set(player.x,player.y+.8,player.z);
       }else this.orbit=null;
+      if(shot==='intro'){
+        // Countdown sweep: from in front of the kart round to behind it, arriving as the lights go green.
+        const a=yaw+Math.PI*(this.reduced?.25:D.clamp(world.countdown/3,0,1))*.95;desired.set(player.x-Math.sin(a)*7.5,player.y+2.4,player.z-Math.cos(a)*7.5);look.set(player.x,player.y+.7,player.z);
+      }else if(shot==='spin'){desired.set(player.x-fx*8,player.y+3.6,player.z-fz*8);look.set(player.x,player.y+.5,player.z);}
+      else if(shot==='fall'&&this.fallAnchor){desired.copy(this.fallAnchor);look.set(player.x,player.y,player.z);}
       // Springs act on offsets from the kart, not world positions, so speed alone never drags the camera back.
       desired.x-=player.x;desired.y-=player.y;desired.z-=player.z;look.x-=player.x;look.y-=player.y;look.z-=player.z;
       if(snap){this.camOffset.copy(desired);this.camVel.set(0,0,0);this.lookOffset.copy(look);this.lookVel.set(0,0,0);this.camReach=null;}
       // Separate stiffness: position eases more under boost (a pull-back), the look target stays crisp.
-      C.springVector(this.camOffset,this.camVel,desired,finished?2.5:boosting?5:8,dt);C.springVector(this.lookOffset,this.lookVel,look,finished?3:11,dt);
+      const cut=finished||shot==='intro'||shot==='spin';C.springVector(this.camOffset,this.camVel,desired,cut?3:shot==='fall'?30:boosting?5:8,dt);C.springVector(this.lookOffset,this.lookVel,look,cut?4:11,dt);
       this.camPos.set(player.x,player.y,player.z).add(this.camOffset);this.lookPos.set(player.x,player.y,player.z).add(this.lookOffset);
       // Never clip through the road, bridges or rails: cast from the kart toward the camera and stop short of any hit.
       origin.set(player.x,player.y+.9,player.z);direction.subVectors(this.camPos,origin);const length=direction.length();let hit=null;
@@ -549,7 +634,7 @@
       this.camRoll+=(roll-this.camRoll)*(1-Math.exp(-6*dt));this.camDip+=(dip-this.camDip)*(1-Math.exp(-(dip>this.camDip?10:3.5)*dt));
       if(!this.reduced){this.camera.rotateZ(this.camRoll);this.camera.rotateX(-this.camDip);const shake=this.shake||0;this.camera.position.x+=Math.sin(now*71)*shake;this.camera.position.y+=Math.cos(now*89)*shake*.65;}
       this.shake=(this.shake||0)*Math.exp(-12*dt);
-      return finished?55:C.chaseFov(speed,boosting,this.reduced);
+      return finished||shot==='intro'?55:shot==='spin'||shot==='fall'?62:C.chaseFov(speed,boosting,this.reduced);
     }
     firstPersonCamera(world,track,player,mesh,mode,yawRate,dt,now){
       const C=root.KartCamera,eye=C.EYES[mode],u=mesh.userData,scale=u.baseScale,top=D.CLASSES[player.classId]?.speed||35,[position,target]=this.tmp;

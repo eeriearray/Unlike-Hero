@@ -7,6 +7,10 @@
   const STEP = 1 / 60, RADIUS = 0.95, POINTS = [15, 12, 10, 8, 6, 4, 2, 1];
   // Heavier gravity and a firmer hop keep the karts planted; ramps aim their own landings.
   const GRAVITY = 32, HOP = 4.2, RAMP_LIFT = 9.5, BOT_PACE = 0.91;
+  // Three-lap races need longer than a sprint; time trial keeps four minutes so ghosts stay bounded.
+  const TIME_LIMIT = { sprint: 240, trial: 240, race: 360, gp: 300 };
+  // Mini-turbo by tier: forward impulse, duration and the extra top speed it allows. Bots get a weaker release so a clean player drift wins.
+  const TURBO = [null, [8, 1.1, 10], [12, 1.6, 14], [16, 2.2, 19]], BOT_TURBO = .6;
   const emptyInput = () => ({ throttle: 0, steer: 0, drift: false, hop: false, use: false, reset: false, assist:true });
   function cleanInput(input = {}) {
     const finite = n => typeof n === 'number' && Number.isFinite(n) ? n : 0;
@@ -39,7 +43,9 @@
         input: emptyInput(), notice: '', noticeUntil: 0 });
     }
     return { version: 1, seed: options.seed || 173, random: D.rng(options.seed || 173), mode, trackIndex,
-      round: options.round || 0, laps: mode === 'trial' ? 3 : mode === 'sprint' ? 1 : 2, time: 0, countdown: 3, phase: 'countdown',
+      round: options.round || 0, laps: mode === 'trial' || mode === 'race' ? 3 : mode === 'sprint' ? 1 : 2, time: 0, countdown: 3, phase: 'countdown',
+      // The bot that starts beside the first human is their named rival: it races wheel to wheel all the way.
+      rival: ['race','gp','sprint'].includes(mode) ? racers.find((k,i) => !k.human && i > 0 && racers[i-1].human)?.id || null : null,
       racers, boxes: T.boxPoses(track, mode === 'battle').map((p,i) => ({ id: i, x: p.x, y: p.y+.9, z: p.z, ready: 0 })),
       shots: [], traps: [], events: [], nextId: 1, resultOrder: [], finished: false, recordValid: true };
   }
@@ -161,11 +167,13 @@
     if (k.eliminated || k.finishTime != null) { k.vx*=Math.exp(-3*dt); k.vz*=Math.exp(-3*dt); return; }
     if (input.reset && w.time-k.lastReset>2) { respawn(w,k); return; }
     const human = w.racers.find(r => r.human && !r.eliminated && r.finishTime==null);
-    // Bots run slightly below a human's pace. When far ahead they ease off more than they catch up from behind.
-    const gapToHuman = human ? human.distance-k.distance : 0, band = D.clamp((Math.abs(gapToHuman)-16)/100,0,1);
-    const correction = !k.human && human && !battle ? (gapToHuman > 0 ? band*.05 : -band*.12) : 0, pace = k.human || battle ? 1 : BOT_PACE;
-    k.aiSpeed += (pace+correction-k.aiSpeed)*Math.min(1,dt*2);
-    k.aiAccel += (pace+correction*1.3-k.aiAccel)*Math.min(1,dt*2);
+    // Bots run slightly below a human's pace and are pulled back toward them from either side, so the pack stays in reach.
+    // The named rival has a tighter leash: it catches up harder and barely eases off, so there is always a duel.
+    const rival = k.id === w.rival, gapToHuman = human ? human.distance-k.distance : 0, band = D.clamp((Math.abs(gapToHuman)-(rival?4:8))/(rival?40:60),0,1);
+    const correction = !k.human && human && !battle ? (gapToHuman > 0 ? band*(rival?.12:.08) : -band*(rival?.05:.08)) : 0, pace = k.human || battle ? 1 : BOT_PACE;
+    // Catch-up never lifts a bot above its class's own pace.
+    k.aiSpeed += (Math.min(1,pace+correction)-k.aiSpeed)*Math.min(1,dt*2);
+    k.aiAccel += (Math.min(1,pace+correction*1.3)-k.aiAccel)*Math.min(1,dt*2);
     const pressed = input.hop || (input.drift && !k.wasDrift), released = !input.drift && k.wasDrift;
     k.wasDrift=input.drift;
     if (pressed && k.spin<=0) {
@@ -176,7 +184,7 @@
       } else k.trickPress=w.time;
     }
     if (released) {
-      if (k.driftLevel>0 && k.spin<=0) boost(w,k,4+2.5*k.driftLevel,.5+.35*k.driftLevel,5+3*k.driftLevel,`MINI TURBO ${['','I','II','III'][k.driftLevel]}`);
+      if (k.driftLevel>0 && k.spin<=0) { const [impulse,duration,extra]=TURBO[k.driftLevel], scale=k.human?1:BOT_TURBO; boost(w,k,impulse*scale,duration*scale,extra*scale,`MINI TURBO ${['','I','II','III'][k.driftLevel]}`); }
       cancelDrift(k);
     }
     if (k.pendingDrift && k.grounded && input.drift && w.time-k.airStart<.85) { k.drift=true; k.pendingDrift=false; }
@@ -186,8 +194,10 @@
     let assistedThrottle=1;
     if(!battle&&k.human&&k.autopilot<=0&&input.assist!==false&&!k.drift&&k.spin<=0&&Math.abs(input.steer)<.05&&input.throttle>0){
       // The assistant eases in from whatever the driver was doing and never yanks the wheel to full lock.
-      const navigation=aiInput(w,k,0),target=D.clamp(navigation.steer*.8,-.75,.75);
-      k.assistSteer=(k.assistSteer??steer)+(target-(k.assistSteer??steer))*Math.min(1,dt*7);
+      // Gentle by default; it firms up over the last 50 m before a ramp so it never lines you up badly for a gap.
+      const lining=(track.ramps||[]).some(r=>D.mod(r*track.length-k.s,track.length)<50),strength=lining?.85:.65;
+      const navigation=aiInput(w,k,0),target=D.clamp(navigation.steer*strength,-strength,strength);
+      k.assistSteer=(k.assistSteer??steer)+(target-(k.assistSteer??steer))*Math.min(1,dt*(lining?8:6));
       steer=k.assistSteer;assistedThrottle=Math.max(.7,navigation.throttle);
     }else k.assistSteer=steer;
     if (k.drift) steer=k.driftSign*D.clamp(.62+steer*k.driftSign*.45,.25,1.1);
@@ -256,8 +266,8 @@
     if (!k.grounded) { k.vy-=GRAVITY*dt; k.y+=k.vy*dt; }
     if (onRoad && k.hopUntil<=0 && k.y<=floor+.65 && k.vy<=0) {
       k.y=floor+.65; k.vy=0; k.grounded=true;
-      if (!wasGrounded && k.trickEligible && w.time-k.airStart>=.23 && w.time-k.trickPress<=.16 && k.spin<=0)
-        boost(w,k,6,.7,8,'LANDING BOOST');
+      if (!wasGrounded && k.trickEligible && w.time-k.airStart>=.23 && w.time-k.trickPress<=.2 && k.spin<=0)
+        boost(w,k,10,1.2,12,'LANDING BOOST');
       k.trickPress=-999; k.trickEligible=false; k.launchedAt=null;
     } else if(k.grounded) k.y=floor+.65;
     if(k.y<-20 || (!onRoad && !k.grounded && w.time-k.airStart>(k.human?1.6:2) && k.y<floor-3)) respawn(w,k);
@@ -332,7 +342,7 @@
     const humans=w.racers.filter(k=>k.human);
     if(w.mode==='battle'){
       if(w.racers.filter(k=>!k.eliminated).length<=1||w.time>=180)finishWorld(w);
-    }else if(humans.every(k=>k.finishTime!=null)||w.time>=240)finishWorld(w);
+    }else if(humans.every(k=>k.finishTime!=null)||w.time>=TIME_LIMIT[w.mode])finishWorld(w);
   }
   function nextGrandPrix(w){
     if(w.mode!=='gp'||w.round>=3||w.phase!=='results')return null;
@@ -352,5 +362,5 @@
     const a=samples[low],b=samples[high],f=D.clamp((time-a[0])/(b[0]-a[0]||1),0,1);
     return [a[1]+(b[1]-a[1])*f,a[2]+(b[2]-a[2])*f,a[3]+(b[3]-a[3])*f,a[4]+D.angle(b[4]-a[4])*f];
   }
-  return {STEP,RADIUS,POINTS,emptyInput,cleanInput,mergeInput,createWorld,step,standings,boost,hit,respawn,useItem,aiInput,nextGrandPrix,snapshot,sampleGhost};
+  return {STEP,RADIUS,POINTS,TURBO,TIME_LIMIT,emptyInput,cleanInput,mergeInput,createWorld,step,standings,boost,hit,respawn,useItem,aiInput,nextGrandPrix,snapshot,sampleGhost};
 });

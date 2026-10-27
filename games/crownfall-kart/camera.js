@@ -2,14 +2,15 @@
   'use strict';
   // Pure camera math for the renderer. Presentation only: nothing here feeds the shared simulation.
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
-  const MODES=['chase','close','cockpit','hood'];
-  const LABELS={chase:'Chase',close:'Close chase',cockpit:'Cockpit',hood:'Hood'};
+  // Racing is first person. Third-person rigs are kept for cutscenes: the countdown, spins, falls, ramp jumps and the finish.
+  const MODES=['cockpit','hood'];
+  const LABELS={cockpit:'Cockpit',hood:'Hood'};
   // Third-person rigs: base distance, extra distance per m/s, height above the kart and how far ahead to look.
   const RIGS={chase:{distance:6.5,perSpeed:.045,height:2.65,look:10},close:{distance:4.3,perSpeed:.03,height:1.8,look:9}};
   // First-person eye points in the kart model's local space (+z is forward, y is up from the model origin).
   const EYES={cockpit:{x:0,y:.7,z:-.24,down:.07},hood:{x:0,y:.58,z:1.05,down:.05}};
   const MAX_CHASE_FOV=72;
-  const validMode=mode=>MODES.includes(mode)?mode:'chase';
+  const validMode=mode=>MODES.includes(mode)?mode:'cockpit';
   const nextMode=mode=>MODES[(MODES.indexOf(validMode(mode))+1)%MODES.length];
   const firstPerson=mode=>mode==='cockpit'||mode==='hood';
   // Exact critically damped spring for one axis; stable at any frame time. Returns [position, velocity].
@@ -37,6 +38,16 @@
     if(reduced)return 0;const pace=clamp(speed/Math.max(1,topSpeed),0,1.2);
     return Math.sin(time*(7+pace*9))*.012*pace+Math.sin(time*31.7)*bump*pace;
   }
+  // Which cutscene, if any, takes over from the driver's view. Falls are long unplanned air time (not a hop or ramp).
+  function shotFor(k,world,{finished=false,spectating=false}={}){
+    if(spectating)return 'spectate';if(finished)return 'finish';if(world.phase==='countdown')return 'intro';
+    if(k.spin>0)return 'spin';
+    if(!k.grounded&&k.launchedAt!=null)return 'jump';
+    if(!k.grounded&&world.time-(k.airStart??world.time)>.45)return 'fall';
+    return null;
+  }
+  // Cutscenes linger briefly after their trigger ends, so a quick wobble doesn't flick between views.
+  const HOLD={spin:.45,jump:.35,fall:.2};
   const ease=t=>{t=clamp(t,0,1);return t*t*(3-2*t);};
-  root.KartCamera={MODES,LABELS,RIGS,EYES,MAX_CHASE_FOV,validMode,nextMode,firstPerson,spring,springVector,chaseFov,firstPersonFov,cornerRoll,brakeDip,pullIn,headBob,ease};
+  root.KartCamera={MODES,LABELS,RIGS,EYES,HOLD,shotFor,MAX_CHASE_FOV,validMode,nextMode,firstPerson,spring,springVector,chaseFov,firstPersonFov,cornerRoll,brakeDip,pullIn,headBob,ease};
 })(typeof window!=='undefined'?window:globalThis);

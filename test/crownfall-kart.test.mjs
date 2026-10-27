@@ -108,8 +108,8 @@ test('teleporting past unvisited checkpoint sectors cannot finish a lap',()=>{
 test('all track variants complete a race with valid finish order and bounded snapshots',()=>{
   for(let track=0;track<D.TRACKS.length;track++){
     const w=S.createWorld({track,seed:173});
-    for(let i=0;i<60*200&&w.phase!=='results';i++)S.step(w,{player:S.aiInput(w,w.racers[0],S.STEP)});
-    assert.equal(w.phase,'results');assert.ok(w.racers[0].finishTime>20&&w.racers[0].finishTime<200);assert.equal(w.racers[0].gate,24);
+    for(let i=0;i<60*S.TIME_LIMIT.race&&w.phase!=='results';i++)S.step(w,{player:S.aiInput(w,w.racers[0],S.STEP)});
+    assert.equal(w.laps,3);assert.equal(w.phase,'results');assert.ok(w.racers[0].finishTime>30&&w.racers[0].finishTime<S.TIME_LIMIT.race);assert.equal(w.racers[0].gate,w.laps*12);
     const order=S.standings(w);for(let i=1;i<order.length;i++)if(order[i].finishTime!=null)assert.ok(order[i-1].finishTime<=order[i].finishTime);
     const packet=S.snapshot(w);assert.ok(JSON.stringify(packet).length<16000);assert.equal(packet.random,undefined);
   }
@@ -299,4 +299,35 @@ test('steering assist follows a sprint while manual steering always takes priori
   for(let i=0;i<15;i++){S.step(a,{player:{throttle:1,steer:.7,assist:true}});S.step(b,{player:{throttle:1,steer:.7,assist:false}});}
   assert.equal(a.racers[0].yaw,b.racers[0].yaw);assert.equal(a.racers[0].x,b.racers[0].x);assert.equal(a.racers[0].z,b.racers[0].z);
   assert.equal(S.cleanInput({assist:false}).assist,false);
+});
+
+test('mini-turbos grow clearly with tier and a player release beats a bot release',()=>{
+  const release=(level,human)=>{const w=trial(),k=w.racers[0];k.human=human;Object.assign(k,{wasDrift:true,drift:true,driftLevel:level,driftTime:2.4,speed:18});S.step(w,{player:{drift:false,throttle:1}});return k.boost;};
+  assert.ok(release(1,true)<release(2,true)&&release(2,true)<release(3,true));
+  assert.ok(release(3,true)>=2);assert.ok(release(3,false)<release(3,true));
+  assert.ok(S.TURBO[3][2]>S.TURBO[1][2]*1.5);
+});
+
+test('lap races default to three laps with a named rival beside the player on the grid',()=>{
+  const w=S.createWorld({roster:[{id:'player',name:'Racer',classId:'medium',human:true}]});
+  assert.equal(w.mode,'race');assert.equal(w.laps,3);assert.equal(w.rival,w.racers[1].id);assert.ok(!w.racers[1].human);
+  assert.equal(S.createWorld({mode:'trial'}).rival,null);assert.equal(S.createWorld({mode:'battle'}).rival,null);
+  assert.ok(S.TIME_LIMIT.race>S.TIME_LIMIT.sprint);
+});
+
+test('rubber banding keeps the rival on a tighter leash and never lifts a bot past full pace',()=>{
+  const setup=gap=>{const w=S.createWorld({roster:[{id:'player',name:'Racer',classId:'medium',human:true}]}),track=T.makeTrack(0);w.phase='racing';
+    for(const [k,s] of [[w.racers[0],200+gap],[w.racers[1],200],[w.racers[2],200]]){const p=T.sample(track,s);Object.assign(k,{distance:s,s:p.s,segment:p.segment,gate:Math.floor(s/(track.length/12)),x:p.x,y:p.y+.65,z:p.z,yaw:p.heading});}
+    for(let i=0;i<120;i++)S.step(w,{player:{throttle:0}});return w;};
+  const ahead=setup(60);
+  // The human is far ahead: the rival recovers more than an ordinary bot, and nobody exceeds their class pace.
+  assert.ok(ahead.racers[1].aiSpeed>ahead.racers[2].aiSpeed);assert.ok(ahead.racers.every(k=>k.aiSpeed<=1+1e-9));
+});
+
+test('the gentle assist still lines up every gap jump in a full three-lap race',()=>{
+  for(const [track,seed] of [[0,2],[2,4],[2,6]]){
+    const w=S.createWorld({mode:'race',track,seed,roster:[{id:'player',name:'Racer',classId:'medium',human:true}]}),k=w.racers[0];let resets=0,last=k.lastReset;
+    for(let i=0;i<60*S.TIME_LIMIT.race&&w.phase!=='results';i++){S.step(w,{player:{throttle:1,steer:0,assist:true}});if(k.lastReset!==last){resets++;last=k.lastReset;}}
+    assert.equal(resets,0,`track ${track} seed ${seed}`);assert.ok(k.finishTime!=null);
+  }
 });

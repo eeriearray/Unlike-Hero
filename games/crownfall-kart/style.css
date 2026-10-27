@@ -24,3 +24,10 @@
 
 /* Graphics preferences remain reachable on short desktop and mobile screens. */
 .graphics-control{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;align-items:center;margin:8px 0 12px}.graphics-control label{font-size:9px;letter-spacing:1.4px;color:#dcc7a8}.graphics-control select{min-height:36px;padding:5px 8px;font-size:11px;width:100%}.graphics-control small{grid-column:1/-1;font-size:10px;line-height:1.35;color:#bda88d}.menu-copy{max-height:calc(100dvh - 104px);overflow-y:auto;scrollbar-width:thin;padding-right:8px}.scene-tags span{border-color:#d7b38055}.vignette{background:radial-gradient(ellipse at 65% 45%,transparent 30%,#25170a3b 100%)}
+
+.drift-glow{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .12s;box-shadow:inset 0 0 90px 12px var(--tier,#65cfff);mix-blend-mode:screen}
+.rival{position:fixed;top:96px;left:50%;transform:translateX(-50%);display:flex;align-items:baseline;gap:10px;padding:7px 14px;background:#0c1729d9;border-bottom:2px solid #ff8f6b;border-radius:3px;color:#f4f8ff;font-size:12px;letter-spacing:.06em;pointer-events:none;white-space:nowrap}
+.rival small{font-size:9px;letter-spacing:.18em;color:#ffb28f}
+.rival strong{font-family:ui-monospace,monospace;font-size:15px;color:#ffcf9e;font-variant-numeric:tabular-nums}
+.rival.behind{border-bottom-color:#8de8ed}.rival.behind small{color:#8de8ed}.rival.behind strong{color:#bff3f6}
+@media(max-width:650px){.rival{top:74px;font-size:10px;padding:5px 10px;gap:6px}.rival strong{font-size:12px}}

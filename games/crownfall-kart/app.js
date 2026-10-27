@@ -3,8 +3,8 @@
   const D=CrownData,T=CrownTrack,S=CrownSim,$=id=>document.getElementById(id);
   const hub=window.Hub?.init({id:'crownfall-kart',version:'1.2.0',title:'Crownfall Kart'});
   const storage=hub?.storage()||{get:(k,f)=>{try{return JSON.parse(localStorage.getItem(`crownfall.${k}`))??f;}catch{return f;}},set:(k,v)=>{try{localStorage.setItem(`crownfall.${k}`,JSON.stringify(v));}catch{}}};
-  const descriptions={sprint:'A start-to-finish dash. Ten checkpoints. No waiting for another lap.',race:'Two laps. Eight karts. Absolutely no royal etiquette.',gp:'Four realms. Four races. One crown. Points carry across the whole cup.',trial:'Three clean laps. No items. No rivals. Chase your personal-best ghost.',battle:'Three balloons each. An enclosed arena. Be the last ghost standing.'};
-  let classId=storage.get('class','medium'),mode='sprint',trackIndex=0,screen='menu',paused=false,connection=null,room=null,playerId='player';
+  const descriptions={sprint:'A start-to-finish dash. Ten checkpoints. No waiting for another lap.',race:'Three laps. Eight karts. One named rival who wants your crown.',gp:'Four realms. Four races. One crown. Points carry across the whole cup.',trial:'Three clean laps. No items. No rivals. Chase your personal-best ghost.',battle:'Three balloons each. An enclosed arena. Be the last ghost standing.'};
+  let classId=storage.get('class','medium'),mode='race',trackIndex=0,screen='menu',paused=false,connection=null,room=null,playerId='player';
   if(!D.CLASSES[classId])classId='medium';
   let world=S.createWorld({classId}),accumulator=0,previous=performance.now(),uiTime=0,netTime=0,sessionActive=false;
   let ghost=null,recording=[],recordAt=0,lastCountdown=0,busy=false;
@@ -16,13 +16,15 @@
   $('graphics-quality').addEventListener('change',event=>applyGraphics(event.target.value));
   $('world').addEventListener('webglcontextlost',event=>{event.preventDefault();input.clear();paused=true;$('fatal').classList.remove('hidden');$('fatal-message').textContent='The graphics context was interrupted. Reload to reopen the track.';});
   $('name').value=storage.get('name',hub?.player()?.name==='Player'?'Racer':hub?.player()?.name||'Racer');
-  $('auto-drive').checked=storage.get('auto.v3',true);input.auto=$('auto-drive').checked;
-  $('steering-assist').checked=storage.get('assist',true);input.assist=$('steering-assist').checked;
+  // Driving is manual by default; touch screens start with auto accelerate and the gentle steering assist on.
+  const touch=matchMedia('(pointer: coarse)').matches;
+  $('auto-drive').checked=storage.get('auto.v4',touch);input.auto=$('auto-drive').checked;
+  $('steering-assist').checked=storage.get('assist.v2',touch);input.assist=$('steering-assist').checked;
   $('track').replaceChildren(...D.TRACKS.map((track,index)=>{const option=document.createElement('option');option.value=index;option.textContent=`${String(index+1).padStart(2,'0')} · ${track.name}`;return option;}));
   audio.setEnabled(storage.get('sound',true));updateSound();
   function formatTime(time){const n=Math.max(0,Number(time)||0);return `${String(Math.floor(n/60)).padStart(2,'0')}:${(n%60).toFixed(3).padStart(6,'0')}`;}
   function name(){return $('name').value.trim().slice(0,18)||'Racer';}
-  function saveSettings(){storage.set('class',classId);storage.set('name',name());storage.set('auto.v3',$('auto-drive').checked);storage.set('assist',$('steering-assist').checked);}
+  function saveSettings(){storage.set('class',classId);storage.set('name',name());storage.set('auto.v4',$('auto-drive').checked);storage.set('assist.v2',$('steering-assist').checked);}
   function setBusy(value){busy=value;$('solo').disabled=value;for(const id of ['host','join'])$(id).disabled=value||mode==='trial';}
   function message(text,error=false){$('menu-message').textContent=text;$('menu-message').classList.toggle('error',error);$('lobby-message').textContent=text;}
   function setScreen(next){
@@ -69,10 +71,10 @@
     else if(screen==='paused'){paused=false;setScreen('race');}
   }
   input.onPause=togglePause;
-  // Chase -> Close chase -> Cockpit -> Hood, remembered per device.
+  // Cockpit <-> Hood, remembered per device. Third-person shots are cutscenes chosen by the renderer.
   function showCamera(){const label=KartCamera.LABELS[renderer.cameraMode];$('camera-button').innerHTML=`View · ${label} <kbd>C</kbd>`;$('camera-button').setAttribute('aria-label',`Change camera view. Current view: ${label}`);}
-  function cycleCamera(){if(screen!=='race')return;renderer.setCameraMode(KartCamera.nextMode(renderer.cameraMode));storage.set('camera.v1',renderer.cameraMode);showCamera();audio.uiSound('click');}
-  renderer.setCameraMode(storage.get('camera.v1','chase'));showCamera();input.onCamera=cycleCamera;$('camera-button').onclick=()=>{audio.unlock();cycleCamera();};
+  function cycleCamera(){if(screen!=='race')return;renderer.setCameraMode(KartCamera.nextMode(renderer.cameraMode));storage.set('camera.v2',renderer.cameraMode);showCamera();audio.uiSound('click');}
+  renderer.setCameraMode(storage.get('camera.v2','cockpit'));showCamera();input.onCamera=cycleCamera;$('camera-button').onclick=()=>{audio.unlock();cycleCamera();};
   function updateSound(){ $('sound').textContent=audio.enabled?'Sound on':'Sound off';$('sound').setAttribute('aria-pressed',String(audio.enabled)); }
   $('sound').onclick=()=>{audio.unlock();audio.setEnabled(!audio.enabled);storage.set('sound',audio.enabled);updateSound();};
   $('auto-drive').onchange=()=>{input.auto=$('auto-drive').checked;saveSettings();};$('steering-assist').onchange=()=>{input.assist=$('steering-assist').checked;saveSettings();};
@@ -178,7 +180,11 @@
     $('position-label').innerHTML=world.mode==='battle'?'BALLOONS<br>REMAINING':world.mode==='trial'?'CLEAN<br>RUN':`/ ${world.racers.length}<br>POSITION`;
     $('lap').textContent=world.mode==='sprint'?`RIFT SPRINT · GATE ${Math.min(10,Math.max(0,k.gate))} / 10`:world.mode==='battle'?`${world.racers.filter(r=>!r.eliminated).length} KARTS REMAIN`:world.mode==='gp'?`RACE ${world.round+1} / 4 · LAP ${k.lap} / ${world.laps}`:`LAP ${k.lap} / ${world.laps}`;
     $('timer').textContent=formatTime(world.time);$('race-name').textContent=world.mode==='battle'?'THE HOLLOW RING':k.gate<0?D.TRACKS[world.trackIndex].zones[0]:T.sectionAt(T.makeTrack(world.trackIndex),k.s);$('speed').textContent=Math.round(k.speed*3.6);
-    const charge=D.clamp(k.driftTime/1.5,0,1);$('turbo-fill').style.width=`${charge*100}%`;$('turbo-fill').style.background=k.driftLevel===3?'#bd73ff':k.driftLevel===2?'#ff963c':'#65cfff';
+    const charge=D.clamp(k.driftTime/1.3,0,1),tier=['#65cfff','#65cfff','#ff963c','#bd73ff'][k.driftLevel];$('turbo-fill').style.width=`${charge*100}%`;
+    // The screen edge glows with the drift charge in the tier colour, so it reads without looking down.
+    $('drift-glow').style.opacity=k.drift&&k.grounded?String(.25+charge*.75):k.boost>0?'.35':'0';$('drift-glow').style.setProperty('--tier',k.boost>0&&!k.drift?'#8ffff0':tier);
+    const rival=world.racers.find(r=>r.id===world.rival);$('rival').classList.toggle('hidden',!rival||k.finishTime!=null||world.phase!=='racing');
+    if(rival){const gap=(rival.distance-k.distance)/Math.max(12,k.speed),ahead=gap>0;$('rival-name').textContent=rival.name.toUpperCase();$('rival-gap').textContent=`${ahead?'+':'−'}${Math.abs(gap).toFixed(1)}s`;$('rival').classList.toggle('behind',!ahead);$('rival-label').textContent=ahead?'RIVAL AHEAD · CHASE':'RIVAL BEHIND · HOLD';}$('turbo-fill').style.background=k.driftLevel===3?'#bd73ff':k.driftLevel===2?'#ff963c':'#65cfff';
     $('turbo-level').textContent=['','I','II','III'][k.driftLevel];$('turbo-label').textContent=k.autopilot>0?'PHANTOM DRIVE':k.boost>0?'BOOST ACTIVE':k.draft>.1?'DRAFTING · STAY CLOSE':k.drift?'RELEASE TO BOOST':'HOP · HOLD · RELEASE';
     $('surface-label').textContent=k.eliminated?'ELIMINATED · SPECTATING':!k.grounded?'AIRBORNE · TAP TO TRICK':k.invincible>0?'UNDYING / PROTECTED':k.surface==='mud'?'HEX MUD / SLOWED':'ASPHALT / GRIP';
     const item=D.ITEMS[k.item];$('item-symbol').textContent=item?.symbol||'◇';$('item-name').textContent=item?.name.toUpperCase()||(world.mode==='trial'?'CLEAN TRACK':'NO ITEM');$('item-hint').textContent=item?'E · TAP TO USE':world.mode==='trial'?'NO ITEMS IN TIME TRIAL':'E · FIND A RIFT BOX';$('item').classList.toggle('ready',!!item);$('item').setAttribute('aria-label',item?`Use ${item.name}: ${item.description}`:'No item held');
