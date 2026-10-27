@@ -78,3 +78,44 @@ test('the final-stretch flag covers the last two checkpoints of a sprint and lap
   assert.ok(!KartAudio.finalStretch({mode:'race',laps:2,trackIndex:1,racers:[]},{gate:2*track.gates-3}));
   assert.ok(KartAudio.finalStretch({mode:'race',laps:2,trackIndex:1,racers:[]},{gate:2*track.gates-2}));
 });
+
+test('camera modes cycle Chase -> Close chase -> Cockpit -> Hood and reject unknown values',()=>{
+  const {KartCamera:C}=browserScript('camera.js');
+  assert.deepEqual([...C.MODES],['chase','close','cockpit','hood']);
+  let mode='chase';const seen=[];for(let i=0;i<4;i++){mode=C.nextMode(mode);seen.push(mode);}
+  assert.deepEqual(seen,['close','cockpit','hood','chase']);
+  assert.equal(C.validMode('drone'),'chase');assert.equal(C.nextMode(undefined),'close');
+  assert.ok(C.firstPerson('cockpit')&&C.firstPerson('hood')&&!C.firstPerson('chase')&&!C.firstPerson('close'));
+  assert.ok(C.RIGS.close.distance<C.RIGS.chase.distance&&C.RIGS.close.height<C.RIGS.chase.height);
+  // The cockpit eye sits behind the windscreen; the hood eye sits ahead of it, low over the bonnet.
+  assert.ok(C.EYES.cockpit.z<0&&C.EYES.hood.z>.85&&C.EYES.hood.y<C.EYES.cockpit.y);
+});
+
+test('camera spring settles without overshoot and is stable for long frames',()=>{
+  const {KartCamera:C}=browserScript('camera.js');
+  let x=0,v=0,max=0;for(let i=0;i<240;i++){[x,v]=C.spring(x,v,10,8,1/60);max=Math.max(max,x);}
+  assert.ok(Math.abs(x-10)<.01);assert.ok(max<=10+1e-9);
+  [x,v]=C.spring(0,0,10,8,5);assert.ok(Number.isFinite(x)&&Math.abs(x-10)<.01);
+  // A stiffer spring closes the gap faster.
+  assert.ok(C.spring(0,0,10,11,.1)[0]>C.spring(0,0,10,5.5,.1)[0]);
+  const p={x:0,y:0,z:0},vel={x:0,y:0,z:0};for(let i=0;i<120;i++)C.springVector(p,vel,{x:1,y:2,z:3},9,1/60);
+  assert.ok(Math.hypot(p.x-1,p.y-2,p.z-3)<.02);
+});
+
+test('field of view: chase capped at 72 with a boost kick, first person 75-85, steady with reduced motion',()=>{
+  const {KartCamera:C}=browserScript('camera.js');
+  assert.equal(C.chaseFov(0,false,false),60);assert.ok(C.chaseFov(20,true,false)>C.chaseFov(20,false,false));
+  for(let speed=0;speed<80;speed+=2)for(const boost of [false,true])assert.ok(C.chaseFov(speed,boost,false)<=72);
+  assert.equal(C.chaseFov(60,true,true),60);
+  assert.equal(C.firstPersonFov(0,35,false),75);assert.equal(C.firstPersonFov(35,35,false),85);assert.equal(C.firstPersonFov(80,35,false),85);
+  assert.equal(C.firstPersonFov(10,35,true),C.firstPersonFov(35,35,true));
+});
+
+test('camera roll, braking dip, head bob and collision pull-in respect their limits',()=>{
+  const {KartCamera:C}=browserScript('camera.js');
+  assert.ok(C.cornerRoll(1.2,30,false)>0);assert.ok(C.cornerRoll(-1.2,30,false)<0);assert.ok(Math.abs(C.cornerRoll(9,40,false))<=.055);
+  assert.equal(C.cornerRoll(1.2,30,true),0);assert.equal(C.brakeDip(-30,true),0);assert.equal(C.headBob(3,30,35,.02,true),0);
+  assert.equal(C.brakeDip(-4,false),0);assert.ok(C.brakeDip(-20,false)>0&&C.brakeDip(-200,false)<=.05);
+  assert.equal(C.pullIn(7,null),7);assert.ok(Math.abs(C.pullIn(7,4)-3.65)<1e-9);assert.equal(C.pullIn(7,.2),1.1);assert.equal(C.pullIn(.8,.2),.8);
+  assert.equal(C.ease(0),0);assert.equal(C.ease(1),1);assert.equal(C.ease(2),1);assert.ok(C.ease(.25)<.25);
+});

@@ -22,9 +22,19 @@ Version 1.2 defaults to **Rift Sprint**, a short start-to-finish run. Auto accel
 | Space while airborne | Tap in the last 0.16 seconds before a ramp landing for a trick boost |
 | E or item slot | Use held item |
 | R | Return to last validated checkpoint; invalidates a time-trial record |
+| C or View button | Cycle camera: Chase → Close chase → Cockpit → Hood (remembered on this device) |
 | Escape | Pause/resume solo; open/close menu online while racing continues |
-| Gamepad | Left stick steer; R2 accelerate; L2 brake; A drift; X item |
-| Touch | Steering arrows, Go, Brake, Drift and tappable item; optional auto acceleration |
+| Gamepad | Left stick steer; R2 accelerate; L2 brake; A drift; X item; Y camera view |
+| Touch | Steering arrows, Go, Brake, Drift and tappable item; View button in the top bar; optional auto acceleration |
+
+| Camera | View |
+| --- | --- |
+| Chase (default) | Spring-damped follow cam a few metres behind, looking into the next bend |
+| Close chase | Lower and tighter behind the kart |
+| Cockpit | Driver's eye inside the kart: glazing and roof hidden, a steering wheel that turns with your input and a dashboard showing speed and drift charge |
+| Hood | Just above the bonnet, with nothing of the car in front of the road |
+
+After finishing, every mode hands over to a slow orbit around your kart. Spectating in Battle always uses the chase camera.
 
 Three presets trade acceleration/turning against speed and collision mass. Light Wisp is agile, medium Revenant is balanced, heavy Colossus has a higher top speed and sends lighter karts sideways. Driving explicitly controls acceleration and lateral grip; it does not simulate wheels or tire friction. Bumps use inverse-mass impulse sharing. Thin edge rails bounce normal departures; larger airborne departures fall into the void and respawn.
 
@@ -73,9 +83,23 @@ The spline is sampled into an arc-length table. Each kart projects only near its
 
 ## Sound and presentation
 
-The soundtrack is an original, clock-scheduled Web Audio composition: kick, snare, hi-hat, bass, chord pads, arpeggios and a four-bar lead motif arranged over 32 bars with breakdowns and drum fills. Each course changes key, tempo (138–154 BPM) and lead timbre. The garage uses a quieter pad/bell arrangement. Engine pitch, tire skid, boost swells, pickups and impacts are separate voices. Audio is unlocked by a pointer gesture, muted through Sound, suspended when hidden, and bounded by a voice budget. It has no external music downloads or third-party music license dependencies.
+The soundtrack is an original, clock-scheduled Web Audio composition: kick, snare, hi-hat, bass, chord pads, arpeggios and a four-bar lead motif arranged over 32 bars with breakdowns and drum fills. Each course has its own key (natural minor on the theme root), tempo (138–154 BPM) and lead timbre. The garage uses a quieter pad/bell arrangement. No melody is borrowed and there are no external music downloads.
 
-Presentation includes fine-grain asphalt with tire wear, rounded metallic bodywork, helmeted drivers, detailed alloy wheels, sunset environment reflections, a player-following soft shadow map, continuous bridge decks, guardrails, structural piers, track lighting, red-and-white curbs and boost-pad arrows, named sector gates, turn boards, biome monuments, themed lava/snow/tunnels, closer racing cameras, drift sparks, landing bursts, exhaust trails and boost speed streaks. Reduced-motion preferences disable camera banking, impact shake and streaks. Close signboards are culled near the camera. Racers use normal camera-frustum clipping so overtakes do not trigger proximity-based hide/show popping. Road ribbons share vertices at segment boundaries to prevent overlapping surfaces and flickering at bends. The course atlas makes the layouts visible before starting.
+The race music reacts to the race. An intensity score from your position, how close the nearest rival is and how far through the course you are picks one of three arrangements: pads only, then bass and drums, then the full mix with arpeggio and lead. Changes have hysteresis and only take effect on bar lines; each layer fades on its own bus. A rising stinger plays over the countdown and lands on the tonic at GO. The last two checkpoints switch to a final-stretch variation (no breakdown, doubled hats, octave bass, lead an octave up). First place gets a fanfare that resolves to the relative major; other finishes get a softer falling outro. The music low-passes while paused and during big ramp jumps, opens on landing, and ducks about 3 dB under impacts and boosts so it sits under the engine and effects.
+
+Sound effects are procedural Web Audio voices:
+
+- **Engine:** a sawtooth rumble with a sub octave plus a band-passed whine, with RPM following speed through five fake gear shifts. Wisp, Revenant and Colossus each have their own pitch and weight. The two nearest rivals get their own engine voices with exaggerated doppler, distance attenuation and stereo panning.
+- **Tyres:** rolling noise that is a dry hiss on asphalt and a low, wobbling squelch in mud. Drift squeal rises in pitch and level with the turbo charge, with a distinct chime for each mini-turbo tier.
+- **Jumps:** a whoosh on ramp launch, wind while airborne, a landing thud (heaviest for Colossus) and a crisp chime for a trick-landing boost.
+- **World:** a rumble from the rolling boulder that grows as it nears, a wall-scrape loop while touching a rail, a rift-pad zap, an item-box shatter, a distinct launch sound for every item, and hit sounds that differ for mines, bolts, the crown breaker and rams.
+- **UI:** countdown beeps in the course key, a checkpoint tick, up/down cues when your place changes, and menu hover and click ticks.
+
+Cues come from comparing your kart with the previous frame, so solo and online sound the same and the shared simulation is untouched. Audio unlocks on the first pointer gesture, Sound mutes everything, the context suspends while the tab is hidden, and one-shot voices share a 90-voice budget and are disconnected when they finish. Persistent loops (engine, tyres, wind, scrape, boulder, two rival engines) are built once and only change level.
+
+The chase cameras use critically damped springs, with separate stiffness for position and look target, and aim toward the road 16–30 m ahead. They roll slightly into corners, dip briefly under hard braking, pull back with a small FOV kick on boost (72° at most), rise and pull back to frame ramp landings, and cast a ray from the kart against invisible road, rail and bridge shells so the camera pulls in instead of clipping through scenery. Respawns and view changes ease over about 0.6 s instead of cutting. First-person views add a speed-based FOV of 75–85°, a light head bob from speed and road roughness, head tilt into corners and a landing jolt. With `prefers-reduced-motion`, the cameras skip roll, tilt, bob, jolts, shake, FOV kicks and speed streaks, and the first-person FOV stays at 78°.
+
+Presentation includes fine-grain asphalt with tire wear, rounded metallic bodywork, detailed alloy wheels, sunset environment reflections, a player-following soft shadow map, continuous bridge decks, guardrails, structural piers, track lighting, red-and-white curbs and boost-pad arrows, named sector gates, turn boards, biome monuments, themed lava/snow/tunnels, drift sparks, landing bursts, exhaust trails and boost speed streaks. Close signboards are culled near the camera. Racers use normal camera-frustum clipping so overtakes do not trigger proximity-based hide/show popping. Road ribbons share vertices at segment boundaries to prevent overlapping surfaces and flickering at bends. The course atlas makes the layouts visible before starting.
 
 ## Source layout
 
@@ -83,9 +107,10 @@ Presentation includes fine-grain asphalt with tire wear, rounded metallic bodywo
 index.html / style.css    Garage, lobby, race HUD, help, results and responsive touch layout
 app.js                    Local session lifecycle, HUD, hub reports, ghost storage, online view
 input.js                  Keyboard, multi-touch, gamepad and edge-action capture
-audio.js                  Gesture-unlocked instrument synthesis, motor/skid effects and music mixing
-engine/score.js           Original 32-bar arrangement: drums, bass, chords, arpeggios and lead
-renderer.js               Textured road, landmarks, karts, particles, speed streaks, camera and minimap
+audio.js                  Gesture-unlocked synthesis: layered music buses, engine/tyre/world loops, one-shot effects
+engine/score.js           Original 32-bar arrangement plus intensity, layers, stinger and fanfare cues
+camera.js                 Pure camera math: modes, springs, FOV, roll, dip, head bob and pull-in
+renderer.js               Textured road, landmarks, karts, particles, speed streaks, cameras, cockpit and minimap
 network.js                WebSocket client; room/lobby/input protocol
 engine/data.js            Weight presets, item tables, themes and deterministic seeded RNG
 engine/track.js           Closed spline, arc length, projection, mud, hazards and box poses

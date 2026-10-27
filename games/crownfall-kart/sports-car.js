@@ -11,7 +11,7 @@
     const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));g.setIndex(indices);g.computeVertexNormals();return g;
   }
   function batchStatic(group,sharedBox){
-    const buckets=new Map();for(const mesh of group.children){if(!mesh.isMesh)continue;const list=buckets.get(mesh.material)||[];list.push(mesh);buckets.set(mesh.material,list);}
+    const buckets=new Map();for(const mesh of group.children){if(!mesh.isMesh||mesh.userData.cabin)continue;const list=buckets.get(mesh.material)||[];list.push(mesh);buckets.set(mesh.material,list);}
     for(const [material,meshes] of buckets){
       if(meshes.length<2)continue;const positions=[],normals=[],uvs=[],indices=[],disposed=new Set();let offset=0;
       for(const mesh of meshes){mesh.updateMatrix();const g=mesh.geometry,p=g.attributes.position,n=g.attributes.normal,uv=g.attributes.uv,normalMatrix=new THREE.Matrix3().getNormalMatrix(mesh.matrix),v=new THREE.Vector3();
@@ -39,14 +39,15 @@
       const width=.61-(h-.38)*.16;
       for(let j=0;j<=sides;j++){const a=j/sides*Math.PI*2,sn=Math.sin(a),cs=Math.cos(a);cabinPositions.push(Math.sign(sn)*Math.pow(Math.abs(sn),.38)*width,.35+(h-.35)*(.5+.5*Math.sign(cs)*Math.pow(Math.abs(cs),.35)),z);cabinUV.push(j/sides,t);if(i<sections&&j<sides){const n=i*(sides+1)+j;cabinIndices.push(n,n+sides+1,n+1,n+1,n+sides+1,n+sides+2);}}
     }
-    const cabin=new THREE.BufferGeometry();cabin.setAttribute('position',new THREE.Float32BufferAttribute(cabinPositions,3));cabin.setAttribute('uv',new THREE.Float32BufferAttribute(cabinUV,2));cabin.setIndex(cabinIndices);cabin.computeVertexNormals();add(cabin,glass);
-    o.coachwork(visual,color,0,.817,-.13,1.03,.045,.74);
+    const cabin=new THREE.BufferGeometry();cabin.setAttribute('position',new THREE.Float32BufferAttribute(cabinPositions,3));cabin.setAttribute('uv',new THREE.Float32BufferAttribute(cabinUV,2));cabin.setIndex(cabinIndices);cabin.computeVertexNormals();
+    // Glazing, roof and pillars stay separate meshes so the cockpit camera can hide them.
+    add(cabin,glass).userData.cabin=true;o.coachwork(visual,color,0,.817,-.13,1.03,.045,.74).userData.cabin=true;
     for(const side of [-1,1]){
       // Sculpted fender lips, mirrors, sill, window frames and flush lamps.
       for(const z of [-1.03,1.01]){const arch=add(new THREE.TorusGeometry(.405,.048,10,40,Math.PI),paint,side*.83,-.13,z);arch.rotation.y=Math.PI/2;arch.rotation.z=Math.PI/2;}
       o.coachwork(visual,'#292a27',side*.78,-.05,0,.12,.12,2.7);
       const mirror=add(new THREE.SphereGeometry(.12,20,12),paint,side*.81,.52,.36);mirror.scale.set(1.2,.6,1.5);
-      for(const z of [-.73,.48]){const pillar=add(new THREE.CylinderGeometry(.018,.025,.42,10),paint,side*.55,.57,z);pillar.rotation.z=side*.25;pillar.rotation.x=z>0?-.6:.6;}
+      for(const z of [-.73,.48]){const pillar=add(new THREE.CylinderGeometry(.018,.025,.42,10),paint,side*.55,.57,z);pillar.rotation.z=side*.25;pillar.rotation.x=z>0?-.6:.6;pillar.userData.cabin=true;}
       o.box(visual,side*.68,.21,1.44,.33,.06,.11,'#fff1d0',true);
       o.box(visual,side*.55,.23,-1.57,.51,.045,.05,'#ff2515',true);
       const exhaust=add(new THREE.CylinderGeometry(.075,.075,.23,20),metal,side*.49,-.08,-1.65);exhaust.rotation.x=Math.PI/2;

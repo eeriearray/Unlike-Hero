@@ -17,6 +17,9 @@
       this.environment=new THREE.Group();this.scene.add(this.environment);this.dynamic=new THREE.Group();this.scene.add(this.dynamic);
       this.karts=new Map();this.entities=new Map();this.trackKey='';this.follow=new THREE.Vector3();this.look=new THREE.Vector3();this.readyCamera=false;
       this.reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+      this.cameraMode='chase';this.raycaster=new THREE.Raycaster();this.colliders=[];this.colliderMaterial=new THREE.MeshBasicMaterial({side:THREE.DoubleSide});this.eyeRig=new THREE.Object3D();
+      this.camPos=new THREE.Vector3();this.camVel=new THREE.Vector3();this.lookPos=new THREE.Vector3();this.lookVel=new THREE.Vector3();this.tmp=[0,1,2,3].map(()=>new THREE.Vector3());
+      this.camRoll=0;this.camDip=0;this.airBlend=0;this.jolt=0;this.joltVel=0;this.headTilt=0;
       this.materials=new Map();this.materialDisposalHooks=new WeakSet();this.unitBox=new THREE.BoxGeometry(1,1,1);this.unitRock=new THREE.DodecahedronGeometry(1,0);
       this.scenery=new root.TrackScenery(this);this.roadTexture=this.scenery.road.map;this.artTextures=[];this.signBoards=[];this.lastMotion=new Map();this.particleCursor=0;
       this.particles=Array.from({length:420},()=>({life:0,x:0,y:0,z:0,vx:0,vy:0,vz:0}));
@@ -91,7 +94,7 @@
     removeKart(mesh){
       this.dynamic.remove(mesh);
       if(mesh.userData.ghost){const materials=new Set();mesh.traverse(o=>{if(o.isMesh)materials.add(o.material);});for(const material of materials)material.dispose();}
-      mesh.traverse(o=>{if(o.userData.ownedMaterial&&!mesh.userData.ghost)o.material.dispose();});this.disposeGroup(mesh);
+      mesh.traverse(o=>{if(o.userData.ownedMaterial&&!mesh.userData.ghost){if(o.userData.ownedTexture)o.material.map.dispose();o.material.dispose();}});this.disposeGroup(mesh);if(this.cockpitKart===mesh)this.cockpitKart=null;
     }
     ribbon(track,laneA,laneB,offset,color){
       // Adjacent segments share their exact edge vertices. Sampling just before
@@ -142,7 +145,8 @@
       if(battle){
         const floor=this.mesh(new THREE.CylinderGeometry(42,39,5,48),track.stone);floor.position.y=3.5;
         const ring=this.mesh(new THREE.TorusGeometry(40,.28,5,96),track.energy,this.environment,true);ring.rotation.x=Math.PI/2;ring.position.y=6.5;
-        for(let i=0;i<16;i++){const a=i*Math.PI/8;const pillar=this.box(this.environment,Math.sin(a)*40,8,Math.cos(a)*40,2,5,2,'#333042');pillar.rotation.y=a;}
+        this.arenaColliders=[floor];
+        for(let i=0;i<16;i++){const a=i*Math.PI/8;const pillar=this.box(this.environment,Math.sin(a)*40,8,Math.cos(a)*40,2,5,2,'#333042');pillar.rotation.y=a;this.arenaColliders.push(pillar);}
       }else{
         this.ribbon(track,-track.width/2,track.width/2,0,'#575e6c');
         for(const side of [-1,1]){
@@ -213,6 +217,7 @@
       }
       this.scenery.build(track,battle);
       this.environment.traverse(m=>{if(m.isMesh)m.receiveShadow=true;});
+      this.buildColliders(track,battle);
     }
     buildSky(){this.scenery.buildSky();}
     buildTrackDetails(track,battle){
@@ -268,7 +273,8 @@
       const shadow=new THREE.Mesh(new THREE.PlaneGeometry(2.8,3.8),new THREE.MeshBasicMaterial({map:this.particleMesh.material.map,color:'#080e18',transparent:true,opacity:.42,depthWrite:false}));group.add(shadow);shadow.userData.ownedMaterial=true;shadow.rotation.x=-Math.PI/2;shadow.position.y=-.59;
       const balloons=[];for(let i=0;i<3;i++){const b=this.mesh(new THREE.SphereGeometry(.4,10,8),color,group);b.position.set((i-1)*.8,2.5+Math.abs(i-1)*.25,-.5);balloons.push(b);const string=this.box(group,(i-1)*.4,1.65,-.5,.018,1.2,.018,'#b3a5be');balloons.push(string);}
       if(ghost){group.traverse(o=>{if(o.isMesh){o.material=o.material.clone();o.material.transparent=true;o.material.opacity=.28;o.material.depthWrite=false;}});}
-      group.userData={baseScale:visual.scale.clone(),bounceTime:1,lean:0,steer:0,visual,wheels,flames,sparks,balloons,shadow,ghost,classId:k.classId};this.dynamic.add(group);return group;
+      const cabin=[];visual.traverse(o=>{if(o.userData.cabin)cabin.push(o);});
+      group.userData={baseScale:visual.scale.clone(),bounceTime:1,lean:0,steer:0,visual,wheels,flames,sparks,balloons,shadow,ghost,cabin,classId:k.classId};this.dynamic.add(group);return group;
     }
     makeHazard(){
       const group=new THREE.Group(),stone=new THREE.Group();group.add(stone);stone.position.y=1.38;this.dynamic.add(group);
@@ -404,23 +410,8 @@
         const yaw=p.heading+(this.reduced ? .62 : .62+Math.sin(now*.12)*.06);
         this.follow.set(p.x+Math.sin(yaw)*11,p.y+5.5,p.z+Math.cos(yaw)*11);
         this.look.set(player.x-3*Math.cos(p.heading),player.y+.5,player.z+3*Math.sin(p.heading));
-        this.camera.position.copy(this.follow);this.camera.lookAt(this.look);this.readyCamera=false;this.camera.fov=59;this.camera.updateProjectionMatrix();this.shake=0;
-      }else{
-        // The camera trails a smoothed heading between where the kart points and where it is travelling,
-        // so steering taps and drifts don't whip the whole view around.
-        const speed=player.speed,travel=speed>3?Math.atan2(player.vx,player.vz):player.yaw,aim=player.yaw+D.angle(travel-player.yaw)*.45;
-        if(this.cameraYaw==null||!this.readyCamera)this.cameraYaw=aim;this.cameraYaw=D.angle(this.cameraYaw+D.angle(aim-this.cameraYaw)*(1-Math.exp(-5.5*dt)));
-        const yaw=this.cameraYaw;
-        this.follow.set(player.x-Math.sin(yaw)*(6.5+speed*.045),player.y+2.65,player.z-Math.cos(yaw)*(6.5+speed*.045));
-        const ahead=world.mode==='battle'?null:T.sample(track,player.s+16);
-        const look=new THREE.Vector3(player.x+Math.sin(yaw)*10,Math.max(player.y-3,ahead?.y??player.y)+1.2,player.z+Math.cos(yaw)*10);
-        if(!this.readyCamera||this.camera.position.distanceTo(this.follow)>35){this.cameraBase=this.follow.clone();this.camera.position.copy(this.follow);this.look.copy(look);this.readyCamera=true;}
-        this.cameraBase.lerp(this.follow,1-Math.exp(-(player.boost>0?4.5:7)*dt));this.camera.position.copy(this.cameraBase);this.look.lerp(look,1-Math.exp(-10*dt));this.camera.lookAt(this.look);
-        if(!this.reduced){this.camera.rotateZ(player.drift?player.driftSign*.025:0);const shake=this.shake||0;this.camera.position.x+=Math.sin(now*71)*shake;this.camera.position.y+=Math.cos(now*89)*shake*.65;}
-        this.shake=(this.shake||0)*Math.exp(-12*dt);
-        if(this.headlight.intensity>0){this.headlight.position.set(player.x-Math.sin(yaw)*1.5,player.y+3.4,player.z-Math.cos(yaw)*1.5);this.headlight.target.position.set(player.x+Math.sin(yaw)*24,player.y-.6,player.z+Math.cos(yaw)*24);this.headlight.target.updateMatrixWorld();}
-        const fov=60+(this.reduced?0:Math.min(4,speed*.11)+D.clamp((speed*3.6-120)/40,0,1)*4+(player.boost>0?6:0));this.camera.fov+=(fov-this.camera.fov)*Math.min(1,dt*4);this.camera.updateProjectionMatrix();
-      }
+        this.camera.position.copy(this.follow);this.camera.up.set(0,1,0);this.camera.lookAt(this.look);this.readyCamera=false;this.cameraBlend=null;this.applyCockpit(null,'chase');this.camera.fov=59;this.camera.updateProjectionMatrix();this.shake=0;
+      }else this.updateCamera(world,track,own,player,dt,now);
       this.updateParticles(dt);this.updateSmoke(dt);this.ambientWeather.update(dt,player,menu);
       for(const cloud of this.clouds){cloud.position.x=cloud.userData.origin.x+Math.sin(now*.025+cloud.userData.phase)*22;cloud.position.z=cloud.userData.origin.z+Math.cos(now*.018+cloud.userData.phase)*12;}
       const boardPosition=new THREE.Vector3();for(const board of this.signBoards){board.getWorldPosition(boardPosition);board.visible=boardPosition.distanceTo(this.camera.position)>8;}
@@ -441,6 +432,136 @@
       this.frameCount=(this.frameCount||0)+1;
       if(!this.frameStarted)this.frameStarted=now;
       if(now-this.frameStarted>=1){this.renderer.domElement.dataset.fps=String(Math.round(this.frameCount/(now-this.frameStarted)));this.renderer.domElement.dataset.drawCalls=String(this.renderer.info.render.calls);this.frameStarted=now;this.frameCount=0;}
+    }
+    // Invisible, chunked collision shells (road deck, rails and skirts) so camera rays only test nearby triangles.
+    buildColliders(track,battle){
+      for(const mesh of this.colliders)if(mesh.userData.collider)mesh.geometry.dispose();this.colliders=[];
+      if(battle){for(const mesh of this.arenaColliders)mesh.updateMatrixWorld(true);this.colliders=this.arenaColliders;return;}
+      const chunk=24,half=track.width/2;
+      for(let first=0;first<track.count;first+=chunk){
+        const positions=[],indices=[];let rows=0;
+        for(let i=first;i<=Math.min(first+chunk,track.count);i++){
+          const s=track.lengths[i],lo=T.sample(track,s,-half),ro=T.sample(track,s,half),lr=T.sample(track,s,-half-.25),rr=T.sample(track,s,half+.25);
+          positions.push(lo.x,lo.y-1.4,lo.z, lo.x,lo.y,lo.z, lr.x,lr.y+1.3,lr.z, ro.x,ro.y,ro.z, rr.x,rr.y+1.3,rr.z, ro.x,ro.y-1.4,ro.z);
+          if(rows&&!T.inGap(track,(s+track.lengths[i-1])/2)){const a=(rows-1)*6,b=rows*6;for(const [p,q] of [[0,1],[1,2],[1,3],[3,4],[3,5]])indices.push(a+p,b+p,a+q,a+q,b+p,b+q);}
+          rows++;
+        }
+        if(!indices.length)continue;
+        const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setIndex(indices);geometry.computeBoundingSphere();
+        const mesh=new THREE.Mesh(geometry,this.colliderMaterial);mesh.userData.collider=true;this.colliders.push(mesh);
+      }
+    }
+    setCameraMode(mode){this.cameraMode=root.KartCamera.validMode(mode);return this.cameraMode;}
+    // Only the kart being viewed from inside loses its glazing and roof; everyone else's stays intact.
+    applyCockpit(mesh,mode){
+      if(this.cockpitKart&&this.cockpitKart!==mesh)this.setCabin(this.cockpitKart,'chase');
+      this.cockpitKart=mesh;if(mesh)this.setCabin(mesh,mode);
+    }
+    setCabin(mesh,mode){
+      const u=mesh.userData,inside=mode==='cockpit';for(const part of u.cabin||[])part.visible=!inside;
+      if(inside&&!u.cockpit)u.cockpit=this.makeCockpit(u.visual);if(u.cockpit)u.cockpit.group.visible=inside;
+    }
+    makeCockpit(visual){
+      const group=new THREE.Group();visual.add(group);
+      const dash=new THREE.Mesh(this.unitBox,this.mat('#1b1d21'));dash.position.set(0,.42,.36);dash.scale.set(1.02,.09,.32);group.add(dash);
+      const column=new THREE.Mesh(this.unitBox,this.mat('#1b1d21'));column.position.set(0,.47,.22);column.rotation.x=.42;column.scale.set(.06,.06,.22);group.add(column);
+      const wheel=new THREE.Group();wheel.position.set(0,.53,.1);wheel.rotation.x=.38;group.add(wheel);
+      const spin=new THREE.Group();wheel.add(spin);
+      spin.add(new THREE.Mesh(new THREE.TorusGeometry(.17,.022,8,36),this.scenery.rubber));
+      // T-shaped spokes leave a clear sight line to the display above the hub.
+      for(const a of [0,Math.PI,-Math.PI/2]){const spoke=new THREE.Mesh(this.unitBox,this.scenery.metal);spoke.position.set(Math.cos(a)*.085,Math.sin(a)*.085,0);spoke.rotation.z=a;spoke.scale.set(.17,.032,.02);spin.add(spoke);}
+      const hub=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,.04,16),this.mat('#2a2c30'));hub.rotation.x=Math.PI/2;spin.add(hub);
+      const marker=new THREE.Mesh(this.unitBox,this.mat('#ffc66d',true));marker.position.set(0,.17,0);marker.scale.set(.03,.035,.03);spin.add(marker);
+      const canvas=document.createElement('canvas');canvas.width=256;canvas.height=112;const texture=new THREE.CanvasTexture(canvas);texture.encoding=THREE.sRGBEncoding;
+      const screen=new THREE.Mesh(new THREE.PlaneGeometry(.3,.13),new THREE.MeshBasicMaterial({map:texture,toneMapped:false}));screen.position.set(0,.5,.34);screen.rotation.set(-.5,Math.PI,0,'YXZ');screen.userData.ownedMaterial=true;screen.userData.ownedTexture=true;group.add(screen);
+      group.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;}});
+      return {group,spin,canvas,context:canvas.getContext('2d'),texture,key:'',drawn:0};
+    }
+    drawDash(cockpit,k,now){
+      const speed=Math.round(k.speed*3.6),charge=D.clamp(k.driftTime/1.5,0,1),key=`${speed}|${Math.round(charge*24)}|${k.driftLevel}|${k.boost>0}`;
+      if(key===cockpit.key||now-cockpit.drawn<.08)return;cockpit.key=key;cockpit.drawn=now;
+      const ctx=cockpit.context,tier=k.driftLevel===3?'#bd73ff':k.driftLevel===2?'#ff963c':'#65cfff';
+      ctx.fillStyle='#071019';ctx.fillRect(0,0,256,112);ctx.strokeStyle=k.boost>0?'#8ffff0':'#2c4a5e';ctx.lineWidth=4;ctx.strokeRect(2,2,252,108);
+      ctx.fillStyle='#f4f8ff';ctx.font='italic bold 54px Impact, Arial Narrow, sans-serif';ctx.textAlign='right';ctx.fillText(String(speed),160,62);
+      ctx.font='bold 16px Arial';ctx.textAlign='left';ctx.fillStyle='#8de8ed';ctx.fillText('KM/H',170,40);ctx.fillText(k.boost>0?'BOOST':['','I','II','III'][k.driftLevel]?`TURBO ${['','I','II','III'][k.driftLevel]}`:'',170,62);
+      ctx.fillStyle='#1d3346';ctx.fillRect(16,80,224,16);ctx.fillStyle=tier;ctx.fillRect(16,80,224*charge,16);
+      cockpit.texture.needsUpdate=true;
+    }
+    updateCamera(world,track,own,player,dt,now){
+      const C=root.KartCamera,mesh=this.karts.get(player.id),speed=player.speed;
+      const finished=own.finishTime!=null&&!own.eliminated,mode=finished||player!==own||!mesh?'chase':this.cameraMode,firstPerson=C.firstPerson(mode);
+      this.applyCockpit(mesh,mode);
+      // The heading the camera follows sits between where the kart points and where it travels, so taps and drifts don't whip the view.
+      const travel=speed>3?Math.atan2(player.vx,player.vz):player.yaw,aim=player.yaw+D.angle(travel-player.yaw)*.45,snap=!this.readyCamera;
+      if(this.cameraYaw==null||snap)this.cameraYaw=aim;
+      const before=this.cameraYaw;this.cameraYaw=D.angle(this.cameraYaw+D.angle(aim-this.cameraYaw)*(1-Math.exp(-5.5*dt)));
+      const yawRate=dt>0?D.angle(this.cameraYaw-before)/dt:0,acceleration=this.lastSpeed!=null&&dt>0?(speed-this.lastSpeed)/dt:0;this.lastSpeed=speed;
+      // Respawns and view changes ease from the previous framing instead of cutting.
+      const last=this.lastViewed,moved=last&&last.id===player.id&&Math.hypot(player.x-last.x,player.y-last.y,player.z-last.z)>10;
+      this.lastViewed={id:player.id,x:player.x,y:player.y,z:player.z};
+      if(!snap&&(moved||this.lastCameraMode!==mode))this.cameraBlend={position:this.camera.position.clone(),quaternion:this.camera.quaternion.clone(),fov:this.camera.fov,t:0};
+      if(snap)this.cameraBlend=null;this.lastCameraMode=mode;
+      let fov;
+      if(firstPerson){fov=this.firstPersonCamera(world,track,player,mesh,mode,yawRate,dt,now);this.chaseStale=true;}
+      else fov=this.chaseCamera(world,track,player,mode,yawRate,acceleration,dt,now,finished,snap||moved||this.chaseStale);
+      if(this.cameraBlend){
+        const b=this.cameraBlend,e=C.ease(b.t+=dt/.6);this.camera.position.lerpVectors(b.position,this.camera.position,e);this.camera.quaternion.slerpQuaternions(b.quaternion,this.camera.quaternion.clone(),e);
+        fov=b.fov+(fov-b.fov)*e;if(b.t>=1)this.cameraBlend=null;else this.camera.fov=fov;
+      }
+      this.readyCamera=true;
+      this.camera.fov=snap?fov:this.camera.fov+(fov-this.camera.fov)*Math.min(1,dt*(firstPerson?6:4));this.camera.updateProjectionMatrix();
+      const yaw=this.cameraYaw;
+      if(this.headlight.intensity>0){this.headlight.position.set(player.x-Math.sin(yaw)*1.5,player.y+3.4,player.z-Math.cos(yaw)*1.5);this.headlight.target.position.set(player.x+Math.sin(yaw)*24,player.y-.6,player.z+Math.cos(yaw)*24);this.headlight.target.updateMatrixWorld();}
+      if(mesh?.userData.cockpit?.group.visible){mesh.userData.cockpit.spin.rotation.z=mesh.userData.steer*2.2;this.drawDash(mesh.userData.cockpit,player,now);}
+    }
+    chaseCamera(world,track,player,mode,yawRate,acceleration,dt,now,finished,snap){
+      const C=root.KartCamera,rig=C.RIGS[mode]||C.RIGS.chase,speed=player.speed,boosting=player.boost>0,yaw=this.cameraYaw,fx=Math.sin(yaw),fz=Math.cos(yaw);
+      const [desired,look,origin,direction]=this.tmp;this.chaseStale=false;
+      // Ramp launches raise and pull the camera back to frame the landing, then settle once the wheels are down.
+      const air=!player.grounded&&player.launchedAt!=null?1:0;this.airBlend+=(air-this.airBlend)*(1-Math.exp(-(air?3:2.2)*dt));
+      const distance=rig.distance+speed*rig.perSpeed+(boosting?1.6:0)+this.airBlend*2.4,height=rig.height+this.airBlend*1.7;
+      desired.set(player.x-fx*distance,player.y+height,player.z-fz*distance);
+      look.set(player.x+fx*rig.look,player.y+1.2,player.z+fz*rig.look);
+      if(world.mode!=='battle'){
+        // Look ahead into the next bend: lean the aim toward the road 16-30 m ahead.
+        const near=T.sample(track,player.s+16),far=T.sample(track,player.s+30),facing=Math.cos(D.angle(yaw-near.heading));
+        if(facing>.3){const w=.34*facing;look.x+=((near.x+far.x)/2-look.x)*w;look.z+=((near.z+far.z)/2-look.z)*w;}
+        look.y=Math.max(player.y-3,(near.y+far.y*this.airBlend)/(1+this.airBlend))+1.2-this.airBlend*.8;
+      }
+      if(finished){
+        // Slow orbit around the finished kart, starting from wherever the camera already is.
+        if(this.orbit==null)this.orbit=Math.atan2(this.camPos.x-player.x,this.camPos.z-player.z);this.orbit+=this.reduced?0:dt*.35;
+        desired.set(player.x+Math.sin(this.orbit)*8,player.y+3,player.z+Math.cos(this.orbit)*8);look.set(player.x,player.y+.8,player.z);
+      }else this.orbit=null;
+      if(snap){this.camPos.copy(desired);this.camVel.set(0,0,0);this.lookPos.copy(look);this.lookVel.set(0,0,0);this.camReach=null;}
+      // Separate springs: position lags a touch more under boost (a pull-back), the look target stays crisp.
+      C.springVector(this.camPos,this.camVel,desired,finished?2.5:boosting?5.5:8.5,dt);C.springVector(this.lookPos,this.lookVel,look,finished?3:11,dt);
+      // Never clip through the road, bridges or rails: cast from the kart toward the camera and stop short of any hit.
+      origin.set(player.x,player.y+.9,player.z);direction.subVectors(this.camPos,origin);const length=direction.length();let hit=null;
+      if(length>.01&&this.colliders.length){direction.divideScalar(length);this.raycaster.set(origin,direction);this.raycaster.far=length+.4;hit=this.raycaster.intersectObjects(this.colliders,false)[0]?.distance??null;}
+      const allowed=C.pullIn(length,hit);this.camReach=this.camReach==null||allowed<this.camReach?allowed:this.camReach+(allowed-this.camReach)*(1-Math.exp(-3*dt));
+      if(length>.01)this.camera.position.copy(origin).addScaledVector(direction,Math.min(length,this.camReach));else this.camera.position.copy(this.camPos);
+      this.camera.up.set(0,1,0);this.camera.lookAt(this.lookPos);
+      const roll=C.cornerRoll(yawRate,speed,this.reduced)+(this.reduced||!player.drift?0:player.driftSign*.02),dip=C.brakeDip(acceleration,this.reduced);
+      this.camRoll+=(roll-this.camRoll)*(1-Math.exp(-6*dt));this.camDip+=(dip-this.camDip)*(1-Math.exp(-(dip>this.camDip?10:3.5)*dt));
+      if(!this.reduced){this.camera.rotateZ(this.camRoll);this.camera.rotateX(-this.camDip);const shake=this.shake||0;this.camera.position.x+=Math.sin(now*71)*shake;this.camera.position.y+=Math.cos(now*89)*shake*.65;}
+      this.shake=(this.shake||0)*Math.exp(-12*dt);
+      return finished?55:C.chaseFov(speed,boosting,this.reduced);
+    }
+    firstPersonCamera(world,track,player,mesh,mode,yawRate,dt,now){
+      const C=root.KartCamera,eye=C.EYES[mode],u=mesh.userData,scale=u.baseScale,top=D.CLASSES[player.classId]?.speed||35,[position,target]=this.tmp;
+      const rig=this.eyeRig;rig.position.copy(mesh.position);rig.rotation.set(u.pitch||0,mesh.rotation.y,0,'YXZ');rig.updateMatrixWorld(true);
+      // Landing jolt: a quick drop that springs back, scaled by how hard the kart came down.
+      if(this.fpGrounded===false&&player.grounded&&!this.reduced)this.joltVel-=D.clamp(-(this.fpVy||0)*.3,.8,3.2);
+      this.fpGrounded=player.grounded;this.fpVy=player.vy;[this.jolt,this.joltVel]=C.spring(this.jolt,this.joltVel,0,12,dt);
+      const rough=player.grounded?(player.surface==='mud'?.02:.005)+(world.mode!=='battle'&&Math.abs(player.lane)>track.width/2-1.4?.012:0):0;
+      const y=u.visual.position.y+eye.y*scale.y+C.headBob(now,player.speed,top,rough,this.reduced)+this.jolt*.1;
+      rig.localToWorld(position.set(eye.x,y,eye.z*scale.z));rig.localToWorld(target.set(eye.x,y-eye.down*12,eye.z*scale.z+12));
+      this.camera.position.copy(position);this.camera.up.set(0,1,0);this.camera.lookAt(target);
+      // Head tilts into corners; reduced motion keeps the horizon level.
+      this.headTilt+=(C.cornerRoll(yawRate,player.speed,this.reduced,.045)-this.headTilt)*(1-Math.exp(-5*dt));if(!this.reduced)this.camera.rotateZ(this.headTilt);
+      this.shake=0;
+      return C.firstPersonFov(player.speed,top,this.reduced);
     }
     drawMap(canvas,world,playerId){
       const ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height,track=T.makeTrack(world.trackIndex);

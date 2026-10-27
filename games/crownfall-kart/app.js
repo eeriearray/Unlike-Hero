@@ -29,7 +29,7 @@
     screen=next;input.clear();input.active=next==='race';
     $('menu').classList.toggle('hidden',next!=='menu');$('lobby').classList.toggle('hidden',next!=='lobby');
     $('pause').classList.toggle('hidden',next!=='paused');$('results').classList.toggle('hidden',next!=='results');
-    $('hud').classList.toggle('hidden',!['race','paused'].includes(next));$('pause-button').classList.toggle('hidden',!['race','paused'].includes(next));
+    $('hud').classList.toggle('hidden',!['race','paused'].includes(next));$('pause-button').classList.toggle('hidden',!['race','paused'].includes(next));$('camera-button').classList.toggle('hidden',next!=='race');
     document.body.classList.toggle('racing',['race','paused','results'].includes(next));
   }
   function preview(){
@@ -69,6 +69,10 @@
     else if(screen==='paused'){paused=false;setScreen('race');}
   }
   input.onPause=togglePause;
+  // Chase -> Close chase -> Cockpit -> Hood, remembered per device.
+  function showCamera(){const label=KartCamera.LABELS[renderer.cameraMode];$('camera-button').innerHTML=`View · ${label} <kbd>C</kbd>`;$('camera-button').setAttribute('aria-label',`Change camera view. Current view: ${label}`);}
+  function cycleCamera(){if(screen!=='race')return;renderer.setCameraMode(KartCamera.nextMode(renderer.cameraMode));storage.set('camera.v1',renderer.cameraMode);showCamera();audio.uiSound('click');}
+  renderer.setCameraMode(storage.get('camera.v1','chase'));showCamera();input.onCamera=cycleCamera;$('camera-button').onclick=()=>{audio.unlock();cycleCamera();};
   function updateSound(){ $('sound').textContent=audio.enabled?'Sound on':'Sound off';$('sound').setAttribute('aria-pressed',String(audio.enabled)); }
   $('sound').onclick=()=>{audio.unlock();audio.setEnabled(!audio.enabled);storage.set('sound',audio.enabled);updateSound();};
   $('auto-drive').onchange=()=>{input.auto=$('auto-drive').checked;saveSettings();};$('steering-assist').onchange=()=>{input.assist=$('steering-assist').checked;saveSettings();};
@@ -84,7 +88,7 @@
   $('track').onchange=()=>{trackIndex=Number($('track').value);preview();};$('name').onchange=saveSettings;
   document.addEventListener('pointerdown',()=>audio.unlock(),{once:true});
   // Menu buttons tick on hover and click; the in-race touch pads stay silent.
-  let hovered=null;const menuButton=e=>{const b=e.target.closest?.('button,select,.course-card');return b&&!b.disabled&&!b.closest('[data-control],#touch-controls')?b:null;};
+  let hovered=null;const menuButton=e=>{const b=e.target.closest?.('button,select,.course-card');return b&&!b.disabled&&!b.closest('[data-control],#touch-controls,#camera-button')?b:null;};
   document.addEventListener('pointerover',e=>{const b=menuButton(e);if(b!==hovered){hovered=b;if(b&&e.pointerType==='mouse')audio.uiSound('hover');}});
   document.addEventListener('click',e=>{if(menuButton(e))audio.uiSound('click');});
   function showCourses(){
@@ -204,6 +208,6 @@
   }
   // Small read-only debug surface for diagnostics; no online authoritative state can be modified through it.
   rootDiagnostics();
-  function rootDiagnostics(){window.Crownfall={getState:()=>S.snapshot(world),getScreen:()=>screen};}
+  function rootDiagnostics(){window.Crownfall={getState:()=>S.snapshot(world),getScreen:()=>screen,getView:()=>({mode:renderer.cameraMode,position:renderer.camera.position.toArray(),fov:renderer.camera.fov,reach:renderer.camReach,colliders:renderer.colliders.length,audio:audio.context?.state,voices:audio.voices,layers:audio.layers})};}
   $('resume').disabled=false;preview();requestAnimationFrame(frame);
 })();
