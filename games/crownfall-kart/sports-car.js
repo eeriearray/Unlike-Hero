@@ -8,6 +8,14 @@
       for(let j=0;j<=sides;j++){const a=j/sides*Math.PI*2,x=Math.sin(a)*p.y,y=p.z+Math.cos(a)*(.22+.035*Math.sin(t*Math.PI));positions.push(x,y,p.x);uvs.push(j/sides,t);
         if(i<segments&&j<sides){const n=i*(sides+1)+j;indices.push(n,n+sides+1,n+1,n+1,n+sides+1,n+sides+2);}}
     }
+    // Cap both ends. Without caps the narrow tail reads as a dark vertical slit into the hollow body.
+    // Cap rings duplicate their vertices so the body's smooth normals are unaffected.
+    for(const [i,rear] of [[0,true],[segments,false]]){
+      const start=positions.length/3,ring=i*(sides+1);let cx=0,cy=0,cz=0;
+      for(let j=0;j<=sides;j++){const n=(ring+j)*3;positions.push(positions[n],positions[n+1],positions[n+2]);uvs.push(0,0);if(j<sides){cx+=positions[n];cy+=positions[n+1];cz+=positions[n+2];}}
+      const center=positions.length/3;positions.push(cx/sides,cy/sides,cz/sides);uvs.push(0,0);
+      for(let j=0;j<sides;j++)if(rear)indices.push(center,start+j,start+j+1);else indices.push(center,start+j+1,start+j);
+    }
     const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));g.setIndex(indices);g.computeVertexNormals();return g;
   }
   function batchStatic(group,sharedBox){

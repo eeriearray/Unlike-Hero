@@ -18,7 +18,7 @@
       this.karts=new Map();this.entities=new Map();this.trackKey='';this.follow=new THREE.Vector3();this.look=new THREE.Vector3();this.readyCamera=false;
       this.reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
       this.cameraMode='chase';this.raycaster=new THREE.Raycaster();this.colliders=[];this.colliderMaterial=new THREE.MeshBasicMaterial({side:THREE.DoubleSide});this.eyeRig=new THREE.Object3D();
-      this.camPos=new THREE.Vector3();this.camVel=new THREE.Vector3();this.lookPos=new THREE.Vector3();this.lookVel=new THREE.Vector3();this.tmp=[0,1,2,3].map(()=>new THREE.Vector3());
+      this.camPos=new THREE.Vector3();this.camOffset=new THREE.Vector3();this.camVel=new THREE.Vector3();this.lookPos=new THREE.Vector3();this.lookOffset=new THREE.Vector3();this.lookVel=new THREE.Vector3();this.tmp=[0,1,2,3].map(()=>new THREE.Vector3());
       this.camRoll=0;this.camDip=0;this.airBlend=0;this.jolt=0;this.joltVel=0;this.headTilt=0;
       this.materials=new Map();this.materialDisposalHooks=new WeakSet();this.unitBox=new THREE.BoxGeometry(1,1,1);this.unitRock=new THREE.DodecahedronGeometry(1,0);
       this.scenery=new root.TrackScenery(this);this.roadTexture=this.scenery.road.map;this.artTextures=[];this.signBoards=[];this.lastMotion=new Map();this.particleCursor=0;
@@ -463,17 +463,17 @@
     }
     makeCockpit(visual){
       const group=new THREE.Group();visual.add(group);
-      const dash=new THREE.Mesh(this.unitBox,this.mat('#1b1d21'));dash.position.set(0,.42,.36);dash.scale.set(1.02,.09,.32);group.add(dash);
-      const column=new THREE.Mesh(this.unitBox,this.mat('#1b1d21'));column.position.set(0,.47,.22);column.rotation.x=.42;column.scale.set(.06,.06,.22);group.add(column);
-      const wheel=new THREE.Group();wheel.position.set(0,.53,.1);wheel.rotation.x=.38;group.add(wheel);
+      const dash=new THREE.Mesh(this.unitBox,this.mat('#1b1d21'));dash.position.set(0,.47,.5);dash.scale.set(1.02,.08,.3);group.add(dash);
+      const column=new THREE.Mesh(this.unitBox,this.mat('#1b1d21'));column.position.set(0,.43,.32);column.rotation.x=-.35;column.scale.set(.045,.045,.3);group.add(column);
+      const wheel=new THREE.Group();wheel.position.set(0,.4,.16);wheel.rotation.x=.55;group.add(wheel);
       const spin=new THREE.Group();wheel.add(spin);
-      spin.add(new THREE.Mesh(new THREE.TorusGeometry(.17,.022,8,36),this.scenery.rubber));
-      // T-shaped spokes leave a clear sight line to the display above the hub.
-      for(const a of [0,Math.PI,-Math.PI/2]){const spoke=new THREE.Mesh(this.unitBox,this.scenery.metal);spoke.position.set(Math.cos(a)*.085,Math.sin(a)*.085,0);spoke.rotation.z=a;spoke.scale.set(.17,.032,.02);spin.add(spoke);}
-      const hub=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,.04,16),this.mat('#2a2c30'));hub.rotation.x=Math.PI/2;spin.add(hub);
-      const marker=new THREE.Mesh(this.unitBox,this.mat('#ffc66d',true));marker.position.set(0,.17,0);marker.scale.set(.03,.035,.03);spin.add(marker);
+      spin.add(new THREE.Mesh(new THREE.TorusGeometry(.135,.018,8,36),this.scenery.rubber));
+      // The wheel sits low and the display sits above its rim, so spokes never cover the readout.
+      for(const a of [0,Math.PI,-Math.PI/2]){const spoke=new THREE.Mesh(this.unitBox,this.scenery.metal);spoke.position.set(Math.cos(a)*.068,Math.sin(a)*.068,0);spoke.rotation.z=a;spoke.scale.set(.135,.026,.016);spin.add(spoke);}
+      const hub=new THREE.Mesh(new THREE.CylinderGeometry(.036,.036,.035,16),this.mat('#2a2c30'));hub.rotation.x=Math.PI/2;spin.add(hub);
+      const marker=new THREE.Mesh(this.unitBox,this.mat('#ffc66d',true));marker.position.set(0,.135,0);marker.scale.set(.03,.035,.03);spin.add(marker);
       const canvas=document.createElement('canvas');canvas.width=256;canvas.height=112;const texture=new THREE.CanvasTexture(canvas);texture.encoding=THREE.sRGBEncoding;
-      const screen=new THREE.Mesh(new THREE.PlaneGeometry(.3,.13),new THREE.MeshBasicMaterial({map:texture,toneMapped:false}));screen.position.set(0,.5,.34);screen.rotation.set(-.5,Math.PI,0,'YXZ');screen.userData.ownedMaterial=true;screen.userData.ownedTexture=true;group.add(screen);
+      const screen=new THREE.Mesh(new THREE.PlaneGeometry(.24,.105),new THREE.MeshBasicMaterial({map:texture,toneMapped:false}));screen.position.set(0,.57,.5);screen.rotation.set(-.25,Math.PI,0,'YXZ');screen.userData.ownedMaterial=true;screen.userData.ownedTexture=true;group.add(screen);
       group.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;}});
       return {group,spin,canvas,context:canvas.getContext('2d'),texture,key:'',drawn:0};
     }
@@ -533,9 +533,12 @@
         if(this.orbit==null)this.orbit=Math.atan2(this.camPos.x-player.x,this.camPos.z-player.z);this.orbit+=this.reduced?0:dt*.35;
         desired.set(player.x+Math.sin(this.orbit)*8,player.y+3,player.z+Math.cos(this.orbit)*8);look.set(player.x,player.y+.8,player.z);
       }else this.orbit=null;
-      if(snap){this.camPos.copy(desired);this.camVel.set(0,0,0);this.lookPos.copy(look);this.lookVel.set(0,0,0);this.camReach=null;}
-      // Separate springs: position lags a touch more under boost (a pull-back), the look target stays crisp.
-      C.springVector(this.camPos,this.camVel,desired,finished?2.5:boosting?5.5:8.5,dt);C.springVector(this.lookPos,this.lookVel,look,finished?3:11,dt);
+      // Springs act on offsets from the kart, not world positions, so speed alone never drags the camera back.
+      desired.x-=player.x;desired.y-=player.y;desired.z-=player.z;look.x-=player.x;look.y-=player.y;look.z-=player.z;
+      if(snap){this.camOffset.copy(desired);this.camVel.set(0,0,0);this.lookOffset.copy(look);this.lookVel.set(0,0,0);this.camReach=null;}
+      // Separate stiffness: position eases more under boost (a pull-back), the look target stays crisp.
+      C.springVector(this.camOffset,this.camVel,desired,finished?2.5:boosting?5:8,dt);C.springVector(this.lookOffset,this.lookVel,look,finished?3:11,dt);
+      this.camPos.set(player.x,player.y,player.z).add(this.camOffset);this.lookPos.set(player.x,player.y,player.z).add(this.lookOffset);
       // Never clip through the road, bridges or rails: cast from the kart toward the camera and stop short of any hit.
       origin.set(player.x,player.y+.9,player.z);direction.subVectors(this.camPos,origin);const length=direction.length();let hit=null;
       if(length>.01&&this.colliders.length){direction.divideScalar(length);this.raycaster.set(origin,direction);this.raycaster.far=length+.4;hit=this.raycaster.intersectObjects(this.colliders,false)[0]?.distance??null;}
