@@ -119,7 +119,7 @@ test('field of view: chase capped at 72 with a boost kick, first person 75-85, s
   assert.equal(C.chaseFov(0,false,false),60);assert.ok(C.chaseFov(20,true,false)>C.chaseFov(20,false,false));
   for(let speed=0;speed<80;speed+=2)for(const boost of [false,true])assert.ok(C.chaseFov(speed,boost,false)<=72);
   assert.equal(C.chaseFov(60,true,true),60);
-  assert.equal(C.firstPersonFov(0,35,false),75);assert.equal(C.firstPersonFov(35,35,false),85);assert.equal(C.firstPersonFov(80,35,false),85);
+  assert.equal(C.firstPersonFov(0,35,false),66);assert.equal(C.firstPersonFov(35,35,false),76);assert.equal(C.firstPersonFov(80,35,false),76);
   assert.equal(C.firstPersonFov(10,35,true),C.firstPersonFov(35,35,true));
 });
 

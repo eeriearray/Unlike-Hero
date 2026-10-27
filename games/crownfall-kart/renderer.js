@@ -626,11 +626,11 @@
       const strip=document.createElement('canvas');strip.width=512;strip.height=48;const s=strip.getContext('2d');
       s.fillStyle='#07080b';s.fillRect(0,0,512,48);s.fillStyle='#'+(trim.color?.getHexString?.()||'ffc66d');s.font='italic 900 30px Impact, Arial Narrow, sans-serif';s.textAlign='center';s.fillText('CROWNFALL  RACING',256,35);
       const stripTexture=new THREE.CanvasTexture(strip);stripTexture.encoding=THREE.sRGBEncoding;stripTexture.center.set(.5,.5);stripTexture.rotation=Math.PI;
-      const sun=new THREE.Mesh(new THREE.PlaneGeometry(1.02,.095),new THREE.MeshBasicMaterial({map:stripTexture,transparent:true,opacity:.92,toneMapped:false}));
-      sun.position.set(0,.748,.34);sun.rotation.x=2.18;sun.userData.ownedMaterial=true;sun.userData.ownedTexture=true;group.add(sun);
+      const sun=new THREE.Mesh(new THREE.PlaneGeometry(.9,.045),new THREE.MeshBasicMaterial({map:stripTexture,transparent:true,opacity:.92,toneMapped:false}));
+      sun.position.set(0,.785,.31);sun.rotation.x=2.18;sun.userData.ownedMaterial=true;sun.userData.ownedTexture=true;group.add(sun);
       // Rear-view mirror on a short stalk from the header.
-      tube([0,.81,.3],[0,.775,.3],.007,kit.carbon);add(this.unitBox,kit.carbon,0,.76,.3,.22,.045,.025);
-      const glass=add(new THREE.PlaneGeometry(.205,.034),kit.mirror,0,.76,.286);glass.rotation.y=Math.PI;
+      tube([0,.81,.3],[0,.785,.3],.007,kit.carbon);add(this.unitBox,kit.carbon,0,.772,.3,.18,.036,.025);
+      const glass=add(new THREE.PlaneGeometry(.17,.026),kit.mirror,0,.772,.286);glass.rotation.y=Math.PI;
       // Gunmetal roll cage: inner A-pillar bars, a header bar tucked under the roof, roof rails and padded X door bars.
       const cage=kit.cage;
       for(const side of [-1,1]){
@@ -644,21 +644,23 @@
       for(const side of [-1,1]){add(this.unitBox,kit.carbon,side*.61,.33,.05,.05,.32,1.3);add(this.unitBox,trim,side*.6,.5,.05,.09,.018,1.3);add(this.unitBox,this.mat('#c8261e'),side*.575,.42,.28,.012,.035,.2);}
       const net=add(new THREE.PlaneGeometry(.75,.28),kit.net,-.575,.64,-.05);net.rotation.y=Math.PI/2;
       // Carbon dashboard: rolled leading edge, painted pin-stripe at the screen base and defrost vents.
-      add(this.unitBox,kit.carbon,0,.42,.6,1.12,.1,.5);
-      const lip=add(new THREE.CylinderGeometry(.02,.02,1.06,12),kit.suede,0,.455,.36);lip.rotation.z=Math.PI/2;
-      add(this.unitBox,trim,0,.474,.84,1.08,.012,.03);
-      for(let i=0;i<6;i++)add(this.unitBox,kit.foam,(i-2.5)*.15,.472,.74,.1,.006,.035);
+      add(this.unitBox,kit.carbon,0,.32,.6,1.12,.1,.5);
+      // Dark cabin floor over the body shell, so looking down shows the cockpit tub rather than bare paint.
+      add(this.unitBox,kit.suede,0,.395,-.15,1.12,.01,1.1);
+      const lip=add(new THREE.CylinderGeometry(.02,.02,1.06,12),kit.suede,0,.355,.36);lip.rotation.z=Math.PI/2;
+      add(this.unitBox,trim,0,.374,.84,1.08,.012,.03);
+      for(let i=0;i<6;i++)add(this.unitBox,kit.foam,(i-2.5)*.15,.372,.74,.1,.006,.035);
       // Switch panel on the right: carbon plate, metal toggles, red guarded ignition switches and a starter button.
-      const panel=new THREE.Group();panel.position.set(.32,.5,.42);panel.rotation.x=-.55;group.add(panel);
+      const panel=new THREE.Group();panel.position.set(.34,.41,.4);panel.rotation.x=-.55;group.add(panel);
       add(this.unitBox,kit.carbon,0,0,0,.26,.13,.014,panel);
       for(let i=0;i<5;i++){const t=add(new THREE.CylinderGeometry(.0045,.0045,.03,6),metal,-.09+i*.035,.025,-.018,1,1,1,panel);t.rotation.x=-Math.PI/2-.4;add(this.unitBox,this.mat('#e9ecef'),-.09+i*.035,-.012,-.008,.022,.008,.002,panel);}
       for(const x of [-.07,-.03])add(this.unitBox,this.mat('#d5281f'),x,-.04,-.016,.026,.03,.018,panel);
       const start=add(new THREE.CylinderGeometry(.018,.018,.014,18),this.mat('#ff3b30',true),.075,-.035,-.01,1,1,1,panel);start.rotation.x=Math.PI/2;
       const bezel=add(new THREE.TorusGeometry(.021,.004,6,20),this.mat('#f2c230'),.075,-.035,-.016,1,1,1,panel);bezel.rotation.y=0;
       // Kill switch on the left of the dash.
-      const kill=add(new THREE.CylinderGeometry(.022,.022,.016,18),this.mat('#e8463c'),-.33,.49,.44);kill.rotation.x=Math.PI/2-.55;
+      const kill=add(new THREE.CylinderGeometry(.022,.022,.016,18),this.mat('#e8463c'),-.34,.4,.42);kill.rotation.x=Math.PI/2-.55;
       // Steering column and quick-release hub.
-      const wheel=new THREE.Group();wheel.position.set(0,.43,.13);wheel.rotation.x=.6;group.add(wheel);
+      const wheel=new THREE.Group();wheel.position.set(0,.45,.1);wheel.rotation.x=.7;group.add(wheel);
       const column=add(new THREE.CylinderGeometry(.026,.03,.32,12),kit.foam,0,0,.2,1,1,1,wheel);column.rotation.x=Math.PI/2;
       const spin=new THREE.Group();wheel.add(spin);
       // Formula-style wheel: a carbon body with suede grips, shift lights, a centre screen, coloured buttons, rotaries and paddles.
