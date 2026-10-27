@@ -6,7 +6,7 @@
   "sdk": "1.x",
   "entry": "index.html",
   "server": "server/index.mjs",
-  "thumbnail": "art/generated/task1_environments_village_belltower.webp",
+  "thumbnail": "hub-banner.webp",
   "accent": "#c9a35b",
   "players": {
     "min": 1,

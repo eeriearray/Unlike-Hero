@@ -3,7 +3,7 @@
  *
  * A bot reads the simulation like a player reads the screen and returns held buttons, nothing more. It never
  * touches fighter state, so a CPU has exactly the same moves, cooldowns and rules as a person.
- *   var bot = new DC.Bot(sim, fighterIndex, { level: 1..3, seed });
+ *   var bot = new DC.Bot(sim, fighterIndex, { level: 1..6, seed });
  *   input = bot.think();   // { held, pressed: 0 }
  * Training dummies use modes: 'stand', 'jump', 'dodge', 'cpu'.
  */
@@ -18,6 +18,9 @@
     1: { react: 20, aim: 0.55, dodge: 0.05, aggression: 0.35, sig: 0.02, ability: 0.06, guard: 0.04, tech: 0.1, grab: 0.1, meter: 0.2 },
     2: { react: 11, aim: 0.8,  dodge: 0.18, aggression: 0.6,  sig: 0.035, ability: 0.12, guard: 0.2, tech: 0.35, grab: 0.3, meter: 0.5 },
     3: { react: 5,  aim: 0.95, dodge: 0.38, aggression: 0.8,  sig: 0.05, ability: 0.18, guard: 0.35, tech: 0.7, grab: 0.55, meter: 0.8 },
+    4: { react:3, aim:.99, dodge:.6, aggression:.95, sig:.09, ability:.28, guard:.65, tech:.85, grab:.8, meter:.9, combo:.65, punish:.65 },
+    5: { react:2, aim:1, dodge:.82, aggression:1, sig:.13, ability:.4, guard:.85, tech:.95, grab:.95, meter:1, combo:.88, punish:.9 },
+    6: { react:0, aim:1, dodge:1, aggression:1, sig:.18, ability:.55, guard:1, tech:1, grab:1, meter:1, combo:1, punish:1 },
   };
 
   function Bot(sim, index, opts) {
@@ -29,13 +32,13 @@
     this.hold = 0; this.tap = 0; this.tapT = 0; this.wait = 0; this.plan = null; this.stuck = 0; this.lastX = 0; this.planHold = 0;
   }
 
-  Bot.prototype.press = function (bits, ticks) { this.tap = bits; this.tapT = ticks || 2; };
+  Bot.prototype.press = function (bits, ticks) { if (this.tapT !== 0 || this.tap) return; this.tap = bits; this.tapT = ticks || 2; };
 
   Bot.prototype.think = function () {
     var out = this.decide();
     var held = this.hold;
     if (this.tapT > 0) { held |= this.tap; this.tapT--; }
-    else if (this.tapT === 0 && this.tap) { this.tap = 0; this.tapT = -3; } // release for a few ticks so the next press registers
+    else if (this.tapT === 0 && this.tap) { this.tap = 0; this.tapT = this.cfg.combo ? -1 : -3; } // release for a few ticks so the next press registers
     else if (this.tapT < 0) this.tapT++;
     return { held: held | (out || 0), pressed: 0 };
   };
@@ -108,6 +111,17 @@
     var face = dx > 0 ? B.right : B.left;
     this.planHold = 0;
 
+    // Expert CPUs confirm hits into stronger moves and punish recovery using ordinary inputs.
+    // They never change damage, movement stats or cooldowns, and cannot inspect player inputs.
+    if (this.tapT === 0 && me.state === 'attack' && me.hitConfirm && r() < (this.cfg.combo || 0)) {
+      var allowed = D.CANCELS[me.moveKind] || [];
+      var follow = allowed.indexOf('heavy') >= 0 ? B.heavy : allowed.indexOf('sig') >= 0 && me.sigCd <= 0 ? B.sig : 0;
+      if (follow) { this.hold = face; this.press(follow, 1); return 0; }
+    }
+    if (this.tapT === 0 && me.state !== 'attack' && adx < 110 * me.stats.scale[0] && Math.abs(dy) < 80 &&
+        t.state === 'attack' && t.moveDef && t.moveT >= t.moveDef.startup + t.moveDef.active && r() < (this.cfg.punish || 0)) {
+      this.hold = face; this.press(t.dmg > 85 ? B.heavy : B.light, 1); return 0;
+    }
     // Gear ability: defensive ones when threatened, aggressive ones up close
     var gid = me.stats.gearAbility;
     if (gid && me.gearCd <= 0 && this.tapT === 0 && r() < this.cfg.aggression * 0.6) {
@@ -121,7 +135,7 @@
     }
     // Guard an incoming attack (and sometimes a perfect parry, by pressing late)
     if (me.grounded && t.state === 'attack' && t.moveDef && t.moveT < t.moveDef.startup && adx < 170 && Math.abs(dy) < 120 && r() < this.cfg.guard) {
-      this.planHold = B.guard; this.hold = B.guard; this.wait = 14;
+      this.planHold = B.guard; this.hold = B.guard; this.wait = this.cfg.combo ? Math.max(1, t.moveDef.startup - t.moveT) : 14;
       return 0;
     }
     // A turtling rival gets grabbed
@@ -262,5 +276,6 @@
   };
 
   Bot.LEVELS = LEVELS;
+  Bot.NAMES = ['', 'Easy', 'Normal', 'Hard', 'Super Hard', 'Extreme', 'Impossible'];
   return Bot;
 });

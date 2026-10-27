@@ -51,7 +51,8 @@
     } else {
       this.setupInfo = opts.setup;
     }
-    this.arena = D.ARENAS[this.setupInfo.arena] || D.ARENAS.skyforge;
+    this.arena = D.arenaForMatch(this.setupInfo.arena, this.setupInfo.fighters);
+    this.cam.x = this.arena.size[0] / 2;
     this.setupInfo.fighters.forEach(function (f) { Art.prepare(f.build.look); });
     window.DCScenery.prepare(this.arena, window.innerWidth, window.innerHeight);   // tint each dragon's art now, not mid-fight
     // Sprite-pack dragons: decode and touch every sheet of the dragons in this match before it starts (and free the rest)
@@ -421,7 +422,7 @@
     this.cam.zBase = base;
     var z = Math.min(this.W / w, this.H / h);
     // Never zoom so far in that the painted sprites are blown up past their source pixels
-    z = Math.max(base * 0.75, Math.min(base * 1.4, z));
+    z = Math.max(base * 0.75 / (this.arena.teamScale || 1), Math.min(base * 1.4, z));
     var cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
     var k = 0.08, zoomAmt = this.settings.camZoom != null ? this.settings.camZoom : 1;
     if (this.endFocus) {

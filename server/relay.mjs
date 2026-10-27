@@ -18,13 +18,11 @@ import { WebSocketServer } from 'ws';
 import { gzipSync } from 'node:zlib';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const PORT = Number(process.env.PORT) || 8080;
+const PORT = Number(process.env.PORT) || 8081;
 const MAX_MSG = 16 * 1024;          // bytes per message
 const MAX_PER_ROOM = 16;            // sockets per room
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.wav': 'audio/wav', '.webm': 'audio/webm', '.mp4': 'video/mp4', '.m4a': 'audio/mp4', '.woff2': 'font/woff2', '.glb': 'model/gltf-binary', '.gltf': 'model/gltf+json', '.md': 'text/markdown; charset=utf-8', '.txt': 'text/plain; charset=utf-8' };
-// Code revalidates on every load (a 304 when unchanged), so edits show up at once; art, sound and models are cached for an
-// hour. Text is gzipped once per file version and kept in memory. Over a slow Wi-Fi this is most of a page's load time.
-const LONG_CACHE = /\.(png|jpe?g|webp|svg|mp3|ogg|wav|webm|mp4|m4a|woff2|glb|gltf)$/i;
+// Every asset revalidates on refresh (a 304 when unchanged), so local edits show up immediately. Text is gzipped once per file version and kept in memory. Over a slow Wi-Fi this is most of a page's load time.
 const COMPRESS = /\.(html|m?js|css|json|svg|md|txt|gltf)$/i;
 const gzCache = new Map();
 const BLOCKED = /(^|\/)(node_modules|server|tools|\.git)(\/|$)|(^|\/)\.|^package(-lock)?\.json$/;
@@ -46,7 +44,7 @@ const server = createServer(async (req, res) => {
     if (!info) { res.writeHead(404).end('Not found'); return; }
     if (info.isDirectory()) { res.writeHead(301, { location: path + '/' }).end(); return; }
     const etag = `"${info.size.toString(36)}-${Math.floor(info.mtimeMs).toString(36)}"`;
-    const head = { 'content-type': TYPES[extname(file).toLowerCase()] || 'application/octet-stream', 'cache-control': LONG_CACHE.test(file) ? 'public, max-age=3600' : 'no-cache',
+    const head = { 'content-type': TYPES[extname(file).toLowerCase()] || 'application/octet-stream', 'cache-control': 'no-cache',
                    etag, 'last-modified': info.mtime.toUTCString(), 'accept-ranges': 'bytes', vary: 'accept-encoding' };
     if (req.headers['if-none-match'] === etag) { res.writeHead(304, head).end(); return; }
     const range = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '');
@@ -167,4 +165,19 @@ function ipv6Addresses() {
   }
   return Object.entries(networkInterfaces()).filter(([n]) => !/^(utun|awdl|llw|lo|docker|br-|veth)/.test(n)).flatMap(([, l]) => l || [])
     .filter(a => (a.family === 'IPv6' || a.family === 6) && !a.internal && /^[23]/.test(a.address)).map(a => a.address).slice(0, 1);
+}
+
+// Retired local preview URLs lead to the one canonical hub, never a second game server.
+if (PORT === 8081) {
+  for (const oldPort of [8080, 8084, 8090]) for (const address of ['127.0.0.1', '::1']) {
+    const redirect = createServer((req, res) => {
+      const url = new URL(req.url, 'http://localhost');
+      res.writeHead(307, { location: `http://localhost:8081${url.pathname}${url.search}`, 'cache-control': 'no-store' });
+      res.end('The main game hub is now at http://localhost:8081');
+    });
+    redirect.on('error', error => console.warn(`Legacy redirect ${oldPort}: ${error.message}`));
+    redirect.listen(oldPort, address);
+    server.once('close', () => redirect.close());
+  }
+  console.log(`Canonical hub: http://localhost:8081\nSource checkout: ${root}`);
 }

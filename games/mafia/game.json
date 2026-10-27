@@ -6,7 +6,7 @@
   "sdk": "1.x",
   "entry": "index.html",
   "server": "server/index.mjs",
-  "thumbnail": "banner.svg",
+  "thumbnail": "hub-banner.webp",
   "accent": "#d01a33",
   "players": { "min": 4, "max": 16 },
   "roles": [

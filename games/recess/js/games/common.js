@@ -61,13 +61,20 @@ export function svgPoint(el, e) {
 export function pullAim(svg, opts) {
   let drag = null;
   const space = opts.space || svg;
+  const win = svg.ownerDocument.defaultView;
   const down = (e) => {
+    if (drag || (e.button != null && e.button !== 0)) return;
     const o = opts.origin(e);
     if (!o) return;
     const p = svgPoint(space, e);
     if (Math.hypot(p.x - o.x, p.y - o.y) > (opts.grabRadius ?? 12)) return;
     drag = { o, from: p, id: e.pointerId };
-    svg.setPointerCapture?.(e.pointerId);
+    // Keep receiving the release outside the board, even if SVG capture fails.
+    win.addEventListener('pointermove', move, true);
+    win.addEventListener('pointerup', up, true);
+    win.addEventListener('pointercancel', cancel, true);
+    win.addEventListener('blur', blur);
+    try { svg.setPointerCapture?.(e.pointerId); } catch { /* Window listeners cover capture failures. */ }
     e.preventDefault();
     move(e);
   };
@@ -80,23 +87,32 @@ export function pullAim(svg, opts) {
     return { dx, dy, power: Math.min(1, len / max), from: drag.from, at: p };
   };
   const move = (e) => { if (drag && e.pointerId === drag.id) opts.onAim?.(vec(e)); };
+  const end = () => {
+    const id = drag?.id;
+    drag = null;
+    win.removeEventListener('pointermove', move, true);
+    win.removeEventListener('pointerup', up, true);
+    win.removeEventListener('pointercancel', cancel, true);
+    win.removeEventListener('blur', blur);
+    if (id != null && svg.hasPointerCapture?.(id)) svg.releasePointerCapture(id);
+  };
   const up = (e) => {
     if (!drag || e.pointerId !== drag.id) return;
     const v = vec(e);
-    drag = null;
+    end();
     if (v.power < 0.06) opts.onCancel?.(); else opts.onShoot(v);
   };
-  const cancel = () => { if (drag) { drag = null; opts.onCancel?.(); } };
+  const cancel = (e) => {
+    if (!drag || (e && e.pointerId !== drag.id)) return;
+    end();
+    opts.onCancel?.();
+  };
+  const blur = () => cancel();
   svg.addEventListener('pointerdown', down);
-  svg.addEventListener('pointermove', move);
-  svg.addEventListener('pointerup', up);
-  svg.addEventListener('pointercancel', cancel);
   svg.style.touchAction = 'none';
   return () => {
+    cancel();
     svg.removeEventListener('pointerdown', down);
-    svg.removeEventListener('pointermove', move);
-    svg.removeEventListener('pointerup', up);
-    svg.removeEventListener('pointercancel', cancel);
   };
 }
 

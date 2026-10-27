@@ -3,13 +3,31 @@
 # needed, starts the hub, and prints (and copies) the link to share. Run `npm run play`, or double-click
 # "Start Hub.command" in Finder. Ctrl+C stops the hub.
 cd "$(dirname "$0")/.." || exit 1
-PORT="${PORT:-8080}"
-
-# An older hub left running would block the port: stop it. Anything else on the port means use the next one.
+# Always launch the primary checkout, even when invoked from a linked worktree.
+MAIN_ROOT=$(cd "$(git rev-parse --git-common-dir)/.." && pwd) || exit 1
+cd "$MAIN_ROOT" || exit 1
+PORT="${PORT:-8081}"
 for pid in $(lsof -nP -iTCP:"$PORT" -sTCP:LISTEN -t 2>/dev/null); do
-  if ps -o command= -p "$pid" | grep -q "server/relay.mjs"; then echo "Stopping the old hub (pid $pid)…"; kill "$pid"; sleep 1; fi
+  process=$(ps -o command= -p "$pid")
+  case "$process" in
+    *server/relay.mjs*)
+      echo "Restarting hub on port $PORT (pid $pid)…"
+      parent=$(ps -o ppid= -p "$pid" | tr -d ' ')
+      parent_command=$(ps -o command= -p "$parent")
+      case "$parent_command" in
+        *node*--watch*server/relay.mjs*) kill "$parent" ;;
+        *) kill "$pid" ;;
+      esac
+      sleep 1 ;;
+
+    *) echo "Port $PORT is occupied by another app. Free it before starting the hub; no alternate copy was launched."; exit 1 ;;
+  esac
 done
-while lsof -nP -iTCP:"$PORT" -sTCP:LISTEN -t >/dev/null 2>&1; do PORT=$((PORT + 1)); done
+if lsof -nP -iTCP:"$PORT" -sTCP:LISTEN -t >/dev/null 2>&1; then
+  echo "Port $PORT is still occupied. Stop its server and try again."; exit 1
+fi
+node tools/build-registry.mjs || exit 1
+echo "Serving main checkout: $MAIN_ROOT"
 
 # Packages: install on first run, or when package-lock.json changed since the last install (e.g. after git pull)
 if [ ! -f node_modules/.package-lock.json ] || [ package-lock.json -nt node_modules/.package-lock.json ]; then
@@ -49,4 +67,4 @@ echo
 ( for _ in $(seq 1 40); do lsof -nP -iTCP:"$PORT" -sTCP:LISTEN -t >/dev/null 2>&1 && break; sleep 0.25; done
   open "${SHARE:-http://localhost:$PORT}" 2>/dev/null ) &
 
-PORT="$PORT" exec node server/relay.mjs
+PORT="$PORT" exec node --watch server/relay.mjs

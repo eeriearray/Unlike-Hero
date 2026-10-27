@@ -66,7 +66,7 @@ export default {
     }
 
     const me = () => view?.bodies.find(b => b.id === api.me);
-    pullAim(svg, {
+    const stopAim = pullAim(svg, {
       grabRadius: 9,
       maxPull: 26,
       origin: () => (view && view.phase === 'aim' && view.turn === api.me && !replaying ? me() : null),
@@ -167,6 +167,6 @@ export default {
       render(v);
     }
 
-    return { update, destroy() { if (replaying) replaying(); } };
+    return { update, destroy() { stopAim(); if (replaying) replaying(); } };
   }
 };

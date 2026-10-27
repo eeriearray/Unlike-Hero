@@ -185,6 +185,19 @@ table.stat td{padding:8px 6px;border-top:1px solid var(--line);font-weight:800}
 .rule .ico{font-size:22px;width:56px;text-align:center}
 .remap td{padding:4px 6px} .remap button{min-width:80px}
 .remap button.wait{background:var(--hot2);color:#2a1660}
+.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+.settings-grid .panel{min-width:0}
+.settings-grid h3{margin:0 0 8px;font:800 22px var(--f-display);color:var(--ink)}
+.settings-grid .movelist{table-layout:fixed}
+.settings-grid .movelist td:first-child{white-space:normal;overflow-wrap:anywhere}
+.settings-grid .movelist th{padding:6px;text-align:left;font-weight:400;overflow-wrap:anywhere}
+.settings-grid .keyboard-remap th:first-child{width:50%}
+.settings-grid .remap button{width:100%;min-width:0;white-space:normal;overflow-wrap:anywhere}
+.settings-grid .setting-value{display:grid;grid-template-columns:110px minmax(0,1fr);gap:12px;align-items:center;margin:8px 0}
+.settings-grid .setting-value input,.settings-grid .setting-value select{width:100%;min-width:0}
+.settings-grid .setting-check{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;margin:12px 0}
+.settings-grid .setting-check input{margin:4px 0 0}
+@media (max-width:900px){.settings-grid{grid-template-columns:minmax(0,1fr)}}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#fff;color:#2a1660;border-radius:999px;padding:10px 18px;font-weight:900;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.3)}
 .code-big{font:800 54px/1 var(--f-display);letter-spacing:.12em;color:var(--hot2)}
 .member{display:flex;gap:10px;align-items:center;background:var(--panel2);border-radius:14px;padding:8px 10px}

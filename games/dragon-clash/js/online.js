@@ -225,9 +225,9 @@
             '<div class="chips"><span class="eyebrow" style="align-self:center">Stocks</span>' + [1, 2, 3, 4, 5].map(function (n) { return '<button class="chip' + (r.settings.stocks === n ? ' on' : '') + '" data-act="set" data-k="stocks" data-v="' + n + '">' + n + '</button>'; }).join('') + '</div>' +
             '<div class="chips"><span class="eyebrow" style="align-self:center">Time</span>' + [0, 3, 5, 8].map(function (n) { return '<button class="chip' + ((r.settings.time | 0) === n ? ' on' : '') + '" data-act="set" data-k="time" data-v="' + n + '">' + (n ? n + ' min' : '∞') + '</button>'; }).join('') + '</div>' +
             (r.mode === 'versus' && D.FORMATS[r.settings.format].perTeam > 1 ? '<label class="row" style="gap:8px"><input type="checkbox" data-ff' + (r.settings.ff ? ' checked' : '') + '><span>Friendly fire</span></label>' : '') +
-            '<div class="row"><button class="btn ghost small" data-act="bot" data-level="1">＋ CPU easy</button><button class="btn ghost small" data-act="bot" data-level="2">＋ CPU normal</button><button class="btn ghost small" data-act="bot" data-level="3">＋ CPU hard</button></div>' +
+            '<div class="row"><button class="btn ghost small" data-act="bot" data-level="1">＋ CPU easy</button><button class="btn ghost small" data-act="bot" data-level="2">＋ CPU normal</button><button class="btn ghost small" data-act="bot" data-level="3">＋ CPU hard</button><button class="btn ghost small" data-act="bot" data-level="4">＋ CPU Super Hard</button><button class="btn ghost small" data-act="bot" data-level="5">＋ CPU Extreme</button><button class="btn ghost small" data-act="bot" data-level="6">＋ CPU Impossible</button></div>' +
             '<button class="btn hot" data-act="start">Start ' + (r.mode === 'cup' ? 'the cup' : 'the match') + ' →</button>' +
-            (r.mode === 'versus' ? '<p class="dim">Empty seats are filled with CPUs.</p>' : '<p class="dim">Seeds follow join order. Byes go to the top seeds.</p>') + '</div>';
+            (r.mode === 'versus' ? '<p class="dim">Uneven teams are allowed. Empty sides get one CPU; other open seats stay empty.</p>' : '<p class="dim">Seeds follow join order. Byes go to the top seeds.</p>') + '</div>';
         } else html += '<div class="panel"><p class="muted">Waiting for the host to start. Share the code <b>' + esc(r.code) + '</b>: friends on this network open this page and join.</p></div>';
         html += '</div>';
       } else if (r.state === 'playing' || r.state === 'results') {
@@ -258,9 +258,9 @@
           '<div class="dim">' + (b ? App.elIcon(b.element) + ' ' + esc(b.name) + (loadoutText(b) ? ' <span style="opacity:.75">· ' + esc(loadoutText(b)) + '</span>' : '') : 'choosing…') + '</div></div>' +
           (m.bot ? (r.host === S.you && r.state === 'lobby'
               ? '<select class="sel" data-cpu-dragon="' + m.id + '" style="width:auto">' + App.presets().map(function (p) { return '<option value="' + esc(p.id) + '"' + (b && b.id === p.id ? ' selected' : '') + '>' + esc(p.name) + '</option>'; }).join('') + '</select>' +
-                ' <select class="sel" data-cpu-level="' + m.id + '" style="width:auto">' + [1, 2, 3].map(function (l) { return '<option value="' + l + '"' + ((m.level || 2) === l ? ' selected' : '') + '>CPU ' + ['', 'easy', 'normal', 'hard'][l] + '</option>'; }).join('') + '</select>' +
+                ' <select class="sel" data-cpu-level="' + m.id + '" style="width:auto">' + [1, 2, 3, 4, 5, 6].map(function (l) { return '<option value="' + l + '"' + ((m.level || 2) === l ? ' selected' : '') + '>CPU ' + window.DC.Bot.NAMES[l] + '</option>'; }).join('') + '</select>' +
                 ' <button class="icon-btn" data-act="kick" data-id="' + m.id + '">✕</button>'
-              : '<span class="pill">CPU ' + ['', 'easy', 'normal', 'hard'][m.level || 2] + '</span>')
+              : '<span class="pill">CPU ' + window.DC.Bot.NAMES[m.level || 2] + '</span>')
             : !m.connected ? '<span class="pill wait">reconnecting</span>' : m.ready ? '<span class="pill ok">ready</span>' : '<span class="pill wait">not ready</span>') + '</div>';
       }
     },

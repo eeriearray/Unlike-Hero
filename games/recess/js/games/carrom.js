@@ -110,7 +110,7 @@ export default {
     }
     slider.addEventListener('input', () => { placeStriker(); if (Number(slider.value) % 3 < .5) sfx('tick'); });
 
-    pullAim(svg, {
+    const stopAim = pullAim(svg, {
       space: world,
       grabRadius: 8,
       maxPull: 30,
@@ -205,6 +205,6 @@ export default {
       render(v);
     }
 
-    return { update, destroy() { if (replaying) replaying(); } };
+    return { update, destroy() { stopAim(); if (replaying) replaying(); } };
   }
 };

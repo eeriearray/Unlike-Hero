@@ -5,7 +5,7 @@
   "version": "0.1.0",
   "sdk": "1.x",
   "entry": "index.html",
-  "thumbnail": "thumbnail.svg",
+  "thumbnail": "hub-banner.webp",
   "accent": "#38c6f2",
   "players": { "min": 2, "max": 2 },
   "roles": [

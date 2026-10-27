@@ -71,7 +71,7 @@
   // ─────────────────────────────────── Sim ───────────────────────────────────
   function Sim(opts) {
     opts = opts || {};
-    this.arena = D.ARENAS[opts.arena] || D.ARENAS.skyforge;
+    this.arena = D.arenaForMatch(opts.arena, opts.fighters);
     this.stocks = clamp(opts.stocks | 0 || 3, 1, 9);
     this.timeLimit = opts.timeLimit | 0;          // ticks, 0 = none
     this.friendlyFire = !!opts.friendlyFire;
@@ -1371,8 +1371,10 @@
   S.respawn = function (f) {
     this.placeAtSpawn(f, f.i);
     var main = this.arena.platforms[0];
-    f.x = clamp(main.x + main.w / 2 + (f.i % 2 ? 60 : -60) * (1 + (f.i >> 1)), main.x + 40, main.x + main.w - 40);
-    f.y = main.y; f.plat = 0; f.grounded = true;
+    if (!this.arena.teamScale) {
+      f.x = clamp(main.x + main.w / 2 + (f.i % 2 ? 60 : -60) * (1 + (f.i >> 1)), main.x + 40, main.x + main.w - 40);
+      f.y = main.y; f.plat = 0; f.grounded = true;
+    }
     f.dmg = this.training && this.training.keepDamage ? f.dmg : 0;
     f.invuln = P.respawnInvuln;
     f.lastHitBy = -1;

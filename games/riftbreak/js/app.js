@@ -1323,7 +1323,8 @@
       '<div class="subt">' + (m.endReason === 'turn-limit' ? 'Turn limit reached — fewest cards wins.' : 'Round ' + v.round + ' · ' + m.turnCount + ' turns') + '</div>' +
       '<div class="rank">' + rows + '</div>' +
       '<div class="btns">' + (host ? '<button class="btn primary again">Rematch</button><button class="btn ghost lobby">Change settings</button>' : '<div class="label">Waiting for the host to start a rematch…</div>') +
-      '<button class="btn ghost leave">Leave</button></div>', { cls: 'results', noClose: true });
+      '<button class="btn ghost dismiss">Close</button><button class="btn ghost leave">Leave</button></div>', { cls: 'results' });
+    $('.dismiss', mm).onclick = function () { S.play('select'); closeModal(); };
     var ag = $('.again', mm); if (ag) ag.onclick = function () { S.play('confirm'); S.music('game'); send({ type: 'start' }); };
     var lb = $('.lobby', mm); if (lb) lb.onclick = function () { S.play('select'); send({ type: 'lobby' }); };
     $('.leave', mm).onclick = function () { closeModal(); leaveNet(); show('title'); };

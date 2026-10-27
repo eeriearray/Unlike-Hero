@@ -50,7 +50,8 @@
     for (var i = 0; i < list.length; i++) if (down[list[i]]) return true;
     if (dev === 'kb1' && !inUse.kb2) {
       var alt = { left: 'ArrowLeft', right: 'ArrowRight', up: 'ArrowUp', down: 'ArrowDown' }[action];
-      if (alt && down[alt]) return true;
+      // Arrow shortcuts yield to an explicit binding in this layout.
+      if (alt && down[alt] && !ACTIONS.some(function (a) { return a !== action && binds.kb1[a].indexOf(alt) >= 0; })) return true;
     }
     return false;
   }
@@ -107,12 +108,37 @@
   function load(saved) {
     binds = JSON.parse(JSON.stringify(DEFAULTS));
     if (saved) for (var d in saved) if (binds[d]) for (var a in saved[d]) if (binds[d][a] && Array.isArray(saved[d][a])) binds[d][a] = saved[d][a].slice(0, 3).map(String);
+    Object.keys(binds).forEach(function (d) {
+      var used = [];
+      ACTIONS.forEach(function (a) {
+        binds[d][a] = binds[d][a].filter(function (code) {
+          if (used.indexOf(code) >= 0) return false;
+          used.push(code); return true;
+        });
+      });
+    });
   }
   function loadPad(saved) {
     padBinds = JSON.parse(JSON.stringify(PAD_DEFAULTS));
     if (saved) for (var a in saved) if (padBinds[a] && Array.isArray(saved[a])) padBinds[a] = saved[a].slice(0, 2).map(Number).filter(function (n) { return n >= 0 && n < 17; });
+    var used = [];
+    PAD_ACTIONS.forEach(function (a) {
+      padBinds[a] = padBinds[a].filter(function (n) {
+        if (!validPadButton(n) || used.indexOf(n) >= 0) return false;
+        used.push(n); return true;
+      });
+    });
   }
-  function setPadBinding(action, buttons) { padBinds[action] = buttons.slice(0, 2); }
+  function validPadButton(n) { return Number.isInteger(n) && n >= 0 && n < 17 && n !== 9 && (n < 12 || n > 15); }
+  function setPadBinding(action, buttons) {
+    var list = buttons.slice(0, 2);
+    if (list.some(function (n) { return !validPadButton(n); })) return 'Start and the d-pad are reserved for pause and movement.';
+    for (var a of PAD_ACTIONS) {
+      if (a !== action && list.some(function (n) { return padBinds[a].indexOf(n) >= 0; })) return 'Button already used by ' + LABELS[a] + '. Choose another button.';
+    }
+    padBinds[action] = list.filter(function (n, i) { return list.indexOf(n) === i; });
+    return null;
+  }
   function resetPad() { padBinds = JSON.parse(JSON.stringify(PAD_DEFAULTS)); }
   /** The first button newly pressed on any pad since the last call (for remapping), or -1. */
   var padPrev = {};
@@ -129,22 +155,32 @@
     return hit;
   }
 
-  function setBinding(dev, action, codes) { binds[dev][action] = codes.slice(0, 3); }
-  function reset(dev) { binds[dev] = JSON.parse(JSON.stringify(DEFAULTS[dev])); }
+  function setBinding(dev, action, codes) {
+    var list = codes.slice(0, 3);
+    for (var a in binds[dev]) {
+      if (a !== action && list.some(function (c) { return binds[dev][a].indexOf(c) >= 0; })) return 'Key already used by ' + DEVICE_NAMES[dev] + ': ' + LABELS[a] + '. Choose another key.';
+    }
+    binds[dev][action] = list.filter(function (c, i) { return list.indexOf(c) === i; });
+    return null;
+  }
+  function reset(dev) {
+    binds[dev] = JSON.parse(JSON.stringify(DEFAULTS[dev]));
+  }
 
   /** Pretty key label. */
   function keyName(code) {
     if (code === 'Backslash') return '\\';
     return code.replace(/^Key/, '').replace(/^Digit/, '').replace(/^Numpad/, 'Num ').replace('ShiftLeft', 'L-Shift').replace('ShiftRight', 'R-Shift')
       .replace('ArrowLeft', '←').replace('ArrowRight', '→').replace('ArrowUp', '↑').replace('ArrowDown', '↓')
-      .replace('Comma', ',').replace('Period', '.').replace('Slash', '/').replace('Space', 'Space').replace('ControlLeft', 'L-Ctrl').replace('ControlRight', 'R-Ctrl').replace('Quote', "'").replace('Semicolon', ';');
+      .replace('BracketLeft', '[').replace('BracketRight', ']').replace('Comma', ',').replace('Period', '.').replace('Slash', '/').replace('Space', 'Space').replace('ControlLeft', 'L-Ctrl').replace('ControlRight', 'R-Ctrl').replace('Quote', "'").replace('Semicolon', ';');
   }
 
-  /** Every key bound in more than one place across the layouts in use. */
+  /** Keys assigned to multiple actions within a keyboard layout. Layouts are independent. */
   function conflicts(devs) {
-    var seen = {}, out = [];
+    var out = [];
     devs.forEach(function (d) {
       if (!binds[d]) return;
+      var seen = {};
       for (var a in binds[d]) binds[d][a].forEach(function (c) {
         var k = c;
         if (seen[k] && seen[k] !== d + '.' + a) out.push(keyName(c));

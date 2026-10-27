@@ -805,7 +805,11 @@
   M.cmd_rest = function (p, c) {
     var e = this.requireTurn(p); if (e) return { error: e };
     var t = this.turn, w = this.w, L = w.locs[p.loc], loc = D.locations[p.loc];
-    if (t.enc) return { error: 'Close the encounter first.' };
+    if (t.enc) {
+      if (t.enc.hold) return { error: 'Decide about your roll first.' };
+      if ((t.enc.kind === 'enemy' || t.enc.kind === 'boss') && !t.enc.over) return { error: 'Close the encounter first.' };
+      this.closeEnc(p, true);
+    }
     if (t.ap < 1) return { error: 'No actions left this turn.' };
     var why = this.restBlock(p);
     if (why) return { error: why };

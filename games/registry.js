@@ -8,7 +8,7 @@ window.GAME_REGISTRY = [
     "sdk": "1.x",
     "entry": "index.html",
     "server": "server/index.mjs",
-    "thumbnail": "thumbnail.svg",
+    "thumbnail": "hub-banner.webp",
     "accent": "#f5c451",
     "players": {
       "min": 1,
@@ -51,7 +51,7 @@ window.GAME_REGISTRY = [
     "sdk": "1.x",
     "entry": "index.html",
     "server": "server/index.mjs",
-    "thumbnail": "thumbnail.svg",
+    "thumbnail": "hub-banner.webp",
     "accent": "#d6ad77",
     "players": {
       "min": 1,
@@ -89,7 +89,7 @@ window.GAME_REGISTRY = [
     "sdk": "1.x",
     "entry": "index.html",
     "server": "server/index.mjs",
-    "thumbnail": "banner.jpg",
+    "thumbnail": "hub-banner.webp",
     "accent": "#ff7a2f",
     "players": {
       "min": 1,
@@ -146,7 +146,7 @@ window.GAME_REGISTRY = [
     "sdk": "1.x",
     "entry": "index.html",
     "server": "server/index.mjs",
-    "thumbnail": "banner.svg",
+    "thumbnail": "hub-banner.webp",
     "accent": "#d01a33",
     "players": {
       "min": 4,
@@ -189,7 +189,7 @@ window.GAME_REGISTRY = [
     "sdk": "1.x",
     "entry": "index.html",
     "server": "server/index.mjs",
-    "thumbnail": "thumbnail.svg",
+    "thumbnail": "hub-banner.webp",
     "accent": "#ffcf3a",
     "players": {
       "min": 1,
@@ -248,7 +248,7 @@ window.GAME_REGISTRY = [
     "sdk": "1.x",
     "entry": "index.html",
     "server": "server/index.mjs",
-    "thumbnail": "thumbnail.svg",
+    "thumbnail": "hub-banner.webp",
     "accent": "#ef6a43",
     "players": {
       "min": 1,
@@ -293,7 +293,7 @@ window.GAME_REGISTRY = [
     "version": "2.0.0",
     "sdk": "1.x",
     "entry": "index.html",
-    "thumbnail": "thumbnail.svg",
+    "thumbnail": "hub-banner.webp",
     "accent": "#ffb347",
     "server": "server/index.mjs",
     "players": {
@@ -338,7 +338,7 @@ window.GAME_REGISTRY = [
     "sdk": "1.x",
     "entry": "index.html",
     "server": "server/index.mjs",
-    "thumbnail": "thumbnail.svg",
+    "thumbnail": "hub-banner.webp",
     "accent": "#a46bff",
     "players": {
       "min": 2,
@@ -375,36 +375,37 @@ window.GAME_REGISTRY = [
   },
   {
     "id": "sea-of-chaos",
-    "title": "Sea of Chaos: Flag Raiders",
-    "tagline": "A free-for-all pirate arcade game. Steal the Skull Flag, race it to your personal buoy, and stash three flags before rival captains do.",
-    "version": "2.0.0",
+    "title": "Sea of Chaos: Plunder",
+    "tagline": "Sink rivals, steal their gold and bank it before you sink. Fast pirate brawls for 1v1 to 3v3.",
+    "version": "6.0.0",
     "sdk": "1.x",
     "entry": "index.html",
-    "thumbnail": "thumbnail.svg",
+    "thumbnail": "hub-banner.webp",
     "accent": "#ffc94a",
     "players": {
       "min": 1,
-      "max": 8
+      "max": 6
     },
     "roles": [
       {
         "id": "captain",
         "name": "Captain",
         "entry": "index.html",
-        "description": "Sail solo against rival captains or host/join a free-for-all with a 4-letter room code."
+        "description": "Practice against bots, or host/join a crew battle with a 4-letter room code."
       }
     ],
     "multiplayer": {
-      "style": "free-for-all flag raiding, host-authoritative",
+      "style": "1v1, 2v2 and 3v3 crew battles, host-authoritative",
       "sameDevice": false,
       "transports": [
         "local",
         "relay"
       ],
-      "notes": "Every captain is a rival. The host simulates at 30 Hz and broadcasts state at 10 Hz; clients send controls at 20 Hz. Up to 8 humans may join; AI fills the roster to 6 captains when space allows. Two Sea Raiders hunt the flag carrier. Solo play uses the same rules against AI."
+      "notes": "Three-minute matches. Scoop floating treasure, bank it at your harbor, and sink rivals to spill the gold they carry. A treasure galleon crosses the sea twice; banked gold counts double in the last 30 seconds. Most banked gold wins. Bots fill empty berths. Host simulation 30Hz, snapshots 10Hz, controls 20Hz."
     },
     "tags": [
       "pvp",
+      "teams",
       "pirates",
       "arcade",
       "3D",
@@ -424,7 +425,7 @@ window.GAME_REGISTRY = [
     "version": "1.0.0",
     "sdk": "1.x",
     "entry": "index.html",
-    "thumbnail": "thumbnail.svg",
+    "thumbnail": "hub-banner.webp",
     "accent": "#ff4d3a",
     "players": {
       "min": 2,
@@ -475,7 +476,7 @@ window.GAME_REGISTRY = [
     "sdk": "1.x",
     "entry": "index.html",
     "server": "server/index.mjs",
-    "thumbnail": "art/generated/task1_environments_village_belltower.webp",
+    "thumbnail": "hub-banner.webp",
     "accent": "#c9a35b",
     "players": {
       "min": 1,
