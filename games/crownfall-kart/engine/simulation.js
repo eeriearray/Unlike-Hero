@@ -11,6 +11,8 @@
   const TIME_LIMIT = { sprint: 240, trial: 240, race: 360, gp: 300 };
   // Mini-turbo by tier: forward impulse, duration and the extra top speed it allows. Bots get a weaker release so a clean player drift wins.
   const TURBO = [null, [8, 1.1, 10], [12, 1.6, 14], [16, 2.2, 19]], BOT_TURBO = .6;
+  // Hex mines: how far back they are thrown, seconds until armed, trigger distance and blast radius (m).
+  const MINE_TOSS = 4, MINE_ARM = .5, MINE_TRIGGER = 1.9, MINE_BLAST = 2.8;
   const emptyInput = () => ({ throttle: 0, steer: 0, drift: false, hop: false, use: false, reset: false, assist:true });
   function cleanInput(input = {}) {
     const finite = n => typeof n === 'number' && Number.isFinite(n) ? n : 0;
@@ -119,16 +121,19 @@
   function useItem(w, k) {
     if (!k.item || k.spin > 0 || k.eliminated || w.phase !== 'racing' || w.mode === 'trial' || w.time-k.lastItem < .2) return false;
     const item = k.item, target = ['homing', 'hunter'].includes(item) ? findTarget(w,k,item==='hunter') : null;
-    if (['homing','hunter'].includes(item) && !target) { notify(w,k,'NO TARGET AHEAD'); return false; }
+    // A leader-hunter needs a leader to chase; a seeker with nobody ahead still fires, straight down the road.
+    if (item==='hunter' && !target) { notify(w,k,'NO TARGET AHEAD'); return false; }
     k.item = null; k.lastItem = w.time;
     switch (item) {
-      case 'coin': k.coins++; notify(w,k,'CROWN SHARD +1'); if (k.coins%3===0) boost(w,k,5,.8,7,'SHARD BOOST'); break;
+      // Every shard is a small kick; every third one is a full boost.
+      case 'coin': k.coins++; if (k.coins%3===0) boost(w,k,8,1.1,10,'SHARD BOOST'); else boost(w,k,3,.5,4,`CROWN SHARD ${k.coins%3}/3`); break;
       case 'boost': boost(w,k,10,1.4,13,'RIFT BOOST'); break;
       case 'star': k.invincible=7; boost(w,k,8,7,8,'UNDYING'); break;
       case 'overdrive': k.autopilot=5; k.invincible=5; boost(w,k,16,5,18,'PHANTOM DRIVE'); cancelDrift(k); break;
       case 'trap':
-        if (w.traps.length < 32) w.traps.push({ id: w.nextId++, owner: k.id, x:k.x-Math.sin(k.yaw)*2.5, y:k.y-.3, z:k.z-Math.cos(k.yaw)*2.5, age:0 });
-        notify(w,k,'HEX MINE DROPPED'); break;
+        // Lobbed over the tail: it flies from the kart and lands a few metres back, armed once it settles.
+        if (w.traps.length < 32) w.traps.push({ id: w.nextId++, owner: k.id, x:k.x-Math.sin(k.yaw)*MINE_TOSS, y:k.y-.3, z:k.z-Math.cos(k.yaw)*MINE_TOSS, fx:k.x, fy:k.y+.4, fz:k.z, age:0 });
+        notify(w,k,'HEX MINE THROWN'); break;
       default:
         for (let i = 0; i < (item==='triple' ? 3 : 1); i++) {
           if (w.shots.length >= 40) break;
@@ -318,8 +323,13 @@
       if(shot.hunter)return true; // Super item floats over the void to reach the current leader.
       const p=T.project(track,shot.x,shot.z);return p.d2<(track.width*.5+1)**2;
     });
-    w.traps=w.traps.filter(trap=>{trap.age+=dt;if(trap.age>25)return false;if(trap.age<.5)return true;
-      for(const k of w.racers)if(k.id!==trap.owner&&!k.eliminated&&Math.abs(k.y-trap.y)<2&&Math.hypot(k.x-trap.x,k.z-trap.z)<1.7){hit(w,k);return false;}return true;});
+    // Bolts and mines cancel out, so a mine thrown behind doubles as a shield.
+    w.shots=w.shots.filter(shot=>{const trap=w.traps.find(t=>t.age>=MINE_ARM&&Math.abs(shot.y-t.y)<2&&Math.hypot(shot.x-t.x,shot.z-t.z)<1.4);if(!trap)return true;trap.blown=true;return false;});
+    w.traps=w.traps.filter(trap=>{trap.age+=dt;if(trap.blown)return false;if(trap.age>25)return false;if(trap.age<MINE_ARM)return true;
+      const near=k=>k.id!==trap.owner&&!k.eliminated&&Math.abs(k.y-trap.y)<2?Math.hypot(k.x-trap.x,k.z-trap.z):Infinity;
+      if(!w.racers.some(k=>near(k)<MINE_TRIGGER))return true;
+      // The blast catches everyone close by, not just the kart that rolled over it.
+      for(const k of w.racers)if(near(k)<MINE_BLAST)hit(w,k);return false;});
     if(w.mode!=='battle')for(let i=0;i<2;i++){const p=T.hazardPose(track,w.time,i);for(const k of w.racers)if(!k.eliminated&&Math.abs(k.y-p.y)<2.5&&Math.hypot(k.x-p.x,k.z-p.z)<2)hit(w,k);}
   }
   function finishWorld(w){
@@ -362,5 +372,5 @@
     const a=samples[low],b=samples[high],f=D.clamp((time-a[0])/(b[0]-a[0]||1),0,1);
     return [a[1]+(b[1]-a[1])*f,a[2]+(b[2]-a[2])*f,a[3]+(b[3]-a[3])*f,a[4]+D.angle(b[4]-a[4])*f];
   }
-  return {STEP,RADIUS,POINTS,TURBO,TIME_LIMIT,emptyInput,cleanInput,mergeInput,createWorld,step,standings,boost,hit,respawn,useItem,aiInput,nextGrandPrix,snapshot,sampleGhost};
+  return {STEP,RADIUS,POINTS,TURBO,MINE_TOSS,MINE_ARM,MINE_TRIGGER,MINE_BLAST,TIME_LIMIT,emptyInput,cleanInput,mergeInput,createWorld,step,standings,boost,hit,respawn,useItem,aiInput,nextGrandPrix,snapshot,sampleGhost};
 });

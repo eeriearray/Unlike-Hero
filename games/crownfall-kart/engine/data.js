@@ -1275,10 +1275,10 @@
   }
 ];
   const ITEMS = {
-    trap: { name: 'Hex mine', symbol: '✦', description: 'Leave a dark-energy trap behind.' },
+    trap: { name: 'Hex mine', symbol: '✦', description: 'Throw a proximity mine behind you. The blast catches anyone close, and it stops bolts.' },
     bolt: { name: 'Soul bolt', symbol: '➤', description: 'Fire a fast projectile straight ahead.' },
-    coin: { name: 'Crown shard', symbol: '◆', description: 'Collect a shard. Every 3 grants a small boost.' },
-    homing: { name: 'Wraith seeker', symbol: '⌁', description: 'A homing bolt hunts the next racer ahead.' },
+    coin: { name: 'Crown shard', symbol: '◆', description: 'A quick speed kick. Every third shard is a full boost.' },
+    homing: { name: 'Wraith seeker', symbol: '⌁', description: 'A homing bolt hunts the next racer ahead, or flies straight if nobody is.' },
     triple: { name: 'Trinity bolts', symbol: '⋮', description: 'Three bolts in a wide forward spread.' },
     boost: { name: 'Rift boost', symbol: '»', description: 'A burst of speed that cuts through mud.' },
     star: { name: 'Undying', symbol: '✧', description: 'Seven seconds of invincibility and extra speed.' },

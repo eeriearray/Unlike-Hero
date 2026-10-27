@@ -331,3 +331,35 @@ test('the gentle assist still lines up every gap jump in a full three-lap race',
     assert.equal(resets,0,`track ${track} seed ${seed}`);assert.ok(k.finishTime!=null);
   }
 });
+
+test('hex mines are thrown behind, arm, and their blast catches every nearby kart',()=>{
+  const w=S.createWorld({mode:'battle'});w.phase='racing';const [owner,a,b,far]=w.racers;
+  for(const k of w.racers.slice(4))k.eliminated=true;
+  Object.assign(owner,{x:0,y:6.65,z:20,yaw:0,item:'trap',human:true});for(const k of [a,b,far])Object.assign(k,{x:30,y:6.65,z:0,yaw:0,vx:0,vz:0,human:true});
+  assert.equal(S.useItem(w,owner),true);const trap=w.traps[0];
+  assert.ok(Math.abs(trap.z-(20-S.MINE_TOSS))<1e-9&&trap.fz===20,'lands behind and remembers where it was thrown from');
+  Object.assign(a,{x:trap.x,z:trap.z});S.step(w,{});assert.equal(a.spin,0,'not armed yet');
+  Object.assign(a,{x:30});trap.age=S.MINE_ARM;
+  Object.assign(a,{x:trap.x+1,z:trap.z});Object.assign(b,{x:trap.x-2.4,z:trap.z});Object.assign(far,{x:trap.x+4,z:trap.z});
+  S.step(w,{});assert.equal(w.traps.length,0);assert.ok(a.spin>0&&b.spin>0);assert.equal(far.spin,0);assert.equal(owner.spin,0);
+});
+
+test('a bolt that meets an armed mine destroys both',()=>{
+  const w=S.createWorld({mode:'battle'});w.phase='racing';const owner=w.racers[0];
+  for(const k of w.racers.slice(1))k.eliminated=true;
+  w.traps.push({id:w.nextId++,owner:'nobody',x:0,y:6.35,z:3,age:2});
+  Object.assign(owner,{x:0,y:6.65,z:0,yaw:0,item:'bolt',human:true});
+  assert.equal(S.useItem(w,owner),true);S.step(w,{});assert.equal(w.shots.length,0);assert.equal(w.traps.length,0);
+});
+
+test('a wraith seeker with nobody ahead still fires straight',()=>{
+  const w=S.createWorld(),track=T.makeTrack(0);w.phase='racing';const owner=w.racers[0];
+  for(const k of w.racers.slice(1))k.eliminated=true;
+  const p=T.sample(track,40);Object.assign(owner,{distance:40,s:p.s,x:p.x,y:p.y+.65,z:p.z,yaw:p.heading,item:'homing'});
+  assert.equal(S.useItem(w,owner),true);assert.equal(w.shots.length,1);assert.equal(w.shots[0].homing,false);
+});
+
+test('every crown shard gives a kick and the third gives a full boost',()=>{
+  const w=S.createWorld();w.phase='racing';const k=w.racers[0];
+  for(let i=1;i<=3;i++){k.item='coin';k.lastItem=-10;k.boost=0;assert.equal(S.useItem(w,k),true);assert.ok(k.boost>0);if(i<3)assert.ok(k.boost<=.5);else assert.ok(k.boost>=1.1);}
+});

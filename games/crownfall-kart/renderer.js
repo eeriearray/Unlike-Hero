@@ -15,7 +15,7 @@
       this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;
       this.quality='high';this.renderScale=1;
       this.environment=new THREE.Group();this.scene.add(this.environment);this.dynamic=new THREE.Group();this.scene.add(this.dynamic);
-      this.karts=new Map();this.entities=new Map();this.trackKey='';this.follow=new THREE.Vector3();this.look=new THREE.Vector3();this.readyCamera=false;
+      this.karts=new Map();this.entities=new Map();this.blasts=[];this.trapSeen=new Map();this.shotSeen=new Map();this.trackKey='';this.follow=new THREE.Vector3();this.look=new THREE.Vector3();this.readyCamera=false;
       this.reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
       this.cameraMode='cockpit';this.raycaster=new THREE.Raycaster();this.colliders=[];this.colliderMaterial=new THREE.MeshBasicMaterial({side:THREE.DoubleSide});this.eyeRig=new THREE.Object3D();
       this.camPos=new THREE.Vector3();this.camOffset=new THREE.Vector3();this.camVel=new THREE.Vector3();this.lookPos=new THREE.Vector3();this.lookOffset=new THREE.Vector3();this.lookVel=new THREE.Vector3();this.tmp=[0,1,2,3].map(()=>new THREE.Vector3());
@@ -380,19 +380,90 @@
       }
       this.particleMesh.geometry.attributes.position.needsUpdate=true;this.particleMesh.geometry.attributes.color.needsUpdate=true;
     }
+    // Hex mine: a squat steel disc with hazard banding, a pressure plate, tilt-rod fuzes and a blinking arming light.
+    makeMine(){
+      if(!this.mineKit){
+        const c=document.createElement('canvas');c.width=256;c.height=32;const x=c.getContext('2d');x.fillStyle='#141518';x.fillRect(0,0,256,32);x.fillStyle='#f2c230';
+        for(let i=-32;i<288;i+=32){x.beginPath();x.moveTo(i,0);x.lineTo(i+16,0);x.lineTo(i+32,32);x.lineTo(i+16,32);x.closePath();x.fill();}
+        const stripes=new THREE.CanvasTexture(c);stripes.encoding=THREE.sRGBEncoding;stripes.wrapS=THREE.RepeatWrapping;stripes.repeat.x=2;
+        this.mineKit={body:new THREE.MeshStandardMaterial({color:'#3d4536',roughness:.5,metalness:.65}),band:new THREE.MeshStandardMaterial({map:stripes,roughness:.45,metalness:.35}),
+          led:new THREE.MeshBasicMaterial({color:'#ff2a2a',toneMapped:false}),dark:new THREE.MeshBasicMaterial({color:'#3a0d0d'})};
+      }
+      const kit=this.mineKit,steel=this.scenery.metal,group=new THREE.Group(),mine=new THREE.Group();group.add(mine);mine.position.y=-.35;this.dynamic.add(group);
+      const add=(geometry,material,x,y,z)=>{const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);mine.add(m);return m;};
+      add(new THREE.CylinderGeometry(.46,.5,.16,28),[kit.band,kit.body,kit.body],0,.08,0).castShadow=true;
+      add(new THREE.CylinderGeometry(.34,.45,.07,28),kit.body,0,.195,0);
+      add(new THREE.CylinderGeometry(.16,.18,.05,20),steel,0,.255,0);
+      for(let i=0;i<8;i++){const a=i/8*Math.PI*2;add(new THREE.CylinderGeometry(.022,.022,.03,8),steel,Math.cos(a)*.4,.235,Math.sin(a)*.4);}
+      for(let i=0;i<3;i++){const a=i/3*Math.PI*2,rod=add(new THREE.CylinderGeometry(.01,.012,.24,6),steel,Math.cos(a)*.07,.38,Math.sin(a)*.07);rod.rotation.set(Math.sin(a)*.25,0,-Math.cos(a)*.25);
+        add(new THREE.SphereGeometry(.022,8,6),kit.led,Math.cos(a)*.1,.5,Math.sin(a)*.1);}
+      const led=add(new THREE.SphereGeometry(.05,12,8),kit.led,.3,.24,0);
+      // Armed mines mark their trigger zone on the road and send up a faint red beacon that reads from the cockpit.
+      const ring=new THREE.Mesh(new THREE.RingGeometry(1.7,1.9,48),new THREE.MeshBasicMaterial({color:'#ff3b30',transparent:true,opacity:.5,depthWrite:false,side:THREE.DoubleSide,toneMapped:false}));
+      ring.rotation.x=-Math.PI/2;ring.position.y=-.3;ring.userData.ownedMaterial=true;group.add(ring);
+      const beacon=new THREE.Mesh(new THREE.CylinderGeometry(.035,.09,2.6,8,1,true),new THREE.MeshBasicMaterial({color:'#ff3b30',transparent:true,opacity:.35,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false}));
+      beacon.position.y=1;beacon.userData.ownedMaterial=true;group.add(beacon);
+      group.userData={mine,led,ring,beacon};return group;
+    }
+    // Bolts: a white-hot core in a coloured halo with a fading tail; the crown breaker wears a ring of gold spikes.
+    makeShot(color,hunter){
+      const group=new THREE.Group();this.dynamic.add(group);
+      const glow=(geometry,opacity)=>{const m=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({color,transparent:true,opacity,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false}));m.userData.ownedMaterial=true;group.add(m);return m;};
+      group.add(new THREE.Mesh(new THREE.SphereGeometry(.2,14,10),this.mat('#fff6e8',true)));
+      glow(new THREE.SphereGeometry(.42,16,12),.4);
+      const tail=glow(new THREE.ConeGeometry(.3,1.8,14,1,true),.3);tail.rotation.x=-Math.PI/2;tail.position.z=-.95;
+      if(hunter)for(let i=0;i<5;i++){const a=i/5*Math.PI*2,spike=new THREE.Mesh(new THREE.ConeGeometry(.07,.3,6),this.mat('#ffd36b',true));spike.position.set(Math.cos(a)*.42,Math.sin(a)*.42,0);spike.rotation.z=a-Math.PI/2;group.add(spike);}
+      group.userData={color};return group;
+    }
+    // Fireball, shockwave ring and sparks. Pure presentation, triggered when the renderer sees a mine or bolt vanish early.
+    blast(x,y,z,big,color='#ffb347'){
+      const group=new THREE.Group();group.position.set(x,y,z);this.dynamic.add(group);
+      const ball=(radius,material)=>{const m=new THREE.Mesh(new THREE.IcosahedronGeometry(radius,2),material);group.add(m);return m;};
+      // Big blasts: a white-hot core inside an orange fireball that darkens to smoke. Bolt impacts are a small coloured flash.
+      const core=ball(1,new THREE.MeshBasicMaterial({color:big?'#fff3c4':color,transparent:true,opacity:1,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false}));
+      const fire=big?ball(1,new THREE.MeshBasicMaterial({color:'#ff7a1a',transparent:true,opacity:.9,depthWrite:false,toneMapped:false})):null;
+      const ring=new THREE.Mesh(new THREE.RingGeometry(.85,1,48),new THREE.MeshBasicMaterial({color:big?'#ffb347':color,transparent:true,opacity:.8,side:THREE.DoubleSide,depthWrite:false,toneMapped:false}));
+      ring.rotation.x=-Math.PI/2;ring.position.y=-.25;group.add(ring);this.blasts.push({group,core,fire,ring,t:0,big});
+      if(big){this.emit(x,y+.3,z,'#ff6a1a',40);this.emit(x,y+.3,z,'#ffe08a',24);this.emit(x,y+.3,z,'#2a2224',16);for(let i=0;i<10;i++)this.emitSmoke({x:x+(Math.random()-.5)*2,y:y+.9,z:z+1.35,yaw:0,vx:0,vz:0},true,0);}
+      else this.emit(x,y,z,color,16);
+      const eye=this.camera.position,d=Math.hypot(eye.x-x,eye.y-y,eye.z-z);
+      if(big&&!this.reduced&&d<22){const k=1-d/22;this.shake=Math.max(this.shake||0,.22*k);this.joltVel-=2.4*k;}
+    }
+    updateBlasts(dt){
+      this.blastColors??=['#ffc04a','#ff4a0a','#2b1d18'].map(c=>new THREE.Color(c));
+      this.blasts=this.blasts.filter(b=>{
+        b.t+=dt;const life=b.big?.9:.4,e=Math.min(1,b.t/life),grow=1-Math.pow(1-e,3);
+        const flash=Math.min(1,b.t/(b.big?.22:.4));b.core.scale.setScalar((b.big?1.1:.8)*(.3+flash));b.core.material.opacity=1-flash;
+        if(b.fire){const [hot,warm,smoke]=this.blastColors;b.fire.scale.setScalar(.4+grow*1.5);b.fire.position.y=grow*.6;b.fire.material.opacity=.9*(1-e*e);
+          if(e<.4)b.fire.material.color.lerpColors(hot,warm,e/.4);else b.fire.material.color.lerpColors(warm,smoke,(e-.4)/.6);}
+        b.ring.scale.setScalar((b.big?4:1.6)*(.15+grow));b.ring.material.opacity=.8*(1-e);
+        if(e<1)return true;
+        this.dynamic.remove(b.group);b.group.traverse(o=>{if(o.isMesh){o.geometry.dispose();o.material.dispose();}});return false;
+      });
+    }
     syncEntities(world,time){
       const needed=new Set();
+      // A new race resets the clock: forget what was on track without setting anything off.
+      if(world.time<(this.entityClock??0)-.01){this.trapSeen.clear();this.shotSeen.clear();}this.entityClock=world.time;
       const sync=(id,type,p,color)=>{
         needed.add(id);let mesh=this.entities.get(id);
-        if(!mesh){mesh=type==='hazard'?this.makeHazard():this.mesh(type==='box'?new THREE.OctahedronGeometry(.8):type==='trap'?new THREE.OctahedronGeometry(.65):new THREE.SphereGeometry(.32,8,6),color,this.dynamic,true);this.entities.set(id,mesh);
-          // Mines get a tall glowing beacon so they read from the cockpit, not just from above.
-          if(type==='trap'){this.beaconGeometry??=new THREE.CylinderGeometry(.06,.06,3.2,6);const beacon=new THREE.Mesh(this.beaconGeometry,this.mat(color,true));beacon.position.y=1.6;mesh.add(beacon);}}
+        if(!mesh){mesh=type==='hazard'?this.makeHazard():type==='trap'?this.makeMine():type==='shot'?this.makeShot(color,p.hunter):this.mesh(new THREE.OctahedronGeometry(.8),color,this.dynamic,true);this.entities.set(id,mesh);}
         if(type==='hazard'){
           // Roll across the road: spin follows the sideways travel, the warning ring stays flat on the asphalt.
           mesh.position.set(p.x,p.y,p.z);mesh.rotation.y=p.heading;const u=mesh.userData;u.stone.rotation.z=-(p.lane||0)/1.35;u.stone.rotation.x=time*.15;
           u.ring.material.opacity=.45+.25*Math.sin(time*5);return;
         }
-        mesh.position.set(p.x,p.y+(type==='box'?Math.sin(time*2+p.id)*.23:0),p.z);mesh.rotation.y=time*(type==='box'?1:2);mesh.rotation.z=.2;
+        if(type==='trap'){
+          // Thrown in an arc from the kart, tumbling, then settled flat; the light blinks fast while arming, slow once live.
+          const u=mesh.userData,arm=root.CrownSim?.MINE_ARM??.5,t=p.fx==null?1:D.clamp(p.age/arm,0,1),armed=t>=1;
+          if(armed)mesh.position.set(p.x,p.y,p.z);else mesh.position.set(p.fx+(p.x-p.fx)*t,p.fy+(p.y-p.fy)*t+Math.sin(Math.PI*t)*1.3,p.fz+(p.z-p.fz)*t);
+          u.mine.rotation.set(armed?0:t*Math.PI*3,(p.id*1.7)%(Math.PI*2),armed?0:t*Math.PI*1.4);
+          const pulse=.5+.5*Math.sin(time*(armed?6:22));u.led.material=pulse>.5?this.mineKit.led:this.mineKit.dark;
+          u.ring.visible=u.beacon.visible=armed;u.ring.material.opacity=.3+.35*pulse;u.beacon.material.opacity=.18+.22*pulse;u.ring.scale.setScalar(1+.04*pulse);
+          return;
+        }
+        if(type==='shot'){mesh.position.set(p.x,p.y,p.z);mesh.rotation.set(0,p.yaw,time*8);if(!this.reduced)this.emit(p.x,p.y,p.z,color,1);return;}
+        mesh.position.set(p.x,p.y+Math.sin(time*2+p.id)*.23,p.z);mesh.rotation.y=time;mesh.rotation.z=.2;
       };
       if(world.mode!=='trial'){
         for(const box of world.boxes)if(box.ready<=0)sync(`b${box.id}`,'box',box,'#d5acff');
@@ -400,6 +471,11 @@
         for(const trap of world.traps)sync(`t${trap.id}`,'trap',trap,'#ff87cb');
         if(world.mode!=='battle')for(let i=0;i<2;i++){const p=T.hazardPose(T.makeTrack(world.trackIndex),world.time,i);const lane=Math.sin(world.time*1.1+i*2)*(T.makeTrack(world.trackIndex).width/2-1);sync(`h${i}`,'hazard',{...p,lane},'#c177e5');}
       }
+      // Mines and bolts that disappear before their natural expiry went off: show the explosion.
+      const live=(list,seen,expiry,onGone)=>{const ids=new Set();for(const e of list||[]){ids.add(e.id);seen.set(e.id,{x:e.x,y:e.y,z:e.z,age:e.age,hunter:e.hunter});}
+        for(const[id,e]of seen)if(!ids.has(id)){seen.delete(id);if(e.age<expiry)onGone(e);}};
+      live(world.traps,this.trapSeen,24.8,e=>{if(e.age>=(root.CrownSim?.MINE_ARM??.5))this.blast(e.x,e.y,e.z,true);});
+      live(world.shots,this.shotSeen,8.8,e=>this.blast(e.x,e.y,e.z,false,e.hunter?'#ffdb78':'#c6a0ff'));
       for(const [id,mesh]of this.entities)if(!needed.has(id)){this.dynamic.remove(mesh);if(mesh.isGroup)mesh.traverse(o=>{if(o.isMesh){o.geometry.dispose();if(o.userData.ownedMaterial)o.material.dispose();}});else mesh.geometry.dispose();this.entities.delete(id);}
     }
     render(world,playerId,dt,menu=false,ghostPose=null){
@@ -418,6 +494,8 @@
         if(previous&&!snap&&previous.grounded&&!k.grounded&&k.hopUntil>0&&!k.trickEligible)u.bounceTime=0;
         if(previous&&!snap&&!previous.grounded&&k.grounded){u.bounceTime=.24;if(k.id===playerId&&previous.vy < -4)this.shake=Math.max(this.shake||0,Math.min(.16,-previous.vy*.009));}
         u.bounceTime+=dt;
+        // Getting hit pops the car up off its wheels for a moment, so a mine or bolt reads as a real impact.
+        if(previous&&!snap&&k.spin>previous.spin+.1)u.hitPop=0;u.hitPop=(u.hitPop??1)+dt;
         const bounce=this.reduced?0:u.bounceTime<.09?-.2*Math.sin(u.bounceTime/.09*Math.PI):u.bounceTime<.24?.22*Math.sin((u.bounceTime-.09)/.15*Math.PI):u.bounceTime<.46?-.13*Math.sin((u.bounceTime-.24)/.22*Math.PI):0;
         u.visual.scale.copy(u.baseScale);u.visual.scale.y*=1+bounce;u.visual.scale.x*=1-bounce*.45;u.visual.scale.z*=1-bounce*.45;
         // Follow the road's slope so the nose dips downhill and lifts uphill instead of hovering level.
@@ -431,7 +509,7 @@
         for(const spark of u.sparks){spark.visible=k.driftLevel>0;spark.material=this.mat(k.driftLevel===3?'#bd73ff':k.driftLevel===2?'#ff963c':'#65cfff',true);spark.scale.setScalar(1+Math.sin(now*26)*.3);}
         u.balloons.forEach((b,i)=>{b.visible=world.mode==='battle'&&Math.floor(i/2)<k.balloons;});
         // Physics rides .65 above the road; seat the tyres on the asphalt rather than a hand's width above it.
-        u.visual.position.y=.56*u.baseScale.y-.65+(k.invincible>0?Math.sin(now*14)*.04:0);
+        u.visual.position.y=.56*u.baseScale.y-.65+(k.invincible>0?Math.sin(now*14)*.04:0)+(this.reduced||u.hitPop>.6?0:Math.sin(u.hitPop/.6*Math.PI)*.9);
         u.shadow.position.y=(world.mode==='battle'?6:T.sample(track,k.s).y)-mesh.position.y+.05;
         u.shadow.visible=world.mode==='battle'||!T.inGap(track,k.s);
         if(!menu&&!snap&&!k.eliminated){
@@ -462,7 +540,7 @@
         this.look.set(player.x-3*Math.cos(p.heading),player.y+.5,player.z+3*Math.sin(p.heading));
         this.camera.position.copy(this.follow);this.camera.up.set(0,1,0);this.camera.lookAt(this.look);this.readyCamera=false;this.cameraBlend=null;this.applyCockpit(null,'chase');this.camera.fov=59;this.camera.updateProjectionMatrix();this.shake=0;
       }else this.updateCamera(world,track,own,player,dt,now);
-      this.updateParticles(dt);this.updateSmoke(dt);this.ambientWeather.update(dt,player,menu);
+      this.updateParticles(dt);this.updateSmoke(dt);this.updateBlasts(dt);this.ambientWeather.update(dt,player,menu);
       for(const cloud of this.clouds){cloud.position.x=cloud.userData.origin.x+Math.sin(now*.025+cloud.userData.phase)*22;cloud.position.z=cloud.userData.origin.z+Math.cos(now*.018+cloud.userData.phase)*12;}
       const boardPosition=new THREE.Vector3();for(const board of this.signBoards){board.getWorldPosition(boardPosition);board.visible=boardPosition.distanceTo(this.camera.position)>8;}
       // Let the camera frustum clip racers naturally; proximity-based hiding pops during overtakes.
@@ -511,53 +589,125 @@
       const u=mesh.userData,inside=mode==='cockpit';for(const part of u.cabin||[])part.visible=!inside;
       if(inside&&!u.cockpit)u.cockpit=this.makeCockpit(u.visual,u.cabin.find(o=>o.material!==this.scenery.glass&&o.material?.isMeshPhysicalMaterial)?.material);if(u.cockpit)u.cockpit.group.visible=inside;
     }
+    // Shared cockpit finishes: woven carbon, suede grips, race gloves and a canvas window net. Built once, reused by every cockpit.
+    cockpitKit(){
+      if(this.cockpitMaterials)return this.cockpitMaterials;
+      const weave=document.createElement('canvas');weave.width=weave.height=64;const w=weave.getContext('2d');
+      w.fillStyle='#101114';w.fillRect(0,0,64,64);
+      for(let y=0;y<8;y++)for(let x=0;x<8;x++){const g=w.createLinearGradient(x*8,y*8,x*8+8,y*8+8),lit=(x+y)%2;g.addColorStop(0,lit?'#2b2d33':'#16171b');g.addColorStop(1,lit?'#1a1b20':'#24262c');w.fillStyle=g;w.fillRect(x*8+.5,y*8+.5,7,7);}
+      const carbonMap=new THREE.CanvasTexture(weave);carbonMap.wrapS=carbonMap.wrapT=THREE.RepeatWrapping;carbonMap.repeat.set(6,6);carbonMap.encoding=THREE.sRGBEncoding;
+      const net=document.createElement('canvas');net.width=net.height=128;const n=net.getContext('2d');n.strokeStyle='#15161a';n.lineWidth=9;
+      for(let i=0;i<=128;i+=32){n.beginPath();n.moveTo(i,0);n.lineTo(i,128);n.moveTo(0,i);n.lineTo(128,i);n.stroke();}
+      const netMap=new THREE.CanvasTexture(net);netMap.wrapS=netMap.wrapT=THREE.RepeatWrapping;netMap.repeat.set(4,3);
+      this.cockpitMaterials={
+        carbon:new THREE.MeshStandardMaterial({color:'#ffffff',map:carbonMap,roughness:.32,metalness:.35}),
+        suede:new THREE.MeshStandardMaterial({color:'#24252a',roughness:.95,metalness:0}),
+        glove:new THREE.MeshStandardMaterial({color:'#1a1b1f',roughness:.7,metalness:.05}),
+        foam:new THREE.MeshStandardMaterial({color:'#0d0d0f',roughness:1,metalness:0}),
+        mirror:new THREE.MeshStandardMaterial({color:'#9fb4c6',roughness:.04,metalness:1}),
+        cage:new THREE.MeshStandardMaterial({color:'#4a4e57',roughness:.38,metalness:.75}),
+        net:new THREE.MeshStandardMaterial({color:'#ffffff',map:netMap,transparent:true,alphaTest:.5,side:THREE.DoubleSide,roughness:.9})
+      };
+      return this.cockpitMaterials;
+    }
     makeCockpit(visual,paint){
       const group=new THREE.Group();visual.add(group);
-      const add=(geometry,material,x,y,z,sx=1,sy=1,sz=1)=>{const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.scale.set(sx,sy,sz);group.add(m);return m;};
-      const trim=paint||this.mat('#ffc66d'),dark=this.mat('#17191d'),soft=this.mat('#24262b');
-      // Windscreen frame in the body colour: header, A-pillars and mirror. It frames the road without covering it.
-      add(this.unitBox,trim,0,1.02,.5,1.16,.04,.1);
-      for(const side of [-1,1]){const pillar=add(this.unitBox,trim,side*.57,.75,.6,.035,.6,.045);pillar.rotation.set(-.45,0,side*.1);}
-      const mirror=add(this.unitBox,this.scenery.metal,0,.96,.48,.17,.045,.02);mirror.rotation.x=.25;
-      // Dash: a dark cowl with a painted trim line, door sills along both sides.
-      add(this.unitBox,dark,0,.43,.55,1.06,.07,.34);add(this.unitBox,soft,0,.47,.62,1.0,.02,.16);add(this.unitBox,trim,0,.455,.72,1.04,.02,.02);
-      for(const side of [-1,1])add(this.unitBox,trim,side*.6,.46,-.05,.07,.07,1.1);
-      // Steering wheel: rim with thick grips, flat-bottom bar and a painted hub carrying a glowing crown marker.
-      const wheel=new THREE.Group();wheel.position.set(0,.4,.16);wheel.rotation.x=.55;group.add(wheel);
+      const kit=this.cockpitKit(),trim=paint||this.mat('#ffc66d'),metal=this.scenery.metal;
+      const add=(geometry,material,x,y,z,sx=1,sy=1,sz=1,parent=group)=>{const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.scale.set(sx,sy,sz);parent.add(m);return m;};
+      const up=new THREE.Vector3(0,1,0),a=new THREE.Vector3(),b=new THREE.Vector3();
+      // A round tube between two points, used for the roll cage, pillars and the driver's arms.
+      const tube=(from,to,radius,material,parent=group,segments=10)=>{a.set(...from);b.set(...to);const length=a.distanceTo(b),m=new THREE.Mesh(new THREE.CylinderGeometry(radius,radius,length,segments),material);
+        m.position.copy(a).add(b).multiplyScalar(.5);m.quaternion.setFromUnitVectors(up,b.clone().sub(a).normalize());parent.add(m);return m;};
+      const joint=(p,radius,material)=>add(new THREE.SphereGeometry(radius,10,8),material,...p);
+      // Body-colour A-pillars and windscreen header follow the glazing, so the view out matches the car seen from outside.
+      for(const side of [-1,1])tube([side*.6,.39,.86],[side*.52,.82,.24],.028,trim);
+      add(this.unitBox,trim,0,.825,.24,1.08,.03,.07);
+      // Tinted sun strip across the top of the windscreen, readable from the driver's seat.
+      const strip=document.createElement('canvas');strip.width=512;strip.height=48;const s=strip.getContext('2d');
+      s.fillStyle='#07080b';s.fillRect(0,0,512,48);s.fillStyle='#'+(trim.color?.getHexString?.()||'ffc66d');s.font='italic 900 30px Impact, Arial Narrow, sans-serif';s.textAlign='center';s.fillText('CROWNFALL  RACING',256,35);
+      const stripTexture=new THREE.CanvasTexture(strip);stripTexture.encoding=THREE.sRGBEncoding;stripTexture.center.set(.5,.5);stripTexture.rotation=Math.PI;
+      const sun=new THREE.Mesh(new THREE.PlaneGeometry(1.02,.095),new THREE.MeshBasicMaterial({map:stripTexture,transparent:true,opacity:.92,toneMapped:false}));
+      sun.position.set(0,.748,.34);sun.rotation.x=2.18;sun.userData.ownedMaterial=true;sun.userData.ownedTexture=true;group.add(sun);
+      // Rear-view mirror on a short stalk from the header.
+      tube([0,.81,.3],[0,.775,.3],.007,kit.carbon);add(this.unitBox,kit.carbon,0,.76,.3,.22,.045,.025);
+      const glass=add(new THREE.PlaneGeometry(.205,.034),kit.mirror,0,.76,.286);glass.rotation.y=Math.PI;
+      // Gunmetal roll cage: inner A-pillar bars, a header bar tucked under the roof, roof rails and padded X door bars.
+      const cage=kit.cage;
+      for(const side of [-1,1]){
+        tube([side*.5,.36,.68],[side*.46,.8,.27],.02,cage);tube([side*.46,.8,.27],[side*.46,.81,-.75],.02,cage);
+        tube([side*.53,.26,.62],[side*.5,.63,-.6],.02,cage);tube([side*.53,.62,.52],[side*.5,.25,-.6],.02,cage);
+        tube([side*.525,.35,.3],[side*.505,.53,-.2],.032,kit.foam,group,12);
+        joint([side*.46,.8,.27],.026,cage);joint([side*.5,.36,.68],.026,cage);
+      }
+      tube([-.46,.8,.27],[.46,.8,.27],.02,cage);
+      // Carbon door cards with a red pull strap, and a window net on the driver's side.
+      for(const side of [-1,1]){add(this.unitBox,kit.carbon,side*.61,.33,.05,.05,.32,1.3);add(this.unitBox,trim,side*.6,.5,.05,.09,.018,1.3);add(this.unitBox,this.mat('#c8261e'),side*.575,.42,.28,.012,.035,.2);}
+      const net=add(new THREE.PlaneGeometry(.75,.28),kit.net,-.575,.64,-.05);net.rotation.y=Math.PI/2;
+      // Carbon dashboard: rolled leading edge, painted pin-stripe at the screen base and defrost vents.
+      add(this.unitBox,kit.carbon,0,.42,.6,1.12,.1,.5);
+      const lip=add(new THREE.CylinderGeometry(.02,.02,1.06,12),kit.suede,0,.455,.36);lip.rotation.z=Math.PI/2;
+      add(this.unitBox,trim,0,.474,.84,1.08,.012,.03);
+      for(let i=0;i<6;i++)add(this.unitBox,kit.foam,(i-2.5)*.15,.472,.74,.1,.006,.035);
+      // Switch panel on the right: carbon plate, metal toggles, red guarded ignition switches and a starter button.
+      const panel=new THREE.Group();panel.position.set(.32,.5,.42);panel.rotation.x=-.55;group.add(panel);
+      add(this.unitBox,kit.carbon,0,0,0,.26,.13,.014,panel);
+      for(let i=0;i<5;i++){const t=add(new THREE.CylinderGeometry(.0045,.0045,.03,6),metal,-.09+i*.035,.025,-.018,1,1,1,panel);t.rotation.x=-Math.PI/2-.4;add(this.unitBox,this.mat('#e9ecef'),-.09+i*.035,-.012,-.008,.022,.008,.002,panel);}
+      for(const x of [-.07,-.03])add(this.unitBox,this.mat('#d5281f'),x,-.04,-.016,.026,.03,.018,panel);
+      const start=add(new THREE.CylinderGeometry(.018,.018,.014,18),this.mat('#ff3b30',true),.075,-.035,-.01,1,1,1,panel);start.rotation.x=Math.PI/2;
+      const bezel=add(new THREE.TorusGeometry(.021,.004,6,20),this.mat('#f2c230'),.075,-.035,-.016,1,1,1,panel);bezel.rotation.y=0;
+      // Kill switch on the left of the dash.
+      const kill=add(new THREE.CylinderGeometry(.022,.022,.016,18),this.mat('#e8463c'),-.33,.49,.44);kill.rotation.x=Math.PI/2-.55;
+      // Steering column and quick-release hub.
+      const wheel=new THREE.Group();wheel.position.set(0,.43,.13);wheel.rotation.x=.6;group.add(wheel);
+      const column=add(new THREE.CylinderGeometry(.026,.03,.32,12),kit.foam,0,0,.2,1,1,1,wheel);column.rotation.x=Math.PI/2;
       const spin=new THREE.Group();wheel.add(spin);
-      spin.add(new THREE.Mesh(new THREE.TorusGeometry(.135,.016,8,40),this.scenery.rubber));
-      for(const side of [-1,1]){const grip=new THREE.Mesh(new THREE.CylinderGeometry(.024,.024,.1,10),this.scenery.rubber);grip.position.set(side*.135,0,0);spin.add(grip);}
-      const bottom=new THREE.Mesh(this.unitBox,this.scenery.rubber);bottom.position.set(0,-.125,0);bottom.scale.set(.15,.026,.03);spin.add(bottom);
-      for(const a of [0,Math.PI,-Math.PI/2]){const spoke=new THREE.Mesh(this.unitBox,this.scenery.metal);spoke.position.set(Math.cos(a)*.068,Math.sin(a)*.068,0);spoke.rotation.z=a;spoke.scale.set(.135,.024,.014);spin.add(spoke);}
-      const hub=new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,.035,20),trim);hub.rotation.x=Math.PI/2;spin.add(hub);
-      const marker=new THREE.Mesh(this.unitBox,this.mat('#ffc66d',true));marker.position.set(0,.135,0);marker.scale.set(.03,.03,.034);spin.add(marker);
-      // Centre display, with a row of lights above it: revs normally, turbo charge in tier colours while drifting.
+      // Formula-style wheel: a carbon body with suede grips, shift lights, a centre screen, coloured buttons, rotaries and paddles.
+      const shape=new THREE.Shape(),hw=.118,top=.072,low=-.062,r=.028;
+      shape.moveTo(-hw+r,low);shape.lineTo(hw-r,low);shape.quadraticCurveTo(hw,low,hw,low+r);shape.lineTo(hw,top-r);shape.quadraticCurveTo(hw,top,hw-r,top);
+      shape.lineTo(-hw+r,top);shape.quadraticCurveTo(-hw,top,-hw,top-r);shape.lineTo(-hw,low+r);shape.quadraticCurveTo(-hw,low,-hw+r,low);
+      const bodyGeometry=new THREE.ExtrudeGeometry(shape,{depth:.026,bevelEnabled:true,bevelThickness:.006,bevelSize:.006,bevelSegments:2,curveSegments:6});bodyGeometry.translate(0,0,-.013);
+      add(bodyGeometry,kit.carbon,0,0,0,1,1,1,spin);
+      const face=-.022;
+      for(const side of [-1,1]){
+        const grip=add(new THREE.CapsuleGeometry(.03,.1,6,12),kit.suede,side*.142,-.002,0,1,1,1,spin);grip.rotation.z=side*.14;
+        const paddle=add(this.unitBox,kit.carbon,side*.11,.045,.032,.08,.055,.006,spin);paddle.rotation.z=side*-.25;
+        // Gloved hands wrap the grips, thumbs resting on the face, sleeves running back toward the seat.
+        const palm=add(new THREE.SphereGeometry(.042,14,10),kit.glove,side*.148,.004,-.012,1,1.3,.95,spin);palm.rotation.z=side*.14;
+        const thumb=add(new THREE.CapsuleGeometry(.012,.032,4,8),kit.glove,side*.112,.03,face-.006,1,1,1,spin);thumb.rotation.z=side*.95;
+        add(this.unitBox,trim,side*.156,-.05,-.03,.07,.02,.07,spin);
+        tube([side*.158,-.055,-.035],[side*.22,-.17,-.26],.034,trim,spin,12);
+        // Three buttons on each side of the screen.
+        (side<0?['#e8463c','#f2c230','#3d8bff']:['#41d17a','#f4f4f4','#ff8a2a']).forEach((color,i)=>{const button=add(new THREE.CylinderGeometry(.0085,.0085,.008,14),this.mat(color,i===0),side*.09,.035-i*.028,face,1,1,1,spin);button.rotation.x=Math.PI/2;});
+        const rotary=add(new THREE.CylinderGeometry(.013,.013,.014,16),metal,side*.042,-.044,face,1,1,1,spin);rotary.rotation.x=Math.PI/2;
+        add(this.unitBox,this.mat(side<0?'#ff8a2a':'#3d8bff'),side*.042,-.044,face-.008,.004,.018,.002,spin);
+      }
       const canvas=document.createElement('canvas');canvas.width=320;canvas.height=150;const texture=new THREE.CanvasTexture(canvas);texture.encoding=THREE.sRGBEncoding;
-      const screen=new THREE.Mesh(new THREE.PlaneGeometry(.22,.1),new THREE.MeshBasicMaterial({map:texture,toneMapped:false}));screen.position.set(0,.51,.5);screen.rotation.set(-.25,Math.PI,0,'YXZ');screen.userData.ownedMaterial=true;screen.userData.ownedTexture=true;group.add(screen);
-      const lights=[];for(let i=0;i<10;i++)lights.push(add(this.unitBox,soft,(i-4.5)*.022,.57,.5,.015,.01,.01));
+      const screen=new THREE.Mesh(new THREE.PlaneGeometry(.122,.057),new THREE.MeshBasicMaterial({map:texture,toneMapped:false}));screen.position.set(0,.004,face);screen.rotation.y=Math.PI;screen.userData.ownedMaterial=true;screen.userData.ownedTexture=true;spin.add(screen);
+      // Shift lights across the top of the wheel: revs normally, turbo charge in tier colours while drifting.
+      const lights=[];for(let i=0;i<10;i++)lights.push(add(this.unitBox,this.mat('#24262b'),(i-4.5)*.019,.054,face,.014,.009,.004,spin));
       group.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;}});
       return {group,spin,canvas,context:canvas.getContext('2d'),texture,lights,key:'',drawn:0,lightKey:''};
     }
     drawDash(cockpit,k,now){
       const top=D.CLASSES[k.classId]?.speed||35,{gear,rpm}=root.KartAudio?.engineRpm(k.speed,top)||{gear:1,rpm:0},charge=D.clamp(k.driftTime/1.3,0,1);
       const tier=['#65cfff','#65cfff','#ff963c','#bd73ff'][k.driftLevel],drifting=k.drift&&k.grounded;
-      // Lights: a rev bar (green, amber, red), or the drift charge filling in the tier colour.
-      const lit=Math.round((drifting?charge:rpm)*10),lightKey=`${lit}|${drifting?k.driftLevel:'r'}`;
-      if(lightKey!==cockpit.lightKey){cockpit.lightKey=lightKey;cockpit.lights.forEach((light,i)=>{light.material=i<lit?this.mat(drifting?tier:i<6?'#5dff9a':i<8?'#ffc34d':'#ff4b4b',true):this.mat('#24262b');});}
-      const speed=Math.round(k.speed*3.6),key=`${speed}|${gear}|${Math.round(rpm*30)}|${Math.round(charge*24)}|${k.driftLevel}|${k.boost>0}`;
+      // Lights: a rev bar (green, amber, red) that flashes blue at the limiter, or the drift charge filling in the tier colour.
+      const limiter=!drifting&&rpm>.95,flash=limiter&&Math.floor(now*12)%2===0;
+      const lit=limiter?(flash?10:0):Math.round((drifting?charge:rpm)*10),lightKey=`${lit}|${drifting?k.driftLevel:limiter?'l':'r'}`;
+      if(lightKey!==cockpit.lightKey){cockpit.lightKey=lightKey;cockpit.lights.forEach((light,i)=>{light.material=i<lit?this.mat(limiter?'#4f8bff':drifting?tier:i<5?'#5dff9a':i<8?'#ff3b30':'#4f8bff',true):this.mat('#24262b');});}
+      const speed=Math.round(k.speed*3.6),key=`${speed}|${gear}|${Math.round(rpm*30)}|${Math.round(charge*24)}|${k.driftLevel}|${k.boost>0}|${k.item||''}`;
       if(key===cockpit.key||now-cockpit.drawn<.06)return;cockpit.key=key;cockpit.drawn=now;
       const ctx=cockpit.context;
-      ctx.fillStyle='#060b12';ctx.fillRect(0,0,320,150);ctx.strokeStyle=k.boost>0?'#8ffff0':'#1f3a4d';ctx.lineWidth=5;ctx.strokeRect(3,3,314,144);
-      // Rev arc with the gear in its centre.
-      ctx.lineCap='round';ctx.lineWidth=11;ctx.strokeStyle='#16283a';ctx.beginPath();ctx.arc(78,84,52,Math.PI*.8,Math.PI*2.2);ctx.stroke();
-      ctx.strokeStyle=rpm>.85?'#ff5a4f':rpm>.65?'#ffc34d':'#65e0ff';ctx.beginPath();ctx.arc(78,84,52,Math.PI*.8,Math.PI*(.8+1.4*rpm));ctx.stroke();
-      ctx.fillStyle='#f4f8ff';ctx.textAlign='center';ctx.font='bold 42px Arial';ctx.fillText(String(gear),78,98);ctx.font='bold 11px Arial';ctx.fillStyle='#8de8ed';ctx.fillText('GEAR',78,124);
-      ctx.textAlign='right';ctx.fillStyle='#f4f8ff';ctx.font='italic bold 58px Impact, Arial Narrow, sans-serif';ctx.fillText(String(speed),262,80);
-      ctx.textAlign='left';ctx.font='bold 13px Arial';ctx.fillStyle='#8de8ed';ctx.fillText('KM/H',268,78);
+      ctx.fillStyle='#04070b';ctx.fillRect(0,0,320,150);ctx.strokeStyle=k.boost>0?'#8ffff0':'#1f3a4d';ctx.lineWidth=5;ctx.strokeRect(3,3,314,144);
+      // Big gear in the centre, speed on the left, item and turbo state on the right, rev bar along the bottom.
+      ctx.textAlign='center';ctx.fillStyle=rpm>.9?'#ff5a4f':'#f4f8ff';ctx.font='bold 92px Impact, Arial Narrow, sans-serif';ctx.fillText(String(gear),160,108);
+      ctx.fillStyle='#f4f8ff';ctx.font='italic bold 46px Impact, Arial Narrow, sans-serif';ctx.fillText(String(speed),62,78);
+      ctx.font='bold 13px Arial';ctx.fillStyle='#8de8ed';ctx.fillText('KM/H',62,98);
+      const item=D.ITEMS[k.item];ctx.fillStyle=item?'#ffd27a':'#36505f';ctx.font='bold 38px Arial';ctx.fillText(item?.symbol||'◇',258,72);
+      ctx.font='bold 12px Arial';ctx.fillText(item?item.name.toUpperCase().slice(0,13):'NO ITEM',258,94);
       const label=k.boost>0?'BOOST':k.driftLevel?`TURBO ${['','I','II','III'][k.driftLevel]}`:drifting?'CHARGING':'';
-      ctx.fillStyle=k.boost>0?'#8ffff0':tier;ctx.font='bold 15px Arial';ctx.textAlign='right';ctx.fillText(label,300,104);
-      ctx.fillStyle='#16283a';ctx.fillRect(146,114,154,14);ctx.fillStyle=tier;ctx.fillRect(146,114,154*charge,14);
-      for(const t of [.35/1.3,.8/1.3]){ctx.fillStyle='#060b12';ctx.fillRect(146+154*t,114,2,14);}
+      ctx.fillStyle=k.boost>0?'#8ffff0':tier;ctx.font='bold 14px Arial';ctx.fillText(label,62,122);
+      ctx.fillStyle='#16283a';ctx.fillRect(14,130,292,10);ctx.fillStyle=drifting?tier:rpm>.85?'#ff5a4f':rpm>.65?'#ffc34d':'#65e0ff';ctx.fillRect(14,130,292*(drifting?charge:rpm),10);
       cockpit.texture.needsUpdate=true;
     }
     updateCamera(world,track,own,player,dt,now){
@@ -591,7 +741,7 @@
       this.camera.fov=snap?fov:this.camera.fov+(fov-this.camera.fov)*Math.min(1,dt*(firstPerson?6:4));this.camera.updateProjectionMatrix();
       const yaw=this.cameraYaw;
       if(this.headlight.intensity>0){this.headlight.position.set(player.x-Math.sin(yaw)*1.5,player.y+3.4,player.z-Math.cos(yaw)*1.5);this.headlight.target.position.set(player.x+Math.sin(yaw)*24,player.y-.6,player.z+Math.cos(yaw)*24);this.headlight.target.updateMatrixWorld();}
-      if(mesh?.userData.cockpit?.group.visible){mesh.userData.cockpit.spin.rotation.z=mesh.userData.steer*2.2;this.drawDash(mesh.userData.cockpit,player,now);}
+      if(mesh?.userData.cockpit?.group.visible){mesh.userData.cockpit.spin.rotation.z=D.clamp(mesh.userData.steer*2.2,-1.5,1.5);this.drawDash(mesh.userData.cockpit,player,now);}
     }
     chaseCamera(world,track,player,mode,yawRate,acceleration,dt,now,shot,snap){
       const finished=shot==='finish';
