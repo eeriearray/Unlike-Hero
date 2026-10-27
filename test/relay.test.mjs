@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import WebSocket from 'ws';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { runInNewContext } from 'node:vm';
 
 const PORT = 20000 + Math.floor(Math.random() * 20000);
 let hub;
@@ -24,6 +25,26 @@ const open = room => new Promise(resolve => {
 });
 const frame = (ws, o) => ws.send(JSON.stringify(Object.assign({ room: 'r' }, o)));
 const settle = () => new Promise(r => setTimeout(r, 150));
+
+test('hub config provides a phone address without changing the current relay origin', async () => {
+  const response = await fetch(`http://localhost:${PORT}/shared/sdk/hub-config.js`);
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('cache-control'), 'no-store');
+  const source = await response.text();
+  for (const [protocol, socketProtocol] of [['http:', 'ws:'], ['https:', 'wss:']]) {
+    const context = { window: {}, location: { protocol, host: `hub.example:${PORT}` } };
+    runInNewContext(source, context);
+    const config = context.window.HUB_CONFIG;
+    assert.equal(config.relayUrl, `${socketProtocol}//hub.example:${PORT}/relay`);
+    if (config.phoneHubUrl !== null) {
+      const phone = new URL(config.phoneHubUrl);
+      assert.equal(phone.protocol, 'http:');
+      assert.equal(phone.port, String(PORT));
+      assert.equal(phone.pathname, '/');
+      assert.ok(!['localhost', '127.0.0.1', '[::1]'].includes(phone.hostname));
+    }
+  }
+});
 
 test('a direct message reaches only its target, and spoofed senders are dropped', async () => {
   const room = 'party-pack:T' + PORT;

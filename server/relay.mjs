@@ -6,7 +6,7 @@
 //     multiplayer works with no extra setup.
 //   • loads optional per-game servers: a game whose game.json has "server": "server/index.mjs"
 //     gets that module attached to this HTTP server (see docs/ARCHITECTURE.md, "Game servers").
-// Run:  npm install  &&  npm start        (PORT=8080 by default)
+// Run:  npm install  &&  npm start        (PORT=8081 by default)
 // Rooms are in memory and disappear when everyone leaves. Nothing is stored.
 import { createServer } from 'node:http';
 import { networkInterfaces, platform } from 'node:os';
@@ -33,7 +33,10 @@ const server = createServer(async (req, res) => {
     let path = decodeURIComponent(url.pathname);
     if (path === '/shared/sdk/hub-config.js') {
       res.writeHead(200, { 'content-type': TYPES['.js'], 'cache-control': 'no-store' });
-      res.end("window.HUB_CONFIG = { relayUrl: (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/relay' };\n");
+      const address = lanAddresses()[0];
+      const ipv6 = address ? '' : ipv6Addresses()[0];
+      const phoneHubUrl = address ? `http://${address}:${PORT}/` : ipv6 ? `http://[${ipv6}]:${PORT}/` : null;
+      res.end("window.HUB_CONFIG = { relayUrl: (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/relay', phoneHubUrl: " + JSON.stringify(phoneHubUrl) + " };\n");
       return;
     }
     if (path.endsWith('/')) path += 'index.html';
@@ -128,9 +131,7 @@ server.listen(PORT, () => {
   console.log(`Game hub on http://localhost:${PORT}  (relay at ws://localhost:${PORT}/relay)`);
   // Print the exact address friends on the same Wi-Fi or hotspot should open. Skips addresses phones can't
   // reach: link-local 169.254.x and the 192.0.0.x a Mac gets on a USB/mobile link with no shared network.
-  const lan = Object.values(networkInterfaces()).flat()
-    .filter(a => a && (a.family === 'IPv4' || a.family === 4) && !a.internal && !/^(169\.254\.|192\.0\.0\.)/.test(a.address))
-    .map(a => a.address);
+  const lan = lanAddresses();
   // Some phone hotspots (an iPhone sharing an IPv6-only carrier like Jio) give no IPv4 address at all: offer the
   // Wi-Fi's IPv6 address instead. It changes whenever the hotspot reconnects, so Macs also print their .local name.
   const lan6 = lan.length ? [] : ipv6Addresses().map(ip => `[${ip}]`);
@@ -146,6 +147,16 @@ server.listen(PORT, () => {
     console.log('Connect it to the same Wi-Fi or phone hotspot as your friends (over Wi-Fi, not a USB cable), then restart: npm start\n');
   }
 });
+
+/** Prefer Wi-Fi/Ethernet adapters over tunnels when sharing with nearby phones. */
+function lanAddresses() {
+  return Object.entries(networkInterfaces())
+    .filter(([name]) => !/^(utun|awdl|llw|lo|docker|br-|veth)/.test(name))
+    .sort(([a], [b]) => Number(!/^(en|eth|wlan|wlp)/.test(a)) - Number(!/^(en|eth|wlan|wlp)/.test(b)))
+    .flatMap(([, addresses]) => addresses || [])
+    .filter(a => (a.family === 'IPv4' || a.family === 4) && !a.internal && !/^(169\.254\.|192\.0\.0\.)/.test(a.address))
+    .map(a => a.address);
+}
 
 /** This Mac's Bonjour name (name.local), which Apple devices on the same network resolve whatever its address. */
 function localName() {

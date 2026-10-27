@@ -61,6 +61,13 @@ button:focus-visible,input:focus-visible,a:focus-visible,summary:focus-visible,s
 .connection-panel{position:absolute;z-index:10;right:0;top:calc(100% + 8px);width:min(320px,calc(100vw - 32px));padding:16px;background:var(--surface);border:1px solid var(--line);box-shadow:0 12px 32px rgba(0,0,0,.42);text-transform:none;letter-spacing:0}
 .connection-panel label{display:grid;gap:7px;color:var(--muted);font:600 11px var(--f-mono);letter-spacing:0;text-transform:uppercase}
 .connection-panel input{width:100%;padding:10px;border:1px solid var(--line);border-radius:3px;background:#11160f;color:var(--ink);font:14px var(--f-mono);letter-spacing:0;text-transform:none}
+.phone-share{margin-top:16px;padding-top:16px;border-top:1px solid var(--line);display:grid;justify-items:center;gap:10px;text-align:center}
+.phone-share h2{margin:0;color:var(--ink);font:600 14px var(--f-mono)}
+.phone-share p{margin:0;font:13px/1.5 var(--f-ui)}
+.phone-qr{width:200px;max-width:100%;background:#fff;line-height:0}
+.phone-qr svg{display:block;width:100%;height:auto}
+.phone-share a{max-width:100%;overflow-wrap:anywhere;color:var(--ink);font:12px/1.5 var(--f-mono)}
+.phone-share .btn{width:100%}
 .intro{display:flex;align-items:end;justify-content:space-between;gap:24px;padding:43px 0 27px;border-bottom:1px solid var(--line)}
 .eyebrow{color:var(--muted);font:600 11px/1 var(--f-mono);letter-spacing:0;text-transform:uppercase}
 .intro .eyebrow{display:block;margin-bottom:8px}
@@ -166,8 +173,15 @@ code{padding:2px 5px;border:1px solid var(--line);border-radius:3px;background:v
         <summary>Connection</summary>
         <div class="connection-panel">
           <label for="relay-url">Multiplayer relay
-            <input id="relay-url" placeholder="ws://host:8080/relay" spellcheck="false">
+            <input id="relay-url" placeholder="ws://host:8081/relay" spellcheck="false">
           </label>
+          <section class="phone-share" aria-labelledby="phone-share-title">
+            <h2 id="phone-share-title">Open on your phone</h2>
+            <div id="phone-qr" class="phone-qr" role="img" aria-label="Scan to open the game hub on your phone" hidden></div>
+            <p id="phone-share-help" role="status">Connect your phone to the same Wi-Fi or hotspot, then scan.</p>
+            <a id="phone-share-link" hidden></a>
+            <button class="btn" id="phone-share-copy" type="button" hidden>Copy hub link</button>
+          </section>
         </div>
       </details>
     </div>
@@ -207,6 +221,7 @@ code{padding:2px 5px;border:1px solid var(--line);border-radius:3px;background:v
 
 <script src="shared/sdk/hub-config.js"></script>
 <script src="games/registry.js"></script>
+<script src="games/putt-club/vendor/qrcode.min.js"></script>
 <script>
 'use strict';
 const $ = s => document.querySelector(s);
@@ -223,6 +238,30 @@ const nameIn = $('#player-name'); nameIn.value = player().name;
 nameIn.addEventListener('change', () => { const p = player(); p.name = nameIn.value.trim() || 'Player'; store.set('hub.player', p); });
 const relayIn = $('#relay-url'); relayIn.value = store.get('hub.relayUrl', '') || (window.HUB_CONFIG && window.HUB_CONFIG.relayUrl) || '';
 relayIn.addEventListener('change', () => store.set('hub.relayUrl', relayIn.value.trim()));
+
+function renderPhoneShare() {
+  const loopback = /^(localhost|127(?:\.\d+){3}|\[?::1\]?)$/i.test(location.hostname);
+  const link = loopback ? window.HUB_CONFIG && window.HUB_CONFIG.phoneHubUrl : new URL('/', location.href).href;
+  const qrEl = $('#phone-qr'), linkEl = $('#phone-share-link'), copy = $('#phone-share-copy');
+  if (!link) {
+    $('#phone-share-help').textContent = 'Connect this computer to Wi-Fi or a phone hotspot, then refresh to get a QR code.';
+    return;
+  }
+  linkEl.href = link; linkEl.textContent = link; linkEl.hidden = false;
+  try {
+    const qr = window.qrcode(0, 'M'); qr.addData(link); qr.make();
+    qrEl.innerHTML = qr.createSvgTag({ cellSize: 6, margin: 24, scalable: true });
+    qrEl.hidden = false;
+  } catch (e) {
+    $('#phone-share-help').textContent = 'Open the link below on a phone connected to the same Wi-Fi or hotspot.';
+  }
+  copy.hidden = false;
+  copy.onclick = async () => {
+    try { await navigator.clipboard.writeText(link); copy.textContent = 'Copied'; }
+    catch (e) { copy.textContent = 'Select the link to copy'; }
+  };
+}
+renderPhoneShare();
 
 function entryUrl(game, entry) {
   const [file, hash] = (entry || game.entry).split('#');
