@@ -555,6 +555,7 @@
       }streakPositions.needsUpdate=true;
       this.registerMaterials();this.camera.updateMatrixWorld();
       if(Math.abs((this.shadowFov||0)-this.camera.fov)>.3){this.csm.updateFrustums();this.shadowFov=this.camera.fov;}this.csm.update();
+      const viewed=this.cockpitKart?.userData.cockpit;if(!menu&&viewed?.group.visible)this.renderMirror(viewed,this.cockpitKart);
       this.renderer.info.autoReset=false;this.renderer.info.reset();this.post.render(this.scene,this.camera,this.reduced,menu?0:player.speed,dt);
       this.adaptResolution(dt,menu);
       this.frameCount=(this.frameCount||0)+1;
@@ -589,24 +590,23 @@
       const u=mesh.userData,inside=mode==='cockpit';for(const part of u.cabin||[])part.visible=!inside;
       if(inside&&!u.cockpit)u.cockpit=this.makeCockpit(u.visual,u.cabin.find(o=>o.material!==this.scenery.glass&&o.material?.isMeshPhysicalMaterial)?.material);if(u.cockpit)u.cockpit.group.visible=inside;
     }
-    // Shared cockpit finishes: woven carbon, suede grips, race gloves and a canvas window net. Built once, reused by every cockpit.
+    // Shared cockpit finishes: woven carbon, suede grips, race gloves and the live rear-view mirror. Built once, reused by every cockpit.
     cockpitKit(){
       if(this.cockpitMaterials)return this.cockpitMaterials;
       const weave=document.createElement('canvas');weave.width=weave.height=64;const w=weave.getContext('2d');
       w.fillStyle='#101114';w.fillRect(0,0,64,64);
       for(let y=0;y<8;y++)for(let x=0;x<8;x++){const g=w.createLinearGradient(x*8,y*8,x*8+8,y*8+8),lit=(x+y)%2;g.addColorStop(0,lit?'#2b2d33':'#16171b');g.addColorStop(1,lit?'#1a1b20':'#24262c');w.fillStyle=g;w.fillRect(x*8+.5,y*8+.5,7,7);}
       const carbonMap=new THREE.CanvasTexture(weave);carbonMap.wrapS=carbonMap.wrapT=THREE.RepeatWrapping;carbonMap.repeat.set(6,6);carbonMap.encoding=THREE.sRGBEncoding;
-      const net=document.createElement('canvas');net.width=net.height=128;const n=net.getContext('2d');n.strokeStyle='#15161a';n.lineWidth=9;
-      for(let i=0;i<=128;i+=32){n.beginPath();n.moveTo(i,0);n.lineTo(i,128);n.moveTo(0,i);n.lineTo(128,i);n.stroke();}
-      const netMap=new THREE.CanvasTexture(net);netMap.wrapS=netMap.wrapT=THREE.RepeatWrapping;netMap.repeat.set(4,3);
+      // The mirror shows a small render looking backwards; the image is flipped left-right like a real mirror.
+      this.mirrorTarget=new THREE.WebGLRenderTarget(448,64,{type:THREE.HalfFloatType});this.mirrorTarget.texture.repeat.x=-1;this.mirrorTarget.texture.offset.x=1;
+      this.mirrorCamera=new THREE.PerspectiveCamera(13,7,2.2,700);
       this.cockpitMaterials={
         carbon:new THREE.MeshStandardMaterial({color:'#ffffff',map:carbonMap,roughness:.32,metalness:.35}),
         suede:new THREE.MeshStandardMaterial({color:'#24252a',roughness:.95,metalness:0}),
         glove:new THREE.MeshStandardMaterial({color:'#1a1b1f',roughness:.7,metalness:.05}),
         foam:new THREE.MeshStandardMaterial({color:'#0d0d0f',roughness:1,metalness:0}),
-        mirror:new THREE.MeshStandardMaterial({color:'#9fb4c6',roughness:.04,metalness:1}),
-        cage:new THREE.MeshStandardMaterial({color:'#4a4e57',roughness:.38,metalness:.75}),
-        net:new THREE.MeshStandardMaterial({color:'#ffffff',map:netMap,transparent:true,alphaTest:.5,side:THREE.DoubleSide,roughness:.9})
+        mirror:new THREE.MeshBasicMaterial({map:this.mirrorTarget.texture}),
+        cage:new THREE.MeshStandardMaterial({color:'#4a4e57',roughness:.38,metalness:.75})
       };
       return this.cockpitMaterials;
     }
@@ -620,47 +620,38 @@
         m.position.copy(a).add(b).multiplyScalar(.5);m.quaternion.setFromUnitVectors(up,b.clone().sub(a).normalize());parent.add(m);return m;};
       const joint=(p,radius,material)=>add(new THREE.SphereGeometry(radius,10,8),material,...p);
       // Body-colour A-pillars and windscreen header follow the glazing, so the view out matches the car seen from outside.
-      for(const side of [-1,1])tube([side*.6,.39,.86],[side*.52,.82,.24],.028,trim);
-      add(this.unitBox,trim,0,.825,.24,1.08,.03,.07);
-      // Tinted sun strip across the top of the windscreen, readable from the driver's seat.
-      const strip=document.createElement('canvas');strip.width=512;strip.height=48;const s=strip.getContext('2d');
-      s.fillStyle='#07080b';s.fillRect(0,0,512,48);s.fillStyle='#'+(trim.color?.getHexString?.()||'ffc66d');s.font='italic 900 30px Impact, Arial Narrow, sans-serif';s.textAlign='center';s.fillText('CROWNFALL  RACING',256,35);
-      const stripTexture=new THREE.CanvasTexture(strip);stripTexture.encoding=THREE.sRGBEncoding;stripTexture.center.set(.5,.5);stripTexture.rotation=Math.PI;
-      const sun=new THREE.Mesh(new THREE.PlaneGeometry(.9,.045),new THREE.MeshBasicMaterial({map:stripTexture,transparent:true,opacity:.92,toneMapped:false}));
-      sun.position.set(0,.785,.31);sun.rotation.x=2.18;sun.userData.ownedMaterial=true;sun.userData.ownedTexture=true;group.add(sun);
-      // Rear-view mirror on a short stalk from the header.
-      tube([0,.81,.3],[0,.785,.3],.007,kit.carbon);add(this.unitBox,kit.carbon,0,.772,.3,.18,.036,.025);
-      const glass=add(new THREE.PlaneGeometry(.17,.026),kit.mirror,0,.772,.286);glass.rotation.y=Math.PI;
-      // Gunmetal roll cage: inner A-pillar bars, a header bar tucked under the roof, roof rails and padded X door bars.
+      for(const side of [-1,1])tube([side*.6,.39,.86],[side*.52,.87,.24],.028,trim);
+      add(this.unitBox,trim,0,.875,.24,1.08,.03,.07);
+      // Rear-view mirror tucked right up under the roof header.
+      tube([0,.868,.28],[0,.855,.28],.007,kit.carbon);add(this.unitBox,kit.carbon,0,.842,.28,.2,.032,.022);
+      const mirror=add(new THREE.PlaneGeometry(.19,.027),kit.mirror,0,.842,.268);mirror.rotation.y=Math.PI;
+      // Gunmetal roll cage: inner A-pillar bars, a header bar above the driver's head (clear of the windscreen), roof rails and padded X door bars.
       const cage=kit.cage;
       for(const side of [-1,1]){
-        tube([side*.5,.36,.68],[side*.46,.8,.27],.02,cage);tube([side*.46,.8,.27],[side*.46,.81,-.75],.02,cage);
+        tube([side*.5,.36,.68],[side*.46,.86,.02],.02,cage);tube([side*.46,.86,.02],[side*.46,.86,-.75],.02,cage);
         tube([side*.53,.26,.62],[side*.5,.63,-.6],.02,cage);tube([side*.53,.62,.52],[side*.5,.25,-.6],.02,cage);
         tube([side*.525,.35,.3],[side*.505,.53,-.2],.032,kit.foam,group,12);
-        joint([side*.46,.8,.27],.026,cage);joint([side*.5,.36,.68],.026,cage);
+        joint([side*.46,.86,.02],.026,cage);joint([side*.5,.36,.68],.026,cage);
       }
-      tube([-.46,.8,.27],[.46,.8,.27],.02,cage);
-      // Carbon door cards with a red pull strap, and a window net on the driver's side.
-      for(const side of [-1,1]){add(this.unitBox,kit.carbon,side*.61,.33,.05,.05,.32,1.3);add(this.unitBox,trim,side*.6,.5,.05,.09,.018,1.3);add(this.unitBox,this.mat('#c8261e'),side*.575,.42,.28,.012,.035,.2);}
-      const net=add(new THREE.PlaneGeometry(.75,.28),kit.net,-.575,.64,-.05);net.rotation.y=Math.PI/2;
-      // Carbon dashboard: rolled leading edge, painted pin-stripe at the screen base and defrost vents.
-      add(this.unitBox,kit.carbon,0,.32,.6,1.12,.1,.5);
+      tube([-.46,.86,.02],[.46,.86,.02],.02,cage);
+      // Carbon door cards with a red pull strap.
+      for(const side of [-1,1]){add(this.unitBox,kit.carbon,side*.61,.33,.05,.05,.32,1.3);add(this.unitBox,kit.suede,side*.6,.48,-.05,.09,.018,1.1);add(this.unitBox,this.mat('#c8261e'),side*.575,.42,.28,.012,.035,.2);}
+      // Carbon dashboard with a rolled suede leading edge.
+      add(this.unitBox,kit.carbon,0,.392,.6,1.12,.1,.5);
       // Dark cabin floor over the body shell, so looking down shows the cockpit tub rather than bare paint.
       add(this.unitBox,kit.suede,0,.395,-.15,1.12,.01,1.1);
-      const lip=add(new THREE.CylinderGeometry(.02,.02,1.06,12),kit.suede,0,.355,.36);lip.rotation.z=Math.PI/2;
-      add(this.unitBox,trim,0,.374,.84,1.08,.012,.03);
-      for(let i=0;i<6;i++)add(this.unitBox,kit.foam,(i-2.5)*.15,.372,.74,.1,.006,.035);
+      const lip=add(new THREE.CylinderGeometry(.02,.02,1.06,12),kit.suede,0,.42,.36);lip.rotation.z=Math.PI/2;
       // Switch panel on the right: carbon plate, metal toggles, red guarded ignition switches and a starter button.
-      const panel=new THREE.Group();panel.position.set(.34,.41,.4);panel.rotation.x=-.55;group.add(panel);
+      const panel=new THREE.Group();panel.position.set(.34,.46,.4);panel.rotation.x=-.55;group.add(panel);
       add(this.unitBox,kit.carbon,0,0,0,.26,.13,.014,panel);
       for(let i=0;i<5;i++){const t=add(new THREE.CylinderGeometry(.0045,.0045,.03,6),metal,-.09+i*.035,.025,-.018,1,1,1,panel);t.rotation.x=-Math.PI/2-.4;add(this.unitBox,this.mat('#e9ecef'),-.09+i*.035,-.012,-.008,.022,.008,.002,panel);}
       for(const x of [-.07,-.03])add(this.unitBox,this.mat('#d5281f'),x,-.04,-.016,.026,.03,.018,panel);
       const start=add(new THREE.CylinderGeometry(.018,.018,.014,18),this.mat('#ff3b30',true),.075,-.035,-.01,1,1,1,panel);start.rotation.x=Math.PI/2;
       const bezel=add(new THREE.TorusGeometry(.021,.004,6,20),this.mat('#f2c230'),.075,-.035,-.016,1,1,1,panel);bezel.rotation.y=0;
       // Kill switch on the left of the dash.
-      const kill=add(new THREE.CylinderGeometry(.022,.022,.016,18),this.mat('#e8463c'),-.34,.4,.42);kill.rotation.x=Math.PI/2-.55;
+      const kill=add(new THREE.CylinderGeometry(.022,.022,.016,18),this.mat('#e8463c'),-.34,.45,.42);kill.rotation.x=Math.PI/2-.55;
       // Steering column and quick-release hub.
-      const wheel=new THREE.Group();wheel.position.set(0,.45,.1);wheel.rotation.x=.7;group.add(wheel);
+      const wheel=new THREE.Group();wheel.position.set(0,.52,.1);wheel.rotation.x=.7;group.add(wheel);
       const column=add(new THREE.CylinderGeometry(.026,.03,.32,12),kit.foam,0,0,.2,1,1,1,wheel);column.rotation.x=Math.PI/2;
       const spin=new THREE.Group();wheel.add(spin);
       // Formula-style wheel: a carbon body with suede grips, shift lights, a centre screen, coloured buttons, rotaries and paddles.
@@ -687,7 +678,14 @@
       // Shift lights across the top of the wheel: revs normally, turbo charge in tier colours while drifting.
       const lights=[];for(let i=0;i<10;i++)lights.push(add(this.unitBox,this.mat('#24262b'),(i-4.5)*.019,.054,face,.014,.009,.004,spin));
       group.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;}});
-      return {group,spin,canvas,context:canvas.getContext('2d'),texture,lights,key:'',drawn:0,lightKey:''};
+      return {group,spin,mirror,canvas,context:canvas.getContext('2d'),texture,lights,key:'',drawn:0,lightKey:''};
+    }
+    // Refresh the rear-view mirror every other frame (every third on Performance), skipping the driver's own car via the near plane.
+    renderMirror(cockpit,mesh){
+      this.mirrorFrame=(this.mirrorFrame||0)+1;if(this.mirrorFrame%(this.quality==='performance'?3:2))return;
+      const cam=this.mirrorCamera,p=this.mirrorPosition??=new THREE.Vector3(),yaw=mesh.rotation.y;
+      cockpit.mirror.getWorldPosition(p);cam.position.copy(p);cam.lookAt(p.x-Math.sin(yaw)*30,p.y-.9,p.z-Math.cos(yaw)*30);
+      cockpit.group.visible=false;this.renderer.setRenderTarget(this.mirrorTarget);this.renderer.render(this.scene,cam);this.renderer.setRenderTarget(null);cockpit.group.visible=true;
     }
     drawDash(cockpit,k,now){
       const top=D.CLASSES[k.classId]?.speed||35,{gear,rpm}=root.KartAudio?.engineRpm(k.speed,top)||{gear:1,rpm:0},charge=D.clamp(k.driftTime/1.3,0,1);

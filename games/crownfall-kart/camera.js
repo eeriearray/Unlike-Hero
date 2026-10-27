@@ -8,7 +8,7 @@
   // Third-person rigs: base distance, extra distance per m/s, height above the kart and how far ahead to look.
   const RIGS={chase:{distance:6.5,perSpeed:.045,height:2.65,look:10},close:{distance:4.3,perSpeed:.03,height:1.8,look:9}};
   // First-person eye points in the kart model's local space (+z is forward, y is up from the model origin).
-  const EYES={cockpit:{x:0,y:.72,z:-.24,down:.13},hood:{x:0,y:.58,z:1.05,down:.05}};
+  const EYES={cockpit:{x:0,y:.8,z:-.24,down:.14},hood:{x:0,y:.58,z:1.05,down:.05}};
   const MAX_CHASE_FOV=72;
   const validMode=mode=>MODES.includes(mode)?mode:'cockpit';
   const nextMode=mode=>MODES[(MODES.indexOf(validMode(mode))+1)%MODES.length];

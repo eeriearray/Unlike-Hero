@@ -65,7 +65,8 @@
     o.coachwork(visual,color,0,.64,-1.35,1.65,.065,.25);
     o.box(visual,0,-.12,-1.53,1.3,.12,.22,'#171918');
     for(let i=0;i<7;i++)o.box(visual,(i-3)*.12,-.11,-1.65,.025,.15,.2,'#171918');
-    for(const z of [-1.38,1.35])for(let i=0;i<6;i++)o.box(visual,(i-2.5)*.1,.35,z,.06,.01,.2,'#292a27');
+    // Rear-deck vents only; bonnet vents would float into the driver's view over the dash.
+    for(let i=0;i<6;i++)o.box(visual,(i-2.5)*.1,.35,-1.38,.06,.01,.2,'#292a27');
     const wheels=[];
     for(const x of [-.84,.84])for(const z of [-1.03,1.01]){
       const steering=new THREE.Group(),spin=new THREE.Group();steering.position.set(x,-.17,z);steering.userData.front=z>0;steering.add(spin);visual.add(steering);wheels.push(steering);
