@@ -1292,7 +1292,8 @@
     battle: [['bolt', 25], ['triple', 25], ['homing', 20], ['trap', 15], ['boost', 10], ['star', 5]]
   };
   const BOT_NAMES = ['Morrow', 'Bramble', 'Nyx', 'Hollow', 'Vesper', 'Thorn', 'Ash'];
-  const COLORS = ['#ffc66d', '#b593ff', '#78e5cc', '#ff8198', '#78c9ff', '#f0ed9f', '#c59c80', '#e1a6e9'];
+  // Gloss liveries: saturated enough to read at night, dark enough to hold clearcoat reflections.
+  const COLORS = ['#d9a441', '#2f4fd1', '#0f7a5c', '#c8202f', '#e8e6e1', '#e2611c', '#1c1d22', '#6b2fa8'];
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
   const mod = (n, m) => ((n % m) + m) % m;
   const angle = n => mod(n + Math.PI, Math.PI * 2) - Math.PI;

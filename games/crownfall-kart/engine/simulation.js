@@ -6,11 +6,17 @@
   'use strict';
   const STEP = 1 / 60, RADIUS = 0.95, POINTS = [15, 12, 10, 8, 6, 4, 2, 1];
   // Heavier gravity and a firmer hop keep the karts planted; ramps aim their own landings.
-  const GRAVITY = 32, HOP = 4.2, RAMP_LIFT = 9.5, BOT_PACE = 0.91;
+  const GRAVITY = 32, HOP = 4.2, RAMP_LIFT = 9.5;
   // Three-lap races need longer than a sprint; time trial keeps four minutes so ghosts stay bounded.
   const TIME_LIMIT = { sprint: 240, trial: 240, race: 360, gp: 300 };
   // Mini-turbo by tier: forward impulse, duration and the extra top speed it allows. Bots get a weaker release so a clean player drift wins.
-  const TURBO = [null, [8, 1.1, 10], [12, 1.6, 14], [16, 2.2, 19]], BOT_TURBO = .6;
+  const TURBO = [null, [8, 1.1, 10], [12, 1.6, 14], [16, 2.2, 19]];
+  const DIFFICULTIES = {
+    easy: { name:'Easy', pace:.78, turbo:.35, itemDelay:2.8, weave:2.1, mercy:.14 },
+    normal: { name:'Normal', pace:.91, turbo:.6, itemDelay:1.6, weave:1.4, mercy:.08 },
+    hard: { name:'Hard', pace:1, turbo:1, itemDelay:.65, weave:.4, mercy:0 }
+  };
+  const difficultyOf = value => Object.hasOwn(DIFFICULTIES, value) ? value : 'normal';
   // Hex mines: how far back they are thrown, seconds until armed, trigger distance and blast radius (m).
   const MINE_TOSS = 4, MINE_ARM = .5, MINE_TRIGGER = 1.9, MINE_BLAST = 2.8;
   const emptyInput = () => ({ throttle: 0, steer: 0, drift: false, hop: false, use: false, reset: false, assist:true });
@@ -44,7 +50,7 @@
         lastReset: -10, lastItem: -10, lastPad: -10, draft:0, draftCooldown:0, aiDriftTimer: 0, aiSpeed: 1, aiAccel: 1, points: options.points?.[seat.id] || 0,
         input: emptyInput(), notice: '', noticeUntil: 0 });
     }
-    return { version: 1, seed: options.seed || 173, random: D.rng(options.seed || 173), mode, trackIndex,
+    return { version: 1, seed: options.seed || 173, random: D.rng(options.seed || 173), mode, trackIndex, difficulty:difficultyOf(options.difficulty),
       round: options.round || 0, laps: mode === 'trial' || mode === 'race' ? 3 : mode === 'sprint' ? 1 : 2, time: 0, countdown: 3, phase: 'countdown',
       // The bot that starts beside the first human is their named rival: it races wheel to wheel all the way.
       rival: ['race','gp','sprint'].includes(mode) ? racers.find((k,i) => !k.human && i > 0 && racers[i-1].human)?.id || null : null,
@@ -147,6 +153,7 @@
   }
   function aiInput(w, k, dt) {
     if (k.eliminated || k.finishTime != null) return emptyInput();
+    const cfg=DIFFICULTIES[k.human ? 'normal' : difficultyOf(w.difficulty)];
     const track = T.makeTrack(w.trackIndex); let heading, turn, curvature=0;
     if (w.mode === 'battle') {
       const target = findTarget(w,k);
@@ -154,7 +161,7 @@
       const goal = k.item || !box ? target : box;
       heading = goal ? Math.atan2(goal.x-k.x,goal.z-k.z) : k.yaw;
     } else {
-      const p = T.sample(track, k.s + 5 + k.speed*.3, Math.sin(w.time*.35 + w.racers.indexOf(k))*1.4);
+      const p = T.sample(track, k.s + 5 + k.speed*.3, Math.sin(w.time*.35 + w.racers.indexOf(k))*cfg.weave);
       heading = Math.atan2(p.x-k.x,p.z-k.z);
       curvature=Math.abs(D.angle(T.sample(track,k.s+26).heading-T.sample(track,k.s+5).heading));
     }
@@ -163,7 +170,7 @@
     const driftCycle = k.aiDriftTimer % 3.4;
     const drift = w.mode !== 'battle' && k.autopilot <= 0 && Math.abs(turn)>.22 && k.speed>12 && driftCycle<2.2;
     return { throttle: D.clamp(1-Math.max(0,Math.abs(turn)-.3)*.3-curvature*.4,.38,1), steer:D.clamp(-turn*2.6,-1,1),
-      drift, use:!!k.item && w.time-k.lastItem>1.6 && (w.mode!=='battle' || Math.abs(turn)<.6 || ['trap','boost','star'].includes(k.item)), reset:false };
+      drift, use:!!k.item && w.time-k.lastItem>cfg.itemDelay && (w.mode!=='battle' || Math.abs(turn)<.6 || ['trap','boost','star'].includes(k.item)), reset:false };
   }
   function drive(w,k,input,dt) {
     const stats = D.CLASSES[k.classId], track = T.makeTrack(w.trackIndex), battle = w.mode==='battle';
@@ -174,8 +181,9 @@
     const human = w.racers.find(r => r.human && !r.eliminated && r.finishTime==null);
     // Bots run slightly below a human's pace and are pulled back toward them from either side, so the pack stays in reach.
     // The named rival has a tighter leash: it catches up harder and barely eases off, so there is always a duel.
+    const cfg=DIFFICULTIES[difficultyOf(w.difficulty)];
     const rival = k.id === w.rival, gapToHuman = human ? human.distance-k.distance : 0, band = D.clamp((Math.abs(gapToHuman)-(rival?4:8))/(rival?40:60),0,1);
-    const correction = !k.human && human && !battle ? (gapToHuman > 0 ? band*(rival?.12:.08) : -band*(rival?.05:.08)) : 0, pace = k.human || battle ? 1 : BOT_PACE;
+    const correction = !k.human && human && !battle ? (gapToHuman > 0 ? band*(rival?.12:.08) : -band*(rival?cfg.mercy*.625:cfg.mercy)) : 0, pace = k.human ? 1 : cfg.pace;
     // Catch-up never lifts a bot above its class's own pace.
     k.aiSpeed += (Math.min(1,pace+correction)-k.aiSpeed)*Math.min(1,dt*2);
     k.aiAccel += (Math.min(1,pace+correction*1.3)-k.aiAccel)*Math.min(1,dt*2);
@@ -189,7 +197,7 @@
       } else k.trickPress=w.time;
     }
     if (released) {
-      if (k.driftLevel>0 && k.spin<=0) { const [impulse,duration,extra]=TURBO[k.driftLevel], scale=k.human?1:BOT_TURBO; boost(w,k,impulse*scale,duration*scale,extra*scale,`MINI TURBO ${['','I','II','III'][k.driftLevel]}`); }
+      if (k.driftLevel>0 && k.spin<=0) { const [impulse,duration,extra]=TURBO[k.driftLevel], scale=k.human?1:cfg.turbo; boost(w,k,impulse*scale,duration*scale,extra*scale,`MINI TURBO ${['','I','II','III'][k.driftLevel]}`); }
       cancelDrift(k);
     }
     if (k.pendingDrift && k.grounded && input.drift && w.time-k.airStart<.85) { k.drift=true; k.pendingDrift=false; }
@@ -356,7 +364,7 @@
   }
   function nextGrandPrix(w){
     if(w.mode!=='gp'||w.round>=3||w.phase!=='results')return null;
-    return createWorld({mode:'gp',round:w.round+1,track:(w.trackIndex+1)%D.TRACKS.length,seed:w.seed+1,
+    return createWorld({difficulty:w.difficulty,mode:'gp',round:w.round+1,track:(w.trackIndex+1)%D.TRACKS.length,seed:w.seed+1,
       roster:w.racers.map(k=>({id:k.id,name:k.name,classId:k.classId,human:k.human})),points:Object.fromEntries(w.racers.map(k=>[k.id,k.points]))});
   }
   function snapshot(w){
@@ -372,5 +380,5 @@
     const a=samples[low],b=samples[high],f=D.clamp((time-a[0])/(b[0]-a[0]||1),0,1);
     return [a[1]+(b[1]-a[1])*f,a[2]+(b[2]-a[2])*f,a[3]+(b[3]-a[3])*f,a[4]+D.angle(b[4]-a[4])*f];
   }
-  return {STEP,RADIUS,POINTS,TURBO,MINE_TOSS,MINE_ARM,MINE_TRIGGER,MINE_BLAST,TIME_LIMIT,emptyInput,cleanInput,mergeInput,createWorld,step,standings,boost,hit,respawn,useItem,aiInput,nextGrandPrix,snapshot,sampleGhost};
+  return {DIFFICULTIES,difficultyOf,STEP,RADIUS,POINTS,TURBO,MINE_TOSS,MINE_ARM,MINE_TRIGGER,MINE_BLAST,TIME_LIMIT,emptyInput,cleanInput,mergeInput,createWorld,step,standings,boost,hit,respawn,useItem,aiInput,nextGrandPrix,snapshot,sampleGhost};
 });

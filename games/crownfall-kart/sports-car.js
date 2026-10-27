@@ -33,7 +33,7 @@
   root.buildSportsCar=function(o,visual,color){
     const low=o.quality==='performance';
     const paintKey='paint:'+color;
-    if(!o.materials.has(paintKey))o.materials.set(paintKey,new THREE.MeshPhysicalMaterial({color,metalness:.18,roughness:.3,clearcoat:1,clearcoatRoughness:.09,envMapIntensity:.65,roughnessMap:o.scenery.road.roughnessMap}));
+    if(!o.materials.has(paintKey))o.materials.set(paintKey,new THREE.MeshPhysicalMaterial({color,metalness:.42,roughness:.34,clearcoat:1,clearcoatRoughness:.035,envMapIntensity:1.05}));
     const paint=o.materials.get(paintKey),carbon=o.mat('#222320'),metal=o.scenery.metal,glass=o.scenery.glass;
     const add=(g,m,x=0,y=0,z=0)=>{const mesh=new THREE.Mesh(g,m);mesh.position.set(x,y,z);visual.add(mesh);return mesh;};
     const body=add(loft([[-1.7,.05,.03],[-1.61,.7,.06],[-1.2,.91,.16],[-.65,.82,.14],[.35,.79,.15],[1.04,.88,.12],[1.57,.7,.02],[1.68,.03,.01]],low?32:96,low?24:48),paint);

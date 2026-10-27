@@ -61,7 +61,7 @@
     applyProfileLighting(){
       const p=this.profile;if(!p)return;
       const night=p.light.intensity<2;this.night=night;
-      this.renderer.toneMappingExposure=night?Math.max(p.light.exposure,1.22):p.light.exposure;this.hemisphere.color.set(p.light.ambient);this.hemisphere.groundColor.set(p.light.ground);this.hemisphere.intensity=night?Math.max(p.light.fill,.95):p.light.fill;
+      this.renderer.toneMappingExposure=night?Math.max(p.light.exposure,1.12):p.light.exposure;this.hemisphere.color.set(p.light.ambient);this.hemisphere.groundColor.set(p.light.ground);this.hemisphere.intensity=night?Math.max(p.light.fill,.72):p.light.fill;
       this.headlight.intensity=night?4:0;if(night)this.scenery.road.color.multiplyScalar(1.35);
       this.csm.lightDirection.set(...p.sky.sun).normalize().negate();for(const light of this.csm.lights){light.color.set(p.light.color);light.intensity=p.light.intensity;}
       this.scene.fog=new THREE.FogExp2(p.atmosphere.color,p.atmosphere.density*.35);this.post.setProfile(p);this.csm.updateFrustums();
@@ -784,10 +784,10 @@
       const bounds=track.bounds,centerX=(bounds.minX+bounds.maxX)/2,centerZ=(bounds.minZ+bounds.maxZ)/2;
       const scale=world.mode==='battle'?w/100:(w-24)/Math.max(bounds.maxX-bounds.minX,bounds.maxZ-bounds.minZ);
       const pos=(x,z)=>[w/2+(x-(world.mode==='battle'?0:centerX))*scale,h/2+(z-(world.mode==='battle'?0:centerZ))*scale];
-      ctx.strokeStyle='#756981';ctx.lineWidth=world.mode==='battle'?3:5;ctx.beginPath();
+      ctx.strokeStyle='#ffffff38';ctx.lineJoin='round';ctx.lineWidth=world.mode==='battle'?3:5;ctx.beginPath();
       if(world.mode==='battle')ctx.arc(w/2,h/2,40*scale,0,Math.PI*2);
       else track.points.forEach((p,i)=>{const[x,y]=pos(p.x,p.z);if(i)ctx.lineTo(x,y);else ctx.moveTo(x,y);});ctx.stroke();
-      for(const k of [...world.racers].reverse()){if(k.eliminated)continue;const[x,y]=pos(k.x,k.z);ctx.fillStyle=k.id===playerId?'#ffe1a0':k.color;ctx.beginPath();ctx.arc(x,y,k.id===playerId?5:3,0,Math.PI*2);ctx.fill();}
+      for(const k of [...world.racers].reverse()){if(k.eliminated)continue;const[x,y]=pos(k.x,k.z);const you=k.id===playerId;ctx.fillStyle=you?'#f6d593':k.color;ctx.strokeStyle=you?'#0a0b0e':'#ffffffb3';ctx.lineWidth=you?2:1;ctx.beginPath();ctx.arc(x,y,you?6:3.5,0,Math.PI*2);ctx.fill();ctx.stroke();}
     }
   }
   root.KartRenderer=KartRenderer;
