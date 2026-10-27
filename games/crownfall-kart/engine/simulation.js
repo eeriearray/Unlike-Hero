@@ -50,7 +50,8 @@
   function boost(w, k, impulse, duration, extra, message) {
     const forward = k.vx*Math.sin(k.yaw)+k.vz*Math.cos(k.yaw);
     const allowance = Math.max(k.boost > 0 ? k.boostExtra : 0, extra);
-    const delta = Math.max(0, Math.min(impulse, D.CLASSES[k.classId].speed + allowance - forward));
+    // Mid-jump the arc is already aimed at the landing; the boost still runs, its push starts once the kart lands.
+    const delta = !k.grounded && k.launchedAt != null ? 0 : Math.max(0, Math.min(impulse, D.CLASSES[k.classId].speed + allowance - forward));
     k.vx += Math.sin(k.yaw)*delta; k.vz += Math.cos(k.yaw)*delta;
     k.boost = Math.max(k.boost, duration); k.boostExtra = allowance;
     if (message) notify(w, k, message, 'boost');
@@ -86,8 +87,11 @@
     const edge = T.edgeAt(track, hint.segment, k.lane) - 3, q = T.sample(track, landS, D.clamp(k.lane, -edge, edge));
     const rise = q.y + .65 - k.y; let lift = RAMP_LIFT;
     if (lift*lift < 2*GRAVITY*rise + 4) lift = Math.sqrt(2*GRAVITY*Math.max(0, rise)) + 2;
-    const time = (lift + Math.sqrt(lift*lift - 2*GRAVITY*rise)) / GRAVITY, dx = q.x - k.x, dz = q.z - k.z;
-    const speed = D.clamp(Math.hypot(dx, dz) / time, 16, 46);
+    const dx = q.x - k.x, dz = q.z - k.z, distance = Math.hypot(dx, dz);
+    // Keep the kart's own speed and shape the arc's height instead, unless that would be absurdly flat or tall.
+    let speed = Math.max(26, Math.hypot(k.vx, k.vz)), flight = distance / speed, keep = (rise + GRAVITY*flight*flight/2) / flight;
+    if (keep >= 6 && keep <= 15) lift = keep;
+    else speed = D.clamp(distance / ((lift + Math.sqrt(lift*lift - 2*GRAVITY*rise)) / GRAVITY), 16, 46);
     k.yaw = Math.atan2(dx, dz); k.vx = Math.sin(k.yaw)*speed; k.vz = Math.cos(k.yaw)*speed; k.vy = lift;
     k.grounded = false; k.airStart = w.time; k.trickEligible = true; k.hopUntil = .12; k.launchedAt = rampS;
     if (k.drift) cancelDrift(k);
@@ -181,9 +185,11 @@
     let steer=k.spin>0 ? 0 : input.steer;
     let assistedThrottle=1;
     if(!battle&&k.human&&k.autopilot<=0&&input.assist!==false&&!k.drift&&k.spin<=0&&Math.abs(input.steer)<.05&&input.throttle>0){
-      const navigation=aiInput(w,k,0);
-      steer=navigation.steer;assistedThrottle=navigation.throttle;
-    }
+      // The assistant eases in from whatever the driver was doing and never yanks the wheel to full lock.
+      const navigation=aiInput(w,k,0),target=D.clamp(navigation.steer*.8,-.75,.75);
+      k.assistSteer=(k.assistSteer??steer)+(target-(k.assistSteer??steer))*Math.min(1,dt*7);
+      steer=k.assistSteer;assistedThrottle=Math.max(.7,navigation.throttle);
+    }else k.assistSteer=steer;
     if (k.drift) steer=k.driftSign*D.clamp(.62+steer*k.driftSign*.45,.25,1.1);
     k.visualSteer=steer; // Presentation state travels with snapshots, including assisted/AI steering.
     const forwardSpeed=k.vx*Math.sin(k.yaw)+k.vz*Math.cos(k.yaw);
@@ -223,7 +229,9 @@
       if (!gap && Math.abs(p.lane)>edge-.55 && Math.abs(p.lane)<track.width*.5+2 && k.y<floor+2.2) {
         const sign=Math.sign(p.lane), nx=Math.cos(p.heading)*sign,nz=-Math.sin(p.heading)*sign;
         const outward=k.vx*nx+k.vz*nz;
-        if(outward>0){k.vx-=nx*outward*1.12;k.vz-=nz*outward*1.12;}
+        // Scrape along the wall: cancel the outward push, keep most forward speed and turn the nose back along the road.
+        if(outward>0){k.vx-=nx*outward*1.15;k.vz-=nz*outward*1.15;k.vx*=1-.6*dt;k.vz*=1-.6*dt;
+          const along=D.angle(p.heading+(Math.cos(D.angle(k.yaw-p.heading))<0?Math.PI:0)-k.yaw);k.yaw=D.angle(k.yaw+along*Math.min(1,dt*6));}
         k.x=p.x+Math.cos(p.heading)*sign*(edge-.6); k.z=p.z-Math.sin(p.heading)*sign*(edge-.6); onRoad=true;
       }
       if(inCorridor && Math.abs(delta)<8) {
@@ -269,7 +277,7 @@
   }
   function kartCollisions(w) {
     for(let i=0;i<w.racers.length;i++)for(let j=i+1;j<w.racers.length;j++){
-      const a=w.racers[i],b=w.racers[j];if(a.eliminated||b.eliminated||a.finishTime!=null||b.finishTime!=null||Math.abs(a.y-b.y)>1.8)continue;
+      const a=w.racers[i],b=w.racers[j],aiming=k=>!k.grounded&&k.launchedAt!=null;if(a.eliminated||b.eliminated||a.finishTime!=null||b.finishTime!=null||Math.abs(a.y-b.y)>1.8||aiming(a)||aiming(b))continue;
       const dx=b.x-a.x,dz=b.z-a.z,d=Math.hypot(dx,dz);if(d>=RADIUS*2||d<.001)continue;
       const nx=dx/d,nz=dz/d,ia=1/D.CLASSES[a.classId].mass,ib=1/D.CLASSES[b.classId].mass,overlap=RADIUS*2-d;
       a.x-=nx*overlap*ia/(ia+ib);a.z-=nz*overlap*ia/(ia+ib);b.x+=nx*overlap*ib/(ia+ib);b.z+=nz*overlap*ib/(ia+ib);

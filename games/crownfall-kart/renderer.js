@@ -10,6 +10,8 @@
       this.renderer.outputEncoding=THREE.sRGBEncoding;this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=.95;
       this.scene=new THREE.Scene();this.camera=new THREE.PerspectiveCamera(59,1,.1,1600);
       this.hemisphere=new THREE.HemisphereLight(0xb4c9e0,0x735338,.35);this.scene.add(this.hemisphere);
+      // A soft lamp ahead of the player's kart keeps the road and anything on it readable on the night courses.
+      this.headlight=new THREE.SpotLight('#fff0d8',0,90,.7,.85,1);this.headlight.castShadow=false;this.scene.add(this.headlight,this.headlight.target);
       this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;
       this.quality='high';this.renderScale=1;
       this.environment=new THREE.Group();this.scene.add(this.environment);this.dynamic=new THREE.Group();this.scene.add(this.dynamic);
@@ -55,7 +57,9 @@
     }
     applyProfileLighting(){
       const p=this.profile;if(!p)return;
-      this.renderer.toneMappingExposure=p.light.exposure;this.hemisphere.color.set(p.light.ambient);this.hemisphere.groundColor.set(p.light.ground);this.hemisphere.intensity=p.light.fill;
+      const night=p.light.intensity<2;this.night=night;
+      this.renderer.toneMappingExposure=night?Math.max(p.light.exposure,1.22):p.light.exposure;this.hemisphere.color.set(p.light.ambient);this.hemisphere.groundColor.set(p.light.ground);this.hemisphere.intensity=night?Math.max(p.light.fill,.95):p.light.fill;
+      this.headlight.intensity=night?4:0;if(night)this.scenery.road.color.multiplyScalar(1.35);
       this.csm.lightDirection.set(...p.sky.sun).normalize().negate();for(const light of this.csm.lights){light.color.set(p.light.color);light.intensity=p.light.intensity;}
       this.scene.fog=new THREE.FogExp2(p.atmosphere.color,p.atmosphere.density*.35);this.post.setProfile(p);this.csm.updateFrustums();
     }
@@ -186,10 +190,14 @@
             for(const side of [-1,1]){dummy.position.set(side*(track.width/2-1),6.6,0);dummy.scale.set(1,1.5,1);dummy.updateMatrix();lanterns.setMatrixAt(light++,new THREE.Matrix4().multiplyMatrices(anchor.matrix,dummy.matrix));}
           }this.environment.add(tunnel,lanterns);
         }
-        // Thick, ink-like mud patches are matched to the simulation's surface bands.
+        // Wet, ochre mud matched to the simulation's surface bands, outlined in glowing amber so it reads at night.
+        const mud=new THREE.MeshStandardMaterial({color:'#7a5532',roughness:.32,metalness:0,emissive:'#3a2412',emissiveIntensity:.6});mud.userData.ownedMaterial=true;
         for(const {start,end,lane,width} of T.mudPatches(track)){
-          const count=18,strip=new THREE.InstancedMesh(this.unitBox,this.mat('#211d29'),count);
-          for(let i=0;i<count;i++){const p=T.sample(track,track.length*(start+(end-start)*i/count),lane);dummy.position.set(p.x,p.y+.055,p.z);dummy.rotation.set(0,p.heading,0);dummy.scale.set(width,.10,track.length*(end-start)/count+1);dummy.updateMatrix();strip.setMatrixAt(i,dummy.matrix);}this.environment.add(strip);
+          const count=18,strip=new THREE.InstancedMesh(this.unitBox,mud,count),edges=new THREE.InstancedMesh(this.unitBox,this.mat('#ffb347',true),count*2);strip.userData.ownedMaterial=true;
+          for(let i=0;i<count;i++){const p=T.sample(track,track.length*(start+(end-start)*i/count),lane),piece=track.length*(end-start)/count+1;
+            dummy.position.set(p.x,p.y+.055,p.z);dummy.rotation.set(0,p.heading,0);dummy.scale.set(width,.10,piece);dummy.updateMatrix();strip.setMatrixAt(i,dummy.matrix);
+            for(const side of [-1,1]){const e=T.sample(track,track.length*(start+(end-start)*i/count),lane+side*width/2);dummy.position.set(e.x,e.y+.07,e.z);dummy.scale.set(.18,.1,piece*.55);dummy.updateMatrix();edges.setMatrixAt(i*2+(side>0?1:0),dummy.matrix);}
+          }this.environment.add(strip,edges);
         }
         if(world.mode==='sprint'){
           const finish=T.sample(track,track.length*10/12),gate=new THREE.Group();gate.position.set(finish.x,finish.y,finish.z);gate.rotation.y=finish.heading;this.environment.add(gate);
@@ -262,6 +270,19 @@
       if(ghost){group.traverse(o=>{if(o.isMesh){o.material=o.material.clone();o.material.transparent=true;o.material.opacity=.28;o.material.depthWrite=false;}});}
       group.userData={baseScale:visual.scale.clone(),bounceTime:1,lean:0,steer:0,visual,wheels,flames,sparks,balloons,shadow,ghost,classId:k.classId};this.dynamic.add(group);return group;
     }
+    makeHazard(){
+      const group=new THREE.Group(),stone=new THREE.Group();group.add(stone);stone.position.y=1.38;this.dynamic.add(group);
+      if(!this.hazardStone){this.hazardStone=new THREE.MeshStandardMaterial({color:'#5d5866',map:this.scenery.rock.map,normalMap:this.scenery.rock.normalMap,normalScale:new THREE.Vector2(1.6,1.6),roughness:.85,metalness:.05,vertexColors:true});}
+      const rock=new THREE.Mesh(this.scenery.rockGeometry(1.35),this.hazardStone);rock.castShadow=true;stone.add(rock);
+      // Glowing rune band and studs make the rolling direction readable from a distance.
+      if(!this.hazardGlow)this.hazardGlow=new THREE.MeshStandardMaterial({color:'#ff9a3c',emissive:'#ff7a1a',emissiveIntensity:1.1,roughness:.5});
+      const band=new THREE.Mesh(new THREE.TorusGeometry(1.36,.09,8,48),this.hazardGlow);band.rotation.y=Math.PI/2;stone.add(band);
+      for(let i=0;i<6;i++){const stud=new THREE.Mesh(new THREE.ConeGeometry(.16,.42,6),this.mat('#3a3440'));const a=i/6*Math.PI*2;stud.position.set(0,Math.sin(a)*1.38,Math.cos(a)*1.38);stud.rotation.x=a;stone.add(stud);}
+      const ring=new THREE.Mesh(new THREE.RingGeometry(1.8,2.4,48),new THREE.MeshBasicMaterial({color:'#ffb347',transparent:true,opacity:.6,depthWrite:false,side:THREE.DoubleSide}));
+      ring.rotation.x=-Math.PI/2;ring.position.y=.06;ring.userData.ownedMaterial=true;group.add(ring);
+      const shadow=new THREE.Mesh(new THREE.CircleGeometry(1.5,32),new THREE.MeshBasicMaterial({color:'#05070c',transparent:true,opacity:.45,depthWrite:false}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.04;shadow.userData.ownedMaterial=true;group.add(shadow);
+      group.userData={stone,ring};return group;
+    }
     initSmoke(){
       const count=320;this.smoke=Array.from({length:count},()=>({life:0}));this.smokeCursor=0;
       const geo=new THREE.BufferGeometry();for(const name of ['position','color'])geo.setAttribute(name,new THREE.BufferAttribute(new Float32Array(count*3),3));
@@ -309,16 +330,21 @@
       const needed=new Set();
       const sync=(id,type,p,color)=>{
         needed.add(id);let mesh=this.entities.get(id);
-        if(!mesh){mesh=this.mesh(type==='box'?new THREE.OctahedronGeometry(.8):type==='hazard'?new THREE.IcosahedronGeometry(1.5,0):type==='trap'?new THREE.OctahedronGeometry(.65):new THREE.SphereGeometry(.32,8,6),color,this.dynamic,true);this.entities.set(id,mesh);}
-        mesh.position.set(p.x,p.y+(type==='box'?Math.sin(time*2+p.id)*.23:0),p.z);mesh.rotation.y=time*(type==='box'?1:2);mesh.rotation.z=type==='hazard'?time:.2;
+        if(!mesh){mesh=type==='hazard'?this.makeHazard():this.mesh(type==='box'?new THREE.OctahedronGeometry(.8):type==='trap'?new THREE.OctahedronGeometry(.65):new THREE.SphereGeometry(.32,8,6),color,this.dynamic,true);this.entities.set(id,mesh);}
+        if(type==='hazard'){
+          // Roll across the road: spin follows the sideways travel, the warning ring stays flat on the asphalt.
+          mesh.position.set(p.x,p.y,p.z);mesh.rotation.y=p.heading;const u=mesh.userData;u.stone.rotation.z=-(p.lane||0)/1.35;u.stone.rotation.x=time*.15;
+          u.ring.material.opacity=.45+.25*Math.sin(time*5);return;
+        }
+        mesh.position.set(p.x,p.y+(type==='box'?Math.sin(time*2+p.id)*.23:0),p.z);mesh.rotation.y=time*(type==='box'?1:2);mesh.rotation.z=.2;
       };
       if(world.mode!=='trial'){
         for(const box of world.boxes)if(box.ready<=0)sync(`b${box.id}`,'box',box,'#d5acff');
         for(const shot of world.shots)sync(`s${shot.id}`,'shot',shot,shot.hunter?'#ffdb78':'#c6a0ff');
         for(const trap of world.traps)sync(`t${trap.id}`,'trap',trap,'#ff87cb');
-        if(world.mode!=='battle')for(let i=0;i<2;i++){const p=T.hazardPose(T.makeTrack(world.trackIndex),world.time,i);sync(`h${i}`,'hazard',{...p,y:p.y+1},'#c177e5');}
+        if(world.mode!=='battle')for(let i=0;i<2;i++){const p=T.hazardPose(T.makeTrack(world.trackIndex),world.time,i);const lane=Math.sin(world.time*1.1+i*2)*(T.makeTrack(world.trackIndex).width/2-1);sync(`h${i}`,'hazard',{...p,lane},'#c177e5');}
       }
-      for(const [id,mesh]of this.entities)if(!needed.has(id)){this.dynamic.remove(mesh);mesh.geometry.dispose();this.entities.delete(id);}
+      for(const [id,mesh]of this.entities)if(!needed.has(id)){this.dynamic.remove(mesh);if(mesh.isGroup)mesh.traverse(o=>{if(o.isMesh){o.geometry.dispose();if(o.userData.ownedMaterial)o.material.dispose();}});else mesh.geometry.dispose();this.entities.delete(id);}
     }
     render(world,playerId,dt,menu=false,ghostPose=null){
       dt=D.clamp(dt,0,.05);this.build(world);const track=T.makeTrack(world.trackIndex),ids=new Set(world.racers.map(k=>k.id));
@@ -380,7 +406,11 @@
         this.look.set(player.x-3*Math.cos(p.heading),player.y+.5,player.z+3*Math.sin(p.heading));
         this.camera.position.copy(this.follow);this.camera.lookAt(this.look);this.readyCamera=false;this.camera.fov=59;this.camera.updateProjectionMatrix();this.shake=0;
       }else{
-        const yaw=player.yaw,speed=player.speed;
+        // The camera trails a smoothed heading between where the kart points and where it is travelling,
+        // so steering taps and drifts don't whip the whole view around.
+        const speed=player.speed,travel=speed>3?Math.atan2(player.vx,player.vz):player.yaw,aim=player.yaw+D.angle(travel-player.yaw)*.45;
+        if(this.cameraYaw==null||!this.readyCamera)this.cameraYaw=aim;this.cameraYaw=D.angle(this.cameraYaw+D.angle(aim-this.cameraYaw)*(1-Math.exp(-5.5*dt)));
+        const yaw=this.cameraYaw;
         this.follow.set(player.x-Math.sin(yaw)*(6.5+speed*.045),player.y+2.65,player.z-Math.cos(yaw)*(6.5+speed*.045));
         const ahead=world.mode==='battle'?null:T.sample(track,player.s+16);
         const look=new THREE.Vector3(player.x+Math.sin(yaw)*10,Math.max(player.y-3,ahead?.y??player.y)+1.2,player.z+Math.cos(yaw)*10);
@@ -388,7 +418,8 @@
         this.cameraBase.lerp(this.follow,1-Math.exp(-(player.boost>0?4.5:7)*dt));this.camera.position.copy(this.cameraBase);this.look.lerp(look,1-Math.exp(-10*dt));this.camera.lookAt(this.look);
         if(!this.reduced){this.camera.rotateZ(player.drift?player.driftSign*.025:0);const shake=this.shake||0;this.camera.position.x+=Math.sin(now*71)*shake;this.camera.position.y+=Math.cos(now*89)*shake*.65;}
         this.shake=(this.shake||0)*Math.exp(-12*dt);
-        const fov=60+(this.reduced?0:Math.min(5,speed*.13)+D.clamp((speed*3.6-130)/35,0,1)*12+(player.boost>0?13:0));this.camera.fov+=(fov-this.camera.fov)*Math.min(1,dt*4);this.camera.updateProjectionMatrix();
+        if(this.headlight.intensity>0){this.headlight.position.set(player.x-Math.sin(yaw)*1.5,player.y+3.4,player.z-Math.cos(yaw)*1.5);this.headlight.target.position.set(player.x+Math.sin(yaw)*24,player.y-.6,player.z+Math.cos(yaw)*24);this.headlight.target.updateMatrixWorld();}
+        const fov=60+(this.reduced?0:Math.min(4,speed*.11)+D.clamp((speed*3.6-120)/40,0,1)*4+(player.boost>0?6:0));this.camera.fov+=(fov-this.camera.fov)*Math.min(1,dt*4);this.camera.updateProjectionMatrix();
       }
       this.updateParticles(dt);this.updateSmoke(dt);this.ambientWeather.update(dt,player,menu);
       for(const cloud of this.clouds){cloud.position.x=cloud.userData.origin.x+Math.sin(now*.025+cloud.userData.phase)*22;cloud.position.z=cloud.userData.origin.z+Math.cos(now*.018+cloud.userData.phase)*12;}

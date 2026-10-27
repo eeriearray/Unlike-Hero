@@ -27,9 +27,9 @@
             if(uv.x>0.&&uv.x<1.&&uv.y>0.&&uv.y<1.){float z=viewPosition(uv).z;occlusion+=step(sampleP.z+.035,z)*(1.-smoothstep(.2,1.5,abs(p.z-z)));}
           }gl_FragColor=vec4(vec3(1.-occlusion/12.*.65),1.);
         }`);this.ao.extensions.derivatives=true;
-      this.composite=material({source:{value:this.sceneTarget.texture},depthMap:{value:this.sceneTarget.depthTexture},bloom:{value:this.bloomA.texture},aoMap:{value:this.aoTarget.texture},resolution:{value:new THREE.Vector2()},inverseProjection:{value:new THREE.Matrix4()},cameraWorld:{value:new THREE.Matrix4()},previousVP:{value:new THREE.Matrix4()},strength:{value:.2},motion:{value:0},cinematic:{value:1},cameraPositionWorld:{value:new THREE.Vector3()},profileFog:{value:new THREE.Vector3(.003,5,.02)},fogTint:{value:new THREE.Color('#b99069')},grade:{value:new THREE.Vector3(1,1,1)},contrast:{value:1},saturation:{value:1},sunDirection:{value:new THREE.Vector3()},sunTint:{value:new THREE.Color()},sunScreen:{value:new THREE.Vector3()},rayStrength:{value:0},reflectionAmount:{value:0},projection:{value:new THREE.Matrix4()},cloudAmount:{value:0},weatherTime:{value:0}},`
+      this.composite=material({source:{value:this.sceneTarget.texture},depthMap:{value:this.sceneTarget.depthTexture},bloom:{value:this.bloomA.texture},aoMap:{value:this.aoTarget.texture},resolution:{value:new THREE.Vector2()},inverseProjection:{value:new THREE.Matrix4()},cameraWorld:{value:new THREE.Matrix4()},previousVP:{value:new THREE.Matrix4()},strength:{value:.2},motion:{value:0},cinematic:{value:1},cameraPositionWorld:{value:new THREE.Vector3()},profileFog:{value:new THREE.Vector3(.003,5,.02)},fogTint:{value:new THREE.Color('#b99069')},grade:{value:new THREE.Vector3(1,1,1)},contrast:{value:1},shadowLift:{value:0},saturation:{value:1},sunDirection:{value:new THREE.Vector3()},sunTint:{value:new THREE.Color()},sunScreen:{value:new THREE.Vector3()},rayStrength:{value:0},reflectionAmount:{value:0},projection:{value:new THREE.Matrix4()},cloudAmount:{value:0},weatherTime:{value:0}},`
         varying vec2 vUv;uniform sampler2D source,bloom,aoMap;uniform vec2 resolution;uniform mat4 cameraWorld,previousVP;uniform vec3 cameraPositionWorld;uniform float strength,motion,cinematic;${depthCode}
-        uniform vec3 profileFog,fogTint,grade,sunDirection,sunTint,sunScreen;uniform float contrast,saturation,rayStrength,reflectionAmount,cloudAmount,weatherTime;uniform mat4 projection;
+        uniform vec3 profileFog,fogTint,grade,sunDirection,sunTint,sunScreen;uniform float shadowLift,contrast,saturation,rayStrength,reflectionAmount,cloudAmount,weatherTime;uniform mat4 projection;
         float hash(vec3 p){return fract(sin(dot(p,vec3(12.9898,78.233,37.719)))*43758.5453);}
         float noise3(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(mix(hash(i),hash(i+vec3(1,0,0)),f.x),mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);}
 
@@ -87,6 +87,8 @@
           }
           c+=texture2D(bloom,vUv).rgb*strength;
           float luma=dot(c,vec3(.2126,.7152,.0722));c=mix(vec3(luma),c,saturation)*grade;c=pow(max(c,vec3(0.)),vec3(contrast));
+          // Lift the darkest tones so road texture and hazards stay readable in night shadows.
+          c+=shadowLift*sqrt(c)*.16*(1.-smoothstep(.02,.3,c));
           gl_FragColor=vec4(c,1.);
           #include <tonemapping_fragment>
           #include <encodings_fragment>
@@ -96,7 +98,7 @@
     }
     setProfile(profile){
       this.profile=profile;this.resetHistory=true;if(!this.enabled)return;const a=profile.atmosphere,u=this.composite.uniforms;
-      u.profileFog.value.set(a.density,a.height,a.falloff);u.fogTint.value.set(a.color);u.grade.value.set(...a.grade);u.contrast.value=a.contrast;u.saturation.value=a.saturation;u.sunDirection.value.set(...profile.sky.sun).normalize();u.sunTint.value.set(profile.light.color);
+      u.profileFog.value.set(a.density,a.height,a.falloff);u.fogTint.value.set(a.color);u.grade.value.set(...a.grade);u.contrast.value=a.contrast;u.shadowLift.value=profile.light.intensity<2?2.2:.4;u.saturation.value=a.saturation;u.sunDirection.value.set(...profile.sky.sun).normalize();u.sunTint.value.set(profile.light.color);
     }
     resize(w,h){if(!this.enabled)return;this.sceneTarget.setSize(w,h);this.bloomA.setSize(Math.max(1,Math.ceil(w/4)),Math.max(1,Math.ceil(h/4)));this.bloomB.setSize(this.bloomA.width,this.bloomA.height);this.aoTarget.setSize(Math.max(1,Math.ceil(w/2)),Math.max(1,Math.ceil(h/2)));this.composite.uniforms.resolution.value.set(w,h);this.resetHistory=true;}
     pass(material,target){this.quad.material=material;this.renderer.setRenderTarget(target);this.renderer.render(this.scene,this.camera);}
