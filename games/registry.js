@@ -44,6 +44,44 @@ window.GAME_REGISTRY = [
     "path": "games/casino/"
   },
   {
+    "id": "crownfall-kart",
+    "title": "Crownfall Kart",
+    "tagline": "Figure-eight skybridges, fortress switchbacks and a sixty-metre spiral. Drift, jump and boost through short cursed-kart sprints with a layered synth soundtrack.",
+    "version": "1.2.0",
+    "sdk": "1.x",
+    "entry": "index.html",
+    "server": "server/index.mjs",
+    "thumbnail": "thumbnail.svg",
+    "accent": "#d6ad77",
+    "players": {
+      "min": 1,
+      "max": 8
+    },
+    "multiplayer": {
+      "style": "competitive, server-authoritative rooms",
+      "sameDevice": false,
+      "transports": [
+        "server"
+      ],
+      "notes": "Solo with AI works offline. Online races, Grand Prix and balloon battle use the game's WebSocket server loaded by npm start. Empty seats are AI. Time trials are solo with a locally saved personal-best ghost."
+    },
+    "tags": [
+      "racing",
+      "arcade",
+      "3D",
+      "pvp",
+      "drifting",
+      "mobile",
+      "dark fantasy"
+    ],
+    "requires": [
+      "WebGL",
+      "npm start for online rooms"
+    ],
+    "status": "playable",
+    "path": "games/crownfall-kart/"
+  },
+  {
     "id": "dragon-clash",
     "title": "Dragon Clash",
     "tagline": "A 2D dragon platform fighter. Forge your own dragon on a 100-point budget, then knock rivals off the Spire in 1v1, 2v2, 3v3 or a tournament.",
