@@ -671,11 +671,10 @@
       for(const side of [-1,1]){
         const grip=add(new THREE.CapsuleGeometry(.03,.1,6,12),kit.suede,side*.142,-.002,0,1,1,1,spin);grip.rotation.z=side*.14;
         const paddle=add(this.unitBox,kit.carbon,side*.11,.045,.032,.08,.055,.006,spin);paddle.rotation.z=side*-.25;
-        // Gloved hands wrap the grips, thumbs resting on the face, sleeves running back toward the seat.
+        // Gloved hands wrap the grips with thumbs on the face. Only short cuffs: arms would swing into view as the wheel turns.
         const palm=add(new THREE.SphereGeometry(.042,14,10),kit.glove,side*.148,.004,-.012,1,1.3,.95,spin);palm.rotation.z=side*.14;
         const thumb=add(new THREE.CapsuleGeometry(.012,.032,4,8),kit.glove,side*.112,.03,face-.006,1,1,1,spin);thumb.rotation.z=side*.95;
-        add(this.unitBox,trim,side*.156,-.05,-.03,.07,.02,.07,spin);
-        tube([side*.158,-.055,-.035],[side*.22,-.17,-.26],.034,trim,spin,12);
+        tube([side*.15,-.03,-.018],[side*.158,-.062,-.04],.03,kit.glove,spin,12);
         // Three buttons on each side of the screen.
         (side<0?['#e8463c','#f2c230','#3d8bff']:['#41d17a','#f4f4f4','#ff8a2a']).forEach((color,i)=>{const button=add(new THREE.CylinderGeometry(.0085,.0085,.008,14),this.mat(color,i===0),side*.09,.035-i*.028,face,1,1,1,spin);button.rotation.x=Math.PI/2;});
         const rotary=add(new THREE.CylinderGeometry(.013,.013,.014,16),metal,side*.042,-.044,face,1,1,1,spin);rotary.rotation.x=Math.PI/2;
@@ -741,7 +740,7 @@
       this.camera.fov=snap?fov:this.camera.fov+(fov-this.camera.fov)*Math.min(1,dt*(firstPerson?6:4));this.camera.updateProjectionMatrix();
       const yaw=this.cameraYaw;
       if(this.headlight.intensity>0){this.headlight.position.set(player.x-Math.sin(yaw)*1.5,player.y+3.4,player.z-Math.cos(yaw)*1.5);this.headlight.target.position.set(player.x+Math.sin(yaw)*24,player.y-.6,player.z+Math.cos(yaw)*24);this.headlight.target.updateMatrixWorld();}
-      if(mesh?.userData.cockpit?.group.visible){mesh.userData.cockpit.spin.rotation.z=D.clamp(mesh.userData.steer*2.2,-1.5,1.5);this.drawDash(mesh.userData.cockpit,player,now);}
+      if(mesh?.userData.cockpit?.group.visible){mesh.userData.cockpit.spin.rotation.z=D.clamp(mesh.userData.steer*1.6,-1,1);this.drawDash(mesh.userData.cockpit,player,now);}
     }
     chaseCamera(world,track,player,mode,yawRate,acceleration,dt,now,shot,snap){
       const finished=shot==='finish';
