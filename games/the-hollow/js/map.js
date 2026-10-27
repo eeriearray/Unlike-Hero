@@ -86,7 +86,7 @@
       var state = isMe ? 'here' : danger ? 'danger' : lg ? 'go' : st.v ? 'seen' : 'new';
       var ring = { here: '#e6c681', danger: '#d8817d', go: '#8dbfb1', seen: '#8b9896', new: '#647577' }[state];
       out += '<g class="node st-' + state + (isSel ? ' sel' : '') + '" tabindex="0" role="button" data-act="selnode" data-loc="' + id + '" transform="translate(' + l.x + ' ' + l.y + ')" aria-label="' + esc(l.name + ', ' + ({ here: 'you are here', danger: 'dangerous', go: 'you can go there', seen: 'visited', new: 'unexplored' })[state]) + '"><circle r="' + (r + 16) + '" fill="transparent"/>';
-      if (v.opening && !v.opening.complete && v.opening.target === id) out += '<path class="objective-beacon" d="M-5 -43L0 -50L5 -43L0 -36Z" fill="#e6c681"/><text class="objective-label" y="-58" text-anchor="middle">NEXT CLUE</text>';
+      if (v.opening && v.opening.id !== 'decision' && v.opening.target === id) out += '<path class="objective-beacon" d="M-5 -43L0 -50L5 -43L0 -36Z" fill="#e6c681"/><text class="objective-label" y="-58" text-anchor="middle">NEXT CLUE</text>';
       if (isMe) out += '<circle r="' + (r + 7) + '" fill="none" stroke="#e3c680" stroke-width="2" opacity=".5"/>';
       out += '<circle class="ring" r="' + r + '" fill="url(#disc)" stroke="' + ring + '" stroke-width="' + (state === 'new' ? 2 : 3.5) + '"/>';
       out += '<svg class="location-glyph" x="-12" y="-12" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="' + ring + '" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="' + A.path(l.glyph || 'keyhole') + '"/></svg>';

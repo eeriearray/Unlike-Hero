@@ -26,7 +26,7 @@
     ['foyer', 'library'], ['foyer', 'mirror'], ['library', 'mirror'], ['library', 'observatory'], ['mirror', 'treasury'], ['foyer', 'corridor'], ['treasury', 'blackmarket'],
     ['foyer', 'blackmarket', { type: 'locked', label: 'The cellar door', ways: [
       { id: 'pay', label: 'Pay the doorkeeper 2 Silver', cost: { silver: 2 } },
-      { id: 'pick', label: 'Pick the cellar lock', stat: 'wit', dc: 11 },
+      { id: 'pick', label: 'Pick the cellar lock', stat: 'wit', dc: 10 },
       { id: 'key', label: 'Turn the Spirit Key', item: 'spirit_key', cost: { san: 1 } }] }],
     ['observatory', 'ritual', { type: 'locked', label: 'The star-door', ways: [
       { id: 'lens', label: 'Fit the Star Lens', item: 'star_lens' },
@@ -57,10 +57,12 @@
       { id: 'name', label: 'Speak the bell\'s name', flag: 'bell_named' },
       { id: 'wkey', label: 'Turn the Warden\'s Key', item: 'wardens_key' },
       { id: 'key', label: 'Turn the Spirit Key', item: 'spirit_key', cost: { san: 1 } },
-      { id: 'force', label: 'Force the door', stat: 'might', dc: 17 }] }],
+      { id: 'recite', label: 'Recite the names from the empty graves', stat: 'fate', dc: 11 },
+      { id: 'force', label: 'Force the door', stat: 'might', dc: 14 }] }],
     ['blackmarket', 'ossuary', { type: 'locked', label: 'The cellar stair', ways: [
-      { id: 'pay', label: 'Pay 4 Silver to the stair-keeper', cost: { silver: 4 } },
-      { id: 'force', label: 'Force the cellar stair', stat: 'might', dc: 14 },
+      { id: 'pay', label: 'Pay 3 Silver to the stair-keeper', cost: { silver: 3 } },
+      { id: 'force', label: 'Force the cellar stair', stat: 'might', dc: 12 },
+      { id: 'agreement', label: 'Show the stair-keeper the bell’s transfer agreement', flag: 'trail_agreement' },
       { id: 'key', label: 'Turn the Spirit Key', item: 'spirit_key', cost: { san: 1 } }] }],
 
     // The Heart of the Hollow

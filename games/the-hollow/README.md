@@ -14,6 +14,12 @@ The opening now ties a personal warning to the removal records, the empty graves
 
 A dismissible expedition letter opens as play begins after character selection. It explains the goal, scene interaction, costs and dice, health and sanity, and solo or party turn pacing. Close it with ×, Escape or **Fold the letter**, and reopen it under **How this works**.
 
+## The trail after the village
+
+When the opening ends, guidance continues as a four-step trail: find the magistrate's account in the Library, go down through the Black Market cellar to the Ossuary, pass the Nameless Door, and reach the Heart. Each step keeps a single **Next step** card, a map marker and a highlighted road. If a locked door is on the way, the travel panel shows it first, with every way to open it. The rest of the map stays open, and a step also completes when anyone reaches its place another way. Trail checks advance the story even when they fail. Ghost companions follow the same trail.
+
+Difficulty was eased for the same reason: the Haunting Clock runs about 20% slower, the cellar stair and Nameless Door have easier ways through, and opening a door no longer requires closing the place's encounter first. In 240 simulated ghost-hand games, the full or partial win rate rose from about 1% to about 48%.
+
 ## Field atlas
 
 The map uses dark contour terrain, distinct location glyphs, readable serif labels, and a gold next-clue marker. Open travel routes are pale green; locked, hidden and guarded routes retain separate symbols. Discovered places fit the viewport, with pan, zoom and party markers still available. Locations and roads come from the authoritative player view.

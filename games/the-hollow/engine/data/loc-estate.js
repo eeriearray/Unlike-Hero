@@ -32,7 +32,7 @@
       { id: 'desk', label: 'Search the reading desk', stat: 'wit', dc: 11, once: 'party', retry: 1, stakes: 'Fail: the diary writes back.',
         ok: { t: 'A diary in a steady hand. "We voted. Eighty to seventy. The bell was to be the price, and the village the receipt."', clue: 'diary', xp: 1 },
         fail: { t: 'The pen on the desk writes your name in the diary. It is a good hand. Better than yours.', san: -1, flag: 'name_written' } },
-      { id: 'falsebottom', label: 'Work the false bottom of the desk', hidden: true, stat: 'wit', dc: 13, once: 'party', retry: 1, stakes: 'Fail: a spring needle.',
+      { id: 'falsebottom', label: 'Work the false bottom of the desk', hidden: true, trail: true, stat: 'wit', dc: 13, once: 'party', retry: 1, stakes: 'Fail: a spring needle.',
         ok: { t: 'A sheet of salt-white vellum. The Rite of Silence, in the founder\'s own hand: speak the name it was cast for, and each name it has taken.', clue: 'silence_rite', xp: 2 },
         fail: { t: 'A needle takes a bead of blood, and the page that should be here is not.', vit: -1, bleed: true } },
       { id: 'weepingeye', label: 'Take the glass eye from the librarian\'s skull', stat: 'wit', dc: 12, once: 'party', retry: 1, hidden: true, stakes: 'Fail: the librarian objects.',

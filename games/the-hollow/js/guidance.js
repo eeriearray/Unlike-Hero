@@ -13,7 +13,7 @@
     if (enc && (enc.kind === 'enemy' || enc.kind === 'boss') && !enc.over) return 'Danger blocks your way. Pick a response below, review its risk, then confirm. Choose Flee to attempt an escape.';
     if (enc && enc.over) return 'Choose Continue to close this encounter, then explore or travel.';
     if (v.me.loc === 'heart_chamber') return 'You have reached the Heart. Open its encounter and propose the bell’s fate.';
-    if (v.opening && (!v.opening.complete || ['square', 'chapel', 'graveyard', 'belltower'].indexOf(v.me.loc) >= 0)) return v.opening.hint;
+    if (v.opening && v.opening.id !== 'decision') return v.opening.hint;
     if (v.me.loc === 'square') {
       var board = options.find(function (o) { return o.id === 'board' && o.state === 'ok'; });
       if (board) return 'Start with “Read the notice board” below. Review the odds, then roll to look for your first clue.';
@@ -27,30 +27,34 @@
   function recommend(v) {
     if (!v.me || v.me.status !== 'alive' || v.game.ap < 1 || v.me.pendingLevels || v.vote || (v.enc && (v.enc.hold || v.enc.kind !== 'loc'))) return null;
     var o = v.opening;
-    if (!o || o.complete) return null;
+    if (!o) return null;
+    if (o.id === 'decision') return v.enc ? null : { k: 'act', id: 'interact' };
     if (o.target !== v.me.loc) return { k: 'act', id: 'travel' };
+    if (o.complete && !(o.opts && o.opts.length)) return null;
     if (!v.enc) return { k: 'act', id: 'interact' };
+    if (o.complete) { var t = o.opts.find(function (id) { return (v.enc.options || []).some(function (x) { return x.id === id && x.state === 'ok'; }); }); return t ? { k: 'opt', id: t } : null; }
     var ids = { arrival: ['board'], record: ['vestry'], route: ['headstones'], enter: ['maintenance', 'force_entry'], frame: ['expertise', 'frame'], response: ['muffle', 'answer_echo'] }[o.id] || [];
     var choice = ids.find(function (id) { return (v.enc.options || []).some(function (x) { return x.id === id && x.state === 'ok'; }); });
     return choice ? { k: 'opt', id: choice } : null;
   }
   function instruction(v) {
-    var o = v.opening, guided = o && !o.complete;
+    var o = v.opening, guided = o && o.id !== 'decision';
     var hint = next(v);
     if (v.game.active !== v.you) hint = 'Your companion is acting. Watch their discoveries; your next step will appear on your turn.';
     else if (guided && v.game.ap > 0 && !v.me.pendingLevels && !v.vote && (!v.enc || (v.enc.kind === 'loc' && !v.enc.hold))) {
-      var names = {square:'the Silent Square',chapel:'the Chapel',graveyard:'the Graveyard',belltower:'the Bell Tower'};
-      if (o.target !== v.me.loc) hint = 'Choose Travel, then go to ' + (names[o.nextTarget || o.target] || o.nextTarget || o.target) + (o.nextTarget && o.nextTarget !== o.target ? ' on the way to ' + (names[o.target] || o.target) : '') + '.';
+      var cat = UI.S && UI.S.cat && UI.S.cat.locations || {}, fixed = { square: 'the Silent Square', chapel: 'the Chapel', graveyard: 'the Graveyard', belltower: 'the Bell Tower' };
+      var names = function (id) { return fixed[id] || (cat[id] ? 'the ' + cat[id].name.replace(/^The /, '') : id); };
+      if (o.target !== v.me.loc) hint = 'Choose Travel, then go to ' + names(o.nextTarget || o.target) + (o.nextTarget && o.nextTarget !== o.target ? ' on the way to ' + names(o.target) : '') + '.' + (o.complete ? ' ' + o.hint : '');
       else if (!v.enc) hint = 'Click a marked object in the scene to examine it. You can also use the cards below.';
       else if (o.id === 'arrival') hint = 'Click “Read the notice board” in the scene, then Roll the D20. Even a failed roll can reveal the way forward.';
     }
     return hint;
   }
   function mission(v) {
-    var o = v.opening, guided = o && !o.complete;
-    var steps = ['arrival', 'record', 'route', 'enter', 'frame', 'response'], step = guided ? steps.indexOf(o.id) + 1 : 0;
+    var o = v.opening;
     var hint = instruction(v);
-    return '<section class="mission-focus" aria-label="Expedition objective"><span class="guide-label">Shared expedition objective</span><h2>' + esc(o ? o.title : 'Reach the Heart and decide the bell’s fate') + '</h2><details class="mission-context"><summary>Why this matters &amp; what to do</summary><p class="mission-purpose"><b>Why now:</b> ' + esc(o ? o.context : 'The bell is taking names. Find how to stop it before the Clock fills.') + '</p><div class="mission-step"><span class="guide-label">Suggested action</span><p>' + esc(hint) + '</p></div>' + (o && o.observation ? '<details class="character-observation"><summary>Your character notices a way</summary><p>' + esc(o.observation) + '</p><p>This is an optional approach on the object; the normal check remains available.</p></details>' : '') + '</details></section>';
+    var stage = !o ? '' : !o.complete ? ' · The village' : o.step ? ' · Step ' + o.step + ' of 4' : '';
+    return '<section class="mission-focus" aria-label="Expedition objective"><span class="guide-label">Shared expedition objective' + stage + '</span><h2>' + esc(o ? o.title : 'Reach the Heart and decide the bell’s fate') + '</h2><details class="mission-context"><summary>Why this matters &amp; what to do</summary><p class="mission-purpose"><b>Why now:</b> ' + esc(o ? o.context : 'The bell is taking names. Find how to stop it before the Clock fills.') + '</p><div class="mission-step"><span class="guide-label">Suggested action</span><p>' + esc(hint) + '</p></div>' + (o && o.observation ? '<details class="character-observation"><summary>Your character notices a way</summary><p>' + esc(o.observation) + '</p><p>This is an optional approach on the object; the normal check remains available.</p></details>' : '') + '</details></section>';
 
   }
   function panel(v) {
