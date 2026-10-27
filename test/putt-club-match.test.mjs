@@ -333,6 +333,23 @@ test('awards come from real stats and are never handed out on a tie', () => {
   assert.ok(by('winner'));
 });
 
+test('bots keep to their thinking budget, take turns planning, and still all play', () => {
+  const { m } = room(1, { course: 'sunset-cove' });
+  for (let i = 0; i < 3; i++) m.addBot('p0');
+  m.botBudget = 2;
+  toPlay(m);
+  let worst = 0, overlap = 0;
+  for (let i = 0; i < 60 * 25 && m.players.some((p) => p.bot && p.strokes < 1); i++) {
+    const t0 = performance.now(); m.tick(1 / 60); worst = Math.max(worst, performance.now() - t0);
+    if (m.players.filter((p) => p.plan && !p.plan.pl.done && p.plan.pl.evaluated > 0).length > 1) overlap++;
+  }
+  for (const p of m.players.filter((q) => q.bot)) assert.ok(p.strokes >= 1, `${p.name} never shot`);
+  assert.equal(overlap, 0, 'two bots were planning at once');
+  // Loose on purpose (CI machines vary); a whole shot planned in one tick took hundreds of milliseconds.
+  assert.ok(worst < 60, `slowest tick ${worst.toFixed(1)} ms`);
+  m.freeSim();
+});
+
 test('a full casual course plays to the end with bots and supports a vote and rematch', { timeout: 120_000 }, () => {
   const { m } = room(1, { course: 'neon-underground' });
   m.addBot('p0'); m.addBot('p0');

@@ -47,8 +47,10 @@
   }
 
   /**
-   * A shot planner that can be run a few candidates at a time (so a bot never stalls a server tick).
-   * planner.step(n) evaluates up to n candidate shots; planner.done / planner.best when finished.
+   * A shot planner that can be run a little at a time (so a bot never stalls a tick or a frame).
+   * planner.step(n) evaluates up to n whole candidate shots; planner.work(deadline) runs physics steps until
+   * the clock passes deadline (ms), pausing part-way through a candidate if need be, which needs opts.sim,
+   * a private prediction world (PuttPhysics.predictSim). planner.done / planner.best when finished.
    */
   function planner(w, b, t, opts) {
     opts = opts || {};
@@ -59,22 +61,41 @@
     for (var a = 0; a < angles; a++) for (var p = 0; p < powers.length; p++) queue.push([base + (a / angles) * Math.PI * 2, powers[p]]);
     var refine = opts.refine == null ? 8 : opts.refine;
     var self = { done: false, best: null, evaluated: 0 };
-    function score(th, pw) {
-      var r = P.predict(w, b, Math.sin(th), -Math.cos(th), P.shotSpeed(pw, strength) * turbo, t, { maxT: 6, every: 1, step: 1 / 60 });
+    var PRED = { maxT: 6, every: 1, step: 1 / 60 }, job = null, cur = null;
+    function score(r) {
       if (r.result === 'cup') return -10;
       if (r.result === 'water' || r.result === 'oob') return 1e6;
       return dist(r.ball.x, r.ball.z) + (r.ball.moving ? 1.5 : 0);
     }
+    function next() {
+      if (queue.length) return queue.shift();
+      if (refine-- > 0 && self.best) return [self.best.th + (rng() - 0.5) * 0.3, Math.min(1, Math.max(0.05, self.best.power + (rng() - 0.5) * 0.18))];
+      self.done = true;
+      return null;
+    }
+    function record(c, s) {
+      self.evaluated++;
+      if (!self.best || s < self.best.score) self.best = { th: c[0], power: c[1], score: s };
+      if (s <= -10 && !queue.length) self.done = true;
+    }
     self.step = function (n) {
       while (n-- > 0 && !self.done) {
-        var c;
-        if (queue.length) c = queue.shift();
-        else if (refine-- > 0 && self.best) c = [self.best.th + (rng() - 0.5) * 0.3, Math.min(1, Math.max(0.05, self.best.power + (rng() - 0.5) * 0.18))];
-        else { self.done = true; break; }
-        var s = score(c[0], c[1]);
-        self.evaluated++;
-        if (!self.best || s < self.best.score) self.best = { th: c[0], power: c[1], score: s };
-        if (s <= -10 && !queue.length) self.done = true;
+        var c = next();
+        if (!c) break;
+        record(c, score(P.predict(w, b, Math.sin(c[0]), -Math.cos(c[0]), P.shotSpeed(c[1], strength) * turbo, t, PRED)));
+      }
+      return self.done;
+    };
+    self.work = function (deadline) {
+      while (!self.done) {
+        if (!job) {
+          cur = next();
+          if (!cur) break;
+          job = P.predictBegin(opts.sim, b, Math.sin(cur[0]), -Math.cos(cur[0]), P.shotSpeed(cur[1], strength) * turbo, t, PRED);
+        }
+        // A couple of dozen steps is a fraction of a millisecond, so the deadline is kept closely.
+        if (P.predictRun(job, 24)) { record(cur, score(job.out)); job = null; }
+        if (now() >= deadline) break;
       }
       return self.done;
     };
@@ -106,16 +127,23 @@
       }
       var turbo = m.hasEffect(p, 'turbo') ? Powerups.BY_ID.turbo.shotPower : 1;
       var at = m.t + 1.4 + m.rng() * 1.4;
-      p.plan = { at: at, pl: planner(m.world, p.ball, at, { rng: m.rng, strength: { soft: 0.82, normal: 1, strong: 1.18 }[m.settings.strength], turbo: turbo }) };
+      // Each bot predicts in its own world, so its half-finished predictions survive between ticks.
+      if (!p.predSim || p.predSim.w !== m.world || !p.predSim.world) { freePlanner(p); p.predSim = P.predictSim(m.world); }
+      p.plan = { at: at, pl: planner(m.world, p.ball, at, { rng: m.rng, strength: { soft: 0.82, normal: 1, strong: 1.18 }[m.settings.strength], turbo: turbo, sim: p.predSim, angles: 16, powers: [0.2, 0.42, 0.66, 0.92] }) };
       return;
     }
     var plan = p.plan;
     if (!plan.pl.done) {
-      // Each match shares a few milliseconds of planning per tick between its bots.
-      var budget = m.botBudget == null ? 4 : m.botBudget, start = now(), n = 0;
+      // Each match gets a few milliseconds of planning per tick and keeps to it: a prediction that runs over
+      // pauses and carries on next tick, so ticks (and frames) stay smooth. Bots take turns with the whole
+      // budget, so the first one is ready quickly instead of every bot crawling along at once.
+      var budget = m.botBudget == null ? 4 : m.botBudget, q = m.thinking;
+      if (q && q !== p && q.plan && !q.plan.pl.done && !q.finished && m.players.indexOf(q) >= 0) return;
+      m.thinking = p;
       if (budget === Infinity) plan.pl.step(1e9);
-      else do { plan.pl.step(1); n++; } while (!plan.pl.done && now() - start < budget / Math.max(1, m.botCount || 1));
+      else plan.pl.work(now() + budget);
       if (!plan.pl.done) return;
+      m.thinking = null;
     }
     if (m.t < plan.at) return;
     p.plan = null;
@@ -128,5 +156,11 @@
     m.command(p.id, { type: 'shoot', dx: Math.sin(th) * flip, dz: -Math.cos(th) * flip, power: pw });
   }
 
-  return { distanceField: distanceField, planner: planner, chooseShot: chooseShot, think: think };
+  /** Free a bot's private prediction world (new hole, bot removed, match over). */
+  function freePlanner(p) {
+    if (p.predSim) { P.freeSim(p.predSim); p.predSim = null; }
+    p.plan = null;
+  }
+
+  return { distanceField: distanceField, planner: planner, chooseShot: chooseShot, think: think, freePlanner: freePlanner };
 });

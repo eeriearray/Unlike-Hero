@@ -949,9 +949,25 @@
    * simulation per hole, so it is exactly the server's physics. Returns { points, result, ball }.
    */
   function predict(w, b, dx, dz, speed, t0, opts) {
-    var maxT = (opts && opts.maxT) || 3, every = (opts && opts.every) || 1 / 30, step = (opts && opts.step) || C.DT;
     var sim = w._pred;
-    if (!sim || !sim.world) { sim = w._pred = createSim(w); sim.ball = addBall(sim, '_pred', w.tee[0], w.tee[1]); }
+    if (!sim || !sim.world) sim = w._pred = predictSim(w);
+    var job = predictBegin(sim, b, dx, dz, speed, t0, opts);
+    predictRun(job, Infinity);
+    return job.out;
+  }
+
+  /** A private one-ball world for predictions. Each user that pauses predictions part-way needs its own. */
+  function predictSim(w) {
+    var sim = createSim(w);
+    sim.ball = addBall(sim, '_pred', w.tee[0], w.tee[1]);
+    return sim;
+  }
+
+  /**
+   * Start a prediction that can be advanced a few physics steps at a time with predictRun, so a caller can
+   * spread one across several ticks. The sim is busy until the job is done.
+   */
+  function predictBegin(sim, b, dx, dz, speed, t0, opts) {
     var c = sim.ball;
     c.holed = false; c.body.setEnabled(true); c.frozen = false; c.wasFrozen = false; stopRide(c); c.hazard = false;
     if (c.body.bodyType() !== R.RigidBodyType.Dynamic) c.body.setBodyType(R.RigidBodyType.Dynamic, true);
@@ -961,25 +977,40 @@
     syncMods(c, 0);
     poseKinematics(sim, t0, true);
     shoot(c, dx, dz, speed);
-    var pts = [[c.x, c.y, c.z]], t = 0, next = every, result = null, bounces = 0;
-    var maxB = (opts && opts.maxBounces) || 99;
-    var ev = function (e) { if (e.type === 'wall' || e.type === 'bumper') bounces++; };
-    while (t < maxT) {
-      var r = stepSim(sim, t0 + t, step, { onEvent: ev, step: step });
-      t += step;
-      if (t >= next - 1e-9) { pts.push([c.x, c.y, c.z]); next += every; }
-      if (r.length) { result = r[0].result; pts.push([c.x, c.y, c.z]); break; }
-      if (bounces >= maxB) { pts.push([c.x, c.y, c.z]); result = 'bounce'; break; }
+    var every = (opts && opts.every) || 1 / 30;
+    var job = {
+      sim: sim, t0: t0, t: 0, next: every, every: every, bounces: 0, done: false, out: null,
+      maxT: (opts && opts.maxT) || 3, step: (opts && opts.step) || C.DT, maxB: (opts && opts.maxBounces) || 99,
+      pts: [[c.x, c.y, c.z]], result: null
+    };
+    job.ev = function (e) { if (e.type === 'wall' || e.type === 'bumper') job.bounces++; };
+    return job;
+  }
+
+  /** Advance a prediction by up to maxSteps physics steps. Returns true once it has finished (job.out is set). */
+  function predictRun(job, maxSteps) {
+    var c = job.sim.ball, pts = job.pts;
+    while (!job.done && maxSteps-- > 0) {
+      if (!(job.t < job.maxT)) { job.done = true; break; }
+      var r = stepSim(job.sim, job.t0 + job.t, job.step, { onEvent: job.ev, step: job.step });
+      job.t += job.step;
+      if (job.t >= job.next - 1e-9) { pts.push([c.x, c.y, c.z]); job.next += job.every; }
+      if (r.length) { job.result = r[0].result; pts.push([c.x, c.y, c.z]); job.done = true; }
+      else if (job.bounces >= job.maxB) { pts.push([c.x, c.y, c.z]); job.result = 'bounce'; job.done = true; }
     }
-    return { points: pts, result: result, ball: { x: c.x, y: c.y, z: c.z, moving: c.moving } };
+    if (job.done && !job.out) job.out = { points: pts, result: job.result, ball: { x: c.x, y: c.y, z: c.z, moving: c.moving } };
+    return job.done;
   }
 
   // ---------------------------------------------------------------- geometry queries
 
   function blocked(w, x0, z0, x1, z1, y) {
+    var lx = Math.min(x0, x1), hx = Math.max(x0, x1), lz = Math.min(z0, z1), hz = Math.max(z0, z1);
     for (var i = 0; i < w.walls.length; i++) {
       var wl = w.walls[i];
       if (wl.ledge || y >= wl.top - 0.02) continue;
+      // Cheap reject on the precomputed (padded) wall box first: the bots' distance map asks this thousands of times.
+      if (hx < wl.x0 || lx > wl.x1 || hz < wl.z0 || lz > wl.z1) continue;
       if (segsCross(x0, z0, x1, z1, wl.ax, wl.az, wl.bx, wl.bz)) return true;
     }
     return false;
@@ -1009,7 +1040,8 @@
     compileHole: compileHole, floorAt: floorAt, blocked: blocked, inPoly: inPoly, heightOn: heightOn, clamp: clamp,
     dynamicAt: dynamicAt, platformAt: platformAt, sliderAt: sliderAt, spinnerAngle: spinnerAngle, gateClosed: gateClosed,
     createSim: createSim, freeSim: freeSim, addBall: addBall, removeBall: removeBall, place: place, push: push, stopRide: stopRide,
-    shoot: shoot, wake: wake, retire: retire, stepSim: stepSim, predict: predict, shotSpeed: shotSpeed
+    shoot: shoot, wake: wake, retire: retire, stepSim: stepSim, predict: predict,
+    predictSim: predictSim, predictBegin: predictBegin, predictRun: predictRun, shotSpeed: shotSpeed
   };
   return api;
 });

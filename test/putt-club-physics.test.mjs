@@ -191,6 +191,20 @@ test('trajectory preview matches the authoritative simulation', () => {
   assert.ok(Math.hypot(pred.ball.x - real.b.x, pred.ball.z - real.b.z) < 0.05, `preview ended ${Math.hypot(pred.ball.x - real.b.x, pred.ball.z - real.b.z).toFixed(3)} away`);
 });
 
+test('a prediction paused and resumed tick by tick ends exactly where one run straight through does', () => {
+  const w = P.compileHole(hole('garden-1')); // a moving spinner, so the hole clock matters too
+  const f = P.floorAt(w, w.tee[0], w.tee[1], 50, 0), ball = { x: w.tee[0], y: f.h, z: w.tee[1], r: P.C.R };
+  const opts = { maxT: 6, every: 1, step: 1 / 60 };
+  const whole = P.predict(w, ball, 0.1, -1, 11, 2.5, opts);
+  const sim = P.predictSim(w), job = P.predictBegin(sim, ball, 0.1, -1, 11, 2.5, opts);
+  let slices = 0;
+  while (!P.predictRun(job, 7)) slices++;
+  assert.ok(slices > 3);
+  assert.equal(job.out.result, whole.result);
+  assert.equal(job.out.ball.x, whole.ball.x); assert.equal(job.out.ball.z, whole.ball.z);
+  P.freeSim(sim); P.freeSim(w._pred);
+});
+
 test('floors are one welded surface: rolling across joins never kicks the ball up or drops it through', () => {
   // Gear Gate (join at z=4) and Grand Orrery (entry lane into the arena at z=7) used to snag balls.
   for (const [id, x, z, power] of [['garden-2', -4.3, 8.4, 0.6], ['garden-6', 0, 11.4, 0.5], ['cove-1', 0, 7.5, 0.5], ['cove-3', -3.3, 7.4, 0.6]]) {
