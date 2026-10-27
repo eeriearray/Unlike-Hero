@@ -601,7 +601,7 @@
         suede:new THREE.MeshStandardMaterial({color:'#24252a',roughness:.95,metalness:0}),
         glove:new THREE.MeshStandardMaterial({color:'#1a1b1f',roughness:.7,metalness:.05}),
         foam:new THREE.MeshStandardMaterial({color:'#0d0d0f',roughness:1,metalness:0}),
-        cage:new THREE.MeshStandardMaterial({color:'#4a4e57',roughness:.38,metalness:.75})
+        cage:new THREE.MeshStandardMaterial({color:'#25272c',roughness:.65,metalness:.15})
       };
       return this.cockpitMaterials;
     }
@@ -613,19 +613,12 @@
       // A round tube between two points, used for the roll cage, pillars and the driver's arms.
       const tube=(from,to,radius,material,parent=group,segments=10)=>{a.set(...from);b.set(...to);const length=a.distanceTo(b),m=new THREE.Mesh(new THREE.CylinderGeometry(radius,radius,length,segments),material);
         m.position.copy(a).add(b).multiplyScalar(.5);m.quaternion.setFromUnitVectors(up,b.clone().sub(a).normalize());parent.add(m);return m;};
-      const joint=(p,radius,material)=>add(new THREE.SphereGeometry(radius,10,8),material,...p);
-      // Body-colour A-pillars and windscreen header follow the glazing, so the view out matches the car seen from outside.
-      for(const side of [-1,1])tube([side*.6,.39,.86],[side*.52,.87,.24],.028,trim);
-      add(this.unitBox,trim,0,.875,.24,1.08,.03,.07);
-      // Gunmetal roll cage: inner A-pillar bars, a header bar above the driver's head (clear of the windscreen), roof rails and padded X door bars.
+      // Slim dark windscreen frame: A-pillars along the glass edges and a thin header at the roof line, so nothing bright crosses the view.
       const cage=kit.cage;
-      for(const side of [-1,1]){
-        tube([side*.5,.36,.68],[side*.46,.86,.02],.02,cage);tube([side*.46,.86,.02],[side*.46,.86,-.75],.02,cage);
-        tube([side*.53,.26,.62],[side*.5,.63,-.6],.02,cage);tube([side*.53,.62,.52],[side*.5,.25,-.6],.02,cage);
-        tube([side*.525,.35,.3],[side*.505,.53,-.2],.032,kit.foam,group,12);
-        joint([side*.46,.86,.02],.026,cage);joint([side*.5,.36,.68],.026,cage);
-      }
-      tube([-.46,.86,.02],[.46,.86,.02],.02,cage);
+      for(const side of [-1,1])tube([side*.6,.39,.86],[side*.52,.87,.24],.018,cage);
+      add(this.unitBox,kit.carbon,0,.875,.24,1.08,.02,.05);
+      // Low padded side-impact bar on each door; the rest of the cage sits overhead, out of the driver's view.
+      for(const side of [-1,1])tube([side*.54,.4,.55],[side*.52,.5,-.5],.03,kit.foam,group,12);
       // Carbon door cards with a red pull strap.
       for(const side of [-1,1]){add(this.unitBox,kit.carbon,side*.61,.33,.05,.05,.32,1.3);add(this.unitBox,kit.suede,side*.6,.48,-.05,.09,.018,1.1);add(this.unitBox,this.mat('#c8261e'),side*.575,.42,.28,.012,.035,.2);}
       // Carbon dashboard with a rolled suede leading edge.

@@ -54,7 +54,8 @@
       // Sculpted fender lips, mirrors, sill, window frames and flush lamps.
       for(const z of [-1.03,1.01]){const arch=add(new THREE.TorusGeometry(.405,.048,10,40,Math.PI),paint,side*.83,-.13,z);arch.rotation.y=Math.PI/2;arch.rotation.z=Math.PI/2;}
       o.coachwork(visual,'#292a27',side*.78,-.05,0,.12,.12,2.7);
-      const mirror=add(new THREE.SphereGeometry(.12,20,12),paint,side*.81,.52,.36);mirror.scale.set(1.2,.6,1.5);
+      // Wing mirrors count as cabin parts so they hide in the cockpit view, where they read as blobs beside the driver.
+      const mirror=add(new THREE.SphereGeometry(.12,20,12),paint,side*.81,.52,.36);mirror.scale.set(1.2,.6,1.5);mirror.userData.cabin=true;
       for(const z of [-.73,.48]){const pillar=add(new THREE.CylinderGeometry(.018,.025,.42,10),paint,side*.55,.57,z);pillar.rotation.z=side*.25;pillar.rotation.x=z>0?-.6:.6;pillar.userData.cabin=true;}
       o.box(visual,side*.68,.21,1.44,.33,.06,.11,'#fff1d0',true);
       o.box(visual,side*.55,.23,-1.57,.51,.045,.05,'#ff2515',true);

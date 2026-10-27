@@ -29,7 +29,7 @@ The game defaults to a three-lap **Lap race** driven from the cockpit. Driving i
 
 | Camera | View |
 | --- | --- |
-| Cockpit (default) | Driver's seat of a race car: gunmetal roll cage with padded door bars, carbon dash and door cards, switch panel and kill switch, and a formula-style wheel held in gloved hands. The cage header sits high so the road fills the windscreen. The wheel turns with your input; its shift lights show revs (flashing blue at the limiter) or drift charge, and its screen shows gear, speed, turbo state and your item |
+| Cockpit (default) | Driver's seat of a race car: slim dark windscreen frame, padded side-impact bars, carbon dash and door cards, switch panel and kill switch, and a formula-style wheel held in gloved hands. Nothing crosses the windscreen, and the wing mirrors hide from inside, so the road fills the view. The wheel turns with your input; its shift lights show revs (flashing blue at the limiter) or drift charge, and its screen shows gear, speed, turbo state and your item |
 | Hood | Just above the bonnet, with nothing of the car in front of the road |
 
 You race in first person. Short third-person cutscenes take over at set moments and then ease back into the cockpit: a sweep around your kart during the countdown, a chase shot through ramp jumps, a pulled-back shot when you spin out, a drone shot when you fall off the road, and a slow orbit at the finish. Spectating in Battle uses the chase camera.
