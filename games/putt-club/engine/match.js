@@ -604,7 +604,7 @@
     if (p.strokes >= this.settings.maxStrokes && !p.ball.moving) {
       p.finished = true; p.status = 'maxed';
       p.ball.holed = true; // removed from play
-      if (p.ball.body) p.ball.body.setEnabled(false);
+      P.retire(p.ball);
       this.fx({ type: 'maxed', id: p.id, strokes: p.strokes });
     }
   };

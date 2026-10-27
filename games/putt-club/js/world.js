@@ -306,7 +306,8 @@
         hub.scale.set(s.hub * 2, s.top - s.h + 0.12, s.hub * 2); hub.position.y = (s.top - s.h + 0.12) / 2;
       }
       hub.castShadow = true; g.add(hub);
-      var post = new THREE.Mesh(unitCyl, kit.navy); post.scale.set(s.hub * 1.2, s.top - s.h, s.hub * 1.2); post.position.y = (s.top - s.h) / 2; g.add(post);
+      // The post is as wide as the hub the ball actually bounces off.
+      var post = new THREE.Mesh(unitCyl, kit.navy); post.scale.set(s.hub * 2, s.top - s.h, s.hub * 2); post.position.y = (s.top - s.h) / 2; g.add(post);
       group.add(g);
       return g;
     });
@@ -330,7 +331,7 @@
       var L = Math.hypot(g.bx - g.ax, g.bz - g.az), ang = -Math.atan2(g.bz - g.az, g.bx - g.ax);
       var neon = g.mat === 'neon';
       var panel = new THREE.Mesh(unitBox, neon ? new THREE.MeshBasicMaterial({ color: '#ff5d6c', transparent: true, opacity: 0.6, toneMapped: false, depthWrite: false }) : kit.brass);
-      panel.scale.set(L, g.height, neon ? 0.05 : g.thick * 2);
+      panel.scale.set(L, g.height, g.thick * 2);
       panel.position.set((g.ax + g.bx) / 2, g.h, (g.az + g.bz) / 2); panel.rotation.y = ang; panel.castShadow = !neon;
       group.add(panel);
       if (!neon) {
@@ -358,8 +359,11 @@
       var height = b.top - b.h;
       if (b.post) {
         if (b.mat === 'stone' && themeId !== 'neon') {
-          var r = PC.props.build('rock', kit, rng, { s: b.r * 1.35 });
-          r.position.y = height * 0.25; r.scale.y *= 1.4; g.add(r);
+          // One rock centred on the post and as wide as it, so the ball bounces where the rock is. (A random
+          // cluster of scenery rocks left gaps on some sides and overhung on others.)
+          var r = new THREE.Mesh(new THREE.DodecahedronGeometry(1, 0), kit.rock);
+          r.scale.set(b.r * 1.12, height * 0.75, b.r * 1.12); r.position.y = height * 0.38;
+          r.rotation.y = rng() * 6; r.castShadow = true; r.receiveShadow = true; g.add(r);
         } else {
           var p = new THREE.Mesh(unitPost, kit.metal); p.scale.set(b.r * 2, height, b.r * 2); p.position.y = height / 2; p.castShadow = true; g.add(p);
           var ring = new THREE.Mesh(unitCyl, kit.neonCyan); ring.scale.set(b.r * 2.05, 0.05, b.r * 2.05); ring.position.y = height * 0.8; g.add(ring);

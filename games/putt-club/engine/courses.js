@@ -59,7 +59,7 @@
           RR(-1.6, 3, 1.6, 9.2, 0, [0, 0, 1.3, 1.3]), S(-1.6, 0, 1.6, 3, 0.32, 0), S(-1.6, -3, 1.6, 0, 0, 0.32), RR(-1.6, -8.6, 1.6, -3, 0, [1.4, 1.4, 0, 0]),
           sand(-1.6, -5.4, -0.55, -4.1)
         ],
-        tokens: [[-0.8, 1.6]],
+        tokens: [[-0.8, 4.4]],
         decor: [{ kind: 'palm', at: [-3.2, 5], s: 1.1 }, { kind: 'palm', at: [3.4, -2], s: 1.25, rot: 2 }, { kind: 'umbrella', at: [3.0, 6.5] }, { kind: 'rock', at: [-2.8, -6], s: 1.2 }, { kind: 'starfish', at: [2.4, -7.6] }]
       },
       {
@@ -119,7 +119,7 @@
           sand(-1.5, -14.2, 1, -12.6, 1.2)
         ],
         bumpers: [{ at: [-1.2, -1.8], r: 0.45, post: true, e: 0.6, kick: 0, mat: 'stone', h: 0.6 }],
-        tokens: [[-4.2, -6.4], [0.5, -1.8], [-3.5, -12]],
+        tokens: [[-4.4, -1.6], [0.5, -1.8], [-3.5, -12]],
         decor: [{ kind: 'lighthouse', at: [7.4, -13] }, { kind: 'palm', at: [-7.6, -1], s: 1.2 }, { kind: 'palm', at: [-2, 5], s: 1.1 }, { kind: 'rock', at: [-1, -6.5], s: 1.6 }, { kind: 'boat', at: [8.5, 3], rot: -0.4 }, { kind: 'umbrella', at: [-1.2, 8.6] }]
       }
     ]
@@ -176,7 +176,7 @@
         sliders: [{ from: [-1.2, 2], to: [1.2, 2], len: 1.5, angle: 0, period: 3.2 }, { from: [1.2, -1.6], to: [-1.2, -1.6], len: 1.5, angle: 0, period: 3.2, phase: 0.25 }],
         gates: [{ a: [-2, -10.2], b: [2, -10.2], h: 0.8, period: 4.5, open: 0.5 }],
         bumpers: [{ at: [1.2, -12.4], r: 0.45, kick: 2.4, h: 0.8 }, { at: [4, -11.4], r: 0.45, kick: 2.4, h: 0.8 }],
-        tokens: [[0, 6], [0, -7], [4.4, -13]],
+        tokens: [[0, 6], [0, -3], [4.4, -13]],
         decor: [{ kind: 'gear', at: [-4, 0], s: 1.8 }, { kind: 'gear', at: [4.2, 3], s: 1.2 }, { kind: 'topiary', at: [-7.4, -12] }, { kind: 'hedgeBall', at: [3.6, 9] }, { kind: 'lamp', at: [-3.4, 10] }, { kind: 'flowers', at: [3.6, -6] }]
       },
       {
@@ -254,7 +254,7 @@
         gates: [{ a: [-5, -7.6], b: [5, -7.6], h: 1.0, period: 4, open: 0.45, mat: 'neon' }],
         magnets: [{ at: [3.6, -10.6], r: 2, k: -5, h: 1 }],
         bumpers: [{ at: [-2.2, -10.4], r: 0.4, kick: 2.6, h: 1.0 }, { at: [2.2, -10.4], r: 0.4, kick: 2.6, h: 1.0 }],
-        tokens: [[3.75, 2], [-1.6, -4.5], [0, -11.2]],
+        tokens: [[3.75, 7.6], [-1.6, -4.5], [0, -11.2]],
         decor: [{ kind: 'core', at: [0, -14.5] }, { kind: 'pillar', at: [-4.4, 10] }, { kind: 'pillar', at: [-6.8, -10] }, { kind: 'crystal', at: [-4.2, 0], s: 1.4 }, { kind: 'cables', at: [0, 4.6] }, { kind: 'screen', at: [7.4, -2], rot: -1.57 }]
       }
     ]

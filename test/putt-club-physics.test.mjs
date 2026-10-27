@@ -76,6 +76,27 @@ test('the cup catches a slow ball and lets a fast one lip out', () => {
   assert.ok(fast.events.some((e) => e.type === 'lip'));
 });
 
+test('a holed or retired ball never disturbs the others (its spin used to leak into the next putt)', () => {
+  for (const how of ['cup', 'retire']) {
+    const { sim, b: a } = setup('cove-1', 0, -4.6);
+    const b = P.addBall(sim, 'b', -1, 5);
+    let t = 0;
+    if (how === 'cup') { P.shoot(a, 0, -1, 4.5); while (!a.holed && t < 10) { P.stepSim(sim, t, 1 / 60); t += 1 / 60; } }
+    else { P.shoot(a, 0, 1, 6); run(sim, 0.3); a.holed = true; P.retire(a); }
+    assert.ok(a.holed, how);
+    // b rolls and settles (as it would after an earlier putt), then is putted sideways.
+    P.shoot(b, 0, -1, 3); while (b.moving && t < 20) { P.stepSim(sim, t, 1 / 60); t += 1 / 60; }
+    P.shoot(b, 1, 0, 6);
+    for (let i = 0; i < 10; i++) {
+      P.stepSim(sim, t, 1 / 120, { step: 1 / 120 }); t += 1 / 120;
+      const s = b.body.angvel();
+      assert.ok(Math.hypot(s.x - b.vz / b.r, s.y, s.z + b.vx / b.r) < 0.5, `${how}: putt lost its roll (spin ${JSON.stringify(s)})`);
+    }
+    assert.ok(b.vx > 5.5, `${how}: putt braked to ${b.vx.toFixed(2)}`);
+    P.freeSim(sim);
+  }
+});
+
 test('sand grabs the ball, metal lets it run', () => {
   const mk = (mat) => ({ id: 's' + mat, par: 2, tee: [0, 4], cup: [0, -40], floors: [{ rect: [-2, -50, 2, 6], h: 0, mat }] });
   const a = roll(mk('sand'), 0, 0.6), b = roll(mk('metal'), 0, 0.6);
