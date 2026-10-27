@@ -20,7 +20,8 @@ export const RULES = {
  galleonAt: [50, 118], galleonHull: 300, galleonGold: 60,
  powerEvery: 11, maxPowers: 3,
  powerTime: 12,
- whirls: 2, whirlRadius: 24, whirlCore: 6, whirlGrind: 26, // hull per second in the core
+ whirls: 2, whirlRadius: 26, whirlCore: 7, whirlGrind: 60, // hull per second in the eye
+ whirlSwallow: 3.5, // closer than this to the centre and the sea takes you
 };
 export const POWERS = {
  triple: { name: 'Big Guns', note: '5-ball broadsides' },
@@ -338,11 +339,14 @@ function stepWhirls(w, dt) {
    const dx = h.x - s.x, dz = h.z - s.z, d = Math.hypot(dx, dz);
    if (d > h.r) { if (s.whirled === n) s.whirled = -1; continue; }
    if (s.whirled !== n) { s.whirled = n; emit(w, 'whirlpool', { id: s.id, x: s.x, z: s.z }); }
-   const k = 1 - d / h.r, grip = s.boost > 0 ? 0.45 : 1, nx = dx / (d || 1), nz = dz / (d || 1);
-   const pull = 11 * Math.pow(k, 1.2) * grip, swirl = 13 * k * grip * h.dir;
+   // The pull grows steeply toward the eye: full sail escapes the rim, only a boost escapes the middle.
+   const k = 1 - d / h.r, grip = s.boost > 0 ? 0.4 : 1, nx = dx / (d || 1), nz = dz / (d || 1);
+   const pull = 17 * Math.pow(k, 0.8) * grip, swirl = 14 * k * grip * h.dir;
    s.x += (nx * pull - nz * swirl) * dt; s.z += (nz * pull + nx * swirl) * dt;
    s.a += h.dir * k * 1.3 * grip * dt;
-   if (d < RULES.whirlCore) { s.hp -= RULES.whirlGrind * dt; s.lastHitBy = s.lastHitBy || 'whirlpool'; if (s.hp <= 0 && s.shield <= 0) sink(w, s, 'whirlpool'); else if (s.hp <= 0) s.hp = 1; }
+   // Spawn protection does not save you from the sea itself.
+   s.hp -= (d < RULES.whirlCore ? RULES.whirlGrind : 8 * k) * dt;
+   if (d < RULES.whirlSwallow || s.hp <= 0) { sink(w, s, 'whirlpool'); s.whirled = -1; }
   }
   for (const l of w.loot) {
    const dx = h.x - l.x, dz = h.z - l.z, d = Math.hypot(dx, dz);

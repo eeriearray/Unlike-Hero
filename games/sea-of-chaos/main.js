@@ -150,8 +150,8 @@ function handleEvents(events = []) {
    case 'sink': {
     sound('sink', at.pan, Math.max(0.4, at.vol));
     const victim = world.ships.find(s => s.id === e.id);
-    feed(`${who(e.by)} sank ${who(e.id)}${e.gold ? ` · <span style="color:#ffd34d">◉ ${e.gold} spilled</span>` : ''}`);
-    if (mine) { banner('SUNK!', e.gold ? `Your ${e.gold} gold spilled into the sea` : 'Back afloat in a moment', 2.4); sound('defeat'); }
+    feed(e.by === 'whirlpool' ? `${who(e.id)} ${mine ? 'were' : 'was'} swallowed by ${who('whirlpool')}${e.gold ? ` · <span style="color:#ffd34d">◉ ${e.gold} swirling in it</span>` : ''}` : `${who(e.by)} sank ${who(e.id)}${e.gold ? ` · <span style="color:#ffd34d">◉ ${e.gold} spilled</span>` : ''}`);
+    if (mine) { banner(e.by === 'whirlpool' ? 'SWALLOWED!' : 'SUNK!', e.by === 'whirlpool' ? 'The whirlpool dragged you under' : e.gold ? `Your ${e.gold} gold spilled into the sea` : 'Back afloat in a moment', 2.4); sound(e.by === 'whirlpool' ? 'whirlpool' : 'defeat'); }
     else if (e.by === myId) banner(`You sank ${esc(victim?.name || 'them')}!`, 'Scoop up the gold they dropped', 2.2);
     break;
    }
@@ -169,7 +169,7 @@ function handleEvents(events = []) {
    case 'galleonescaped': feed('The galleon escaped with its gold'); break;
    case 'final': sound('sudden'); banner('FINAL 30 SECONDS', 'Banked gold now counts DOUBLE', 3); break;
    case 'tower': if (me && e.team !== me.team && at.vol > 0) sound('sentry', 0, 0.7); break;
-   case 'whirlpool': if (mine) { sound('whirlpool'); banner('WHIRLPOOL!', TOUCH ? 'Tap Boost to break free' : 'Boost (Shift) to break free', 1.6); } else if (at.vol > 0.3) sound('whirlpool', at.pan, at.vol * 0.5); break;
+   case 'whirlpool': if (mine) { sound('whirlpool'); banner('WHIRLPOOL!', TOUCH ? 'Tap Boost and steer out, or it will sink you' : 'Shift to boost out, or it will sink you', 1.8); sound('warning'); } else if (at.vol > 0.3) sound('whirlpool', at.pan, at.vol * 0.5); break;
    case 'boost': if (mine) sound('boost'); break;
    case 'bump': if (mine) sound('collision'); break;
    case 'end': endMatch(); break;
@@ -219,8 +219,8 @@ function hint(w, me) {
  if (!me) return '';
  if (me.dead) return `Sunk! Back afloat in ${Math.max(1, Math.ceil(me.respawnIn))}…`;
  const home = TEAMS[me.team], homeD = Math.hypot(me.x - home.x, me.z - home.z);
+ if ((w.whirls || []).some(h => Math.hypot(h.x - me.x, h.z - me.z) < h.r)) return `Being dragged under! ${KEYS.boost} and steer away from the eye`;
  if (performance.now() - startedAt < 9000) return `${KEYS.steer} · sail through the glowing treasure`;
- if ((w.whirls || []).some(h => Math.hypot(h.x - me.x, h.z - me.z) < h.r)) return `Caught in a whirlpool! ${KEYS.boost} and steer out`;
  const aim = aimBroadside(w, me);
  if (aim && aim.d < RULES.range) return me.reload <= 0 ? `Target alongside! ${KEYS.fire}` : 'Reloading…';
  if (me.gold > 0 && homeD > BANK_RADIUS) return `Carrying ◉ ${me.gold}. Follow the gold arrow home to bank it${w.final ? ' (×2!)' : ''}`;
@@ -260,6 +260,7 @@ function updateHud(w) {
 // Play-testing switches: ?autopilot lets the bot brain steer you, ?at=SECONDS starts a solo match later.
 const params = new URLSearchParams(location.search), AUTOPILOT = params.has('autopilot'), START_AT = Number(params.get('at')) || 0;
 const DT = 1 / 30, IDLE = { ships: [], shots: [], loot: [], powers: [], teams: [] };
+if (AUTOPILOT) window.socWorld = () => world; // console access while play-testing
 let demo = null, demoAcc = 0, demoSeen = 0, demoSwitch = 0, demoFollow = '';
 function frame(now) {
  const dt = Math.min(0.1, (now - lastFrame) / 1000); lastFrame = now;

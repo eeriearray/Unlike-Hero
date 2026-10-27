@@ -32,7 +32,7 @@ test('sinking spills carried gold plus a bounty for anyone to grab', () => {
  const w = createMatch([{ id: 'a', ai: false }, { id: 'b', ai: false }], { seed: 2 });
  const [a, b] = w.ships;
  Object.assign(a, { x: 0, z: 30, a: 0, shield: 0 }); Object.assign(b, { x: 25, z: 30, a: 0, shield: 0, gold: 20, hp: 5 });
- w.loot = [];
+ w.loot = []; w.whirls = [];
  run(w, 1.5, { a: { fire: true, throttle: 0 }, b: { throttle: 0 } });
  assert.ok(b.dead, 'broadside should sink the damaged ship');
  const spilled = w.loot.filter(l => l.kind === 'coins').reduce((sum, l) => sum + l.value, 0);
@@ -104,4 +104,20 @@ test('whirlpools roam unpredictably, drag ships in and grind hulls', () => {
  Object.assign(a, { x: h.x, z: h.z });
  step(w, { a: { throttle: 0 } }, 1 / 30);
  assert.ok(a.hp < 100, 'the eye grinds the hull');
+});
+
+test('a whirlpool swallows a ship that drifts in, but a boost escapes the rim', () => {
+ const w = createMatch([{ id: 'a' }, { id: 'b' }], { seed: 8 });
+ const [a, b] = w.ships, h = w.whirls[0];
+ Object.assign(h, { speed: 0, lurch: 99 }); h.heading = 0;
+ Object.assign(a, { x: h.x + h.r * 0.5, z: h.z, v: 0, shield: 3, hp: 100 });
+ let swallowed = false;
+ for (let i = 0; i < 8 * 30 && !swallowed; i++) {
+  h.speed = 0; step(w, { a: { throttle: 0 }, b: { throttle: 0 } }, 1 / 30);
+  swallowed = w.events.some(e => e.type === 'sink' && e.id === 'a' && e.by === 'whirlpool');
+ }
+ assert.ok(swallowed, 'an idle ship should be dragged under, even with spawn protection');
+ Object.assign(b, { x: h.x + h.r * 0.8, z: h.z, a: Math.PI / 2, v: 10, shield: 0, hp: 100 }); // heading away (+x)
+ for (let i = 0; i < 4 * 30; i++) { h.speed = 0; step(w, { b: { throttle: 1, boost: true } }, 1 / 30); }
+ assert.ok(!b.dead && Math.hypot(b.x - h.x, b.z - h.z) > h.r, 'boosting away from the rim escapes');
 });

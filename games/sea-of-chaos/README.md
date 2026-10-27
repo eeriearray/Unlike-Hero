@@ -10,7 +10,7 @@ Scoop up glowing treasure → sail it home to your harbor to **bank** it → sin
 - **Your harbor** is the ring of buoys in front of your tower. Sail inside it to bank. It also repairs your hull, and the tower fires at enemy raiders.
 - **Broadsides.** Cannons fire sideways and aim themselves at whoever is alongside, leading moving targets. Get a rival beside you and fire.
 - **Treasure galleon** sails across the map at 2:10 and 1:02. It fights back, and sinking it bursts open ten chests.
-- **Whirlpools** wander the sea on a random walk, lurching onto new headings without warning. They drag ships in, spin them and grind their hull in the eye. Loot gets trapped circling inside, so they make tempting bait. Boosting halves their grip, and bots steer around them.
+- **Whirlpools** wander the sea on a random walk, lurching onto new headings without warning. They suck ships in harder the closer they get, grind the hull, and swallow any ship that reaches the eye (spawn protection does not help). Full sail escapes the rim; from the middle only a boost (which cuts their grip to 40%) gets you out. Loot gets trapped circling inside, so they make tempting bait. Bots steer around them but still get caught when one lurches.
 - **Barrels** give power-ups: ✹ Big Guns (5-ball broadsides), ➤ Fair Wind (speed), ✚ Repair.
 - **Final 30 seconds:** banked gold counts double.
 

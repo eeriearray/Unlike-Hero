@@ -5,7 +5,7 @@ import { SEA, EDGE, TEAMS, ISLANDS, BANK_RADIUS, forward, angleDelta } from './s
 let vortices = [];
 export function waveHeight(x, z, t) {
  let h = Math.sin(x * 0.16 + z * 0.08 + t * 1.1) * 0.3 + Math.sin(x * 0.07 - z * 0.19 - t * 0.8) * 0.22 + Math.sin(x * 0.31 + z * 0.27 + t * 1.7) * 0.06;
- for (const v of vortices) { const d = Math.hypot(x - v.x, z - v.z); if (d < v.r) { const q = 1 - d / v.r; h = h * (1 - q) - 4.2 * Math.pow(q, 2.2); } }
+ for (const v of vortices) { const d = Math.hypot(x - v.x, z - v.z); if (d < v.r) { const q = 1 - d / v.r; h = h * (1 - q) - 6 * Math.pow(q, 2); } }
  return h;
 }
 const damp = (rate, dt) => 1 - Math.exp(-rate * dt);
@@ -96,7 +96,7 @@ export function makeView(canvas) {
  const SWELL = `uniform float time;uniform vec4 whirls[2];
   float swell(vec2 p){float a=p.x*.16+p.y*.08+time*1.1,b=p.x*.07-p.y*.19-time*.8,c=p.x*.31+p.y*.27+time*1.7;
    float h=sin(a)*.3+sin(b)*.22+sin(c)*.06;
-   for(int k=0;k<2;k++){float d=length(p-whirls[k].xy),r=whirls[k].z;if(d<r){float q=1.-d/r;h=h*(1.-q)-4.2*pow(q,2.2);}}
+   for(int k=0;k<2;k++){float d=length(p-whirls[k].xy),r=whirls[k].z;if(d<r){float q=1.-d/r;h=h*(1.-q)-6.*pow(q,2.);}}
    return h;}`;
  const water = new T.ShaderMaterial({
   uniforms: {
@@ -591,11 +591,16 @@ export function makeView(canvas) {
   const sideX = -f.z, sideZ = f.x, port = waveHeight(o.x + sideX * 2.2 * scale, o.z + sideZ * 2.2 * scale, time), stb = waveHeight(o.x - sideX * 2.2 * scale, o.z - sideZ * 2.2 * scale, time);
   o.roll += ((s.yawRate || 0) * -0.12 - o.roll) * damp(4, dt);
   o.recoil = Math.max(0, o.recoil - dt * 3);
-  o.root.position.set(o.x, (y + bow + stern) / 3 - 0.75 * scale - o.sinkT * o.sinkT * 1.2, o.z);
-  o.root.rotation.set(0, 0, 0); o.root.rotation.y = o.a;
+  // A ship swallowed by a whirlpool spirals round the eye as it goes down.
+  const vortex = sinking && vortices.find(v => Math.hypot(o.x - v.x, o.z - v.z) < v.r * 0.5);
+  o.whirlSpin = vortex ? (o.whirlSpin || 0) + (vortex.dir || 1) * dt * (1.5 + o.sinkT * 2.5) : 0;
+  o.root.position.set(o.x, (y + bow + stern) / 3 - 0.75 * scale - o.sinkT * o.sinkT * (vortex ? 2.2 : 1.2), o.z);
+  o.root.rotation.set(0, 0, 0); o.root.rotation.y = o.a + o.whirlSpin;
   o.body.rotation.x = Math.atan2(stern - bow, len * 2) + (sinking ? -o.sinkT * 0.25 : 0);
   o.body.rotation.z = (reduced ? 0 : Math.atan2(port - stb, 4.4 * scale)) + o.roll + o.recoil * 0.1 * (o.recoilSide || 0) + (sinking ? o.sinkT * 0.35 : 0);
   o.root.visible = !(sinking && o.sinkT > 3.2);
+  // Your timbers groan near the eye.
+  if (mine && !s.dead && vortices.some(v => Math.hypot(o.x - v.x, o.z - v.z) < v.r * 0.45)) shake = Math.max(shake, 0.7);
   if (!s.galleon) {
    const n = s.gold <= 0 ? 0 : Math.min(7, 1 + Math.floor(s.gold / 8));
    o.pieces.forEach((p, k) => p.visible = k < n);
