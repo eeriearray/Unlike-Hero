@@ -7,7 +7,7 @@
   let classId=storage.get('class','medium'),mode='sprint',trackIndex=0,screen='menu',paused=false,connection=null,room=null,playerId='player';
   if(!D.CLASSES[classId])classId='medium';
   let world=S.createWorld({classId}),accumulator=0,previous=performance.now(),uiTime=0,netTime=0,sessionActive=false;
-  let ghost=null,recording=[],recordAt=0,seenNotice='',lastCountdown=0,busy=false;
+  let ghost=null,recording=[],recordAt=0,lastCountdown=0,busy=false;
   const input=new KartInput(),audio=new KartAudio();let renderer;
   try{renderer=new KartRenderer($('world'));}catch(error){$('fatal').classList.remove('hidden');$('fatal-message').textContent='This game needs WebGL. Enable hardware acceleration or try a recent Chrome, Edge, Firefox or Safari browser.';console.error(error);return;}
   const graphicsNotes={performance:'Lower resolution, one shadow cascade, reduced foliage. Post effects off. Targets 60 FPS; hardware dependent.',balanced:'Two shadow cascades, SSAO, bloom and atmospheric haze. Resolution adapts to frame time.',high:'Three shadow cascades, SSAO, cinematic focus and speed blur. Best on a dedicated GPU.'};
@@ -58,7 +58,7 @@
   function startSolo(){
     if(busy)return;audio.unlock();saveSettings();connection?.close();connection=null;room=null;playerId='player';paused=false;
     world=S.createWorld({mode,track:trackIndex,classId,seed:Math.floor(Math.random()*2**30),roster:[{id:'player',name:name(),classId,human:true}]});
-    ghost=mode==='trial'?loadGhost():null;recording=[];recordAt=0;accumulator=0;seenNotice='';lastCountdown=0;renderer.readyCamera=false;
+    ghost=mode==='trial'?loadGhost():null;recording=[];recordAt=0;accumulator=0;lastCountdown=0;renderer.readyCamera=false;
     setScreen('race');reportStart();
   }
   function quitToMenu(){
@@ -83,6 +83,10 @@
   document.querySelector(`[data-class="${classId}"]`).click();
   $('track').onchange=()=>{trackIndex=Number($('track').value);preview();};$('name').onchange=saveSettings;
   document.addEventListener('pointerdown',()=>audio.unlock(),{once:true});
+  // Menu buttons tick on hover and click; the in-race touch pads stay silent.
+  let hovered=null;const menuButton=e=>{const b=e.target.closest?.('button,select,.course-card');return b&&!b.disabled&&!b.closest('[data-control],#touch-controls')?b:null;};
+  document.addEventListener('pointerover',e=>{const b=menuButton(e);if(b!==hovered){hovered=b;if(b&&e.pointerType==='mouse')audio.uiSound('hover');}});
+  document.addEventListener('click',e=>{if(menuButton(e))audio.uiSound('click');});
   function showCourses(){
     $('course-grid').replaceChildren(...D.TRACKS.map((definition,index)=>{
       const button=document.createElement('button'),canvas=document.createElement('canvas'),title=document.createElement('b'),description=document.createElement('small'),stats=document.createElement('span');
@@ -133,15 +137,15 @@
     if(data.type==='state'){
       if(!data.world||!Array.isArray(data.world.racers))return;
       const old=world;world=data.world;playerId=connection.id;mode=world.mode;
-      if(screen==='lobby'||screen==='menu'||(screen==='results'&&world.phase!=='results')){paused=false;setScreen('race');renderer.readyCamera=false;seenNotice='';lastCountdown=0;reportStart();}
+      if(screen==='lobby'||screen==='menu'||(screen==='results'&&world.phase!=='results')){paused=false;setScreen('race');renderer.readyCamera=false;lastCountdown=0;reportStart();}
       if(old.phase!=='results'&&world.phase==='results')showResults();
     }
   }
   function showResults(){
-    paused=false;input.clear();$('help').classList.add('hidden');setScreen('results');audio.effect('finish');reportEnd();
+    paused=false;input.clear();$('help').classList.add('hidden');setScreen('results');reportEnd();
     const me=world.racers.find(k=>k.id===playerId),finalCup=world.mode==='gp'&&world.round===3;
     const order=finalCup?[...world.racers].sort((a,b)=>b.points-a.points||a.place-b.place):[...world.racers].sort((a,b)=>a.place-b.place);
-    const place=order.findIndex(k=>k.id===playerId)+1;
+    const place=order.findIndex(k=>k.id===playerId)+1;audio.finish(place===1&&(world.mode!=='trial'||me?.finishTime!=null));
     $('result-eyebrow').textContent=world.mode==='gp'?`GRAND PRIX · ROUND ${world.round+1} / 4`:world.mode==='trial'?'THE CLOCK TELLS NO LIES':'THE DUST HAS SETTLED';
     $('result-title').textContent=world.mode==='trial'?(world.recordValid?'A clean escape.':'A fractured run.'):place===1?'The crown is yours.':place<=3?'A noble disaster.':'Long live the chaos.';
     let summary=world.mode==='battle'?`${me?.balloons||0} balloons remain. ${world.time>=180?'Time limit reached; remaining balloons decide the order.':'Last survivor takes the crown.'}`:world.mode==='gp'?`${finalCup?'Final cup standings':'Race standings'} · ${D.TRACKS[world.trackIndex].name}`:`${place}${['','st','nd','rd'][place]||'th'} place · ${formatTime(me?.finishTime||world.time)}`;
@@ -161,7 +165,7 @@
   }
   $('next').onclick=()=>{
     if(connection){connection.send({type:'start'});return;}
-    const next=S.nextGrandPrix(world);if(next){world=next;accumulator=0;renderer.readyCamera=false;setScreen('race');seenNotice='';lastCountdown=0;}
+    const next=S.nextGrandPrix(world);if(next){world=next;accumulator=0;renderer.readyCamera=false;setScreen('race');lastCountdown=0;}
     else startSolo();
   };
   function hud(){
@@ -175,9 +179,8 @@
     $('surface-label').textContent=k.eliminated?'ELIMINATED · SPECTATING':!k.grounded?'AIRBORNE · TAP TO TRICK':k.invincible>0?'UNDYING / PROTECTED':k.surface==='mud'?'HEX MUD / SLOWED':'ASPHALT / GRIP';
     const item=D.ITEMS[k.item];$('item-symbol').textContent=item?.symbol||'◇';$('item-name').textContent=item?.name.toUpperCase()||(world.mode==='trial'?'CLEAN TRACK':'NO ITEM');$('item-hint').textContent=item?'E · TAP TO USE':world.mode==='trial'?'NO ITEMS IN TIME TRIAL':'E · FIND A RIFT BOX';$('item').classList.toggle('ready',!!item);$('item').setAttribute('aria-label',item?`Use ${item.name}: ${item.description}`:'No item held');
     $('notice').textContent=k.noticeUntil>world.time?k.notice:'';
-    if(k.notice&&k.noticeUntil>world.time&&`${k.notice}:${k.noticeUntil}`!==seenNotice){seenNotice=`${k.notice}:${k.noticeUntil}`;audio.effect(k.notice.includes('BOOST')||k.notice.includes('TURBO')?'boost':k.notice.startsWith('JUMP!')?'jump':k.notice==='HEXED!'?'hit':k.item?'pickup':'notice');}
     const count=world.phase==='countdown'?Math.ceil(world.countdown):world.time<.7?'GO':'';$('countdown').textContent=count;
-    if(count&&count!==lastCountdown){lastCountdown=count;audio.tone(count==='GO'?800:400,.15,'triangle',.2);}
+    if(count&&count!==lastCountdown){lastCountdown=count;audio.uiSound(count==='GO'?'go':'count');}
     const sorted=[...world.racers].sort((a,b)=>a.place-b.place).slice(0,6);
     $('standings').replaceChildren(...sorted.map(kart=>{const row=document.createElement('div');row.className=`standing ${kart.id===playerId?'you':''}`;const rank=document.createElement('small');rank.textContent=kart.place;const dot=document.createElement('i');dot.style.background=kart.color;const label=document.createElement('span');label.textContent=kart.name;row.append(rank,dot,label);return row;}));
     renderer.drawMap($('map'),world,playerId);
@@ -193,7 +196,7 @@
         if(old!=='results'&&world.phase==='results'){showResults();break;}
       }
     }
-    const me=world.racers.find(k=>k.id===playerId);audio.update(me,screen==='race'&&world.phase==='racing',world.trackIndex,screen==='menu'||screen==='lobby');
+    const me=world.racers.find(k=>k.id===playerId);audio.update({world,me,screen},dt);
     const ghostPose=screen!=='menu'&&world.mode==='trial'&&ghost?S.sampleGhost(ghost.samples,world.time):null;
     renderer.render(world,playerId,dt,screen==='menu'||screen==='lobby',ghostPose);
     if(uiTime>=.075&&['race','paused'].includes(screen)){uiTime=0;hud();}
