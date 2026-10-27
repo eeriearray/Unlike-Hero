@@ -3,31 +3,12 @@
   "configurations": [
     {
       "name": "hub",
-      "runtimeExecutable": "node",
+      "runtimeExecutable": "npm",
       "runtimeArgs": [
-        "server/relay.mjs"
+        "run",
+        "play"
       ],
-      "port": 8080
-    },
-    {
-      "name": "hub-8090",
-      "runtimeExecutable": "env",
-      "runtimeArgs": [
-        "PORT=8090",
-        "node",
-        "server/relay.mjs"
-      ],
-      "port": 8090
-    },
-    {
-      "name": "sea-worktree",
-      "runtimeExecutable": "env",
-      "runtimeArgs": [
-        "PORT=8097",
-        "node",
-        "server/relay.mjs"
-      ],
-      "port": 8097,
+      "port": 8081,
       "autoPort": false
     }
   ]
