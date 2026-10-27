@@ -24,7 +24,7 @@
   H.CFG = {
     maxPlayers: 6,
     clockMax: 36, phaseAt: [12, 24],
-    clockStep: [1.3, 1.6, 1.9, 2.2, 2.5, 2.8],     // base Haunting ticks per round for 1..6 players
+    clockStep: [1.0, 1.25, 1.5, 1.8, 2.1, 2.4],    // base Haunting ticks per round for 1..6 players
     phaseMult: [0.8, 1.0, 1.25],
     noiseMax: 3,
     packSize: 7,

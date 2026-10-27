@@ -100,7 +100,7 @@
     var G = v.game, enc = v.enc, list = C.list(v);
     var inEnemy = enc && (enc.kind === 'enemy' || enc.kind === 'boss');
     var cap = inEnemy ? 4 : 3;
-    var guided = v.opening && !v.opening.complete && !inEnemy && !(enc && enc.hold);
+    var guided = v.opening && v.opening.id !== 'decision' && !inEnemy && !(enc && enc.hold);
     var rec = g.HollowGuidance && g.HollowGuidance.recommend(v);
     var recommended = rec && list.find(function (c) { return c.k === rec.k && c.id === rec.id && c.state === 'ok'; });
     if (recommended) { recommended.recommended = true; recommended.pri = -2; }

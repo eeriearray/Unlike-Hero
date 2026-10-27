@@ -5,7 +5,7 @@ import vm from 'node:vm';
 const root = new URL('../games/the-hollow/', import.meta.url);
 const window = { HollowUI: { howtoModal: () => '<h2>HOW TO PLAY</h2>' }, HollowArt: { esc: x => x }, HollowCards: { tray: () => '' } };
 vm.runInNewContext(fs.readFileSync(new URL('js/guidance.js', root), 'utf8'), { window });
-const next = window.HollowGuidance.next;
+const next = window.HollowGuidance.next, recommend = window.HollowGuidance.recommend;
 const view = (enc, ap = 3, loc = 'square') => ({ game: { ap }, me: { loc }, enc });
 test('guidance adapts to actionable choices, combat and exhausted actions', () => {
   assert.match(next(view({ options: [{ id: 'board', state: 'ok' }] })), /Read the notice board/);
@@ -24,7 +24,9 @@ test('authored bell tower has matching real encounter choices and travel', () =>
   assert.ok(scene.layers()[0].svg.includes('bt-stone'));
 });
 
-test('completed opening guidance does not send Heart or Estate players back to the village',()=>{
- const v={...view(null,3,'heart_chamber'),opening:{complete:true,hint:'Return to the graveyard'}};
- assert.match(next(v),/propose/);assert.doesNotMatch(next({...v,me:{loc:'foyer'}}),/Return to the graveyard/);
+test('completed opening guidance follows the current trail lead, and the Heart asks for a decision',()=>{
+ const v={...view(null,3,'heart_chamber'),opening:{complete:true,id:'decision',hint:'Open the Heart encounter'}};
+ assert.match(next(v),/propose/);
+ const t={...view(null,3,'foyer'),me:{loc:'foyer',status:'alive'},opening:{complete:true,id:'account',target:'library',opts:['falsebottom'],hint:'Go to the Forgotten Library'}};
+ assert.match(next(t),/Forgotten Library/);assert.equal(recommend(t).id,'travel');
 });

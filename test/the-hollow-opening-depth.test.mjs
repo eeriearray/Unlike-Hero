@@ -28,8 +28,8 @@ for(const cls of Object.keys(data.classes)) test(cls+': real roads, failed check
  choose(g,'board');walk(g,'chapel');choose(g,'vestry');walk(g,'graveyard');choose(g,'headstones');assert.equal(g.viewFor('p0').opening.nextTarget,'square');walk(g,'belltower');choose(g,'maintenance');replenish(g);choose(g,'frame');
  assert.equal(g.viewFor('p0').opening.id,'response');assert.equal(g.w.opening.complete,false);
  replenish(g);choose(g,'muffle');assert.ok(g.w.opening.complete);assert.equal(g.get('p0').status,'alive');
- assert.match(g.viewFor('p0').opening.context,/magistrate/);assert.equal(g.viewFor('p0').opening.target,'foyer');
- walk(g,'foyer');assert.equal(g.get('p0').loc,'foyer');
+ assert.match(g.viewFor('p0').opening.context,/magistrate/);assert.equal(g.viewFor('p0').opening.target,'library');assert.equal(g.viewFor('p0').opening.id,'account');
+ walk(g,'library');assert.equal(g.get('p0').loc,'library');
 });
 for(const cls of Object.keys(data.classes)) test(cls+': expertise changes costs and cannot be repeated',()=>{
  const g=make([cls]),p=g.get('p0'),x=g.openingExpertise(p);p.loc=x.loc;g.markSeen(x.loc);
