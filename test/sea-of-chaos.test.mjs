@@ -1,20 +1,107 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createWorld,step,buoy,ISLANDS} from '../games/sea-of-chaos/simulation.js';
-import {snapshot,roomCode} from '../games/sea-of-chaos/network.js';
-const world=()=>createWorld([{id:'one',name:'One'},{id:'two',name:'Two'}]);
-function tick(w,n=1,inputs={}){for(let i=0;i<n;i++)step(w,inputs);}
-function isolate(w){for(const s of w.ships){s.ai=false;s.shield=0;}return w;}
-function stash(w,s){const b=buoy(s);s.x=b.x;s.z=b.z;s.v=0;w.flag.carrier=s.id;tick(w,61);}
-test('each captain has a distinct buoy and two non-scoring raiders',()=>{const w=world();assert.equal(w.ships.length,4);assert.notDeepEqual(buoy(w.ships[0]),buoy(w.ships[1]));assert.equal(w.ships.filter(s=>s.raider).length,2);});
-test('only captains pick up the central flag',()=>{const w=isolate(world());const r=w.ships[2];r.x=r.z=0;tick(w);assert.equal(w.flag.carrier,null);const s=w.ships[0];s.x=s.z=0;tick(w);assert.equal(w.flag.carrier,s.id);});
-test('stash requires two seconds in own buoy and scores independently',()=>{const w=isolate(world()),s=w.ships[0],b=buoy(s);Object.assign(s,b);w.flag.carrier=s.id;tick(w,30);assert.equal(s.score,0);tick(w,31);assert.equal(s.score,1);assert.equal(w.ships[1].score,0);assert.equal(w.flag.carrier,null);assert.ok(w.flag.returnAt>0);});
-test('leaving capture area resets progress and third stash wins',()=>{const w=isolate(world()),s=w.ships[0];Object.assign(s,buoy(s));w.flag.carrier=s.id;tick(w,20);s.x=50;s.z=55;tick(w);assert.equal(s.capture,0);for(let i=0;i<3;i++)stash(w,s);assert.equal(w.winner,s.id);assert.equal(w.over,true);});
-test('sinking drops the flag for 12 seconds, respawn takes eight',()=>{const w=isolate(world()),s=w.ships[0];s.x=10;s.z=0;s.hp=1;w.flag.carrier=s.id;w.shots.push({x:8,z:0,a:Math.PI/2,t:1,owner:'two',damage:24,type:1});tick(w);assert.equal(s.dead,8);assert.equal(s.score,0);assert.equal(w.flag.carrier,null);assert.equal(w.flag.dropped,12);tick(w,239);assert.ok(s.dead>0);tick(w,2);assert.equal(s.hp,100);assert.equal(s.dead,0);assert.ok(s.shield>0);s.x=70;s.z=60;tick(w,121);assert.equal(w.flag.dropped,0);assert.equal(w.flag.x,0);});
-test('any rival can steal a dropped flag',()=>{const w=isolate(world()),s=w.ships[1];Object.assign(w.flag,{x:10,z:10,dropped:12});s.x=s.z=10;tick(w);assert.equal(w.flag.carrier,'two');assert.equal(w.flag.dropped,0);});
-test('whirlpool strips the flag without instant repickup',()=>{const w=isolate(world()),s=w.ships[0],h=w.whirl[0];s.x=h.x;s.z=h.z;w.flag.carrier=s.id;tick(w,3);assert.equal(w.flag.carrier,null);assert.ok(w.flag.dropped>11);assert.ok(s.hp<100);});
-test('timer picks leader; tie becomes next-stash sudden death',()=>{const w=isolate(world());w.t=240;w.ships[1].score=2;tick(w);assert.equal(w.winner,'two');const tied=isolate(world());tied.t=240;tick(tied);assert.equal(tied.sudden,true);assert.equal(tied.over,false);stash(tied,tied.ships[0]);assert.equal(tied.winner,'one');});
-test('carrier is slower; boost and ram have cooldowns',()=>{const a=isolate(world()),b=isolate(world());a.flag.carrier='one';tick(a,30,{one:{throttle:1}});tick(b,30,{one:{throttle:1}});assert.ok(a.ships[0].v<b.ships[0].v);tick(b,1,{one:{boost:true,ram:true}});assert.ok(b.ships[0].boost>3);assert.ok(b.ships[0].ram>2);});
-test('projectile hits only one hostile ship and chain slows',()=>{const w=isolate(world());w.ships[1].x=12;w.ships[1].z=0;w.ships[2].x=24;w.ships[2].z=0;w.shots=[{x:10,z:0,a:Math.PI/2,t:1,owner:'one',type:2,damage:16}];tick(w);assert.equal(w.ships[1].hp,84);assert.equal(w.ships[2].hp,100);assert.ok(w.ships[1].slow>0);});
-test('AI contest, stash, sink, respawn and finish a full match',()=>{const w=createWorld(Array.from({length:6},(_,i)=>({id:`ai${i}`,ai:true})));const seen=new Set();for(let i=0;i<18000&&!w.over;i++){step(w);for(const e of w.events)seen.add(e.type);for(const s of w.ships)assert.ok(Number.isFinite(s.x)&&Number.isFinite(s.z));}assert.ok(w.over);for(const type of ['pickup','stash','sink','respawn'])assert.ok(seen.has(type),type);assert.ok(w.ships.filter(s=>s.raider).every(s=>s.score===0));});
-test('eight-player snapshots fit relay limit and room codes are four letters',()=>{const w=isolate(createWorld(Array.from({length:8},(_,i)=>({id:`captain-${i}abcdefghi`,name:'Captain Sixteen!'}))));for(let i=0;i<30;i++)step(w,Object.fromEntries(w.ships.filter(s=>!s.raider).map(s=>[s.id,{fire:true,ammo:3}])));assert.ok(Buffer.byteLength(JSON.stringify(snapshot(w,w.events)))<15500);for(let i=0;i<100;i++)assert.match(roomCode(),/^[A-Z]{4}$/);});
+import { createMatch, step, aimBroadside, RULES } from '../games/sea-of-chaos/plunder.js';
+import { TEAMS, ISLANDS, EDGE, BANK_RADIUS, collideSea, shoreRadius } from '../games/sea-of-chaos/sea-map.js';
+import { snapshot, readSnapshot } from '../games/sea-of-chaos/network.js';
+
+const crew = n => Array.from({ length: n }, (_, i) => ({ id: `c${i}`, name: `C${i}`, ai: true }));
+const run = (w, seconds, controls = {}) => { for (let i = 0; i < seconds * 30; i++) step(w, controls, 1 / 30); return w; };
+
+test('captains alternate crews and spawn inside their own harbor', () => {
+ const w = createMatch(crew(6), { seed: 1 });
+ assert.deepEqual(w.ships.map(s => s.team), [0, 1, 0, 1, 0, 1]);
+ for (const s of w.ships) assert.ok(Math.hypot(s.x - TEAMS[s.team].x, s.z - TEAMS[s.team].z) < BANK_RADIUS);
+});
+
+test('bot matches finish with banked gold, sinkings, whirlpools and a galleon', () => {
+ const all = new Set();
+ for (const n of [2, 4, 6]) {
+  const w = createMatch(crew(n), { seed: n * 13 }), seen = new Set();
+  let last = 0;
+  while (w.phase === 'play') { step(w, {}, 1 / 30); for (const e of w.events) if (e.n > last) seen.add(e.type); last = w.eventN; }
+  assert.equal(w.phase, 'over');
+  assert.ok(w.teams[0].score + w.teams[1].score > 60, `${n} captains banked too little`);
+  for (const type of ['bank', 'galleon', 'final', 'end']) assert.ok(seen.has(type), `${n} captains never saw ${type}`);
+  seen.forEach(t => all.add(t));
+  assert.equal(w.winner, w.teams[0].score === w.teams[1].score ? -1 : w.teams[0].score > w.teams[1].score ? 0 : 1);
+ }
+ assert.ok(all.has('sink') && all.has('whirlpool'));
+});
+
+test('sinking spills carried gold plus a bounty for anyone to grab', () => {
+ const w = createMatch([{ id: 'a', ai: false }, { id: 'b', ai: false }], { seed: 2 });
+ const [a, b] = w.ships;
+ Object.assign(a, { x: 0, z: 30, a: 0, shield: 0 }); Object.assign(b, { x: 25, z: 30, a: 0, shield: 0, gold: 20, hp: 5 });
+ w.loot = [];
+ run(w, 1.5, { a: { fire: true, throttle: 0 }, b: { throttle: 0 } });
+ assert.ok(b.dead, 'broadside should sink the damaged ship');
+ const spilled = w.loot.filter(l => l.kind === 'coins').reduce((sum, l) => sum + l.value, 0);
+ assert.equal(spilled, 20 + RULES.bounty);
+ assert.equal(b.gold, 0);
+ assert.equal(a.sinks, 1);
+});
+
+test('gold only counts once it is banked, and counts double in the final rush', () => {
+ const w = createMatch([{ id: 'a', ai: false }, { id: 'b', ai: false }], { seed: 3 });
+ const [a] = w.ships;
+ a.gold = 15; a.x = 0; a.z = 40;
+ run(w, 0.2, {});
+ assert.equal(w.teams[0].score, 0);
+ a.x = TEAMS[0].x; a.z = TEAMS[0].z;
+ run(w, 0.1, {});
+ assert.equal(w.teams[0].score, 15); assert.equal(a.gold, 0);
+ w.t = w.duration - RULES.finalRush + 1; a.gold = 10;
+ run(w, 0.1, {});
+ assert.equal(w.teams[0].score, 35);
+});
+
+test('broadsides pick the side a rival is on and ignore targets ahead', () => {
+ const w = createMatch([{ id: 'a' }, { id: 'b' }], { seed: 4 });
+ const [a, b] = w.ships;
+ Object.assign(a, { x: 0, z: 0, a: 0 });
+ Object.assign(b, { x: -30, z: 0 }); // starboard of a ship heading +z is -x
+ assert.equal(aimBroadside(w, a).side, 1);
+ Object.assign(b, { x: 30, z: 0 });
+ assert.equal(aimBroadside(w, a).side, -1);
+ Object.assign(b, { x: 0, z: 30 });
+ assert.equal(aimBroadside(w, a), null);
+});
+
+test('ships never end up on land or outside the sea', () => {
+ const w = createMatch(crew(6), { seed: 5 });
+ for (let i = 0; i < 90 * 30; i++) {
+  step(w, {}, 1 / 30);
+  for (const s of w.ships) {
+   assert.ok(Math.hypot(s.x, s.z) <= EDGE + 0.01);
+   for (const isle of ISLANDS) assert.ok(Math.hypot(s.x - isle.x, s.z - isle.z) >= shoreRadius(isle) + 3.1, `${s.id} beached on ${isle.kind}`);
+  }
+ }
+ const s = { x: ISLANDS[2].x, z: ISLANDS[2].z + 1, v: 10 };
+ assert.ok(collideSea(s));
+});
+
+test('snapshots round-trip and stay under the relay cap', () => {
+ const w = run(createMatch(crew(6), { seed: 6 }), 70);
+ const packet = snapshot(w), size = JSON.stringify(packet).length, back = readSnapshot(packet);
+ assert.ok(size < 14000, `snapshot is ${size} bytes`);
+ assert.equal(back.ships.length, 6);
+ assert.equal(back.teams[0].score, w.teams[0].score);
+ assert.ok(Math.abs(back.ships[0].x - w.ships[0].x) < 0.01);
+});
+
+test('whirlpools roam unpredictably, drag ships in and grind hulls', () => {
+ const w = createMatch([{ id: 'a' }, { id: 'b' }], { seed: 7 });
+ const h = w.whirls[0], start = { x: h.x, z: h.z }, headings = new Set();
+ for (let i = 0; i < 20 * 30; i++) { step(w, { a: { throttle: 0 }, b: { throttle: 0 } }, 1 / 30); headings.add(Math.round(h.heading)); }
+ assert.ok(Math.hypot(h.x - start.x, h.z - start.z) > 20, 'whirlpool should travel');
+ assert.ok(headings.size > 2, 'whirlpool should change direction');
+ for (const isle of ISLANDS) assert.ok(Math.hypot(h.x - isle.x, h.z - isle.z) > shoreRadius(isle));
+ const [a] = w.ships;
+ Object.assign(a, { x: h.x + 14, z: h.z, v: 0, shield: 0, hp: 100 });
+ const before = Math.hypot(a.x - h.x, a.z - h.z);
+ for (let i = 0; i < 10; i++) step(w, { a: { throttle: 0 } }, 1 / 30);
+ assert.ok(Math.hypot(a.x - h.x, a.z - h.z) < before, 'ships are pulled inward');
+ Object.assign(a, { x: h.x, z: h.z });
+ step(w, { a: { throttle: 0 } }, 1 / 30);
+ assert.ok(a.hp < 100, 'the eye grinds the hull');
+});

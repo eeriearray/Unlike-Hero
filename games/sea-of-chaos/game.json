@@ -1,8 +1,8 @@
 {
   "id": "sea-of-chaos",
-  "title": "Sea of Chaos: Dock Wars",
-  "tagline": "Carry treasure, bank upgrades and raid rival fortresses. Three resources, 24 purchases and best-of-three pirate battles.",
-  "version": "5.0.0",
+  "title": "Sea of Chaos: Plunder",
+  "tagline": "Sink rivals, steal their gold and bank it before you sink. Fast pirate brawls for 1v1 to 3v3.",
+  "version": "6.0.0",
   "sdk": "1.x",
   "entry": "index.html",
   "thumbnail": "thumbnail.svg",
@@ -16,24 +16,23 @@
       "id": "captain",
       "name": "Captain",
       "entry": "index.html",
-      "description": "Customize a ship, practice with AI crews, or host/join team raids with a 4-letter room code."
+      "description": "Practice against bots, or host/join a crew battle with a 4-letter room code."
     }
   ],
   "multiplayer": {
-    "style": "1v1, 2v2 and 3v3 team raids, host-authoritative",
+    "style": "1v1, 2v2 and 3v3 crew battles, host-authoritative",
     "sameDevice": false,
     "transports": [
       "local",
       "relay"
     ],
-    "notes": "1v1, 2v2 or 3v3; first to two round wins. Collect and bank physical gold, pearls and ancient relics; unbanked cargo drops on sinking. Break the shield and both turrets before five uninterrupted stationary seconds of core boarding. Core loss stops rebuilding; eliminate the fleet to win. At 4:00 hold Crownfall\u2019s beacon uncontested for 20 seconds; at 5:00 rebuilding ends and the safe sea closes. Sea-level gates, tall cliff cover, two pearl outposts and a central relic temple. 24 purchases across Ship, Crew & Fortress and Supplies. Cosmetic ship customization persists. Host simulation 30Hz, compact snapshots 10Hz, controls 20Hz; six humans with AI filling crews."
+    "notes": "Three-minute matches. Scoop floating treasure, bank it at your harbor, and sink rivals to spill the gold they carry. A treasure galleon crosses the sea twice; banked gold counts double in the last 30 seconds. Most banked gold wins. Bots fill empty berths. Host simulation 30Hz, snapshots 10Hz, controls 20Hz."
   },
   "tags": [
     "pvp",
     "teams",
     "pirates",
     "arcade",
-    "customization",
     "3D",
     "mobile"
   ],

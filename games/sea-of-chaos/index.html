@@ -2,48 +2,82 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#102f39"><title>Sea of Chaos · Dock Wars</title>
+<meta name="theme-color" content="#0d3a4a"><title>Sea of Chaos · Plunder</title>
 <link rel="stylesheet" href="style.css">
 <script src="vendor/three.min.js"></script>
 <script src="../../shared/sdk/hub-config.js"></script><script src="../../shared/sdk/hub-sdk.js"></script>
 </head>
 <body>
-<canvas id="sea" aria-label="Pirate arena"></canvas>
+<canvas id="sea" aria-label="The open sea"></canvas>
+
 <section id="menu" class="screen"><div class="paper">
-<div class="eyebrow">UNLIKE HERO PRESENTS</div><div class="crest" aria-hidden="true">⚑</div>
-<h1>SEA OF<br><em>CHAOS</em></h1><div class="subtitle">D O C K &nbsp; W A R S</div>
-<p class="pitch">Risk the crossing. Bank your treasure. Break their harbor.</p>
-<div class="match-builder"><label for="format">CREW FORMAT</label><select id="format"><option value="1">1v1 · Captain duel</option><option value="2" selected>2v2 · Wingmate raid</option><option value="3">3v3 · Fleet battle</option></select><div class="series-rule">BEST OF THREE · FIRST TO 2 WINS</div><p id="mode-description">Break the enemy core, then sink their fleet. Protect yours to keep respawning.</p></div>
-<button id="customize" class="shipyard-link">Shipyard <span id="loadout-summary">Customize parts, paint &amp; weapons →</span></button>
-<label for="name">CAPTAIN’S NAME</label><input id="name" maxlength="16" autocomplete="nickname" placeholder="Captain">
-<button id="how-to" class="how-link">How to play · objective &amp; controls</button>
-<button id="solo" class="gold">Practice raid · with AI <span>→</span></button>
-<div class="divider">OR RAID WITH FRIENDS</div><button id="host">Create a room <small>2–6 captains</small></button>
-<div class="join"><input id="code" maxlength="4" placeholder="CODE" aria-label="Four-letter room code" autocomplete="off"><button id="join">Join room</button></div>
-<p id="menu-note" role="status">Grab treasure → upgrade → raid their fort · Best of three</p>
-<div class="audio-options"><button data-audio="music" aria-pressed="true">Music on</button><button data-audio="effects" aria-pressed="true">Effects on</button></div><a href="../../index.html">← Back to the Hub</a>
+ <div class="eyebrow">UNLIKE HERO PRESENTS</div>
+ <h1>SEA OF <em>CHAOS</em></h1>
+ <div class="subtitle">P L U N D E R</div>
+ <p class="pitch">Sink rivals. Steal their gold. Bank it before you sink.</p>
+ <ol class="steps">
+  <li><b>◉</b><span>Scoop up glowing treasure</span></li>
+  <li><b>⚓</b><span>Bank it at your harbor</span></li>
+  <li><b>💥</b><span>Sink rivals to spill their gold</span></li>
+ </ol>
+ <div class="row"><label>Captain<input id="name" maxlength="16" autocomplete="nickname" placeholder="Captain"></label>
+ <label>Crews<select id="format"><option value="1">1 v 1</option><option value="2" selected>2 v 2</option><option value="3">3 v 3</option></select></label></div>
+ <button id="solo" class="gold big">Set sail · vs bots</button>
+ <div class="divider">OR PLAY WITH FRIENDS</div>
+ <div class="row"><button id="host">Create room</button><div class="join"><input id="code" maxlength="4" placeholder="CODE" aria-label="Four-letter room code" autocomplete="off"><button id="join">Join</button></div></div>
+ <p id="menu-note" role="status"></p>
+ <div class="foot"><button id="how-to" class="link">How to play</button><button class="link" data-audio="music">Music on</button><button class="link" data-audio="effects">Sound on</button><a href="../../index.html">← Hub</a></div>
 </div></section>
-<section id="lobby" class="screen hidden"><div class="paper"><div class="eyebrow">ALL HANDS ON DECK</div><h2>Captains aboard</h2><p>Share this room code</p><div id="room-code">----</div><p id="lobby-note" role="status"></p><div id="roster"></div><button id="start" class="gold">Launch the raid →</button><button id="back">Leave room</button></div></section>
+
+<section id="lobby" class="screen hidden"><div class="paper">
+ <div class="eyebrow">ALL HANDS ON DECK</div><h2>Room <span id="room-code">----</span></h2>
+ <p>Share the code. Empty berths are filled with bots.</p>
+ <div id="roster"></div><p id="lobby-note" role="status"></p>
+ <button id="start" class="gold big">Start the match</button><button id="back">Leave room</button>
+</div></section>
+
+<section id="help-screen" class="screen hidden" role="dialog" aria-modal="true" aria-labelledby="help-title"><div class="paper wide">
+ <h2 id="help-title">How to plunder</h2>
+ <div class="cards">
+  <div><b>1 · Grab treasure</b><p>Glowing chests and gold float on the sea. Sail through them to haul them aboard. The pile on your deck shows what you carry.</p></div>
+  <div><b>2 · Bank it</b><p>Sail into your harbor's ring of buoys to bank it. The gold arrow points home. <em>If you sink first, all of it spills into the sea.</em></p></div>
+  <div><b>3 · Fight</b><p>Your cannons fire sideways. Bring a rival alongside and fire; the guns aim themselves. Sinking a ship spills its gold for anyone to grab.</p></div>
+ </div>
+ <ul class="extras"><li><b>Treasure galleon</b> sails across at 2:10 and again at 1:02. Sink it for a hoard of chests.</li><li><b>Whirlpools</b> roam the sea and change course without warning. They drag you in and grind your hull, and spilled treasure gets caught circling inside them. Boost to break free.</li><li><b>Barrels</b> give power-ups: ✹ Big Guns, ➤ Fair Wind, ✚ Repair.</li><li><b>Last 30 seconds:</b> banked gold counts <b>double</b>.</li><li>Your harbor heals you, and its tower shoots raiders.</li><li>When time runs out, the crew with the most <b>banked</b> gold wins.</li></ul>
+ <div class="keys"><span><kbd>A</kbd><kbd>D</kbd> steer</span><span><kbd>W</kbd> full sail · <kbd>S</kbd> brake</span><span><kbd>Space</kbd> / click: fire</span><span><kbd>Shift</kbd> boost</span><span><kbd>Esc</kbd> pause</span></div>
+ <button id="help-close" class="gold big">Got it</button>
+</div></section>
+
+<section id="pause-screen" class="screen hidden"><div class="paper">
+ <h2>Anchored</h2><p id="pause-note"></p>
+ <button id="resume" class="gold big">Resume</button><button id="help">How to play</button><button id="quit">Leave match</button>
+</div></section>
+
+<section id="end" class="screen hidden"><div class="paper wide">
+ <div class="eyebrow">MATCH OVER</div><h2 id="winner">Crimson wins!</h2>
+ <div id="final-score"></div><table id="captains"></table>
+ <button id="again" class="gold big">Play again</button><button id="menu-btn">Back to port</button>
+</div></section>
+
 <div id="hud" class="hidden">
-<header><div class="nav-actions"><button id="pause" aria-label="Pause game">Ⅱ</button><button id="help" aria-label="Show objective and controls">Help</button></div><div class="match"><span class="win-rule" id="mode-title">CORE WARS · 2v2</span><b id="timer">6:00</b><span id="flag-state">AT THE WRECK</span></div><button id="standings-toggle" aria-expanded="false">Scores</button></header>
-<div id="scores"></div><div id="treasure-hud"><div class="cargo-line"><span>ABOARD <small>lost on sinking</small></span><b id="cargo-count">0 / 16</b></div><div id="cargo-resources"></div><div class="bank-line"><span>SAFE AT HOME</span><b id="bank-resources"></b></div></div><div id="crew-tools"><select id="crew-command" aria-label="Signal your crew"><option value="">Signal crew</option><option value="attack">Attack</option><option value="defend">Defend</option><option value="help">Need help</option><option value="return">Returning with treasure</option></select><span id="crew-intent" role="status"></span></div><div id="team-status" aria-live="polite"></div><div id="raid-phase" class="opening"><span class="phase-light"></span><b id="phase-clock">DOCK SHIELDS · 1:00</b><span id="phase-copy">Contest treasure. Gear up.</span></div><div class="chart"><canvas id="map" width="284" height="284" aria-label="Chart: team docks and central treasure forge"></canvas><div class="chart-legend">◆ RELICS &nbsp; ● PEARLS &nbsp; □ HOME</div></div>
-<aside id="mission-card"><div class="mission-top"><span id="phase-label">YOUR NEXT MOVE</span><span id="stash-count">0 / 3 STASHED</span></div><h2 id="objective-title">Steal the Skull Flag</h2><p id="objective">Follow the gold arrow to the wreck in the middle of the sea.</p><div id="personal-progress" class="hidden"><i class="stash-pip"></i><i class="stash-pip"></i><i class="stash-pip"></i><span>Deliver 3 flags to win</span></div><ol class="mission-steps"><li data-step="1"><b>1</b><span>STEAL the flag at the wreck</span></li><li data-step="2"><b>2</b><span>RETURN to YOUR gold buoy</span></li><li data-step="3"><b>3</b><span>HOLD inside for 2 seconds</span></li></ol><div class="capture hidden"><i id="capture-fill"></i></div><div id="leader-line">Every other captain is a rival</div></aside>
-<div class="sea-status"><b id="zone-label">THE CROSSING</b><span id="tide-state">FLOOD TIDE</span></div>
-<div id="route"><span id="route-arrow">↑</span><b id="route-label">SKULL FLAG</b><small id="distance"></small></div>
-<div id="notice" role="status"></div>
-
-<button id="tutorial" class="hidden"></button>
-<div class="health" id="health-panel"><div><b id="captain">Captain</b><span id="life">AFLOAT</span></div><div class="health-track"><i id="hp"></i></div><small>HULL <b id="hp-txt">100/100</b></small></div>
-<div id="stick" aria-label="Drag to steer and sail"><span id="knob"></span><small>STEER</small></div>
-<button id="dock-shop">Dock shop · <span id="wallet">12 gold</span></button><div id="weapons"><div class="ammo"><button data-ammo="1" class="on">1 · Ball</button><button data-ammo="2">2 · Chain</button><button data-ammo="3">3 · Heavy</button></div><div class="aux-actions"><button data-act="boost">Boost <small id="boost-cd">SHIFT</small></button><button data-act="utility" id="utility-button">Tool <small id="utility-cd">R · EMPTY</small></button><button data-act="ram" class="ram-button">Ram <small id="ram-cd">SPACE</small></button></div><div class="broadsides"><button data-act="fire" class="fire auto">FIRE<small>AIMS AT THE NEAREST RIVAL</small></button><button data-act="fire-port" class="fire port">← PORT<small>Q · LEFT CANNONS</small></button><button data-act="fire-starboard" class="fire starboard">STARBOARD →<small>E · RIGHT CANNONS</small></button></div><div id="fire-cd">Broadside ready · line up a rival beside you</div></div>
-<div id="hints">W/S sail · A/D steer · <b>Click or F: fire</b> (aims at the nearest rival on either side, hold to keep firing) · Q/E force a side · Shift boost · Space ram · R tool</div>
-
+ <div id="scoreboard">
+  <div class="team t0"><span class="tname">CRIMSON</span><b id="score0">0</b></div>
+  <div id="clock"><b id="timer">3:00</b><small id="clock-note">Most banked gold wins</small></div>
+  <div class="team t1"><b id="score1">0</b><span class="tname">AZURE</span></div>
+ </div>
+ <button id="pause" aria-label="Pause">❚❚</button>
+ <canvas id="map" width="320" height="320" aria-label="Sea chart"></canvas>
+ <div id="feed" aria-live="polite"></div>
+ <div id="banner" aria-live="assertive"></div>
+ <div id="floaters"></div>
+ <div id="me">
+  <div class="hull"><span>HULL</span><i><u id="hull-bar"></u></i></div>
+  <div class="cargo"><b id="gold">0</b><span>gold aboard<br><small id="cargo-note">bank it at home</small></span></div>
+  <div id="status"></div>
+ </div>
+ <div id="hint"></div>
+ <div id="touch"><div id="stick"><div id="knob"></div></div><button data-act="boost" id="boost-btn">Boost</button><button data-act="fire" id="fire-btn">FIRE</button></div>
 </div>
-<section id="pause-screen" class="screen hidden"><div class="paper"><h2>At anchor</h2><p id="pause-note">Take a breath, Captain.</p><button id="resume" class="gold">Back to the raid</button><div class="audio-options"><button data-audio="music" aria-pressed="true">Music on</button><button data-audio="effects" aria-pressed="true">Effects on</button></div><button id="quit">Return to menu</button></div></section>
-<section id="end" class="screen hidden"><div class="paper"><div class="eyebrow">THE RAID IS OVER</div><h2 id="winner">Victory, Captain!</h2><p>Crews win together. Change your build and raid again.</p><div id="final-scores"></div><button id="again" class="gold">Raid again →</button><button id="menu-btn">Back to port</button></div></section>
-<section id="help-screen" class="screen hidden" role="dialog" aria-modal="true" aria-labelledby="rules-title"><div class="paper rules-card"><div class="eyebrow">WELCOME TO DOCK WARS</div><h2 id="rules-title">Build. Defend.<br>Break through.</h2><ol class="explain-steps"><li><b>1 · GEAR UP · FIRST 25 SECONDS</b> Both forts start shielded. Follow the gold arrow to treasure, then sail home to bank it. Your ship upgrades itself at the dock (switch to manual in the Dock shop).</li><li><b>2 · RAID THEIR FORT</b> Shoot their shield until it pops, then sink their two turrets. Turrets fire back, and your home water repairs you.</li><li><b>3 · BOARD THE CORE · 3 SECONDS</b> Sail slowly into the glowing ring by their core. Each hit you take knocks a second off. A destroyed core means no more respawns for that crew.</li><li><b>4 · SINK THE FLEET</b> Sink every ship left on that crew to win the round. First crew to win two rounds wins the match.</li></ol><p class="rule-note">If nobody breaks through, the center beacon opens at 3:00: hold its ring alone for 12 seconds to win the round. At 3:45 the storm closes in and respawns stop.</p><div class="combat-guide"><b>FIRING IS AUTOMATIC</b><p>Click or press F to fire. Your cannons shoot from whichever side has a rival nearby. Hold to keep firing. Q and E force the left or right side. Shift boosts, Space rams, 1/2/3 change your shot.</p><span>Touch: the left stick sails, the big Fire button shoots.</span></div><button id="help-close" class="gold">Understood · back to port</button></div></section>
-<section id="shipyard" class="screen hidden" role="dialog" aria-modal="true" aria-labelledby="yard-title"><div class="paper yard-card"><div class="eyebrow">YOUR SHIP · YOUR PLAYSTYLE</div><h2 id="yard-title">Captain’s shipyard</h2><p>All parts unlocked. Equal budgets. Choose your tradeoffs.</p><label for="ship-paint">HULL PAINT</label><select id="ship-paint"></select><label for="ship-sail">SAIL CLOTH</label><select id="ship-sail"></select><label for="ship-part">SHIP PART</label><select id="ship-part"></select><p id="part-perk" class="perk-note"></p><label for="special-a">SPECIAL CANNON · SLOT 2</label><select id="special-a"></select><p id="special-a-perk" class="perk-note"></p><label for="special-b">SPECIAL CANNON · SLOT 3</label><select id="special-b"></select><p id="special-b-perk" class="perk-note"></p><p class="yard-hint">Ball shot is always unlimited. Specials start with 6 rounds each. Buy reloads at your dock.</p><button id="yard-close" class="gold">Save ship · back to port →</button></div></section>
-<div id="round-break" class="hidden round-break"><div><span>BEST OF THREE · FIRST TO TWO</span><h2 id="round-result"></h2><b id="round-score"></b><p id="round-next"></p></div></div>
-<section id="shop-screen" class="screen hidden" role="dialog" aria-modal="true" aria-labelledby="shop-title"><div class="paper shop-card"><div class="eyebrow">GOLD · PEARLS · ANCIENT RELICS</div><h2 id="shop-title">Dock outfitter</h2><p id="shop-info" role="status"></p><div id="shop-tabs" role="group" aria-label="Shop category"><button data-category="ship" aria-pressed="true">Ship</button><button data-category="fortress" aria-pressed="false">Crew &amp; Fortress</button><button data-category="supplies" aria-pressed="false">Supplies</button></div><button id="auto-buy" class="auto-toggle" aria-pressed="true">Auto-upgrade at dock · ON</button><p id="shop-feedback" role="status"></p><div id="shop-items"></div><p class="yard-hint">The raid continues while shopping. Gold is yours; banked pearls and relics are shared. One equipped tool, up to 2 charges. Unused tools are lost when sunk; paid ship upgrades survive rebuilding.</p><button id="shop-close" class="gold">Back to the helm →</button></div></section>
 <script type="module" src="main.js"></script>
-</body></html>
+</body>
+</html>
