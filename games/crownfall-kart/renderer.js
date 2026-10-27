@@ -555,7 +555,6 @@
       }streakPositions.needsUpdate=true;
       this.registerMaterials();this.camera.updateMatrixWorld();
       if(Math.abs((this.shadowFov||0)-this.camera.fov)>.3){this.csm.updateFrustums();this.shadowFov=this.camera.fov;}this.csm.update();
-      const viewed=this.cockpitKart?.userData.cockpit;if(!menu&&viewed?.group.visible)this.renderMirror(viewed,this.cockpitKart);
       this.renderer.info.autoReset=false;this.renderer.info.reset();this.post.render(this.scene,this.camera,this.reduced,menu?0:player.speed,dt);
       this.adaptResolution(dt,menu);
       this.frameCount=(this.frameCount||0)+1;
@@ -590,22 +589,18 @@
       const u=mesh.userData,inside=mode==='cockpit';for(const part of u.cabin||[])part.visible=!inside;
       if(inside&&!u.cockpit)u.cockpit=this.makeCockpit(u.visual,u.cabin.find(o=>o.material!==this.scenery.glass&&o.material?.isMeshPhysicalMaterial)?.material);if(u.cockpit)u.cockpit.group.visible=inside;
     }
-    // Shared cockpit finishes: woven carbon, suede grips, race gloves and the live rear-view mirror. Built once, reused by every cockpit.
+    // Shared cockpit finishes: woven carbon, suede grips and race gloves. Built once, reused by every cockpit.
     cockpitKit(){
       if(this.cockpitMaterials)return this.cockpitMaterials;
       const weave=document.createElement('canvas');weave.width=weave.height=64;const w=weave.getContext('2d');
       w.fillStyle='#101114';w.fillRect(0,0,64,64);
       for(let y=0;y<8;y++)for(let x=0;x<8;x++){const g=w.createLinearGradient(x*8,y*8,x*8+8,y*8+8),lit=(x+y)%2;g.addColorStop(0,lit?'#2b2d33':'#16171b');g.addColorStop(1,lit?'#1a1b20':'#24262c');w.fillStyle=g;w.fillRect(x*8+.5,y*8+.5,7,7);}
       const carbonMap=new THREE.CanvasTexture(weave);carbonMap.wrapS=carbonMap.wrapT=THREE.RepeatWrapping;carbonMap.repeat.set(6,6);carbonMap.encoding=THREE.sRGBEncoding;
-      // The mirror shows a small render looking backwards; the image is flipped left-right like a real mirror.
-      this.mirrorTarget=new THREE.WebGLRenderTarget(448,64,{type:THREE.HalfFloatType});this.mirrorTarget.texture.repeat.x=-1;this.mirrorTarget.texture.offset.x=1;
-      this.mirrorCamera=new THREE.PerspectiveCamera(13,7,2.2,700);
       this.cockpitMaterials={
         carbon:new THREE.MeshStandardMaterial({color:'#ffffff',map:carbonMap,roughness:.32,metalness:.35}),
         suede:new THREE.MeshStandardMaterial({color:'#24252a',roughness:.95,metalness:0}),
         glove:new THREE.MeshStandardMaterial({color:'#1a1b1f',roughness:.7,metalness:.05}),
         foam:new THREE.MeshStandardMaterial({color:'#0d0d0f',roughness:1,metalness:0}),
-        mirror:new THREE.MeshBasicMaterial({map:this.mirrorTarget.texture}),
         cage:new THREE.MeshStandardMaterial({color:'#4a4e57',roughness:.38,metalness:.75})
       };
       return this.cockpitMaterials;
@@ -622,9 +617,6 @@
       // Body-colour A-pillars and windscreen header follow the glazing, so the view out matches the car seen from outside.
       for(const side of [-1,1])tube([side*.6,.39,.86],[side*.52,.87,.24],.028,trim);
       add(this.unitBox,trim,0,.875,.24,1.08,.03,.07);
-      // Rear-view mirror tucked right up under the roof header.
-      tube([0,.868,.28],[0,.855,.28],.007,kit.carbon);add(this.unitBox,kit.carbon,0,.842,.28,.2,.032,.022);
-      const mirror=add(new THREE.PlaneGeometry(.19,.027),kit.mirror,0,.842,.268);mirror.rotation.y=Math.PI;
       // Gunmetal roll cage: inner A-pillar bars, a header bar above the driver's head (clear of the windscreen), roof rails and padded X door bars.
       const cage=kit.cage;
       for(const side of [-1,1]){
@@ -678,14 +670,7 @@
       // Shift lights across the top of the wheel: revs normally, turbo charge in tier colours while drifting.
       const lights=[];for(let i=0;i<10;i++)lights.push(add(this.unitBox,this.mat('#24262b'),(i-4.5)*.019,.054,face,.014,.009,.004,spin));
       group.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;}});
-      return {group,spin,mirror,canvas,context:canvas.getContext('2d'),texture,lights,key:'',drawn:0,lightKey:''};
-    }
-    // Refresh the rear-view mirror every other frame (every third on Performance), skipping the driver's own car via the near plane.
-    renderMirror(cockpit,mesh){
-      this.mirrorFrame=(this.mirrorFrame||0)+1;if(this.mirrorFrame%(this.quality==='performance'?3:2))return;
-      const cam=this.mirrorCamera,p=this.mirrorPosition??=new THREE.Vector3(),yaw=mesh.rotation.y;
-      cockpit.mirror.getWorldPosition(p);cam.position.copy(p);cam.lookAt(p.x-Math.sin(yaw)*30,p.y-.9,p.z-Math.cos(yaw)*30);
-      cockpit.group.visible=false;this.renderer.setRenderTarget(this.mirrorTarget);this.renderer.render(this.scene,cam);this.renderer.setRenderTarget(null);cockpit.group.visible=true;
+      return {group,spin,canvas,context:canvas.getContext('2d'),texture,lights,key:'',drawn:0,lightKey:''};
     }
     drawDash(cockpit,k,now){
       const top=D.CLASSES[k.classId]?.speed||35,{gear,rpm}=root.KartAudio?.engineRpm(k.speed,top)||{gear:1,rpm:0},charge=D.clamp(k.driftTime/1.3,0,1);
