@@ -1,0 +1,19 @@
+import {lineOfSight} from './raid-map.js';
+import {inSmoke} from './economy.js';
+export const OPENING_SECONDS=60,WARD_RADIUS=22,SENTRY_RANGE=48;
+export function openingProtected(w){return !!w.rules&&w.t<(w.defense?.endsAt??OPENING_SECONDS);}
+export function layerFor(base){return base.core<=0?'broken':base.shieldHP>0?'shield':base.turrets.some(t=>t.hp>0)?'turrets':'core';}
+export function structureTargets(w,team){if(!w.teams)return [];const base=w.teams[1-team];if(base.shieldHP>0)return [{...base,id:`ward-${base.id}`,team:base.id,dead:0,drag:0,height:2.1,structure:true}];return base.turrets.filter(t=>t.hp>0).map(t=>({...t,team:base.id,dead:0,drag:0,height:base.height+2.4,structure:true}));}
+export function damageShield(w,base,damage,by,emit){if(openingProtected(w)||base.shieldHP<=0)return;const amount=Math.min(base.shieldHP,damage);base.shieldHP=Math.max(0,base.shieldHP-damage);emit(w,'structurehit',null,base.id,{x:base.x,z:base.z,damage:amount,part:'shield'});if(base.shieldHP===0){base.shieldBrokenAt=w.t;emit(w,'shieldbroken',null,base.id);}}
+export function updateDefenses(w,dt,emit){const active=openingProtected(w),was=w.defense.active;w.defense.active=active;w.defense.remaining=Math.max(0,w.defense.endsAt-w.t);
+ if(was&&!active)emit(w,'defenseend',null);
+ if(active){const remaining=Math.ceil(w.defense.remaining);if(remaining<=5&&remaining>0&&remaining!==w.defense.count){w.defense.count=remaining;emit(w,'defensecount',null,remaining);}}
+ for(const base of w.teams){base.shieldFlash=Math.max(0,(base.shieldFlash||0)-dt);for(const turret of base.turrets){turret.cooldown=Math.max(0,turret.cooldown-dt);if(turret.hp<=0)continue;
+  const decoy=w.fields?.find(f=>f.kind==='decoy'&&f.team!==base.id&&Math.hypot(f.x-turret.x,f.z-turret.z)<SENTRY_RANGE);const target=decoy||w.ships.filter(s=>s.team!==base.id&&!s.dead&&!s.eliminated&&s.whirl<0&&s.shield<=0&&Math.hypot(s.x-turret.x,s.z-turret.z)<SENTRY_RANGE&&!inSmoke(w,s)&&lineOfSight({...turret,height:base.height},s)).sort((a,b)=>Math.hypot(a.x-turret.x,a.z-turret.z)-Math.hypot(b.x-turret.x,b.z-turret.z))[0];if(!target||turret.cooldown>0)continue;
+  const a=Math.atan2(target.x-turret.x,target.z-turret.z),distance=Math.hypot(target.x-turret.x,target.z-turret.z),y=base.height+2.4;turret.aim=a;turret.firedAt=w.t;turret.cooldown=1.8;
+  w.shots.push({id:++w.shotSeq,x:turret.x,z:turret.z,y,vy:((target.height||0)+2.1-y)/Math.max(.1,distance/44),a,owner:turret.id,team:base.id,t:1.4,damage:7*(1+base.turretPower*.15),type:1,kind:'sentry',speed:44});emit(w,'sentry',target.id,base.id,{turret:turret.index});
+ }}
+}
+export function repelFromWard(w,s){const base=w.teams[1-s.team];if(base.shieldHP<=0)return;const dx=s.x-base.x,dz=s.z-base.z,d=Math.hypot(dx,dz);if(d>=WARD_RADIUS)return;const nx=d?dx/d:base.x>0?-1:1,nz=d?dz/d:0;s.x=base.x+nx*(WARD_RADIUS+.05);s.z=base.z+nz*(WARD_RADIUS+.05);s.v*=.25;s.attack=0;}
+export function interceptWard(w,p,emit){const base=w.teams.find(t=>t.id!==p.team&&t.shieldHP>0&&Math.hypot(p.x-t.x,p.z-t.z)<WARD_RADIUS);if(!base)return false;p.t=0;const owner=w.ships.find(s=>s.id===p.owner);damageShield(w,base,p.damage*(1+(owner?.siegeLevel||0)*.30),p.owner,emit);if(!base.shieldFlash){base.shieldFlash=.4;emit(w,'shieldhit',null,base.id,{x:p.x,z:p.z});}return true;}
+export function hitTurret(w,p,emit){for(const base of w.teams){if(base.id===p.team||base.shieldHP>0)continue;for(const turret of base.turrets){if(turret.hp<=0||Math.hypot(p.x-turret.x,p.z-turret.z)>3||Math.abs((p.y??2.1)-(base.height+2.4))>4)continue;const owner=w.ships.find(s=>s.id===p.owner),damage=p.damage*(1+(owner?.siegeLevel||0)*.30);turret.hp=Math.max(0,turret.hp-damage);p.t=0;emit(w,'structurehit',null,base.id,{x:turret.x,z:turret.z,damage,part:'turret'});if(!turret.hp){turret.destroyedAt=w.t;emit(w,'turretbroken',null,base.id,{x:turret.x,z:turret.z,turret:turret.index});}return true;}}return false;}

@@ -1,125 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720">
-  <defs>
-    <!-- Sky gradient: clean, deep oceanic twilight -->
-    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#0a1826"/>
-      <stop offset="60%" stop-color="#143448"/>
-      <stop offset="100%" stop-color="#1d5064"/>
-    </linearGradient>
-
-    <!-- Sun glow -->
-    <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#ffbe3b" stop-opacity=".3"/>
-      <stop offset="60%" stop-color="#ff9900" stop-opacity=".08"/>
-      <stop offset="100%" stop-color="#ff9900" stop-opacity="0"/>
-    </radialGradient>
-
-    <!-- Sail gradient -->
-    <linearGradient id="sailWhite" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="100%" stop-color="#eddcc6"/>
-    </linearGradient>
-    <linearGradient id="sailRed" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#ff4d4d"/>
-      <stop offset="100%" stop-color="#c92231"/>
-    </linearGradient>
-  </defs>
-
-  <!-- 1. Sky -->
-  <rect width="1200" height="720" fill="url(#sky)"/>
-
-  <!-- 2. Golden Sun -->
-  <circle cx="780" cy="230" r="150" fill="url(#sunGlow)"/>
-  <circle cx="780" cy="230" r="85" fill="#fecb4e"/>
-  <circle cx="780" cy="230" r="74" fill="#ffe27c"/>
-
-  <!-- 3. Distant Ocean Wave -->
-  <path d="M 0 435 Q 320 395 660 435 Q 960 475 1200 420 L 1200 720 L 0 720 Z" fill="#0c3848"/>
-
-  <!-- 4. PIRATE SHIP (CLEAN & ICONIC) -->
-  <g id="ship">
-    <!-- Bowsprit spar -->
-    <line x1="380" y1="438" x2="270" y2="408" stroke="#25160d" stroke-width="8" stroke-linecap="round"/>
-
-    <!-- Mast -->
-    <line x1="530" y1="440" x2="530" y2="135" stroke="#25160d" stroke-width="12" stroke-linecap="round"/>
-
-    <!-- Yardarm -->
-    <line x1="415" y1="210" x2="645" y2="210" stroke="#25160d" stroke-width="7" stroke-linecap="round"/>
-
-    <!-- Main Sail (Ivory cloth) -->
-    <path d="M 425 210
-             Q 530 220 635 210
-             Q 625 315 605 385
-             Q 530 405 455 385
-             Q 435 315 425 210 Z"
-          fill="url(#sailWhite)" stroke="#1a0f08" stroke-width="5" stroke-linejoin="round"/>
-
-    <!-- Pirate Skull & Crossbones Emblem on Main Sail -->
-    <g transform="translate(530, 300)">
-      <!-- Crossed Bones -->
-      <line x1="-42" y1="-38" x2="42" y2="38" stroke="#17191d" stroke-width="9" stroke-linecap="round"/>
-      <circle cx="-44" cy="-40" r="5" fill="#17191d"/><circle cx="-38" cy="-44" r="5" fill="#17191d"/>
-      <circle cx="44" cy="40" r="5" fill="#17191d"/><circle cx="38" cy="44" r="5" fill="#17191d"/>
-      <line x1="42" y1="-38" x2="-42" y2="38" stroke="#17191d" stroke-width="9" stroke-linecap="round"/>
-      <circle cx="44" cy="-40" r="5" fill="#17191d"/><circle cx="38" cy="-44" r="5" fill="#17191d"/>
-      <circle cx="-44" cy="40" r="5" fill="#17191d"/><circle cx="-38" cy="44" r="5" fill="#17191d"/>
-
-      <!-- Skull -->
-      <ellipse cx="0" cy="-5" rx="24" ry="22" fill="#17191d"/>
-      <path d="M -12 11 H 12 V 22 H -12 Z" fill="#17191d"/>
-      <!-- Eyes & Nose -->
-      <circle cx="-9" cy="-3" r="5.5" fill="#fdfaf3"/>
-      <circle cx="9" cy="-3" r="5.5" fill="#fdfaf3"/>
-      <polygon points="0,5 -3,11 3,11" fill="#fdfaf3"/>
-    </g>
-
-    <!-- Front Jib Sail (Crimson Red) -->
-    <path d="M 285 415
-             Q 380 425 435 440
-             Q 420 330 525 210
-             Q 395 305 285 415 Z"
-          fill="url(#sailRed)" stroke="#1a0f08" stroke-width="5" stroke-linejoin="round"/>
-
-    <!-- Pirate Flag at Masthead -->
-    <path d="M 534 135 L 600 148 L 582 161 L 600 174 L 534 167 Z" fill="#17191d"/>
-    <circle cx="560" cy="154" r="3.5" fill="#fdfaf3"/>
-
-    <!-- Ship Hull -->
-    <path d="M 335 445
-             C 365 510 435 540 535 540
-             C 630 540 695 515 735 435
-             C 740 405 685 410 655 418
-             C 545 432 445 438 335 445 Z"
-          fill="#351f14" stroke="#170c07" stroke-width="6" stroke-linejoin="round"/>
-
-    <!-- Golden Deck Trim Line -->
-    <path d="M 350 442 C 450 435 550 430 655 418 C 690 414 725 414 732 425" fill="none" stroke="#e5a93c" stroke-width="4" stroke-linecap="round"/>
-  </g>
-
-  <!-- 5. Foreground Ocean Waves -->
-  <!-- Main Foreground Wave -->
-  <path d="M 0 505
-           C 280 455 580 505 840 475
-           C 1020 450 1140 485 1200 470
-           L 1200 720 L 0 720 Z"
-        fill="#072735"/>
-
-  <!-- Wave Foam Crest -->
-  <path d="M 0 505
-           C 280 455 580 505 840 475
-           C 1020 450 1140 485 1200 470"
-        fill="none" stroke="#36d6be" stroke-width="6" stroke-linecap="round"/>
-
-  <!-- Front Base Wave -->
-  <path d="M 0 615
-           C 360 565 740 620 1020 585
-           C 1120 575 1170 590 1200 585
-           L 1200 720 L 0 720 Z"
-        fill="#03151e"/>
-
-  <path d="M 0 615
-           C 360 565 740 620 1020 585
-           C 1120 575 1170 590 1200 585"
-        fill="none" stroke="#5eead4" stroke-width="4" stroke-linecap="round" opacity=".4"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-label="Sea of Chaos Dock Wars: build your ship and raid with your crew">
+<defs><linearGradient id="sea" x2="0" y2="1"><stop stop-color="#143343"/><stop offset="1" stop-color="#0c242e"/></linearGradient><radialGradient id="glow"><stop stop-color="#f3c967" stop-opacity=".2"/><stop offset="1" stop-color="#f3c967" stop-opacity="0"/></radialGradient></defs>
+<path fill="url(#sea)" d="M0 0h1200v720H0z"/><circle cx="860" cy="320" r="300" fill="url(#glow)"/>
+<g fill="none" stroke="#31717a" stroke-width="2" opacity=".5"><ellipse cx="820" cy="470" rx="320" ry="125"/><ellipse cx="820" cy="470" rx="230" ry="85"/><path d="M0 560q200-60 400 0t400 0t400 0M0 640q200-60 400 0t400 0t400 0M0 600q200-60 400 0t400 0t400 0"/></g>
+<ellipse cx="880" cy="470" rx="105" ry="36" fill="none" stroke="#ffdb7b" stroke-width="5"/>
+<path d="M880 460V140" stroke="#c28e43" stroke-width="12"/>
+<path d="M887 147q65-25 141 12l-28 46 28 35q-75-35-141-7z" fill="#f8d477"/>
+<g fill="#25383b"><circle cx="949" cy="187" r="19"/><path d="M936 198h26v15h-26z"/></g><g fill="#f8d477"><circle cx="942" cy="185" r="4"/><circle cx="956" cy="185" r="4"/></g>
+<path d="m687 484 135 31 112-49-66 98-121-8z" fill="#734932" stroke="#c89858" stroke-width="4"/><path d="M806 495V288" stroke="#c8a36d" stroke-width="9"/><path d="M792 307q-68 18-56 141l56 12zM818 307q65 18 66 131l-66 22z" fill="#eee1be"/><path d="m806 287 50 12-50 13z" fill="#ffce65"/>
+<text x="72" y="119" fill="#83b7bc" font-family="sans-serif" font-size="20" letter-spacing="7">UNLIKE HERO</text>
+<text x="68" y="245" fill="#f4e6c6" font-family="Georgia,serif" font-size="92" font-weight="bold">SEA OF</text><text x="64" y="342" fill="#ffd166" font-family="Georgia,serif" font-size="105" font-weight="bold">CHAOS</text>
+<text x="74" y="397" fill="#ebd4a4" font-family="sans-serif" font-size="23" letter-spacing="9">DOCK WARS</text>
+<path d="M74 432h390" stroke="#b19257"/>
+<text x="74" y="481" fill="#d2e3dd" font-family="sans-serif" font-size="23">Build your ship. Raid their dock.</text><text x="74" y="519" fill="#ffd166" font-family="sans-serif" font-size="23" font-weight="bold">Break their core. Win with your crew.</text>
+<rect x="74" y="590" width="339" height="51" rx="25" fill="#234651" stroke="#47737a"/><text x="243" y="623" text-anchor="middle" fill="#e9dfc5" font-family="sans-serif" font-size="18">1v1 · 2v2 · 3v3 · TOUCH READY</text>
 </svg>

@@ -1,0 +1,33 @@
+import {waypoint} from './navigation.js';
+import {cargoCount,capacity} from './economy.js';
+import {openingProtected,layerFor,structureTargets} from './defenses.js';
+import {buoy} from './simulation.js';
+export function missionFor(w,s){
+ if(w.rules){const m=teamMission(w,s);if(!s.dead&&!s.eliminated&&!m.goal.siege)m.goal=waypoint(w,s,m.goal);return m;}
+ const carrier=w.ships.find(e=>e.id===w.flag.carrier),home=buoy(s),base={phase:1,goal:w.flag,label:carrier?'FLAG CARRIER':'SKULL FLAG'};
+ if(s.dead)return {...base,title:'Ship sunk · back soon',detail:`Respawning at your gold buoy in ${Math.ceil(s.dead)} seconds. Sinking does not remove your stashes.`,status:'RESPAWNING'};
+ if(s.whirl>=0)return {...base,title:'Caught in the maelstrom!',detail:'The current has your ship. You will resurface at your buoy after sinking.',status:'DRAGGED UNDER'};
+ if(s.drag>.03){const h=w.whirl.reduce((a,b)=>Math.hypot(s.x-a.x,s.z-a.z)<Math.hypot(s.x-b.x,s.z-b.z)?a:b);return {...base,goal:{x:s.x+(s.x-h.x)*5,z:s.z+(s.z-h.z)*5},label:'SAFE WATER',title:'Boost out of the whirlpool',detail:'Turn away from the dark funnel and hold Boost before the current catches you.',status:'WHIRLPOOL PULL'};}
+ if(w.flag.carrier===s.id){if(s.capture>0)return {...base,phase:3,goal:home,label:'YOUR STASH BUOY',title:'Stay here · stashing!',detail:`Release the stick or W/S. Hold this circle for ${Math.max(0,2-s.capture).toFixed(1)} more seconds to score.`,status:'STASHING'};return {...base,phase:2,goal:home,label:'YOUR GOLD BUOY',title:'Bring the flag HOME',detail:'Follow the gold arrow to YOUR glowing buoy. Stop inside its circle for 2 seconds.',status:'FLAG CARRIER'};}
+ if(carrier)return {...base,title:`Steal it from ${carrier.name}`,detail:'Put the carrier alongside your ship. Fire Q/Port or E/Starboard, then sail into the dropped flag.',status:'HUNT THE CARRIER'};
+ if(w.flag.returnAt>0)return {...base,title:`Next flag in ${Math.ceil(w.flag.returnAt)} seconds`,detail:'Head toward the central wreck. A new Skull Flag appears there after every stash.',status:'FLAG RETURNING'};
+ return {...base,title:w.flag.dropped>0?'Grab the dropped flag':'Steal the Skull Flag',detail:w.flag.dropped>0?`Sail into the flag before it returns in ${Math.ceil(w.flag.dropped)} seconds. Then deliver it to YOUR gold buoy.`:'Follow the gold arrow to the central wreck. Sail into the flag to pick it up automatically.',status:'FIND THE FLAG'};
+}
+
+function teamMission(w,s){const home=w.teams[s.team],enemy=w.teams[1-s.team],base={phase:1,goal:enemy,label:'ENEMY FORTRESS'};
+ if(w.series.phase==='intermission')return {...base,title:`Round ${w.series.round} complete`,detail:`${w.series.replay?'Both fleets sank. Replay this round.':w.teams[w.series.roundWinner].name+' wins.'} Fresh defenses and upgrades next round in ${Math.ceil(w.series.nextIn)}s.`,status:'BEST OF THREE'};
+ if(s.eliminated)return {...base,title:'Final sink · spectating',detail:'Your remaining teammates can still win this round.',status:'ELIMINATED'};
+ if(s.dead)return {...base,goal:home,title:`Rebuilding · ${Math.ceil(s.dead)}s`,detail:'Your living core lets you respawn. Destroy theirs to stop their rebuilds.',status:'RESPAWNING'};
+ if(s.whirl>=0)return {...base,title:'Caught in the maelstrom',detail:'The current is dragging you under. A living core lets you rebuild.',status:'TRAPPED'};
+ if(s.hp<s.maxHp*.35)return {...base,goal:home,label:'HOME DOCK',title:'Fall back and repair',detail:'Return through a harbor gate to your dock. Heal and spend gold on stronger gear.',status:'LOW HULL'};
+ const boarder=w.ships.find(p=>p.attack>0);if(boarder)return {...base,goal:boarder,label:'BOARDING SHIP',title:boarder.team===s.team?`Protect boarding · ${boarder.attack.toFixed(1)}/5s`:`DEFEND CORE · ${boarder.attack.toFixed(1)}/5s`,detail:boarder.team===s.team?'Cover your teammate. Any movement or damage resets the five-second hold.':'Hit the boarding ship before the capture ring fills.',status:'BOARDING ALERT'};
+ if(w.overtime.active)return {...base,goal:w.nodes[2],label:'CROWNFALL BEACON',title:`Hold the beacon · ${w.overtime.progress[s.team].toFixed(1)}/20s`,detail:w.overtime.finalWater>0?'Final lives. The marked safe sea is closing toward the beacon. Hold alone to win.':`Hold the central 20m ring without enemies for 20s. Enemies pause capture and drain your progress when they hold alone. Final lives and closing safe sea begin at 5:00.`,status:w.overtime.contested?'BEACON CONTESTED':'OVERTIME'};
+ if(home.core<=0)return {...base,title:'Your core is gone · final life',detail:'Stay together. Sink their fleet or win the central beacon in overtime.',status:'FINAL LIFE'};
+ if(home.alarmUntil>w.t)return {...base,goal:home,label:'YOUR HOME DOCK',title:'Your harbor is under attack',detail:'Return to intercept the raiders, or signal a teammate to defend.',status:'DEFEND'};
+ if(s.cargo.relics||s.cargo.pearls>=3||cargoCount(s)>=capacity(s)*.65)return {...base,goal:home,label:'BANK AT HOME',title:`Return home to bank ${s.cargo.relics?`${s.cargo.relics} relics`:s.cargo.pearls?`${s.cargo.pearls} pearls`:'your treasure'}`,detail:'Sail within 24m of your dock to bank automatically. Sinking drops all unbanked treasure.',status:'TREASURE ABOARD'};
+ if(openingProtected(w)){const node=w.nodes[0];return {...base,goal:node,label:node.name.toUpperCase(),title:'Collect pearls at Tideglass Mine',detail:`Sail into the pale pearl markers. Bank at home for shared upgrades. Shields unlock in ${Math.ceil(w.defense.endsAt-w.t)}s.`,status:'RESOURCE CONTEST'};}
+ if(enemy.core<=0)return {...base,goal:w.ships.find(p=>p.team!==s.team&&!p.dead)||enemy,label:'FINAL RIVALS',title:'Their core is gone · finish the fleet!',detail:'Sink their remaining ships to win this round. First crew to win two rounds wins the match.',status:'FINAL HUNT'};
+ const layer=layerFor(enemy);if(layer==='shield')return {...base,title:'1 · Break the enemy shield',detail:`${Math.ceil(enemy.shieldHP)} shield remaining. Turn your side cannons toward the dome. Siege upgrades deal more structure damage.`,status:'SHIELD ASSAULT'};
+ if(layer==='turrets')return {...base,goal:structureTargets(w,s.team)[0],label:'ENEMY TURRET',title:'2 · Destroy both defense turrets',detail:`${enemy.turrets.filter(t=>t.hp>0).length} still firing. Destroyed turrets stay down for the round. You cannot board the core yet.`,status:'TURRETS LIVE'};
+ return {...base,phase:3,label:'EXPOSED CORE',title:s.attack>0?`Hold still · ${(5-s.attack).toFixed(1)}s remaining`:'3 · Board the core and stop for 5 seconds',detail:'Enter the enemy harbor through a gate and stop inside the core ring. Release movement and hold still for 5 uninterrupted seconds. Movement or damage resets progress.',status:s.attack>0?'BOARDING CORE':'CORE EXPOSED'};
+}
