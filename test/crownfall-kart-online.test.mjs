@@ -28,13 +28,13 @@ async function client(url,t){
 
 test('online rooms share server-owned races, reject guest starts and switch disconnected humans to AI',async t=>{
   const{game,url}=await setup(t),host=await client(url,t),guest=await client(url,t);
-  host.send({type:'create',name:'Host',classId:'heavy',mode:'race',track:1});const lobby=await host.next('lobby');
-  assert.match(lobby.code,/^[A-Z]{4}$/);assert.equal(lobby.host,host.id);
+  host.send({type:'create',name:'Host',classId:'heavy',mode:'race',track:1,difficulty:'hard'});const lobby=await host.next('lobby');
+  assert.match(lobby.code,/^[A-Z]{4}$/);assert.equal(lobby.host,host.id);assert.equal(lobby.difficulty,'hard');
   guest.send({type:'join',code:lobby.code,name:'<Guest>',classId:'light'});const joined=await guest.next('lobby',d=>d.seats.length===2);
   assert.equal(joined.seats[1].name,'Guest');assert.equal(joined.seats[1].classId,'light');
   guest.send({type:'start'});assert.match((await guest.next('error')).message,/host/);
   host.send({type:'start'});const first=(await host.next('state')).world,second=(await guest.next('state')).world;
-  assert.equal(first.racers.length,8);assert.equal(first.racers.filter(k=>k.human).length,2);assert.equal(second.trackIndex,1);
+  assert.equal(first.difficulty,'hard');assert.equal(first.racers.length,8);assert.equal(first.racers.filter(k=>k.human).length,2);assert.equal(second.trackIndex,1);
   assert.equal(first.racers.find(k=>k.id===host.id).classId,'heavy');
   guest.send({type:'state',world:{racers:[{id:guest.id,x:999999,item:'star'}]}});
   guest.send({type:'input',input:{throttle:999,steer:0,x:999999,item:'star',coins:1000}});
@@ -46,8 +46,8 @@ test('online rooms share server-owned races, reject guest starts and switch disc
 });
 
 test('online lobbies enforce eight human seats and clamp untrusted room configuration',async t=>{
-  const{url}=await setup(t),host=await client(url,t);host.send({type:'create',mode:'invalid',track:999,name:'Host',classId:'invalid'});
-  const lobby=await host.next('lobby');assert.equal(lobby.mode,'race');assert.equal(lobby.track,D.TRACKS.length-1);assert.equal(lobby.seats[0].classId,'medium');
+  const{url}=await setup(t),host=await client(url,t);host.send({type:'create',mode:'invalid',difficulty:'__proto__',track:999,name:'Host',classId:'invalid'});
+  const lobby=await host.next('lobby');assert.equal(lobby.mode,'race');assert.equal(lobby.difficulty,'normal');assert.equal(lobby.track,D.TRACKS.length-1);assert.equal(lobby.seats[0].classId,'medium');
   for(let i=1;i<8;i++){const peer=await client(url,t);peer.send({type:'join',code:lobby.code,name:`Racer ${i}`});await peer.next('lobby',d=>d.seats.length===i+1);}
   const ninth=await client(url,t);ninth.send({type:'join',code:lobby.code,name:'Ninth'});assert.match((await ninth.next('error')).message,/full/);
   host.send({type:'start'});assert.equal((await host.next('state')).world.trackIndex,D.TRACKS.length-1);
