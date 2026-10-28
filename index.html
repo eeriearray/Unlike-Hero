@@ -114,6 +114,10 @@ button:focus-visible,input:focus-visible,a:focus-visible,summary:focus-visible,s
 .game-title-short-fuse{display:inline-flex;align-items:baseline;gap:8px;margin:0 0 8px;font-size:31px;line-height:1;text-transform:uppercase}
 .game-title-short-fuse .fuse-short{font-family:'Black Ops One','Saira Stencil One',var(--f-display);font-size:31px;font-weight:400;color:#ff3326;letter-spacing:.04em;text-shadow:0 0 18px rgba(255,51,38,.5),2px 2px 0 #280805,3px 3px 6px rgba(0,0,0,.75)}
 .game-title-short-fuse .fuse-fuse{font-family:'Share Tech Mono',var(--f-mono);font-size:29px;font-weight:700;color:#ffffff;letter-spacing:.14em;text-shadow:0 0 10px rgba(255,255,255,.6),0 0 20px rgba(255,60,45,.3),2px 2px 0 #0d1215,3px 3px 6px rgba(0,0,0,.75)}
+.game-title-chronolink{display:flex;flex-direction:column;gap:5px;text-transform:none}
+.game-title-chronolink .chrono-name{font-family:'Limelight',Georgia,serif;font-size:33px;font-weight:400;line-height:1;letter-spacing:.04em;background:linear-gradient(180deg,#f7dd86 0%,#d4af37 55%,#a87a22 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 2px 0 #2a1a07) drop-shadow(0 0 12px rgba(212,175,55,.3))}
+.game-title-chronolink .chrono-sub{font-family:'Share Tech Mono',var(--f-mono);font-size:13px;font-weight:400;line-height:1;letter-spacing:.24em;text-transform:uppercase;color:#7ffcec;text-shadow:0 0 10px rgba(0,245,212,.55)}
+.game-title-chronolink .chrono-sub span{color:#f0d68a;text-shadow:0 0 8px rgba(212,175,55,.4)}
 .tagline{display:-webkit-box;overflow:hidden;margin:0;color:#d8dfd1;font-size:15px;line-height:1.5;-webkit-box-orient:vertical;-webkit-line-clamp:2}
 .tag{color:var(--muted);font:500 11px var(--f-mono);letter-spacing:0;text-transform:uppercase}
 .tag+.tag::before{content:"/";margin-right:9px;color:#87927e}
@@ -283,6 +287,8 @@ function renderGames() {
       ? '<span class="fuse-short">SHORT</span><span class="fuse-fuse">FUSE</span>'
       : g.id === 'casino'
       ? '<span class="casino-neon">Neon</span><span class="casino-deco">Casino</span>'
+      : g.id === 'chronolink'
+      ? '<span class="chrono-name">ChronoLink</span><span class="chrono-sub"><span>Anchor</span> &amp; Echo</span>'
       : g.id === 'recess'
       ? 'RECESS'
       : esc(g.title);
@@ -302,7 +308,7 @@ function renderGames() {
         </div>
         <div class="card-body">
           <div class="card-meta"><span class="players">${esc(players)}</span></div>
-          <h2 class="game-title game-title-${esc(g.id)}"${g.id === 'crownfall-kart' || g.id === 'party-pack' || g.id === 'short-fuse' || g.id === 'casino' ? ` aria-label="${esc(g.title)}"` : ''}>${titleMarkup}</h2>
+          <h2 class="game-title game-title-${esc(g.id)}"${g.id === 'crownfall-kart' || g.id === 'party-pack' || g.id === 'short-fuse' || g.id === 'casino' || g.id === 'chronolink' ? ` aria-label="${esc(g.title)}"` : ''}>${titleMarkup}</h2>
           <p class="tagline">${esc(g.tagline || '')}</p>
           <div class="tags">${(g.tags || []).slice(0, 2).map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>
           <div class="card-action">${roleControl}<button class="btn primary" data-game="${esc(g.id)}" data-title="${esc(g.title)}" data-role="${esc(firstRole.id)}" aria-label="Play ${esc(g.title)} as ${esc(firstRole.name)}">Play <span aria-hidden="true">→</span></button></div>
