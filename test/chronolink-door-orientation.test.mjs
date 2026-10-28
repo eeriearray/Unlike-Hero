@@ -26,3 +26,12 @@ test('exit arches on all four sides face into the chamber',()=>{
     assert.equal(vm.runInContext('exitGateYaw(level)',context),yaw);
   }
 });
+test('authored exit approaches override the nearest wall, including chambers 2, 8 and 11',()=>{
+  for(let n=1;n<=context.ChronoCore.MAX_LEVEL;n++) {
+    context.level=context.ChronoCore.getChamber(n);
+    const expected=[9,12].includes(n)?0:Math.PI/2;
+    assert.equal(vm.runInContext('exitGateYaw(level)',context),expected,`chamber ${n} follows its authored approach`);
+  }
+  context.level={W:14,H:8,exit:{x:11,y:3},exitFacing:'S'};
+  assert.equal(vm.runInContext('exitGateYaw(level)',context),0,'explicit facing also overrides a nearer side wall');
+});
