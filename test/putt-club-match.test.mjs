@@ -150,13 +150,19 @@ test('crates award a weighted random power-up; inventory holds two', () => {
   assert.equal(Object.keys(counts).length, 12);
 });
 
-test('crates are picked up even when inventory is full or ball is resting or fast-moving', () => {
+test('crates are picked up even when ball is resting or fast-moving, and inventory is capped at two', () => {
   const { m, fx } = room(1);
   toPlay(m);
   const p = m.get('p0'), tk = m.tokens[0];
-  // 1. Full inventory: ball resting at crate collects and replaces slot 1
+  // 1. Full inventory: ball at crate does NOT exceed 2 or consume crate
   p.inventory = ['turbo', 'magnet'];
   P.place(p.ball, tk.x, tk.y, tk.z);
+  m.playRules();
+  assert.equal(tk.active, true);
+  assert.equal(p.inventory.length, 2);
+
+  // 2. Room in inventory: ball resting at crate collects it
+  p.inventory = ['turbo'];
   m.playRules();
   assert.equal(tk.active, false);
   assert.equal(p.inventory.length, 2);
@@ -164,15 +170,17 @@ test('crates are picked up even when inventory is full or ball is resting or fas
   assert.ok(Powerups.BY_ID[p.inventory[1]]);
   assert.ok(fx.some((e) => e.type === 'token' && e.id === 'p0'));
 
-  // 2. Continuous swept collision for fast ball passing across token
+  // 3. Continuous swept collision for fast ball passing across token
   tk.active = true;
   tk.respawnAt = 0;
+  p.inventory = [];
   p.ball.px = tk.x;
   p.ball.pz = tk.z - 2.5;
   p.ball.x = tk.x;
   p.ball.z = tk.z + 2.5;
   m.playRules();
   assert.equal(tk.active, false);
+  assert.equal(p.inventory.length, 1);
 });
 
 test('all twelve power-ups exist with unique names and descriptions', () => {

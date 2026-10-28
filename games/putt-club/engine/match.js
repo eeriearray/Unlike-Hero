@@ -644,7 +644,7 @@
         if (!tk.active) { if (self.t >= tk.respawnAt) { tk.active = true; self.fx({ type: 'tokenBack', token: tk.id }); self.emitState(); } return; }
         for (var i = 0; i < self.players.length; i++) {
           var p = self.players[i], b = p.ball;
-          if (!b || p.finished) continue;
+          if (!b || p.finished || p.inventory.length >= 2) continue;
           var x0 = b.px != null ? b.px : b.x;
           var y0 = b.py != null ? b.py : b.y;
           var z0 = b.pz != null ? b.pz : b.z;
@@ -655,11 +655,7 @@
           var distSq = distSqToSegment(tk.x, tk.z, x0, z0, b.x, b.z);
           if (distSq > reachSq) continue;
           var item = Powerups.roll(self.rng, { behind: self.isBehind(p) });
-          if (p.inventory.length >= 2) {
-            p.inventory[1] = item;
-          } else {
-            p.inventory.push(item);
-          }
+          p.inventory.push(item);
           p.stats.tokens++;
           tk.active = false; tk.respawnAt = self.t + freq.respawn;
           self.fx({ type: 'token', token: tk.id, id: p.id, power: item, x: tk.x, y: tk.y, z: tk.z });
