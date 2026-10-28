@@ -5,6 +5,18 @@ Two-player asymmetric co-op. The **Anchor** works a pristine 1924 building; the 
 the Echo walks through what is left. Move it again and the future changes again. See [DESIGN.md](DESIGN.md) for
 the reasoning behind the mechanics.
 
+Every chamber now also blocks the Anchor with a signal lock. Only the Echo can stand on the matching lettered
+receiver in 2026 and read its three-digit frequency. The Echo must tell the Anchor the number; the Anchor enters
+it at the barrier. The code is never filled in or displayed on the Anchor's screen, including in hints. Wrong
+frequencies leave the barrier closed. In single-device play, switch to the Echo to read it and back to the Anchor
+to enter it.
+
+Chambers 3–6, 10, 13, 18 and 19 chain two locks with the existing water, rust, bridge and observation puzzles.
+For example, in Rust the Anchor first bridges the Echo's gap; the Echo reads receiver A; the Anchor unlocks A
+and sends water to rust the iron; the Echo kicks the bars and reads receiver B; the Anchor unlocks the final route.
+In Pit Stop the Anchor must fill the first gap before the Echo can unlock access to the second crate.
+The solver models both receiver reads and lock tuning, and verifies that all 19 chambers remain solvable.
+
 Everything is one file, `index.html`: no images or audio files. Both eras are real-time 3D scenes rendered with
 three.js r128 (loaded from cdnjs, so the first load needs internet). Every texture is painted on a canvas in code,
 and music and effects are synthesised with the Web Audio API. Drag a view to orbit its camera, scroll to zoom,
@@ -18,7 +30,8 @@ double-click to reset.
   `BroadcastChannel('chronolink-sync')`: the first becomes the Anchor, the second the Echo, and each then uses `WASD`,
   `E` and `F`. A window that is closed or hidden for 3 seconds hands both players back, and **Play both here** in the
   menu unlinks on purpose.
-- **Two devices:** from the hub, press **Online** in both and enter the same 4-letter code (uses the hub relay).
+- **Two devices:** choose **Play online**, create a room, and give its four-letter room code to your partner to join.
+  The room code connects the devices; the three-digit signal frequencies are separate clues found inside chambers.
 - `Tab` switches split and solo view. `?level=N` or `#N` opens a chamber (1-19).
 
 ## How time works

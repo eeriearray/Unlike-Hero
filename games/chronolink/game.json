@@ -1,8 +1,8 @@
 {
   "id": "chronolink",
   "title": "ChronoLink: Anchor & Echo",
-  "tagline": "One of you is in 1924, the other in the same building's 2026 ruins. Whatever the Anchor leaves somewhere spends a century there: dry planks become bridges, wet ones rot, acorns become trees, running water floods and erodes. 19 hand-built chambers.",
-  "version": "2.0.0",
+  "tagline": "Change the past to open the Echo’s route. Explore the future to decode the Anchor’s signal locks. Neither era holds the whole answer: 19 chambers of two-way co-op, shared discoveries and chained puzzles.",
+  "version": "2.1.0",
   "sdk": "1.x",
   "entry": "index.html",
   "thumbnail": "hub-banner.webp",
