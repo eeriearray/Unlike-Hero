@@ -259,20 +259,18 @@ h1 small{margin-top:8px;padding:3px 8px 2px;border-radius:3px;background:var(--g
   .race-clock{padding:6px 10px}.race-clock small{max-width:150px}
 }
 
-/* Road calls sit between the race clock and the lower touch controls. */
-.route-cue{position:fixed;top:148px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px;width:min(280px,calc(100% - 32px));padding:9px 12px;border:1px solid #e6d3a859;border-radius:9px;background:#0a0e17e8;color:#f3e4bd;pointer-events:none;box-shadow:0 6px 24px #0005}
-.route-cue>strong{font:800 36px/1 var(--display);flex:none;width:36px;text-align:center}
-.route-cue>div{min-width:0}.route-cue b{display:block;font:700 16px/1.2 var(--display);letter-spacing:.04em}
-.route-cue small{display:block;margin-top:3px;color:#e6e1d6;font-size:11px;line-height:1.35}
+/* Compact racing cues: one symbol and a distance, only when useful. */
+.route-cue{position:fixed;top:148px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;width:max-content;max-width:160px;padding:6px 10px;border:1px solid #e6d3a859;border-radius:9px;background:#0a0e17df;color:#f3e4bd;pointer-events:none}
+.route-cue>strong{font:800 32px/1 var(--display);width:32px;text-align:center}
+.route-cue>b{font:700 18px/1 var(--display);white-space:nowrap}
+.route-cue>b:empty{display:none}
 .route-cue[data-kind=turn],.route-cue[data-kind=jump]{border-color:#ffb347;color:#ffcd7c}
-.route-cue[data-kind=danger]{border-color:#ff5a4f;color:#ffaaa0;background:#301013eb}
-@media(max-width:650px){.route-cue{top:calc(232px + env(safe-area-inset-top));width:240px;padding:7px 10px}.route-cue>strong{font-size:28px;width:28px}.route-cue b{font-size:15px}}
-@media(max-height:500px){.route-cue{top:58px;width:240px;padding:6px 10px}.route-cue>strong{font-size:28px;width:28px}.route-cue b{font-size:14px}.route-cue small{font-size:10px}.rival{display:none}}
-.notice{top:224px}
-@media(max-width:650px){.notice{top:auto;bottom:110px;padding:6px 10px;font-size:15px}}
-@media(max-height:500px){.notice{top:auto;bottom:10px;max-width:32vw;padding:5px 8px;font-size:12px}}
-@media(max-width:650px) and (min-height:501px){
- .rival{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 10px;width:240px}
- .rival small{grid-column:1/-1;font-size:9px;white-space:nowrap}
- .rival b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-}
+.route-cue[data-kind=danger]{border-color:#ff5a4f;color:#ffaaa0;background:#301013df}
+.racing #rival,.racing #standings,.racing .race-hints,.racing #race-name{display:none}
+.item-slot.empty{display:none}
+#surface-label:empty,#turbo-label:empty{display:none}
+.notice{top:208px;padding:6px 10px;font-size:16px}
+@media(max-width:650px){.route-cue{top:calc(178px + env(safe-area-inset-top))}.route-cue>strong{font-size:28px;width:28px}.route-cue>b{font-size:16px}.notice{top:auto;bottom:110px;font-size:14px}}
+@media(max-height:500px){.route-cue{top:58px}.notice{top:auto;bottom:10px;max-width:32vw;padding:5px 8px;font-size:12px}}
+.telemetry:has(#turbo-label:empty):has(#surface-label:empty) .turbo{display:none}
+@media(pointer:coarse){.mast kbd{display:none}}

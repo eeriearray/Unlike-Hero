@@ -183,35 +183,39 @@
     else startSolo();
   };
   function updateRouteCue(k){
-    const track=T.makeTrack(world.trackIndex),box=$('route-cue');
-    box.classList.toggle('hidden',world.mode==='battle'||world.phase!=='racing'||k.finishTime!=null);
-    if(box.classList.contains('hidden'))return;
-    let symbol='↑',title='FOLLOW THE ARROWS',detail='Stay between the edge markings',kind='straight';
-    const cue=T.guidance(track,k.s,k.speed),floor=T.sample(track,k.s).y;
+    const track=T.makeTrack(world.trackIndex),box=$('route-cue'),cue=T.guidance(track,k.s,k.speed),floor=T.sample(track,k.s).y;
+    let symbol='',label='',description='',kind='straight';
     if(!k.grounded&&k.launchedAt!=null){
-      const windowOpen=k.vy<0&&k.y-floor<2.4;
-      symbol='↓';title=windowOpen?'TAP JUMP NOW':'AIRBORNE';detail=windowOpen?'Time the landing for a boost':'Tap again just before landing';kind='jump';
-    }else if(!k.grounded&&k.y<floor-.5){symbol='!';title='OFF THE ROAD';detail='Recovering to the last safe section';kind='danger';}
-    else if(k.grounded&&Math.abs(k.lane)>T.edgeAt(track,k.segment,k.lane)-1.5){symbol=k.lane>0?'→':'←';title='ROAD EDGE';detail=k.lane>0?'Steer right toward the road':'Steer left toward the road';kind='danger';}
-    else if(cue.kind==='gap'){symbol='⇧';title=`GAP · ${Math.ceil(cue.distance/5)*5} m`;detail='Jump at amber · land at cyan';kind='jump';}
-    else if(cue.kind==='turn'){symbol=cue.side==='left'?'←':'→';title=`${cue.severity==='hairpin'?'HAIRPIN':cue.severity==='sharp'?'SHARP':''} ${cue.side.toUpperCase()} · ${Math.ceil(cue.distance/5)*5} m`.trim();detail=cue.severity==='bend'?'Follow the arrows through the bend':'Brake or hold drift through the bend';kind='turn';}
-    box.dataset.kind=kind;$('route-symbol').textContent=symbol;$('route-title').textContent=title;$('route-detail').textContent=detail;
+      const ready=k.vy<0&&k.y-floor<2.4;
+      symbol='↓';label=ready?'TAP':'';description=ready?'Tap jump for a landing boost':'Airborne; prepare to land';kind='jump';
+    }else if(!k.grounded&&k.y<floor-.5){symbol='↻';description='Recovering to the road';kind='danger';}
+    else if(k.grounded&&Math.abs(k.lane)>T.edgeAt(track,k.segment,k.lane)-1.5){symbol=k.lane>0?'→':'←';label='EDGE';description=k.lane>0?'Road edge; steer right':'Road edge; steer left';kind='danger';}
+    else if(cue.kind==='gap'){symbol='⇧';label=`${Math.ceil(cue.distance/5)*5} m`;description=`Gap in ${label}; jump at the amber line`;kind='jump';}
+    else if(cue.kind==='turn'){symbol=cue.severity==='hairpin'?(cue.side==='left'?'↶':'↷'):(cue.side==='left'?'←':'→');label=`${Math.ceil(cue.distance/5)*5} m`;description=`${cue.severity} ${cue.side} in ${label}`;kind='turn';}
+    box.classList.toggle('hidden',kind==='straight'||world.mode==='battle'||world.phase!=='racing'||k.finishTime!=null);
+    box.dataset.kind=kind;box.setAttribute('aria-label',description||'Road ahead');
+    $('route-symbol').textContent=symbol;$('route-title').textContent=label;
+  }
+  function shortNotice(text){
+    if(/^MINI TURBO /.test(text))return '⚡ '+text.slice(11);
+    if(/^CROWN SHARD /.test(text))return '◆ +1';
+    return {'PERFECT TAKEOFF · TAP AGAIN TO LAND':'✦ TAKEOFF','PERFECT JUMP COMBO':'✦ COMBO','LANDING BOOST':'✦ LANDING','TAKEOFF BOOST':'✦ TAKEOFF','SLIPSTREAM BOOST':'» BOOST','RIFT PAD BOOST':'⚡ BOOST','RIFT BOOST':'⚡ BOOST','SHARD BOOST':'⚡ BOOST','BACK ON TRACK':'↻','RESPAWN · RUN INVALID':'↻ INVALID','HEXED!':'HIT','OUT OF BALLOONS':'OUT','NO TARGET AHEAD':'NO TARGET','FINISH!':'FINISH'}[text]||'';
   }
   function hud(){
     const k=world.racers.find(k=>k.id===playerId)||world.racers[0];
     $('place').textContent=world.mode==='trial'?'TT':world.mode==='battle'?k.balloons:k.place;
-    $('position-label').innerHTML=world.mode==='battle'?'BALLOONS<br>REMAINING':world.mode==='trial'?'CLEAN<br>RUN':`/ ${world.racers.length}<br>POSITION`;
-    $('lap').textContent=world.mode==='sprint'?`RIFT SPRINT · GATE ${Math.min(10,Math.max(0,k.gate))} / 10`:world.mode==='battle'?`${world.racers.filter(r=>!r.eliminated).length} KARTS REMAIN`:world.mode==='gp'?`RACE ${world.round+1} / 4 · LAP ${k.lap} / ${world.laps}`:`LAP ${k.lap} / ${world.laps}`;
+    $('position-label').innerHTML=world.mode==='battle'?'◉':world.mode==='trial'?'':`/ ${world.racers.length}`;
+    $('lap').textContent=world.mode==='sprint'?`GATE ${Math.min(10,Math.max(0,k.gate))}/10`:world.mode==='battle'?`${world.racers.filter(r=>!r.eliminated).length} LEFT`:world.mode==='gp'?`${world.round+1}/4 · LAP ${k.lap}/${world.laps}`:`LAP ${k.lap}/${world.laps}`;
     $('timer').textContent=formatTime(world.time);$('race-name').textContent=world.mode==='battle'?'THE HOLLOW RING':k.gate<0?D.TRACKS[world.trackIndex].zones[0]:T.sectionAt(T.makeTrack(world.trackIndex),k.s);$('speed').textContent=Math.round(k.speed*3.6);
     const charge=D.clamp(k.driftTime/1.3,0,1),boostLeft=D.clamp(k.boost/2.7,0,1),tier=['#65cfff','#65cfff','#ff963c','#bd73ff'][k.driftLevel];$('turbo-fill').style.width=`${(k.boost>0&&!k.drift?boostLeft:charge)*100}%`;
     // The screen edge glows with the drift charge in the tier colour, so it reads without looking down.
     $('drift-glow').style.opacity=k.drift&&k.grounded?String(.25+charge*.75):k.boost>0?'.35':'0';$('drift-glow').style.setProperty('--tier',k.boost>0&&!k.drift?'#8ffff0':tier);
     const rival=world.racers.find(r=>r.id===world.rival);$('rival').classList.toggle('hidden',!rival||k.finishTime!=null||world.phase!=='racing');
     if(rival){const gap=(rival.distance-k.distance)/Math.max(12,k.speed),ahead=gap>0;$('rival-name').textContent=rival.name.toUpperCase();$('rival-gap').textContent=`${ahead?'+':'−'}${Math.abs(gap).toFixed(1)}s`;$('rival').classList.toggle('behind',!ahead);$('rival-label').textContent=ahead?'RIVAL AHEAD · CHASE':'RIVAL BEHIND · HOLD';}$('turbo-fill').style.background=k.driftLevel===3?'#bd73ff':k.driftLevel===2?'#ff963c':'#65cfff';
-    $('turbo-level').textContent=['','I','II','III'][k.driftLevel];$('turbo-label').textContent=k.autopilot>0?'PHANTOM DRIVE':k.boost>0?`BOOST · ${k.boost.toFixed(1)}s`:k.draft>.1?'DRAFTING · STAY CLOSE':k.drift?'RELEASE TO BOOST':'HOP · HOLD · RELEASE';
-    $('surface-label').textContent=k.eliminated?'ELIMINATED · SPECTATING':!k.grounded?'AIRBORNE · TAP BEFORE LANDING':k.invincible>0?'UNDYING / PROTECTED':k.surface==='mud'?'HEX MUD / SLOWED':'ASPHALT / GRIP';
-    const item=D.ITEMS[k.item];$('item-symbol').textContent=item?.symbol||'◇';$('item-name').textContent=item?.name||(world.mode==='trial'?'Clean track':'No item');$('item-hint').textContent=item?'E · tap to use':world.mode==='trial'?'No items in time trial':'E · find a rift box';$('item').classList.toggle('ready',!!item);$('item').setAttribute('aria-label',item?`Use ${item.name}: ${item.description}`:'No item held');
-    $('notice').textContent=k.noticeUntil>world.time?k.notice:'';
+    $('turbo-level').textContent=['','I','II','III'][k.driftLevel];$('turbo-label').textContent=k.autopilot>0?'AUTO':k.boost>0?`BOOST · ${k.boost.toFixed(1)}s`:k.draft>.1?'»':k.drift?'DRIFT':'';
+    $('surface-label').textContent=k.eliminated?'OUT':k.surface==='mud'&&k.grounded?'MUD':'';
+    const item=D.ITEMS[k.item];$('item-symbol').textContent=item?.symbol||'◇';$('item-name').textContent=item?.name||(world.mode==='trial'?'Clean track':'No item');$('item-hint').textContent=item&&!touch?'E':'';$('item').classList.toggle('empty',!item);$('item').classList.toggle('ready',!!item);$('item').setAttribute('aria-label',item?`Use ${item.name}: ${item.description}`:'No item held');
+    $('notice').textContent=k.noticeUntil>world.time?shortNotice(k.notice):'';
     updateRouteCue(k);
 
     const count=world.phase==='countdown'?Math.ceil(world.countdown):world.time<.7?'GO':'';$('countdown').textContent=count;

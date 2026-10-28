@@ -42,7 +42,7 @@ Three presets trade acceleration/turning against speed and collision mass. Light
 ## Modes
 
 - **Rift Sprint:** ten validated checkpoints, finishing at a different location before returning to the start. AI-driven checks finish the courses in roughly 26–65 seconds; player times vary.
-- **Lap race (default):** three laps against an eight-kart grid, with a named rival (the bot that starts beside you). A banner shows the rival's gap in seconds and whether to chase or hold. Races time out after six minutes.
+- **Lap race (default):** three laps against an eight-kart grid, with a named rival (the bot that starts beside you). The HUD keeps only your position; the full standings appear after the race. Races time out after six minutes.
 - **Grand Prix:** four consecutive races, starting at the selected track and wrapping through the eight-map catalog below. Points `[15,12,10,8,6,4,2,1]` persist between rounds. Final standings sort by points, then the final race's place. Every map has its own road layout. Unfinished racers are placed by validated progress when every connected human finishes; each race has a four-minute limit.
 - **Time trial:** three laps, one kart, no AI/items/dynamic hazards. Record a clean run to save a personal-best pose ghost per track and class in local storage. The format is versioned; samples contain elapsed simulation time, position and heading. Replay interpolates the short heading arc, with no collision or race participation. Respawning invalidates the run. A four-minute limit bounds recording size. Saved ghosts are local to this browser/device, not a global leaderboard.
 - **Battle:** an enclosed arena, three balloons per kart, independent battle loot. Accepted hits remove one balloon; immunity and hit grace prevent repeated damage from a single contact. Eliminated players spectate the leading survivor. Last survivor wins; after three minutes, remaining balloons determine standings (ties currently use stable racer ID).
@@ -199,8 +199,9 @@ Run `node tools/verify-crownfall-environments.cjs` with the same Playwright conf
 ## Road readability and driving rewards (1.3)
 
 White road arrows follow the actual course through crossings and crests. Amber
-boards repeat before bends; the HUD calls the next bend or gap with its distance.
-Red lips and side signs mark a road end, and a cyan gate marks the landing. Ramp
+chevrons repeat before bends; the compact HUD shows a direction symbol and distance
+only when a bend or gap is near.
+Red lips and exclamation signs mark a road end, and a cyan gate marks the landing. Ramp
 approaches continue to the gap instead of dropping at the launch line; humps on
 continuous roads descend smoothly.
 
@@ -218,3 +219,8 @@ available, but a throttle-only assisted run is no longer competitive with skille
 
 Time-trial ghosts use a new `v5` record namespace because road heights and handling
 have changed. Earlier records remain stored but are not compared with these runs.
+
+The racing HUD uses short labels and symbols. Straight-road prompts, the duplicate
+rival/standings panels, keyboard instruction strip and empty item panel are hidden.
+Detailed driving instructions remain in **How to play**, and route symbols retain
+descriptive accessible labels.

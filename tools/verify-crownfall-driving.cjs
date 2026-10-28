@@ -27,7 +27,7 @@ const out='output/crownfall-readability';
     v.setWorld(w);v.renderer.readyCamera=false;v.renderer.lastMotion.clear();
     for(let i=0;i<2;i++)v.renderer.render(w,k.id,1/60);
     v.hud();
-    return {name:t.name,turns:t.turns.length,gaps:t.gaps.length,markers:v.renderer.routeMarkerCounts,cue:document.getElementById('route-title').textContent};
+    return {name:t.name,turns:t.turns.length,gaps:t.gaps.length,markers:v.renderer.routeMarkerCounts,cue:document.getElementById('route-title').textContent,kind:document.getElementById('route-cue').dataset.kind};
    },{track,kind});
   }
   const results=[];
@@ -35,11 +35,32 @@ const out='output/crownfall-readability';
    const result=await pose(track,'gap');
    assert.ok(result.markers.arrows>30&&result.markers.bends>0,result.name);
    assert.equal(result.markers.gaps,result.gaps);
-   if(result.gaps)assert.ok(result.cue.startsWith('GAP'),result.name+': gap called before the edge');
+   if(result.gaps){assert.equal(result.kind,'jump',result.name+': gap called before the edge');assert.match(result.cue,/^\d+ m$/,'only distance beside the jump symbol');}
    await page.screenshot({timeout:60000,path:`${out}/track-${track}-approach.png`});
    results.push(result);
   }
   await pose(0,'gap');
+  const states=await page.evaluate(()=>{
+   const v=__drivingTest,S=CrownSim,T=CrownTrack,w=S.createWorld({mode:'sprint'}),k=w.racers[0],t=T.makeTrack(0);
+   w.phase='racing';w.time=12;v.setWorld(w);
+   const read=()=>{v.hud();const el=document.getElementById('route-cue');return {hidden:el.classList.contains('hidden'),label:el.textContent.trim(),kind:el.dataset.kind,description:el.getAttribute('aria-label')};};
+   const straight=read(),idleMeterHidden=document.querySelector('.turbo').getBoundingClientRect().width===0;
+   k.boost=1.5;read();const boostMeterVisible=document.querySelector('.turbo').getBoundingClientRect().width>0;k.boost=0;
+   k.grounded=false;k.launchedAt=t.ramps[0]*t.length;k.y=T.sample(t,k.s).y+2;k.vy=-1;
+   const landing=read();
+   k.launchedAt=null;k.y=T.sample(t,k.s).y-1;
+   const recover=read();
+   k.grounded=true;k.lane=t.width/2-.2;
+   const edge=read();
+   k.lane=0;k.notice='PERFECT TAKEOFF · TAP AGAIN TO LAND';k.noticeUntil=14;read();
+   return {straight,landing,recover,edge,idleMeterHidden,boostMeterVisible,notice:document.getElementById('notice').textContent};
+  });
+  assert.ok(states.straight.hidden,'no straight-road instruction panel');
+  assert.ok(states.idleMeterHidden&&states.boostMeterVisible,'boost meter appears only when useful');
+  assert.ok(states.landing.label.includes('TAP')&&states.landing.label.length<8);
+  assert.equal(states.recover.label,'↻');assert.equal(states.edge.kind,'danger');
+  assert.ok(states.edge.description.includes('steer'),'symbols retain accessible explanations');
+  assert.ok(states.notice.length<16&&!states.notice.includes('TAP AGAIN'),'short event feedback');
   for(const [width,height] of [[320,568],[390,844],[844,320],[768,1024],[1024,680]]){
    await page.setViewportSize({width,height});await page.waitForTimeout(500);await pose(0,'gap');
    const layout=await page.evaluate(()=>{
@@ -49,9 +70,9 @@ const out='output/crownfall-readability';
      const r=el.getBoundingClientRect();if(!r.width||!r.height||getComputedStyle(el).visibility==='hidden')continue;
      if(Math.min(route.right,r.right)-Math.max(route.left,r.left)>1&&Math.min(route.bottom,r.bottom)-Math.max(route.top,r.top)>1)overlap.push({element:el.id||el.className,route:route.toJSON(),bounds:r.toJSON()});
     }
-    return {fits:route.left>=0&&route.right<=innerWidth&&route.top>=0&&route.bottom<=innerHeight,overlap};
+    return {compact:route.width<=160&&route.height<=48&&document.getElementById('route-cue').textContent.trim().length<18,fits:route.left>=0&&route.right<=innerWidth&&route.top>=0&&route.bottom<=innerHeight,overlap};
    });
-   assert.ok(layout.fits,`${width}x${height}: route visible`);assert.deepEqual(layout.overlap,[],`${width}x${height}: route must not cover driving controls`);
+   assert.ok(layout.compact,`${width}x${height}: compact symbol cue`);assert.ok(layout.fits,`${width}x${height}: route visible`);assert.deepEqual(layout.overlap,[],`${width}x${height}: route must not cover driving controls`);
    await page.screenshot({timeout:60000,path:`${out}/hud-${width}x${height}.png`});
   }
   assert.deepEqual(errors,[],'no browser runtime errors');

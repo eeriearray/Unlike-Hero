@@ -83,7 +83,7 @@
     resize(){const w=innerWidth,h=innerHeight;this.renderer.setSize(w,h,false);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();if(this.csm)this.csm.updateFrustums();if(this.post)this.post.resize(Math.round(w*this.renderer.getPixelRatio()),Math.round(h*this.renderer.getPixelRatio()));}
     sign(text,sub,color,width=5,height=2){
       const canvas=document.createElement('canvas');canvas.width=512;canvas.height=192;const ctx=canvas.getContext('2d');
-      ctx.fillStyle='#151521';ctx.fillRect(0,0,512,192);ctx.strokeStyle=color;ctx.lineWidth=8;ctx.strokeRect(5,5,502,182);ctx.fillStyle=color;ctx.font='bold 40px Arial';ctx.textAlign='center';ctx.fillText(text,256,82);ctx.fillStyle='#f9eddb';ctx.font='19px Arial';ctx.fillText(sub,256,137);
+      ctx.fillStyle='#151521';ctx.fillRect(0,0,512,192);ctx.strokeStyle=color;ctx.lineWidth=8;ctx.strokeRect(5,5,502,182);ctx.fillStyle=color;ctx.font=sub?'bold 40px Arial':'bold 108px Arial';ctx.textAlign='center';ctx.fillText(text,256,sub?82:132);if(sub){ctx.fillStyle='#f9eddb';ctx.font='19px Arial';ctx.fillText(sub,256,137);}
       const texture=new THREE.CanvasTexture(canvas);texture.encoding=THREE.sRGBEncoding;this.artTextures.push(texture);
       const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,height),new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide}));mesh.userData.ownedMaterial=true;this.signBoards.push(mesh);return mesh;
     }
@@ -238,14 +238,14 @@
         this.routeMarkerCounts.arrows++;
       }
       for(const cue of track.turns||[]) {
-        const side=-Math.sign(cue.bend),label=cue.side==='left'?'<<< LEFT':'RIGHT >>>';
+        const side=-Math.sign(cue.bend),label=cue.side==='left'?'‹‹‹':'›››';
         // Three boards lead into each real bend, facing the approaching driver.
         for(const lead of [44,27,10]) {
           const s=cue.s-lead,p=T.sample(track,s,side*(half+1));
           if(T.inGap(track,s)||!this.clearOfRoad(track,p.x,p.z,p.y,p.y+4,1.8,p.s))continue;
           const g=place(s,side*(half+1));
           this.box(g,0,.8,0,.15,1.6,.15,'#292a31');
-          const board=this.sign(label,cue.severity==='hairpin'?'HAIRPIN · BRAKE OR DRIFT':cue.severity==='sharp'?'SHARP BEND · DRIFT':'FOLLOW THE ARROWS',warn,4.4,1.35);
+          const board=this.sign(label,'',warn,3.8,1.2);
           board.position.set(0,2.35,0);board.rotation.y=Math.PI;g.add(board);
           this.routeMarkerCounts.bends++;
         }
@@ -260,18 +260,17 @@
         // Lip pylons and an overhead gantry make the launch visible from far down the road.
         for(const side of [-1,1]){const g=place(r,side*(half+.45));this.box(g,0,1.2,0,.24,2.4,.24,'#2b2733');for(let i=0;i<3;i++){if(i%2)this.box(g,0,.55+i*.7,0,.27,.22,.27,'#f0ede6');else glow(g,0,.55+i*.7,0,.27,.22,.27,warn);}}
         const gantry=place(r-32);for(const side of [-1,1])this.box(gantry,side*(half+.7),3,0,.3,6,.3,'#2b2733');this.box(gantry,0,5.8,0,track.width+1.8,.3,.3,'#2b2733');
-        const board=this.sign('JUMP AT AMBER LINE','TAP TAKEOFF · TAP AGAIN BEFORE LANDING',warn,7.5,1.6);board.position.set(0,5,-.2);board.rotation.y=Math.PI;gantry.add(board);
+        const board=this.sign('⇧','',warn,3.2,1.4);board.position.set(0,5,-.2);board.rotation.y=Math.PI;gantry.add(board);
         // Painted approach chevrons count down to the kicker.
         for(let d=12;d<=40;d+=7){const g=place(r-d,0,.03);for(const side of [-1,1]){const bar=glow(g,side*.75,0,0,1.9,.03,.3,warn);bar.rotation.y=side*.55;}}
       }
       // Gaps: a red lip where the road ends and a bright landing line where it resumes.
       for(const gap of track.gaps||[]){
         for(const [u,color] of [[gap.start,danger],[gap.end,pad]]){const g=place(u*track.length+(color===danger?-.3:.3),0,.04);glow(g,0,0,0,track.width,.05,.55,color);for(const side of [-1,1])glow(g,side*(half+.45),1.3,0,.3,2.6,.3,color);}
-        const span=Math.round((gap.end-gap.start)*track.length);
         for(const side of [-1,1]) {
           const lip=place(gap.start*track.length-3,side*(half+2.4));
           this.box(lip,0,.7,0,.15,1.4,.15,'#292a31');
-          const board=this.sign('GAP · '+span+' m','ROAD ENDS HERE',danger,3.6,1.35);board.position.y=2.2;board.rotation.y=Math.PI;lip.add(board);
+          const board=this.sign('!','',danger,1.4,1.2);board.position.y=2.2;board.rotation.y=Math.PI;lip.add(board);
         }
         // Cyan marks a real landing, never a strip of apparent road over the void.
         const landing=place(gap.end*track.length+3);
