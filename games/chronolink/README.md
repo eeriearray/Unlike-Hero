@@ -33,6 +33,9 @@ double-click to reset.
 - **Two devices:** choose **Play online**, create a room, and give its four-letter room code to your partner to join.
   The room code connects the devices; the three-digit signal frequencies are separate clues found inside chambers.
 - `Tab` switches split and solo view. `?level=N` or `#N` opens a chamber (1-19).
+- **Placing items:** a translucent plank previews the selected adjacent tile. `E` / `Enter` snaps to a nearby
+  gap rather than requiring exact facing. Point at another legal adjacent tile to aim, or click it to place.
+  Dragging still orbits the camera. The Echo visibly carries the pristine plank taken from the Stash Box.
 
 ## How time works
 
@@ -54,8 +57,9 @@ double-click to reset.
 - **Rewind:** hold `R` to undo the last change, as many times as you like, all the way back to the start. The menu
   also has **Restart chamber**. There are no penalties.
 - **Hints:** press `H` (or **Hint** in the menu). The solver plans from where both chrononauts are right now, in a
-  Web Worker so play never stalls. The first press says whose move it is and lights the tile in violet; a second
-  press says exactly what to do and how many moves are left. From a dead end it says to rewind. After 75 seconds
+  Web Worker. A manual hint immediately shows the next instruction and whose move it is, even when that era
+  is off-screen; its marker appears in the relevant era. If the worker fails, the game falls back to local search.
+  From a dead end it says to rewind. After 75 seconds
   without a change a "Stuck? Press H" nudge appears, and after 150 seconds the first hint shows by itself.
 
 ## Clarity

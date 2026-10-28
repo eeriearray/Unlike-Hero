@@ -97,6 +97,7 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
 #signalPop{z-index:10}
 #signalFrequency{font:44px var(--f-mono);letter-spacing:.25em;color:var(--neon);padding:12px}
 #signalCode{width:160px;background:#080b0b;border:1px solid var(--brass);border-radius:4px;color:var(--ink);font:28px var(--f-mono);letter-spacing:.2em;padding:10px;text-align:center}
+#hintStatus{position:absolute;top:64px;left:50%;transform:translateX(-50%);z-index:5;max-width:calc(100% - 32px);width:max-content;padding:9px 14px;border:1px solid #c89bff;border-radius:9px;background:rgba(16,8,26,.94);color:#eadcff;text-align:center;font:600 14px/1.5 var(--f-ui);pointer-events:none}
 @media (max-width:520px){#lvlTag{font-size:30px}.lvlnav b{font-size:44px}}
 #card{position:absolute;left:50%;top:104px;transform:translateX(-50%);z-index:4;pointer-events:none;text-align:center;transition:opacity .8s,transform .8s;
   padding:12px 26px 13px;border-radius:6px;background:rgba(10,8,5,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:inset 0 0 0 1px rgba(212,175,55,.35);max-width:calc(100% - 32px)}
@@ -126,6 +127,7 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
     <button class="ico" id="menuBtn" aria-label="Menu (Esc)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14"/></svg></button>
   </nav>
   <div id="log" aria-live="polite"></div>
+  <div id="hintStatus" role="status" hidden></div>
 
   <div id="onlinePop" hidden>
     <div class="note">Create a room and send its code to your friend, or enter their code to join.</div>
@@ -1662,6 +1664,10 @@ function doorwayAlongZ(L, x, y) {
   const wall = (xx, yy) => xx >= 0 && yy >= 0 && xx < L.W && yy < L.H && '#Wcp'.includes(L.base[yy * L.W + xx]);
   return Number(wall(x, y - 1)) + Number(wall(x, y + 1)) > Number(wall(x - 1, y)) + Number(wall(x + 1, y));
 }
+function plankYaw(L, x, y) {
+  const crack = (xx, yy) => xx >= 0 && yy >= 0 && xx < L.W && yy < L.H && '~;'.includes(L.base[yy * L.W + xx]);
+  return Number(crack(x - 1, y)) + Number(crack(x + 1, y)) > Number(crack(x, y - 1)) + Number(crack(x, y + 1)) ? Math.PI / 2 : 0;
+}
 function exitGateYaw(L) {
   const { x, y } = L.exit;
   // The arch's normal faces into the chamber from the nearest outside wall.
@@ -1975,6 +1981,13 @@ function buildWorld(era) {
 
   // ----- players -----
   w.player = past ? buildAnchor(w) : buildEcho(w);
+  if (!past) {
+    w.carriedItems = {};
+    for (const kind of ['plank', 'acorn']) { const item = buildPastObj(w, { k: kind, x: 0, y: 0 }); item.g.visible = false; w.carriedItems[kind] = item; }
+  }
+  const previewMat = own(w, new THREE.MeshBasicMaterial({ color: past ? 0xffd86a : 0x74ffdb, transparent: true, opacity: 0.5, depthWrite: false }));
+  w.placementPreview = mk(BOX(0.92, 0.05, 0.34), previewMat, 0, 0.12, 0, S, false);
+  w.placementPreview.visible = false;
   S.add(w.player.group);
   // A faint ghost marks where the other chrononaut stands in this same building, 102 years away.
   const ghM = own(w, M.ghost.clone()); ghM.color.setHex(past ? 0x00f5d4 : 0xffc860);
@@ -2048,6 +2061,7 @@ function tokenKey(rec, i) {
 function buildToken(w, rec, i) {
   const W = G.L.W, x = i % W, y = (i / W) | 0, b = G.L.base[i];
   const g = new THREE.Group(); g.position.set(x, 0, y);
+  if (rec.o === 'bridge' || rec.o === 'echoplank') g.rotation.y = plankYaw(G.L, x, y);
   let h = 0.6;
   if (b === 'p') {
     if (rec.t === 'hole') {
@@ -2275,19 +2289,31 @@ function animateCharacter(ch, p, dt, t) {
    current blocker and toward any tile the past just rewrote, so cause and
    effect share the frame.
    ============================================================ */
-const drag = { on: false, era: null, x: 0, y: 0 };
+const drag = { on: false, era: null, x: 0, y: 0, distance: 0 };
 const mouse = { x: 0, y: 0 };
 function viewAt(x, y) { return views().find(q => x >= q.x && x < q.x + q.w && y >= q.y && y < q.y + q.h); }
-cvs.addEventListener('pointerdown', e => { cvs.focus({ preventScroll: true }); const v = viewAt(e.offsetX, e.offsetY); if (!v) return; drag.on = true; drag.era = v.era; drag.x = e.clientX; drag.y = e.clientY; cvs.setPointerCapture(e.pointerId); });
+function pointerPlacement(e) {
+  const v = viewAt(e.offsetX, e.offsetY), w = v && WORLD[v.era];
+  if (!w || !G.started || G.won || !$('menu').hidden || !$('signalPop').hidden) return null;
+  const who = v.era === 'past' ? 'A' : 'E'; if (!controls(who)) return null;
+  const ray = new THREE.Raycaster(), hit = new THREE.Vector3();
+  ray.setFromCamera(new THREE.Vector2((e.offsetX - v.x) / v.w * 2 - 1, 1 - (e.offsetY - v.y) / v.h * 2), w.cam.cam);
+  if (!ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.1), hit)) return null;
+  const x = Math.round(hit.x), y = Math.round(hit.z);
+  const target = placementTargets(who).find(q => q.x === x && q.y === y);
+  return target ? { who, target } : null;
+}
+cvs.addEventListener('pointerdown', e => { cvs.focus({ preventScroll: true }); const v = viewAt(e.offsetX, e.offsetY); if (!v || e.button !== 0) return; drag.on = true; drag.era = v.era; drag.distance = 0; drag.x = e.clientX; drag.y = e.clientY; cvs.setPointerCapture(e.pointerId); });
 cvs.addEventListener('pointermove', e => {
   mouse.x = e.offsetX; mouse.y = e.offsetY;
-  if (!drag.on) return;
+  if (!drag.on) { const aim = pointerPlacement(e); G.placementAim = aim ? { who: aim.who, x: aim.target.x, y: aim.target.y } : null; return; }
   const w = WORLD[drag.era]; if (!w) return;
+  drag.distance += Math.hypot(e.clientX - drag.x, e.clientY - drag.y);
   w.cam.yaw -= (e.clientX - drag.x) * 0.007; w.cam.pitch = clamp(w.cam.pitch + (e.clientY - drag.y) * 0.005, 0.35, 1.45);
   drag.x = e.clientX; drag.y = e.clientY;
 });
 const endDrag = () => { drag.on = false; };
-cvs.addEventListener('pointerup', endDrag); cvs.addEventListener('pointercancel', endDrag);
+cvs.addEventListener('pointerup', e => { const click = drag.on && drag.distance < 5; endDrag(); if (click) { const aim = pointerPlacement(e); if (aim) interact(aim.who, aim.target); } }); cvs.addEventListener('pointercancel', endDrag);
 cvs.addEventListener('wheel', e => {
   const v = viewAt(e.offsetX, e.offsetY); if (!v || !WORLD[v.era]) return;
   e.preventDefault();
@@ -2341,6 +2367,13 @@ function updateWorld(w, dt, t) {
   w.ghost.position.set(other.rx, 0, other.ry); w.ghost.rotation.y = other.yaw || 0;
   w.ghostM.opacity = 0.13 + 0.05 * Math.sin(t * 3) + (Math.random() < 0.03 ? 0.1 : 0);
   animateCharacter(w.player, playerOf(w.era), dt, t);
+  const who = past ? 'A' : 'E', target = G.targets[who];
+  w.placementPreview.visible = !!(G.started && controls(who) && !G.won && target && (target.kind === 'drop' || target.kind === 'lay') && (past ? G.s.objs.find(o => o.id === G.s.held)?.k === 'plank' : G.s.echo.carry === 'plank'));
+  if (w.placementPreview.visible) { w.placementPreview.position.set(target.x, 0.13 + Math.sin(t * 4) * 0.025, target.y); w.placementPreview.rotation.y = plankYaw(L, target.x, target.y); }
+  if (!past) for (const [kind, item] of Object.entries(w.carriedItems)) {
+    item.g.visible = G.s.echo.carry === kind;
+    if (item.g.visible) { const p = G.E; item.g.position.set(p.rx + Math.sin(p.yaw) * 0.32, 0.96 + Math.sin(t * 6) * 0.015, p.ry + Math.cos(p.yaw) * 0.32); item.g.rotation.y = p.yaw; }
+  }
   // water: rises and falls toward what is running now (1924) or what ran for a century (2026 tokens)
   if (past) for (const k in w.water) {
     const wa = w.water[k], on = G.flow[k] ? 1 : 0;
@@ -2414,7 +2447,7 @@ function updateWorld(w, dt, t) {
     P.ring.position.set(p.x, 0.03, p.y); P.ring.scale.setScalar(0.3 + ((t - p.t0) * 0.8 % 1) * 0.8);
   });
   // proximity ring on whatever E/Enter would act on
-  const who = past ? 'A' : 'E', tg = controls(who) && !G.won ? G.targets[who] : null;
+  const tg = controls(who) && !G.won ? G.targets[who] : null;
   w.highlight.visible = !!tg;
   if (tg) { w.highlight.position.set(tg.x, 0.03, tg.y); w.highlight.scale.setScalar(0.5 + 0.05 * Math.sin(t * 6)); w.highlight.material.opacity = tg.deny ? 0.25 : 0.55 + 0.35 * Math.sin(t * 6); w.highlight.material.color.setHex(tg.deny ? 0xff6a4a : past ? 0xffd86a : 0x00f5d4); }
   const h = G.hint, showH = !!(h && h.x != null && (h.era === w.era || h.era === 'both') && !G.won);
@@ -2535,6 +2568,8 @@ function drawStamp(c, x, y, st, t) {
 const ERA_TITLE = { past: '1924 · THE ANCHOR', future: '2026 · THE ECHO' };
 function eraHint(era) {
   if (G.role !== 'BOTH' && ROLE_ERA[G.role] !== era) return 'Partner view · Drag Orbit';
+  if (era === 'future' && G.s.echo.carry === 'plank') return 'Carrying plank · E / Enter or click a neighbouring gap';
+  if (era === 'past' && G.s.objs.find(o => o.id === G.s.held)?.k === 'plank') return 'Carrying plank · E / Enter or click a placement tile';
   const pins = G.L && G.L.pinsMax ? ' · F Pin' : '';
   if (G.role !== 'BOTH' || G.view === 'solo') return 'WASD / Arrows Move · E / Enter Use' + (era === 'future' ? pins : '') + ' · Hold R Rewind';
   return era === 'past' ? 'WASD Move · E Use · Q Ping · Hold R Rewind' : 'Arrows Move · Enter Use' + (G.L && G.L.pinsMax ? ' · . Pin' : '') + ' · R-Shift Ping';
@@ -2575,10 +2610,9 @@ function drawOverlay(v, w, t) {
     c.restore();
   }
   goalChip(c, v, G.goals[who], era, t);
-  // hint line under the chip, in the era whose move it is; a gentle nudge after a while without progress
+  // Hints use a wrapping DOM readout shared by both views, even when the other era has the next move.
   const hh = G.hint;
-  if (hh && !G.won && (hh.era === era || hh.era === 'both')) pill(c, v.x + v.w / 2, v.y + 62, hintLine(hh), '#c89bff', t - hh.t0);
-  else if (!hh && !G.won && G.started && G.t - G.lastProgress > 75) pill(c, v.x + v.w / 2, v.y + 62, 'Stuck? Press H for a hint', '#c89bff', G.t - G.lastProgress - 75);
+  if (!hh && !G.won && G.started && G.t - G.lastProgress > 75) pill(c, v.x + v.w / 2, v.y + 62, 'Stuck? Press H for a hint', '#c89bff', G.t - G.lastProgress - 75);
   // era title, controls and the Echo's pins
   c.textAlign = 'left'; c.textBaseline = 'alphabetic';
   const x0 = v.x + 22, y0 = v.y + v.h - 40;
@@ -2725,6 +2759,7 @@ function loadLevel(input, share) {
   G.stand = null; G.hist = []; G.pings = []; G.stamps = []; G.threads = []; G.pending = []; G.shocks = []; G.goals = {};
   G.camFocus = null; G.timelapse = null; G.paradoxT = -9; G.rewindT = -9; G.won = false; G.wonT = 0; G.rewinds = 0; G.paradoxes = 0;
   G.levelStart = G.t; G.hitstop = 0; G.denyT = null; G.lastProgress = G.t; G.hint = null; G.hints = 0;
+  G.placementAim = null;
   $('signalPop').hidden = true; activeSignal = null;
   FX.clear && WORLD.past && FX.clear();
   recompute(); trackStand(true);
@@ -2909,6 +2944,25 @@ function around(p) {
   for (const [dx, dy] of DIR4) if (dx !== p.dir.dx || dy !== p.dir.dy) out.push({ x: p.x + dx, y: p.y + dy });
   return out.filter(q => q.x >= 0 && q.y >= 0 && q.x < G.L.W && q.y < G.L.H);
 }
+function placementTargets(who) {
+  const L = G.L, s = G.s, p = who === 'A' ? G.A : G.E;
+  if (!p || (who === 'A' ? !s.held : s.echo.carry !== 'plank')) return [];
+  const item = who === 'A' ? s.objs.find(o => o.id === s.held) : null;
+  return around(p).flatMap(q => {
+    if (who === 'E') {
+      const action = C.echoAct(L, s, G.fut, tileIdx(q.x, q.y));
+      return action?.kind === 'lay' ? [{ ...q, label: 'Lay plank', kind: 'lay', priority: 3, run: () => C.echoAct(L, G.s, G.fut, tileIdx(q.x, q.y))?.s }] : [];
+    }
+    if (!item || !C.canPlace(L, s, item.k, q.x, q.y)) return [];
+    const b = L.base[tileIdx(q.x, q.y)], box = C.boxAt(L, q.x, q.y), plant = b === 'S' || b === 's', bridge = C.isCrack(b) || b === 't' || b === '=';
+    return [{ ...q, label: box ? 'Seal in box' : plant ? 'Plant' : bridge ? 'Lay across' : 'Set down', kind: 'drop', priority: box || plant ? 4 : bridge ? 3 : 1, run: () => C.actDrop(L, G.s, q.x, q.y) }];
+  });
+}
+function choosePlacement(who) {
+  const targets = placementTargets(who), aim = G.placementAim;
+  if (aim?.who === who) { const selected = targets.find(q => q.x === aim.x && q.y === aim.y); if (selected) return selected; }
+  return targets.sort((a, b) => b.priority - a.priority || Number(!!b.facing) - Number(!!a.facing))[0] || null;
+}
 function anchorTarget() {
   const L = G.L, s = G.s, p = G.A;
   for (const q of around(p)) {
@@ -2916,16 +2970,9 @@ function anchorTarget() {
     if (r && !s.locks?.[r.id] && !'#Wcp'.includes(L.base[tileIdx(q.x, q.y)])) return { ...q, label: 'Signal lock ' + r.label, kind: 'signal-lock', relay: r };
   }
   if (s.held) {
-    const o = s.objs.find(q => q.id === s.held);
     // a wheel can be turned with full hands
     for (const q of around(p)) { const wi = C.wheelAt(L, q.x, q.y); if (wi >= 0 && q.facing) return { x: q.x, y: q.y, label: 'Turn wheel', h: 1.2, run: () => C.actWheel(L, s, wi), kind: 'wheel', wheel: wi }; }
-    for (const q of around(p)) {
-      const b = L.base[tileIdx(q.x, q.y)];
-      if (!C.canPlace(L, s, o.k, q.x, q.y)) { if (q.facing && b !== '#' && b !== 'p' && b !== 'c') return { x: q.x, y: q.y, label: 'Not here', deny: true }; continue; }
-      const label = C.boxAt(L, q.x, q.y) ? 'Seal in box' : (b === 'S' || b === 's') ? 'Plant' : C.isCrack(b) ? 'Lay across' : b === 't' || b === '=' ? 'Lay across' : 'Set down';
-      return { x: q.x, y: q.y, label, h: 0.6, run: () => C.actDrop(L, s, q.x, q.y), kind: 'drop' };
-    }
-    return null;
+    return choosePlacement('A');
   }
   for (const q of around(p).concat([{ x: p.x, y: p.y }])) {
     const wi = C.wheelAt(L, q.x, q.y);
@@ -2944,6 +2991,7 @@ function anchorTarget() {
 }
 function echoTarget() {
   const L = G.L, s = G.s, p = G.E, fut = G.fut;
+  const placement = choosePlacement('E'); if (placement) return placement;
   const receiver = (L.relays || []).find(r => r.receiver.x === p.x && r.receiver.y === p.y && !s.locks?.[r.id]);
   if (receiver) return { ...receiver.receiver, label: 'Read receiver ' + receiver.label, kind: 'signal-read', relay: receiver };
   for (const q of around(p)) {
@@ -2970,11 +3018,11 @@ function pinTarget() {
   return null;
 }
 // Anticipation: the chrononaut winds up, then the world changes, then they follow through.
-function interact(who) {
+function interact(who, selectedTarget) {
   if (G.won || !G.L) return false;
   const p = who === 'A' ? G.A : G.E;
   if (G.t < p.lockUntil) return true;
-  const tg = who === 'A' ? anchorTarget() : echoTarget();
+  const tg = selectedTarget || (who === 'A' ? anchorTarget() : echoTarget());
   if (!tg) return false;
   if (tg.relay) { openSignal(who, tg.relay, tg); return true; }
   if (tg.deny) { denyFx(who); return true; }
@@ -3061,29 +3109,41 @@ function describeStep(step) {
 }
 function hintFrom(r) {
   const X = G.L.exit;
-  if (!r.ok) return { era: 'both', who: 'Both', text: r.why === 'exhausted' ? 'this timeline is stuck: hold R to rewind' : 'try rewinding (hold R) a step or two', stuck: true };
+  if (!r.ok) return { era: 'both', who: 'Both', text: r.why === 'exhausted' ? 'this timeline is stuck: hold R to rewind' : 'a full plan could not be found here. Check the objective chips or rewind one change, then press H again.', stuck: true };
   if (!r.path.length) return { era: 'both', x: X.x, y: X.y, who: 'Both', text: 'the way is open: walk to the exit', exit: true };
   return Object.assign(describeStep(r.path[0]), { left: r.depth, step: r.path[0] });
 }
 // The search can take a second in the bigger chambers, so it runs in a worker built from the same core script.
-const hintWorker = (() => {
+let hintRequest = null;
+let hintWorker = (() => {
   try {
     const src = $('chrono-core').textContent + '\nonmessage = e => { const L = ChronoCore.getChamber(e.data.n); const r = ChronoCore.solve(L, { start: e.data.start, maxStates: 150000 }); postMessage({ id: e.data.id, r: { ok: r.ok, why: r.why, depth: r.depth, path: r.path || [] } }); };';
     const wk = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
     wk.onmessage = e => onHint(e.data.id, e.data.r);
+    wk.onerror = () => { wk.terminate(); hintWorker = null; if (hintRequest) fallbackHint(hintRequest); };
     return wk;
   } catch (e) { return null; }
 })();
 let hintId = 0;
+function fallbackHint(request) {
+  setTimeout(() => {
+    if (G.hint?.id !== request.id) return;
+    try { onHint(request.id, C.solve(C.getChamber(request.n), { start: request.start, maxStates: 150000 })); }
+    catch { onHint(request.id, { ok: false, why: 'unavailable' }); }
+  }, 0);
+}
 function requestHint(auto) {
   const id = ++hintId, start = { s: G.s, a: { x: G.A.x, y: G.A.y }, e: { x: G.E.x, y: G.E.y }, stand: G.stand };
   G.hint = { pending: true, id, tier: 1, t0: G.t, auto, era: 'both', who: 'Both' };
-  if (hintWorker) hintWorker.postMessage({ id, n: G.L.n, start: JSON.parse(JSON.stringify(start)) });
-  else onHint(id, C.solve(G.L, { start, maxStates: 150000 }));
+  hintRequest = { id, n: G.L.n, start: JSON.parse(JSON.stringify(start)) };
+  syncHintStatus();
+  if (hintWorker) { try { hintWorker.postMessage(hintRequest); } catch { hintWorker = null; fallbackHint(hintRequest); } }
+  else fallbackHint(hintRequest);
 }
 function onHint(id, r) {
   const h = G.hint; if (!h || h.id !== id) return;      // the world changed while it was thinking
   G.hint = Object.assign(hintFrom(r), { tier: h.tier, t0: G.t, auto: h.auto, id });
+  hintRequest = null; syncHintStatus();
   Sound.chime();
   if (G.hint.x != null) for (const era of G.hint.era === 'both' ? ['past', 'future'] : [G.hint.era]) G.shocks.push({ era, x: G.hint.x, y: G.hint.y, t0: G.t });
 }
@@ -3096,8 +3156,12 @@ function hint() {
 }
 function hintLine(h) {
   if (h.pending) return 'HINT · thinking…';
-  if (h.stuck || h.exit || h.tier === 2) return 'HINT · ' + h.who + ': ' + h.text + (h.left > 1 ? '  (' + h.left + ' moves left)' : '');
+  if (!h.auto || h.stuck || h.exit || h.tier === 2) return 'HINT · ' + h.who + ': ' + h.text + (h.left > 1 ? '  (' + h.left + ' moves left)' : '');
   return 'HINT · ' + h.who + ' has the next move: look at the glow · H again for more';
+}
+function syncHintStatus() {
+  const el = $('hintStatus'); el.hidden = !G.hint || !!G.won;
+  const text = el.hidden ? '' : hintLine(G.hint); if (el.textContent !== text) el.textContent = text;
 }
 
 // ----- objectives: the first thing between each chrononaut and the exit, and which era can fix it -----
@@ -3378,7 +3442,7 @@ function tick() {
     const dt = G.hitstop > 0 ? 0 : rdt; G.hitstop = Math.max(0, G.hitstop - rdt);
     if (G.started) updatePlayers(dt);
     if (rewindKeys.size && G.started && !G.won && $('signalPop').hidden && $('menu').hidden) { G.rewindHold += rdt; if (G.rewindHold >= REWIND_HOLD) { G.rewindHold = 0.05; rewind(); } } else G.rewindHold = 0;
-    updateTargets(); computeGoals(false);
+    updateTargets(); computeGoals(false); syncHintStatus();
     // no change for a long while: offer a hint, then show where to look
     if (G.started && !G.won && !G.hint && G.t - G.lastProgress > 150) requestHint(true);
     emitters(dt); updateParticles(dt);
