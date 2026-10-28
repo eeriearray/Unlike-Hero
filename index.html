@@ -147,6 +147,10 @@ code{padding:2px 5px;border:1px solid var(--line);border-radius:3px;background:v
 /* iPad Safari sizes iframes to their content and ignores height:100% in a grid row, which left games black: pin the frame into a stage instead */
 .stage{position:relative;flex:1 1 auto;min-height:0;overflow:hidden;-webkit-overflow-scrolling:touch}
 .stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#050607}
+.game-trailer{position:absolute;inset:0;z-index:2;display:grid;place-items:center;background:#000}
+.game-trailer[hidden]{display:none}
+.game-trailer video{display:block;width:100%;height:100%;object-fit:contain}
+.trailer-skip{position:absolute;right:20px;bottom:20px;background:#111e;color:#fff;border-color:#aaa;font-size:12px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:30;background:var(--ink);color:var(--surface);border:1px solid var(--ink);border-radius:3px;padding:10px 16px;font:500 11px var(--f-mono)}
 @media(max-width:1000px){.wrap{padding-inline:28px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.intro h1{font-size:46px}}
 @media(max-width:640px){.shape-purple{top:-54px;left:-62px;width:122px;height:122px}.shape-teal{top:-42px;right:-64px;width:108px;height:105px}.shape-bolt{top:36%;left:-38px;width:52px;height:92px}.shape-star{top:24px;left:78%;width:20px;height:20px}.shape-dot{width:10px;height:10px}.shape-dot-a{top:31%;left:6%}.shape-dot-b{top:3%;right:8%;width:8px;height:8px}.shape-dot-c{bottom:4%;left:35%;width:8px;height:8px}.shape-cross{width:23px;height:23px}.shape-cross::before{width:23px;height:5px}.shape-cross::after{width:5px;height:23px}.shape-cross-a{top:10%;left:24%}.shape-cross-b{right:-8px;top:61%}.shape-cross-c{left:7%;bottom:21%}.shape-ring{left:-54px;bottom:-55px;width:128px;height:128px;border-width:18px;box-shadow:0 0 0 24px rgba(35,57,114,.38)}.shape-blue{right:-58px;bottom:-58px;width:128px;height:128px}.shape-triangle{right:9%;bottom:17%;width:27px;height:25px}.shape-triangle-teal{left:12%;bottom:14%;width:25px;height:24px}.shape-squiggle{width:96px;height:38px;border-width:3px}.shape-squiggle::after{left:28px;top:-3px;width:60px;height:35px;border-width:3px}.shape-squiggle-a{left:-70px;top:20%}.shape-squiggle-b{right:-70px;top:27%}.shape-squiggle-c{right:8%;bottom:4%}.wrap{padding:0 16px 48px}.masthead{min-height:76px;align-items:flex-start;padding:17px 0;flex-direction:column;gap:16px}.brand{gap:10px}.brand-mark{font-size:25px}.brand-kicker{padding-left:10px;font-size:9px}.header-actions{width:100%;justify-content:space-between;gap:12px}.player-field{gap:7px}.player-field input{width:104px}.connection summary{min-height:34px}.intro{padding:34px 0 21px;align-items:flex-start;flex-direction:column;gap:13px}.intro h1{font-size:38px}.intro h1 em{white-space:nowrap}.collection-count{padding:0}.grid{grid-template-columns:1fr;gap:12px}.thumb-wrap{aspect-ratio:16/9}.card-body{min-height:218px;padding:17px}.game-title{font-size:29px}.tagline{font-size:15px}.pbar{padding:8px}.pbar b{font-size:18px}.share{max-width:46vw;font-size:10px}}
@@ -223,7 +227,13 @@ code{padding:2px 5px;border:1px solid var(--line);border-radius:3px;background:v
     <div class="row"><button class="btn" id="p-exit">← Library</button><b id="p-title">Game</b></div>
     <div class="row"><span class="share" id="p-share"></span><button class="btn" id="p-copy">Copy partner link</button><button class="btn" id="p-full">Fullscreen</button></div>
   </div>
-  <div class="stage"><iframe id="frame" title="Game" allow="fullscreen; autoplay; clipboard-write" allowfullscreen></iframe></div>
+  <div class="stage">
+    <iframe id="frame" title="Game" allow="fullscreen; autoplay; clipboard-write" allowfullscreen></iframe>
+    <div class="game-trailer" id="game-trailer" role="dialog" aria-label="ChronoLink trailer" hidden>
+      <video id="trailer-video" playsinline preload="none" aria-label="ChronoLink: Anchor and Echo trailer"></video>
+      <button class="btn trailer-skip" id="trailer-skip">Skip trailer · press any key</button>
+    </div>
+  </div>
 </div>
 
 <script src="shared/sdk/hub-config.js"></script>
@@ -327,19 +337,51 @@ function renderGames() {
 }
 
 let current = null;
+let cancelTrailer = null;
+function playChronolinkTrailer(onDone) {
+  const overlay = $('#game-trailer'), video = $('#trailer-video');
+  let finished = false;
+  const cleanup = () => {
+    finished = true;
+    window.removeEventListener('keydown', skipKey, true);
+    video.onended = video.onerror = null;
+    $('#trailer-skip').onclick = null;
+    video.pause(); video.removeAttribute('src'); video.load();
+    overlay.hidden = true; cancelTrailer = null;
+  };
+  const finish = () => { if (finished) return; cleanup(); onDone(); };
+  const skipKey = e => { e.preventDefault(); e.stopImmediatePropagation(); finish(); };
+  cancelTrailer = cleanup;
+  video.onended = video.onerror = finish;
+  $('#trailer-skip').onclick = finish;
+  window.addEventListener('keydown', skipKey, true);
+  overlay.hidden = false;
+  $('#trailer-skip').focus();
+  video.muted = false;
+  video.src = 'games/chronolink/media/trailer.mp4';
+  video.play().catch(() => {
+    if (finished) return;
+    // Some browsers still restrict sound despite the Play button gesture.
+    video.muted = true;
+    video.play().catch(finish);
+  });
+}
 function openGame(id, roleId) {
+  if (cancelTrailer) cancelTrailer();
   const g = GAMES.find(x => x.id === id); if (!g) return;
   const role = (g.roles || []).find(r => r.id === roleId) || { entry: g.entry, name: 'Play' };
   current = { g, role };
   $('#p-title').textContent = `${g.title} · ${role.name}`;
-  $('#frame').src = entryUrl(g, role.entry);
+  $('#frame').src = 'about:blank';
+  const launch = () => { $('#frame').src = entryUrl(g, role.entry); $('#frame').focus(); };
   const other = (g.roles || []).find(r => r.id !== roleId);
   if (other) { const url = new URL(g.path + other.entry, location.href).href; $('#p-share').textContent = `${other.name}: ${url}`; $('#p-copy').hidden = false; $('#p-copy').dataset.url = url; }
   else { $('#p-share').textContent = ''; $('#p-copy').hidden = true; }
   $('#player').hidden = false; document.body.style.overflow = 'hidden';
-  setTimeout(() => $('#frame').focus(), 300);
+  if (id === 'chronolink') playChronolinkTrailer(launch);
+  else launch();
 }
-function closeGame() { $('#player').hidden = true; $('#frame').src = 'about:blank'; document.body.style.overflow = ''; current = null; }
+function closeGame() { if (cancelTrailer) cancelTrailer(); $('#player').hidden = true; $('#frame').src = 'about:blank'; document.body.style.overflow = ''; current = null; }
 $('#p-exit').onclick = closeGame;
 $('#p-full').onclick = () => { const el = $('#player'); (el.requestFullscreen ? el.requestFullscreen() : Promise.reject()).catch(() => toast('Fullscreen is not available here')); };
 $('#p-copy').onclick = () => { const u = $('#p-copy').dataset.url; (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(() => toast('Partner link copied'), () => toast(u)); };
