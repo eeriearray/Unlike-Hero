@@ -90,3 +90,53 @@ test('both eras are the same building: identical walls and an aged twin on every
     assert.deepEqual(P.exit, F.exit);
   }
 });
+
+// An independent push solver (plain BFS over exact crate + player positions) so the test doesn't trust the generator.
+function solveCrateRoom(L, link) {
+  const P = L.past, F = L.future, W = L.W, crates = P.objs.filter(o => o.crate && o.crateLink === link.index);
+  const area = crates[0].area, goals = crates.map(c => c.goal.y * W + c.goal.x);
+  const open = i => { const x = i % W, y = (i / W) | 0; return y >= 1 && y <= L.H - 2 && [P, F].every(r => r.grid[i] === 0 && (!r.objAt[i] || r.objAt[i].crate)); };
+  const inArea = i => { const x = i % W; return x >= area.x0 && x <= area.x1; };
+  const sp = link.crateSol.startP, start = { c: crates.map(c => c.y * W + c.x), p: sp.y * W + sp.x };
+  const key = s => s.c.slice().sort((a, b) => a - b).join(',') + '@' + s.p;
+  const seen = new Set([key(start)]); let frontier = [start];
+  for (let depth = 0; depth < 60; depth++) {
+    const next = [];
+    for (const s of frontier) {
+      if (s.c.every(c => goals.includes(c))) return depth;
+      for (const d of [1, -1, W, -W]) {
+        const np = s.p + d; if (!open(np)) continue;
+        const ci = s.c.indexOf(np);
+        if (ci < 0) { const ns = { c: s.c, p: np }, k = key(ns); if (!seen.has(k)) { seen.add(k); frontier.push(ns); } continue; }
+        const to = np + d; if (!open(to) || !inArea(to) || s.c.includes(to)) continue;
+        const ns = { c: s.c.map((c, j) => j === ci ? to : c), p: np }, k = key(ns);
+        if (!seen.has(k)) { seen.add(k); next.push(ns); }
+      }
+    }
+    frontier = next; if (!frontier.length) return -1;
+  }
+  return -1;
+}
+
+test('crate puzzles are solvable from the start and need real planning', () => {
+  let checked = 0;
+  for (let n = 9; n <= 1000 && checked < 14; n += 37) {
+    const L = C.generateLevel(n);
+    for (const link of L.links.filter(l => l.type === 'CRATE')) {
+      const pushes = solveCrateRoom(L, link);
+      assert.ok(pushes >= 0, `level ${n}: crate room unsolvable`);
+      assert.equal(pushes, link.crateSol.pushes, `level ${n}: generator's push count should be the true minimum`);
+      assert.ok(pushes >= (link.nCrates === 1 ? 4 : 8), `level ${n}: only ${pushes} pushes`);
+      checked++;
+    }
+  }
+  assert.ok(checked >= 8);
+});
+
+test('from level 9 every non-breather level has a crate or flood puzzle', () => {
+  for (let n = 9; n <= 300; n++) {
+    if (C.cyclePos(n) === 20) continue;
+    const L = C.generateLevel(n);
+    assert.ok(L.links.some(l => l.type === 'CRATE' || l.type === 'FLOW'), `level ${n}: ${L.links.map(l => l.type).join('>')}`);
+  }
+});

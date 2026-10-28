@@ -246,13 +246,18 @@ const LINK_TYPES = {
   PUSH:   { dir: 'PF', from: 4 },
   SLUICE: { dir: 'PF', from: 6 },
   STASH:  { dir: 'PF', from: 8 },
+  CRATE:  { dir: 'PF', from: 9 },
+  FLOW:   { dir: 'PF', from: 16 },
   CODE:   { dir: 'FP', from: 1 },
 };
-const SYNC_FROM = 11, CIPHER_FROM = 14, SEQUENCE_FROM = 24, DECOY_FROM = 101;
+// CRATE: a small push puzzle in 1924 whose 2026 ruins must end on weight plates only the Echo can see.
+// FLOW: two flood channels share one water supply; the sluice decides which one is dry.
+const SYNC_FROM = 11, CIPHER_FROM = 14, SEQUENCE_FROM = 24, DECOY_FROM = 30, HIDDEN_PIPES_FROM = 30, BURIED_PIPES_FROM = 101, TWO_CRATES_FROM = 120;
 function linkSteps(type, n) {
   if (type === 'SEED') return n >= 40 ? 2 : 1;
   if (type === 'SLUICE' || type === 'PUSH' || type === 'SYNC') return 1;
   if (type === 'STASH') return 4;
+  if (type === 'CRATE' || type === 'FLOW') return 3;
   return 2;
 }
 
@@ -289,6 +294,11 @@ function chainLinks(rng, n, target) {
     const count = stepsForLevel(n) >= 12 && rng.next() < 0.5 ? 2 : 1;
     for (let i = 0; i < count; i++) links.splice(rng.range(1, links.length), 0, { type: 'SYNC', dir: 'SYNC' });
   }
+  // From level 9 every level (breathers aside) gets at least one puzzle that takes planning: crates or floods.
+  if (n >= LINK_TYPES.CRATE.from && c !== 20 && !links.some(l => l.type === 'CRATE' || l.type === 'FLOW')) {
+    const swap = links.map((l, i) => i).filter(i => links[i].dir === 'PF' && n - LINK_TYPES[links[i].type].from > 1);
+    if (swap.length) links[rng.pick(swap)] = { type: n >= LINK_TYPES.FLOW.from && rng.next() < 0.5 ? 'FLOW' : 'CRATE', dir: 'PF' };
+  }
   return links;
 }
 // Which chrononaut a link's doorway holds back until it opens.
@@ -313,6 +323,10 @@ const NODE_TEXT = {
   lever: 'pull the lever the Echo identifies',
   push: 'shove the wardrobe clear of the doorway',
   sync: 'stand on the resonance plate together',
+  crate: 'push the crates so their ruins rest on the 2026 weight plates',
+  flow_on: 'turn the sluice to send the water into the far channel',
+  ford: 'wade into the strip between the channels',
+  flow_off: 'turn the sluice back once the Echo is between the channels',
 };
 
 function buildGraph(rng, n, links) {
@@ -340,6 +354,8 @@ function buildGraph(rng, n, links) {
       L.scan = add('ECHO', 'scan'); L.lever = add('ANCHOR', 'lever');
     } else if (L.type === 'PUSH') { L.push = add('ANCHOR', 'push'); }
     else if (L.type === 'SYNC') { L.sync = add('BOTH', 'sync'); }
+    else if (L.type === 'CRATE') { L.nCrates = n >= TWO_CRATES_FROM ? 2 : 1; L.crate = add('ANCHOR', 'crate'); }
+    else if (L.type === 'FLOW') { L.toggle = 't' + i; L.flowOn = add('ANCHOR', 'flow_on'); L.ford = add('ECHO', 'ford'); L.flowOff = add('ANCHOR', 'flow_off'); }
     if (L.type === 'CODE' && n >= CIPHER_FROM) { L.cipher = true; L.glyphs = rng.shuffle(GLYPHS.slice()); }
     L.openNode = L.nodes[L.nodes.length - 1].id;
   });
@@ -364,7 +380,7 @@ function passable(room, x, y, isDone) {
   const t = room.grid[y * room.W + x];
   if (t === TILE.WALL) return false;
   if (t === TILE.CHASM) { const c = room.cols[x]; return !!c && y === c.row && isDone(c.openNode); }
-  if (t === TILE.WATER) { const c = room.cols[x]; return !!c && isDone(c.openNode); }
+  if (t === TILE.WATER) { const c = room.cols[x]; if (!c) return false; return c.toggle ? (isDone.allOpen || !!isDone(c.toggle) === c.dryWhenOn) : isDone(c.openNode); }
   const o = room.objAt[y * room.W + x];
   if (o && o.solidWhen) return !isDone(o.solidWhen);
   if (o && o.solid) return o.barrier ? isDone(o.openNode) : false;
@@ -404,6 +420,7 @@ function astar(room, sx, sy, goal, tx, ty, isDone) {
 }
 
 const ALL_OPEN = () => true;
+ALL_OPEN.allOpen = true; // generation-time reachability: every door open and every channel crossable
 
 // One building, two moments. Both eras share a single floor plan: the same walls, the same doorways,
 // and every object stands on the same tile as its 102-year-older (or younger) twin.
@@ -442,6 +459,8 @@ function buildFacility(rng, n, links) {
     if (L.type === 'CODE') P({ kind: 'safe', node: L.override.id, code: L.code }, { kind: 'terminal', node: L.read.id, code: L.code }, { near: true });
     if (L.type === 'LEVER') P({ kind: 'lever', node: L.lever.id, correct: L.correct }, { kind: 'leverbank', node: L.scan.id, correct: L.correct }, { span: 3, near: true });
     if (L.type === 'SYNC') P({ kind: 'plate', node: L.sync.id }, { kind: 'plate', node: L.sync.id }, { solid: false });
+    if (L.type === 'CRATE') P({ kind: 'rewinder', crateLink: i }, { kind: 'deadrewinder' }, { mustReach: true });
+    if (L.type === 'FLOW') P({ kind: 'sluice', node: L.flowOn.id, flow: true }, { kind: 'deadwheel', cause: L.toggle }, { near: true });
   });
   // Act II onward: decoy machines whose pipes run into dead ends, so players have to trace cause and effect.
   if (n >= DECOY_FROM && cyclePos(n) !== 20) {
@@ -452,11 +471,11 @@ function buildFacility(rng, n, links) {
     }
   }
   const H = 7 + rng.range(0, n > 200 ? 2 : 1);
-  const need = pairs.map(ps => 4 + Math.ceil(ps.reduce((a, q) => a + (q.span || 1), 0) / 2)); need.push(4);
-  const base = need.reduce((a, b) => a + b, 0);
-  const W = base + K + 2 + rng.range(0, 2);
-  const widths = need.slice(); let extra = W - 2 - K - base; while (extra-- > 0) widths[rng.range(0, K)]++;
-  const mkRoom = era => ({ era, W, H, grid: new Uint8Array(W * H), objs: [], objAt: {}, cols: {}, zones: [], deco: [], zoneOfX: new Int8Array(W).fill(-1) });
+  const need = pairs.map((ps, i) => (links[i].type === 'CRATE' ? 7 + 2 * links[i].nCrates : 4) + Math.ceil(ps.reduce((a, q) => a + (q.span || 1), 0) / 2)); need.push(4);
+  const base = need.reduce((a, b) => a + b, 0), barrierW = links.reduce((a, L) => a + (L.type === 'FLOW' ? 3 : 1), 0);
+  const W = base + barrierW + 2 + rng.range(0, 2);
+  const widths = need.slice(); let extra = W - 2 - barrierW - base; while (extra-- > 0) widths[rng.range(0, K)]++;
+  const mkRoom = era => ({ era, W, H, grid: new Uint8Array(W * H), objs: [], objAt: {}, cols: {}, zones: [], deco: [], marks: [], zoneOfX: new Int8Array(W).fill(-1) });
   const past = mkRoom('past'), future = mkRoom('future'), rooms = [past, future];
   for (const r of rooms) for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (x === 0 || y === 0 || x === W - 1 || y === H - 1) r.grid[key(W, x, y)] = TILE.WALL;
   let oid = 0;
@@ -480,6 +499,25 @@ function buildFacility(rng, n, links) {
       past.cols[bx] = { kind: 'rift', row, link: sct };
       addObj(future, { kind: 'trunk', x: bx, y: row, solid: false, node: open, link: sct });
       addObj(past, { kind: 'planter', x: bx, y: row, solid: true, node: L.plant.id, link: sct });
+    } else if (L.type === 'FLOW') {
+      // Two channels fed by one supply. Off: the near channel floods, the far one is dry. On: the reverse.
+      // The Echo must wade into the strip between them, then the Anchor switches the water back.
+      const c1 = bx, mid = bx + 1, c2 = bx + 2;
+      for (const cx of [c1, c2]) for (let y = 1; y < H - 1; y++) future.grid[key(W, cx, y)] = TILE.WATER;
+      future.cols[c1] = { kind: 'water', row, toggle: L.toggle, dryWhenOn: true, link: sct };
+      future.cols[c2] = { kind: 'water', row, toggle: L.toggle, dryWhenOn: false, link: sct };
+      past.cols[c1] = { kind: 'channel', row, link: sct }; past.cols[c2] = { kind: 'channel', row, link: sct };
+      for (const r of rooms) for (const cx of [mid, c2]) r.zoneOfX[cx] = sct;
+      for (let y = 1; y < H - 1; y++) reserved.add(key(W, mid, y));
+      doors[doors.length - 1] = { x: c2, y: row, link: sct };
+      L.mid = mid; L.channels = [c1, c2];
+      reserved.add(key(W, bx - 1, row)); reserved.add(key(W, c2 + 1, row));
+      x = c2 + 1; continue;
+    } else if (L.type === 'CRATE') {
+      // The 2026 shutter is held shut by its counterweights until crate ruins rest on the weight plates.
+      wall();
+      addObj(past, { kind: 'shutter_open', x: bx, y: row, solid: false, link: sct });
+      addObj(future, { kind: 'weightdoor', x: bx, y: row, solid: true, barrier: true, openNode: open, link: sct });
     } else if (L.type === 'SLUICE') {
       // 1924: a dry stone channel. 2026: the same channel, flooded, unless the water was diverted.
       for (let y = 1; y < H - 1; y++) future.grid[key(W, bx, y)] = TILE.WATER;
@@ -525,7 +563,7 @@ function buildFacility(rng, n, links) {
         const a = addObj(past, Object.assign({}, pr.past, { x: cx, y: cy + k, solid, link: sct, index: k }));
         const b = addObj(future, Object.assign({}, pr.future, { x: cx, y: cy + k, solid, link: sct, index: k }));
         made.push(a, b);
-        if (a.node && !a.decoy) required.past.push(a); if (b.node) required.future.push(b);
+        if ((a.node && !a.decoy) || pr.mustReach) required.past.push(a); if (b.node) required.future.push(b);
       }
       if (reachOK()) return true;
       for (const m of made) { const r = m.id[0] === 'p' ? past : future; delObj(r, m); const req = required[r.era], i = req.indexOf(m); if (i >= 0) req.splice(i, 1); }
@@ -543,9 +581,10 @@ function buildFacility(rng, n, links) {
     }
   }
   if (!reachOK()) return null;
-  // Furniture in 1924 becomes ruins in 2026, tile for tile.
+  // Furniture in 1924 becomes ruins in 2026, tile for tile. Crate rooms stay clear: their layout is the puzzle.
+  const crateSections = new Set(links.map((L, i) => L.type === 'CRATE' ? i : -1));
   const decoKinds = Object.keys(AGED), interior = [];
-  for (let cy = 1; cy < H - 1; cy++) for (let cx = 1; cx < W - 1; cx++) interior.push([cx, cy]);
+  for (let cy = 1; cy < H - 1; cy++) for (let cx = 1; cx < W - 1; cx++) if (!crateSections.has(past.zoneOfX[cx])) interior.push([cx, cy]);
   rng.shuffle(interior);
   const decoN = Math.floor((W - 2) * (H - 2) * (n % 20 === 0 ? 0.04 : 0.07 + Math.min(0.05, n / 9000)));
   let placed = 0;
@@ -563,7 +602,125 @@ function buildFacility(rng, n, links) {
     else if (r < 0.09) { past.deco.push({ kind: 'inlay', x: cx, y: cy }); future.deco.push({ kind: 'wires', x: cx, y: cy }); }
     else if (r < 0.13) future.deco.push({ kind: 'puddle', x: cx, y: cy });
   }
+  for (let sct = 0; sct < K; sct++) if (links[sct].type === 'CRATE' && !genCrates(sct)) return null;
   return { past, future, W, H, doors };
+
+  // Crate puzzles. Cells are flat indexes into the W×H grid; typed arrays keep generation fast enough to run
+  // when a level loads. Generation plays the puzzle backwards (crates start on their plates and are pulled
+  // away), so every result is solvable; a breadth-first solver then measures the true minimum number of
+  // pushes, and only layouts inside the level's target band are kept.
+  function genCrates(sct) {
+    const L = links[sct], { x0, x1 } = past.zones[sct], count = L.nCrates, N = W * H;
+    const pd = sct > 0 ? doors[sct - 1] : null, entry = pd ? { x: pd.x + 1, y: pd.y } : past.start;
+    const exitAp = { x: doors[sct].x - 1, y: doors[sct].y };
+    const E = entry.y * W + entry.x, X = exitAp.y * W + exitAp.x;
+    const walk = new Uint8Array(N), slot = new Uint8Array(N);
+    for (let cy = 1; cy <= H - 2; cy++) for (let cx = x0; cx <= x1; cx++) {
+      const i = cy * W + cx;
+      if (rooms.every(r => r.grid[i] === TILE.FLOOR && !r.objAt[i])) { walk[i] = 1; slot[i] = i !== E && i !== X ? 1 : 0; }
+    }
+    walk[E] = 1;
+    const DIRS = [1, -1, W, -W], stamp = new Uint32Array(N), queue = new Int32Array(N);
+    let gen = 0;
+    const has = (arr, v) => { for (let k = 0; k < arr.length; k++) if (arr[k] === v) return true; return false; };
+    // Flood-fill the player's reachable cells (marked with the current stamp); returns the smallest index reached.
+    const reach = (from, crates) => {
+      gen++; let h = 0, t = 0, min = from; stamp[from] = gen; queue[t++] = from;
+      while (h < t) { const c = queue[h++]; if (c < min) min = c; for (const d of DIRS) { const nx = c + d; if (walk[nx] && stamp[nx] !== gen && !has(crates, nx)) { stamp[nx] = gen; queue[t++] = nx; } } }
+      return min;
+    };
+    // Solver in a compact cell space: each crate arrangement gets its walkable areas labelled once (cached),
+    // so a state's canonical player position is a table lookup instead of a flood fill.
+    const cid = new Int32Array(N).fill(-1), cellOf = [];
+    for (let i = 0; i < N; i++) if (walk[i]) { cid[i] = cellOf.length; cellOf.push(i); }
+    const M = cellOf.length, nb = new Int32Array(M * 4).fill(-1), cslot = new Uint8Array(M);
+    for (let c = 0; c < M; c++) { cslot[c] = slot[cellOf[c]]; for (let di = 0; di < 4; di++) { const j = cellOf[c] + DIRS[di]; if (walk[j]) nb[c * 4 + di] = cid[j]; } }
+    const OPP = [1, 0, 3, 2], lq = new Int32Array(M);
+    const labels = new Map();
+    const labelFor = (cs, ck) => {
+      let lab = labels.get(ck); if (lab) return lab;
+      lab = new Int16Array(M).fill(-1);
+      for (const c of cs) lab[c] = -2;
+      for (let s0 = 0; s0 < M; s0++) {
+        if (lab[s0] !== -1) continue;
+        let h = 0, t = 0; lq[t++] = s0; lab[s0] = s0;
+        while (h < t) { const c = lq[h++]; for (let di = 0; di < 4; di++) { const n2 = nb[c * 4 + di]; if (n2 >= 0 && lab[n2] === -1) { lab[n2] = s0; lq[t++] = n2; } } }
+      }
+      labels.set(ck, lab); return lab;
+    };
+    const confKey = cs => { const s2 = cs.slice().sort((x, y) => x - y); let k = 0; for (const c of s2) k = k * M + c; return k; };
+    const solve = (starts, goals, player, limit) => {
+      const cs0 = starts.map(c => cid[c]), cg = goals.map(c => cid[c]), p0 = cid[player];
+      const isGoal = cs => cs.every(c => cg.includes(c));
+      const seen = new Set();
+      const ck0 = confKey(cs0);
+      seen.add(ck0 * M + labelFor(cs0, ck0)[p0]);
+      let frontier = [{ cs: cs0, p: p0, dm: 0 }];
+      for (let depth = 0; depth <= limit; depth++) {
+        const next = [];
+        for (const st of frontier) {
+          if (isGoal(st.cs)) { let bits = st.dm, dirs = 0; while (bits) { dirs += bits & 1; bits >>= 1; } return { pushes: depth, dirs }; }
+          const lab = labelFor(st.cs, confKey(st.cs)), region = lab[st.p];
+          for (let ci = 0; ci < st.cs.length; ci++) for (let di = 0; di < 4; di++) {
+            const c = st.cs[ci], from = nb[c * 4 + OPP[di]], to = nb[c * 4 + di];
+            if (from < 0 || to < 0 || lab[from] !== region || !cslot[to] || st.cs.includes(to)) continue;
+            const cs = st.cs.slice(); cs[ci] = to;
+            const ck = confKey(cs), k = ck * M + labelFor(cs, ck)[c];
+            if (seen.has(k)) continue;
+            seen.add(k); next.push({ cs, p: c, dm: st.dm | (1 << di) });
+          }
+        }
+        if (!next.length || seen.size > 60000) return null;
+        frontier = next;
+      }
+      return null;
+    };
+    const band = count === 1 ? (n < 40 ? [4, 9] : n < 200 ? [6, 12] : [8, 14]) : (n < 500 ? [10, 18] : [12, 22]);
+    const cells = []; for (let i = 0; i < N; i++) if (slot[i]) cells.push(i);
+    let best = null;
+    for (let attempt = 0; attempt < 45; attempt++) {
+      const goals = rng.shuffle(cells.slice()).slice(0, count);
+      if (goals.length < count) return false;
+      const crates = goals.slice();
+      const adj = DIRS.map(d => crates[0] + d).filter(c => walk[c] && !has(crates, c));
+      if (!adj.length) continue;
+      let player = rng.pick(adj); const endP = player;
+      const target = rng.range(band[0] + 2, band[1] + 6);
+      for (let step = 0; step < target; step++) {
+        reach(player, crates); const g0 = gen, moves = [];
+        crates.forEach((c, ci) => { for (const d of DIRS) {
+          const a = c + d, b2 = c + 2 * d;
+          if (slot[a] && walk[b2] && !has(crates, a) && !has(crates, b2) && stamp[a] === g0) {
+            const dist = q => Math.abs((q % W) - (goals[ci] % W)) + Math.abs(((q / W) | 0) - ((goals[ci] / W) | 0));
+            moves.push({ ci, a, b2, away: dist(a) > dist(c) });
+          }
+        } });
+        if (!moves.length) break;
+        const away = moves.filter(m => m.away), mv = away.length && rng.next() < 0.75 ? rng.pick(away) : rng.pick(moves);
+        crates[mv.ci] = mv.a; player = mv.b2;
+      }
+      if (crates.some((c, i) => Math.abs((c % W) - (goals[i] % W)) + Math.abs(((c / W) | 0) - ((goals[i] / W) | 0)) < 2)) continue;
+      reach(E, crates); if (stamp[player] !== gen) continue;     // the Anchor can walk in to start
+      reach(E, goals); if (stamp[X] !== gen) continue;           // once solved, the doorway is reachable
+      const sol = solve(crates, goals, player, band[1] + 4);
+      if (!sol || sol.dirs < 2) continue;
+      const miss = sol.pushes < band[0] ? band[0] - sol.pushes : sol.pushes > band[1] ? sol.pushes - band[1] : 0;
+      if (!best || miss < best.miss) best = { miss, crates: crates.slice(), goals, player, endP, pushes: sol.pushes };
+      if (miss === 0) break;
+    }
+    if (!best || best.miss > 2) return false;
+    const pt = i => ({ x: i % W, y: (i / W) | 0 });
+    L.crateSol = { startP: pt(best.player), endP: pt(best.endP), pushes: best.pushes };
+    L.crateIds = [];
+    best.crates.forEach((c, k) => {
+      const at = pt(c), goal = pt(best.goals[k]);
+      const a = addObj(past, { kind: 'crate1924', x: at.x, y: at.y, solid: true, crate: true, crateLink: sct, home: Object.assign({}, at), goal, area: { x0, x1 }, idx: k, link: sct });
+      const b = addObj(future, { kind: 'crate2026', x: at.x, y: at.y, solid: true, crate: true, crateLink: sct, home: Object.assign({}, at), goal, idx: k, link: sct });
+      a.twin = b.id; b.twin = a.id; L.crateIds.push(a.id);
+      future.marks.push({ kind: 'weightplate', x: goal.x, y: goal.y, link: sct, idx: k });
+    });
+    return true;
+  }
 }
 
 function generateLevel(input) {
@@ -583,7 +740,8 @@ function generateLevel(input) {
     const { past, future, W, H, doors } = fac;
     const level = {
       n, seed, custom, input: custom ? seed : String(n), W, H, past, future, doors, links, nodes,
-      steps: nodes.length, act: actFor(n), chamber: rng.pick(CHAMBERS), breather: n % 20 === 0, attempt,
+      // effort, not node count: a crate room or a flood counts as three steps of thinking
+      steps: links.reduce((a, l) => a + linkSteps(l.type, n), 0), act: actFor(n), chamber: rng.pick(CHAMBERS), breather: n % 20 === 0, attempt,
     };
     const v = validateLevel(level);
     if (v.ok) { level.solution = v; return level; }
@@ -593,6 +751,12 @@ function generateLevel(input) {
 
 // Plays the dependency graph forward with A*, so a chamber ships only if both players can finish it.
 function validateLevel(level) {
+  const moved = [];
+  const moveCrate = (room, o, to) => { delete room.objAt[o.y * room.W + o.x]; moved.push([room, o, o.x, o.y]); o.x = to.x; o.y = to.y; room.objAt[o.y * room.W + o.x] = o; };
+  try { return validateInner(level, moveCrate); }
+  finally { for (let i = moved.length - 1; i >= 0; i--) { const [room, o, x, y] = moved[i]; delete room.objAt[o.y * room.W + o.x]; o.x = x; o.y = y; room.objAt[y * room.W + x] = o; } }
+}
+function validateInner(level, moveCrate) {
   const done = new Set();
   const isDone = id => done.has(id);
   const pos = { ANCHOR: Object.assign({}, level.past.start), ECHO: Object.assign({}, level.future.start) };
@@ -609,8 +773,21 @@ function validateLevel(level) {
       }
       route.push({ node: nd.id, actor: 'BOTH' }); done.add(nd.id); continue;
     }
-    const room = nd.actor === 'ANCHOR' ? level.past : level.future;
-    const targets = room.objs.filter(o => o.node === nd.id && !o.deco);
+    const room = nd.actor === 'ANCHOR' ? level.past : level.future, L = level.links[nd.link];
+    if (nd.type === 'crate') {
+      const sp = L.crateSol.startP;
+      const p = astar(room, pos.ANCHOR.x, pos.ANCHOR.y, (x, y) => x === sp.x && y === sp.y, sp.x, sp.y, isDone);
+      if (!p) return { ok: false, at: nd.id, why: 'crate-start' };
+      moves += p.length - 1 + L.crateSol.pushes * 3;
+      for (const r of [level.past, level.future]) for (const o of r.objs.filter(q => q.crate && q.crateLink === nd.link)) moveCrate(r, o, o.goal);
+      pos.ANCHOR = Object.assign({}, L.crateSol.endP); route.push({ node: nd.id, actor: 'ANCHOR' }); done.add(nd.id); continue;
+    }
+    if (nd.type === 'ford') {
+      const p = astar(room, pos.ECHO.x, pos.ECHO.y, (x) => x === L.mid, L.mid, pos.ECHO.y, isDone);
+      if (!p) return { ok: false, at: nd.id, why: 'ford' };
+      moves += p.length - 1; pos.ECHO = p[p.length - 1]; route.push({ node: nd.id, actor: 'ECHO' }); done.add(nd.id); continue;
+    }
+    const targets = room.objs.filter(o => (o.node === nd.id || (nd.type === 'flow_off' && o.node === L.flowOn.id)) && !o.deco);
     let best = null;
     for (const t of targets) {
       const p = astar(room, pos[nd.actor].x, pos[nd.actor].y, (x, y) => cheb(x, y, t.x, t.y) <= 1, t.x, t.y, isDone);
@@ -621,6 +798,8 @@ function validateLevel(level) {
     pos[nd.actor] = best[best.length - 1];
     route.push({ node: nd.id, actor: nd.actor, at: pos[nd.actor] });
     done.add(nd.id);
+    if (nd.type === 'flow_on') done.add(L.toggle);
+    if (nd.type === 'flow_off') done.delete(L.toggle);
   }
   for (const [actor, room] of [['ANCHOR', level.past], ['ECHO', level.future]]) {
     const p = astar(room, pos[actor].x, pos[actor].y, (x, y) => x === room.exit.x && y === room.exit.y, room.exit.x, room.exit.y, isDone);
@@ -630,7 +809,7 @@ function validateLevel(level) {
   return { ok: true, moves, steps: level.nodes.length, route };
 }
 
-root.ChronoCore = { TILE, GLYPHS, cyclePos, SYNC_FROM, CIPHER_FROM, SEQUENCE_FROM, DECOY_FROM, Mulberry32, hashStr, seedForLevel, stepsForLevel, actFor, LINK_TYPES, linkSteps, NODE_TEXT, generateLevel, validateLevel, passable, astar, cheb };
+root.ChronoCore = { TILE, GLYPHS, cyclePos, SYNC_FROM, CIPHER_FROM, SEQUENCE_FROM, DECOY_FROM, HIDDEN_PIPES_FROM, BURIED_PIPES_FROM, TWO_CRATES_FROM, Mulberry32, hashStr, seedForLevel, stepsForLevel, actFor, LINK_TYPES, linkSteps, NODE_TEXT, generateLevel, validateLevel, passable, astar, cheb };
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
 
@@ -889,7 +1068,7 @@ const G = {
 const ROLE_ERA = { ANCHOR: 'past', ECHO: 'future' };
 function newPlayer(start) {
   return { x: start.x, y: start.y, rx: start.x, ry: start.y, vx: 0, vy: 0, yaw: Math.PI / 2, speed: 0, turn: 0, dir: { dx: 1, dy: 0 },
-    done: {}, inv: null, revealed: {}, sent: {}, prog: {}, stunUntil: 0, lockUntil: 0 };
+    done: {}, inv: null, revealed: {}, sent: {}, prog: {}, crates: {}, stunUntil: 0, lockUntil: 0 };
 }
 const isDone = id => !!(G.A && (G.A.done[id] || G.E.done[id]));
 const nodeById = id => G.level.nodes.find(n => n.id === id);
@@ -898,7 +1077,7 @@ const allDone = () => G.level.nodes.every(n => isDone(n.id));
 const roomOf = era => G.level[era];
 const playerOf = era => era === 'past' ? G.A : G.E;
 
-function subState(p) { return { x: p.x, y: p.y, px: Math.round(p.rx * 100) / 100, pz: Math.round(p.ry * 100) / 100, dir: p.dir, done: p.done, inv: p.inv, revealed: p.revealed, sent: p.sent, prog: p.prog }; }
+function subState(p) { return { x: p.x, y: p.y, px: Math.round(p.rx * 100) / 100, pz: Math.round(p.ry * 100) / 100, dir: p.dir, done: p.done, inv: p.inv, revealed: p.revealed, sent: p.sent, prog: p.prog, crates: p.crates }; }
 
 /* ============================================================
    NETWORK: BroadcastChannel('chronolink-sync') links two tabs;
@@ -982,7 +1161,8 @@ function applySnapshot(s) {
   for (const [who, sub] of [['A', s.A], ['E', s.E]]) {
     if (!sub) continue;
     const p = who === 'A' ? G.A : G.E;
-    Object.assign(p, { done: sub.done || {}, inv: sub.inv || null, revealed: sub.revealed || {}, sent: sub.sent || {} });
+    Object.assign(p, { done: sub.done || {}, inv: sub.inv || null, revealed: sub.revealed || {}, sent: sub.sent || {}, prog: sub.prog || {}, crates: sub.crates || {} });
+    if (who === 'A') for (const id in p.crates) { const o = G.level.past.objs.find(q => q.id === id && q.crate), v = p.crates[id]; if (o && Array.isArray(v)) placeCrate(o, v[0], v[1]); }
     moveRemote(p, sub, who === 'A' ? 'past' : 'future', true);
   }
   for (const id in G.A.done) G.fxTimes[id] = -99;
@@ -1012,6 +1192,11 @@ function applyRemote(who, s) {
   p.revealed = s.revealed && typeof s.revealed === 'object' ? s.revealed : {};
   p.sent = s.sent && typeof s.sent === 'object' ? s.sent : {};
   p.prog = s.prog && typeof s.prog === 'object' ? s.prog : {};
+  if (who === 'A' && s.crates && typeof s.crates === 'object') for (const id in s.crates) {
+    const o = G.level.past.objs.find(q => q.id === id && q.crate), v = s.crates[id];
+    if (o && Array.isArray(v) && (o.x !== v[0] || o.y !== v[1]) && Number.isInteger(v[0]) && Number.isInteger(v[1])) placeCrate(o, v[0], v[1]);
+  }
+  if (who === 'A') p.crates = s.crates || {};
   const newly = Object.keys(s.done || {}).filter(id => !p.done[id] && G.level.nodes.some(n => n.id === id));
   p.done = s.done || {};
   for (const id of newly) onNodeDone(id, false);
@@ -1433,8 +1618,12 @@ function buildWorld(era) {
       const mat = own(w, phys({ color: 0x06222e, roughness: 0.04, metalness: 0.35, transparent: true, opacity: 0.9, clearcoat: 1, emissive: 0x00303a, emissiveIntensity: 0.12 }));
       const water = mk(geo, mat, x, -0.08, (H - 1) / 2, S, false);
       const base = geo.attributes.position.array.slice();
+      const lvl = { v: -1 };
+      const dryNow = () => col.toggle ? !!isDone(col.toggle) === col.dryWhenOn : isDone(col.openNode);
       w.updaters.push(t => {
-        const drained = isDone(col.openNode) ? clamp(sinceDone(col.openNode) / 2, 0, 1) : 0;
+        if (lvl.v < 0) lvl.v = dryNow() && !col.toggle && sinceDone(col.openNode) > 2 ? 1 : dryNow() && col.toggle ? 1 : 0;
+        lvl.v += ((dryNow() ? 1 : 0) - lvl.v) * (1 - Math.exp(-(G.frameDt || 0.016) * 1.6));
+        const drained = lvl.v;
         water.position.y = -0.08 - drained * 0.32; mat.opacity = 0.88 * (1 - drained); water.visible = drained < 1;
         const a = geo.attributes.position.array;
         for (let i = 0; i < a.length; i += 3) a[i + 1] = base[i + 1] + Math.sin(base[i + 2] * 5 + t * 2.4) * 0.025 + Math.sin(base[i] * 9 + base[i + 2] * 3 - t * 3.1) * 0.015;
@@ -1444,7 +1633,7 @@ function buildWorld(era) {
       for (let y = 1; y < H - 1; y++) if (th(x, y, 3) % 3 === 0) {
         const plank = mk(BOX(0.4, 0.04, 0.1), M.darkWood, x, -0.06, y, S);
         const ph = th(x, y, 4) % 100;
-        w.updaters.push(t => { const d = isDone(col.openNode) ? clamp(sinceDone(col.openNode) / 2, 0, 1) : 0; plank.position.set(x + Math.sin(t * 0.4 + ph) * 0.25, -0.05 - d * 0.3 + Math.sin(t * 2 + ph) * 0.015, y + Math.cos(t * 0.3 + ph) * 0.2); plank.rotation.y = t * 0.2 + ph; });
+        w.updaters.push(t => { const d = lvl.v < 0 ? 0 : lvl.v; plank.position.set(x + Math.sin(t * 0.4 + ph) * 0.25, -0.05 - d * 0.3 + Math.sin(t * 2 + ph) * 0.015, y + Math.cos(t * 0.3 + ph) * 0.2); plank.rotation.y = t * 0.2 + ph; });
       }
     } else if (col.kind === 'chasm') {
       const mist = mk(cachedGeo('mist', () => new THREE.PlaneGeometry(1, 1)), own(w, new THREE.MeshBasicMaterial({ color: 0x00f5d4, transparent: true, opacity: 0.12, blending: THREE.AdditiveBlending, depthWrite: false })), x, -2.6, (H - 1) / 2, S, false);
@@ -1548,6 +1737,15 @@ function buildWorld(era) {
     }
   }
 
+  // ----- weight plates: only 2026 has them; the Anchor never sees where the crates need to go -----
+  for (const mkd of room.marks || []) {
+    const plateM = own(w, std({ color: 0x3a2a1a, metalness: 0.6, roughness: 0.5, emissive: 0x00f5d4, emissiveIntensity: 0.15 }));
+    mk(CYL(0.4, 0.42, 0.04, 28), plateM, mkd.x, 0.02, mkd.y, S, false);
+    const ringM = own(w, new THREE.MeshBasicMaterial({ color: 0x00f5d4, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, depthWrite: false }));
+    const ring = mk(cachedGeo('ring', () => { const gg = new THREE.RingGeometry(0.92, 1, 72); gg.rotateX(-Math.PI / 2); return gg; }), ringM, mkd.x, 0.05, mkd.y, S, false); ring.scale.setScalar(0.38);
+    w.updaters.push(t => { const o = room.objAt[mkd.y * room.W + mkd.x], held = !!(o && o.crate); plateM.emissiveIntensity = held ? 1.4 : 0.15 + 0.1 * Math.sin(t * 2.5); ringM.opacity = held ? 0.9 : 0.25 + 0.15 * Math.sin(t * 2.5); });
+  }
+
   // ----- objects -----
   for (const o of room.objs) { const b = buildObject(w, o, era); if (b) { w.objs[o.id] = b; S.add(b.group); } }
 
@@ -1564,17 +1762,19 @@ function buildWorld(era) {
       const groove = mk(BOX(sx + 0.04, 0.012, sz + 0.04), dark, (a.x + b.x) / 2, 0.004, (a.y + b.y) / 2, S, false); groove.castShadow = false;
       const line = mk(BOX(sx * (horiz ? 1 : 0.5), 0.02, sz * (horiz ? 0.5 : 1)), pipeM, (a.x + b.x) / 2, 0.012, (a.y + b.y) / 2, S, false); line.castShadow = false;
       groove.visible = line.visible = fl(a) || fl(b);
-      groove.userData.show = line.userData.show = groove.visible;
+      groove.userData.show = line.userData.show = groove.visible; groove.userData.seg = line.userData.seg = i - 1;
       segs.push(line); parts.push(groove, line);
     }
-    const plates = [cd.cells[0], cd.cells[cd.cells.length - 1]].map(q => { const pm = own(w, std({ color: past ? 0x8a6d1d : 0x14303a, emissive: past ? 0xffd86a : 0x00f5d4, emissiveIntensity: 0, metalness: 0.7, roughness: 0.3 })); const p = mk(CYL(0.16, 0.16, 0.03, 16), pm, q.x, 0.012, q.y, S, false); p.userData.show = true; parts.push(p); return pm; });
-    const buried = !past && G.level.n >= C.DECOY_FROM;
+    const plates = [cd.cells[0], cd.cells[cd.cells.length - 1]].map(q => { const pm = own(w, std({ color: past ? 0x8a6d1d : 0x14303a, emissive: past ? 0xffd86a : 0x00f5d4, emissiveIntensity: 0, metalness: 0.7, roughness: 0.3 })); const p = mk(CYL(0.16, 0.16, 0.03, 16), pm, q.x, 0.012, q.y, S, false); p.userData.show = true; p.userData.seg = q === cd.cells[0] ? -1 : cd.len; parts.push(p); return pm; });
+    // From level 30 the 1924 pipes are under the floorboards: only the light running through them shows the route.
+    // From level 101 the 2026 pipes are buried too, until a LIDAR wave passes over the machine they start from.
+    const hiddenPast = past && G.level.n >= C.HIDDEN_PIPES_FROM, buried = !past && G.level.n >= C.BURIED_PIPES_FROM;
     let seen = !buried;
     const pulses = []; for (let i = 0; i < Math.ceil(cd.len / 1.6); i++) { const pu = mk(SPH(0.05, 8), litM, 0, 0.05, 0, S, false); pu.visible = false; pulses.push(pu); }
     w.updaters.push(t => {
       if (!seen && G.scanT[cd.fromId] != null) seen = true;
-      for (const m of parts) m.visible = seen && m.userData.show;
       const on = isDone(cd.node), lit = on ? Math.min(cd.len, sinceDone(cd.node) * 5) : 0;
+      for (const m of parts) m.visible = seen && m.userData.show && (!hiddenPast || (on && m.userData.seg < lit));
       segs.forEach((s, i) => { s.material = i < lit ? litM : pipeM; });
       plates[0].emissiveIntensity = on ? 1.6 : 0; plates[1].emissiveIntensity = on && lit >= cd.len ? 1.6 + 0.6 * Math.sin(t * 5) : 0;
       pulses.forEach((pu, j) => {
@@ -1873,6 +2073,54 @@ function buildObject(w, o, era) {
         lm.emissiveIntensity = show ? wear * (1.6 + 0.4 * Math.sin(t * 4)) : 0;
       };
       h = 1.0; break;
+    }
+    case 'crate1924': case 'crate2026': {
+      // Shoved in 1924, the crate slides one tile; its 2026 ruin slides with it.
+      const pastC = o.kind === 'crate1924', body = new THREE.Group(); g.add(body);
+      if (pastC) {
+        mk(BOX(0.78, 0.7, 0.78), M.mahogany, 0, 0.35, 0, body);
+        for (const [x, z] of [[-0.39, -0.39], [0.39, -0.39], [-0.39, 0.39], [0.39, 0.39]]) mk(BOX(0.06, 0.72, 0.06), M.brass, x, 0.36, z, body);
+        for (const y of [0.05, 0.68]) mk(BOX(0.8, 0.05, 0.8), M.darkWood, 0, y, 0, body);
+        mk(BOX(0.6, 0.04, 0.02), M.brass, 0, 0.4, 0.4, body);
+      } else {
+        const crt = mk(BOX(0.76, 0.55, 0.76), M.rotWood, 0, 0.27, 0, body); crt.rotation.set(0.05, 0.1, -0.04);
+        for (const [x, z] of [[-0.37, -0.37], [0.37, 0.37]]) mk(BOX(0.06, 0.5, 0.06), M.rust, x, 0.26, z, body);
+        mk(SPH(0.2, 10), M.moss, 0.05, 0.56, 0, body).scale.set(1.5, 0.3, 1.3);
+      }
+      const edgeM = pastC ? null : own(w, new THREE.MeshBasicMaterial({ color: 0x00f5d4, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+      if (edgeM) mk(BOX(0.84, 0.04, 0.84), edgeM, 0, 0.03, 0, body, false);
+      up = t => {
+        const k = o.movedT != null ? ease((G.t - o.movedT) / 0.22) : 1;
+        const fx = o.px != null ? lerp(o.px, o.x, k) : o.x, fz = o.py != null ? lerp(o.py, o.y, k) : o.y;
+        g.position.set(fx, 0, fz); body.position.y = Math.sin(k * Math.PI) * 0.03;
+        if (edgeM) edgeM.opacity = o.x === o.goal.x && o.y === o.goal.y ? 0.6 + 0.3 * Math.sin(t * 4) : 0;
+      };
+      h = 1.0; break;
+    }
+    case 'rewinder': case 'deadrewinder': {
+      // A brass chronal rewinder: sends this room's crates back to where they stood.
+      const pastR = o.kind === 'rewinder';
+      mk(CYL(0.16, 0.24, 0.85, 14), pastR ? M.brass : M.rust, 0, 0.42, 0, g);
+      const face = mk(CYL(0.2, 0.2, 0.04, 24), pastR ? M.marbleWhite : M.rubble, 0, 0.9, 0, g);
+      const hand = mk(BOX(0.02, 0.012, 0.16), M.iron, 0, 0.93, 0.05, g, false);
+      if (!pastR) mk(SPH(0.12, 8), M.moss, 0.08, 0.95, 0, g).scale.set(1.4, 0.3, 1);
+      up = t => { if (pastR) { hand.rotation.y = -t * 2.2; hand.position.set(Math.sin(-t * 2.2) * 0.05, 0.93, Math.cos(-t * 2.2) * 0.05); } };
+      h = 1.25; break;
+    }
+    case 'shutter_open': {
+      mk(BOX(0.12, 0.25, 0.96), M.iron, 0, 1.22, 0, g);
+      for (const sd of [-1, 1]) mk(BOX(0.1, 1.3, 0.06), M.brass, 0, 0.65, sd * 0.47, g);
+      h = 1.5; break;
+    }
+    case 'weightdoor': {
+      // 2026: a counterweighted shutter. It lifts only while crate ruins hold its weight plates down.
+      for (const sd of [-1, 1]) mk(BOX(0.1, 1.3, 0.06), M.rust, 0, 0.65, sd * 0.47, g);
+      const sh = mk(BOX(0.14, 1.2, 0.9), M.steel, 0, 0.6, 0, g);
+      for (let i = 0; i < 5; i++) mk(BOX(0.16, 0.03, 0.9), M.darkMetal, 0, 0.15 + i * 0.24, 0, sh).position.set(0, -0.45 + i * 0.24, 0);
+      const lampM = own(w, std({ color: 0x200000, emissive: 0xff3a2a, emissiveIntensity: 2 }));
+      mk(SPH(0.05, 8), lampM, 0.1, 1.32, 0, g, false);
+      up = () => { const k = isDone(o.openNode) ? ease(sinceDone(o.openNode) / 1.2) : 0; sh.position.y = 0.6 + k * 1.1; sh.scale.y = 1 - k * 0.85; lampM.emissive.setHex(k > 0 ? 0x40ff90 : 0xff3a2a); };
+      h = 1.5; break;
     }
     case 'wardrobe': case 'wardrobe_rot': {
       // Shoved in 1924, it slides along its floor groove; the 2026 heap is found exactly where it stopped.
@@ -2547,9 +2795,27 @@ function actionFor(who, o) {
   const nd = o.node ? nodeById(o.node) : null;
   if (who === 'A') {
     if (o.decoy) {
-      // A red herring: it works, its pipe lights up, and the pipe runs into a wall.
+      // A red herring: it turns, its pipe lights up into a wall, and the pressure has to go somewhere.
       if (G.A.done[o.node]) return null;
-      return { label: 'Turn the wheel', run: () => { G.A.done[o.node] = true; G.fxTimes[o.node] = G.t; Sound.playLeverClunk(); Sound.playSteamHiss(); broadcast('A'); } };
+      return { label: 'Turn the wheel', run: () => { G.A.done[o.node] = true; G.fxTimes[o.node] = G.t; G.strain++; surgeFx(o.x, o.y, true); G.A.stunUntil = G.t + 0.8; broadcast('A'); } };
+    }
+    if (o.kind === 'crate1924') {
+      const L = G.level.links[o.crateLink];
+      if (isDone(L.crate.id)) return null;
+      const dx = o.x - G.A.x, dy = o.y - G.A.y;
+      if (Math.abs(dx) + Math.abs(dy) !== 1) return { label: 'Crate', blocked: 'Line up squarely behind the crate.' };
+      if (!crateFree(o, o.x + dx, o.y + dy)) return { label: 'Crate', blocked: 'Something is in the way.' };
+      return { label: 'Push', run: () => pushCrate(o, o.x + dx, o.y + dy) };
+    }
+    if (o.kind === 'rewinder') {
+      const L = G.level.links[o.crateLink];
+      if (isDone(L.crate.id)) return null;
+      return { label: 'Rewind the crates', run: () => rewindCrates(o) };
+    }
+    if (o.kind === 'sluice' && o.flow) {
+      const L = G.level.links[o.link];
+      if (isDone(L.flowOff.id) || preBlocked(nd)) return null;
+      return { label: 'Turn the sluice', run: () => toggleFlow(L, o) };
     }
     if (!nd || nd.actor !== 'ANCHOR') return null;
     if (isDone(nd.id) && o.kind !== 'lever') return null;
@@ -2705,6 +2971,12 @@ function onNodeDone(id, local) {
       if (wd) temporalShock(wd.dest, wd.dest);
       break;
     }
+    case 'crate': {
+      const door = objIn('future', o => o.kind === 'weightdoor' && o.link === nd.link);
+      Sound.playDoorSlide(); Sound.chime();
+      if (door) { G.shocks.push({ era: 'future', x: door.x, y: door.y, t0: G.t }); G.camFocus = { era: 'future', x: door.x, y: door.y, t0: G.t }; }
+      break;
+    }
     case 'sync': {
       const door = objIn('past', o => o.kind === 'syncdoor' && o.link === nd.link);
       Sound.playTemporalPing(); Sound.playDoorSlide();
@@ -2736,6 +3008,57 @@ function onTransmit(oid) {
   const L = G.level.links[o.link], msg = o.kind === 'terminal' ? codeText(L) : wearText(L);
   say('E', msg); say('A', msg, true);
 }
+// Crates: a 1924 push moves the 2026 ruin with it. Crates only slide on open floor inside their own room.
+function placeCrate(po, x, y) {
+  const L = G.level, twin = L.future.objs.find(q => q.id === po.twin);
+  for (const [room, o] of [[L.past, po], [L.future, twin]]) {
+    if (!o) continue;
+    if (room.objAt[o.y * room.W + o.x] === o) delete room.objAt[o.y * room.W + o.x];
+    o.px = o.x; o.py = o.y; o.x = x; o.y = y; o.movedT = G.t; room.objAt[y * room.W + x] = o;
+  }
+}
+function crateFree(o, x, y) {
+  const L = G.level;
+  if (x < o.area.x0 || x > o.area.x1 || y < 1 || y > L.H - 2) return false;
+  if (G.A.x === x && G.A.y === y) return false;
+  return [L.past, L.future].every(r => r.grid[y * r.W + x] === TILE.FLOOR && !r.objAt[y * r.W + x]);
+}
+function pushCrate(o, x, y) {
+  placeCrate(o, x, y);
+  G.A.crates[o.id] = [x, y];
+  Sound.step('past'); Sound.playLeverClunk();
+  const L = G.level.links[o.crateLink];
+  const crates = G.level.past.objs.filter(q => q.crate && q.crateLink === o.crateLink);
+  if (o.x === o.goal.x && o.y === o.goal.y) Sound.chime();
+  if (crates.every(q => q.x === q.goal.x && q.y === q.goal.y)) complete(L.crate.id, 'A');
+  else broadcast('A');
+}
+function rewindCrates(r) {
+  for (const q of G.level.past.objs.filter(q => q.crate && q.crateLink === r.crateLink)) { placeCrate(q, q.home.x, q.home.y); G.A.crates[q.id] = [q.x, q.y]; }
+  Sound.playTemporalPing(); G.shocks.push({ era: 'past', x: r.x, y: r.y, t0: G.t });
+  broadcast('A');
+}
+// Floods: one water supply, two channels. Each turn of the sluice drains one channel and floods the other.
+function toggleFlow(L, o) {
+  const on = !G.A.done[L.toggle];
+  G.A.done[L.toggle] = on; G.fxTimes[L.toggle] = G.t;
+  Sound.playLeverClunk(); Sound.drain();
+  temporalShock(o, { x: on ? L.channels[0] : L.channels[1], y: G.level.doors[L.index].y });
+  if (on && !isDone(L.flowOn.id)) complete(L.flowOn.id, 'A');
+  else if (!on && isDone(L.ford.id) && !isDone(L.flowOff.id)) complete(L.flowOff.id, 'A');
+  else broadcast('A');
+}
+// If the world changes under a chrononaut (a flood, a crate), step them to the nearest open tile.
+function unstick(p, room) {
+  if (freeAt(room, p.rx, p.ry)) return;
+  const seen = new Set([p.x + ',' + p.y]), q = [{ x: p.x, y: p.y }];
+  while (q.length) {
+    const c = q.shift();
+    if (C.passable(room, c.x, c.y, isDone) && freeAt(room, c.x, c.y)) { Object.assign(p, { x: c.x, y: c.y, rx: c.x, ry: c.y, vx: 0, vy: 0 }); return; }
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const k = (c.x + dx) + ',' + (c.y + dy); if (!seen.has(k) && c.x + dx > 0 && c.y + dy > 0 && c.x + dx < room.W - 1 && c.y + dy < room.H - 1) { seen.add(k); q.push({ x: c.x + dx, y: c.y + dy }); } }
+  }
+}
+
 // Levers: one right lever, or (from level 24) a sequence. In a sequence each correct pull stays down;
 // a wrong pull vents steam and drops every lever back up.
 function leverPulled(o) {
@@ -2844,7 +3167,15 @@ function ping(who) { const p = who === 'A' ? G.A : G.E; addPing(p.x, p.y, who, t
 
 // ----- hints -----
 function activeNodes() { return G.level.nodes.filter(n => !isDone(n.id) && !preBlocked(n)); }
+function checkFlows() {
+  if (!controls('E') || G.won) return;
+  for (const L of G.level.links) {
+    if (L.type !== 'FLOW' || !isDone(L.flowOn.id) || isDone(L.ford.id)) continue;
+    if (G.E.x === L.mid) complete(L.ford.id, 'E');
+  }
+}
 function checkSync() {
+  checkFlows();
   if (!controls('A') || G.won) return;
   for (const n of G.level.nodes) {
     if (n.type !== 'sync' || isDone(n.id) || preBlocked(n)) continue;
@@ -2853,7 +3184,7 @@ function checkSync() {
   }
 }
 function hintTargets(era) {
-  if (G.t - G.stepStart < 12 || G.won) return [];
+  if (G.t - G.stepStart < 40 || G.won) return [];
   const ids = [];
   for (const n of activeNodes()) {
     const room = n.actor === 'ANCHOR' ? 'past' : n.actor === 'ECHO' ? 'future' : era;
@@ -3015,6 +3346,7 @@ function updatePlayers(dt) {
       p.vx = (p.rx - ox) / Math.max(dt, 1e-3); p.vy = (p.ry - oy) / Math.max(dt, 1e-3);
       faceFromVelocity(p, dt); continue;
     }
+    unstick(p, room);
     const frozen = G.won || G.t < p.stunUntil || (who === 'A' && G.safe) || !$('menu').hidden;
     const [ix, iy] = frozen ? [0, 0] : inputVector(who);
     const k = 1 - Math.exp(-dt * 20);
