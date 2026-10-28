@@ -95,7 +95,7 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
 #onlinePop{position:absolute;right:max(16px,env(safe-area-inset-right,0px));top:8px;z-index:9;background:#081311;border:1px solid #1d6b5e;border-radius:6px;padding:12px;display:grid;gap:8px;width:min(300px,calc(100% - 32px))}
 #onlinePop input{background:#030a09;border:1px solid #1d6b5e;border-radius:4px;padding:7px 9px;font:15px var(--f-mono);letter-spacing:.3em;text-transform:uppercase;width:100%}
 @media (max-width:520px){#lvlTag{font-size:30px}.lvlnav b{font-size:44px}}
-#card{position:absolute;left:50%;top:64px;transform:translateX(-50%);z-index:4;pointer-events:none;text-align:center;transition:opacity .8s,transform .8s;
+#card{position:absolute;left:50%;top:104px;transform:translateX(-50%);z-index:4;pointer-events:none;text-align:center;transition:opacity .8s,transform .8s;
   padding:12px 26px 13px;border-radius:6px;background:rgba(10,8,5,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:inset 0 0 0 1px rgba(212,175,55,.35);max-width:calc(100% - 32px)}
 #card.gone{opacity:0;transform:translate(-50%,-10px)}
 #card b{display:block;font:400 26px/1.1 var(--f-deco);color:var(--brass);letter-spacing:.04em}
@@ -143,8 +143,8 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
         <div class="who"><h3>1924</h3><div class="kmap"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move, walk into crates to shove</div><div class="kmap"><kbd>E</kbd> pick up · set down · turn</div></div>
         <div class="who e"><h3>2026</h3><div class="kmap"><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> move</div><div class="kmap"><kbd>↵</kbd> kick · open · lay <kbd>F</kbd> pin</div></div>
       </div>
-      <p class="note">Hold <kbd>R</kbd> to rewind one change. <kbd>Q</kbd> / <kbd>⇧</kbd> ping. <kbd>Tab</kbd> toggles the view. A second tab links automatically. Drag to orbit, scroll to zoom, double-click to reset.</p>
-      <div class="mrow"><button class="btn" id="swapBtn" hidden>Show 2026</button><button class="btn" id="unlinkBtn" hidden>Play both here</button><button class="btn cy" id="onlineBtn" hidden>Online</button><button class="btn" id="backBtn" hidden>← Hub</button></div>
+      <p class="note">Stuck? Press <kbd>H</kbd> for a hint (twice for the exact move). Hold <kbd>R</kbd> to rewind one change. <kbd>Q</kbd> / <kbd>⇧</kbd> ping. <kbd>Tab</kbd> toggles the view. A second tab links automatically. Drag to orbit, scroll to zoom, double-click to reset.</p>
+      <div class="mrow"><button class="btn" id="hintBtn">Hint (H)</button><button class="btn" id="restartBtn">Restart chamber</button><button class="btn" id="swapBtn" hidden>Show 2026</button><button class="btn" id="unlinkBtn" hidden>Play both here</button><button class="btn cy" id="onlineBtn" hidden>Online</button><button class="btn" id="backBtn" hidden>← Hub</button></div>
       <div class="actions"><button class="big" id="resumeBtn">Resume</button></div>
     </div>
   </div>
@@ -158,7 +158,7 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
         <div class="who e"><h3>2026</h3><div class="kmap"><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></div><div class="kmap"><kbd>↵</kbd> use · <kbd>F</kbd> pin</div></div>
       </div>
       <button class="big" id="startBtn">Begin</button>
-      <span class="note">Hold <kbd>R</kbd> to rewind · <kbd>Esc</kbd> menu</span>
+      <span class="note"><kbd>H</kbd> hint · hold <kbd>R</kbd> to rewind · <kbd>Esc</kbd> menu</span>
     </div>
   </div>
 
@@ -410,6 +410,76 @@ const CHAMBERS = [
     gates: [{ id: 'a', x: 4, y: 8 }, { id: 'a', x: 8, y: 7 }],
     wheels: [{ x: 2, y: 5, positions: [[], ['a']] }],
     needs: ['stand', 'box'],
+  },
+  {
+    name: 'Pit Stop', card: 'Crates fill holes, but they cannot cross the stone channel.',
+    map: [
+      '#############',
+      '#A.....~=~..#',
+      '#......~=~..#',
+      '#E.....~=~.X#',
+      '#......~=~..#',
+      '#############',
+    ],
+    objs: [{ k: 'crate', x: 4, y: 2 }, { k: 'crate', x: 10, y: 4 }],
+  },
+  {
+    name: 'Compost', card: 'Old crates block the way. Soak the right ones and they turn to mulch.',
+    map: [
+      '##############',
+      '#A...r..rrrr.#',
+      '#E..t.......X#',
+      '#####c##c#####',
+      '#####W##W#####',
+    ],
+    objs: [{ k: 'crate', x: 5, y: 2 }, { k: 'crate', x: 8, y: 2 }],
+    gates: [{ id: 'a', x: 5, y: 3 }, { id: 'b', x: 8, y: 3 }],
+    wheels: [{ x: 2, y: 1, positions: [[], ['a'], ['b']] }],
+  },
+  {
+    name: 'Orchard', card: 'Two acorns, four sunlit planters. Each tree leans its own way.',
+    map: [
+      '############',
+      '#A...~...S.#',
+      '#.S..~...~.#',
+      '#E...~.S.~X#',
+      '#....~...~.#',
+      '#....S...~.#',
+      '############',
+    ],
+    objs: [{ k: 'acorn', x: 1, y: 4 }, { k: 'acorn', x: 3, y: 1 }],
+    planters: [{ x: 5, y: 5, dir: 'N' }, { x: 9, y: 1, dir: 'S' }, { x: 2, y: 2, dir: 'E', len: 2 }, { x: 7, y: 3, dir: 'E', len: 2 }],
+  },
+  {
+    name: 'Rust Belt', card: 'Kick the bars while they are rusty. What the Echo breaks stays broken.',
+    map: [
+      '#############',
+      '#A...#.=.#..#',
+      '#E.........X#',
+      '#....c.=.c..#',
+      '#....c.=.c..#',
+      '#####W#W#W###',
+    ],
+    bars: [{ x: 5, y: 2 }, { x: 9, y: 2 }],
+    gates: [{ id: 'a', x: 5, y: 4 }, { id: 'a', x: 7, y: 4 }, { id: 'b', x: 9, y: 4 }],
+    wheels: [{ x: 2, y: 4, positions: [[], ['a'], ['b']] }],
+  },
+  {
+    name: 'Overgrown', card: 'No planks this time. A tree, a crate, rust and water, in the right order.',
+    map: [
+      '###############',
+      '#A...~...r.=..#',
+      '#....~.###.=..#',
+      '#E...~t....=X.#',
+      '#....~.#cc.=..#',
+      '#....S.##c.=..#',
+      '#####cW##W#W###',
+    ],
+    objs: [{ k: 'acorn', x: 2, y: 1 }, { k: 'crate', x: 8, y: 3 }],
+    planters: [{ x: 5, y: 5, dir: 'N' }],
+    bars: [{ x: 9, y: 3 }],
+    gates: [{ id: 'a', x: 5, y: 6 }, { id: 'a', x: 9, y: 5 }, { id: 'a', x: 11, y: 5 }],
+    wheels: [{ x: 2, y: 4, positions: [[], ['a']] }],
   },
 ];
 
@@ -690,7 +760,10 @@ function solve(L, opts) {
     return Math.min(...d.ra.cells) + '|' + (st.stand ? 's' + st.stand.i + recKey(st.stand.rec) : 'z' + zoneRep(d.fut, st.e.y * W + st.e.x)) + '|' + pastKey(st.s) + '|' + ec.carry + '|' +
       Object.keys(ec.hold).sort().map(k => k + recKey(ec.hold[k])).join(',') + '|' + Object.keys(ec.witness).sort().map(k => k + recKey(ec.witness[k])).join(',');
   };
-  const start = { s: initState(L), a: L.startA, e: L.startE, stand: null, path: [] };
+  // `opts.start` lets the game ask for a hint from wherever the players are now.
+  const os = opts.start;
+  const start = os ? { s: cloneState(os.s), a: { x: os.a.x, y: os.a.y }, e: { x: os.e.x, y: os.e.y }, stand: os.stand ? { i: os.stand.i, rec: os.stand.rec } : null, path: [] }
+    : { s: initState(L), a: L.startA, e: L.startE, stand: null, path: [] };
   const seen = new Set([keyOf(start, expand(start))]);
   let frontier = [start], explored = 0;
   for (let depth = 0; depth < (opts.maxDepth || 80); depth++) {
@@ -1591,7 +1664,6 @@ function buildWorld(era) {
     if (lit) {
       const shaftM = addMat(w, new THREE.MeshBasicMaterial({ color: past ? 0xffe6a0 : 0xa8f0ff, transparent: true, opacity: past ? 0.13 : 0.07, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
       const shaft = mk(CYL(0.42, 0.42, 3.2, 20, true), shaftM, 0, 2.0, 0, g, false); shaft.castShadow = false;
-      mk(BOX(0.9, 0.05, 0.9), addMat(w, std({ color: 0x111111, emissive: past ? 0xffe6a0 : 0x9fefff, emissiveIntensity: 0.9 })), 0, 3.6, 0, g, false);
       w.updaters.push(t => { shaftM.opacity = (past ? 0.11 : 0.06) + 0.03 * Math.sin(t * 0.9 + x); });
       // which way the tree will lean: a brass arrow on the rim
       const p = L.planters[i];
@@ -1799,6 +1871,12 @@ function buildWorld(era) {
   mk(rg, goalM, 0, 0.04, 0, w.goal, false).scale.setScalar(0.46);
   const goalBeam = mk(CYL(0.44, 0.44, 1.4, 24, true), own(w, new THREE.MeshBasicMaterial({ color: 0xff6a4a, transparent: true, opacity: 0.12, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })), 0, 0.7, 0, w.goal, false);
   w.goalM = goalM; w.goalBeam = goalBeam;
+  // hint marker: a violet ring and beam on the tile the next move happens at
+  const hintM = own(w, new THREE.MeshBasicMaterial({ color: 0xc89bff, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false }));
+  w.hintMark = new THREE.Group(); S.add(w.hintMark); w.hintMark.visible = false;
+  mk(rg, hintM, 0, 0.05, 0, w.hintMark, false).scale.setScalar(0.5);
+  mk(CYL(0.3, 0.3, 3, 20, true), own(w, new THREE.MeshBasicMaterial({ color: 0xc89bff, transparent: true, opacity: 0.18, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })), 0, 1.5, 0, w.hintMark, false);
+  w.hintM = hintM;
   // held tile: a chronal shimmer where the Echo is keeping 2026 from changing
   const holdM = own(w, new THREE.MeshBasicMaterial({ color: 0x9ffff0, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
   w.holdRing = mk(rg, holdM, 0, 0.06, 0, S, false); w.holdRing.visible = false; w.holdM = holdM;
@@ -2207,6 +2285,9 @@ function updateWorld(w, dt, t) {
   const who = past ? 'A' : 'E', tg = controls(who) && !G.won ? G.targets[who] : null;
   w.highlight.visible = !!tg;
   if (tg) { w.highlight.position.set(tg.x, 0.03, tg.y); w.highlight.scale.setScalar(0.5 + 0.05 * Math.sin(t * 6)); w.highlight.material.opacity = tg.deny ? 0.25 : 0.55 + 0.35 * Math.sin(t * 6); w.highlight.material.color.setHex(tg.deny ? 0xff6a4a : past ? 0xffd86a : 0x00f5d4); }
+  const h = G.hint, showH = !!(h && h.x != null && (h.era === w.era || h.era === 'both') && !G.won);
+  w.hintMark.visible = showH;
+  if (showH) { w.hintMark.position.set(h.x, 0, h.y); w.hintMark.children[0].scale.setScalar(0.5 + 0.08 * Math.sin(t * 5)); w.hintM.opacity = 0.6 + 0.35 * Math.sin(t * 5); }
   // goal marker: the first thing blocking this chrononaut's way out
   const goal = G.goals[who];
   w.goal.visible = !!(goal && goal.x != null) && !G.won;
@@ -2298,6 +2379,15 @@ function goalChip(c, v, goal, era, t) {
   }
   c.restore();
 }
+function pill(c, cx, y, text, col, age) {
+  c.save(); c.globalAlpha = clamp(age / 0.3, 0, 1);
+  c.font = '600 13px "Josefin Sans", system-ui, sans-serif';
+  const w = Math.min(c.measureText(text).width + 28, 900), h = 26;
+  c.fillStyle = 'rgba(16,8,26,.86)'; roundRect(c, cx - w / 2, y, w, h, 13); c.fill();
+  c.strokeStyle = col; c.lineWidth = 1.4; roundRect(c, cx - w / 2, y, w, h, 13); c.stroke();
+  c.fillStyle = '#eadcff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(text, cx, y + h / 2 + 1);
+  c.restore();
+}
 const STAMP_COL = { 'ROT · WET': '#d48a4a', PARADOX: '#ff5a6a', 'THE ECHO IS HERE': '#ff5a6a', 'THE ECHO HAS IT': '#ff5a6a', UNPINNED: '#d8cbb1', BRIDGE: '#7be3a0', TREE: '#7be3a0', DRY: '#9fe8ff', HOLE: '#ffd86a', OPEN: '#7be3a0', ROT: '#d48a4a', RUST: '#e0743a', FLOOD: '#5ab8ff', GONE: '#ff7a5c', SEALED: '#ff7a5c', BLOCKED: '#ff7a5c', CRATE: '#d8cbb1', HELD: '#9ffff0', PINNED: '#9ffff0', KICK: '#7be3a0' };
 function drawStamp(c, x, y, st, t) {
   const a = t - st.t0; if (a < 0 || a > 1.9) return;
@@ -2353,6 +2443,10 @@ function drawOverlay(v, w, t) {
     c.restore();
   }
   goalChip(c, v, G.goals[who], era, t);
+  // hint line under the chip, in the era whose move it is; a gentle nudge after a while without progress
+  const hh = G.hint;
+  if (hh && !G.won && (hh.era === era || hh.era === 'both')) pill(c, v.x + v.w / 2, v.y + 62, hintLine(hh), '#c89bff', t - hh.t0);
+  else if (!hh && !G.won && G.started && G.t - G.lastProgress > 75) pill(c, v.x + v.w / 2, v.y + 62, 'Stuck? Press H for a hint', '#c89bff', G.t - G.lastProgress - 75);
   // era title, controls and the Echo's pins
   c.textAlign = 'left'; c.textBaseline = 'alphabetic';
   const x0 = v.x + 22, y0 = v.y + v.h - 40;
@@ -2498,7 +2592,7 @@ function loadLevel(input, share) {
   G.A = newPlayer(L.startA); G.E = newPlayer(L.startE);
   G.stand = null; G.hist = []; G.pings = []; G.stamps = []; G.threads = []; G.pending = []; G.shocks = []; G.goals = {};
   G.camFocus = null; G.timelapse = null; G.paradoxT = -9; G.rewindT = -9; G.won = false; G.wonT = 0; G.rewinds = 0; G.paradoxes = 0;
-  G.levelStart = G.t; G.hitstop = 0; G.denyT = null;
+  G.levelStart = G.t; G.hitstop = 0; G.denyT = null; G.lastProgress = G.t; G.hint = null; G.hints = 0;
   FX.clear && WORLD.past && FX.clear();
   recompute(); trackStand(true);
   $('victory').hidden = true;
@@ -2614,14 +2708,14 @@ function changeFx(c) {
     FX.spawn('future', s.startsWith('ROT') || s === 'GONE' ? 'spore' : 'chronal', x + rnd(-0.3, 0.3), 0.3, y + rnd(-0.3, 0.3), Math.cos(a) * sp, vy, Math.sin(a) * sp, rnd(0.9, 1.6), col, extra);
   }
 }
-function pushHist() { G.hist.push({ s: C.cloneState(G.s), A: { x: G.A.x, y: G.A.y }, E: { x: G.E.x, y: G.E.y } }); if (G.hist.length > 80) G.hist.shift(); }
+function pushHist() { G.hist.push({ s: C.cloneState(G.s), A: { x: G.A.x, y: G.A.y }, E: { x: G.E.x, y: G.E.y } }); if (G.hist.length > 2000) G.hist.shift(); }
 // Every change to the world goes through here. `part` says whose state it is (past or echo).
 function commit(n, part, who, causeTile) {
   if (!n) { denyFx(who); return false; }
   if (n.paradox != null) { paradoxFx(n.paradox, n.why, true); return false; }
   if (part === 'past' && G.stand && C.crushes(G.L, G.s, n, G.stand.i)) { paradoxFx(G.stand.i, 'crush', true); return false; }
   pushHist();
-  G.s = n;
+  G.s = n; G.lastProgress = G.t; G.hint = null;
   refresh(part === 'past' ? 'past' : 'echo', causeTile);
   sendWorld(part, { cause: part === 'past' ? 'remote-past' : 'remote-echo', cx: causeTile ? causeTile.x : null, cy: causeTile ? causeTile.y : null });
   checkVictory();
@@ -2646,7 +2740,7 @@ function rewind() {
   for (const [p, q] of [[G.A, h.A], [G.E, h.E]]) { p.x = q.x; p.y = q.y; p.rx = q.x; p.ry = q.y; p.vx = p.vy = 0; }
   G.stand = null; recompute(); trackStand(true); syncFuture(true);
   computeGoals(true);
-  G.rewinds++; rewindFx(true);
+  G.rewinds++; G.lastProgress = G.t; G.hint = null; rewindFx(true);
   sendWorld('all', { cause: 'rewind' });
 }
 function rewindFx() { G.rewindT = G.t; Sound.rewind(); G.shake.past = G.shake.future = 2; }
@@ -2746,10 +2840,75 @@ function pin() {
   if (pt.deny) { denyFx('E'); return; }
   const r = C.echoPin(G.L, G.s, G.fut, pt.i); if (!r) { denyFx('E'); return; }
   G.E.act = { kind: 'pin', t0: G.t };
-  pushHist(); G.s = r.s; refresh('echo', null); sendWorld('echo', { cause: 'remote-echo' });
+  pushHist(); G.s = r.s; G.lastProgress = G.t; G.hint = null; refresh('echo', null); sendWorld('echo', { cause: 'remote-echo' });
   G.stamps.push({ era: 'future', x: pt.x, y: pt.y, text: r.kind === 'pin' ? 'PINNED' : 'UNPINNED', t0: G.t });
   Sound.pin(); G.hitstop = 0.05;
   for (let i = 0; i < 20; i++) { const a = Math.random() * 7; FX.spawn('future', 'chronal', pt.x, 1, pt.y, Math.cos(a) * 1.5, rnd(-0.5, 1.5), Math.sin(a) * 1.5, 1, 0x9ffff0, { drag: 2, tw: 1 }); }
+}
+
+// ----- hints: the solver plans from where both chrononauts are right now -----
+// First press (or a long time without progress) says who should do something and where; a second press says what.
+const ITEM_WORD = { plank: 'plank', acorn: 'acorn', crate: 'crate' };
+function describeStep(step) {
+  const L = G.L, m = step.split(' '), who = m[0], [x, y] = (m[2] || '').split(',').map(Number);
+  const base = Number.isFinite(x) ? L.base[tileIdx(x, y)] : '', era = who === 'A' ? 'past' : 'future', name = who === 'A' ? 'Anchor' : 'Echo';
+  const held = G.s.held && G.s.objs.find(o => o.id === G.s.held), item = held ? ITEM_WORD[held.k] : 'it';
+  let text = '';
+  switch (m[1]) {
+    case 'pick': { const bx = C.boxAt(L, x, y), o = bx ? G.s.objs.find(q => q.box === bx.id) : C.objAt(G.s, x, y); text = bx ? 'take the ' + ITEM_WORD[o.k] + ' out of the Stash Box' : 'pick up this ' + ITEM_WORD[o.k]; break; }
+    case 'drop': text = C.boxAt(L, x, y) ? 'seal the ' + item + ' in the Stash Box' : base === 'S' || base === 's' ? 'plant the acorn in this planter' : C.isCrack(base) || base === 't' || base === '=' ? 'lay the ' + item + ' across here' : 'set the ' + item + ' down here'; break;
+    case 'wheel': { const wh = L.wheels[+m[2]]; return { era, x: wh.x, y: wh.y, who: name, text: 'turn this wheel' }; }
+    case 'shove': { const [dx, dy] = m[3].split(',').map(Number); text = 'shove this crate ' + (dx > 0 ? 'east' : dx < 0 ? 'west' : dy > 0 ? 'south' : 'north'); break; }
+    case 'stand': text = 'stand here, and stay while 1924 changes'; break;
+    case 'go': text = 'walk over here'; break;
+    case 'pin': text = 'pin this tile'; break;
+    case 'unpin': text = 'take the pin back from here'; break;
+    case 'kick': text = 'kick the rusted bars'; break;
+    case 'open': text = 'open the Stash Box'; break;
+    case 'lay': text = 'lay the plank across here'; break;
+    default: text = 'do this';
+  }
+  return { era, x, y, who: name, text };
+}
+function hintFrom(r) {
+  const X = G.L.exit;
+  if (!r.ok) return { era: 'both', who: 'Both', text: r.why === 'exhausted' ? 'this timeline is stuck: hold R to rewind' : 'try rewinding (hold R) a step or two', stuck: true };
+  if (!r.path.length) return { era: 'both', x: X.x, y: X.y, who: 'Both', text: 'the way is open: walk to the exit', exit: true };
+  return Object.assign(describeStep(r.path[0]), { left: r.depth, step: r.path[0] });
+}
+// The search can take a second in the bigger chambers, so it runs in a worker built from the same core script.
+const hintWorker = (() => {
+  try {
+    const src = $('chrono-core').textContent + '\nonmessage = e => { const L = ChronoCore.getChamber(e.data.n); const r = ChronoCore.solve(L, { start: e.data.start, maxStates: 150000 }); postMessage({ id: e.data.id, r: { ok: r.ok, why: r.why, depth: r.depth, path: r.path || [] } }); };';
+    const wk = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+    wk.onmessage = e => onHint(e.data.id, e.data.r);
+    return wk;
+  } catch (e) { return null; }
+})();
+let hintId = 0;
+function requestHint(auto) {
+  const id = ++hintId, start = { s: G.s, a: { x: G.A.x, y: G.A.y }, e: { x: G.E.x, y: G.E.y }, stand: G.stand };
+  G.hint = { pending: true, id, tier: 1, t0: G.t, auto, era: 'both', who: 'Both' };
+  if (hintWorker) hintWorker.postMessage({ id, n: G.L.n, start: JSON.parse(JSON.stringify(start)) });
+  else onHint(id, C.solve(G.L, { start, maxStates: 150000 }));
+}
+function onHint(id, r) {
+  const h = G.hint; if (!h || h.id !== id) return;      // the world changed while it was thinking
+  G.hint = Object.assign(hintFrom(r), { tier: h.tier, t0: G.t, auto: h.auto, id });
+  Sound.chime();
+  if (G.hint.x != null) for (const era of G.hint.era === 'both' ? ['past', 'future'] : [G.hint.era]) G.shocks.push({ era, x: G.hint.x, y: G.hint.y, t0: G.t });
+}
+function hint() {
+  if (G.won || !G.L) return;
+  if (G.hint && G.hint.pending) return;
+  G.hints++;
+  if (G.hint && G.hint.tier === 1 && !G.hint.stuck) { G.hint.tier = 2; G.hint.t0 = G.t; Sound.chime(); return; }
+  requestHint(false);
+}
+function hintLine(h) {
+  if (h.pending) return 'HINT · thinking…';
+  if (h.stuck || h.exit || h.tier === 2) return 'HINT · ' + h.who + ': ' + h.text + (h.left > 1 ? '  (' + h.left + ' moves left)' : '');
+  return 'HINT · ' + h.who + ' has the next move: look at the glow · H again for more';
 }
 
 // ----- objectives: the first thing between each chrononaut and the exit, and which era can fix it -----
@@ -2831,7 +2990,7 @@ function checkVictory() {
     const best = store.get('times', {}); if (!best[n] || secs < best[n]) { best[n] = secs; store.set('times', best); }
     store.set('best', Math.max(store.get('best', 0), n));
     $('vicSub').textContent = 'Chamber ' + String(n).padStart(2, '0') + ' · ' + G.L.name;
-    $('vicStats').innerHTML = `<div><b>${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}</b><small>time</small></div><div><b>${G.rewinds}</b><small>rewinds</small></div><div><b>${G.paradoxes}</b><small>paradoxes</small></div>`;
+    $('vicStats').innerHTML = `<div><b>${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}</b><small>time</small></div><div><b>${G.rewinds}</b><small>rewinds</small></div><div><b>${G.hints}</b><small>hints</small></div>`;
     $('vicText').textContent = n >= C.MAX_LEVEL ? 'Every chamber sealed. The building holds in both centuries.' : 'Both chrononauts are through. The timeline holds.';
     $('vicNext').hidden = n >= C.MAX_LEVEL;
     if (hub) hub.report('session-end', { result: 'win', level: n, seconds: secs, rewinds: G.rewinds });
@@ -2908,6 +3067,7 @@ addEventListener('keydown', e => {
     case 'KeyQ': if (e.repeat) break; if (G.role === 'ECHO') ping('E'); else ping('A'); break;
     case 'ShiftRight': case 'Numpad0': if (G.role === 'BOTH') ping('E'); break;
     case 'KeyR': case 'Backspace': e.preventDefault(); rewindKeys.add(e.code); break;
+    case 'KeyH': if (!e.repeat) hint(); break;
     case 'Tab': e.preventDefault(); toggleView(); break;
     case 'Escape': if (!$('onlinePop').hidden) $('onlinePop').hidden = true; else setMenu(true); break;
   }
@@ -3018,6 +3178,8 @@ function tick() {
     if (G.started) updatePlayers(dt);
     if (rewindKeys.size && G.started && !G.won) { G.rewindHold += rdt; if (G.rewindHold >= REWIND_HOLD) { G.rewindHold = 0.05; rewind(); } } else G.rewindHold = 0;
     updateTargets(); computeGoals(false);
+    // no change for a long while: offer a hint, then show where to look
+    if (G.started && !G.won && !G.hint && G.t - G.lastProgress > 150) requestHint(true);
     emitters(dt); updateParticles(dt);
     G.pings = G.pings.filter(p => G.t - p.t0 < 6);
     G.threads = G.threads.filter(th => G.t - th.t0 < th.dur);
@@ -3048,6 +3210,8 @@ $('swapBtn').onclick = () => { G.soloEra = G.soloEra === 'past' ? 'future' : 'pa
 $('prev').onclick = () => loadLevel(String(Math.max(1, G.L.n - 1)), true);
 $('next').onclick = () => loadLevel(String(Math.min(C.MAX_LEVEL, G.L.n + 1)), true);
 $('vicNext').onclick = () => nextLevel();
+$('restartBtn').onclick = () => { loadLevel(G.input, true); setMenu(false); };
+$('hintBtn').onclick = () => { setMenu(false); hint(); };
 $('vicStay').onclick = () => loadLevel(G.input, true);
 if (hub) {
   $('backBtn').hidden = false; $('backBtn').onclick = () => hub.exit();
@@ -3069,7 +3233,7 @@ addEventListener('resize', resize);
   Net.init();
   window.claude?.hot?.snapshot?.(() => ({ input: G.input }));
   requestAnimationFrame(frame);
-  window.ChronoLink = { G, C, Sound, Net, loadLevel, interact, pin, rewind, tick };
+  window.ChronoLink = { G, C, Sound, Net, loadLevel, interact, pin, rewind, tick, hint };
 })();
 </script>
 </body>

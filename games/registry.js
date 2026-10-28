@@ -46,7 +46,7 @@ window.GAME_REGISTRY = [
   {
     "id": "chronolink",
     "title": "ChronoLink: Anchor & Echo",
-    "tagline": "One of you is in 1924, the other in the same building's 2026 ruins. Whatever the Anchor leaves somewhere spends a century there: dry planks become bridges, wet ones rot, acorns become trees, running water floods and erodes. 14 hand-built chambers.",
+    "tagline": "One of you is in 1924, the other in the same building's 2026 ruins. Whatever the Anchor leaves somewhere spends a century there: dry planks become bridges, wet ones rot, acorns become trees, running water floods and erodes. 19 hand-built chambers.",
     "version": "2.0.0",
     "sdk": "1.x",
     "entry": "index.html",

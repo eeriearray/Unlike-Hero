@@ -71,6 +71,8 @@ stars for "no mistakes". Experimenting is never punished.
   the split divider to the twin in 2026. In solo view it runs to an edge arrow instead.
 - **Before/after beat:** on every 2026 change there is a 70 ms hit-stop and the 2026 camera frames the tile. The old
   state dissolves while the year counter rolls, then an icon stamps the result (BRIDGE, ROT, RUST, FLOOD, HOLE, TREE).
+- **Hints:** `H` asks the solver for the next move from the live state: first press names who and lights where,
+  second press says what. A nudge appears after 75 s without a change, and the first hint after 150 s.
 - No paragraphs in play. Words appear only on the chamber card, at most one line.
 
 ## Feel
@@ -80,7 +82,7 @@ anticipation and a thud with a small shake. Shoves wind up, then the crate slide
 The near walls are cut away low and interior walls stand at half height, so nothing hides a player. The camera widens to keep the player and their current blocker in
 frame. On a solve, both exit gates flare, the divider dissolves, and a "Chamber NN sealed" stamp plays across both eras.
 
-## Chambers (14, hand-built; each teaches, then twists)
+## Chambers (19, hand-built; each teaches, then twists)
 
 | # | Idea taught | Twist |
 | --- | --- | --- |
@@ -98,6 +100,11 @@ frame. On a solve, both exit gates flare, the divider dissolves, and a "Chamber 
 | 12 Two Pins | a round trip needs two held bridges | one plank, a box at the far end, a wet chasm at home |
 | 13 Long Way Round | the Echo holding a bridge frees the plank | the plank has to bridge a 1924 trench to reach the wheel |
 | 14 The Divergence | tree, flood, erosion, holding and the Stash Box | all in one order |
+| 15 Pit Stop | crates fill pits | a dry stone channel between the gaps stops one crate doing both |
+| 16 Compost | soaked crates rot to mulch | a three-way wheel soaks one at a time, so wait between them |
+| 17 Orchard | trees lean | four sunlit planters, two acorns, only two lean usefully |
+| 18 Rust Belt | rusted bars can be kicked | kicked bars stay broken, so kick each one while the water is on it |
+| 19 Overgrown | no planks at all | tree, crate, rust and a channel, in one order |
 
 Mid-campaign target is 3-8 minutes for two players. Chambers are authored as data (ASCII grid plus object list)
 in `chrono-core`. Tests replace the generator checks with a BFS over each chamber's state (object positions, wheel

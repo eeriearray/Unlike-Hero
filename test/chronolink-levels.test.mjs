@@ -16,8 +16,8 @@ const C = sandbox.ChronoCore;
 const room = (map, extra) => C.parseChamber(Object.assign({ name: 'test', card: '', map }, extra || {}), 0);
 const at = (L, recs, x, y) => recs[y * L.W + x];
 
-test('there are 14 hand-built chambers, each a closed rectangle with a start for both eras and an exit', () => {
-  assert.equal(C.MAX_LEVEL, 14);
+test('there are 19 hand-built chambers, each a closed rectangle with a start for both eras and an exit', () => {
+  assert.equal(C.MAX_LEVEL, 19);
   for (let n = 1; n <= C.MAX_LEVEL; n++) {
     const L = C.getChamber(n);
     assert.ok(L.name && L.card, `chamber ${n} has a name and a one-line card`);
@@ -138,4 +138,50 @@ test('no chamber can be finished before anything is done', () => {
     const re = C.regionOf(L, L.startE, (x, y) => C.walkFuture(fut, L, x, y));
     assert.ok(!re.seen[X], `chamber ${n}: the Echo can walk straight out`);
   }
+});
+
+// Random play: wander away from each chamber's start with legal moves, then ask the hint solver for a way out.
+// From every state it must either find a plan (so the hint is real) or prove the timeline is a dead end, which
+// rewinding (hold R) always gets out of because the start is solvable. It must never give up for lack of time.
+function randomState(L, rnd, steps) {
+  let s = C.initState(L), a = { ...L.startA }, e = { ...L.startE }, stand = null;
+  const W = L.W, N = W * L.H;
+  for (let k = 0; k < steps; k++) {
+    const flow = C.flowing(L, s), fut = C.deriveFuture(L, s, stand);
+    const ra = C.regionOf(L, a, (x, y) => C.walkPast(L, s, x, y, flow)), re = C.regionOf(L, e, (x, y) => C.walkFuture(fut, L, x, y));
+    const near = (seen, i) => [1, -1, W, -W].some(d => i + d >= 0 && i + d < N && seen[i + d]);
+    const opts = [];
+    for (let i = 0; i < N; i++) {
+      const x = i % W, y = (i / W) | 0;
+      if (near(ra.seen, i)) {
+        const from = ra.cells.find(c => Math.abs(c % W - x) + Math.abs(((c / W) | 0) - y) === 1);
+        const act = s.held ? C.actDrop(L, s, x, y) : C.actPick(L, s, x, y);
+        if (act && act.paradox == null) opts.push(() => { s = act; a = { x: from % W, y: (from / W) | 0 }; });
+        const wi = C.wheelAt(L, x, y); if (wi >= 0) opts.push(() => { s = C.actWheel(L, s, wi); });
+      }
+      if (re.seen[i]) opts.push(() => { e = { x, y }; stand = { i, rec: fut[i] }; });
+      if (near(re.seen, i)) { const ea = C.echoAct(L, s, fut, i); if (ea) opts.push(() => { s = ea.s; }); }
+    }
+    for (const o of s.objs) if (o.k === 'crate') for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      if (!ra.seen[(o.y - dy) * W + o.x - dx]) continue;
+      const n = C.actShove(L, s, o.x, o.y, dx, dy); if (n && !(stand && C.crushes(L, s, n, stand.i))) opts.push(() => { s = n; a = { x: o.x - dx + dx, y: o.y - dy + dy }; });
+    }
+    if (!opts.length) break;
+    opts[Math.floor(rnd() * opts.length)]();
+  }
+  return { s, a, e, stand };
+}
+test('from random mid-chamber states the hint solver always finds the way out or proves a dead end', () => {
+  let seed = 12345; const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+  let solved = 0, dead = 0;
+  for (let n = 1; n <= C.MAX_LEVEL; n++) {
+    const L = C.getChamber(n);
+    for (let k = 0; k < 12; k++) {
+      const start = randomState(L, rnd, 1 + (k % 6));
+      const r = C.solve(L, { start, noPath: true, maxStates: 120000 });
+      assert.ok(r.ok || r.why === 'exhausted', `chamber ${n} random state ${k}: solver gave up (${r.why})`);
+      if (r.ok) solved++; else dead++;
+    }
+  }
+  assert.ok(solved > dead * 3, `${solved} solvable vs ${dead} dead-end states`);
 });

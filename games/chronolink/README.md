@@ -13,13 +13,13 @@ double-click to reset.
 ## Play
 
 - **One keyboard (default):** split screen. Anchor: `WASD`, `E` use, `Q` ping. Echo: arrows, `Enter` use, `.` pin,
-  `Right Shift` ping. Either player: hold `R` (or `Backspace`) to rewind one change.
+  `Right Shift` ping. Either player: `H` for a hint, hold `R` (or `Backspace`) to rewind one change.
 - **Two windows:** open the page again in a second window and press Begin in both. Visible, started windows link over
   `BroadcastChannel('chronolink-sync')`: the first becomes the Anchor, the second the Echo, and each then uses `WASD`,
   `E` and `F`. A window that is closed or hidden for 3 seconds hands both players back, and **Play both here** in the
   menu unlinks on purpose.
 - **Two devices:** from the hub, press **Online** in both and enter the same 4-letter code (uses the hub relay).
-- `Tab` switches split and solo view. `?level=N` or `#N` opens a chamber (1-14).
+- `Tab` switches split and solo view. `?level=N` or `#N` opens a chamber (1-19).
 
 ## How time works
 
@@ -38,7 +38,12 @@ double-click to reset.
   a tile the Echo walks away from.
 - **Paradox:** 1924 cannot put something solid where the Echo stands, or take back an object the Echo has taken out
   of the Stash Box. Both screens crack, the change is refused and the stamp says why.
-- **Rewind:** hold `R` to undo the last change, as many times as you like. There are no penalties.
+- **Rewind:** hold `R` to undo the last change, as many times as you like, all the way back to the start. The menu
+  also has **Restart chamber**. There are no penalties.
+- **Hints:** press `H` (or **Hint** in the menu). The solver plans from where both chrononauts are right now, in a
+  Web Worker so play never stalls. The first press says whose move it is and lights the tile in violet; a second
+  press says exactly what to do and how many moves are left. From a dead end it says to rewind. After 75 seconds
+  without a change a "Stuck? Press H" nudge appears, and after 150 seconds the first hint shows by itself.
 
 ## Clarity
 
@@ -69,6 +74,11 @@ double-click to reset.
 | 12 | Two Pins | there and back with one plank and two pins |
 | 13 | Long Way Round | while the Echo holds the bridge, the plank crosses a 1924 trench |
 | 14 | The Divergence | tree, flood, erosion, holding and the Stash Box in order |
+| 15 | Pit Stop | two crates, two gaps; crates cannot cross the stone channel between them |
+| 16 | Compost | a three-way wheel soaks one old crate at a time; wait between them |
+| 17 | Orchard | two acorns, four sunlit planters; only two lean the right way |
+| 18 | Rust Belt | kick each door while it is rusty: what the Echo breaks stays broken |
+| 19 | Overgrown | no planks: grow the tree, soak the crate, kick the bars, then dry the channel |
 
 ## Code
 
@@ -78,4 +88,6 @@ double-click to reset.
 
 `npm test` runs `test/chronolink-levels.test.mjs`. It proves every chamber solvable, proves that each chamber which
 teaches standing, pins or the Stash Box cannot be solved without it, checks that no chamber can be walked straight
-out of, and unit-tests every aging rule, holding, pins and both kinds of paradox.
+out of, and unit-tests every aging rule, holding, pins and both kinds of paradox. It also wanders randomly into
+mid-chamber states and checks that the hint solver always either finds the way out or proves a dead end (which
+rewind leaves).
