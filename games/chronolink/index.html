@@ -1965,8 +1965,14 @@ function buildToken(w, rec, i) {
   let h = 0.6;
   if (b === 'p') {
     if (rec.t === 'hole') {
-      for (let k = 0; k < 6; k++) { const r = mk(cachedGeo('rock', () => new THREE.DodecahedronGeometry(0.2, 0)), M.rubble, rnd(-0.4, 0.4), 0.06, rnd(-0.4, 0.4), g); r.scale.setScalar(rnd(0.3, 0.6)); }
-      for (const s of [-1, 1]) mk(BOX(0.16, 0.6, 0.9), M.wallConcrete, s * 0.44, 0.3, 0, g);
+      const opening = new THREE.Group(); g.add(opening);
+      opening.rotation.y = doorwayAlongZ(G.L, x, y) ? Math.PI / 2 : 0;
+      // Keep the surviving plaster on the wall line, leaving the walking lane clear.
+      mk(BOX(1, 0.6, 1), M.concrete[0], 0, -0.3, 0, opening);
+      for (const s of [-1, 1]) {
+        mk(BOX(0.12, 0.6, 0.9), M.wallConcrete, s * 0.44, 0.3, 0, opening);
+        for (let k = 0; k < 3; k++) { const r = mk(cachedGeo('rock', () => new THREE.DodecahedronGeometry(0.2, 0)), M.rubble, s * 0.44, 0.06, (k - 1) * 0.3, opening); r.scale.setScalar(rnd(0.25, 0.4)); }
+      }
       h = 0.3;
     } else {
       mk(BOX(1, 1.2, 1), M.wallConcrete, 0, 0.0, 0, g);
