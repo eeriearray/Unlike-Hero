@@ -22,7 +22,7 @@
   var TIMING = { intro: 3.6, holeResults: 6.5, courseResults: 10, voteTime: 25 };
   var SHOT_GAP = 0.35;          // seconds between accepted shots (rate limit)
   var USE_GAP = 1.2;            // seconds between power-up uses
-  var TOKEN_R = 0.62;
+  var TOKEN_R = 0.72;
   var BOT_NAMES = ['Birdie Bot', 'Putt-o-Tron', 'Caddie 3000', 'Bogey Bot', 'Chip', 'Sir Slice', 'Wedgie', 'Mulligan'];
 
   var DEFAULT_SETTINGS = {
@@ -44,6 +44,19 @@
 
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
   function round2(v) { return Math.round(v * 100) / 100; }
+  function distSqToSegment(px, pz, x1, z1, x2, z2) {
+    var dx = x2 - x1, dz = z2 - z1;
+    var lenSq = dx * dx + dz * dz;
+    if (lenSq < 1e-6) {
+      var ex = px - x1, ez = pz - z1;
+      return ex * ex + ez * ez;
+    }
+    var u = ((px - x1) * dx + (pz - z1) * dz) / lenSq;
+    u = u < 0 ? 0 : u > 1 ? 1 : u;
+    var nx = x1 + u * dx, nz = z1 + u * dz;
+    var rx = px - nx, rz = pz - nz;
+    return rx * rx + rz * rz;
+  }
   function cleanName(s, fallback) {
     s = String(s == null ? '' : s).replace(/[\u0000-\u001f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 16).trim();
     return s || fallback;
@@ -424,6 +437,7 @@
     var spot = this.teeSpot(idx);
     if (p.ball && p.ball.body && this.sim && this.sim.balls.indexOf(p.ball) >= 0) P.removeBall(this.sim, p.ball);
     p.ball = P.addBall(this.sim, p.id, spot[0], spot[1]);
+    p.ball.px = p.ball.x; p.ball.py = p.ball.y; p.ball.pz = p.ball.z;
     p.finished = false; p.status = 'tee'; p.strokes = 0; p.shotOnce = false; p.effects = [];
     p.gustSafe = null; p.frostImmuneUntil = -1; p.gustCdUntil = -1; p.lastShotAt = -9; p.lastUseAt = -9; p.restSince = 0;
     p.botNext = 0;
@@ -537,7 +551,15 @@
     // Balls still on the tee (never shot) don't collide, so the opening shots can't scatter the field.
     var collide = this.settings.collisions;
     var byId = {};
-    this.players.forEach(function (p) { byId[p.id] = p; if (p.ball) p.ball.solo = !collide || !p.shotOnce; });
+    this.players.forEach(function (p) {
+      byId[p.id] = p;
+      if (p.ball) {
+        p.ball.solo = !collide || !p.shotOnce;
+        p.ball.px = p.ball.x;
+        p.ball.py = p.ball.y;
+        p.ball.pz = p.ball.z;
+      }
+    });
     var events = [];
     var results = P.stepSim(this.sim, this.t - dt, dt, {
       onEvent: function (e) { if (events.length < 24) events.push(e); }
@@ -622,12 +644,23 @@
         if (!tk.active) { if (self.t >= tk.respawnAt) { tk.active = true; self.fx({ type: 'tokenBack', token: tk.id }); self.emitState(); } return; }
         for (var i = 0; i < self.players.length; i++) {
           var p = self.players[i], b = p.ball;
-          if (!b || p.finished || !b.moving || p.inventory.length >= 2) continue;
-          if (Math.abs(b.y - tk.y) > 0.8) continue;
-          var dx = b.x - tk.x, dz = b.z - tk.z;
-          if (dx * dx + dz * dz > (TOKEN_R + b.r) * (TOKEN_R + b.r)) continue;
+          if (!b || p.finished) continue;
+          var x0 = b.px != null ? b.px : b.x;
+          var y0 = b.py != null ? b.py : b.y;
+          var z0 = b.pz != null ? b.pz : b.z;
+          var minY = Math.min(b.y, y0), maxY = Math.max(b.y, y0);
+          if (tk.y < minY - 0.6 || tk.y > maxY + 1.2) continue;
+          var reach = TOKEN_R + b.r;
+          var reachSq = reach * reach;
+          var distSq = distSqToSegment(tk.x, tk.z, x0, z0, b.x, b.z);
+          if (distSq > reachSq) continue;
           var item = Powerups.roll(self.rng, { behind: self.isBehind(p) });
-          p.inventory.push(item); p.stats.tokens++;
+          if (p.inventory.length >= 2) {
+            p.inventory[1] = item;
+          } else {
+            p.inventory.push(item);
+          }
+          p.stats.tokens++;
           tk.active = false; tk.respawnAt = self.t + freq.respawn;
           self.fx({ type: 'token', token: tk.id, id: p.id, power: item, x: tk.x, y: tk.y, z: tk.z });
           self.emitState();

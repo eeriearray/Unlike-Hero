@@ -431,9 +431,9 @@
     })();
     var tokenMeshes = (opts.tokens || []).map(function (tk) {
       var g = new THREE.Group(); g.position.set(tk.x, tk.y, tk.z);
-      var crate = new THREE.Mesh(crateGeo, kit.crate); crate.castShadow = true; crate.position.y = 0.5; g.add(crate);
+      var crate = new THREE.Mesh(crateGeo, kit.crate); crate.castShadow = true; crate.position.y = 0.28; g.add(crate);
       var glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: PC.tex.glow(), color: '#ffd27a', transparent: true, opacity: 0.45, depthWrite: false, blending: THREE.AdditiveBlending }));
-      glow.scale.set(1.3, 1.3, 1); glow.position.y = 0.5; g.add(glow);
+      glow.scale.set(1.3, 1.3, 1); glow.position.y = 0.28; g.add(glow);
       var shadow = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.8), kit.blob); shadow.rotation.x = -Math.PI / 2; shadow.position.y = 0.012; g.add(shadow);
       group.add(g);
       return { g: g, crate: crate, glow: glow, shadow: shadow, active: tk.active !== false, s: tk.active !== false ? 1 : 0, phase: rng() * 6 };
@@ -577,7 +577,7 @@
         tk.s = PC.damp(tk.s, target, 7, dt);
         var s = tk.s < 0.01 ? 0.0001 : tk.s;
         tk.crate.scale.setScalar(s); tk.glow.scale.setScalar(1.3 * s); tk.shadow.scale.setScalar(s);
-        tk.crate.position.y = 0.5 + Math.sin(t * 2 + tk.phase) * 0.07;
+        tk.crate.position.y = 0.28 + Math.sin(t * 2 + tk.phase) * 0.04;
         tk.crate.rotation.y = t * 0.9 + tk.phase; tk.crate.rotation.x = Math.sin(t * 0.7 + tk.phase) * 0.15;
       });
       // Flag ripples; it lifts out of the way while a ball is near the cup.
@@ -601,7 +601,7 @@
       },
       pad: function (x, z) { padMeshes.forEach(function (p, i) { if (Math.hypot(w.pads[i].x - x, w.pads[i].z - z) < 2) p.pulse = 1; }); },
       setToken: function (id, on) { if (tokenMeshes[id]) tokenMeshes[id].active = on; },
-      tokenPos: function (id) { var t = tokenMeshes[id]; return t ? t.g.position.clone().add(new THREE.Vector3(0, 0.5, 0)) : null; },
+      tokenPos: function (id) { var t = tokenMeshes[id]; return t ? t.g.position.clone().add(new THREE.Vector3(0, 0.28, 0)) : null; },
       liftFlag: function (v) { flagLift = PC.damp(flagLift, v, 6, 1 / 60); },
       dispose: function () {
         group.traverse(function (o) { if (o.geometry && o.geometry !== unitBox && o.geometry !== unitCyl && o.geometry !== unitPost && disposables.indexOf(o.geometry) < 0) o.geometry.dispose(); });

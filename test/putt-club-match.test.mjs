@@ -150,6 +150,31 @@ test('crates award a weighted random power-up; inventory holds two', () => {
   assert.equal(Object.keys(counts).length, 12);
 });
 
+test('crates are picked up even when inventory is full or ball is resting or fast-moving', () => {
+  const { m, fx } = room(1);
+  toPlay(m);
+  const p = m.get('p0'), tk = m.tokens[0];
+  // 1. Full inventory: ball resting at crate collects and replaces slot 1
+  p.inventory = ['turbo', 'magnet'];
+  P.place(p.ball, tk.x, tk.y, tk.z);
+  m.playRules();
+  assert.equal(tk.active, false);
+  assert.equal(p.inventory.length, 2);
+  assert.equal(p.inventory[0], 'turbo');
+  assert.ok(Powerups.BY_ID[p.inventory[1]]);
+  assert.ok(fx.some((e) => e.type === 'token' && e.id === 'p0'));
+
+  // 2. Continuous swept collision for fast ball passing across token
+  tk.active = true;
+  tk.respawnAt = 0;
+  p.ball.px = tk.x;
+  p.ball.pz = tk.z - 2.5;
+  p.ball.x = tk.x;
+  p.ball.z = tk.z + 2.5;
+  m.playRules();
+  assert.equal(tk.active, false);
+});
+
 test('all twelve power-ups exist with unique names and descriptions', () => {
   const ids = Powerups.LIST.map((p) => p.id);
   assert.deepEqual(ids.sort(), ['confetti', 'freeze', 'ghost', 'giant', 'gust', 'magnet', 'reverse', 'shield', 'sticky', 'swap', 'tiny', 'turbo']);
