@@ -57,10 +57,14 @@ button:focus-visible,input:focus-visible,a:focus-visible,summary:focus-visible,s
 .connection summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;min-height:42px}
 .connection summary::-webkit-details-marker{display:none}
 .connection summary::after{content:"";width:6px;height:6px;border-right:1px solid currentColor;border-bottom:1px solid currentColor;transform:rotate(45deg) translateY(-2px)}
-.connection[open] summary::after{transform:rotate(225deg) translate(-2px,-1px)}
+.connection[open]>summary::after,.relay-settings[open]>summary::after{transform:rotate(225deg) translate(-2px,-1px)}
 .connection-panel{position:absolute;z-index:10;right:0;top:calc(100% + 8px);width:min(320px,calc(100vw - 32px));padding:16px;background:var(--surface);border:1px solid var(--line);box-shadow:0 12px 32px rgba(0,0,0,.42);text-transform:none;letter-spacing:0}
 .connection-panel label{display:grid;gap:7px;color:var(--muted);font:600 11px var(--f-mono);letter-spacing:0;text-transform:uppercase}
 .connection-panel input{width:100%;padding:10px;border:1px solid var(--line);border-radius:3px;background:#11160f;color:var(--ink);font:14px var(--f-mono);letter-spacing:0;text-transform:none}
+.relay-settings{margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
+.relay-settings summary{font-size:11px}
+.relay-help{margin:8px 0 0;font:12px/1.5 var(--f-ui);color:var(--muted)}
+.connection-panel .phone-share{margin-top:0;padding-top:0;border-top:0}
 .phone-share{margin-top:16px;padding-top:16px;border-top:1px solid var(--line);display:grid;justify-items:center;gap:10px;text-align:center}
 .phone-share h2{margin:0;color:var(--ink);font:600 14px var(--f-mono)}
 .phone-share p{margin:0;font:13px/1.5 var(--f-ui)}
@@ -184,18 +188,22 @@ code{padding:2px 5px;border:1px solid var(--line);border-radius:3px;background:v
       <details class="connection">
         <summary>Connection</summary>
         <div class="connection-panel">
-          <label for="relay-url">Multiplayer relay
-            <input id="relay-url" placeholder="ws://host:8081/relay" spellcheck="false">
-          </label>
           <section class="phone-share" aria-labelledby="phone-share-title">
-            <h2 id="phone-share-title">Open on your phone</h2>
+            <h2 id="phone-share-title">Share this link with friends</h2>
             <div id="phone-qr" class="phone-qr" role="img" aria-label="Scan to open the game hub on your phone" hidden></div>
-            <p id="phone-share-help" role="status">Connect your phone to the same Wi-Fi or hotspot, then scan.</p>
+            <p id="phone-share-help" role="status">Friends must join the same Wi-Fi or hotspot. Changed Wi-Fi? Click Get new link.</p>
             <a id="phone-share-link" hidden></a>
             <span id="phone-share-alt" class="phone-share-alt" hidden></span>
-            <button class="btn" id="phone-share-copy" type="button" hidden>Copy hub link</button>
+            <button class="btn" id="phone-share-copy" type="button" hidden>Copy friend link</button>
             <button class="btn" id="phone-share-refresh" type="button">Get new link</button>
           </section>
+          <details class="relay-settings">
+            <summary>Advanced connection settings</summary>
+            <label for="relay-url">Relay server (game connection only)
+              <input id="relay-url" placeholder="ws://host:8081/relay" spellcheck="false" aria-describedby="relay-help">
+            </label>
+            <p id="relay-help" class="relay-help">Used by the games to connect players. To invite friends, copy the friend link above.</p>
+          </details>
         </div>
       </details>
     </div>
@@ -283,7 +291,7 @@ function renderPhoneShare() {
     $('#phone-share-help').textContent = 'Connect this computer to Wi-Fi or a phone hotspot, then press Get new link.';
     return;
   }
-  $('#phone-share-help').textContent = 'Connect your phone to the same Wi-Fi or hotspot, then scan.';
+  $('#phone-share-help').textContent = 'Friends must join the same Wi-Fi or hotspot. Changed Wi-Fi? Click Get new link.';
   linkEl.href = link; linkEl.textContent = link; linkEl.hidden = false;
   alt.hidden = !shareAlt || shareAlt === link; alt.textContent = 'Mac, iPhone or iPad can also use ' + shareAlt;
   try {
@@ -293,14 +301,14 @@ function renderPhoneShare() {
   } catch (e) {
     $('#phone-share-help').textContent = 'Open the link below on a phone connected to the same Wi-Fi or hotspot.';
   }
-  copy.hidden = false; copy.textContent = 'Copy hub link';
+  copy.hidden = false; copy.textContent = 'Copy friend link';
   copy.onclick = async () => {
     try { await navigator.clipboard.writeText(link); copy.textContent = 'Copied'; }
     catch (e) { copy.textContent = 'Select the link to copy'; }
   };
 }
 renderPhoneShare();
-$('#phone-share-refresh').onclick = async () => { const b = $('#phone-share-refresh'); b.textContent = 'Checking…'; await refreshShare(true); b.textContent = 'Get new link'; };
+$('#phone-share-refresh').onclick = async () => { const b = $('#phone-share-refresh'); b.disabled = true; b.textContent = 'Checking Wi-Fi…'; try { await refreshShare(true); } finally { b.disabled = false; b.textContent = 'Get new link'; } };
 // refresh when the panel opens, when the network comes back, and every 10 s while the panel is open
 const connection = document.querySelector('.connection');
 connection.addEventListener('toggle', () => { if (connection.open) refreshShare(true); });
