@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-28T20:24:38.354Z",
+  "generated": "2026-10-28T20:34:17.963Z",
   "games": [
     {
       "id": "casino",
@@ -61,13 +61,13 @@
         {
           "id": "anchor",
           "name": "The Anchor (1924)",
-          "entry": "index.html",
+          "entry": "index.html#anchor",
           "description": "WASD and E. Carries planks and acorns, shoves crates, turns sluice wheels. Everything left behind ages into 2026."
         },
         {
           "id": "echo",
           "name": "The Echo (2026)",
-          "entry": "index.html",
+          "entry": "index.html#echo",
           "description": "Arrows and Enter (F or . to pin). Walks the result, holds whatever it stands on still, pins tiles, kicks rusted bars and empties the Stash Box."
         }
       ],

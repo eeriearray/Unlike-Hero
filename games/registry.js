@@ -60,13 +60,13 @@ window.GAME_REGISTRY = [
       {
         "id": "anchor",
         "name": "The Anchor (1924)",
-        "entry": "index.html",
+        "entry": "index.html#anchor",
         "description": "WASD and E. Carries planks and acorns, shoves crates, turns sluice wheels. Everything left behind ages into 2026."
       },
       {
         "id": "echo",
         "name": "The Echo (2026)",
-        "entry": "index.html",
+        "entry": "index.html#echo",
         "description": "Arrows and Enter (F or . to pin). Walks the result, holds whatever it stands on still, pins tiles, kicks rusted bars and empties the Stash Box."
       }
     ],

@@ -1133,6 +1133,8 @@ const tileIdx = (x, y) => y * G.L.W + x;
 const Net = {
   id: Math.random().toString(36).slice(2, 10), since: Date.now() + Math.random(), peer: null, lastSeen: 0, bc: null, room: null, warnedFull: false,
   noLink: false, partnerHiddenSince: 0, hiddenFor: 0,
+  // the role this window was opened for (#anchor or #echo from the hub), if any
+  want: /(^|[#&?])(role=)?anchor\b/i.test(location.hash + location.search) ? 'ANCHOR' : /(^|[#&?])(role=)?echo\b/i.test(location.hash + location.search) ? 'ECHO' : null,
   // Only a started, visible window links. A forgotten background tab must never take a chrononaut away.
   ready() { return G.started && !document.hidden && !this.noLink; },
   init() {
@@ -1152,7 +1154,7 @@ const Net = {
       if (this.hiddenFor >= 3) { this.send({ t: 'bye' }); this.unlink('This window was hidden · it plays both'); return; }
       if (this.partnerHiddenSince && Date.now() - this.partnerHiddenSince > 3000) { this.send({ t: 'bye' }); this.unlink('Partner window hidden · this window plays both'); return; }
       if (Date.now() - this.lastSeen > 4500) this.unlink('Partner lost · this window plays both');
-    } else if (this.ready()) this.send({ t: 'hello', since: this.since });
+    } else if (this.ready()) this.send({ t: 'hello', since: this.since, want: this.want });
   },
   link(peer, role) {
     this.peer = peer; this.lastSeen = Date.now(); this.warnedFull = false; this.partnerHiddenSince = 0; this.hiddenFor = 0;
@@ -1163,14 +1165,21 @@ const Net = {
     updateHUD();
   },
   unlink(msg) {
-    this.peer = null; G.role = 'BOTH'; G.view = 'split'; applyView();
+    this.peer = null; G.role = 'BOTH';
+    if (this.want) { G.view = 'solo'; G.soloEra = ROLE_ERA[this.want]; } else G.view = 'split';
+    applyView();
     log(msg, 'sys'); updateHUD();
   },
   recv(m) {
     if (!m || typeof m !== 'object' || typeof m.t !== 'string' || m.from === this.id) return;
     if (m.t === 'hello') {
       if (!this.peer && this.ready()) {
-        if (this.since < +m.since) { this.link(m.from, 'ANCHOR'); this.send({ t: 'welcome', to: m.from, role: 'ECHO', snap: snapshot() }); }
+        // the older window decides; a window opened as a role keeps it, otherwise the older one is the Anchor
+        if (this.since < +m.since) {
+          const theirs = m.want === 'ANCHOR' || m.want === 'ECHO' ? m.want : null;
+          const mine = this.want && this.want !== theirs ? this.want : theirs ? (theirs === 'ANCHOR' ? 'ECHO' : 'ANCHOR') : 'ANCHOR';
+          this.link(m.from, mine); this.send({ t: 'welcome', to: m.from, role: mine === 'ANCHOR' ? 'ECHO' : 'ANCHOR', snap: snapshot() });
+        }
       } else if (m.from !== this.peer) this.send({ t: 'full', to: m.from });
       return;
     }
@@ -1194,8 +1203,8 @@ const Net = {
     if (this.room) try { this.room.leave(); } catch (e) { /* ignore */ }
     this.room = hub.room('chronolink:' + code);
     this.room.on('m', d => this.recv(d));
-    this.room.on('peers', () => this.send({ t: 'hello', since: this.since }));
-    this.send({ t: 'hello', since: this.since });
+    this.room.on('peers', () => this.send({ t: 'hello', since: this.since, want: this.want }));
+    this.send({ t: 'hello', since: this.since, want: this.want });
     log('Room ' + code + ' · waiting for partner', 'sys');
     $('linkChip').textContent = 'Room ' + code;
   },
@@ -3228,7 +3237,9 @@ addEventListener('resize', resize);
   const hash = (location.hash || '').replace('#', '');
   const fromUrl = new URLSearchParams(location.search).get('level') || (/^\d{1,3}$/.test(hash) ? hash : null);
   loadLevel(fromUrl || String(store.get('level', 1)), false);
-  if (VW < 700) { G.view = 'solo'; G.soloEra = 'past'; }
+  // opened as one role from the hub: that era fills the screen (Tab still shows the other or both)
+  if (Net.want) { G.view = 'solo'; G.soloEra = ROLE_ERA[Net.want]; }
+  else if (VW < 700) { G.view = 'solo'; G.soloEra = 'past'; }
   applyView();
   Net.init();
   window.claude?.hot?.snapshot?.(() => ({ input: G.input }));
