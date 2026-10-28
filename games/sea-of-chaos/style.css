@@ -123,3 +123,21 @@ kbd{display:inline-block;min-width:22px;padding:1px 6px;margin-right:2px;border:
  .cards{grid-template-columns:1fr}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* Safe centering leaves the start of tall screens reachable by scrolling. */
+.screen{place-items:safe center;padding-top:max(20px,env(safe-area-inset-top));padding-bottom:max(20px,env(safe-area-inset-bottom))}
+.paper{min-width:0}.row>*{min-width:0}
+#banner{width:calc(100% - 32px);white-space:normal}
+@media(max-width:380px){
+ #stick{width:100px;height:100px;left:max(12px,env(safe-area-inset-left))}
+ #fire-btn{width:84px;height:84px;right:max(12px,env(safe-area-inset-right))}
+ #boost-btn{width:64px;height:64px;right:104px;font-size:12px;padding:6px}
+ #me{gap:6px;padding:6px 8px;max-width:calc(100% - 24px)}
+ .paper{padding:22px 18px}
+}
+@media(max-height:500px) and (pointer:coarse){
+ #map{width:76px;height:76px;bottom:140px}
+ #hint{top:62px;max-width:42%;font-size:11px;padding:4px 8px}
+ #me{top:62px;left:auto;right:max(12px,env(safe-area-inset-right));transform:none;max-width:40%}
+ #me .hull{width:64px}
+}

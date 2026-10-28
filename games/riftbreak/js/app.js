@@ -22,7 +22,7 @@
   function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
   function el(html) { var t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; }
   function cardEl(c) { var d = document.createElement('div'); d.className = 'cardel'; d.innerHTML = c ? A.card(c) : A.back(); return d; }
-  function isMobile() { return window.matchMedia('(max-width: 760px)').matches; }
+  function isMobile() { return window.matchMedia('(max-width: 760px), (max-height: 600px) and (pointer: coarse)').matches; }
   var ICON = {
     book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5M9 7h6"/></svg>',
     log: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>',
@@ -159,6 +159,7 @@
     var x = Math.max(10, Math.min(window.innerWidth - cr.width - 10, r.left + r.width / 2 - cr.width / 2));
     var y = r.top - cr.height - 12;
     if (y < 60) y = Math.min(window.innerHeight - cr.height - 10, r.bottom + 12);
+    y = Math.max(10, Math.min(window.innerHeight - cr.height - 10, y));
     c.style.left = x + 'px'; c.style.top = y + 'px';
     var done = function () { if (!c.parentNode) return; c.remove(); app.tipShown = null; setTimeout(nextTip, 300); };
     $('button', c).onclick = function () { S.play('select'); done(); };
@@ -1013,7 +1014,7 @@
     document.body.appendChild(ch);
     var r = anchor.getBoundingClientRect(), cr = ch.getBoundingClientRect();
     ch.style.left = Math.max(12, Math.min(window.innerWidth - cr.width - 12, r.left + r.width / 2 - cr.width / 2)) + 'px';
-    ch.style.top = Math.max(60, r.top - cr.height - 16) + 'px';
+    ch.style.top = Math.max(12, Math.min(window.innerHeight - cr.height - 12, r.top - cr.height - 16)) + 'px';
     app.chooser = ch;
     setTimeout(function () { document.addEventListener('pointerdown', outside, true); }, 0);
   }
@@ -1047,7 +1048,7 @@
     if (k === 'm') { S.setPref('muted', !S.prefs.muted); updateMute(); }
   });
   var resizeT;
-  window.addEventListener('resize', function () { clearTimeout(resizeT); resizeT = setTimeout(function () { if (app.screen === 'game' && app.view && app.view.match) renderGame([]); }, 120); });
+  window.addEventListener('resize', function () { clearTips(); closeChooser(); clearTimeout(resizeT); resizeT = setTimeout(function () { if (app.screen === 'game' && app.view && app.view.match) renderGame([]); }, 120); });
 
   // ───────────── events → words, sounds, motion ─────────────
   function eventText(e) {

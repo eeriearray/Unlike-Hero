@@ -233,3 +233,28 @@ h1 small{margin-top:8px;padding:3px 8px 2px;border-radius:3px;background:var(--g
 @media(pointer:coarse) and (min-width:651px){#touch-controls{display:flex;position:fixed;left:22px;right:22px;bottom:16px;justify-content:space-between;touch-action:none}.steer-controls,.action-controls{display:flex;gap:12px}.steer-controls button,.action-controls button{min-width:62px;min-height:56px;background:#0d0f14cc}.telemetry,.item-area{bottom:96px}.race-hints{display:none}}
 @media(max-height:500px) and (pointer:coarse){.mast{height:48px}.race-top{top:54px}.standings,.map-panel{display:none}.position strong{font-size:40px}.race-clock strong{font-size:20px}.telemetry,.item-area{bottom:86px}.item-slot{height:84px}.speed strong{font-size:36px}.notice{top:31%}.overlay{padding:12px}.panel{padding:20px;max-height:calc(100vh - 24px);overflow:auto}.panel h2{font-size:30px}.result-list{max-height:27vh}.menu-copy{top:48px}.menu-footer{display:none}.menu-copy{bottom:0}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
+
+/* Keep menus reachable when browser chrome or the hub toolbar shortens the view. */
+.overlay{align-items:safe center}
+.panel{flex-shrink:0;max-height:calc(100dvh - 28px);overflow-y:auto}
+.notice{max-width:calc(100% - 32px);white-space:normal;text-align:center}
+@media(max-width:650px){
+  .mast{padding-top:env(safe-area-inset-top);height:calc(60px + env(safe-area-inset-top))}
+  .menu-copy{top:calc(60px + env(safe-area-inset-top));padding-bottom:max(16px,env(safe-area-inset-bottom))}
+  .mode-picker{flex-wrap:wrap;overflow:visible;gap:4px}
+  .mode-picker button{flex:1 1 auto}
+  .rival{top:calc(178px + env(safe-area-inset-top));max-width:calc(100% - 32px);white-space:normal}
+  .race-top{top:calc(68px + env(safe-area-inset-top))}
+}
+@media(max-width:380px){
+  #touch-controls{left:max(8px,env(safe-area-inset-left));right:max(8px,env(safe-area-inset-right));gap:6px}
+  .steer-controls,.action-controls{gap:4px}
+  .steer-controls button{width:48px}
+  .action-controls button{min-width:44px;padding:6px;font-size:13px}
+  .telemetry{gap:6px;padding:8px;left:8px}.speed{min-width:42px}.turbo{width:104px}
+  .item-area{right:8px}.item-slot{width:86px}
+}
+@media(max-height:500px) and (pointer:coarse){
+  .rival{top:58px;max-width:34vw;font-size:10px}
+  .race-clock{padding:6px 10px}.race-clock small{max-width:150px}
+}

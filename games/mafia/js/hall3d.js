@@ -552,6 +552,8 @@
     this.lamp.visible = !portrait; // seen from overhead the shade would hide the table
     this.camera.position.set(Math.sin(az) * dist * Math.cos(elev), 0.6 + dist * Math.sin(elev), Math.cos(az) * dist * Math.cos(elev));
     this.camera.lookAt(0, 0.75, 0);
+    // Project labels against this frame, including immediately after an orientation change.
+    this.camera.updateMatrixWorld();
 
     // characters
     var accused = this.accusedId && this.seats[this.accusedId];
@@ -590,7 +592,10 @@
       var el = s.tagEl;
       if (tmpV.z > 1) { el.style.display = 'none'; return; }
       el.style.display = '';
-      el.style.transform = 'translate(-50%,-100%) translate(' + (tmpV.x * w2 + w2).toFixed(1) + 'px,' + (-tmpV.y * h2 + h2).toFixed(1) + 'px)';
+      var halfTag = el.offsetWidth / 2, tagHeight = el.offsetHeight;
+      var tagX = Math.max(halfTag + 6, Math.min(self.w - halfTag - 6, tmpV.x * w2 + w2));
+      var tagY = Math.max(tagHeight + 6, Math.min(self.h - 6, -tmpV.y * h2 + h2));
+      el.style.transform = 'translate(-50%,-100%) translate(' + tagX.toFixed(1) + 'px,' + tagY.toFixed(1) + 'px)';
       el.style.zIndex = String(Math.round((1 - tmpV.z) * 1000));
     });
     this.renderer.render(this.scene, this.camera);

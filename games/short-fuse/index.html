@@ -49,8 +49,8 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible,su
 .hint{font:11px var(--f-mono);color:var(--dim);text-align:center}
 
 /* menu */
-#menu{display:flex;align-items:center;background:linear-gradient(90deg,rgba(4,5,6,.94) 0%,rgba(4,5,6,.82) 34%,rgba(4,5,6,.2) 58%,rgba(4,5,6,0) 70%)}
-.menu-left{width:100%;max-width:560px;display:grid;gap:24px;margin-left:clamp(0px,5vw,80px)}
+#menu{display:flex;align-items:safe center;background:linear-gradient(90deg,rgba(4,5,6,.94) 0%,rgba(4,5,6,.82) 34%,rgba(4,5,6,.2) 58%,rgba(4,5,6,0) 70%)}
+.menu-left{width:100%;min-width:0;max-width:560px;display:grid;gap:24px;margin-left:clamp(0px,5vw,80px);margin-right:clamp(0px,5vw,80px)}
 .logo{display:grid;gap:8px;justify-items:start}
 .logo h1{margin:0;display:flex;align-items:baseline;gap:clamp(10px,2vw,20px);line-height:.85;letter-spacing:0}
 .logo h1 .fuse-short{font-family:'Black Ops One','Saira Stencil One',var(--f-display);font-size:clamp(50px,7.5vw,94px);color:#ff3326;letter-spacing:.04em;text-shadow:0 0 28px rgba(255,51,38,.55),3px 3px 0 #280805}
@@ -133,6 +133,7 @@ body.cine #game .hud,body.cine #game .bottom{opacity:0;transform:translateY(-8px
 body.cine .skip{opacity:1}
 .cine-cap{position:fixed;left:32px;bottom:calc(11vh + 12px);z-index:6;font:400 26px var(--f-display);letter-spacing:.06em;color:rgba(214,221,211,.85);opacity:0;transition:opacity .8s .3s;pointer-events:none}
 body.cine .cine-cap{opacity:1}
+@media (max-width:380px){.menu-left{margin-inline:0}.logo h1{flex-wrap:wrap;row-gap:8px}.roles,.role{min-width:0}.record{gap:10px}}
 @media (max-width:700px){ #menu{background:rgba(4,5,6,.8)} .hud .lvname small{display:none} }
 </style>
 <style id="shared-css">

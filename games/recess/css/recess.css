@@ -469,3 +469,7 @@ label.lbl { display: block; font: 700 22px var(--f-hand); margin: 0 0 4px; }
 }
 body.calm *, body.calm *::before, body.calm *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 body.calm .confetti, body.calm .stars-burst, body.calm .cover-doodles { display: none; }
+
+/* Let avatar tracks shrink on iOS instead of expanding beyond the notebook. */
+.avatar-pick{grid-template-columns:repeat(5,minmax(0,1fr))}
+.avatar-pick button{width:100%;min-width:0}

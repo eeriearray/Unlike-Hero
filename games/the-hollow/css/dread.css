@@ -51,3 +51,7 @@ body.reduced-scares .dread-shock,body.reduce-motion .dread-shock { display:none!
 
 /* The statue can occupy the existing scene before the empty-frame cut. */
 .dread-shock[data-scare="graveyard"] { background:transparent; }
+
+/* The warning text grows across beats; keep both its first line and action reachable. */
+.warning-prologue{overflow-y:auto}
+.warning-message{height:auto;min-height:100%;padding-top:max(70px,calc(env(safe-area-inset-top) + 56px));padding-bottom:max(30px,env(safe-area-inset-bottom))}

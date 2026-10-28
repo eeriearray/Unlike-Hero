@@ -594,3 +594,17 @@ body.phase-night .hud-phase .kicker { color: #a6b6e8; } body.phase-trial .hud-ph
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+@media(max-width:380px){
+ .topbar:not(.in-game){flex-wrap:wrap}
+ .topbar .spacer{min-width:0}
+}
+/* The lobby already lists every seat; background labels compete with that form. */
+body.screen-menu #hall3d .hall3d-labels{display:none}
+.n3d{max-width:min(160px,28vw)}
+.n3d-name{max-width:100%;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:700px){
+ .hud-dock .reactions{min-width:0;flex-wrap:wrap;justify-content:center}
+ .hud-dock .reactions button{flex:0 0 36px}
+ .hud.chat-open .hud-dock{width:calc(100vw - 20px);max-width:calc(100vw - 20px)}
+}

@@ -20,8 +20,8 @@ p{margin:0;color:var(--muted)}
 .btn{border:1px solid var(--line);background:#1b2226;border-radius:10px;padding:10px 16px;font-weight:600}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#04131a}
 input{background:#0d1114;border:1px solid var(--line);border-radius:10px;padding:10px 12px;letter-spacing:.2em;text-transform:uppercase;width:130px}
-.code{display:flex;gap:10px}
-.code i{width:64px;height:64px;border-radius:12px;border:2px solid rgba(255,255,255,.15)}
+.code{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.code i{width:100%;max-width:64px;aspect-ratio:1;border-radius:12px;border:2px solid rgba(255,255,255,.15)}
 .pads{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 .pads button{aspect-ratio:1;border-radius:14px;border:0}
 .status{font:600 13px ui-monospace,monospace;color:var(--muted)}
