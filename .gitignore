@@ -10,3 +10,8 @@ games/the-hollow/server/.data/
 games/the-hollow/art/generated/
 games/the-hollow/art/.generated-backup/
 games/the-hollow/art/manifest.json.tmp
+
+# Local playtest output and Python caches
+output/
+__pycache__/
+*.py[cod]

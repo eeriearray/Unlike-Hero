@@ -349,6 +349,7 @@
     // never spend the last of our resources
     opts = opts.filter(function (x) { var c = x.ev.cost; return !c || (!c.san && !c.vit && !c.maxvit && (!c.silver || p.silver > c.silver + 1)); });
     var safe = enc.kind === 'enemy' || enc.kind === 'boss';
+    var beat = this.w.opening && this.w.opening.complete ? this.trailBeat() : null, trail = beat && enc.kind === 'loc' && enc.loc === beat.target ? beat.opts : [];
     var best = null, bs = -1;
     opts.forEach(function (x) {
       var s;
@@ -357,6 +358,7 @@
       else s = x.raw.shop ? 10 : 60;
       if (x.raw.shop) s = 5;
       if (safe && x.ev.kind === 'auto') s += 40;
+      if (trail.indexOf(x.raw.id) >= 0) s += 100;
       if (s > bs) { bs = s; best = x; }
     });
     if (!best || (safe && bs < 25 && enc.kind === 'enemy')) {
@@ -415,7 +417,19 @@
       if (any) return true;
       this.closeEnc(p, true);
     }
-    // 2. move on: nearest unfinished place, preferring deeper regions
+    // 2. follow the trail toward the current objective, opening any door on the way
+    if (w.opening && w.opening.complete) {
+      var beat = this.trailBeat(), route = beat.target !== loc && this.guidePath(loc, beat.target);
+      if (route && route.length) {
+        var step = this.moveOptions(p).find(function (m) { return m.to === route[0]; });
+        if (step && step.ok && !step.enemy) { var sr = this.cmd_move(p, { mode: 'step', to: step.to }); if (!sr.error) return true; }
+        if (step && step.state === 'locked') {
+          var way = (step.ways || []).filter(function (x) { return x.ok && !x.flag && x.ap <= t.ap; }).sort(function (x, y) { return (y.stat ? y.chance : 100) - (x.stat ? x.chance : 100); })[0];
+          if (way) { var ur = this.cmd_unlock(p, { edge: step.key, way: way.id }); if (!ur.error) return true; }
+        }
+      }
+    }
+    // 3. move on: nearest unfinished place, preferring deeper regions
     var order = ['village', 'woods', 'estate', 'abbey', 'crypt', 'heart'];
     var goals = Object.keys(D.locations).filter(function (id) {
       if (id === 'gate') return false;

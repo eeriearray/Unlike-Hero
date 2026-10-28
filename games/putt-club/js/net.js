@@ -1,7 +1,7 @@
 /* Putt Club — transports and snapshot interpolation.
  *
- * Online: Socket.io to games/putt-club/server (authoritative). Offline: the very same PuttMatch runs in this
- * tab (solo practice with bots). Both expose send(cmd) -> Promise<{ok}|{error}>, leave(), kind, playerId and
+ * Online: Socket.io to games/putt-club/server (authoritative). Offline: the very same PuttMatch runs in a
+ * Web Worker (js/offline-worker.js; in this tab if workers are unavailable) for solo practice with bots. Both expose send(cmd) -> Promise<{ok}|{error}>, leave(), kind, playerId and
  * call handlers.onState(view), onSnap(snap), onFx(events), onClosed(reason), onStatus(connected).
  *
  * Interp keeps a short buffer of ball snapshots and renders other balls ~100 ms in the past, so they glide
@@ -14,7 +14,7 @@
   function onlineAvailable() { return typeof global.io === 'function' && location.protocol !== 'file:'; }
 
   function createOnline(h) {
-    var socket = global.io({ path: basePath() + 'socket.io', transports: ['websocket', 'polling'], tryAllTransports: true, reconnectionDelayMax: 4000 });
+    var socket = global.io({ path: basePath() + 'socket.io', transports: ['websocket', 'polling'], reconnectionDelayMax: 4000 });
     var seat = null, closed = false;
     function emit(ev, data) {
       return new Promise(function (resolve) {
@@ -53,7 +53,52 @@
     };
   }
 
+  /**
+   * Solo practice. The match (physics and bots) runs in a Web Worker so the bots' planning never steals
+   * frames from drawing; if workers are unavailable (e.g. opened from file://) it runs on this page.
+   */
   function createOffline(h, profile, bots) {
+    var worker = null;
+    try { if (global.Worker && location.protocol !== 'file:') worker = new Worker('js/offline-worker.js'); } catch (e) { worker = null; }
+    if (!worker) return createInPage(h, profile, bots);
+    var replies = {}, nextId = 1, closed = false, fallback = null, ready = false;
+    function toPage() {
+      // The worker failed to start: fall back to running the match here.
+      if (closed || fallback || ready) return;
+      worker.terminate();
+      fallback = createInPage(h, profile, bots);
+      Object.keys(replies).forEach(function (id) { replies[id]({ error: 'Try again.' }); });
+      replies = {};
+    }
+    worker.onmessage = function (e) {
+      var msg = e.data;
+      if (msg.type === 'ready') { ready = true; h.onStatus(true); }
+      else if (msg.type === 'state') h.onState(msg.view);
+      else if (msg.type === 'snap') h.onSnap(msg.snap);
+      else if (msg.type === 'fx') h.onFx(msg.list);
+      else if (msg.type === 'reply') { var f = replies[msg.id]; delete replies[msg.id]; if (f) f(msg.res); }
+      else if (msg.type === 'error') toPage();
+    };
+    worker.onerror = function (e) { if (!ready) { e.preventDefault(); toPage(); } };
+    worker.postMessage({ type: 'start', profile: { name: profile.name, color: profile.color }, bots: bots });
+    return {
+      kind: 'offline', playerId: 'me', code: 'SOLO', worker: worker,
+      send: function (cmd) {
+        if (fallback) return fallback.send(cmd);
+        if (closed) return Promise.resolve({ error: 'Game closed.' });
+        var id = nextId++;
+        return new Promise(function (resolve) { replies[id] = resolve; worker.postMessage({ type: 'cmd', id: id, cmd: cmd }); });
+      },
+      leave: function () {
+        if (fallback) return fallback.leave();
+        closed = true; worker.postMessage({ type: 'stop' });
+        Object.keys(replies).forEach(function (id) { replies[id]({ error: 'Game closed.' }); });
+        replies = {};
+      }
+    };
+  }
+
+  function createInPage(h, profile, bots) {
     var Match = global.PuttMatch, myId = 'me', queued = false, fxq = [], tickN = 0;
     var m = new Match({
       code: 'SOLO',

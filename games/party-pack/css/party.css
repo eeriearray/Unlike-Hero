@@ -536,3 +536,46 @@ canvas.pad{width:100%;aspect-ratio:1;border-radius:10px;background:#fbf8f1;displ
 .game-card .req{white-space:normal;max-width:100%}
 @media (max-height:820px){.slot{aspect-ratio:1/.72}.qr svg{width:72px;height:72px}.howto{gap:8px}.picker{margin-top:10px}}
 @media (max-height:600px){.join-card .qr{display:none}}
+
+/* Grid tracks must shrink to the device, including long LAN URLs and room codes. */
+.stage-app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto}
+.stage,.top,.lobby-hero,.howto,.join-card,.join-card>div{min-width:0}
+.stage{min-height:0;align-content:safe center}
+.top .join{max-width:100%;min-width:0;flex-wrap:wrap}
+.top .join>div{min-width:0;overflow-wrap:anywhere}
+.lobby-hero,.picker{max-width:100%}
+@media(max-width:1000px){
+ /* On a small shared screen, let the stage, scores and captions take their own
+    space instead of placing a fixed presenter over answers and buttons. */
+ .stage-app{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+ .top,.stage,.strip{flex:none}
+ .stage{width:100%;min-height:220px;overflow:visible;align-content:start}
+ .top{padding:10px 16px;gap:8px}
+ .top .join{font-size:13px;gap:6px;padding:4px 8px;width:100%}
+ .top .join>div{flex:1}
+ .top .code{font-size:24px;padding-inline:8px}
+ .join-row{max-width:100%;flex-wrap:wrap;justify-content:center}
+ .join-card{width:100%;gap:10px}
+ .howto{width:100%}
+ .slots{grid-template-columns:repeat(4,minmax(0,1fr))}
+ .slot{min-width:0;padding:8px 4px}.slot small{font-size:10px}
+ .picker{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .strip{flex-wrap:nowrap;justify-content:safe center;overflow-x:auto;min-height:72px}
+ .pchip{flex:none}
+ .host{display:none;position:relative;left:auto;bottom:auto;width:auto;transform:none;margin:8px 16px 16px}
+ .host:has(.bubble.on){display:block}
+ .host-art{display:none}
+ .bubble{position:static;width:100%;max-width:100%;transform:none;font-size:14px;padding:10px 14px}
+ .bubble::before,.bubble::after{display:none}
+ .timer{position:static;flex:none;align-self:flex-end;width:64px;height:64px;margin:8px 16px}
+ .timer::before{inset:6px}.timer b{font-size:24px}
+ .audbar{position:static;transform:none;flex-wrap:wrap;align-self:center;max-width:100%;margin:8px;font-size:13px}
+}
+@media(max-width:1000px){.top .brand{min-width:0;max-width:100%;font-size:clamp(20px,6vw,30px);overflow-wrap:anywhere}}
+
+/* Safari includes SVG/input intrinsic widths in automatic grid minimums. */
+.phone,.join-form,.join-form label{min-width:0}
+.join-form{grid-template-columns:minmax(0,1fr)}
+.join-form input{width:100%;min-width:0}
+.avatars{grid-template-columns:repeat(6,minmax(0,1fr))}
+.avatars button{min-width:0;width:100%}

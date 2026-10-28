@@ -17,7 +17,7 @@ function chit(roleId, { folded = false, label } = {}) {
     return `<svg viewBox="0 0 80 100" class="chit-svg"><path d="M8 10l64-4 2 88-64 2z" fill="#fffaf0" stroke="${INK}" stroke-width="3.5"/><path d="M9 52l63-2" stroke="${INK}" stroke-width="2" stroke-dasharray="4 4" opacity=".4"/><path d="M40 6v90" stroke="${INK}" stroke-width="1.5" stroke-dasharray="3 5" opacity=".25"/><text x="40" y="60" text-anchor="middle" font-family="Caveat" font-weight="700" font-size="30" fill="${INK}" opacity=".5">?</text>${label ? `<text x="40" y="88" text-anchor="middle" font-family="Caveat" font-weight="700" font-size="14" fill="${INK}">${label}</text>` : ''}</svg>`;
   }
   const r = ROLE[roleId];
-  return `<svg viewBox="0 0 80 100" class="chit-svg"><path d="M8 10l64-4 2 88-64 2z" fill="${r.color}" stroke="${INK}" stroke-width="3.5"/><g transform="translate(0 6)">${r.icon}</g><text x="40" y="76" text-anchor="middle" font-size="15" font-weight="700" fill="${INK}">${r.hi}</text><text x="40" y="92" text-anchor="middle" font-family="Caveat" font-weight="700" font-size="17" fill="${INK}">${r.en} · ${r.pts}</text></svg>`;
+  return `<svg viewBox="0 0 80 100" class="chit-svg"><path d="M8 10l64-4 2 88-64 2z" fill="${r.color}" stroke="${INK}" stroke-width="3.5"/><g transform="translate(0 6)">${r.icon}</g><text x="40" y="76" text-anchor="middle" font-size="15" font-weight="700" fill="${INK}">${r.hi}</text><text x="40" y="88" text-anchor="middle" font-family="Caveat" font-weight="700" font-size="12" textLength="52" lengthAdjust="spacingAndGlyphs" fill="${INK}">${r.en} · ${r.pts}</text></svg>`;
 }
 
 export default {

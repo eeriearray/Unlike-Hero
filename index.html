@@ -61,6 +61,13 @@ button:focus-visible,input:focus-visible,a:focus-visible,summary:focus-visible,s
 .connection-panel{position:absolute;z-index:10;right:0;top:calc(100% + 8px);width:min(320px,calc(100vw - 32px));padding:16px;background:var(--surface);border:1px solid var(--line);box-shadow:0 12px 32px rgba(0,0,0,.42);text-transform:none;letter-spacing:0}
 .connection-panel label{display:grid;gap:7px;color:var(--muted);font:600 11px var(--f-mono);letter-spacing:0;text-transform:uppercase}
 .connection-panel input{width:100%;padding:10px;border:1px solid var(--line);border-radius:3px;background:#11160f;color:var(--ink);font:14px var(--f-mono);letter-spacing:0;text-transform:none}
+.phone-share{margin-top:16px;padding-top:16px;border-top:1px solid var(--line);display:grid;justify-items:center;gap:10px;text-align:center}
+.phone-share h2{margin:0;color:var(--ink);font:600 14px var(--f-mono)}
+.phone-share p{margin:0;font:13px/1.5 var(--f-ui)}
+.phone-qr{width:200px;max-width:100%;background:#fff;line-height:0}
+.phone-qr svg{display:block;width:100%;height:auto}
+.phone-share a{max-width:100%;overflow-wrap:anywhere;color:var(--ink);font:12px/1.5 var(--f-mono)}
+.phone-share .btn{width:100%}
 .intro{display:flex;align-items:end;justify-content:space-between;gap:24px;padding:43px 0 27px;border-bottom:1px solid var(--line)}
 .eyebrow{color:var(--muted);font:600 11px/1 var(--f-mono);letter-spacing:0;text-transform:uppercase}
 .intro .eyebrow{display:block;margin-bottom:8px}
@@ -75,7 +82,7 @@ button:focus-visible,input:focus-visible,a:focus-visible,summary:focus-visible,s
 .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:stretch}
 .card{min-width:0;display:grid;grid-template-rows:auto 1fr;overflow:hidden;border:1px solid var(--line);border-radius:5px;background:rgba(26,32,24,.97);transition:border-color .18s,box-shadow .18s}
 .card:hover{border-color:#85916d;box-shadow:0 8px 24px rgba(0,0,0,.28)}
-.thumb-wrap{position:relative;overflow:hidden;background:var(--surface-2);aspect-ratio:1.68}
+.thumb-wrap{position:relative;overflow:hidden;background:var(--surface-2);aspect-ratio:16/9}
 .thumb{display:block;width:100%;height:100%;object-fit:cover;transition:transform .35s ease}
 .card:hover .thumb{transform:scale(1.025)}
 .status{position:absolute;top:12px;left:12px;padding:6px 9px;background:#11160f;color:var(--acid);border:1px solid rgba(212,240,106,.5);font:500 10px var(--f-mono);letter-spacing:0;text-transform:uppercase}
@@ -83,16 +90,13 @@ button:focus-visible,input:focus-visible,a:focus-visible,summary:focus-visible,s
 .card-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;margin-bottom:11px;color:var(--muted);font:500 11px var(--f-mono);letter-spacing:0;text-transform:uppercase}
 .card-meta .players{color:var(--ink)}
 .game-title{margin:0 0 8px;color:var(--ink);font:400 32px/1.05 var(--f-display);letter-spacing:0;text-transform:uppercase}
+.game-title-crownfall-kart{display:inline-flex;align-items:flex-end;gap:7px;color:#f8eddb;font:900 27px/.82 Impact,'Arial Narrow',sans-serif;letter-spacing:1px;text-shadow:0 3px 24px #0003}
+.game-title-crownfall-kart .kart-fall{display:block;color:#f4ce8e}
+.game-title-crownfall-kart .kart-label{color:#c9b8d2;font:700 9px/1 Arial,sans-serif;writing-mode:vertical-rl;letter-spacing:3px}
 .game-title-the-hollow{font-family:'Cormorant Garamond',Georgia,serif;font-size:36px;font-weight:700;line-height:1.12;letter-spacing:.075em;color:#efe1bb;text-shadow:0 2px 1px #080c0d,0 0 20px rgba(201,163,91,.15)}
-.thumb-wrap-the-hollow{background:#0c1215;isolation:isolate}
-.thumb-wrap-the-hollow .thumb{object-position:58% 44%}
-.thumb-wrap-the-hollow::after{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(5,10,12,.05) 15%,rgba(5,10,12,.25) 43%,rgba(5,10,12,.94) 100%);pointer-events:none}
-.hollow-banner{position:absolute;inset:auto 16px 19px;z-index:2;display:grid;justify-items:center;gap:5px;text-align:center;pointer-events:none}
-.hollow-banner-kicker{font:500 9px/1.4 var(--f-mono);letter-spacing:.22em;color:#dbcaa1;text-transform:uppercase}
-.hollow-banner-title{font:600 clamp(30px,3.3vw,48px)/1.05 'Cormorant Garamond',Georgia,serif;letter-spacing:.12em;color:#f5e8c8;text-shadow:0 2px 8px #000}
-.hollow-banner-rule{width:72px;height:1px;margin:4px 0;background:linear-gradient(90deg,transparent,#c9a35b,transparent)}
-.hollow-banner-caption{font:500 9px/1.4 var(--f-mono);letter-spacing:.14em;color:#c4cdd0;text-transform:uppercase}
-@media(max-width:640px){.hollow-banner-title{font-size:42px}.game-title.game-title-the-hollow{font-size:34px}}
+.thumb-wrap{border-bottom:1px solid var(--line)}
+.thumb-wrap::after{content:"";position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 32px rgba(0,0,0,.14)}
+@media(max-width:640px){.game-title.game-title-the-hollow{font-size:34px}}
 .game-title-mafia{font-family:'Special Elite',serif;font-size:29px;color:#ff7772;text-transform:none}
 .game-title-party-pack{font-family:'DynaPuff',var(--f-display);font-size:31px;font-weight:700}
 .party-word{display:inline-block;background-clip:text;-webkit-background-clip:text;color:transparent;-webkit-text-fill-color:transparent;filter:drop-shadow(0 1px 0 #fff1a6) drop-shadow(3px 3px 0 #a84772) drop-shadow(5px 5px 0 #382050)}
@@ -129,10 +133,10 @@ button:focus-visible,input:focus-visible,a:focus-visible,summary:focus-visible,s
 code{padding:2px 5px;border:1px solid var(--line);border-radius:3px;background:var(--surface);color:var(--ink);font:12px var(--f-mono)}
 .empty{margin:0;color:var(--muted);font-size:13px}
 /* full-window player */
-.player{position:fixed;inset:0;z-index:20;background:#000;display:flex;flex-direction:column}
-.pbar{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:8px 12px;background:#111;border-bottom:1px solid #333;flex-wrap:wrap}
-.pbar b{font:500 22px/1 var(--f-display);color:#f4f4ef}
-.pbar .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.player{position:fixed;inset:0;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);z-index:20;background:#000;display:flex;flex-direction:column}
+.pbar{flex:none;display:flex;gap:10px;align-items:center;justify-content:space-between;padding:8px 12px;background:#111;border-bottom:1px solid #333;flex-wrap:wrap}
+.pbar b{min-width:0;overflow-wrap:anywhere;font:500 22px/1 var(--f-display);color:#f4f4ef}
+.pbar .row{display:flex;min-width:0;max-width:100%;gap:8px;flex-wrap:wrap;align-items:center}
 .player .btn{border-color:#41443f;background:#1b1e1a;color:#f4f4ef}
 .player .btn:hover{border-color:#b64232;background:#b64232}
 .share{font:12px var(--f-mono);color:#a9afa6;max-width:min(520px,60vw);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -141,10 +145,13 @@ code{padding:2px 5px;border:1px solid var(--line);border-radius:3px;background:v
 .stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#050607}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:30;background:var(--ink);color:var(--surface);border:1px solid var(--ink);border-radius:3px;padding:10px 16px;font:500 11px var(--f-mono)}
 @media(max-width:1000px){.wrap{padding-inline:28px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.intro h1{font-size:46px}}
-@media(max-width:640px){.shape-purple{top:-54px;left:-62px;width:122px;height:122px}.shape-teal{top:-42px;right:-64px;width:108px;height:105px}.shape-bolt{top:36%;left:-38px;width:52px;height:92px}.shape-star{top:24px;left:78%;width:20px;height:20px}.shape-dot{width:10px;height:10px}.shape-dot-a{top:31%;left:6%}.shape-dot-b{top:3%;right:8%;width:8px;height:8px}.shape-dot-c{bottom:4%;left:35%;width:8px;height:8px}.shape-cross{width:23px;height:23px}.shape-cross::before{width:23px;height:5px}.shape-cross::after{width:5px;height:23px}.shape-cross-a{top:10%;left:24%}.shape-cross-b{right:-8px;top:61%}.shape-cross-c{left:7%;bottom:21%}.shape-ring{left:-54px;bottom:-55px;width:128px;height:128px;border-width:18px;box-shadow:0 0 0 24px rgba(35,57,114,.38)}.shape-blue{right:-58px;bottom:-58px;width:128px;height:128px}.shape-triangle{right:9%;bottom:17%;width:27px;height:25px}.shape-triangle-teal{left:12%;bottom:14%;width:25px;height:24px}.shape-squiggle{width:96px;height:38px;border-width:3px}.shape-squiggle::after{left:28px;top:-3px;width:60px;height:35px;border-width:3px}.shape-squiggle-a{left:-70px;top:20%}.shape-squiggle-b{right:-70px;top:27%}.shape-squiggle-c{right:8%;bottom:4%}.wrap{padding:0 16px 48px}.masthead{min-height:76px;align-items:flex-start;padding:17px 0;flex-direction:column;gap:16px}.brand{gap:10px}.brand-mark{font-size:25px}.brand-kicker{padding-left:10px;font-size:9px}.header-actions{width:100%;justify-content:space-between;gap:12px}.player-field{gap:7px}.player-field input{width:104px}.connection summary{min-height:34px}.intro{padding:34px 0 21px;align-items:flex-start;flex-direction:column;gap:13px}.intro h1{font-size:38px}.intro h1 em{white-space:nowrap}.collection-count{padding:0}.grid{grid-template-columns:1fr;gap:12px}.thumb-wrap{aspect-ratio:1.8}.card-body{min-height:218px;padding:17px}.game-title{font-size:29px}.tagline{font-size:15px}.pbar{padding:8px}.pbar b{font-size:18px}.share{max-width:46vw;font-size:10px}}
+@media(max-width:640px){.shape-purple{top:-54px;left:-62px;width:122px;height:122px}.shape-teal{top:-42px;right:-64px;width:108px;height:105px}.shape-bolt{top:36%;left:-38px;width:52px;height:92px}.shape-star{top:24px;left:78%;width:20px;height:20px}.shape-dot{width:10px;height:10px}.shape-dot-a{top:31%;left:6%}.shape-dot-b{top:3%;right:8%;width:8px;height:8px}.shape-dot-c{bottom:4%;left:35%;width:8px;height:8px}.shape-cross{width:23px;height:23px}.shape-cross::before{width:23px;height:5px}.shape-cross::after{width:5px;height:23px}.shape-cross-a{top:10%;left:24%}.shape-cross-b{right:-8px;top:61%}.shape-cross-c{left:7%;bottom:21%}.shape-ring{left:-54px;bottom:-55px;width:128px;height:128px;border-width:18px;box-shadow:0 0 0 24px rgba(35,57,114,.38)}.shape-blue{right:-58px;bottom:-58px;width:128px;height:128px}.shape-triangle{right:9%;bottom:17%;width:27px;height:25px}.shape-triangle-teal{left:12%;bottom:14%;width:25px;height:24px}.shape-squiggle{width:96px;height:38px;border-width:3px}.shape-squiggle::after{left:28px;top:-3px;width:60px;height:35px;border-width:3px}.shape-squiggle-a{left:-70px;top:20%}.shape-squiggle-b{right:-70px;top:27%}.shape-squiggle-c{right:8%;bottom:4%}.wrap{padding:0 16px 48px}.masthead{min-height:76px;align-items:flex-start;padding:17px 0;flex-direction:column;gap:16px}.brand{gap:10px}.brand-mark{font-size:25px}.brand-kicker{padding-left:10px;font-size:9px}.header-actions{width:100%;justify-content:space-between;gap:12px}.player-field{gap:7px}.player-field input{width:104px}.connection summary{min-height:34px}.intro{padding:34px 0 21px;align-items:flex-start;flex-direction:column;gap:13px}.intro h1{font-size:38px}.intro h1 em{white-space:nowrap}.collection-count{padding:0}.grid{grid-template-columns:1fr;gap:12px}.thumb-wrap{aspect-ratio:16/9}.card-body{min-height:218px;padding:17px}.game-title{font-size:29px}.tagline{font-size:15px}.pbar{padding:8px}.pbar b{font-size:18px}.share{max-width:46vw;font-size:10px}}
 @media(max-width:640px){.brand{gap:8px}.brand-monogram{width:32px;height:32px;font-size:8px}.brand-monogram span:nth-child(2){font-size:11px}.brand-mark{font-size:16px}.brand-kicker{padding-left:9px;font-size:8px}.shape-bolt,.shape-squiggle-a,.shape-cross-a,.shape-cross-b{display:none}}
 @media(max-width:1000px){.intro h1{font-size:42px}}
 @media(max-width:640px){.intro h1{font-size:32px}}
+@media(max-height:500px) and (pointer:coarse){.pbar{padding:4px 8px;gap:4px;flex-wrap:nowrap}.pbar .btn{min-height:36px;padding:0 10px;font-size:12px}.pbar b{font-size:16px}.pbar .share{display:none}.pbar .row{flex-wrap:nowrap;min-width:0}.pbar b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+@media(max-width:640px){.pbar .share{display:none}}
+@media(max-width:380px){.pbar .share{display:none}.pbar .btn{padding-inline:10px;font-size:12px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}
 </style>
 </head>
@@ -169,8 +176,15 @@ code{padding:2px 5px;border:1px solid var(--line);border-radius:3px;background:v
         <summary>Connection</summary>
         <div class="connection-panel">
           <label for="relay-url">Multiplayer relay
-            <input id="relay-url" placeholder="ws://host:8080/relay" spellcheck="false">
+            <input id="relay-url" placeholder="ws://host:8081/relay" spellcheck="false">
           </label>
+          <section class="phone-share" aria-labelledby="phone-share-title">
+            <h2 id="phone-share-title">Open on your phone</h2>
+            <div id="phone-qr" class="phone-qr" role="img" aria-label="Scan to open the game hub on your phone" hidden></div>
+            <p id="phone-share-help" role="status">Connect your phone to the same Wi-Fi or hotspot, then scan.</p>
+            <a id="phone-share-link" hidden></a>
+            <button class="btn" id="phone-share-copy" type="button" hidden>Copy hub link</button>
+          </section>
         </div>
       </details>
     </div>
@@ -210,6 +224,7 @@ code{padding:2px 5px;border:1px solid var(--line);border-radius:3px;background:v
 
 <script src="shared/sdk/hub-config.js"></script>
 <script src="games/registry.js"></script>
+<script src="games/putt-club/vendor/qrcode.min.js"></script>
 <script>
 'use strict';
 const $ = s => document.querySelector(s);
@@ -227,6 +242,30 @@ nameIn.addEventListener('change', () => { const p = player(); p.name = nameIn.va
 const relayIn = $('#relay-url'); relayIn.value = store.get('hub.relayUrl', '') || (window.HUB_CONFIG && window.HUB_CONFIG.relayUrl) || '';
 relayIn.addEventListener('change', () => store.set('hub.relayUrl', relayIn.value.trim()));
 
+function renderPhoneShare() {
+  const loopback = /^(localhost|127(?:\.\d+){3}|\[?::1\]?)$/i.test(location.hostname);
+  const link = loopback ? window.HUB_CONFIG && window.HUB_CONFIG.phoneHubUrl : new URL('/', location.href).href;
+  const qrEl = $('#phone-qr'), linkEl = $('#phone-share-link'), copy = $('#phone-share-copy');
+  if (!link) {
+    $('#phone-share-help').textContent = 'Connect this computer to Wi-Fi or a phone hotspot, then refresh to get a QR code.';
+    return;
+  }
+  linkEl.href = link; linkEl.textContent = link; linkEl.hidden = false;
+  try {
+    const qr = window.qrcode(0, 'M'); qr.addData(link); qr.make();
+    qrEl.innerHTML = qr.createSvgTag({ cellSize: 6, margin: 24, scalable: true });
+    qrEl.hidden = false;
+  } catch (e) {
+    $('#phone-share-help').textContent = 'Open the link below on a phone connected to the same Wi-Fi or hotspot.';
+  }
+  copy.hidden = false;
+  copy.onclick = async () => {
+    try { await navigator.clipboard.writeText(link); copy.textContent = 'Copied'; }
+    catch (e) { copy.textContent = 'Select the link to copy'; }
+  };
+}
+renderPhoneShare();
+
 function entryUrl(game, entry) {
   const [file, hash] = (entry || game.entry).split('#');
   return `${game.path}${file}?hub=1${hash ? '#' + hash : ''}`;
@@ -236,7 +275,9 @@ function renderGames() {
   $('#games').innerHTML = GAMES.map(g => {
     const roles = g.roles && g.roles.length ? g.roles : [{ id: 'play', name: 'Play', entry: g.entry }];
     const firstRole = roles[0];
-    const titleMarkup = g.id === 'party-pack'
+    const titleMarkup = g.id === 'crownfall-kart'
+      ? '<span>CROWN<span class="kart-fall">FALL</span></span><span class="kart-label">KART</span>'
+      : g.id === 'party-pack'
       ? '<span class="party-word party-word-a">PARTY</span><span class="party-word party-word-b">PACK</span>'
       : g.id === 'short-fuse'
       ? '<span class="fuse-short">SHORT</span><span class="fuse-fuse">FUSE</span>'
@@ -256,13 +297,12 @@ function renderGames() {
     return `
       <article class="card">
         <div class="thumb-wrap thumb-wrap-${esc(g.id)}">
-          <img class="thumb" src="${esc(g.path + (g.thumbnail || ''))}" alt="" loading="lazy" decoding="async">
-          ${g.id === 'the-hollow' ? '<div class="hollow-banner" aria-hidden="true"><span class="hollow-banner-kicker">A co-op horror expedition</span><span class="hollow-banner-title">THE HOLLOW</span><span class="hollow-banner-rule"></span><span class="hollow-banner-caption">Thornwick is waiting.</span></div>' : ''}
+          <img class="thumb" src="${esc(g.path + (g.thumbnail || ''))}" alt="" width="960" height="540" loading="lazy" decoding="async">
           ${g.status && g.status !== 'playable' ? `<span class="status">${esc(g.status)}</span>` : ''}
         </div>
         <div class="card-body">
           <div class="card-meta"><span class="players">${esc(players)}</span></div>
-          <h2 class="game-title game-title-${esc(g.id)}"${g.id === 'party-pack' || g.id === 'short-fuse' || g.id === 'casino' ? ` aria-label="${esc(g.title)}"` : ''}>${titleMarkup}</h2>
+          <h2 class="game-title game-title-${esc(g.id)}"${g.id === 'crownfall-kart' || g.id === 'party-pack' || g.id === 'short-fuse' || g.id === 'casino' ? ` aria-label="${esc(g.title)}"` : ''}>${titleMarkup}</h2>
           <p class="tagline">${esc(g.tagline || '')}</p>
           <div class="tags">${(g.tags || []).slice(0, 2).map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>
           <div class="card-action">${roleControl}<button class="btn primary" data-game="${esc(g.id)}" data-title="${esc(g.title)}" data-role="${esc(firstRole.id)}" aria-label="Play ${esc(g.title)} as ${esc(firstRole.name)}">Play <span aria-hidden="true">→</span></button></div>

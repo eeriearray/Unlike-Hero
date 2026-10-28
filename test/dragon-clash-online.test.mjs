@@ -71,6 +71,48 @@ test('two clients play a versus match the server runs and decides', async () => 
   a.close(); b.close();
 });
 
+for (const format of ['2v2', '3v3']) {
+test(`online ${format} with two players and one added CPU stays 2v1`, async (t) => {
+  const a = await client(), b = await client();
+  t.after(() => { a.close(); b.close(); });
+  a.do({ t: 'create', mode: 'versus', name: 'Ann', build: Build.presetBuild('emberfang') });
+  const joined = await a.wait(type('joined'));
+  a.do({ t: 'settings', format });
+  b.do({ t: 'join', code: joined.code, name: 'Bob', build: Build.presetBuild('tidefang') });
+  await b.wait(type('joined'));
+  a.do({ t: 'bot', op: 'add', level: 3 });
+  const lobby = await a.wait(type('room', (m) => m.room.members.length === 3));
+  const cpu = lobby.room.members.find((m) => m.bot);
+  a.do({ t: 'ready', ready: true });
+  b.do({ t: 'ready', ready: true });
+  await a.wait(type('room', (m) => m.room.members.length === 3 && m.room.members.every((x) => x.ready)));
+  a.do({ t: 'start' });
+  const match = await a.wait(type('match'));
+  const fighters = match.match.setup.fighters;
+  assert.equal(fighters.length, 3, 'no fourth fighter is added');
+  assert.deepEqual(fighters.map((f) => f.id).sort(), lobby.room.members.map((m) => m.id).sort());
+  assert.deepEqual([0, 1].map((team) => fighters.filter((f) => f.team === team).length).sort(), [1, 2]);
+  assert.ok(fighters.some((f) => f.id === cpu.id), 'the explicitly added CPU plays');
+  const playing = await a.wait(type('room', (m) => m.room.state === 'playing'));
+  assert.equal(playing.room.members.filter((m) => m.bot).length, 1);
+});
+
+test(`online solo ${format} adds only one opposing CPU`, async (t) => {
+  const a = await client();
+  t.after(() => a.close());
+  a.do({ t: 'create', mode: 'versus', name: 'Solo', build: Build.presetBuild('emberfang') });
+  await a.wait(type('joined'));
+  a.do({ t: 'settings', format });
+  a.do({ t: 'ready', ready: true });
+  a.do({ t: 'start' });
+  const match = await a.wait(type('match'));
+  const fighters = match.match.setup.fighters;
+  assert.equal(fighters.length, 2);
+  assert.notEqual(fighters[0].team, fighters[1].team);
+});
+
+}
+
 test('a dropped player rejoins with their token', async () => {
   const a = await client();
   a.do({ t: 'create', mode: 'versus', name: 'Ann' });
@@ -152,4 +194,17 @@ test('online: CPUs are painted sprite dragons, and a mirror match gets a recolou
   assert.equal(f1.build.id, f2.build.id);
   assert.notEqual(f1.build.look.tint || '', f2.build.look.tint || '', 'identical dragons on opposing sides are told apart');
   b.close(); c.close();
+});
+
+
+test('online CPU difficulty accepts all expert tiers', async () => {
+  const a = await client();
+  a.do({ t:'create', mode:'versus', name:'Host', build:Build.presetBuild('emberfang') });
+  await a.wait(type('joined'));
+  for (const level of [4,5,6]) {
+    a.do({ t:'bot', op:'add', level });
+    const state = await a.wait(type('room', m => m.room.members.some(b => b.bot && b.level === level)));
+    assert.ok(state.room.members.some(b => b.bot && b.level === level));
+  }
+  a.close();
 });

@@ -6,7 +6,7 @@
   "sdk": "1.x",
   "entry": "index.html",
   "server": "server/index.mjs",
-  "thumbnail": "thumbnail.svg",
+  "thumbnail": "hub-banner.webp",
   "accent": "#f5c451",
   "players": {
     "min": 1,

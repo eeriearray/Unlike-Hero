@@ -341,3 +341,18 @@ td.p0 .npat-mark { color: var(--red); }
 .cr-slide-row { display: flex; align-items: center; gap: 10px; padding: 6px 14px; background: var(--paper); border: 2px solid var(--ink); border-radius: 30px; font: 600 20px var(--f-note); }
 .cr-slider { width: min(300px, 56vw); accent-color: var(--red); height: 28px; }
 .cr-controls { min-height: 4px; }
+
+/* A full Bluff hand can exceed a phone: keep the first card in the scroll range. */
+.bluff-hand{width:100%;max-width:min(100%,98vw);justify-content:safe center;overflow-x:auto;padding:36px 24px 18px}
+.bluff-card{flex:none}
+@media(max-width:600px){
+ .bluff-card{transform:none}
+ .bluff-card:hover{transform:translateY(-8px)}
+ .bluff-card.up{transform:translateY(-22px)}
+ .npat-body{max-width:100%;padding-left:24px}
+ .npat-row{grid-template-columns:minmax(0,1fr);gap:0;padding-block:6px}
+ .npat-input{width:100%;min-width:0}
+ .sps-arena{gap:8px}.sps-hand{width:clamp(88px,26vw,150px)}
+ .flames-page{max-width:100%;padding-left:24px}
+ .flames-strip{gap:4px}.fs{min-width:0;flex:1;font-size:32px}
+}

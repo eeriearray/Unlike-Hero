@@ -12,7 +12,7 @@
 (function () {
   'use strict';
   var B = window.DC.Sim.BTN;
-  var root = null, held = 0, stick = null, buttons = {}, opts = {};
+  var root = null, held = 0, pressed = 0, stick = null, buttons = {}, opts = {};
   var BTNS = [
     { a: 'light', cls: 't-btn-light', lbl: 'LIGHT', icon: '<path d="M6 3c2.5 6 2.5 12 0 18M12 3c2.5 6 2.5 12 0 18M18 3c2.5 6 2.5 12 0 18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>' },
     { a: 'heavy', cls: 't-btn-heavy', lbl: 'HEAVY', icon: '<path d="M4 4l10 10M4 4h4M4 4v4M20 4L10 14M20 4h-4M20 4v4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>' },
@@ -113,6 +113,7 @@
     // Multi-touch button handling with slide-across & flick-gesture support
     function onBtnDown(el, e) {
       e.preventDefault();
+      capture(el, e);
       var a = el.dataset.a;
       pointers[e.pointerId] = { btn: el, a: a };
       el.classList.add('on');
@@ -157,6 +158,7 @@
       var a = pointers[id].a;
       if (a && B[a]) h |= B[a];
     }
+    pressed |= h & ~held;
     held = h;
   }
 
@@ -166,10 +168,10 @@
     root.style.display = '';
     isShown = true;
     layout();
-    held = 0; pointers = {}; stick = null;
+    held = pressed = 0; pointers = {}; stick = null;
     root.querySelectorAll('.on').forEach(function (el) { el.classList.remove('on'); });
   }
-  function hide() { if (root) root.style.display = 'none'; isShown = false; held = 0; pointers = {}; stick = null; }
+  function hide() { if (root) root.style.display = 'none'; isShown = false; held = pressed = 0; pointers = {}; stick = null; }
 
-  window.DCTouch = { show: show, hide: hide, held: function () { return held; }, isTouchDevice: isTouchDevice, isShown: function () { return isShown; } };
+  window.DCTouch = { show: show, hide: hide, held: function () { return held; }, takePresses: function () { var p = pressed; pressed = 0; return p; }, isTouchDevice: isTouchDevice, isShown: function () { return isShown; } };
 })();

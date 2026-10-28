@@ -8,8 +8,8 @@
 
   function getControls() {
     return App.isTouch()
-      ? [['touch', 'Touch screen'], ['kb1', 'Keyboard 1'], ['kb2', 'Keyboard 2'], ['pad0', 'Gamepad 1'], ['pad1', 'Gamepad 2'], ['pad2', 'Gamepad 3'], ['pad3', 'Gamepad 4'], ['cpu1', 'CPU · easy'], ['cpu2', 'CPU · normal'], ['cpu3', 'CPU · hard']]
-      : [['kb1', 'Keyboard 1'], ['kb2', 'Keyboard 2'], ['pad0', 'Gamepad 1'], ['pad1', 'Gamepad 2'], ['pad2', 'Gamepad 3'], ['pad3', 'Gamepad 4'], ['touch', 'Touch screen'], ['cpu1', 'CPU · easy'], ['cpu2', 'CPU · normal'], ['cpu3', 'CPU · hard']];
+      ? [['touch', 'Touch screen'], ['kb1', 'Keyboard 1'], ['kb2', 'Keyboard 2'], ['pad0', 'Gamepad 1'], ['pad1', 'Gamepad 2'], ['pad2', 'Gamepad 3'], ['pad3', 'Gamepad 4'], ['cpu1', 'CPU · easy'], ['cpu2', 'CPU · normal'], ['cpu3', 'CPU · hard'], ['cpu4', 'CPU · Super Hard'], ['cpu5', 'CPU · Extreme'], ['cpu6', 'CPU · Impossible']]
+      : [['kb1', 'Keyboard 1'], ['kb2', 'Keyboard 2'], ['pad0', 'Gamepad 1'], ['pad1', 'Gamepad 2'], ['pad2', 'Gamepad 3'], ['pad3', 'Gamepad 4'], ['touch', 'Touch screen'], ['cpu1', 'CPU · easy'], ['cpu2', 'CPU · normal'], ['cpu3', 'CPU · hard'], ['cpu4', 'CPU · Super Hard'], ['cpu5', 'CPU · Extreme'], ['cpu6', 'CPU · Impossible']];
   }
   function ctrlOptions(sel) { return getControls().map(function (c) { return '<option value="' + c[0] + '"' + (c[0] === sel ? ' selected' : '') + '>' + c[1] + '</option>'; }).join(''); }
   var PRESET_ROTATION = ['emberfang-hd', 'frostwing-hd', 'voltscale-hd', 'ironmaw-hd', 'tidefang-hd'];
@@ -81,7 +81,7 @@
           if (c.indexOf('pad') === 0 && Input.connectedPads().indexOf(c) < 0) out.push(Input.DEVICE_NAMES[c] + ' is not connected (press a button on it).');
         }
         var conf = Input.conflicts(Object.keys(used).filter(function (d) { return d.indexOf('kb') === 0; }));
-        if (conf.length) out.push('Keyboard layouts share keys: ' + conf.join(', ') + '. Remap in Controls & settings.');
+        if (conf.length) out.push('A keyboard layout has duplicate keys: ' + conf.join(', ') + '. Remap in Controls & settings.');
         return out;
       }
       function render() {
@@ -186,7 +186,7 @@
       var cfg = Object.assign({ build: defaultBuildId(0), device: App.defaultDevice(), dummy: 'preset-ironmaw', mode: 'stand', arena: 'training' }, App.store.get('training', {}));
       if (!App.isTouch() && cfg.device === 'touch') cfg.device = 'kb1';
       if (App.isTouch() && cfg.device === 'kb1') cfg.device = 'touch';
-      var MODES = [['stand', 'Standing dummy'], ['jump', 'Jumping dummy'], ['dodge', 'Dodging dummy'], ['cpu1', 'CPU · easy'], ['cpu2', 'CPU · normal'], ['cpu3', 'CPU · hard']];
+      var MODES = [['stand', 'Standing dummy'], ['jump', 'Jumping dummy'], ['dodge', 'Dodging dummy'], ['cpu1', 'CPU · easy'], ['cpu2', 'CPU · normal'], ['cpu3', 'CPU · hard'], ['cpu4', 'CPU · Super Hard'], ['cpu5', 'CPU · Extreme'], ['cpu6', 'CPU · Impossible']];
       function render() {
         App.ui.innerHTML = '<div class="screen"><div class="topbar"><button class="btn ghost small" data-act="back">← Back</button><h1>Training</h1></div>' +
           '<div class="teams">' +

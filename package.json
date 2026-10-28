@@ -5,7 +5,7 @@
   "description": "A hub of co-op multiplayer browser games. Each game lives in games/<id>/ with a game.json manifest.",
   "type": "module",
   "scripts": {
-    "start": "node server/relay.mjs",
+    "start": "node --watch server/relay.mjs",
     "play": "bash tools/play.sh",
     "registry": "node tools/build-registry.mjs",
     "new-game": "node tools/new-game.mjs",

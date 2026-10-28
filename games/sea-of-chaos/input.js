@@ -1,13 +1,44 @@
-export function createInput(canvas, sound, pauseAudio) {
- const keyMap={KeyW:['throttle',1],ArrowUp:['throttle',1],KeyS:['throttle',-1],ArrowDown:['throttle',-1],KeyA:['turn',-1],ArrowLeft:['turn',-1],KeyD:['turn',1],ArrowRight:['turn',1],ShiftLeft:['boost',1],ShiftRight:['boost',1],Space:['ram',1],Digit1:['ammo',1],Digit2:['ammo',2],Digit3:['ammo',3]};
- const keys={};let ammo=1,firePointer=false,stickId=null,stick={x:0,y:0},mode='menu',onEscape=()=>{};
- window.addEventListener('keydown',e=>{if(keyMap[e.code]){e.preventDefault();keys[e.code]=true;if(e.code.startsWith('Digit')){ammo=keyMap[e.code][1];document.querySelectorAll('[data-ammo]').forEach(b=>b.classList.toggle('on',+b.dataset.ammo===ammo))}}if(e.code==='Escape'&&mode==='game')onEscape()});
- window.addEventListener('keyup',e=>keys[e.code]=false);
- canvas.addEventListener('pointerdown',e=>{if(mode==='game'){canvas.setPointerCapture(e.pointerId);firePointer=true;sound('fire')}});canvas.addEventListener('pointerup',()=>firePointer=false);canvas.addEventListener('pointercancel',()=>firePointer=false);
- for(const b of document.querySelectorAll('[data-act]')){const act=b.dataset.act;b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);b.classList.add('on');keys[`touch-${act}`]=true;if(act==='fire')sound('fire')});const release=e=>{e.preventDefault();b.classList.remove('on');keys[`touch-${act}`]=false};b.addEventListener('pointerup',release);b.addEventListener('pointercancel',release);b.addEventListener('lostpointercapture',release)}
- document.querySelectorAll('[data-ammo]').forEach(b=>b.onclick=()=>{ammo=+b.dataset.ammo;document.querySelectorAll('[data-ammo]').forEach(x=>x.classList.toggle('on',x===b))});
- const stickEl=document.getElementById('stick'),knob=document.getElementById('knob');stickEl.addEventListener('pointerdown',e=>{e.preventDefault();stickId=e.pointerId;stickEl.setPointerCapture(e.pointerId);moveStick(e)});stickEl.addEventListener('pointermove',e=>{if(e.pointerId===stickId)moveStick(e)});
- function moveStick(e){const r=stickEl.getBoundingClientRect(),x=e.clientX-(r.left+r.width/2),y=e.clientY-(r.top+r.height/2),l=Math.hypot(x,y),k=Math.min(42,l),dx=l?x/l*k:0,dy=l?y/l*k:0;stick.x=dx/42;stick.y=dy/42;knob.style.transform=`translate(${dx}px,${dy}px)`}
- function resetStick(){stickId=null;stick.x=stick.y=0;knob.style.transform=''}stickEl.addEventListener('pointerup',resetStick);stickEl.addEventListener('pointercancel',resetStick);document.addEventListener('visibilitychange',()=>pauseAudio(document.hidden));
- return {read(){let throttle=0,turn=0;for(const [code,[k,v]]of Object.entries(keyMap))if(keys[code]){if(k==='throttle')throttle=v;if(k==='turn')turn=v}if(stick.y<-.16)throttle=Math.max(throttle,-stick.y);if(stick.y>.16)throttle=-Math.max(-throttle,stick.y);turn=Math.abs(stick.x)>.15?stick.x:turn;return{throttle,turn,fire:firePointer||keys['touch-fire']||keys.KeyF,boost:keys.ShiftLeft||keys.ShiftRight||keys['touch-boost'],ram:keys.Space||keys['touch-ram'],ammo}},setMode(m){mode=m},onEscape(fn){onEscape=fn}};
+// Keyboard, mouse and touch controls. Fire is "hold to keep firing"; a quick tap
+// is latched until the next read so it is never lost between network sends.
+export function createInput(canvas, unlock) {
+ const keys = new Set(), touch = new Set();
+ let mode = 'menu', touchMode = false, tapped = false, mouse = false, stickId = null, sx = 0, sy = 0, escape = () => {};
+ const GAME = new Set(['KeyW', 'KeyS', 'KeyA', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ShiftLeft', 'ShiftRight', 'Space', 'KeyF']);
+ addEventListener('keydown', e => {
+  if (e.code === 'Escape') { escape(); return; }
+  if (mode !== 'game' || e.target.matches?.('input,textarea,select')) return;
+  if (GAME.has(e.code)) { e.preventDefault(); keys.add(e.code); if (!e.repeat && (e.code === 'Space' || e.code === 'KeyF')) tapped = true; }
+ });
+ addEventListener('keyup', e => keys.delete(e.code));
+ canvas.addEventListener('pointerdown', e => { if (mode !== 'game' || e.pointerType === 'touch') return; unlock(); mouse = true; tapped = true; });
+ addEventListener('pointerup', e => { if (e.pointerType !== 'touch') mouse = false; });
+ for (const b of document.querySelectorAll('[data-act]')) {
+  const act = b.dataset.act;
+  b.addEventListener('pointerdown', e => { if (mode !== 'game') return; e.preventDefault(); unlock(); b.setPointerCapture?.(e.pointerId); touch.add(act); if (act === 'fire') tapped = true; b.classList.add('on'); });
+  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) b.addEventListener(ev, () => { touch.delete(act); b.classList.remove('on'); });
+ }
+ const stick = document.getElementById('stick'), knob = document.getElementById('knob');
+ function move(e) { const r = stick.getBoundingClientRect(), x = e.clientX - r.left - r.width / 2, y = e.clientY - r.top - r.height / 2, l = Math.hypot(x, y), k = Math.min(44, l); sx = l ? x / l * k / 44 : 0; sy = l ? y / l * k / 44 : 0; knob.style.transform = `translate(${sx * 44}px,${sy * 44}px)`; }
+ stick?.addEventListener('pointerdown', e => { if (mode !== 'game' || stickId !== null) return; e.preventDefault(); unlock(); touchMode = true; stickId = e.pointerId; stick.setPointerCapture(e.pointerId); move(e); });
+ stick?.addEventListener('pointermove', e => { if (e.pointerId === stickId) move(e); });
+ function resetStick() { stickId = null; sx = sy = 0; if (knob) knob.style.transform = ''; }
+ for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) stick?.addEventListener(ev, resetStick);
+ function reset() { keys.clear(); touch.clear(); tapped = mouse = false; resetStick(); document.querySelectorAll('[data-act]').forEach(b => b.classList.remove('on')); }
+ addEventListener('blur', reset);
+ const axis = v => Math.abs(v) < 0.12 ? 0 : Math.sign(v) * Math.min(1, (Math.abs(v) - 0.12) / 0.75);
+ const has = (...codes) => codes.some(c => keys.has(c));
+ return {
+  read() {
+   if (mode !== 'game') return {};
+   const fire = tapped || mouse || touch.has('fire') || has('Space', 'KeyF'); tapped = false;
+   // Screen-right is starboard, which turns the heading negative.
+   const turn = stickId !== null ? -axis(sx) : Number(has('KeyA', 'ArrowLeft')) - Number(has('KeyD', 'ArrowRight'));
+   // Ships cruise on their own; W is full sail, S brakes. Touch captains make
+   // full way unless they pull the stick right back.
+   const throttle = stickId !== null ? (sy > 0.55 ? -1 : 1) : touchMode ? 1 : has('KeyW', 'ArrowUp') ? 1 : has('KeyS', 'ArrowDown') ? -1 : 0.6;
+   return { throttle, turn, fire, boost: touch.has('boost') || has('ShiftLeft', 'ShiftRight') };
+  },
+  setMode(m) { mode = m; reset(); },
+  onEscape(fn) { escape = fn; },
+ };
 }

@@ -188,10 +188,11 @@
     if (w.opening && !w.opening.complete && w.opening.revealed && loc === 'belltower' && openingOpt === 'frame') { out.state = 'done'; out.why = 'Choose your response to the echo.'; }
     if (w.opening && !w.opening.complete && ['square:board', 'chapel:vestry', 'graveyard:headstones', 'belltower:frame'].indexOf(loc + ':' + o.id) >= 0) out.stakes += ' The opening lead survives a failed check.';
     if (w.opening && !w.opening.complete && enc.loc === 'belltower' && ['frame', 'climb', 'listen'].indexOf(o.id) >= 0 && !w.opening.entered) { out.state = 'locked'; out.why = 'Enter the tower first.'; }
+    if (o.trail && w.opening && w.opening.complete) out.stakes += ' The trail continues even if this fails.';
     if (o.confirm) out.confirm = o.confirm;
     if (o.needsTarget) out.needsTarget = o.needsTarget;
     // visibility
-    if (o.hidden && !(w.locs[loc] && w.locs[loc].inv)) return null;
+    if (o.hidden && !(w.locs[loc] && w.locs[loc].inv) && !(o.trail && w.opening && w.opening.complete)) return null;
     if (o.show && !this.test(o.show, p)) return null;
     if (o.hide && this.test(o.hide, p)) return null;
     var cost = o.cost ? Object.assign({}, o.cost) : null;

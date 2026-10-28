@@ -171,6 +171,8 @@ Only the five sprite dragons are offered in menus; Forge builds are drawn with t
 
 Eight arenas (`D.ARENA_ORDER`): Skyforge Spire, Frostfall Rift, **Ember Caldera** (volcano, eruptions, lava lake), **Stormcrown Peaks** (three summits, rain, lightning), **Jade Terrace** (pagoda, blossom petals), **Dragon Colosseum** (walls, crowd that cheers KOs), **Crystal Hollow** (geode cave), **Sunken Shrine** (underwater ruins, kelp, fish). Preview any with `gallery.html#scene=<id>&live`.
 
+Team matches automatically widen each arena: 2v2 is 45% wider and 3v3 is 80% wider. Platforms, spawn spacing and horizontal blast boundaries expand together; jump heights stay the same. Teammates spawn and respawn on the same side, and the camera can pull back to cover the wider fight. Local and online matches use the same layout rules; duels, free-for-all and training keep the original arenas.
+
 
 Painted procedurally, pixel by pixel, once per arena and screen size, then drawn with parallax: dithered sky, sun or
 moon with halo, Milky Way, clouds from fractal noise lit toward the light, mountain ranges with ridge and facet
@@ -258,7 +260,7 @@ npm start
 
 Open the printed address in two browser windows (or on two devices), choose **Online**, create a room in one and
 join with its 4-letter code in the other. The server (`server/index.mjs`, loaded by the hub server) runs every match
-at 60 Hz with the same engine files, validates builds, fills empty seats with CPUs, and advances tournaments only
+at 60 Hz with the same engine files, validates builds, adds one CPU to each empty side while allowing uneven teams, and advances tournaments only
 from finished server matches. A dropped player has 20 seconds to reconnect (refresh is fine) before forfeiting.
 There is no client-side prediction yet, so play feels best on the same network.
 

@@ -113,6 +113,7 @@
     var i = this.players.findIndex(function (p) { return p.id === id; });
     if (i < 0) return;
     var wasHost = this.players[i].isHost;
+    if (AI) AI.freePlanner(this.players[i]);
     this.players.splice(i, 1);
     if (wasHost) this.passHost();
     this.emitState();
@@ -499,6 +500,7 @@
   /** Release the Rapier world of the current hole. */
   M.freeSim = function () {
     if (this.world && this.world._pred) { P.freeSim(this.world._pred); this.world._pred = null; }
+    if (AI) this.players.forEach(function (p) { AI.freePlanner(p); });
     if (this.sim) { P.freeSim(this.sim); this.sim = null; }
   };
   M.destroy = function () { this.freeSim(); };
@@ -604,7 +606,7 @@
     if (p.strokes >= this.settings.maxStrokes && !p.ball.moving) {
       p.finished = true; p.status = 'maxed';
       p.ball.holed = true; // removed from play
-      if (p.ball.body) p.ball.body.setEnabled(false);
+      P.retire(p.ball);
       this.fx({ type: 'maxed', id: p.id, strokes: p.strokes });
     }
   };

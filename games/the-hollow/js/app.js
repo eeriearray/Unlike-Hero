@@ -522,7 +522,11 @@
     },
     scenepan: function (el) { closeCard(); St.pan(el.dataset.dir); },
     detailzoom: function () { if (!S.ui.icard) return; S.ui.icard.magnify = !S.ui.icard.magnify; AU.sfx('paper', { gain: .08 }); htmlOf.advui = null; render(); },
-    icclose: function () { closeCard(); },
+    icclose: function () {
+      closeCard();
+      var enc = S.view && S.view.enc;
+      if (enc && (enc.kind === 'loc' || enc.over) && !enc.hold) send({ t: 'leave' });
+    },
     // an action card in the tray
     card: function (el) {
       if (el.getAttribute && el.getAttribute('aria-disabled') === 'true') { var t = el.getAttribute('title'); if (t) toast(t); return; }
@@ -566,7 +570,19 @@
     interact: function () { send({ t: 'interact' }); }, investigate: function () { search(St.objectFor('investigate')); },
     explore: function () { send({ t: 'explore' }); }, echo: function () { send({ t: 'echo' }); },
     'rest-ui': function () { openModal({ type: 'rest' }); },
-    rest: function (el) { closeModal(); send({ t: 'rest', stat: el.dataset.stat }); AU.sfx('heal'); },
+    rest: function (el) {
+      closeModal();
+      var enc = S.view && S.view.enc;
+      if (enc && (enc.kind === 'loc' || enc.over) && !enc.hold) {
+        send({ t: 'leave' }, function () {
+          send({ t: 'rest', stat: el.dataset.stat });
+          AU.sfx('heal');
+        });
+      } else {
+        send({ t: 'rest', stat: el.dataset.stat });
+        AU.sfx('heal');
+      }
+    },
     endturn: function () { send({ t: 'endturn' }); }, leaveenc: function () { send({ t: 'leave' }); }, leave_: function () { send({ t: 'leave' }); },
     move: function (el) { var mode = el.dataset.mode; var sc0 = $('#stagehost'); if (sc0) sc0.classList.add('leaving'); setTimeout(function () { if (sc0) sc0.classList.remove('leaving'); }, 900); closeCard(true); closeModal(); S.ui.travel = false; send({ t: 'move', mode: mode, to: el.dataset.to }); },
     follow: function (el) { closeModal(); S.ui.travel = false; send({ t: 'move', mode: 'follow', target: el.dataset.to }); },
@@ -630,7 +646,15 @@
     if (el.dataset && el.dataset.act === 'vol') ACTIONS.vol(el);
   });
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { if (S.ui.icard) { closeCard(); return; } if (S.ui.modal) closeModal(); else if (S.ui.map) ACTIONS.closemap(); else if (S.ui.drawer) ACTIONS.drawer({ dataset: { d: S.ui.drawer } }); else if (S.ui.sel) ACTIONS.desel(); }
+    if (e.key === 'Escape') {
+      if (S.ui.icard) {
+        closeCard();
+        var enc = S.view && S.view.enc;
+        if (enc && (enc.kind === 'loc' || enc.over) && !enc.hold) send({ t: 'leave' });
+        return;
+      }
+      if (S.ui.modal) closeModal(); else if (S.ui.map) ACTIONS.closemap(); else if (S.ui.drawer) ACTIONS.drawer({ dataset: { d: S.ui.drawer } }); else if (S.ui.sel) ACTIONS.desel();
+    }
     if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.node[data-act]')) { e.preventDefault(); ACTIONS.selnode(e.target); }
     if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.obj[data-act]')) { e.preventDefault(); ACTIONS.obj(e.target); }
     if (e.key === 'Enter' && e.target.id === 'f-code') ACTIONS.join();

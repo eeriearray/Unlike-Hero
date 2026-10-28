@@ -21,7 +21,7 @@ const ALL_BUTTONS = Object.values(Sim.BTN).reduce((a, b) => a | b, 0);
 const CPU_PRESETS = D.PRESETS.filter((p) => p.look && p.look.sprite);
 function cpuBuild(presetId, level) {
   const preset = CPU_PRESETS.find((p) => p.id === presetId) || CPU_PRESETS[randomInt(CPU_PRESETS.length)];
-  return { preset, build: Build.sanitize(Build.presetBuild(preset.id)), name: 'CPU ' + preset.name, level: Math.max(1, Math.min(3, level | 0 || 2)) };
+  return { preset, build: Build.sanitize(Build.presetBuild(preset.id)), name: 'CPU ' + preset.name, level: Math.max(1, Math.min(6, level | 0 || 2)) };
 }
 
 const TICK_MS = 1000 / 60;
@@ -331,9 +331,9 @@ export default function attach({ httpServer, basePath, log = console.log, tickMs
     const teams = Array.from({ length: f.teams }, () => []);
     for (const m of room.members.values()) teams[m.team % f.teams].push(m);
     if (teams.some((t) => t.length > f.perTeam)) return err(conn, 'Too many dragons on one team for ' + f.name + '.');
-    // Fill empty seats with CPUs
+    // Supply an opponent for empty sides, but keep partially filled teams as chosen in the lobby.
     teams.forEach((t, ti) => {
-      while (t.length < f.perTeam) {
+      if (t.length === 0) {
         const c = cpuBuild(null, 2);
         const id = 'b' + randomBytes(4).toString('hex');
         const bot = { id, name: c.name, bot: true, level: c.level, build: c.build, ready: true, team: ti, connected: true };

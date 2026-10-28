@@ -487,7 +487,7 @@
       content: () => (PP.UGC ? PP.UGC.content() : PP.CONTENT),
       live,
       async wait(ms) { await PP.sleep(ms); live(); },
-      stage(html, cls) { live(); const s = $('#stage'); s.className = 'stage ' + (cls || ''); s.innerHTML = html; return s; },
+      stage(html, cls) { live(); const s = $('#stage'); s.className = 'stage ' + (cls || ''); s.innerHTML = html; s.scrollTop = 0; $('#stage-app').scrollTop = 0; return s; },
       setPhase(name) { H.phase = name; const d = $('#phase'); if (d) d.textContent = name; },
       /** Speak a host line (names and answers stay on screen). await it to wait for the line, capped so a stuck voice never stalls the game. */
       say(lineKey, vars, maxMs) {

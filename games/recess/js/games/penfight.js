@@ -74,7 +74,7 @@ export default {
     // aiming
     const myPen = () => view?.pens.find(p => p.id === api.me);
     let grab = 0;
-    pullAim(svg, {
+    const stopAim = pullAim(svg, {
       grabRadius: 6,
       maxPull: 34,
       origin: (e) => {
@@ -193,6 +193,6 @@ export default {
       render(v);
     }
 
-    return { update, destroy() { if (replaying) replaying(); } };
+    return { update, destroy() { stopAim(); if (replaying) replaying(); } };
   }
 };

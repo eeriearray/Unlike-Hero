@@ -84,7 +84,7 @@
     var o = this.w.opening; if (!o) return null;
     var goal;
     if (o.complete && p && p.loc === 'heart_chamber') goal = { id: 'decision', title: 'Decide the bell’s fate', context: 'You reached the Heart. Your discoveries will shape the final decision.', hint: 'Open the Heart encounter and propose an ending. Your party votes together.', target: 'heart_chamber', complete: true };
-    else if (o.complete) goal = { id: 'complete', title: 'Find the magistrate’s account in the Black Estate', context: 'The bell was lowered beneath the Abbey, not destroyed. The tower inscription says the magistrate kept the transfer agreement. It may explain how to stop the taking of names.', hint: 'Return through the graveyard to the Black Estate foyer, then seek its library. The agreement is your lead toward the Abbey.', target: p && p.loc === 'foyer' ? 'library' : 'foyer', complete: true };
+    else if (o.complete) goal = this.trailBeat();
     else if (o.revealed) goal = { id: 'response', title: 'Choose how to leave the ringing frame', context: 'The rope pulls downward as a toll rises through the floor. The bell is below the Abbey; this tower is only its echo. Your name begins forming in the iron.', hint: 'Touch the frame: bind the rope to delay a toll, or answer the echo for a name at the cost of time.', target: 'belltower' };
     else if (o.entered) goal = { id: 'frame', title: 'Find what is ringing in an empty tower', context: 'The rope vanishes into the floor. The empty yoke bears the same missing names as the grave marker.', hint: 'Study the empty bell-frame for the destination of the missing bell.', target: 'belltower' };
     else if (o.route) goal = { id: 'enter', title: 'Trace the bell’s removal into the tower', context: 'The graves hold no bodies. Their iron nameplates were taken for the bell. A keeper’s diagram marks a dry entrance.', hint: 'Use the maintenance entrance at the tower to find where the bell went.', target: 'belltower' };
@@ -93,8 +93,8 @@
     else goal = { id: 'arrival', title: 'Test the warning in your summons', context: 'A letter in your own handwriting warned: “Come to Thornwick before the bell learns your name.” You came to stop it. A toll just sounded from a tower with no bell.', hint: 'Read the square’s notice board: its tower notice may explain who still rings it.', target: 'square' };
     if (p) { var x = this.openingExpertise(p); if (x && p.loc === x.loc && !o.complete && !(x.opt === 'vestry' && o.record) && !(x.opt === 'headstones' && o.route) && !(x.opt === 'force_entry' && o.entered) && !(x.opt === 'frame' && o.revealed)) goal.observation = x.observation; }
     if (p && p.loc !== goal.target) {
-      var route = this.path(p.loc, goal.target, false);
-      if (route && route.length) { goal.nextTarget = route[0]; if (route.length > 1) goal.hint = 'Travel via ' + D.locations[route[0]].name + ' toward ' + D.locations[goal.target].name + '. ' + goal.hint; }
+      var route = o.complete ? this.guidePath(p.loc, goal.target) : this.path(p.loc, goal.target, false);
+      if (route && route.length) { goal.nextTarget = route[0]; if (route.length > 1 && !o.complete) goal.hint = 'Travel via ' + D.locations[route[0]].name + ' toward ' + D.locations[goal.target].name + '. ' + goal.hint; }
     }
     goal.complete = !!o.complete;
     goal.evidence = { board: !!o.board, record: !!o.record, route: !!o.route, entered: !!o.entered, revealed: !!o.revealed, response: o.response || null };
@@ -102,7 +102,8 @@
   };
   // Shared evidence survives failure, falling, snapshots and reconnects.
   M.recordOpening = function (p, enc, opt, ctx) {
-    var o = this.w.opening; if (!o || o.complete || enc.kind !== 'loc') return;
+    var o = this.w.opening; if (o && o.complete && enc.kind === 'loc') return this.recordTrail(p, enc, opt, ctx);
+    if (!o || o.complete || enc.kind !== 'loc') return;
     var before = this.openingObjective().id, key = enc.loc + ':' + (opt.openingAs || opt.id), text = '';
     if (key === 'square:board' && !o.board) { o.board = true; text = 'REMOVAL CERTIFICATE — forty years ago. The chapel vestry holds the keeper’s account. As you read, fresh ink writes your name beneath the date. Your summons was a warning, not an invitation.'; }
     if (key === 'chapel:vestry' && !o.record) { o.record = true; text = 'The keeper’s entry survives: “Bell lowered; front entrance flooded. Dry service passage marked on my bell-stone in the graveyard.” Someone meant a later keeper to get back inside. A single wooden knock comes from the direction of the graves.'; }
@@ -118,11 +119,66 @@
       o.response = opt.id; o.complete = true; this.w.flags.opening_active = false;
       this.w.flags.opening_muffled = opt.id === 'muffle';
       ['foyer', 'library', 'bridge', 'wagon', 'nursery'].forEach(function (id) { this.w.locs[id].seen = true; }, this);
+      this.w.trail = { account: false };
+      this.syncTrail();
       text = 'Opening complete: the wider roads are open. The magistrate’s library in the Black Estate holds the transfer agreement. Find who ordered the bell lowered before it finishes learning your name; then follow its trail beneath the Abbey.';
     }
     if (text) { this.say(ctx, text, 'story'); this.addLog('story', text, { p: p.id, loc: enc.loc }); }
     var next = this.openingObjective();
     if (before !== next.id) { this.say(ctx, 'New objective: ' + next.title, 'info'); this.addLog('story', 'New objective: ' + next.title, { loc: enc.loc }); }
+  };
+
+  // ───────────────────────────── the trail: one clear objective from the opening to the Heart ─────────────────────────────
+  // After the village opening the wider Hollow opens, but the party always has a single next lead. Every beat is optional:
+  // the whole map stays open, and a beat completes as soon as anyone reaches its place, by any road.
+  var BEYOND_CRYPT = ['ossuary', 'sealed_crypt', 'tomb', 'sunken_archive', 'flooded_hall', 'nameless_door', 'hidden_passage'];
+  var BEYOND_DOOR = ['stair', 'hall_of_names', 'still_lake', 'forge', 'pit', 'heart_chamber'];
+  M.trailBeat = function () {
+    var w = this.w, t = w.trail || {}, been = function (ids) { return ids.some(function (id) { return w.locs[id] && w.locs[id].visited; }); };
+    if (!t.account && !w.clues.silence_rite && !been(BEYOND_CRYPT.concat(BEYOND_DOOR))) return { id: 'account', step: 1, title: 'Find the magistrate’s account in the Library', context: 'The bell was lowered beneath the Abbey, not destroyed. The tower inscription says the magistrate hid the transfer agreement in his library desk. It may explain how to stop the taking of names.', hint: 'Go to the Forgotten Library in the Black Estate and work the false bottom of the reading desk.', target: 'library', opts: ['falsebottom'] };
+    if (!been(BEYOND_CRYPT.concat(BEYOND_DOOR))) return { id: 'descend', step: 2, title: 'Go down beneath the Abbey', context: 'The agreement names the route the bell was carried: through the Black Market cellar and down the stair-keeper’s steps to the Ossuary under the Abbey.', hint: 'From the Foyer, open the cellar door to the Black Market (pay or pick the lock), then take the cellar stair down to the Ossuary.', target: 'ossuary', opts: [] };
+    if (!been(BEYOND_DOOR)) return { id: 'door', step: 3, title: 'Pass the Nameless Door', context: 'The toll is right below you now. A door without a name stands between you and the stair to the Heart. The names you read in the tower are its answer.', hint: 'Go to the Nameless Door and open it: recite the grave-names, force it, or speak the bell’s name if you know it.', target: 'stair', opts: [] };
+    return { id: 'heart', step: 4, title: 'Reach the Heart of the Hollow', context: 'The stair winds down to the chamber where the bell hangs and learns. Whatever you know now is what you bring to the end.', hint: 'Follow the stair through the Hall of Names and the Forge into the Heart Chamber, then decide the bell’s fate.', target: 'heart_chamber', opts: [] };
+  };
+  // Shortest road the party can see, counting locked and guarded doors as passable (the guidance explains how to open them).
+  M.guidePath = function (from, to) {
+    if (from === to) return [];
+    var prev = {}, q = [from], seen = {}, self = this; seen[from] = true;
+    while (q.length) {
+      var cur = q.shift(), nbs = this.neighbors(cur);
+      for (var i = 0; i < nbs.length; i++) {
+        var nb = nbs[i];
+        if (seen[nb.to] || !this.edgeVisible(nb.e)) continue;
+        var st = this.edgeState(nb.e, cur, false).state;
+        if (st === 'hidden' || st === 'oneway') continue;
+        seen[nb.to] = true; prev[nb.to] = cur;
+        if (nb.to === to) { var out = [], c = to; while (c !== from) { out.unshift(c); c = prev[c]; } return out; }
+        q.push(nb.to);
+      }
+    }
+    return null;
+  };
+  // Reveal the road to the current lead on the map, so the next step is always visible.
+  M.syncTrail = function () {
+    var w = this.w; if (!w.opening || !w.opening.complete) return;
+    w.trail = w.trail || {};
+    var beat = this.trailBeat();
+    if (w.trail.shown === beat.id) return;
+    w.trail.shown = beat.id;
+    var from = this.players.filter(function (x) { return x.status === 'alive'; }).map(function (x) { return x.loc; })[0] || 'library';
+    var route = this.guidePath(from, beat.target) || [];
+    route.concat([beat.target]).forEach(function (id) { if (w.locs[id]) w.locs[id].seen = true; });
+  };
+  M.recordTrail = function (p, enc, opt, ctx) {
+    var w = this.w; w.trail = w.trail || {};
+    var before = this.trailBeat().id;
+    if (enc.loc === 'library' && opt.id === 'falsebottom') { w.trail.account = true; w.flags.trail_agreement = true; }
+    var next = this.trailBeat();
+    if (before !== next.id) {
+      if (before === 'account') this.say(ctx, 'Behind the desk, the transfer agreement: the bell went down through the Black Market cellar to the Ossuary beneath the Abbey.', 'story');
+      this.say(ctx, 'New objective: ' + next.title, 'info'); this.addLog('story', 'New objective: ' + next.title, { loc: enc.loc });
+    }
+    this.syncTrail();
   };
 
   M.autoEquip = function (p, e) {
@@ -570,8 +626,10 @@
     var thread = p.thread; p.thread = false;
     p.prevLoc = from; p.loc = to; p.unnoticed = mode === 'sneak' ? to : null; p.tally.steps++;
     if (!p.visited[to]) { p.visited[to] = w.round; this.gainXp(p, D.xpValues.firstVisit, null); }
+    var beatBefore = w.trail && w.opening && w.opening.complete ? this.trailBeat().id : null;
     L.visited = true; L.seen = true;
     this.markSeen(to);
+    if (beatBefore && this.trailBeat().id !== beatBefore) { this.addLog('story', 'New objective: ' + this.trailBeat().title, { loc: to }); this.syncTrail(); }
     var verb = { step: 'steps', sprint: 'sprints', sneak: 'creeps', follow: 'follows the trail', echo: 'follows an echo', slip: 'slips', forced: 'is carried', unlock: 'steps' }[mode] || 'moves';
     this.addLog('move', p.name + ' ' + verb + ' to ' + loc.name + '.', { p: p.id, loc: to, d: { k: 'move', mode: mode, region: loc.region, from: from } });
     if (p.skills.indexOf('cartographer') >= 0) {
@@ -639,7 +697,7 @@
   M.cmd_unlock = function (p, c) {
     var e = this.requireTurn(p); if (e) return { error: e };
     var t = this.turn, w = this.w;
-    if (t.enc) return { error: 'Close the encounter first.' };
+    if (t.enc && (t.enc.kind !== 'loc' || t.enc.hold)) return { error: 'Close the encounter first.' };
     var nb = this.neighbors(p.loc).find(function (x) { return x.e.key === c.edge; });
     if (!nb || nb.e.type !== 'locked') return { error: 'That is not a locked road beside you.' };
     var st = this.edgeState(nb.e, p.loc);
@@ -650,6 +708,7 @@
     if (!wi.ok) return { error: wi.why + '.' };
     if (way.stat && t.ap < 1) return { error: 'No actions left this turn.' };
     var name = (nb.e.label || 'the way') + ' (' + D.locations[nb.e.a].name + ' ↔ ' + D.locations[nb.e.b].name + ')';
+    if (t.enc) this.closeEnc(p, true);    // like travel, working a door leaves the place's encounter
     if (way.cost) this.payCost(p, way.cost);
     if (way.stat) {
       t.ap -= 1;
@@ -746,7 +805,11 @@
   M.cmd_rest = function (p, c) {
     var e = this.requireTurn(p); if (e) return { error: e };
     var t = this.turn, w = this.w, L = w.locs[p.loc], loc = D.locations[p.loc];
-    if (t.enc) return { error: 'Close the encounter first.' };
+    if (t.enc) {
+      if (t.enc.hold) return { error: 'Decide about your roll first.' };
+      if ((t.enc.kind === 'enemy' || t.enc.kind === 'boss') && !t.enc.over) return { error: 'Close the encounter first.' };
+      this.closeEnc(p, true);
+    }
     if (t.ap < 1) return { error: 'No actions left this turn.' };
     var why = this.restBlock(p);
     if (why) return { error: why };

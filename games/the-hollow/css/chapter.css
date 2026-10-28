@@ -117,3 +117,11 @@ svg.chapter-map .node .ring { fill: url(#disc); }
 @media (prefers-reduced-motion: reduce) { .trailer-tools { transition: none; } .trailer-glow { display: none; } }
 body.reduce-motion .trailer-tools { transition: none; }
 body.reduce-motion .trailer-glow, body.reduced-scares .trailer-glow { display: none; }
+
+.chapter-intro[open]{place-items:safe center;overflow-y:auto}
+@media(max-height:500px){
+ .chapter-intro{padding:16px}
+ .chapter-intro h2{font-size:30px}
+ .chapter-intro p{font-size:1rem;min-height:0}
+ .chapter-intro progress{margin:16px auto}
+}

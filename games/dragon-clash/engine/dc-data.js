@@ -501,13 +501,41 @@
   var TEAM_COLORS = ['#ff4d5a', '#3d8bff', '#3ddc84', '#ffc93d'];
   var TEAM_NAMES = ['Red', 'Blue', 'Green', 'Gold'];
 
+  // Shared by the simulation and online renderer: grow team arenas horizontally,
+  // keeping jump heights and platform heights familiar. Never mutate the duel map.
+  function arenaForMatch(id, fighters) {
+    var base = ARENAS[id] || ARENAS.skyforge, teams = [];
+    (fighters || []).forEach(function (f) {
+      var team = f.team | 0;
+      if (teams.indexOf(team) < 0) teams.push(team);
+    });
+    var n = (fighters || []).length, perTeam = n / 2;
+    if (base.id === 'training' || teams.length !== 2 || (perTeam !== 2 && perTeam !== 3) ||
+        fighters.filter(function (f) { return (f.team | 0) === teams[0]; }).length !== perTeam) return base;
+    var scale = perTeam === 2 ? 1.45 : 1.8;
+    var arena = Object.assign({}, base, {
+      teamScale: scale,
+      size: [base.size[0] * scale, base.size[1]],
+      blast: Object.assign({}, base.blast, { left: base.blast.left * scale, right: base.blast.right * scale }),
+      platforms: base.platforms.map(function (p) { return Object.assign({}, p, { x: p.x * scale, w: p.w * scale }); }),
+    });
+    // Catalog spawn slots alternate sides; match seats are allowed in any order.
+    var ranks = [0, 0];
+    arena.spawns = fighters.map(function (f) {
+      var side = teams.indexOf(f.team | 0), slot = ranks[side]++ * 2 + side;
+      var sp = base.spawns[slot];
+      return [sp[0] * scale, sp[1]];
+    });
+    return arena;
+  }
+
   return {
     TICK_RATE: TICK_RATE, ELEMENTS: ELEMENTS, ELEMENT_ORDER: ELEMENT_ORDER, BEATS: BEATS, BEATS_EDGE: BEATS_EDGE, matchupTier: matchupTier, ELEMENT_CONFIG: ELEMENT_CONFIG,
     elementMultiplier: elementMultiplier, matchup: matchup, INTERACTIONS: INTERACTIONS, STATUS: STATUS,
     PHYSICS: PHYSICS, MOVES: MOVES, pickMove: pickMove, SIGNATURES: SIGNATURES, ABILITIES: ABILITIES,
     GEAR_BUDGET: GEAR_BUDGET, SIZES: SIZES, INSTINCTS: INSTINCTS, GEAR_ABILITIES: GEAR_ABILITIES,
     BUDGET: BUDGET, BODIES: BODIES, MOBILITY: MOBILITY, UPGRADES: UPGRADES, PARTS: PARTS, PRESETS: PRESETS, SPRITES: SPRITES, TINTS: TINTS, SHADES: SHADES,
-    ARENAS: ARENAS, ARENA_ORDER: ARENA_ORDER, FORMATS: FORMATS, TEAM_COLORS: TEAM_COLORS, TEAM_NAMES: TEAM_NAMES,
+    ARENAS: ARENAS, arenaForMatch: arenaForMatch, ARENA_ORDER: ARENA_ORDER, FORMATS: FORMATS, TEAM_COLORS: TEAM_COLORS, TEAM_NAMES: TEAM_NAMES,
     COMBO: COMBO, INPUT_PRIORITY: INPUT_PRIORITY, CANCELS: CANCELS, exVersion: exVersion, frameData: frameData,
   };
 });

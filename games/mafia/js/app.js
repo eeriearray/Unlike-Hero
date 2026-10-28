@@ -67,6 +67,33 @@
   function Icon(props) {
     return html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d=${ICONS[props.name]} /></svg>`;
   }
+  /** Engraved line glyphs for the roles and the big moments, drawn to one grid so they read as a set. */
+  var GLYPHS = {
+    villager: 'M3.5 11 12 4l8.5 7M5.5 9.5V20h13V9.5M10 20v-5.5h4V20',
+    detective: 'M16.5 10.5a6 6 0 1 1-12 0 6 6 0 0 1 12 0zM14.8 14.8l5.7 5.7M7.5 10.5a3 3 0 0 1 3-3',
+    doctor: 'M9.5 3.5h5v6h6v5h-6v6h-5v-6h-6v-5h6z',
+    bodyguard: 'M12 3l7.5 3v5.5c0 4.6-3.1 8.2-7.5 9.5-4.4-1.3-7.5-4.9-7.5-9.5V6zM8.5 11l3.5 2.5 3.5-2.5',
+    vigilante: 'M18.5 12a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0zM12 2.5v5M12 16.5v5M2.5 12h5M16.5 12h5M12 11.6v.8',
+    medium: 'M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12zM15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z',
+    mafioso: 'M2.5 8h15l1.2 1.5h2.8v2.5h-9l-1.2 2.3H8.6L7.4 20H3.8l1.5-8H2.5zM9 14.3c.4 1.4 1.7 2.1 3 1.6',
+    godfather: 'M2.5 16c3 1.8 16 1.8 19 0M5.5 15.5 7 9c.4-1.7 1.9-2.6 3.4-1.9L12 8l1.6-.9c1.5-.7 3 .2 3.4 1.9l1.5 6.5M6.3 12.8c3.8 1 7.6 1 11.4 0',
+    consigliere: 'M20 3.5C12.5 5 8 10 6.5 18M20 3.5c-.5 6.5-5 11-12 13M4 20.5l2.5-2.5M11 12.5h4.5',
+    framer: 'M3.5 3.5h17v17h-17zM7 7h10v10H7zM7 15l3-3.5 2.5 2.5 1.5-1.5 3 2.5',
+    silencer: 'M20.5 11.5c0 4-3.8 7-8.5 7-1.2 0-2.3-.2-3.3-.5L4 19.5l1.3-3.6C4.2 14.7 3.5 13.2 3.5 11.5c0-4 3.8-7 8.5-7s8.5 3 8.5 7zM5 4l14 15',
+    serial_killer: 'M20.5 3.5 9.8 14.2l-2-2L17.6 2.6c1.3-.5 2.5.2 2.9.9zM7.8 12.2 3.5 18.5l2 2 6.3-4.3M8.8 13.2l2 2',
+    jester: 'M4.5 18.5h15M5.2 18.5 3.5 8l5 4L12 5.5l3.5 6.5 5-4-1.7 10.5M2.5 6.5a1 1 0 1 0 2 0 1 1 0 1 0-2 0M11 3.5a1 1 0 1 0 2 0 1 1 0 1 0-2 0M19.5 6.5a1 1 0 1 0 2 0 1 1 0 1 0-2 0',
+    executioner: 'M12 4v16M8.5 20h7M5 7h14M5 7l-2.5 6h5zM19 7l-2.5 6h5zM2.5 13a2.5 2.2 0 0 0 5 0M16.5 13a2.5 2.2 0 0 0 5 0',
+    dream: 'M19.5 14.5A8 8 0 1 1 9.5 4.5a6.5 6.5 0 0 0 10 10z',
+    gavel: 'M13.5 4.5l6 6M10.5 7.5l6 6M12 6l-4.5 4.5 6 6L18 12M10 13 3.5 19.5l1 1L11 14',
+    leaf: 'M5 19C5 10 10 5 20 4c-1 10-6 15-15 15zM5 19l8-8',
+    feather: 'M20 4c-8 0-13 5-13 13v3.5M7 17c5 0 9.5-2.5 11.5-8M9.5 13H15',
+    trophy: 'M7.5 4h9v5a4.5 4.5 0 0 1-9 0zM7.5 6h-3a3 3 0 0 0 3.3 4M16.5 6h3a3 3 0 0 1-3.3 4M12 13.5V17M8.5 20.5h7M10 17h4v3.5h-4z'
+  };
+  function Glyph(props) {
+    var d = GLYPHS[props.name] || GLYPHS.villager;
+    return html`<svg className=${cx('glyph', props.className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth=${props.weight || 1.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d=${d} /></svg>`;
+  }
+  function RoleGlyph(props) { return html`<${Glyph} name=${props.role && props.role.id} className=${props.className} weight=${props.weight} />`; }
   function lookOf(avatar) { return window.MafiaHall3D ? window.MafiaHall3D.lookOf(avatar) : { hat: 'none', css: { coat: '#4a3a30', skin: '#e0ac7e', hat: '#2a2420' } }; }
   /** A player's initial on their character's coat colour. */
   function Mono(props) {
@@ -128,7 +155,7 @@
     var team = E.TEAMS[role.team];
     return html`<div className=${'face front ' + teamClass(role.team)}>
       <div className="team">${team.name}</div>
-      <div className="big">${role.icon}</div>
+      <div className="big"><${RoleGlyph} role=${role} weight="1.1" /></div>
       <h2>${role.name}</h2>
       <p><em>${role.summary}</em></p>
       <p>${role.abilityText}</p>
@@ -156,7 +183,7 @@
     var style = { left: left + 'px', '--ax': Math.max(18, Math.min(w - 18, t.x - left)) + 'px' };
     if (below) style.top = (t.bottom + 12) + 'px'; else style.bottom = (innerHeight - t.top + 12) + 'px';
     return html`<div className=${cx('tip', below ? 'below' : 'above')} key=${t.id} style=${style} role="tooltip">
-      <div className="t-head"><span className="ic">${r.icon}</span><div><b>${r.name}</b><span className=${'team ' + teamClass(r.team)}>${E.TEAMS[r.team].name}</span></div></div>
+      <div className="t-head"><span className="ic"><${RoleGlyph} role=${r} /></span><div><b>${r.name}</b><span className=${'team ' + teamClass(r.team)}>${E.TEAMS[r.team].name}</span></div></div>
       <p>${r.abilityText}</p>
       <p className="goal">Goal: ${d.goal}<br />The Detective sees them as ${r.appearsEvil ? 'Suspicious' : 'Innocent'}.</p>
     </div>`;
@@ -199,11 +226,11 @@
           <h4 className=${teamClass(g[0])} style=${{ margin: '0 0 8px', font: '500 13px var(--f-label)', letterSpacing: '.24em', textTransform: 'uppercase' }}>${g[1]}</h4>
           <div className="guide">${ids.map(function (id) {
             var r = E.ROLES[id];
-            return html`<div className="guide-card" key=${id}><div className="ic">${r.icon}</div><div><b className=${teamClass(r.team)}>${r.name}</b><p>${r.abilityText}</p></div></div>`;
+            return html`<div className=${cx('guide-card', teamClass(r.team))} key=${id}><div className="ic"><${RoleGlyph} role=${r} /></div><div><b className=${teamClass(r.team)}>${r.name}</b><p>${r.abilityText}</p></div></div>`;
           })}</div>
         </div>`;
       })}
-      <p className="muted small" style=${{ margin: 0, fontFamily: 'var(--f-type)' }}>Night order: Silencer and Framer, then Doctor and Bodyguard, then the killers, then the investigators.</p>
+      <p className="muted small" style=${{ margin: 0, fontFamily: 'var(--f-display)', fontStyle: 'italic', fontSize: '14px' }}>Night order: Silencer and Framer, then Doctor and Bodyguard, then the killers, then the investigators.</p>
     </div>`;
   }
 
@@ -217,8 +244,8 @@
     var nameOk = p.name.trim().length > 0;
     return html`<div className="home">
       <div className="hero">
-        <div className="kicker">A game of lies, for 4 to 16</div>
-        <h1>Maf<span>i</span>a</h1>
+        <div className="kicker"><span>A game of lies</span><i></i><span>4 to 16 players</span></div>
+        <h1>Mafia</h1>
         <p>The town sleeps. Someone at this table is lying.</p>
       </div>
       ${props.error ? html`<div className="notice error">${props.error}</div>` : null}
@@ -321,7 +348,7 @@
           </div>
         </section>
         <section className="panel">
-          <div className="panel-head"><h3>Roles in play</h3><span className="muted small" style=${{ fontFamily: 'var(--f-type)' }}>${isHost ? 'Tap to toggle · hover or hold for details' : 'Hover or hold for details'}</span></div>
+          <div className="panel-head"><h3>Roles in play</h3><span className="muted small" style=${{ fontFamily: 'var(--f-display)', fontStyle: 'italic', fontSize: '14px' }}>${isHost ? 'Tap to toggle · hover or hold for details' : 'Hover or hold for details'}</span></div>
           <div className="panel-body role-toggles">
             ${groups.map(function (g) {
               return html`<div key=${g[0]}><h4 className=${teamClass(g[0])}>${g[1]}</h4><div className="chips">
@@ -329,11 +356,11 @@
                   var r = E.ROLES[id], fixed = !r.toggle, on = fixed || st.roles[id];
                   return html`<button key=${id} ...${tips.bind(id)} className=${cx('chip-toggle', on && 'on', fixed && 'fixed', teamClass(r.team))}
                     aria-pressed=${on} aria-label=${r.name + (fixed ? ' (always in play)' : on ? ' (on)' : ' (off)') + '. ' + r.abilityText}
-                    onClick=${function () { if (!fixed) toggleRole(id); }}><span className="ic">${r.icon}</span>${r.name}</button>`;
+                    onClick=${function () { if (!fixed) toggleRole(id); }}><span className="ic"><${RoleGlyph} role=${r} /></span>${r.name}</button>`;
                 })}
               </div></div>`;
             })}
-            <p className="muted small" style=${{ margin: 0, fontFamily: 'var(--f-type)' }}>The storyteller deals to fit the table: Detective and Doctor first, about one Mafia member per four players, neutrals from 6 players (the Serial Killer from 7).</p>
+            <p className="muted small" style=${{ margin: 0, fontFamily: 'var(--f-display)', fontStyle: 'italic', fontSize: '14px' }}>The storyteller deals to fit the table: Detective and Doctor first, about one Mafia member per four players, neutrals from 6 players (the Serial Killer from 7).</p>
           </div>
         </section>
       </div>
@@ -493,7 +520,7 @@
       </div>
       ${active === 'notes' ? html`<${Notebook} view=${view} onRole=${props.onRole} />` : html`
         <div className="chat-log" ref=${logRef} aria-live="polite">
-          ${msgs.length ? null : html`<p className="muted small" style=${{ textAlign: 'center', fontFamily: 'var(--f-type)' }}>${active === 'mafia' ? 'Only the family can read this.' : active === 'dead' ? 'Only the dead (and the Medium) can read this.' : 'No messages yet.'}</p>`}
+          ${msgs.length ? null : html`<p className="muted small" style=${{ textAlign: 'center', fontFamily: 'var(--f-display)', fontStyle: 'italic', fontSize: '14px' }}>${active === 'mafia' ? 'Only the family can read this.' : active === 'dead' ? 'Only the dead (and the Medium) can read this.' : 'No messages yet.'}</p>`}
           ${msgs.map(function (m) {
             if (m.system) return html`<div key=${m.id} className=${cx('msg', m.kind === 'story' ? 'story' : 'system')}>${m.text}</div>`;
             return html`<div key=${m.id} className=${cx('msg', m.from === me.id && 'mine')}><${Mono} avatar=${m.avatar} name=${m.name} /><div><div className="who">${m.name}</div><div className="txt">${m.text}</div></div></div>`;
@@ -516,10 +543,10 @@
     var dead = view.players.filter(function (p) { return !p.alive; });
     return html`<div className="notebook">
       ${me.role ? html`<div className="log-entry my-role" onClick=${props.onRole} title="Show my card">
-        <span className="ic">${me.role.icon}</span><div><b className=${teamClass(me.role.team)}>${me.role.name}</b><div className="small">${me.role.goal}</div></div></div>` : null}
+        <span className=${cx('ic', teamClass(me.role.team))}><${RoleGlyph} role=${me.role} /></span><div><b className=${teamClass(me.role.team)}>${me.role.name}</b><div className="small">${me.role.goal}</div></div></div>` : null}
       ${me.log.length ? me.log.slice().reverse().map(function (l, i) {
         return html`<div key=${i} className=${cx('log-entry', l.kind)}><span className="when">${l.phase === 'roles' ? 'Before night one' : 'Day ' + l.day}</span>${l.text}</div>`;
-      }) : html`<p className="muted small" style=${{ fontFamily: 'var(--f-type)' }}>Your private results and secrets will be written here.</p>`}
+      }) : html`<p className="muted small" style=${{ fontFamily: 'var(--f-display)', fontStyle: 'italic', fontSize: '14px' }}>Your private results and secrets will be written here.</p>`}
       ${dead.length ? html`<div className="graveyard"><div className="when">The graveyard</div>
         ${dead.map(function (p) { return html`<div key=${p.id}>✝ ${p.name} — ${p.role ? p.role.name : 'role unknown'} <span className="muted">(${p.deathCause === 'lynch' ? 'hanged' : 'killed'}, day ${p.deathDay})</span></div>`; })}
       </div>` : null}
@@ -566,9 +593,9 @@
         </div>
         ${flipped ? html`<div className="stack" style=${{ justifyItems: 'center' }}>
           ${me.ready
-            ? html`<div className="muted" style=${{ fontFamily: 'var(--f-type)' }}>Waiting for the others… ${ready} of ${view.players.length} ready</div>`
+            ? html`<div className="muted" style=${{ fontFamily: 'var(--f-display)', fontStyle: 'italic', fontSize: '14px' }}>Waiting for the others… ${ready} of ${view.players.length} ready</div>`
             : html`<button className="btn gold big" onClick=${function () { A.play('select'); props.send({ type: 'ready' }); }}>I'm ready — let night fall</button>`}
-          <p className="muted small" style=${{ margin: 0, fontFamily: 'var(--f-type)' }}>Keep your screen to yourself. Your card is in the Notebook if you forget.</p>
+          <p className="muted small" style=${{ margin: 0, fontFamily: 'var(--f-display)', fontStyle: 'italic', fontSize: '14px' }}>Keep your screen to yourself. Your card is in the Notebook if you forget.</p>
         </div>` : null}
       </div>
     </div>`;
@@ -629,7 +656,7 @@
       });
     }
     var kill = action.key === 'kill';
-    var icon = kill ? '🔫' : me.role.icon;
+    var icon = html`<${Glyph} name=${kill ? 'mafioso' : me.role.id} />`;
     var target = byId(view, sel);
     return html`<div className="overlay clear">
       <button className="icon-btn close" aria-label="Minimize" onClick=${props.onClose}>▾</button>
@@ -661,7 +688,7 @@
         <div className="kicker muted">Night ${view.day}</div>
         <h2>You are asleep</h2>
         <p className="muted small" style=${{ margin: 0, maxWidth: '440px' }}>You have no night action. Tap around anyway — in the same room, it keeps people from guessing who has a role. Nothing you pick here has any effect.</p>
-        <${Wheel} view=${view} targets=${targets} ui="dream" icon="💤" verb="Dream" selected=${sel} onPick=${setSel} />
+        <${Wheel} view=${view} targets=${targets} ui="dream" icon=${html`<${Glyph} name="dream" />`} verb="Dream" selected=${sel} onPick=${setSel} />
         <button className="btn gold" onClick=${function () { A.play('confirm'); props.onClose(); }}>${sel ? 'Sweet dreams' : 'Back to sleep'}</button>
       </div>
     </div>`;
@@ -736,16 +763,16 @@
     }, []);
     if (v.noTrial) {
       return html`<div className="overlay clear" onClick=${props.onClose}><div className="verdict">
-        <div className="dove">🍂</div><h2>No trial today</h2><p className="muted">${v.text}</p></div></div>`;
+        <div className="dove"><${Glyph} name="leaf" weight="1" /></div><h2>No trial today</h2><p className="muted">${v.text}</p></div></div>`;
     }
     function names(ids) { return ids.map(function (id) { var p = byId(view, id); return p ? p.name : '?'; }).join(', ') || 'nobody'; }
     return html`<div className="overlay" onClick=${props.onClose}><div className="verdict">
-      <div className="gavel">🔨</div>
+      <div className="gavel"><${Glyph} name="gavel" weight="1" /></div>
       <div className="tally"><span style=${{ color: 'var(--mafia)' }}>Guilty ${v.guilty.length}</span><span style=${{ color: 'var(--ok)' }}>Innocent ${v.innocent.length}</span></div>
-      <div className=${v.executed ? 'hanged' : 'dove'}>${v.executed ? html`<${LookFigure} avatar=${v.avatar} />` : '🕊️'}</div>
+      <div className=${v.executed ? 'hanged' : 'dove'}>${v.executed ? html`<${LookFigure} avatar=${v.avatar} />` : html`<${Glyph} name="feather" weight="1" />`}</div>
       <h2>${v.executed ? v.name + ' is hanged' : v.name + ' walks free'}</h2>
       ${v.executed ? (v.role
-        ? html`<div className=${cx('pill', teamClass(v.role.team))} style=${{ fontSize: '15px', padding: '8px 16px', animation: 'pop .6s 2s both' }}>${v.role.icon} ${v.role.name}</div>`
+        ? html`<div className=${cx('pill', teamClass(v.role.team))} style=${{ fontSize: '15px', padding: '8px 16px', animation: 'pop .6s 2s both' }}><${RoleGlyph} role=${v.role} /> ${v.role.name}</div>`
         : html`<div className="muted">Their role goes with them to the grave.</div>`) : null}
       ${v.jester ? html`<div className="notice" style=${{ animation: 'pop .6s 2.8s both' }}>The Jester wanted this. They win!</div>` : null}
       <p className="muted small">${v.text}</p>
@@ -765,7 +792,7 @@
     }, []);
     var stats = {}; (view.stats || []).forEach(function (s) { stats[s.id] = s; });
     var a = w.awards || {};
-    var awards = [['🏆', 'Most valuable', a.mvp, 'points'], ['👉', 'Most accused', a.mostAccused, 'votes'], ['🔪', 'Deadliest', a.deadliest, 'kills'], ['🛡️', 'Guardian angel', a.guardian, 'saves']]
+    var awards = [['trophy', 'Most valuable', a.mvp, 'points'], ['detective', 'Most accused', a.mostAccused, 'votes'], ['serial_killer', 'Deadliest', a.deadliest, 'kills'], ['bodyguard', 'Guardian angel', a.guardian, 'saves']]
       .filter(function (x) { return x[2]; });
     var sorted = view.players.slice().sort(function (x, y) { return (stats[y.id] ? stats[y.id].score : 0) - (stats[x.id] ? stats[x.id].score : 0); });
     return html`<div className="overlay">
@@ -777,7 +804,7 @@
         ${w.neutralWins.length ? html`<div className="notice">${w.neutralWins.map(function (nw) { var p = byId(view, nw.id); return html`<div key=${nw.id}>${p ? p.name : '?'} ${nw.reason}</div>`; })}</div>` : null}
         <div className="awards">${awards.map(function (x, i) {
           var p = byId(view, x[2].id);
-          return html`<div className="award" key=${x[1]} style=${{ animationDelay: (0.2 + i * 0.15) + 's' }}><div className="ic">${x[0]}</div><div className="t">${x[1]}</div><div className="n">${p ? p.name : '?'}</div><div className="small">${x[2].value} ${x[3]}</div></div>`;
+          return html`<div className="award" key=${x[1]} style=${{ animationDelay: (0.2 + i * 0.15) + 's' }}><div className="ic"><${Glyph} name=${x[0]} /></div><div className="t">${x[1]}</div><div className="n">${p ? p.name : '?'}</div><div className="small">${x[2].value} ${x[3]}</div></div>`;
         })}</div>
         <div className="panel table-wrap">
           <table className="results">
@@ -787,19 +814,19 @@
               var won = w.winners.indexOf(p.id) >= 0;
               return html`<tr key=${p.id} className=${won ? 'win' : ''}>
                 <td><span className="row" style=${{ gap: '8px', flexWrap: 'nowrap' }}><${Mono} avatar=${p.avatar} name=${p.name} />${p.name}${won ? ' ★' : ''}</span></td>
-                <td className=${p.role && teamClass(p.role.team)}>${st.originalRole ? st.originalRole.name + ' → ' : ''}${p.role ? p.role.icon + ' ' + p.role.name : '?'}</td>
+                <td className=${p.role && teamClass(p.role.team)}>${st.originalRole ? st.originalRole.name + ' → ' : ''}${p.role ? html`<span className="role-cell"><${RoleGlyph} role=${p.role} />${p.role.name}</span>` : '?'}</td>
                 <td>${p.alive ? 'Survived' : (p.deathCause === 'lynch' ? 'Hanged' : 'Killed') + ', day ' + p.deathDay}</td>
                 <td>${st.kills || 0}</td><td>${st.votesReceived || 0}</td><td><b>${st.score || 0}</b></td></tr>`;
             })}</tbody>
           </table>
         </div>
         <div className="row" style=${{ justifyContent: 'center' }}>
-          ${me.isHost ? html`<button className="btn gold big" onClick=${function () { A.play('click'); props.send({ type: 'lobby' }); }}>Play again</button>` : html`<span className="muted" style=${{ fontFamily: 'var(--f-type)' }}>Waiting for the host to start another round…</span>`}
+          ${me.isHost ? html`<button className="btn gold big" onClick=${function () { A.play('click'); props.send({ type: 'lobby' }); }}>Play again</button>` : html`<span className="muted" style=${{ fontFamily: 'var(--f-display)', fontStyle: 'italic', fontSize: '14px' }}>Waiting for the host to start another round…</span>`}
           <button className="btn" onClick=${props.onClose}>View the table</button>
           <button className="btn ghost" onClick=${props.onLeave}>Leave</button>
         </div>
         ${view.timeline && view.timeline.length ? html`<details className="panel" style=${{ width: '100%', textAlign: 'left' }}><summary className="panel-head" style=${{ cursor: 'pointer' }}><h3>How it happened</h3></summary>
-          <div className="panel-body small" style=${{ fontFamily: 'var(--f-type)' }}>${view.timeline.map(function (t, i) { return html`<div key=${i}><span className="muted">Day ${t.day}</span> — ${t.text}</div>`; })}</div></details>` : null}
+          <div className="panel-body small" style=${{ fontFamily: 'var(--f-display)', fontStyle: 'italic', fontSize: '14px' }}>${view.timeline.map(function (t, i) { return html`<div key=${i}><span className="muted">Day ${t.day}</span> — ${t.text}</div>`; })}</div></details>` : null}
       </div>
     </div>`;
   }
@@ -816,7 +843,7 @@
         if (!me.alive) return html`<div className="actions">${hint('You are a ghost. Whisper with the dead in the Graveyard chat.')}</div>`;
         if (me.actions && me.actions.length) {
           return html`<div className="actions">
-            <button className=${cx('btn', me.nightDone ? '' : 'gold')} onClick=${props.openNight}>${me.nightDone ? html`<${Icon} name="check" /> Locked in · change` : html`${me.role.icon} Choose your night action`}</button></div>`;
+            <button className=${cx('btn', me.nightDone ? '' : 'gold')} onClick=${props.openNight}>${me.nightDone ? html`<${Icon} name="check" /> Locked in · change` : html`<${RoleGlyph} role=${me.role} /> Choose your night action`}</button></div>`;
         }
         return html`<div className="actions">${hint('You sleep through the night.')}<button className="btn small ghost" onClick=${props.openNight}>Dream…</button></div>`;
       case 'dawn':
@@ -909,7 +936,7 @@
       <${PhaseCard} view=${view} left=${props.left} />
       <div className="hud-caption" aria-live="polite"><span><${Typewriter} text=${view.announcement} /></span></div>
       ${me.role ? html`<button className="hud-role" onClick=${function () { setRoleOpen(true); }} aria-label=${'Your role: ' + me.role.name}>
-        <span className="ic">${me.role.icon}</span><div><b className=${teamClass(me.role.team)}>${me.role.name}</b><span>${me.alive ? 'Your secret role' : 'You are dead'}</span></div></button>` : null}
+        <span className=${cx('ic', teamClass(me.role.team))}><${RoleGlyph} role=${me.role} /></span><div><b className=${teamClass(me.role.team)}>${me.role.name}</b><span>${me.alive ? 'Your secret role' : 'You are dead'}</span></div></button>` : null}
       <div className="hud-dock hud-ghostable">
         <${ActionStrip} view=${view} send=${send}
           openNight=${function () { open('night'); }} openDawn=${function () { open('dawn'); }} openVerdict=${function () { open('verdict'); }}

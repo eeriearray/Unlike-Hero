@@ -353,34 +353,35 @@
   // ─────────────── settings & remapping ───────────────
   App.screens.settings = {
     enter: function () {
-      var waiting = null, unKey = null;
+      var waiting = null, unKey = null, bindingError = null;
       function render() {
         var b = Input.binds();
         var conf = Input.conflicts(['kb1', 'kb2']);
         var row = function (a) {
           return '<tr><td>' + Input.LABELS[a] + '</td>' + ['kb1', 'kb2'].map(function (d) {
             var w = waiting && waiting.dev === d && waiting.a === a;
-            return '<td><button class="icon-btn ' + (w ? 'wait' : '') + '" data-act="bind" data-dev="' + d + '" data-a="' + a + '">' + (w ? 'press a key…' : b[d][a].map(Input.keyName).join(' / ') || '—') + '</button></td>';
+            return '<td><button class="icon-btn ' + (w ? 'wait' : '') + '" data-act="bind" data-dev="' + d + '" data-a="' + a + '" aria-label="' + Input.DEVICE_NAMES[d] + ': ' + esc(Input.LABELS[a]) + '">' + (w ? 'press a key…' : b[d][a].map(Input.keyName).join(' / ') || '—') + '</button></td>';
           }).join('') + '</tr>';
         };
         ui.innerHTML =
           '<div class="screen"><div class="topbar"><button class="btn ghost small" data-act="back">← Back</button><h1>Controls & settings</h1></div>' +
-          '<div class="howto">' +
+          '<div class="settings-grid">' +
           '<div class="panel"><h3>Sound</h3>' +
           slider('Music', 'music', App.settings.music) + slider('Effects', 'sfx', App.settings.sfx) + slider('Announcer', 'voice', App.settings.voice) + slider('Interface', 'ui', App.settings.ui) +
           check('captions', 'Subtitles: show what the announcer says') +
           '</div>' +
           '<div class="panel"><h3>Screen and accessibility</h3>' +
           slider('Screen shake', 'shake', App.settings.shake) + slider('Camera zoom', 'camZoom', App.settings.camZoom) +
-          '<label class="row"><span style="width:110px">Effects</span><select class="sel" data-sel="fx"><option value="high"' + (App.settings.fx !== 'low' ? ' selected' : '') + '>High</option><option value="low"' + (App.settings.fx === 'low' ? ' selected' : '') + '>Low (fewer particles, faster)</option></select></label>' +
-          '<label class="row"><input type="checkbox" data-set="flashes"' + (App.settings.flashes === false ? '' : ' checked') + '> Bright flashes (off: lightning, KO and super flashes are dimmed)</label>' +
+          '<label class="setting-value"><span>Effects</span><select class="sel" data-sel="fx"><option value="high"' + (App.settings.fx !== 'low' ? ' selected' : '') + '>High</option><option value="low"' + (App.settings.fx === 'low' ? ' selected' : '') + '>Low (fewer particles, faster)</option></select></label>' +
+          '<label class="setting-check"><input type="checkbox" data-set="flashes"' + (App.settings.flashes === false ? '' : ' checked') + '><span>Bright flashes (off: lightning, KO and super flashes are dimmed)</span></label>' +
           check('callouts', 'Callouts: COUNTER, PARRY, combo counter and the like') +
           check('tapJump', 'Up also jumps (tap jump)') +
           check('debug', 'Developer overlay: hitboxes, hurtboxes, cooldowns, launch paths (toggle in a match with <kbd>`</kbd>)') +
           '</div>' +
-          '<div class="panel"><h3>Keyboard layouts</h3><p class="dim">Click a key to change it. Two players can share one keyboard: Keyboard 1 on the left, Keyboard 2 on the arrows and numpad.</p>' +
-          '<table class="remap movelist"><tr class="dim"><td></td><td>Keyboard 1</td><td>Keyboard 2</td></tr>' + Input.ACTIONS.map(row).join('') + '</table>' +
-          (conf.length ? '<p class="errors">Used twice: ' + conf.map(esc).join(', ') + '</p>' : '<p class="ok-text">No shared keys between the two layouts.</p>') +
+          '<div class="panel"><h3>Keyboard layouts</h3><p class="dim">Click a key to change it. Each key can control only one action within a keyboard layout. Keyboard 1 and Keyboard 2 can use the same keys. Free a key by remapping its current action first.</p>' +
+          (bindingError ? '<p class="errors" role="alert">' + esc(bindingError) + '</p>' : '') +
+          '<table class="remap movelist keyboard-remap"><thead><tr class="dim"><th scope="col">Action</th><th scope="col">Keyboard 1</th><th scope="col">Keyboard 2</th></tr></thead><tbody>' + Input.ACTIONS.map(row).join('') + '</tbody></table>' +
+          (conf.length ? '<p class="errors">Used twice: ' + conf.map(esc).join(', ') + '</p>' : '<p class="ok-text">No duplicate keys within either layout.</p>') +
           '<div class="row"><button class="btn ghost small" data-act="reset" data-dev="kb1">Reset Keyboard 1</button><button class="btn ghost small" data-act="reset" data-dev="kb2">Reset Keyboard 2</button></div>' +
           '</div>' +
           '<div class="panel"><h3>Gamepad buttons</h3><p class="dim">Movement is the left stick or d-pad; Start pauses. Click an action, then press a button on any pad. Connected now: ' + (Input.connectedPads().length || 'none (press a button to wake one)') + '.</p>' +
@@ -396,26 +397,26 @@
         ui.querySelectorAll('input[type=checkbox]').forEach(function (c) { c.addEventListener('change', function () { App.settings[c.dataset.set] = c.checked; App.saveSettings(); }); });
         ui.querySelectorAll('select[data-sel]').forEach(function (c) { c.addEventListener('change', function () { App.settings[c.dataset.sel] = c.value; App.saveSettings(); }); });
       }
-      function check(key, label) { return '<label class="row"><input type="checkbox" data-set="' + key + '"' + (App.settings[key] ? ' checked' : '') + '> ' + label + '</label>'; }
+      function check(key, label) { return '<label class="setting-check"><input type="checkbox" data-set="' + key + '"' + (App.settings[key] ? ' checked' : '') + '><span>' + label + '</span></label>'; }
       // Gamepad remapping: poll the pads while waiting for a button
       var padWait = null, padTimer = null;
       function pollPad() {
         var b = Input.padPressed();
-        if (padWait && b >= 0 && b !== 9) { Input.setPadBinding(padWait, [b]); store.set('padBinds', Input.padBinds()); padWait = null; render(); }
+        if (padWait && b >= 0) { bindingError = Input.setPadBinding(padWait, [b]); store.set('padBinds', Input.padBinds()); padWait = null; render(); }
         if (padWait) padTimer = requestAnimationFrame(pollPad);
       }
-      function slider(label, key, v) { return '<label class="row"><span style="width:110px">' + label + '</span><input type="range" min="0" max="1" step="0.05" value="' + v + '" data-set="' + key + '" class="grow"></label>'; }
+      function slider(label, key, v) { return '<label class="setting-value"><span>' + label + '</span><input type="range" min="0" max="1" step="0.05" value="' + v + '" data-set="' + key + '" class="grow"></label>'; }
       App.on(ui, {
         back: function () { App.show('title'); },
-        bind: function (el) { waiting = { dev: el.dataset.dev, a: el.dataset.a }; render(); },
+        bind: function (el) { bindingError = null; waiting = { dev: el.dataset.dev, a: el.dataset.a }; render(); },
         reset: function (el) { Input.reset(el.dataset.dev); store.set('binds', Input.binds()); render(); },
-        padbind: function (el) { padWait = el.dataset.a; Input.padPressed(); render(); cancelAnimationFrame(padTimer); padTimer = requestAnimationFrame(pollPad); },
+        padbind: function (el) { bindingError = null; padWait = el.dataset.a; Input.padPressed(); render(); cancelAnimationFrame(padTimer); padTimer = requestAnimationFrame(pollPad); },
         padreset: function () { Input.resetPad(); store.set('padBinds', Input.padBinds()); padWait = null; render(); },
       });
       unKey = Input.onKey(function (e) {
         if (!waiting) return;
         e.preventDefault();
-        if (e.code !== 'Escape') { Input.setBinding(waiting.dev, waiting.a, [e.code]); store.set('binds', Input.binds()); }
+        if (e.code !== 'Escape') { bindingError = Input.setBinding(waiting.dev, waiting.a, [e.code]); store.set('binds', Input.binds()); }
         waiting = null; render();
       });
       this.leave = function () { if (unKey) unKey(); cancelAnimationFrame(padTimer); };

@@ -6,7 +6,7 @@
 //     multiplayer works with no extra setup.
 //   • loads optional per-game servers: a game whose game.json has "server": "server/index.mjs"
 //     gets that module attached to this HTTP server (see docs/ARCHITECTURE.md, "Game servers").
-// Run:  npm install  &&  npm start        (PORT=8080 by default)
+// Run:  npm install  &&  npm start        (PORT=8081 by default)
 // Rooms are in memory and disappear when everyone leaves. Nothing is stored.
 import { createServer } from 'node:http';
 import { networkInterfaces, platform } from 'node:os';
@@ -18,13 +18,11 @@ import { WebSocketServer } from 'ws';
 import { gzipSync } from 'node:zlib';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const PORT = Number(process.env.PORT) || 8080;
+const PORT = Number(process.env.PORT) || 8081;
 const MAX_MSG = 16 * 1024;          // bytes per message
 const MAX_PER_ROOM = 16;            // sockets per room
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.wav': 'audio/wav', '.webm': 'audio/webm', '.mp4': 'video/mp4', '.m4a': 'audio/mp4', '.woff2': 'font/woff2', '.glb': 'model/gltf-binary', '.gltf': 'model/gltf+json', '.md': 'text/markdown; charset=utf-8', '.txt': 'text/plain; charset=utf-8' };
-// Code revalidates on every load (a 304 when unchanged), so edits show up at once; art, sound and models are cached for an
-// hour. Text is gzipped once per file version and kept in memory. Over a slow Wi-Fi this is most of a page's load time.
-const LONG_CACHE = /\.(png|jpe?g|webp|svg|mp3|ogg|wav|webm|mp4|m4a|woff2|glb|gltf)$/i;
+// Every asset revalidates on refresh (a 304 when unchanged), so local edits show up immediately. Text is gzipped once per file version and kept in memory. Over a slow Wi-Fi this is most of a page's load time.
 const COMPRESS = /\.(html|m?js|css|json|svg|md|txt|gltf)$/i;
 const gzCache = new Map();
 const BLOCKED = /(^|\/)(node_modules|server|tools|\.git)(\/|$)|(^|\/)\.|^package(-lock)?\.json$/;
@@ -35,7 +33,10 @@ const server = createServer(async (req, res) => {
     let path = decodeURIComponent(url.pathname);
     if (path === '/shared/sdk/hub-config.js') {
       res.writeHead(200, { 'content-type': TYPES['.js'], 'cache-control': 'no-store' });
-      res.end("window.HUB_CONFIG = { relayUrl: (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/relay' };\n");
+      const address = lanAddresses()[0];
+      const ipv6 = address ? '' : ipv6Addresses()[0];
+      const phoneHubUrl = address ? `http://${address}:${PORT}/` : ipv6 ? `http://[${ipv6}]:${PORT}/` : null;
+      res.end("window.HUB_CONFIG = { relayUrl: (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/relay', phoneHubUrl: " + JSON.stringify(phoneHubUrl) + " };\n");
       return;
     }
     if (path.endsWith('/')) path += 'index.html';
@@ -46,7 +47,7 @@ const server = createServer(async (req, res) => {
     if (!info) { res.writeHead(404).end('Not found'); return; }
     if (info.isDirectory()) { res.writeHead(301, { location: path + '/' }).end(); return; }
     const etag = `"${info.size.toString(36)}-${Math.floor(info.mtimeMs).toString(36)}"`;
-    const head = { 'content-type': TYPES[extname(file).toLowerCase()] || 'application/octet-stream', 'cache-control': LONG_CACHE.test(file) ? 'public, max-age=3600' : 'no-cache',
+    const head = { 'content-type': TYPES[extname(file).toLowerCase()] || 'application/octet-stream', 'cache-control': 'no-cache',
                    etag, 'last-modified': info.mtime.toUTCString(), 'accept-ranges': 'bytes', vary: 'accept-encoding' };
     if (req.headers['if-none-match'] === etag) { res.writeHead(304, head).end(); return; }
     const range = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '');
@@ -130,9 +131,7 @@ server.listen(PORT, () => {
   console.log(`Game hub on http://localhost:${PORT}  (relay at ws://localhost:${PORT}/relay)`);
   // Print the exact address friends on the same Wi-Fi or hotspot should open. Skips addresses phones can't
   // reach: link-local 169.254.x and the 192.0.0.x a Mac gets on a USB/mobile link with no shared network.
-  const lan = Object.values(networkInterfaces()).flat()
-    .filter(a => a && (a.family === 'IPv4' || a.family === 4) && !a.internal && !/^(169\.254\.|192\.0\.0\.)/.test(a.address))
-    .map(a => a.address);
+  const lan = lanAddresses();
   // Some phone hotspots (an iPhone sharing an IPv6-only carrier like Jio) give no IPv4 address at all: offer the
   // Wi-Fi's IPv6 address instead. It changes whenever the hotspot reconnects, so Macs also print their .local name.
   const lan6 = lan.length ? [] : ipv6Addresses().map(ip => `[${ip}]`);
@@ -148,6 +147,16 @@ server.listen(PORT, () => {
     console.log('Connect it to the same Wi-Fi or phone hotspot as your friends (over Wi-Fi, not a USB cable), then restart: npm start\n');
   }
 });
+
+/** Prefer Wi-Fi/Ethernet adapters over tunnels when sharing with nearby phones. */
+function lanAddresses() {
+  return Object.entries(networkInterfaces())
+    .filter(([name]) => !/^(utun|awdl|llw|lo|docker|br-|veth)/.test(name))
+    .sort(([a], [b]) => Number(!/^(en|eth|wlan|wlp)/.test(a)) - Number(!/^(en|eth|wlan|wlp)/.test(b)))
+    .flatMap(([, addresses]) => addresses || [])
+    .filter(a => (a.family === 'IPv4' || a.family === 4) && !a.internal && !/^(169\.254\.|192\.0\.0\.)/.test(a.address))
+    .map(a => a.address);
+}
 
 /** This Mac's Bonjour name (name.local), which Apple devices on the same network resolve whatever its address. */
 function localName() {
@@ -167,4 +176,19 @@ function ipv6Addresses() {
   }
   return Object.entries(networkInterfaces()).filter(([n]) => !/^(utun|awdl|llw|lo|docker|br-|veth)/.test(n)).flatMap(([, l]) => l || [])
     .filter(a => (a.family === 'IPv6' || a.family === 6) && !a.internal && /^[23]/.test(a.address)).map(a => a.address).slice(0, 1);
+}
+
+// Retired local preview URLs lead to the one canonical hub, never a second game server.
+if (PORT === 8081) {
+  for (const oldPort of [8080, 8084, 8090]) for (const address of ['127.0.0.1', '::1']) {
+    const redirect = createServer((req, res) => {
+      const url = new URL(req.url, 'http://localhost');
+      res.writeHead(307, { location: `http://localhost:8081${url.pathname}${url.search}`, 'cache-control': 'no-store' });
+      res.end('The main game hub is now at http://localhost:8081');
+    });
+    redirect.on('error', error => console.warn(`Legacy redirect ${oldPort}: ${error.message}`));
+    redirect.listen(oldPort, address);
+    server.once('close', () => redirect.close());
+  }
+  console.log(`Canonical hub: http://localhost:8081\nSource checkout: ${root}`);
 }

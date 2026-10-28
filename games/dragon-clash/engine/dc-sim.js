@@ -71,7 +71,7 @@
   // ─────────────────────────────────── Sim ───────────────────────────────────
   function Sim(opts) {
     opts = opts || {};
-    this.arena = D.ARENAS[opts.arena] || D.ARENAS.skyforge;
+    this.arena = D.arenaForMatch(opts.arena, opts.fighters);
     this.stocks = clamp(opts.stocks | 0 || 3, 1, 9);
     this.timeLimit = opts.timeLimit | 0;          // ticks, 0 = none
     this.friendlyFire = !!opts.friendlyFire;
@@ -159,6 +159,8 @@
     if (this.result) return;
     this.tick++;
     if (this.freeze > 0) {
+      // Capture taps during the cinematic without advancing gameplay or buffer timers.
+      for (var j = 0; j < this.fighters.length; j++) this.captureInput(this.fighters[j], (inputs && inputs[j]) || {}, false);
       // The super's cinematic: nobody moves, no timers run, then the move plays out
       if (--this.freeze === 0) this.emit({ type: 'superGo', f: this.freezeBy });
       return;
@@ -174,22 +176,29 @@
     this.checkEnd();
   };
 
-  S.updateFighter = function (f, input) {
+  S.captureInput = function (f, input, age) {
     var held = input.held | 0;
     var pressed = (input.pressed | 0) | (held & ~f.prevHeld & (ACTIONS | BTN.up));
     if (!f.tapJump) pressed &= ~BTN.up;
     f.prevHeld = held;
     f.held = held;
 
+    if (f.state === 'out' || f.state === 'dead') return 0;
+    // Input buffer: remember action presses for a few ticks so they come out as soon as the dragon can act.
+    // Presses on the same tick arrive together; INPUT_PRIORITY decides between them when they are used.
+    if (pressed & (ACTIONS | BTN.up)) f.buf = { bits: pressed & (ACTIONS | BTN.up), t: P.inputBuffer, held: held };
+    else if (age && f.buf && --f.buf.t <= 0) f.buf = null;
+    return pressed;
+  };
+
+  S.updateFighter = function (f, input) {
+    var held = input.held | 0;
+    var pressed = this.captureInput(f, input, f.hitlag <= 0);
     if (f.state === 'out') return;
     if (f.state === 'dead') {
       if (--f.respawnT <= 0) this.respawn(f);
       return;
     }
-    // Input buffer: remember action presses for a few ticks so they come out as soon as the dragon can act.
-    // Presses on the same tick arrive together; INPUT_PRIORITY decides between them when they are used.
-    if (pressed & (ACTIONS | BTN.up)) f.buf = { bits: pressed & (ACTIONS | BTN.up), t: P.inputBuffer, held: held };
-    else if (f.buf && --f.buf.t <= 0) f.buf = null;
     if (pressed & BTN.dodge) f.techWindow = 10;
     else if (f.techWindow > 0) f.techWindow--;
     // Parry window opens on a fresh Guard press; pressing again too soon gives none (mashing never parries)
@@ -1371,8 +1380,10 @@
   S.respawn = function (f) {
     this.placeAtSpawn(f, f.i);
     var main = this.arena.platforms[0];
-    f.x = clamp(main.x + main.w / 2 + (f.i % 2 ? 60 : -60) * (1 + (f.i >> 1)), main.x + 40, main.x + main.w - 40);
-    f.y = main.y; f.plat = 0; f.grounded = true;
+    if (!this.arena.teamScale) {
+      f.x = clamp(main.x + main.w / 2 + (f.i % 2 ? 60 : -60) * (1 + (f.i >> 1)), main.x + 40, main.x + main.w - 40);
+      f.y = main.y; f.plat = 0; f.grounded = true;
+    }
     f.dmg = this.training && this.training.keepDamage ? f.dmg : 0;
     f.invuln = P.respawnInvuln;
     f.lastHitBy = -1;
