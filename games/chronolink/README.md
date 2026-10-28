@@ -12,8 +12,10 @@ Movement is continuous and camera-relative; the 1924 Anchor walks at 2.3 tiles/s
 ## Play
 
 - **One keyboard (default):** split screen. Anchor: `WASD`, `E`, `Q` ping. Echo: arrows, `Enter`, `F` LIDAR, `Right Shift` ping.
-- **Two tabs:** open the page again in a second tab. They link over `BroadcastChannel('chronolink-sync')`; tab 1 becomes the
-  Anchor, tab 2 the Echo, and each tab uses `E` / `F` / `Q` for its own chrononaut. Closing one tab hands both players back.
+- **Two windows:** open the page again in a second window and press Begin in both. Visible, started windows link over
+  `BroadcastChannel('chronolink-sync')`: the first becomes the Anchor, the second the Echo, and a `LINKED` tag shows each
+  window's role. A window that is closed or hidden for 3 seconds hands both players back, and **Play both here** in the
+  menu unlinks on purpose. A background tab never links, so a forgotten copy can't take the Echo away.
 - **Two devices:** from the hub, press **Online** in both and enter the same 4-letter code (uses the hub relay).
 - `Tab` switches split and solo view. `?level=N` or `#N` opens a level; the jump box also accepts any text as a custom seed.
 

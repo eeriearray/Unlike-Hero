@@ -35,6 +35,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--neon);outline-o
   backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:background .2s,color .2s}
 .ico:hover{background:rgba(0,0,0,.5);color:#fff}
 .ico svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#linkTag{position:absolute;left:max(22px,env(safe-area-inset-left,0px));top:60px;z-index:4;font:11px/1 var(--f-mono);letter-spacing:.14em;padding:5px 9px;border-radius:999px;background:rgba(0,0,0,.35);pointer-events:none}
+#linkTag.past{color:#f0d68a;box-shadow:inset 0 0 0 1px rgba(212,175,55,.5)} #linkTag.future{color:#7ff5dc;box-shadow:inset 0 0 0 1px rgba(0,245,212,.45)}
 #soundBtn .slash{display:none} #soundBtn.off .slash{display:inline} #soundBtn.off .waves{display:none}
 #viewBtn.solo .half{opacity:.25}
 .btn{border:1px solid #4b3b22;background:#1d160d;border-radius:4px;padding:7px 12px;font-weight:600;font-size:13px;letter-spacing:.03em;white-space:nowrap}
@@ -113,6 +115,7 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
   <canvas id="game" aria-label="ChronoLink: 1924 on the left, 2026 on the right"></canvas>
   <canvas id="overlay" aria-hidden="true"></canvas>
   <div id="lvlTag">01</div>
+  <div id="linkTag" hidden></div>
   <nav id="corner" aria-label="Game controls">
     <button class="ico" id="soundBtn" aria-label="Sound" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor" stroke="none"/><path class="waves" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/><path class="slash" d="M15.5 9.5l5 5M20.5 9.5l-5 5"/></svg></button>
     <button class="ico" id="viewBtn" aria-label="Split or solo view (Tab)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M12 5v14"/><rect class="half" x="12.6" y="5.6" width="7.3" height="12.8" rx="1.4" fill="currentColor" stroke="none" opacity=".35"/></svg></button>
@@ -142,7 +145,7 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
         <div class="who e"><h3>2026</h3><div class="kmap"><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></div><div class="kmap"><kbd>↵</kbd> use · <kbd>F</kbd> scan · <kbd>⇧</kbd> ping</div></div>
       </div>
       <p class="note">Open a second tab to split the two chrononauts across windows. <kbd>Tab</kbd> toggles the view. Drag to orbit each camera, scroll to zoom, double-click to reset.</p>
-      <div class="mrow"><button class="btn" id="swapBtn" hidden>Show 2026</button><button class="btn cy" id="onlineBtn" hidden>Online</button><button class="btn" id="backBtn" hidden>← Hub</button></div>
+      <div class="mrow"><button class="btn" id="swapBtn" hidden>Show 2026</button><button class="btn" id="unlinkBtn" hidden>Play both here</button><button class="btn cy" id="onlineBtn" hidden>Online</button><button class="btn" id="backBtn" hidden>← Hub</button></div>
       <div class="actions"><button class="big" id="resumeBtn">Resume</button></div>
     </div>
   </div>
@@ -904,9 +907,11 @@ function subState(p) { return { x: p.x, y: p.y, px: Math.round(p.rx * 100) / 100
    ============================================================ */
 const Net = {
   id: Math.random().toString(36).slice(2, 10), since: Date.now() + Math.random(), peer: null, lastSeen: 0, bc: null, room: null, warnedFull: false,
+  noLink: false, partnerHiddenSince: 0, hiddenFor: 0,
+  // Only a started, visible window links. A forgotten background tab must never take a chrononaut away.
+  ready() { return G.started && !document.hidden && !this.noLink; },
   init() {
     try { this.bc = new BroadcastChannel('chronolink-sync'); this.bc.onmessage = e => this.recv(e.data); } catch (e) { this.bc = null; }
-    this.send({ t: 'hello', since: this.since });
     setInterval(() => this.beat(), 1000);
     addEventListener('pagehide', () => { if (this.peer) this.send({ t: 'bye' }); });
   },
@@ -917,12 +922,15 @@ const Net = {
   },
   beat() {
     if (this.peer) {
-      this.send({ t: 'hb' });
+      this.send({ t: 'hb', h: document.hidden });
+      this.hiddenFor = document.hidden ? this.hiddenFor + 1 : 0;
+      if (this.hiddenFor >= 3) { this.send({ t: 'bye' }); this.unlink('This window was hidden · it plays both'); return; }
+      if (this.partnerHiddenSince && Date.now() - this.partnerHiddenSince > 3000) { this.send({ t: 'bye' }); this.unlink('Partner window hidden · this window plays both'); return; }
       if (Date.now() - this.lastSeen > 4500) this.unlink('Partner lost · this window plays both');
-    } else this.send({ t: 'hello', since: this.since });
+    } else if (this.ready()) this.send({ t: 'hello', since: this.since });
   },
   link(peer, role) {
-    this.peer = peer; this.lastSeen = Date.now(); this.warnedFull = false;
+    this.peer = peer; this.lastSeen = Date.now(); this.warnedFull = false; this.partnerHiddenSince = 0; this.hiddenFor = 0;
     G.role = role; G.view = 'solo'; G.soloEra = ROLE_ERA[role];
     applyView();
     log(role === 'ANCHOR' ? 'Linked · this window is 1924' : 'Linked · this window is 2026', 'sys');
@@ -936,17 +944,18 @@ const Net = {
   recv(m) {
     if (!m || typeof m !== 'object' || typeof m.t !== 'string' || m.from === this.id) return;
     if (m.t === 'hello') {
-      if (!this.peer) {
+      if (!this.peer && this.ready()) {
         if (this.since < +m.since) { this.link(m.from, 'ANCHOR'); this.send({ t: 'welcome', to: m.from, role: 'ECHO', snap: snapshot() }); }
       } else if (m.from !== this.peer) this.send({ t: 'full', to: m.from });
       return;
     }
     if (m.to && m.to !== this.id) return;
-    if (m.t === 'welcome') { if (!this.peer && (m.role === 'ECHO' || m.role === 'ANCHOR')) { applySnapshot(m.snap); this.link(m.from, m.role); } return; }
+    if (m.t === 'welcome') { if (!this.peer && this.ready() && (m.role === 'ECHO' || m.role === 'ANCHOR')) { applySnapshot(m.snap); this.link(m.from, m.role); } return; }
     if (m.t === 'full') { if (!this.warnedFull) log('Two windows already linked · playing solo', 'sys'); this.warnedFull = true; return; }
     if (m.from !== this.peer) return;
     this.lastSeen = Date.now();
     switch (m.t) {
+      case 'hb': this.partnerHiddenSince = m.h ? (this.partnerHiddenSince || Date.now()) : 0; break;
       case 'bye': this.unlink('Partner left · this window plays both'); break;
       case 'state': applyRemote(m.who, m.s); break;
       case 'level': loadLevel(String(m.input), false); break;
@@ -2903,6 +2912,8 @@ function updateHUD() {
   const st = L.custom ? 0 : (store.get('stars', {})[L.n] || 0);
   $('actChip').textContent = L.act.name + ' · ' + L.chamber + (st ? ' · ' + '★'.repeat(st) + '☆'.repeat(3 - st) : '');
   $('prev').disabled = L.n <= 1; $('next').disabled = L.n >= 1000;
+  $('linkTag').hidden = !Net.peer; $('unlinkBtn').hidden = !Net.peer;
+  if (Net.peer) { const era = ROLE_ERA[G.role]; $('linkTag').className = era; $('linkTag').textContent = 'LINKED · ' + (era === 'past' ? '1924 ANCHOR' : '2026 ECHO'); }
   $('linkChip').textContent = Net.peer ? (G.role === 'ANCHOR' ? 'Linked · this window is 1924' : 'Linked · this window is 2026') : (Net.room ? $('linkChip').textContent : 'One window · both players');
 }
 function setMenu(open) {
@@ -2942,6 +2953,7 @@ addEventListener('keydown', e => {
   if (who) {
     e.preventDefault();
     const arr = held[who]; if (!arr.includes(e.code)) arr.push(e.code);
+    if (!e.repeat) taps[who][e.code] = G.t + 0.14;
     return;
   }
   switch (e.code) {
@@ -2969,9 +2981,12 @@ addEventListener('blur', () => { held.A.length = 0; held.E.length = 0; });
 // The 1924 human walks at a human pace; the suited 2026 explorer moves faster.
 const MOVE_SPEED = { A: 2.3, E: 3.6 }, BODY_R = 0.26;
 const MOVE_AXES = { KeyW: [0, 1], KeyS: [0, -1], KeyA: [-1, 0], KeyD: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
+const taps = { A: {}, E: {} };
 function inputVector(who) {
   let r = 0, f = 0;
-  for (const code of held[who]) { const a = MOVE_AXES[code]; if (a) { r += a[0]; f += a[1]; } }
+  const codes = new Set(held[who]);
+  for (const c in taps[who]) if (taps[who][c] > G.t) codes.add(c);
+  for (const code of codes) { const a = MOVE_AXES[code]; if (a) { r += a[0]; f += a[1]; } }
   if (!r && !f) return [0, 0];
   const yaw = camYaw(who === 'A' ? 'past' : 'future');
   const fx = -Math.sin(yaw), fz = -Math.cos(yaw), rx = -fz, rz = fx;
@@ -3002,7 +3017,7 @@ function updatePlayers(dt) {
     }
     const frozen = G.won || G.t < p.stunUntil || (who === 'A' && G.safe) || !$('menu').hidden;
     const [ix, iy] = frozen ? [0, 0] : inputVector(who);
-    const k = 1 - Math.exp(-dt * 14);
+    const k = 1 - Math.exp(-dt * 20);
     p.vx += (ix * MOVE_SPEED[who] - p.vx) * k; p.vy += (iy * MOVE_SPEED[who] - p.vy) * k;
     if (Math.abs(p.vx) < 0.01) p.vx = 0; if (Math.abs(p.vy) < 0.01) p.vy = 0;
     const nx = p.rx + p.vx * dt; if (freeAt(room, nx, p.ry)) p.rx = nx; else p.vx = 0;
@@ -3042,6 +3057,7 @@ function tick() {
 function start() {
   if (G.started) return;
   G.started = true; $('intro').hidden = true;
+  Net.beat();
   Sound.setOn(store.get('sound', true) !== false);
   Sound.playTemporalPing();
 }
@@ -3049,6 +3065,7 @@ $('startBtn').onclick = start;
 $('menuBtn').onclick = () => setMenu($('menu').hidden);
 $('menuClose').onclick = () => setMenu(false);
 $('resumeBtn').onclick = () => setMenu(false);
+$('unlinkBtn').onclick = () => { Net.noLink = true; Net.send({ t: 'bye' }); Net.unlink('Unlinked · this window plays both'); setMenu(false); };
 $('soundBtn').onclick = () => Sound.setOn(!Sound.on);
 $('viewBtn').onclick = () => { if (G.view === 'split') { G.view = 'solo'; G.soloEra = G.role === 'BOTH' ? 'past' : ROLE_ERA[G.role]; } else G.view = 'split'; applyView(); };
 $('swapBtn').onclick = () => { G.soloEra = G.soloEra === 'past' ? 'future' : 'past'; applyView(); };
