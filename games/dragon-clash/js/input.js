@@ -24,18 +24,20 @@
   var DEVICE_NAMES = { kb1: 'Keyboard 1', kb2: 'Keyboard 2', pad0: 'Gamepad 1', pad1: 'Gamepad 2', pad2: 'Gamepad 3', pad3: 'Gamepad 4', touch: 'Touch screen' };
 
   var down = {};
+  var pending = { kb1: {}, kb2: {} };
   var binds = JSON.parse(JSON.stringify(DEFAULTS));
   var listeners = [];
   var inUse = {};
 
   window.addEventListener('keydown', function (e) {
     if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) return;
+    if (!down[e.code] && !e.repeat) { pending.kb1[e.code] = true; pending.kb2[e.code] = true; }
     down[e.code] = true;
     for (var i = 0; i < listeners.length; i++) listeners[i](e);
     if (isGameKey(e.code)) e.preventDefault();
   });
   window.addEventListener('keyup', function (e) { down[e.code] = false; });
-  window.addEventListener('blur', function () { down = {}; });
+  window.addEventListener('blur', function () { down = {}; clearPresses(); });
 
   function isGameKey(code) {
     if (!document.body.classList.contains('in-match')) return false;
@@ -45,13 +47,14 @@
 
   function onKey(fn) { listeners.push(fn); return function () { listeners = listeners.filter(function (f) { return f !== fn; }); }; }
 
-  function keyHeld(dev, action) {
+  function keyHeld(dev, action, keys) {
+    keys = keys || down;
     var list = binds[dev][action];
-    for (var i = 0; i < list.length; i++) if (down[list[i]]) return true;
+    for (var i = 0; i < list.length; i++) if (keys[list[i]]) return true;
     if (dev === 'kb1' && !inUse.kb2) {
       var alt = { left: 'ArrowLeft', right: 'ArrowRight', up: 'ArrowUp', down: 'ArrowDown' }[action];
       // Arrow shortcuts yield to an explicit binding in this layout.
-      if (alt && down[alt] && !ACTIONS.some(function (a) { return a !== action && binds.kb1[a].indexOf(alt) >= 0; })) return true;
+      if (alt && keys[alt] && !ACTIONS.some(function (a) { return a !== action && binds.kb1[a].indexOf(alt) >= 0; })) return true;
     }
     return false;
   }
@@ -95,6 +98,23 @@
       h |= window.DCTouch.held();
     }
     return h;
+  }
+
+  // Event-latched presses survive a down/up pair between simulation or network polls.
+  function sample(dev) {
+    var held = read(dev), pressed = 0;
+    var kb = dev === 'touch' ? 'kb1' : dev;
+    if (pending[kb]) {
+      for (var i = 0; i < ACTIONS.length; i++) if (keyHeld(kb, ACTIONS[i], pending[kb])) pressed |= B[ACTIONS[i]];
+      pending[kb] = {};
+    }
+    if ((dev === 'touch' || dev === 'kb1') && window.DCTouch && window.DCTouch.isShown()) pressed |= window.DCTouch.takePresses();
+    return { held: held, pressed: pressed };
+  }
+
+  function clearPresses() {
+    pending = { kb1: {}, kb2: {} };
+    if (window.DCTouch && window.DCTouch.takePresses) window.DCTouch.takePresses();
   }
 
   function connectedPads() {
@@ -190,7 +210,7 @@
     return out;
   }
 
-  window.DCInput = { read: read, onKey: onKey, padStart: padStart, connectedPads: connectedPads, setInUse: setInUse, load: load,
+  window.DCInput = { read: read, sample: sample, clearPresses: clearPresses, onKey: onKey, padStart: padStart, connectedPads: connectedPads, setInUse: setInUse, load: load,
                      binds: function () { return binds; }, setBinding: setBinding, reset: reset, keyName: keyName, conflicts: conflicts,
                      loadPad: loadPad, padBinds: function () { return padBinds; }, setPadBinding: setPadBinding, resetPad: resetPad, padPressed: padPressed,
                      padName: function (k) { return PAD_NAMES[k] || 'Button ' + k; }, PAD_ACTIONS: PAD_ACTIONS,

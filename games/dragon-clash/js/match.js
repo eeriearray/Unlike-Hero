@@ -51,6 +51,7 @@
     } else {
       this.setupInfo = opts.setup;
     }
+    Input.clearPresses();
     this.arena = D.arenaForMatch(this.setupInfo.arena, this.setupInfo.fighters);
     this.cam.x = this.arena.size[0] / 2;
     this.setupInfo.fighters.forEach(function (f) { Art.prepare(f.build.look); });
@@ -123,6 +124,7 @@
     var p = force != null ? force : !this.paused;
     if (p === this.paused) return;
     this.paused = p;
+    Input.clearPresses();
     if (this.o.onPause) this.o.onPause(p);
   };
 
@@ -178,6 +180,7 @@
     var dt = Math.min(100, now - this.last);
     this.last = now;
     this.rdt = dt / 1000;
+    if (this.paused || this.vsT > 0 || this.countdown > 0) Input.clearPresses();
     if (this.spriteLoad != null) { this.drawLoading(); return; }
     this.time += dt / 1000;
     this.dt = this.paused ? 0 : dt / 1000;
@@ -245,7 +248,7 @@
     var self = this, out = [];
     (this.o.controllers || []).forEach(function (c) {
       if (c.type === 'human') {
-        out[c.i] = { held: Input.read(c.device), pressed: 0 };
+        out[c.i] = Input.sample(c.device);
         if (c.device.indexOf('pad') === 0 && Input.padStart(+c.device.slice(3)) && !self.padPause) { self.padPause = true; self.togglePause(); }
         else if (c.device.indexOf('pad') === 0 && !Input.padStart(+c.device.slice(3))) self.padPause = false;
       } else if (self.bots[c.i]) out[c.i] = self.bots[c.i].think();
@@ -279,13 +282,14 @@
   /** Online: send this device's held buttons plus press counters (so short taps are never lost). */
   M.sendInput = function () {
     if (!this.o.net || this.o.spectator) return;
-    var held = this.paused ? 0 : Input.read(this.o.device || 'kb1');
+    var input = Input.sample(this.o.device || 'kb1');
+    var held = this.paused ? 0 : input.held, pressed = this.paused ? 0 : input.pressed;
     var now = performance.now();
     this.pressCount = this.pressCount || {};
     var prev = this.prevHeld || 0, B = Sim.BTN, changed = held !== prev;
-    for (var k in B) if ((held & B[k]) && !(prev & B[k])) this.pressCount[k] = ((this.pressCount[k] || 0) + 1) & 255;
+    for (var k in B) if ((pressed & B[k]) || ((held & B[k]) && !(prev & B[k]))) this.pressCount[k] = ((this.pressCount[k] || 0) + 1) & 255;
     this.prevHeld = held;
-    if (changed || now - (this.lastSend || 0) > 100) {
+    if (changed || pressed || now - (this.lastSend || 0) > 100) {
       this.lastSend = now;
       this.o.net.sendInput(held, this.pressCount);
     }
