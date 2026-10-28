@@ -44,6 +44,58 @@ window.GAME_REGISTRY = [
     "path": "games/casino/"
   },
   {
+    "id": "chronolink",
+    "title": "ChronoLink: Anchor & Echo",
+    "tagline": "One of you is in 1924, the other in the same facility's 2026 ruins. Plant a seed in the past to bridge a chasm in the future; read a burnt black box in the future to disarm a boiler in the past. 1,000 generated chambers.",
+    "version": "1.0.0",
+    "sdk": "1.x",
+    "entry": "index.html",
+    "thumbnail": "thumbnail.svg",
+    "accent": "#D4AF37",
+    "players": {
+      "min": 1,
+      "max": 2
+    },
+    "roles": [
+      {
+        "id": "anchor",
+        "name": "The Anchor (1924)",
+        "entry": "index.html",
+        "description": "WASD and E. Plants, turns valves, pulls levers and uses the Chronal Stash Box."
+      },
+      {
+        "id": "echo",
+        "name": "The Echo (2026)",
+        "entry": "index.html",
+        "description": "Arrows, Enter/E and F. Kicks rusted bars, loots the stash box and scans black boxes with LIDAR."
+      }
+    ],
+    "multiplayer": {
+      "style": "asymmetric co-op, split screen or two tabs",
+      "sameDevice": true,
+      "transports": [
+        "local",
+        "relay"
+      ],
+      "notes": "Split screen on one keyboard by default. A second tab links automatically over BroadcastChannel('chronolink-sync'); the Online button links two devices through the hub relay with a 4-letter code."
+    },
+    "tags": [
+      "co-op",
+      "asymmetric",
+      "puzzle",
+      "time-travel",
+      "procedural",
+      "3D"
+    ],
+    "requires": [
+      "keyboard",
+      "webgl",
+      "internet (three.js r128 loads from cdnjs)"
+    ],
+    "status": "playable",
+    "path": "games/chronolink/"
+  },
+  {
     "id": "dragon-clash",
     "title": "Dragon Clash",
     "tagline": "A 2D dragon platform fighter. Forge your own dragon on a 100-point budget, then knock rivals off the Spire in 1v1, 2v2, 3v3 or a tournament.",
