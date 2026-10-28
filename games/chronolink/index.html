@@ -30,7 +30,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--neon);outline-o
 /* Minimal HUD: a level number top-left, three round icon buttons top-right; everything else lives in the pause menu. */
 #lvlTag{position:absolute;left:max(20px,env(safe-area-inset-left,0px));top:16px;z-index:4;font:400 38px/1 var(--f-deco);color:rgba(245,230,200,.4);
   letter-spacing:.06em;pointer-events:none;text-shadow:0 2px 14px rgba(0,0,0,.55);font-variant-numeric:tabular-nums}
-#corner{position:absolute;right:max(14px,env(safe-area-inset-right,0px));top:14px;z-index:4;display:flex;gap:6px}
+#corner{position:absolute;right:max(14px,env(safe-area-inset-right,0px));top:14px;z-index:4;display:flex;gap:6px;max-width:calc(100% - 90px);flex-wrap:wrap;justify-content:flex-end}
 .ico{width:38px;height:38px;border-radius:50%;border:0;padding:0;background:rgba(0,0,0,.26);color:rgba(245,230,200,.72);display:grid;place-items:center;
   backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:background .2s,color .2s}
 .ico:hover{background:rgba(0,0,0,.5);color:#fff}
@@ -117,6 +117,7 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
   <div id="card" class="gone" aria-live="polite"><i id="cardNum">CHAMBER 01</i><b id="cardName"></b><span id="cardText"></span></div>
   <nav id="corner" aria-label="Game controls">
     <button class="btn cy" id="roomBtn" hidden>Play online</button>
+    <button class="btn" id="rewindBtn" title="Undo the last object change (hold R)">Rewind</button>
     <button class="ico" id="soundBtn" aria-label="Sound" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor" stroke="none"/><path class="waves" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/><path class="slash" d="M15.5 9.5l5 5M20.5 9.5l-5 5"/></svg></button>
     <button class="ico" id="viewBtn" aria-label="Split or solo view (Tab)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M12 5v14"/><rect class="half" x="12.6" y="5.6" width="7.3" height="12.8" rx="1.4" fill="currentColor" stroke="none" opacity=".35"/></svg></button>
     <button class="ico" id="menuBtn" aria-label="Menu (Esc)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14"/></svg></button>
@@ -1238,7 +1239,7 @@ function sendWorld(part, extra) {
   const m = Object.assign({ t: 'world', part }, extra || {});
   if (part === 'past' || part === 'all') { m.objs = G.s.objs; m.wheel = G.s.wheel; m.held = G.s.held; }
   if (part === 'echo' || part === 'all') m.echo = G.s.echo;
-  if (part === 'all') { m.A = posOf(G.A); m.E = posOf(G.E); }
+  if (part === 'all') { m.A = posOf(G.A); m.E = posOf(G.E); m.stand = G.stand; }
   Net.send(m);
 }
 function applyRemotePos(who, q) {
@@ -1254,16 +1255,20 @@ function applyRemotePos(who, q) {
   if (who === 'E') trackStand(false);
 }
 function applyRemoteWorld(m) {
+  const undo = m.part === 'all' && m.cause === 'rewind';
+  if (undo) { G.hist.pop(); clearRewindMotion(); G.rewinds++; }
+  else pushHist();
   const s = C.cloneState(G.s);
   if ((m.part === 'past' || m.part === 'all') && Array.isArray(m.objs) && m.objs.length === s.objs.length && Array.isArray(m.wheel)) { s.objs = m.objs.map(o => Object.assign({}, o)); s.wheel = m.wheel.slice(); s.held = typeof m.held === 'string' ? m.held : null; }
   if ((m.part === 'echo' || m.part === 'all') && m.echo && Array.isArray(m.echo.pins)) s.echo = { carry: m.echo.carry || null, pins: m.echo.pins.slice(), hold: Object.assign({}, m.echo.hold), witness: Object.assign({}, m.echo.witness) };
   G.s = s;
   if (m.part === 'all') {
-    for (const [p, q] of [[G.A, m.A], [G.E, m.E]]) if (q && Number.isInteger(q.x)) { p.x = q.x; p.y = q.y; p.rx = q.px; p.ry = q.pz; p.vx = p.vy = 0; }
-    G.stand = null; trackStand(true);
+    for (const [p, q] of [[G.A, m.A], [G.E, m.E]]) if (q && Number.isInteger(q.x)) restoreRewindPlayer(p, q);
+    G.stand = m.stand ? JSON.parse(JSON.stringify(m.stand)) : null; recompute(); trackStand(true);
   }
   refresh(m.cause || 'remote', m.cx != null ? { x: m.cx, y: m.cy } : null);
-  if (m.part === 'all' && m.cause === 'rewind') rewindFx(false);
+  if (undo) { G.lastProgress = G.t; G.hint = null; rewindFx(); }
+  updateRewindControl();
   checkVictory();
 }
 </script>
@@ -2730,7 +2735,24 @@ function changeFx(c) {
     FX.spawn('future', s.startsWith('ROT') || s === 'GONE' ? 'spore' : 'chronal', x + rnd(-0.3, 0.3), 0.3, y + rnd(-0.3, 0.3), Math.cos(a) * sp, vy, Math.sin(a) * sp, rnd(0.9, 1.6), col, extra);
   }
 }
-function pushHist() { G.hist.push({ s: C.cloneState(G.s), A: { x: G.A.x, y: G.A.y }, E: { x: G.E.x, y: G.E.y } }); if (G.hist.length > 2000) G.hist.shift(); }
+function updateRewindControl() { $('rewindBtn').textContent = G.hist.length ? 'Rewind · ' + G.hist.length : 'Rewind'; }
+function pushHist() {
+  G.hist.push({ s: C.cloneState(G.s), A: posOf(G.A), E: posOf(G.E), stand: G.stand ? JSON.parse(JSON.stringify(G.stand)) : null });
+  if (G.hist.length > 2000) G.hist.shift();
+  updateRewindControl();
+}
+function restoreRewindPlayer(p, q) {
+  p.x = q.x; p.y = q.y;
+  p.rx = p.tx = Number.isFinite(q.px) ? q.px : q.x;
+  p.ry = p.ty = Number.isFinite(q.pz) ? q.pz : q.y;
+  p.vx = p.vy = p.speed = p.bump = 0; p.act = null; p.lockUntil = 0;
+  if (q.dir) p.dir = { ...q.dir };
+  if (Number.isFinite(q.yaw)) p.yaw = p.tyaw = q.yaw;
+}
+function clearRewindMotion() {
+  G.pending = []; G.camFocus = G.timelapse = null;
+  held.A.length = held.E.length = 0; taps.A = {}; taps.E = {};
+}
 // Every change to the world goes through here. `part` says whose state it is (past or echo).
 function commit(n, part, who, causeTile) {
   if (!n) { denyFx(who); return false; }
@@ -2757,13 +2779,20 @@ function paradoxFx(i, why, local) {
   if (local && Net.peer) Net.send({ t: 'fx', kind: 'paradox', i, why });
 }
 function rewind() {
-  const h = G.hist.pop(); if (!h) return;
+  const h = G.hist.pop();
+  if (!h) {
+    if (G.emptyRewindT == null || G.t - G.emptyRewindT > 2) { log('Nothing to rewind yet · first pick up, place or change an object.', 'sys'); G.emptyRewindT = G.t; }
+    return false;
+  }
+  clearRewindMotion();
   G.s = h.s;
-  for (const [p, q] of [[G.A, h.A], [G.E, h.E]]) { p.x = q.x; p.y = q.y; p.rx = q.x; p.ry = q.y; p.vx = p.vy = 0; }
-  G.stand = null; recompute(); trackStand(true); syncFuture(true);
+  for (const [p, q] of [[G.A, h.A], [G.E, h.E]]) restoreRewindPlayer(p, q);
+  G.stand = h.stand || null; recompute(); trackStand(true); syncFuture(true);
   computeGoals(true);
   G.rewinds++; G.lastProgress = G.t; G.hint = null; rewindFx(true);
   sendWorld('all', { cause: 'rewind' });
+  updateRewindControl();
+  return true;
 }
 function rewindFx() { G.rewindT = G.t; Sound.rewind(); G.shake.past = G.shake.future = 2; }
 
@@ -3039,6 +3068,7 @@ function toggleView() {
   applyView();
 }
 function updateHUD() {
+  updateRewindControl();
   const L = G.L; if (!L) return;
   $('lvlTag').textContent = String(L.n).padStart(2, '0');
   $('lvlNum').textContent = L.n; $('lvlOf').textContent = 'of ' + C.MAX_LEVEL;
@@ -3226,6 +3256,7 @@ function start() {
   for (const w of [WORLD.past, WORLD.future]) if (w) w.cam.swoopT0 = G.t;
 }
 $('startBtn').onclick = start;
+$('rewindBtn').onclick = () => { if (!G.started || G.won || !$('menu').hidden) return; rewind(); focusControls(); };
 $('menuBtn').onclick = () => setMenu($('menu').hidden);
 $('menuClose').onclick = () => setMenu(false);
 $('resumeBtn').onclick = () => setMenu(false);
