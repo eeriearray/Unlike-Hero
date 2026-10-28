@@ -19,7 +19,14 @@
       const x = curve(p(k-1)[0], p(k)[0], p(k+1)[0], p(k+2)[0], t) * theme.scale * twist;
       const z = curve(p(k-1)[1], p(k)[1], p(k+1)[1], p(k+2)[1], t) * theme.scale;
       let y = curve(p(k-1)[2]??6,p(k)[2]??6,p(k+1)[2]??6,p(k+2)[2]??6,t);
-      for (const ramp of theme.ramps || [0.18, 0.49, 0.78]) if (u > ramp - 0.032 && u < ramp) y += (u - (ramp - 0.032)) / 0.032 * 4.3;
+      for (const ramp of theme.ramps || []) {
+        const gap=(theme.gaps||[]).find(g=>g.start>=ramp && g.start-ramp<.04);
+        if(u>ramp-.032 && u<ramp) y+=(u-(ramp-.032))/.032*4.3;
+        // The raised approach continues to the visible broken edge. Previously it
+        // dropped 4.3 m at the launch line while there was still road ahead.
+        else if(gap && u>=ramp && u<=gap.start) y+=4.3;
+        else if(!gap && u>=ramp && u<ramp+.032) y+=4.3*(1-(u-ramp)/.032);
+      }
       points.push({ x, y, z });
       if (i) lengths.push(lengths[i-1] + Math.hypot(x - points[i-1].x, z - points[i-1].z));
     }
@@ -44,6 +51,7 @@
       return [pos, neg];
     });
     const track = { ...theme, index, count, points, lengths, bounds, normals, laneLimit, length: lengths[count], gates: 12 };
+    track.turns = turnCues(track);
     cache.set(index, track); return track;
   }
   function sample(track, distance, lane = 0) {
@@ -76,6 +84,34 @@
     }
     return best;
   }
+  // Find actual bends rather than putting a few signs at arbitrary lap percentages.
+  function turnCues(track) {
+    const candidates=[];
+    for(let s=0;s<track.length;s+=6) {
+      const bend=D.angle(sample(track,s+18).heading-sample(track,s-8).heading);
+      if(Math.abs(bend)<.32 || inGap(track,s) || (track.ramps||[]).some(r=>Math.abs(D.mod(s-r*track.length+track.length/2,track.length)-track.length/2)<22)) continue;
+      const previous=candidates[candidates.length-1];
+      if(previous && s-previous.s<34 && Math.sign(bend)===Math.sign(previous.bend)) {
+        if(Math.abs(bend)>Math.abs(previous.bend)) { previous.s=s; previous.bend=bend; }
+      } else candidates.push({s,bend});
+    }
+    // The seam is one bend too; avoid two contradictory calls straddling the start line.
+    if(candidates.length>1) {
+      const a=candidates[0],b=candidates[candidates.length-1];
+      if(a.s+track.length-b.s<34&&Math.sign(a.bend)===Math.sign(b.bend)) {
+        if(Math.abs(a.bend)>=Math.abs(b.bend)) candidates.pop(); else candidates.shift();
+      }
+    }
+    return candidates.map(c=>({...c,side:c.bend>0?'left':'right',severity:Math.abs(c.bend)>.9?'hairpin':Math.abs(c.bend)>.55?'sharp':'bend'}));
+  }
+  function guidance(track,s,speed=35) {
+    const ahead=n=>D.mod(n-s,track.length),range=D.clamp(speed*2.4,55,110);
+    const gap=(track.gaps||[]).map(g=>({...g,distance:inGap(track,s)&&D.mod(s,track.length)/track.length>g.start&&D.mod(s,track.length)/track.length<g.end?0:ahead(g.start*track.length)})).sort((a,b)=>a.distance-b.distance)[0];
+    const turn=(track.turns||[]).map(c=>({...c,distance:ahead(c.s)})).sort((a,b)=>a.distance-b.distance)[0];
+    if(gap&&gap.distance<=range&&(!turn||gap.distance<45||gap.distance<turn.distance+18)) return {kind:'gap',distance:gap.distance,length:(gap.end-gap.start)*track.length};
+    if(turn&&turn.distance<=range) return {kind:'turn',...turn};
+    return {kind:'straight',distance:null};
+  }
   function surfaceAt(track, s, lane) {
     const u = D.mod(s, track.length) / track.length;
     return mudPatches(track).some(p=>u>p.start&&u<p.end&&Math.abs(lane-p.lane)<p.width/2) ? 'mud' : 'stone';
@@ -94,5 +130,5 @@
     for (const u of [.08, .24, .45, .59, .82, .95]) for (const lane of [-4, 0, 4]) out.push(sample(track, u*track.length, lane));
     return out;
   }
-  return { makeTrack, sample, project, clampLane, edgeAt, surfaceAt, mudPatches, inGap, sectionAt, padPoses, hazardPose, boxPoses };
+  return { makeTrack, turnCues, guidance, sample, project, clampLane, edgeAt, surfaceAt, mudPatches, inGap, sectionAt, padPoses, hazardPose, boxPoses };
 });

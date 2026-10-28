@@ -6,19 +6,19 @@
   'use strict';
   const STEP = 1 / 60, RADIUS = 0.95, POINTS = [15, 12, 10, 8, 6, 4, 2, 1];
   // Heavier gravity and a firmer hop keep the karts planted; ramps aim their own landings.
-  const GRAVITY = 32, HOP = 4.2, RAMP_LIFT = 9.5;
+  const GRAVITY = 32, HOP = 6.8, RAMP_LIFT = 9.5;
   // Three-lap races need longer than a sprint; time trial keeps four minutes so ghosts stay bounded.
   const TIME_LIMIT = { sprint: 240, trial: 240, race: 360, gp: 300 };
   // Mini-turbo by tier: forward impulse, duration and the extra top speed it allows. Bots get a weaker release so a clean player drift wins.
-  const TURBO = [null, [8, 1.1, 10], [12, 1.6, 14], [16, 2.2, 19]];
+  const TURBO = [null, [10, 1.3, 13], [15, 1.9, 19], [20, 2.7, 25]];
   const DIFFICULTIES = {
     easy: { name:'Easy', pace:.78, turbo:.35, itemDelay:2.8, weave:2.1, mercy:.14 },
-    normal: { name:'Normal', pace:.91, turbo:.6, itemDelay:1.6, weave:1.4, mercy:.08 },
+    normal: { name:'Normal', pace:.99, turbo:.9, itemDelay:1.1, weave:.8, mercy:.02 },
     hard: { name:'Hard', pace:1, turbo:1, itemDelay:.65, weave:.4, mercy:0 }
   };
   const difficultyOf = value => Object.hasOwn(DIFFICULTIES, value) ? value : 'normal';
   // Hex mines: how far back they are thrown, seconds until armed, trigger distance and blast radius (m).
-  const MINE_TOSS = 4, MINE_ARM = .5, MINE_TRIGGER = 1.9, MINE_BLAST = 2.8;
+  const MINE_TOSS = 4, MINE_ARM = .5, MINE_TRIGGER = 1.9, MINE_BLAST = 2.8, MINE_CLEARANCE = .8;
   const emptyInput = () => ({ throttle: 0, steer: 0, drift: false, hop: false, use: false, reset: false, assist:true });
   function cleanInput(input = {}) {
     const finite = n => typeof n === 'number' && Number.isFinite(n) ? n : 0;
@@ -42,7 +42,7 @@
       const pose = mode === 'battle' ? { x: Math.sin(i*Math.PI/4)*27, z: Math.cos(i*Math.PI/4)*27, y: 6, heading: i*Math.PI/4+Math.PI, s: 0, segment: 0 } : T.sample(track, distance, lane);
       racers.push({ id: String(seat.id).slice(0,64), name: String(seat.name || 'Racer').slice(0,18), classId, human: !!seat.human,
         color: D.COLORS[i], x: pose.x, y: pose.y + .65, z: pose.z, yaw: pose.heading, vx: 0, vz: 0, vy: 0,
-        speed: 0, grounded: true, wasDrift: false, hopUntil: 0, airStart: 0, trickEligible: false, trickPress: -999,
+        speed: 0, grounded: true, wasDrift: false, hopUntil: 0, airStart: 0, trickEligible: false, trickPress: -999, takeoffPress: -999, perfectTakeoff: false,
         drift: false, driftSign: 0, driftTime: 0, driftLevel: 0, driftAngle: 0, pendingDrift: false,
         boost: 0, boostExtra: 0, invincible: 0, autopilot: 0, spin: 0, hitGrace: 0,
         item: null, coins: 0, balloons: 3, eliminated: false, finishTime: null, place: i+1,
@@ -90,7 +90,7 @@
     const roll = w.mode === 'battle' ? 0 : 14;
     Object.assign(k, { x: p.x, y: p.y+.65, z: p.z, yaw: p.heading, vx: Math.sin(p.heading)*roll, vz: Math.cos(p.heading)*roll, vy: 0, speed: roll, grounded: true,
       s: p.s, segment: p.segment, distance: s, lane: 0, boost: 0, boostExtra: 0, autopilot: 0, spin: 0, hopUntil: 0,
-      trickEligible: false, trickPress: -999, hitGrace: 1.5, lastReset: w.time });
+      trickEligible: false, trickPress: -999, takeoffPress: -999, perfectTakeoff: false, hitGrace: 1.5, lastReset: w.time });
     cancelDrift(k);
     if (penalize) { if (w.mode === 'trial') w.recordValid = false; notify(w, k, w.mode === 'trial' ? 'RESPAWN · RUN INVALID' : 'BACK ON TRACK'); }
   }
@@ -100,16 +100,17 @@
     const landS = gap ? gap.end*track.length + 9 : rampS + 24, hint = T.sample(track, landS);
     const edge = T.edgeAt(track, hint.segment, k.lane) - 3, q = T.sample(track, landS, D.clamp(k.lane, -edge, edge));
     const rise = q.y + .65 - k.y; let lift = RAMP_LIFT;
+    const timed = w.time-k.takeoffPress <= .3;
     if (lift*lift < 2*GRAVITY*rise + 4) lift = Math.sqrt(2*GRAVITY*Math.max(0, rise)) + 2;
     const dx = q.x - k.x, dz = q.z - k.z, distance = Math.hypot(dx, dz);
     // Keep the kart's own speed and shape the arc's height instead, unless that would be absurdly flat or tall.
-    let speed = Math.max(26, Math.hypot(k.vx, k.vz)), flight = distance / speed, keep = (rise + GRAVITY*flight*flight/2) / flight;
-    if (keep >= 6 && keep <= 15) lift = keep;
+    let speed = Math.max(26, Math.hypot(k.vx, k.vz))*(timed?1.18:1), flight = distance / speed, keep = (rise + GRAVITY*flight*flight/2) / flight;
+    if (keep >= (timed ? 2.5 : 6) && keep <= 15) lift = keep;
     else speed = D.clamp(distance / ((lift + Math.sqrt(lift*lift - 2*GRAVITY*rise)) / GRAVITY), 16, 46);
     k.yaw = Math.atan2(dx, dz); k.vx = Math.sin(k.yaw)*speed; k.vz = Math.cos(k.yaw)*speed; k.vy = lift;
-    k.grounded = false; k.airStart = w.time; k.trickEligible = true; k.hopUntil = .12; k.launchedAt = rampS;
+    k.grounded = false; k.airStart = w.time; k.trickEligible = true; k.hopUntil = .12; k.launchedAt = rampS; k.perfectTakeoff = timed;
     if (k.drift) cancelDrift(k);
-    notify(w, k, 'JUMP! · TAP SPACE BEFORE LANDING', 'jump');
+    notify(w, k, timed?'PERFECT TAKEOFF · TAP AGAIN TO LAND':'GAP JUMP · TAP BEFORE LANDING', 'jump');
   }
   function standings(w) {
     const sorted = [...w.racers].sort((a,b) => {
@@ -153,8 +154,9 @@
   }
   function aiInput(w, k, dt) {
     if (k.eliminated || k.finishTime != null) return emptyInput();
-    const cfg=DIFFICULTIES[k.human ? 'normal' : difficultyOf(w.difficulty)];
-    const track = T.makeTrack(w.trackIndex); let heading, turn, curvature=0;
+    const cfg={...DIFFICULTIES[k.human ? 'normal' : difficultyOf(w.difficulty)]};
+    if(w.mode==='battle' && w.difficulty==='normal') cfg.itemDelay=1.6;
+    const track = T.makeTrack(w.trackIndex); let heading, turn, curvature=0, hop=false;
     if (w.mode === 'battle') {
       const target = findTarget(w,k);
       const box = w.boxes.filter(b => b.ready<=0).sort((a,b) => Math.hypot(a.x-k.x,a.z-k.z)-Math.hypot(b.x-k.x,b.z-k.z))[0];
@@ -165,12 +167,20 @@
       heading = Math.atan2(p.x-k.x,p.z-k.z);
       curvature=Math.abs(D.angle(T.sample(track,k.s+26).heading-T.sample(track,k.s+5).heading));
     }
+    // Better CPUs use the same takeoff and landing windows as the player.
+    if(w.mode!=='battle' && !k.human && w.difficulty!=='easy') {
+      const skilled=w.difficulty==='hard'||(k.gate+w.racers.indexOf(k))%3!==0;
+      const lip=(track.ramps||[]).some(r=>D.mod(r*track.length-k.s,track.length)<k.speed*.22);
+      hop=skilled && (k.grounded&&lip&&w.time-k.takeoffPress>.8 || !k.grounded&&k.trickEligible&&k.vy<0&&k.y-T.sample(track,k.s).y<1.7&&k.trickPress<k.airStart);
+    }
     turn = D.angle(heading-k.yaw);
     k.aiDriftTimer += dt;
     const driftCycle = k.aiDriftTimer % 3.4;
-    const drift = w.mode !== 'battle' && k.autopilot <= 0 && Math.abs(turn)>.22 && k.speed>12 && driftCycle<2.2;
-    return { throttle: D.clamp(1-Math.max(0,Math.abs(turn)-.3)*.3-curvature*.4,.38,1), steer:D.clamp(-turn*2.6,-1,1),
-      drift, use:!!k.item && w.time-k.lastItem>cfg.itemDelay && (w.mode!=='battle' || Math.abs(turn)<.6 || ['trap','boost','star'].includes(k.item)), reset:false };
+    const keepSlide=(k.drift||k.pendingDrift)&&curvature>.18&&Math.abs(turn)<.7&&k.driftTime<.95;
+    const drift = w.mode !== 'battle' && k.autopilot <= 0 && (Math.abs(turn)>.22||keepSlide) && k.speed>12 && driftCycle<2.2;
+    const desired=-turn*2.6,steering=k.drift?(desired*k.driftSign-.32)/.6*k.driftSign:desired;
+    return { throttle: D.clamp(1-Math.max(0,Math.abs(turn)-.3)*.3-curvature*.4,.38,1), steer:D.clamp(steering,-1,1),
+      drift, hop, use:!!k.item && w.time-k.lastItem>cfg.itemDelay && (w.mode!=='battle' || Math.abs(turn)<.6 || ['trap','boost','star'].includes(k.item)), reset:false };
   }
   function drive(w,k,input,dt) {
     const stats = D.CLASSES[k.classId], track = T.makeTrack(w.trackIndex), battle = w.mode==='battle';
@@ -182,8 +192,8 @@
     // Bots run slightly below a human's pace and are pulled back toward them from either side, so the pack stays in reach.
     // The named rival has a tighter leash: it catches up harder and barely eases off, so there is always a duel.
     const cfg=DIFFICULTIES[difficultyOf(w.difficulty)];
-    const rival = k.id === w.rival, gapToHuman = human ? human.distance-k.distance : 0, band = D.clamp((Math.abs(gapToHuman)-(rival?4:8))/(rival?40:60),0,1);
-    const correction = !k.human && human && !battle ? (gapToHuman > 0 ? band*(rival?.12:.08) : -band*(rival?cfg.mercy*.625:cfg.mercy)) : 0, pace = k.human ? 1 : cfg.pace;
+    const rival = k.id === w.rival, gapToHuman = human ? human.distance-k.distance : 0, band = D.clamp((Math.abs(gapToHuman)-(rival?12:18))/(rival?40:60),0,1);
+    const correction = !k.human && human && !battle ? (gapToHuman > 0 ? band*(rival?.12:.08) : -band*(rival?cfg.mercy*.625:cfg.mercy)) : 0, pace = k.human ? 1 : battle && w.difficulty==='normal' ? .91 : cfg.pace;
     // Catch-up never lifts a bot above its class's own pace.
     k.aiSpeed += (Math.min(1,pace+correction)-k.aiSpeed)*Math.min(1,dt*2);
     k.aiAccel += (Math.min(1,pace+correction*1.3)-k.aiAccel)*Math.min(1,dt*2);
@@ -191,7 +201,7 @@
     k.wasDrift=input.drift;
     if (pressed && k.spin<=0) {
       if (k.grounded) {
-        k.vy=HOP; k.grounded=false; k.hopUntil=.12; k.airStart=w.time; k.trickEligible=false;
+        k.takeoffPress=w.time; k.vy=input.drift&&Math.abs(input.steer)>.2&&k.speed>7?4.8:HOP; k.grounded=false; k.hopUntil=.12; k.airStart=w.time; k.trickEligible=false;
         k.pendingDrift=Math.abs(input.steer)>.2 && k.speed>7;
         k.driftSign=Math.sign(input.steer)||1;
       } else k.trickPress=w.time;
@@ -213,7 +223,7 @@
       k.assistSteer=(k.assistSteer??steer)+(target-(k.assistSteer??steer))*Math.min(1,dt*(lining?8:6));
       steer=k.assistSteer;assistedThrottle=Math.max(.7,navigation.throttle);
     }else k.assistSteer=steer;
-    if (k.drift) steer=k.driftSign*D.clamp(.62+steer*k.driftSign*.45,.25,1.1);
+    if (k.drift) steer=k.driftSign*D.clamp(.32+steer*k.driftSign*.6,.08,1.1);
     k.visualSteer=steer; // Presentation state travels with snapshots, including assisted/AI steering.
     const forwardSpeed=k.vx*Math.sin(k.yaw)+k.vz*Math.cos(k.yaw);
     // A +Z-facing kart viewed from behind has screen-right along local -X.
@@ -223,10 +233,12 @@
     k.yaw=D.angle(k.yaw-steer*turnRate*(k.grounded?1:.3)*(forwardSpeed<-.5?-1:1)*dt);
     const sx=Math.sin(k.yaw), cz=Math.cos(k.yaw);
     k.surface=battle?'stone':T.surfaceAt(track,k.s,k.lane);
-    const max=stats.speed*k.aiSpeed*(k.surface==='mud'&&k.boost<=0?.54:1)+(k.boost>0?k.boostExtra:0);
+    // Drifting carries speed through a bend; ordinary full-lock turning scrubs it.
+    const cornerLoss=(battle?0:k.drift?.04:.20)*Math.abs(steer)*D.clamp(speedFraction,0,1);
+    const max=stats.speed*k.aiSpeed*(1-cornerLoss)*(k.surface==='mud'&&k.boost<=0?.54:1)+(k.boost>0?k.boostExtra:0);
     if (k.grounded && k.spin<=0) {
-      const direction=k.yaw+(k.drift?k.driftSign*.34:0), rx=Math.cos(direction), rz=-Math.sin(direction);
-      const lateral=k.vx*rx+k.vz*rz, grip=1-Math.exp(-(k.drift?5.2:14)*dt);
+      const direction=k.yaw+(k.drift?k.driftSign*.22:0), rx=Math.cos(direction), rz=-Math.sin(direction);
+      const lateral=k.vx*rx+k.vz*rz, grip=1-Math.exp(-(k.drift?7:14)*dt);
       k.vx-=rx*lateral*grip; k.vz-=rz*lateral*grip;
       const current=k.vx*sx+k.vz*cz, throttle=input.throttle>0?input.throttle*assistedThrottle:input.throttle;
       const target=throttle>=0?max*throttle:max*.32*throttle;
@@ -279,15 +291,18 @@
     if (!k.grounded) { k.vy-=GRAVITY*dt; k.y+=k.vy*dt; }
     if (onRoad && k.hopUntil<=0 && k.y<=floor+.65 && k.vy<=0) {
       k.y=floor+.65; k.vy=0; k.grounded=true;
-      if (!wasGrounded && k.trickEligible && w.time-k.airStart>=.23 && w.time-k.trickPress<=.2 && k.spin<=0)
-        boost(w,k,10,1.2,12,'LANDING BOOST');
+      if (!wasGrounded && k.trickEligible && w.time-k.airStart>=.23 && k.spin<=0) {
+        if(w.time-k.trickPress<=.3) boost(w,k,k.perfectTakeoff?20:15,k.perfectTakeoff?2.2:1.8,k.perfectTakeoff?23:18,k.perfectTakeoff?'PERFECT JUMP COMBO':'LANDING BOOST');
+        else if(k.perfectTakeoff) boost(w,k,10,1.2,12,'TAKEOFF BOOST');
+      }
+      k.perfectTakeoff=false;
       k.trickPress=-999; k.trickEligible=false; k.launchedAt=null;
     } else if(k.grounded) k.y=floor+.65;
     if(k.y<-20 || (!onRoad && !k.grounded && w.time-k.airStart>(k.human?1.6:2) && k.y<floor-3)) respawn(w,k);
     k.speed=Math.hypot(k.vx,k.vz);
     if(k.drift&&k.grounded){
       k.driftAngle=D.angle(Math.atan2(k.vx,k.vz)-k.yaw);
-      if(k.driftAngle*k.driftSign>.08&&Math.abs(k.driftAngle)<1.35) k.driftTime+=dt;
+      if(k.driftAngle*k.driftSign>.08&&Math.abs(k.driftAngle)<1.35&&Math.abs(input.steer)>.12) k.driftTime+=dt;
       k.driftLevel=k.driftTime>=1.3?3:k.driftTime>=.8?2:k.driftTime>=.35?1:0;
     }
     if(input.use) useItem(w,k);
@@ -334,7 +349,7 @@
     // Bolts and mines cancel out, so a mine thrown behind doubles as a shield.
     w.shots=w.shots.filter(shot=>{const trap=w.traps.find(t=>t.age>=MINE_ARM&&Math.abs(shot.y-t.y)<2&&Math.hypot(shot.x-t.x,shot.z-t.z)<1.4);if(!trap)return true;trap.blown=true;return false;});
     w.traps=w.traps.filter(trap=>{trap.age+=dt;if(trap.blown)return false;if(trap.age>25)return false;if(trap.age<MINE_ARM)return true;
-      const near=k=>k.id!==trap.owner&&!k.eliminated&&Math.abs(k.y-trap.y)<2?Math.hypot(k.x-trap.x,k.z-trap.z):Infinity;
+      const near=k=>k.id!==trap.owner&&!k.eliminated&&Math.abs(k.y-trap.y)<MINE_CLEARANCE?Math.hypot(k.x-trap.x,k.z-trap.z):Infinity;
       if(!w.racers.some(k=>near(k)<MINE_TRIGGER))return true;
       // The blast catches everyone close by, not just the kart that rolled over it.
       for(const k of w.racers)if(near(k)<MINE_BLAST)hit(w,k);return false;});
@@ -380,5 +395,5 @@
     const a=samples[low],b=samples[high],f=D.clamp((time-a[0])/(b[0]-a[0]||1),0,1);
     return [a[1]+(b[1]-a[1])*f,a[2]+(b[2]-a[2])*f,a[3]+(b[3]-a[3])*f,a[4]+D.angle(b[4]-a[4])*f];
   }
-  return {DIFFICULTIES,difficultyOf,STEP,RADIUS,POINTS,TURBO,MINE_TOSS,MINE_ARM,MINE_TRIGGER,MINE_BLAST,TIME_LIMIT,emptyInput,cleanInput,mergeInput,createWorld,step,standings,boost,hit,respawn,useItem,aiInput,nextGrandPrix,snapshot,sampleGhost};
+  return {DIFFICULTIES,difficultyOf,STEP,RADIUS,POINTS,TURBO,MINE_TOSS,MINE_ARM,MINE_TRIGGER,MINE_BLAST,MINE_CLEARANCE,TIME_LIMIT,emptyInput,cleanInput,mergeInput,createWorld,step,standings,boost,hit,respawn,useItem,aiInput,nextGrandPrix,snapshot,sampleGhost};
 });

@@ -7,10 +7,10 @@ A browser-native arcade kart racer for Unlike Hero. It uses classic JavaScript s
 Run the hub from the repository root:
 
 ```sh
-npm start
+npm run play
 ```
 
-Open `http://localhost:8080/games/crownfall-kart/`, or choose **Crownfall Kart** in the hub. If the server was already running when this folder was added, restart it to load the new online server. Static solo play needs no server simulation; the classic scripts and bundled assets are served over local HTTP. Online rooms require the Node hub server and HTTP/HTTPS.
+Open `http://localhost:8081/games/crownfall-kart/`, or choose **Crownfall Kart** in the hub. If the server was already running when this folder was added, restart it to load the new online server. Static solo play needs no server simulation; the classic scripts and bundled assets are served over local HTTP. Online rooms require the Node hub server and HTTP/HTTPS.
 
 The game defaults to a three-lap **Lap race** driven from the cockpit. Driving is manual by default on keyboard and gamepad; touch screens start with **Auto accelerate** and **Gentle steering assist** on, and both are options in the garage on every device. Manual left/right input always overrides assistance. Use **Explore the courses** to inspect the actual route maps, terrain and soundtrack tempo. Choose a weight class, mode and track, then **Take the crown** to play solo. **Host online** creates a four-letter room code; friends open the same hub server and choose **Join race**. The host starts when the lobby is ready. Up to eight humans can join, and AI fills remaining seats. Races already in progress reject late joins. Disconnecting turns that seat into an AI; the next connected human inherits host controls. Reconnection/seat reclamation and cross-server matchmaking are not included.
 
@@ -19,7 +19,8 @@ The game defaults to a three-lap **Lap race** driven from the cockpit. Driving i
 | W/S or Up/Down | Accelerate / brake and reverse |
 | A/D or Left/Right | Steer |
 | Space | Hop; hold through a turn to drift; release for a charged turbo |
-| Space while airborne | Tap in the last 0.16 seconds before a ramp landing for a trick boost |
+| Space at the amber launch line | Tap within 0.30 seconds of takeoff for a landing reward |
+| Space while airborne | Tap in the last 0.30 seconds before landing; combine both timings for a stronger jump combo |
 | E or item slot | Use held item |
 | R | Return to last validated checkpoint; invalidates a time-trial record |
 | C or View button | Switch between the Cockpit and Hood views (remembered on this device) |
@@ -50,7 +51,7 @@ Three presets trade acceleration/turning against speed and collision mass. Light
 
 Version 1.2 replaces the broad loop variants with figure-eight crossings, technical switchbacks, substantial elevation, gap jumps and a spiral climb. Driving acceleration is stronger; drift tiers charge sooner; edge contact preserves more momentum. Cyan road pads grant a short boost. Staying close behind another kart for 0.85 seconds grants a slipstream boost, with a cooldown. Gap ramps launch the kart, and trick timing remains a separate player action.
 
-Steering is screen-relative: D/Right, right touch input and positive gamepad input steer right on screen. The optional gentle steering assistant follows the course while no direction is held, using about two thirds of full steering and firming up over the last 50 m before a ramp so it never misses a gap; it never fires items or overrides active manual steering. Keyboard and touch steering ramp in over a few frames so taps make small corrections. New local ghosts use version 4; old ghosts remain stored but are excluded because the geometry and handling changed.
+Steering is screen-relative: D/Right, right touch input and positive gamepad input steer right on screen. The optional gentle steering assistant follows the course while no direction is held, using about two thirds of full steering and firming up over the last 50 m before a ramp so it never misses a gap; it never fires items or overrides active manual steering. Keyboard and touch steering ramp in over a few frames so taps make small corrections. New local ghosts use version 5; old ghosts remain stored but are excluded because the geometry and handling changed.
 
 ## Maps
 
@@ -69,7 +70,7 @@ Rift Sprint, lap race and time trial can select any of the eight courses; online
 
 ## Handling and items
 
-Drift time charges only while grounded with a signed slip angle, at 0.35 / 0.8 / 1.3 seconds. Releasing grants a bounded forward velocity impulse and temporary extra speed that grow clearly with the tier: about 8 / 12 / 16 m/s of push for 1.1 / 1.6 / 2.2 seconds. Bots get 60% of that, so a clean player drift wins. Charge is visible as blue, orange and purple sparks on the kart, the dash lights and a screen-edge glow. A trick press within 0.2 seconds of a ramp landing gives a 1.2-second landing boost. Holding a straight line, falling through the air, or taking a hit does not charge a turbo. A controller hop cannot farm a ramp trick. Discrete hop/use/reset inputs are latched through network packet coalescing. Boosts bypass mud, expire using simulation time, and cannot add unbounded velocity.
+Drift time charges only while grounded with a signed slip angle, at 0.35 / 0.8 / 1.3 seconds. Releasing grants a bounded forward velocity impulse and temporary extra speed that grow clearly with the tier: about 10 / 15 / 20 m/s of push for 1.3 / 1.9 / 2.7 seconds. Normal CPUs use 90% of that reward; Hard uses the full reward, while Easy uses 35%. Charge is visible as blue, orange and purple sparks on the kart, the dash lights and a screen-edge glow. A trick press within 0.30 seconds of a ramp landing gives a 1.8-second landing boost. Timing takeoff as well upgrades this to a 2.2-second jump combo. Holding a straight line, falling through the air, or taking a hit does not charge a turbo. A controller hop cannot farm a ramp trick. Discrete hop/use/reset inputs are latched through network packet coalescing. Boosts bypass mud, expire using simulation time, and cannot add unbounded velocity.
 
 | Placement | Default loot weights |
 | --- | --- |
@@ -194,3 +195,26 @@ Each profile specifies terrain type, asphalt color/roughness/normal strength, bo
 Wet reflections reconstruct visible surface normals from depth, march a reflection ray and refine depth intersections. They have the normal limitations of screen-space reflections: off-screen objects use the HDR environment fallback. Sun shafts are depth-occluded screen-space scattering, not ray-traced light transport. High mode adds a sixteen-sample volumetric cloud layer; lower modes retain the profile's HDR cloud backdrop. Performance mode uses profile-colored distance fog and PBR reflections without the advanced post stack. Reduced motion suppresses speed blur/DoF and softens shafts/cloud animation; weather never uses flashing lightning.
 
 Run `node tools/verify-crownfall-environments.cjs` with the same Playwright configuration described above. It checks all eight live WebGL profiles, unique skies/materials/architecture, finite weather and aerodynamic movement, wet SSR/shafts, delayed HDR isolation, bounded sky cache, graphics scaling, battle, fallback and mobile resize. `KART_ANGLE=metal` selects native Metal for local Mac testing; the default uses software rendering. Environment screenshots are saved in `output/crownfall-kart-environments/`.
+
+## Road readability and driving rewards (1.3)
+
+White road arrows follow the actual course through crossings and crests. Amber
+boards repeat before bends; the HUD calls the next bend or gap with its distance.
+Red lips and side signs mark a road end, and a cyan gate marks the landing. Ramp
+approaches continue to the gap instead of dropping at the launch line; humps on
+continuous roads descend smoothly.
+
+Drifts retain more corner speed and release stronger three-tier turbos. Counter
+steering widens the slide instead of forcing the kart into a tight circle. A straight
+hop can clear floor mines and carry momentum across mud. Ramps still provide a
+basic safe launch; tapping at takeoff earns a boost on landing, and a second timed
+tap before landing upgrades it to a jump combo. The boost bar shows remaining
+boost time as well as drift charge.
+
+Normal CPUs now run near full pace, lose less speed when ahead, and use timed
+jumps; Hard uses full-strength drift turbos and jump combos. Easy remains available.
+Balloon battle retains its existing pace and item timing. Driving assistance remains
+available, but a throttle-only assisted run is no longer competitive with skilled CPUs.
+
+Time-trial ghosts use a new `v5` record namespace because road heights and handling
+have changed. Earlier records remain stored but are not compared with these runs.

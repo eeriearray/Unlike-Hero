@@ -56,7 +56,7 @@ test('turbo release rewards once and resets the accumulated charge',()=>{
 
 test('only a recent airborne trick press rewards a valid ramp landing',()=>{
   function land(age,eligible=true){const w=trial(),k=w.racers[0];w.time=1;k.grounded=false;k.y+=.001;k.vy=-2;k.trickEligible=eligible;k.airStart=.5;k.trickPress=1-age;S.step(w,{});return k;}
-  assert.ok(land(.10).boost>0);assert.equal(land(.25).boost,0);assert.equal(land(.10,false).boost,0);
+  assert.ok(land(.10).boost>0);assert.equal(land(.35).boost,0);assert.equal(land(.10,false).boost,0);
 });
 
 test('hits cancel drift and boost, invincibility and hit grace block duplicate damage',()=>{

@@ -47,7 +47,7 @@ window.GAME_REGISTRY = [
     "id": "crownfall-kart",
     "title": "Crownfall Kart",
     "tagline": "Figure-eight skybridges, fortress switchbacks and a sixty-metre spiral. Drift, jump and boost through short cursed-kart sprints with a layered synth soundtrack.",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "sdk": "1.x",
     "entry": "index.html",
     "server": "server/index.mjs",

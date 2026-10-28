@@ -173,13 +173,6 @@
           for(let i=0;i<3;i++)for(const side of [-1,1]){const arrow=this.box(group,side*pad.width*.18,.12,(i-1)*1.2,pad.width*.42,.07,.26,'#73ffdf',true);arrow.rotation.y=side*.45;}
         }
         this.buildRoadMarkers(track);
-        for(const u of [.08,.26,.43,.6,.77,.92]){
-          const p=T.sample(track,u*track.length,track.width/2+5),turn=D.angle(T.sample(track,u*track.length+30).heading-p.heading);
-          if(!this.clearOfRoad(track,p.x,p.z,p.y,p.y+5,2,p.s))continue;
-          const board=this.sign(Math.abs(turn)>.25?(turn>0?'<<< DRIFT LEFT':'DRIFT RIGHT >>>'):'FULL THROTTLE',T.sectionAt(track,u*track.length),track.accent);
-          board.position.set(p.x,p.y+3,p.z);board.rotation.y=p.heading+Math.PI;this.environment.add(board);
-          const support=this.box(this.environment,p.x,p.y+1,p.z,.2,4,.2,'#272434');support.rotation.y=p.heading;
-        }
         for(let i=0;i<3;i++){
           const p=T.sample(track,(i+.1)/3*track.length),portal=new THREE.Group();
           if([-1,1].some(side=>{const q=T.sample(track,p.s,side*(track.width/2+.8));return !this.clearOfRoad(track,q.x,q.z,p.y,p.y+12,2,p.s);}))continue;portal.position.set(p.x,p.y,p.z);portal.rotation.y=p.heading;this.environment.add(portal);
@@ -234,6 +227,29 @@
         this.box(g,0,.75,0,.1,1.5,.1,'#1d3a44');this.box(g,0,.75,-.03,.62,1.25,.04,'#0e2129');chevrons(g,.38,pad);glow(g,0,1.55,0,.22,.1,.22,pad);
       }
       const half=track.width/2;
+      this.routeMarkerCounts={arrows:0,bends:0,gaps:(track.gaps||[]).length};
+      // A forward-pointing racing ribbon makes the next piece of road readable
+      // through crossings, blind crests and bends even before a sign can be read.
+      for(let s=8;s<track.length;s+=18) {
+        if(T.inGap(track,s)||T.inGap(track,s+2)||T.inGap(track,s-2))continue;
+        const nearJump=(track.ramps||[]).some(r=>D.mod(r*track.length-s,track.length)<44);
+        const g=place(s,0,.055),color=nearJump?warn:'#eee0b6';
+        for(const side of [-1,1]){const bar=glow(g,side*.55,0,0,1.5,.035,.22,color);bar.rotation.y=side*.55;}
+        this.routeMarkerCounts.arrows++;
+      }
+      for(const cue of track.turns||[]) {
+        const side=-Math.sign(cue.bend),label=cue.side==='left'?'<<< LEFT':'RIGHT >>>';
+        // Three boards lead into each real bend, facing the approaching driver.
+        for(const lead of [44,27,10]) {
+          const s=cue.s-lead,p=T.sample(track,s,side*(half+1));
+          if(T.inGap(track,s)||!this.clearOfRoad(track,p.x,p.z,p.y,p.y+4,1.8,p.s))continue;
+          const g=place(s,side*(half+1));
+          this.box(g,0,.8,0,.15,1.6,.15,'#292a31');
+          const board=this.sign(label,cue.severity==='hairpin'?'HAIRPIN · BRAKE OR DRIFT':cue.severity==='sharp'?'SHARP BEND · DRIFT':'FOLLOW THE ARROWS',warn,4.4,1.35);
+          board.position.set(0,2.35,0);board.rotation.y=Math.PI;g.add(board);
+          this.routeMarkerCounts.bends++;
+        }
+      }
       for(const u of track.ramps||[]){
         const r=u*track.length,a=T.sample(track,r-7),b=T.sample(track,r),rise=.32;
         // The kicker itself: a low wedge across the road with glowing arrows, ending at the launch line.
@@ -244,13 +260,24 @@
         // Lip pylons and an overhead gantry make the launch visible from far down the road.
         for(const side of [-1,1]){const g=place(r,side*(half+.45));this.box(g,0,1.2,0,.24,2.4,.24,'#2b2733');for(let i=0;i<3;i++){if(i%2)this.box(g,0,.55+i*.7,0,.27,.22,.27,'#f0ede6');else glow(g,0,.55+i*.7,0,.27,.22,.27,warn);}}
         const gantry=place(r-32);for(const side of [-1,1])this.box(gantry,side*(half+.7),3,0,.3,6,.3,'#2b2733');this.box(gantry,0,5.8,0,track.width+1.8,.3,.3,'#2b2733');
-        const board=this.sign('JUMP AHEAD','HOLD YOUR LINE · TAP SPACE BEFORE LANDING',warn,7,1.6);board.position.set(0,5,-.2);board.rotation.y=Math.PI;gantry.add(board);
+        const board=this.sign('JUMP AT AMBER LINE','TAP TAKEOFF · TAP AGAIN BEFORE LANDING',warn,7.5,1.6);board.position.set(0,5,-.2);board.rotation.y=Math.PI;gantry.add(board);
         // Painted approach chevrons count down to the kicker.
         for(let d=12;d<=40;d+=7){const g=place(r-d,0,.03);for(const side of [-1,1]){const bar=glow(g,side*.75,0,0,1.9,.03,.3,warn);bar.rotation.y=side*.55;}}
       }
       // Gaps: a red lip where the road ends and a bright landing line where it resumes.
       for(const gap of track.gaps||[]){
-        for(const [u,color] of [[gap.start,danger],[gap.end,warn]]){const g=place(u*track.length+(color===danger?-.3:.3),0,.04);glow(g,0,0,0,track.width,.05,.35,color);for(const side of [-1,1])glow(g,side*(half+.45),.9,0,.22,1.8,.22,color);}
+        for(const [u,color] of [[gap.start,danger],[gap.end,pad]]){const g=place(u*track.length+(color===danger?-.3:.3),0,.04);glow(g,0,0,0,track.width,.05,.55,color);for(const side of [-1,1])glow(g,side*(half+.45),1.3,0,.3,2.6,.3,color);}
+        const span=Math.round((gap.end-gap.start)*track.length);
+        for(const side of [-1,1]) {
+          const lip=place(gap.start*track.length-3,side*(half+2.4));
+          this.box(lip,0,.7,0,.15,1.4,.15,'#292a31');
+          const board=this.sign('GAP · '+span+' m','ROAD ENDS HERE',danger,3.6,1.35);board.position.y=2.2;board.rotation.y=Math.PI;lip.add(board);
+        }
+        // Cyan marks a real landing, never a strip of apparent road over the void.
+        const landing=place(gap.end*track.length+3);
+        for(const side of [-1,1])glow(landing,side*(half+.6),2.2,0,.22,4.4,.22,pad);
+        glow(landing,0,4.35,0,track.width+1.4,.15,.18,pad);
+        for(let d=3;d<=15;d+=6){const g=place(gap.end*track.length+d,0,.065);for(const side of [-1,1]){const bar=glow(g,side*.7,0,0,1.7,.04,.28,pad);bar.rotation.y=side*.55;}}
       }
       // Hundreds of small boxes become one mesh per material; signboards keep their own canvas materials.
       root.updateMatrixWorld(true);const buckets=new Map(),keep=[];

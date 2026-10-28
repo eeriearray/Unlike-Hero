@@ -1,7 +1,7 @@
 (function(){
   'use strict';
   const D=CrownData,T=CrownTrack,S=CrownSim,$=id=>document.getElementById(id);
-  const hub=window.Hub?.init({id:'crownfall-kart',version:'1.2.0',title:'Crownfall Kart'});
+  const hub=window.Hub?.init({id:'crownfall-kart',version:'1.3.0',title:'Crownfall Kart'});
   const storage=hub?.storage()||{get:(k,f)=>{try{return JSON.parse(localStorage.getItem(`crownfall.${k}`))??f;}catch{return f;}},set:(k,v)=>{try{localStorage.setItem(`crownfall.${k}`,JSON.stringify(v));}catch{}}};
   const descriptions={sprint:'A start-to-finish dash. Ten checkpoints. No waiting for another lap.',race:'Three laps. Eight karts. One named rival who wants your crown.',gp:'Four realms. Four races. One crown. Points carry across the whole cup.',trial:'Three clean laps. No items. No rivals. Chase your personal-best ghost.',battle:'Three balloons each. An enclosed arena. Be the last ghost standing.'};
   let classId=storage.get('class','medium'),mode='race',trackIndex=0,screen='menu',paused=false,connection=null,room=null,playerId='player';
@@ -47,8 +47,8 @@
     const best=loadGhost();$('best-time').textContent=mode==='trial'&&best?`BEST ${formatTime(best.duration)}`:'';
   }
   function loadGhost(){
-    const g=storage.get(`ghost.v4.${trackIndex}.${classId}`,null);
-    if(!g||g.version!==4||g.track!==trackIndex||g.classId!==classId||g.laps!==3||!Number.isFinite(g.duration)||g.duration<=0||g.duration>240||!Array.isArray(g.samples)||g.samples.length<2||g.samples.length>5000)return null;
+    const g=storage.get(`ghost.v5.${trackIndex}.${classId}`,null);
+    if(!g||g.version!==5||g.track!==trackIndex||g.classId!==classId||g.laps!==3||!Number.isFinite(g.duration)||g.duration<=0||g.duration>240||!Array.isArray(g.samples)||g.samples.length<2||g.samples.length>5000)return null;
     let last=-1;
     for(const sample of g.samples){if(!Array.isArray(sample)||sample.length!==5||sample.some(n=>typeof n!=='number'||!Number.isFinite(n))||sample[0]<last||sample[0]<0||sample[0]>241||Math.abs(sample[1])>500||Math.abs(sample[2])>200||Math.abs(sample[3])>500)return null;last=sample[0];}
     return g;
@@ -83,7 +83,7 @@
   $('auto-drive').onchange=()=>{input.auto=$('auto-drive').checked;saveSettings();};$('steering-assist').onchange=()=>{input.assist=$('steering-assist').checked;saveSettings();};
   for(const button of document.querySelectorAll('[data-mode]'))button.onclick=()=>{
     mode=button.dataset.mode;for(const b of document.querySelectorAll('[data-mode]')){b.classList.toggle('selected',b===button);b.setAttribute('aria-pressed',String(b===button));}
-    $('cpu-difficulty').disabled=mode==='trial';$('cpu-note').textContent=mode==='trial'?'Time trial has no CPU opponents.':'Controls CPU pace, drift boosts and item use. The host chooses for online races.';
+    $('cpu-difficulty').disabled=mode==='trial';$('cpu-note').textContent=mode==='trial'?'Time trial has no CPU opponents.':'Normal CPUs race near full pace and use jump boosts. Hard CPUs chain full turbos and jump combos. Easy leaves more room to learn.';
     $('mode-description').textContent=descriptions[mode];$('host').disabled=mode==='trial';$('join').disabled=mode==='trial';$('track').disabled=mode==='battle';$('course-open').disabled=mode==='battle';preview();
   };
   for(const button of document.querySelectorAll('[data-class]'))button.onclick=()=>{
@@ -167,8 +167,8 @@
       if(me?.finishTime==null)$('result-title').textContent='Out of time';
       summary=me?.finishTime==null?'The four-minute limit was reached. Complete all three laps to save a ghost.':world.recordValid?`${formatTime(me.finishTime)} · Three laps, no shortcuts.`:'Respawning invalidated this record. Try again for a clean ghost.';
       if(world.recordValid&&me?.finishTime!=null&&recording.length>1&&(!ghost||me.finishTime<ghost.duration)){
-        const record={version:4,track:world.trackIndex,classId:me.classId,laps:3,duration:me.finishTime,samples:recording};
-        storage.set(`ghost.v4.${world.trackIndex}.${me.classId}`,record);summary=`PERSONAL BEST · ${formatTime(me.finishTime)} · Ghost saved on this device.`;
+        const record={version:5,track:world.trackIndex,classId:me.classId,laps:3,duration:me.finishTime,samples:recording};
+        storage.set(`ghost.v5.${world.trackIndex}.${me.classId}`,record);summary=`PERSONAL BEST · ${formatTime(me.finishTime)} · Ghost saved on this device.`;
       }
     }
     $('result-summary').textContent=summary;
@@ -182,21 +182,38 @@
     const next=S.nextGrandPrix(world);if(next){world=next;accumulator=0;renderer.readyCamera=false;setScreen('race');lastCountdown=0;}
     else startSolo();
   };
+  function updateRouteCue(k){
+    const track=T.makeTrack(world.trackIndex),box=$('route-cue');
+    box.classList.toggle('hidden',world.mode==='battle'||world.phase!=='racing'||k.finishTime!=null);
+    if(box.classList.contains('hidden'))return;
+    let symbol='↑',title='FOLLOW THE ARROWS',detail='Stay between the edge markings',kind='straight';
+    const cue=T.guidance(track,k.s,k.speed),floor=T.sample(track,k.s).y;
+    if(!k.grounded&&k.launchedAt!=null){
+      const windowOpen=k.vy<0&&k.y-floor<2.4;
+      symbol='↓';title=windowOpen?'TAP JUMP NOW':'AIRBORNE';detail=windowOpen?'Time the landing for a boost':'Tap again just before landing';kind='jump';
+    }else if(!k.grounded&&k.y<floor-.5){symbol='!';title='OFF THE ROAD';detail='Recovering to the last safe section';kind='danger';}
+    else if(k.grounded&&Math.abs(k.lane)>T.edgeAt(track,k.segment,k.lane)-1.5){symbol=k.lane>0?'→':'←';title='ROAD EDGE';detail=k.lane>0?'Steer right toward the road':'Steer left toward the road';kind='danger';}
+    else if(cue.kind==='gap'){symbol='⇧';title=`GAP · ${Math.ceil(cue.distance/5)*5} m`;detail='Jump at amber · land at cyan';kind='jump';}
+    else if(cue.kind==='turn'){symbol=cue.side==='left'?'←':'→';title=`${cue.severity==='hairpin'?'HAIRPIN':cue.severity==='sharp'?'SHARP':''} ${cue.side.toUpperCase()} · ${Math.ceil(cue.distance/5)*5} m`.trim();detail=cue.severity==='bend'?'Follow the arrows through the bend':'Brake or hold drift through the bend';kind='turn';}
+    box.dataset.kind=kind;$('route-symbol').textContent=symbol;$('route-title').textContent=title;$('route-detail').textContent=detail;
+  }
   function hud(){
     const k=world.racers.find(k=>k.id===playerId)||world.racers[0];
     $('place').textContent=world.mode==='trial'?'TT':world.mode==='battle'?k.balloons:k.place;
     $('position-label').innerHTML=world.mode==='battle'?'BALLOONS<br>REMAINING':world.mode==='trial'?'CLEAN<br>RUN':`/ ${world.racers.length}<br>POSITION`;
     $('lap').textContent=world.mode==='sprint'?`RIFT SPRINT · GATE ${Math.min(10,Math.max(0,k.gate))} / 10`:world.mode==='battle'?`${world.racers.filter(r=>!r.eliminated).length} KARTS REMAIN`:world.mode==='gp'?`RACE ${world.round+1} / 4 · LAP ${k.lap} / ${world.laps}`:`LAP ${k.lap} / ${world.laps}`;
     $('timer').textContent=formatTime(world.time);$('race-name').textContent=world.mode==='battle'?'THE HOLLOW RING':k.gate<0?D.TRACKS[world.trackIndex].zones[0]:T.sectionAt(T.makeTrack(world.trackIndex),k.s);$('speed').textContent=Math.round(k.speed*3.6);
-    const charge=D.clamp(k.driftTime/1.3,0,1),tier=['#65cfff','#65cfff','#ff963c','#bd73ff'][k.driftLevel];$('turbo-fill').style.width=`${charge*100}%`;
+    const charge=D.clamp(k.driftTime/1.3,0,1),boostLeft=D.clamp(k.boost/2.7,0,1),tier=['#65cfff','#65cfff','#ff963c','#bd73ff'][k.driftLevel];$('turbo-fill').style.width=`${(k.boost>0&&!k.drift?boostLeft:charge)*100}%`;
     // The screen edge glows with the drift charge in the tier colour, so it reads without looking down.
     $('drift-glow').style.opacity=k.drift&&k.grounded?String(.25+charge*.75):k.boost>0?'.35':'0';$('drift-glow').style.setProperty('--tier',k.boost>0&&!k.drift?'#8ffff0':tier);
     const rival=world.racers.find(r=>r.id===world.rival);$('rival').classList.toggle('hidden',!rival||k.finishTime!=null||world.phase!=='racing');
     if(rival){const gap=(rival.distance-k.distance)/Math.max(12,k.speed),ahead=gap>0;$('rival-name').textContent=rival.name.toUpperCase();$('rival-gap').textContent=`${ahead?'+':'−'}${Math.abs(gap).toFixed(1)}s`;$('rival').classList.toggle('behind',!ahead);$('rival-label').textContent=ahead?'RIVAL AHEAD · CHASE':'RIVAL BEHIND · HOLD';}$('turbo-fill').style.background=k.driftLevel===3?'#bd73ff':k.driftLevel===2?'#ff963c':'#65cfff';
-    $('turbo-level').textContent=['','I','II','III'][k.driftLevel];$('turbo-label').textContent=k.autopilot>0?'PHANTOM DRIVE':k.boost>0?'BOOST ACTIVE':k.draft>.1?'DRAFTING · STAY CLOSE':k.drift?'RELEASE TO BOOST':'HOP · HOLD · RELEASE';
-    $('surface-label').textContent=k.eliminated?'ELIMINATED · SPECTATING':!k.grounded?'AIRBORNE · TAP TO TRICK':k.invincible>0?'UNDYING / PROTECTED':k.surface==='mud'?'HEX MUD / SLOWED':'ASPHALT / GRIP';
+    $('turbo-level').textContent=['','I','II','III'][k.driftLevel];$('turbo-label').textContent=k.autopilot>0?'PHANTOM DRIVE':k.boost>0?`BOOST · ${k.boost.toFixed(1)}s`:k.draft>.1?'DRAFTING · STAY CLOSE':k.drift?'RELEASE TO BOOST':'HOP · HOLD · RELEASE';
+    $('surface-label').textContent=k.eliminated?'ELIMINATED · SPECTATING':!k.grounded?'AIRBORNE · TAP BEFORE LANDING':k.invincible>0?'UNDYING / PROTECTED':k.surface==='mud'?'HEX MUD / SLOWED':'ASPHALT / GRIP';
     const item=D.ITEMS[k.item];$('item-symbol').textContent=item?.symbol||'◇';$('item-name').textContent=item?.name||(world.mode==='trial'?'Clean track':'No item');$('item-hint').textContent=item?'E · tap to use':world.mode==='trial'?'No items in time trial':'E · find a rift box';$('item').classList.toggle('ready',!!item);$('item').setAttribute('aria-label',item?`Use ${item.name}: ${item.description}`:'No item held');
     $('notice').textContent=k.noticeUntil>world.time?k.notice:'';
+    updateRouteCue(k);
+
     const count=world.phase==='countdown'?Math.ceil(world.countdown):world.time<.7?'GO':'';$('countdown').textContent=count;
     if(count&&count!==lastCountdown){lastCountdown=count;audio.uiSound(count==='GO'?'go':'count');}
     const sorted=[...world.racers].sort((a,b)=>a.place-b.place).slice(0,6);
