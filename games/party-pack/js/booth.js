@@ -101,8 +101,16 @@
     const AC = window.AudioContext || window.webkitAudioContext; const ac = new AC();
     const an = ac.createAnalyser(); an.fftSize = 512; ac.createMediaStreamSource(B.stream).connect(an);
     const data = new Uint8Array(an.fftSize);
-    const tick = () => { an.getByteTimeDomainData(data); let peak = 0; for (const v of data) peak = Math.max(peak, Math.abs(v - 128)); const el = document.getElementById('lvl'); if (el) el.style.width = Math.min(100, peak / 1.1) + '%'; requestAnimationFrame(tick); };
-    tick();
+    const meterGate = window.HubPerformance?.frameGate(30);
+    const tick = now => {
+      const el = document.getElementById('lvl');
+      if (el && B.rec && !document.hidden && (!meterGate || meterGate(now))) {
+        an.getByteTimeDomainData(data); let peak = 0; for (const v of data) peak = Math.max(peak, Math.abs(v - 128));
+        const width = Math.min(100, peak / 1.1).toFixed(1) + '%'; if (el.style.width !== width) el.style.width = width;
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
     return B.stream;
   }
   async function toggleRec() {

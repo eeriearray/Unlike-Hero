@@ -5,7 +5,7 @@
     constructor(canvas){
       // r147 stores CSS colors in linear space only when legacy color management is disabled.
       THREE.ColorManagement.legacyMode=false;
-      this.renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
+      this.renderer=new THREE.WebGLRenderer({canvas,antialias:!root.HubPerformance?.low,alpha:false,powerPreference:'high-performance'});
       this.renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.6));
       this.renderer.outputEncoding=THREE.sRGBEncoding;this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=.95;
       this.scene=new THREE.Scene();this.camera=new THREE.PerspectiveCamera(59,1,.1,1600);
@@ -29,7 +29,7 @@
       this.particleMesh=new THREE.Points(particleGeo,new THREE.PointsMaterial({size:.12,map:new THREE.CanvasTexture(glowCanvas),vertexColors:true,transparent:true,opacity:.7,blending:THREE.AdditiveBlending,depthWrite:false}));this.particleMesh.frustumCulled=false;this.scene.add(this.particleMesh);
       const streakGeo=new THREE.BufferGeometry();streakGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(36*6),3));
       this.streaks=new THREE.LineSegments(streakGeo,new THREE.LineBasicMaterial({color:'#c7ecff',transparent:true,opacity:0,depthTest:false,depthWrite:false}));this.streaks.frustumCulled=false;this.camera.add(this.streaks);this.scene.add(this.camera);
-      this.post=new root.KartPostProcessing(this.renderer);this.ambientWeather=new root.TrackWeather(this);this.initSmoke();this.setQuality('high');
+      this.post=new root.KartPostProcessing(this.renderer);this.ambientWeather=new root.TrackWeather(this);this.initSmoke();this.setQuality(root.HubPerformance&&root.HubPerformance.tier!=='high'?'performance':'balanced');
       this.resize();window.addEventListener('resize',()=>this.resize());
     }
     registerMaterials(){
@@ -53,7 +53,7 @@
       this.csm=new root.CSM({camera:this.camera,parent:this.scene,cascades:settings.cascades,maxFar:this.quality==='performance'?90:260,shadowMapSize:settings.size,mode:'practical',lightDirection:new THREE.Vector3(.65,-.32,.7).normalize(),lightIntensity:2.6,lightNear:1,lightFar:800,lightMargin:180,shadowBias:-.000015});
       this.csm.fade=this.quality!=='performance';for(const light of this.csm.lights){light.color.set('#ffe0ac');light.shadow.normalBias=.025;}
       this.csm.updateFrustums();this.registerMaterials();this.scenery.setQuality(this.quality);this.ambientWeather.setQuality(this.quality);if(this.profile)this.applyProfileLighting();
-      this.renderScale=settings.scale;this.pixelRatio=Math.min(devicePixelRatio||1,settings.ratio);this.renderer.setPixelRatio(this.pixelRatio*this.renderScale);
+      this.renderScale=settings.scale;this.ratioCap=settings.ratio;this.pixelRatio=root.HubPerformance?.pixelRatio(innerWidth,innerHeight,settings.ratio)??Math.min(devicePixelRatio||1,settings.ratio);this.renderer.setPixelRatio(this.pixelRatio*this.renderScale);
       this.post.quality=this.quality;this.post.resetHistory=true;this.resize();this.slowFrames=0;this.fastFrames=0;
       if(previousQuality!==this.quality){for(const mesh of this.karts.values())this.removeKart(mesh);this.karts.clear();if(this.ghost){this.removeKart(this.ghost);this.ghost=null;}}
       this.renderer.domElement.dataset.graphics=this.quality;
@@ -80,7 +80,7 @@
     mat(color,emissive=false){const key=color+emissive;if(!this.materials.has(key))this.materials.set(key,new THREE.MeshStandardMaterial({color,roughness:.78,metalness:.08,roughnessMap:emissive?null:this.scenery?.rock.roughnessMap,emissive:emissive?color:0,emissiveIntensity:emissive ? 3.2 : 0}));return this.materials.get(key);}
     mesh(geometry,color,parent=this.environment,emissive=false){const m=new THREE.Mesh(geometry,this.mat(color,emissive));parent.add(m);return m;}
     box(parent,x,y,z,sx,sy,sz,color,emissive=false){const m=this.mesh(this.unitBox,color,parent,emissive);m.position.set(x,y,z);m.scale.set(sx,sy,sz);return m;}
-    resize(){const w=innerWidth,h=innerHeight;this.renderer.setSize(w,h,false);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();if(this.csm)this.csm.updateFrustums();if(this.post)this.post.resize(Math.round(w*this.renderer.getPixelRatio()),Math.round(h*this.renderer.getPixelRatio()));}
+    resize(){const w=innerWidth,h=innerHeight;if(root.HubPerformance&&this.ratioCap){this.pixelRatio=root.HubPerformance.pixelRatio(w,h,this.ratioCap);this.renderer.setPixelRatio(this.pixelRatio*this.renderScale);}this.renderer.setSize(w,h,false);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();if(this.csm)this.csm.updateFrustums();if(this.post)this.post.resize(Math.round(w*this.renderer.getPixelRatio()),Math.round(h*this.renderer.getPixelRatio()));}
     sign(text,sub,color,width=5,height=2){
       const canvas=document.createElement('canvas');canvas.width=512;canvas.height=192;const ctx=canvas.getContext('2d');
       ctx.fillStyle='#151521';ctx.fillRect(0,0,512,192);ctx.strokeStyle=color;ctx.lineWidth=8;ctx.strokeRect(5,5,502,182);ctx.fillStyle=color;ctx.font=sub?'bold 40px Arial':'bold 108px Arial';ctx.textAlign='center';ctx.fillText(text,256,sub?82:132);if(sub){ctx.fillStyle='#f9eddb';ctx.font='19px Arial';ctx.fillText(sub,256,137);}

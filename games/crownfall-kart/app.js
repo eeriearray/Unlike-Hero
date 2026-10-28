@@ -15,7 +15,7 @@
   try{renderer=new KartRenderer($('world'));}catch(error){$('fatal').classList.remove('hidden');$('fatal-message').textContent='This game needs WebGL. Enable hardware acceleration or try a recent Chrome, Edge, Firefox or Safari browser.';console.error(error);return;}
   const graphicsNotes={performance:'Lower resolution, one shadow cascade, reduced foliage. Post effects off. Targets 60 FPS; hardware dependent.',balanced:'Two shadow cascades, SSAO, bloom and atmospheric haze. Resolution adapts to frame time.',high:'Three shadow cascades, SSAO, cinematic focus and speed blur. Best on a dedicated GPU.'};
   function applyGraphics(value){renderer.setQuality(value);$('graphics-quality').value=renderer.quality;$('graphics-note').textContent=graphicsNotes[renderer.quality]+(!renderer.post.enabled?' HDR post effects are unavailable on this device.':'');storage.set('graphics.v1',renderer.quality);}
-  applyGraphics(storage.get('graphics.v1','balanced'));
+  applyGraphics(storage.get('graphics.v1',window.HubPerformance&&window.HubPerformance.tier!=='high'?'performance':'balanced'));
   $('graphics-quality').addEventListener('change',event=>applyGraphics(event.target.value));
   $('world').addEventListener('webglcontextlost',event=>{event.preventDefault();input.clear();paused=true;$('fatal').classList.remove('hidden');$('fatal-message').textContent='The graphics context was interrupted. Reload to reopen the track.';});
   $('name').value=storage.get('name',hub?.player()?.name==='Player'?'Racer':hub?.player()?.name||'Racer');
@@ -237,8 +237,8 @@
     }
     const me=world.racers.find(k=>k.id===playerId);audio.update({world,me,screen},dt);
     const ghostPose=screen!=='menu'&&world.mode==='trial'&&ghost?S.sampleGhost(ghost.samples,world.time):null;
-    renderer.render(world,playerId,dt,screen==='menu'||screen==='lobby',ghostPose);
-    if(uiTime>=.075&&['race','paused'].includes(screen)){uiTime=0;hud();}
+    if(!document.hidden)renderer.render(world,playerId,dt,screen==='menu'||screen==='lobby',ghostPose);
+    if(!document.hidden&&uiTime>=.075&&['race','paused'].includes(screen)){uiTime=0;hud();}
     requestAnimationFrame(frame);
   }
   // Small read-only debug surface for diagnostics; no online authoritative state can be modified through it.

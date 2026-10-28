@@ -611,6 +611,7 @@ net.addEventListener('session-lost', (e) => {
 
 // Pending view while a module loads
 setInterval(() => {
+  if (document.hidden) return;
   const m = state.match;
   if (m && !m.loading && m.pendingView) { const v = m.pendingView; m.pendingView = null; updateMatch(m.matchId, v); }
 }, 100);

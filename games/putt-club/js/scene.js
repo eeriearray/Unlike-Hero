@@ -9,7 +9,7 @@
   function quality() {
     var q = PC.store.get('quality', 'auto');
     if (q !== 'auto') return q;
-    return PC.isTouch() || (navigator.hardwareConcurrency || 4) <= 4 ? 'low' : 'high';
+    return PC.isTouch() || (global.HubPerformance && global.HubPerformance.tier !== 'high') || (navigator.hardwareConcurrency || 4) <= 4 ? 'low' : 'high';
   }
 
   function Scene(canvas, dom) {
@@ -23,10 +23,11 @@
     renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
-    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.enabled = !global.HubPerformance?.low;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     PC.maxAniso = Math.min(8, renderer.capabilities.getMaxAnisotropy());
-    this.pixelRatio = Math.min(global.devicePixelRatio || 1, this.quality === 'low' ? 1.25 : 2);
+    this.ratioCap = this.quality === 'low' ? 1.25 : 2; this.resolutionScale = 1;
+    this.pixelRatio = global.HubPerformance?.pixelRatio(canvas.clientWidth, canvas.clientHeight, this.ratioCap) ?? Math.min(global.devicePixelRatio || 1, this.ratioCap);
     renderer.setPixelRatio(this.pixelRatio);
 
     this.scene = new THREE.Scene();
@@ -35,7 +36,7 @@
     this.hemi = new THREE.HemisphereLight('#ffffff', '#888888', 0.6); this.scene.add(this.hemi);
     this.ambient = new THREE.AmbientLight('#ffffff', 0.1); this.scene.add(this.ambient);
     this.sun = new THREE.DirectionalLight('#ffffff', 1.4);
-    this.sun.castShadow = true;
+    this.sun.castShadow = renderer.shadowMap.enabled;
     var sz = this.quality === 'low' ? 1024 : 2048;
     this.sun.shadow.mapSize.set(sz, sz);
     this.sun.shadow.bias = -0.0004; this.sun.shadow.normalBias = 0.025;
@@ -63,6 +64,8 @@
 
   S.resize = function () {
     var w = this.canvas.clientWidth || global.innerWidth, h = this.canvas.clientHeight || global.innerHeight;
+    this.pixelRatio = (global.HubPerformance?.pixelRatio(w, h, this.ratioCap) ?? Math.min(global.devicePixelRatio || 1, this.ratioCap)) * this.resolutionScale;
+    this.renderer.setPixelRatio(this.pixelRatio);
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / Math.max(1, h);
     this.camera.updateProjectionMatrix();
@@ -370,16 +373,17 @@
 
   S.frame = function (now) {
     var rawDt = (now - this.last) / 1000;
-    var dt = Math.min(0.05, rawDt); this.last = now; this.t += dt;
+    var dt = Math.min(0.05, rawDt); this.last = now;
+    if (document.hidden || (this.dom.hidden && this.dom.hidden())) return;
+    this.t += dt;
     this.perf(rawDt);
     // Graceful degradation: when frames run under ~50 fps for a couple of seconds, step the resolution down
-    // a notch (never below 1x), so a busy course on a laptop stays smooth instead of staying laggy.
+    // a notch within the device pixel budget, including sub-1x rendering on very slow devices.
     if (dt > 0.02) this.slowFrames++; else this.slowFrames = Math.max(0, this.slowFrames - 2);
-    if (this.slowFrames > 120 && this.pixelRatio > 1) {
-      this.pixelRatio = Math.max(1, Math.round((this.pixelRatio - 0.25) * 4) / 4);
-      this.renderer.setPixelRatio(this.pixelRatio); this.resize(); this.slowFrames = 0;
+    if (this.slowFrames > 120 && this.resolutionScale > 0.55) {
+      this.resolutionScale = Math.max(0.55, this.resolutionScale - 0.15);
+      this.resize(); this.slowFrames = 0;
     }
-    if (this.dom.hidden && this.dom.hidden()) return;
     var serverNow = this.interp.serverNow(), renderT = serverNow - this.interp.delay;
     var self = this, focus = null, myBall = null, rolling = 0;
     if (this.holeView) {

@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Share+Tech+Mono&family=Saira+Stencil+One&family=Chakra+Petch:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@400;600&display=swap" media="print" onload="this.media='all'">
+<script src="../../shared/sdk/performance.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
 <!-- optional game-hub SDK: the game runs the same without it -->
 <script src="../../shared/sdk/hub-config.js"></script>
@@ -1023,8 +1024,9 @@ function carbonTexture() {
 // ---------- renderer, room, lights ----------
 function initGL() {
   const canvas = $('#gl');
-  const r = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-  r.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); r.outputEncoding = THREE.sRGBEncoding;
+  const r = new THREE.WebGLRenderer({ canvas, antialias: !window.HubPerformance?.low, powerPreference: 'high-performance' });
+  E.resolutionBudget = window.HubPerformance?.createResolutionBudget(2);
+  r.setPixelRatio(E.resolutionBudget?.ratio(innerWidth, innerHeight) ?? Math.min(devicePixelRatio || 1, 2)); r.outputEncoding = THREE.sRGBEncoding;
   r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.06;
   r.shadowMap.enabled = G.shadows; r.shadowMap.type = THREE.PCFSoftShadowMap;
   E.maxAniso = Math.min(8, r.capabilities.getMaxAnisotropy());
@@ -1041,7 +1043,7 @@ function initGL() {
   const bounce = new THREE.PointLight(0xff9a50, .35, 22); bounce.position.set(0, .6, 7); scene.add(bounce);
   const spot = new THREE.SpotLight(0xffe0b0, 2.3, 46, .62, .6, 1.1);
   spot.position.set(.6, 12.5, 4.2); spot.target.position.set(0, 2.4, 0); spot.castShadow = true;
-  spot.shadow.mapSize.set(2048, 2048); spot.shadow.bias = -.0003; spot.shadow.normalBias = .02; spot.shadow.radius = 5;
+  spot.shadow.mapSize.set(window.HubPerformance?.tier === 'high' ? 2048 : 1024, window.HubPerformance?.tier === 'high' ? 2048 : 1024); spot.shadow.bias = -.0003; spot.shadow.normalBias = .02; spot.shadow.radius = 5;
   scene.add(spot, spot.target);
   const rim = new THREE.DirectionalLight(0x8fb4ff, .45); rim.position.set(-9, 7, -8); scene.add(rim);
   const fill = new THREE.PointLight(0xffa860, .45, 30); fill.position.set(9, 5, 9); scene.add(fill);
@@ -1245,6 +1247,7 @@ function endCine() {
 function skipCine() { const c = CamCtl.cine; if (c && c.t < CINE.end - .1) { c.t = CINE.end; endCine(); } }
 function resizeGL() {
   if (!E.r) return;
+  E.r.setPixelRatio(E.resolutionBudget?.ratio(innerWidth, innerHeight) ?? Math.min(devicePixelRatio || 1, 2));
   E.r.setSize(innerWidth, innerHeight, false); E.cam.aspect = innerWidth / innerHeight; E.cam.updateProjectionMatrix();
 }
 
@@ -2130,8 +2133,10 @@ function setHover(o) {
 
 const _q = new THREE.Quaternion(), _e = new THREE.Euler();
 function frame(dt, now) {
-  animateRoom(dt, now);
   if (G.bomb && G.bomb.running) G.bomb.update((E.rawDt || dt) * 1000);
+  if (document.hidden || manualFull()) return;
+  if (E.resolutionBudget?.sample(E.rawDt || dt)) resizeGL();
+  animateRoom(dt, now);
   const k = 1 - Math.exp(-dt * 22);
   Press.forEach(m => { m.position.z += (m.userData.tz - m.position.z) * k; });
   Spinners.forEach(o => {
@@ -2232,7 +2237,7 @@ const LEVELS = [
   { id: 4, name: 'Veteran', blurb: 'Modules front and rear, plus venting gas alarms.', count: 7, time: 720, strikes: 3, needy: ['vent'] },
   { id: 5, name: 'Nightmare', blurb: 'A full case and all three needy modules. No time to think twice.', count: 7, time: 660, strikes: 3, needy: ['capacitor', 'vent', 'knob'] }
 ];
-const G = { bomb: null, caseBomb: null, progress: store.get('progress', { cleared: {}, best: {} }), record: store.get('record', { defused: 0, detonated: 0, streak: 0, bestStreak: 0 }), free: store.get('free2', { count: 6, time: 10, strikes: 3, needy: 'capacitor' }), skin: store.get('skin', 'gunmetal'), sway: store.get('sway', true), shadows: store.get('shadows', true) };
+const G = { bomb: null, caseBomb: null, progress: store.get('progress', { cleared: {}, best: {} }), record: store.get('record', { defused: 0, detonated: 0, streak: 0, bestStreak: 0 }), free: store.get('free2', { count: 6, time: 10, strikes: 3, needy: 'capacitor' }), skin: store.get('skin', 'gunmetal'), sway: store.get('sway', true), shadows: store.get('shadows', !window.HubPerformance?.low) };
 function drawTypes(n) { const out = []; let pool = []; while (out.length < n) { if (!pool.length) pool = shuffle(POOL.slice()); out.push(pool.pop()); } return out; }
 const unlocked = id => id === 1 || G.progress.all || !!G.progress.cleared[id - 1];
 const newSeed = () => (Math.random() * 4294967295) >>> 0;

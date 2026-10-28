@@ -107,7 +107,7 @@
     minis.forEach(function (m) {
       var cv = m.cv, w = cv.clientWidth, h = cv.clientHeight;
       if (!w || !h) return;
-      var dpr = Math.min(2, window.devicePixelRatio || 1);
+      var dpr = window.HubPerformance?.pixelRatio(w, h, 2) ?? Math.min(2, window.devicePixelRatio || 1);
       if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
       var x = cv.getContext('2d');
       x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, w, h);
@@ -128,7 +128,7 @@
   var menuDragons = [Build.presetBuild('emberfang-hd'), Build.presetBuild('frostwing-hd')];
   App.menuBackdrop = { arena: D.ARENAS.skyforge, dragons: true };
   function drawMenu(t) {
-    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    var dpr = window.HubPerformance?.pixelRatio(innerWidth, innerHeight, 2) ?? Math.min(2, window.devicePixelRatio || 1);
     var W = window.innerWidth, H = window.innerHeight;
     if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) { canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr); canvas.style.width = W + 'px'; canvas.style.height = H + 'px'; }
     var x = canvas.getContext('2d');
@@ -148,10 +148,13 @@
     x.restore();
   }
 
+  var menuRenderGate = window.HubPerformance?.frameGate();
   function loop(now) {
     var t = (now - menuT0) / 1000;
-    if (!App.match) drawMenu(t);
-    drawMinis(t);
+    if (!document.hidden && (!menuRenderGate || menuRenderGate(now))) {
+      if (!App.match) drawMenu(t);
+      drawMinis(t);
+    }
     requestAnimationFrame(loop);
   }
 
@@ -525,7 +528,7 @@
       var t0 = performance.now();
       (function draw() {
         if (!document.body.contains(cv)) return;
-        var w = cv.clientWidth, h = cv.clientHeight, dpr = Math.min(2, window.devicePixelRatio || 1);
+        var w = cv.clientWidth, h = cv.clientHeight, dpr = window.HubPerformance?.pixelRatio(w, cv.clientHeight, 2) ?? Math.min(2, window.devicePixelRatio || 1);
         if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
         var x = cv.getContext('2d'), t = (performance.now() - t0) / 1000, gy = h * 0.8;
         x.setTransform(dpr, 0, 0, dpr, 0, 0);

@@ -164,7 +164,7 @@
   ScreenConfetti.prototype.start = function (seconds) { this.until = performance.now() + seconds * 1000; };
   ScreenConfetti.prototype.active = function () { return performance.now() < this.until || this.parts.length > 0; };
   ScreenConfetti.prototype.update = function (dt) {
-    var c = this.c, g = this.g, w = c.clientWidth, h = c.clientHeight, dpr = Math.min(2, global.devicePixelRatio || 1);
+    var c = this.c, g = this.g, w = c.clientWidth, h = c.clientHeight, dpr = global.HubPerformance?.pixelRatio(c.clientWidth, c.clientHeight, 2) ?? Math.min(2, global.devicePixelRatio || 1);
     if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, w, h);

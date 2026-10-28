@@ -24,6 +24,7 @@ export function replay(frames, onFrame, onDone, fps = 30) {
   const start = performance.now();
   const calm = document.body.classList.contains('calm') || document.hidden;
   const total = frames.length - 1;
+  const renderGate = globalThis.HubPerformance?.frameGate();
   const finish = () => {
     if (done) return;
     done = true;
@@ -37,7 +38,7 @@ export function replay(frames, onFrame, onDone, fps = 30) {
     const f = calm ? total : Math.min(total, ((now - start) / 1000) * fps);
     const i = Math.floor(f);
     if (f >= total) { finish(); return; }
-    onFrame(frames[i], frames[Math.min(total, i + 1)], f - i, i);
+    if (!renderGate || renderGate(now)) onFrame(frames[i], frames[Math.min(total, i + 1)], f - i, i);
     raf = requestAnimationFrame(tick);
   };
   // Animation frames stop in background tabs; never leave a shot half-replayed.

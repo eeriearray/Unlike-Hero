@@ -101,7 +101,7 @@
   };
 
   M.resize = function () {
-    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    var dpr = window.HubPerformance?.pixelRatio(innerWidth, innerHeight, 2) ?? Math.min(2, window.devicePixelRatio || 1);
     this.W = window.innerWidth; this.H = window.innerHeight;
     this.canvas.width = Math.round(this.W * dpr); this.canvas.height = Math.round(this.H * dpr);
     this.canvas.style.width = this.W + 'px'; this.canvas.style.height = this.H + 'px';
@@ -209,7 +209,7 @@
       for (var ci in this.combos) { var cc = this.combos[ci]; if (!cc.live && ++cc.t > 70) delete this.combos[ci]; }
     }
     this.updateIntensity();
-    this.render();
+    if (!document.hidden) this.render();
   };
 
   /** Music gets more intense when stocks run low, damage is high or the clock is nearly out. */

@@ -144,9 +144,9 @@
     var self = this;
     if (!tmpColor) { tmpColor = new T.Color(); tmpV = new T.Vector3(); }
     this.el = container;
-    this.coarse = global.matchMedia && global.matchMedia('(pointer: coarse)').matches;
+    this.coarse = (global.matchMedia && global.matchMedia('(pointer: coarse)').matches) || !!global.HubPerformance?.low;
     this.renderer = new T.WebGLRenderer({ antialias: !this.coarse, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(global.devicePixelRatio || 1, this.coarse ? 1.5 : 2));
+    this.renderer.setPixelRatio(global.HubPerformance?.pixelRatio(container.clientWidth, container.clientHeight, this.coarse ? 1.5 : 2) ?? Math.min(global.devicePixelRatio || 1, this.coarse ? 1.5 : 2));
     this.renderer.outputEncoding = T.sRGBEncoding;
     this.renderer.toneMapping = T.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1;
@@ -185,8 +185,8 @@
     this.onResize = function () { self.resize(); };
     global.addEventListener('resize', this.onResize);
     this.resize();
-    this.alive = true;
-    (function loop() { if (!self.alive) return; self.raf = global.requestAnimationFrame(loop); if (!document.hidden) self.frame(); })();
+    this.alive = true; this.renderGate = global.HubPerformance?.frameGate();
+    (function loop() { if (!self.alive) return; self.raf = global.requestAnimationFrame(loop); if (!document.hidden && (!self.renderGate || self.renderGate())) self.frame(); })();
   }
 
   var H = Hall.prototype;
@@ -507,6 +507,7 @@
 
   H.resize = function () {
     var w = this.el.clientWidth || 1, h = this.el.clientHeight || 1;
+    this.renderer.setPixelRatio(global.HubPerformance?.pixelRatio(w, h, this.coarse ? 1.5 : 2) ?? Math.min(global.devicePixelRatio || 1, this.coarse ? 1.5 : 2));
     this.renderer.setSize(w, h, false);
     this.w = w; this.h = h;
     var ins = this.insets;

@@ -17,7 +17,7 @@
     return true;
   }
   function resize() {
-    dpr = Math.min(2, global.devicePixelRatio || 1);
+    dpr = global.HubPerformance?.pixelRatio(innerWidth, innerHeight, 2) ?? Math.min(2, global.devicePixelRatio || 1);
     W = global.innerWidth; H = global.innerHeight;
     [canvas, bgCanvas].forEach(function (c) { c.width = W * dpr; c.height = H * dpr; c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0); });
   }
@@ -56,6 +56,7 @@
   var AMBIENT_RATE = { embers: 0.35, motes: 0.25, rain: 5 };
 
   function step(t) {
+    if (document.hidden) { running = false; return; }
     var dt = Math.min(3, (t - last) / 16.67 || 1); last = t;
     var top = g;
     top.clearRect(0, 0, W, H);
@@ -101,6 +102,8 @@
     else running = false;
   }
   function kick() { if (!running && (canvas || setup())) { running = true; last = performance.now(); global.requestAnimationFrame(step); } }
+
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && (parts.length || ambientType)) kick(); });
 
   var API = {
     burst: function (type, x, y, n) {

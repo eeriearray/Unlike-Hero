@@ -279,7 +279,7 @@ function frame(now) {
   }
   if (now - lastHud > 90) { updateHud(world); lastHud = now; }
  }
- if (mode === 'menu') {
+ if (mode === 'menu' && !document.hidden) {
   // Behind the menu a bot crew plays a match, so new captains see the game first.
   if (!demo || demo.phase !== 'play') { demo = createMatch(crew([]), { seed: Date.now() }); view.reset(); demoSeen = demoSwitch = 0; }
   demoAcc += dt; while (demoAcc >= DT) { step(demo, {}, DT); demoAcc -= DT; }

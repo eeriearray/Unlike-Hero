@@ -49,7 +49,7 @@
   }
   /** A canvas element showing a drawing. */
   function canvasFor(drawing, px, opts) {
-    const c = document.createElement('canvas'); const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const c = document.createElement('canvas'); const dpr = window.HubPerformance?.pixelRatio(px, px, 2) ?? Math.min(2, window.devicePixelRatio || 1);
     c.width = c.height = Math.round(px * dpr); c.style.width = c.style.height = px + 'px'; c.className = 'drawing';
     render(c.getContext('2d'), drawing, c.width, opts); return c;
   }
@@ -77,7 +77,7 @@
   function pad(canvas, opts) {
     const palette = opts.palette; let color = 0, width = 1, strokes = [], cur = null, total = 0;
     const ctx = canvas.getContext('2d'); const recent = []; let raf = 0;
-    function size() { const r = canvas.getBoundingClientRect(); const dpr = Math.min(2, window.devicePixelRatio || 1); canvas.width = Math.round(r.width * dpr); canvas.height = Math.round(r.width * dpr); redraw(); }
+    function size() { const r = canvas.getBoundingClientRect(); const dpr = window.HubPerformance?.pixelRatio(r.width, r.width, 2) ?? Math.min(2, window.devicePixelRatio || 1); canvas.width = Math.round(r.width * dpr); canvas.height = Math.round(r.width * dpr); redraw(); }
     function redraw() {
       if (opts.blind) { blindFrame(); return; }
       render(ctx, { p: palette, d: encode(strokes) }, canvas.width);
