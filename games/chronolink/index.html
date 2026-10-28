@@ -1675,12 +1675,26 @@ function exitGateYaw(L) {
   // The arch's normal faces into the chamber from the nearest outside wall.
   return Math.min(x, L.W - 1 - x) < Math.min(y, L.H - 1 - y) ? Math.PI / 2 : 0;
 }
+function flashlightClearance(L, future, x, y, yaw, range = 5) {
+  let nearest = range;
+  // Clip the decorative light volume too: an unshadowed cone otherwise draws through walls.
+  for (const spread of [-0.31, -0.16, 0, 0.16, 0.31]) {
+    const dx = Math.sin(yaw + spread), dy = Math.cos(yaw + spread);
+    for (let distance = 0.05; distance <= nearest; distance += 0.05) {
+      const cx = Math.floor(x + dx * distance + 0.5), cy = Math.floor(y + dy * distance + 0.5);
+      if (cx < 0 || cy < 0 || cx >= L.W || cy >= L.H || future[cy * L.W + cx]?.t === 'wall') { nearest = Math.max(0.02, distance - 0.05); break; }
+    }
+  }
+  return nearest;
+}
 const ringGeo = () => cachedGeo('ring', () => { const g = new THREE.RingGeometry(0.92, 1, 72); g.rotateX(-Math.PI / 2); return g; });
 const addMat = (w, m) => own(w, m);
 function buildWorld(era) {
   const L = G.L, past = era === 'past', room = { W: L.W, H: L.H, exit: L.exit };
   const w = { era, room, scene: new THREE.Scene(), mats: [], updaters: [], sources: [], pools: {}, objs: {}, tokens: {}, dying: [], water: {}, pins: {} };
   const S = w.scene, W = L.W, H = L.H, cx = (W - 1) / 2, cz = (H - 1) / 2, B = L.base;
+  // Cutaway walls stay low for the camera, but block light at full architectural height.
+  w.lightBlockerMat = own(w, new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false, side: THREE.DoubleSide }));
   const fogCol = past ? 0x1c1006 : 0x03101a;
   S.background = new THREE.Color(fogCol);
   S.fog = new THREE.FogExp2(fogCol, past ? 0.024 : 0.04);
@@ -1834,6 +1848,7 @@ function buildWorld(era) {
     if (b !== '#' && b !== 'W' && b !== 'c' && !(b === 'p' && past)) continue;
     const perim = x === 0 || y === 0 || x === W - 1 || y === H - 1, front = y === H - 1 || x === W - 1;
     const h = front ? 0.22 : perim ? 1.5 : 0.6;
+    mk(BOX(1, 2.8, 1), w.lightBlockerMat, x, 1.1, y, S);
     (b === 'p' ? plaster : walls).push({ x, y: (h - 0.6) / 2, z: y, sy: h + 0.6 });
     caps.push({ x, y: h + 0.03, z: y });
     if (b === 'c') culverts.push({ x, y, h });
@@ -2081,6 +2096,7 @@ function buildToken(w, rec, i) {
       }
       h = 0.3;
     } else {
+      mk(BOX(1, 2.8, 1), w.lightBlockerMat, 0, 1.1, 0, g);
       mk(BOX(1, 1.2, 1), M.wallConcrete, 0, 0.0, 0, g);
       for (let k = 0; k < 3; k++) mk(BOX(0.25, 0.2, 0.04), M.rustLight, rnd(-0.3, 0.3), rnd(0.1, 0.45), 0.5, g, false);
       h = 0.9;
@@ -2199,25 +2215,34 @@ function syncWorldInstant() {
 }
 function limb(parent, x, y, len, w, m, footM) {
   const piv = new THREE.Group(); piv.position.set(x, y, 0); parent.add(piv);
-  mk(BOX(w, len, w * 1.1), m, 0, -len / 2, 0, piv);
-  if (footM) mk(BOX(w * 1.1, 0.06, w * 1.8), footM, 0, -len + 0.02, 0.03, piv);
+  mk(CYL(w * 0.48, w * 0.57, len * 0.52, 10), m, 0, -len * 0.26, 0, piv);
+  mk(SPH(w * 0.49, 10), m, 0, -len * 0.5, 0, piv).scale.set(1, 0.8, 1);
+  const bend = new THREE.Group(); bend.position.y = -len * 0.5; piv.add(bend); piv.userData.bend = bend;
+  mk(CYL(w * 0.42, w * 0.34, len * 0.48, 10), m, 0, -len * 0.24, 0, bend);
+  if (footM) mk(SPH(w * 0.65, 12), footM, 0, -len * 0.48, 0.035, bend).scale.set(0.85, 0.65, 1.55);
   return piv;
 }
 function buildAnchor(w) {
   const group = new THREE.Group(), body = new THREE.Group(); group.add(body);
-  const legL = limb(body, -0.08, 0.42, 0.4, 0.11, M.trousers, M.boot), legR = limb(body, 0.08, 0.42, 0.4, 0.11, M.trousers, M.boot);
-  const torso = new THREE.Group(); torso.position.y = 0.42; body.add(torso);
-  mk(BOX(0.34, 0.36, 0.2), M.cream, 0, 0.18, 0, torso);
-  mk(BOX(0.35, 0.3, 0.21), M.tweed, 0, 0.17, 0, torso);
-  mk(BOX(0.36, 0.04, 0.22), M.boot, 0, 0.02, 0, torso);
-  mk(BOX(0.06, 0.06, 0.02), M.red, 0, 0.34, 0.11, torso);
-  const armL = limb(torso, -0.22, 0.33, 0.32, 0.085, M.cream), armR = limb(torso, 0.22, 0.33, 0.32, 0.085, M.cream);
-  mk(SPH(0.045, 8), M.skin, 0, -0.34, 0, armL); mk(SPH(0.045, 8), M.skin, 0, -0.34, 0, armR);
-  const head = new THREE.Group(); head.position.y = 0.48; torso.add(head);
-  mk(SPH(0.13, 16), M.skin, 0, 0.1, 0, head);
-  const hair = mk(SPH(0.135, 16), M.hair, 0, 0.13, -0.015, head); hair.scale.set(1, 0.75, 1);
-  mk(TOR(0.13, 0.012, 20), M.boot, 0, 0.15, 0, head).rotation.x = Math.PI / 2;
-  for (const x of [-0.05, 0.05]) { mk(TOR(0.035, 0.012, 12), M.brass, x, 0.16, 0.12, head); mk(cachedGeo('lensDisc', () => new THREE.CircleGeometry(0.03, 12)), M.lens, x, 0.16, 0.125, head, false); }
+  const legL = limb(body, -0.08, 0.49, 0.46, 0.105, M.trousers, M.boot), legR = limb(body, 0.08, 0.49, 0.46, 0.105, M.trousers, M.boot);
+  const torso = new THREE.Group(); torso.position.y = 0.49; body.add(torso);
+  mk(CYL(0.17, 0.135, 0.4, 12), M.tweed, 0, 0.18, 0, torso).scale.z = 0.66;
+  mk(CYL(0.105, 0.14, 0.18, 12), M.cream, 0, 0.31, 0.012, torso).scale.z = 0.68;
+  for (const side of [-1, 1]) { const lapel = mk(BOX(0.065, 0.18, 0.018), M.tweed, side * 0.062, 0.28, 0.103, torso); lapel.rotation.z = side * 0.3; }
+  for (const y of [0.09, 0.15, 0.21]) mk(SPH(0.012, 8), M.brass, 0, y, 0.106, torso);
+  for (const side of [-1, 1]) { const tail = mk(BOX(0.11, 0.21, 0.028), M.tweed, side * 0.065, -0.035, -0.086, torso); tail.rotation.x = 0.12; }
+  mk(CYL(0.14, 0.14, 0.035, 12), M.boot, 0, 0.015, 0, torso).scale.z = 0.68;
+  mk(CYL(0.018, 0.028, 0.11, 6), M.red, 0, 0.3, 0.117, torso);
+  const armL = limb(torso, -0.20, 0.35, 0.39, 0.08, M.tweed), armR = limb(torso, 0.20, 0.35, 0.39, 0.08, M.tweed);
+  for (const arm of [armL, armR]) mk(SPH(0.04, 12), M.skin, 0, -0.20, 0, arm.userData.bend).scale.set(0.8, 1.15, 0.8);
+  mk(CYL(0.045, 0.05, 0.07, 10), M.skin, 0, 0.42, 0, torso);
+  const head = new THREE.Group(); head.position.y = 0.47; torso.add(head);
+  mk(SPH(0.105, 18), M.skin, 0, 0.085, 0, head).scale.set(0.92, 1.15, 0.95);
+  const hair = mk(SPH(0.108, 18), M.hair, 0, 0.13, -0.017, head); hair.scale.set(1, 0.62, 1);
+  mk(SPH(0.024, 10), M.skin, 0, 0.07, 0.1, head).scale.set(0.7, 0.8, 1);
+  for (const side of [-1, 1]) mk(SPH(0.021, 10), M.skin, side * 0.10, 0.082, 0, head);
+  mk(TOR(0.106, 0.009, 20), M.boot, 0, 0.12, 0, head).rotation.x = Math.PI / 2;
+  for (const x of [-0.04, 0.04]) { mk(TOR(0.026, 0.009, 16), M.brass, x, 0.12, 0.095, head); mk(cachedGeo('lensDiscSmall', () => new THREE.CircleGeometry(0.022, 16)), M.lens, x, 0.12, 0.10, head, false); }
   // belt lantern with a real light
   const lantern = new THREE.Group(); lantern.position.set(0.2, 0.0, 0.08); torso.add(lantern);
   mk(BOX(0.07, 0.1, 0.07), M.brass, 0, 0, 0, lantern);
@@ -2228,18 +2253,21 @@ function buildAnchor(w) {
 }
 function buildEcho(w) {
   const group = new THREE.Group(), body = new THREE.Group(); group.add(body);
-  const legL = limb(body, -0.09, 0.42, 0.4, 0.12, M.suitDark, M.boot), legR = limb(body, 0.09, 0.42, 0.4, 0.12, M.suitDark, M.boot);
-  const torso = new THREE.Group(); torso.position.y = 0.42; body.add(torso);
-  mk(BOX(0.36, 0.38, 0.22), M.olive, 0, 0.19, 0, torso);
-  mk(BOX(0.37, 0.07, 0.23), M.hazardYellow, 0, 0.18, 0, torso);
-  mk(BOX(0.24, 0.32, 0.12), M.suitDark, 0, 0.2, -0.17, torso);
+  const legL = limb(body, -0.085, 0.49, 0.46, 0.11, M.suitDark, M.boot), legR = limb(body, 0.085, 0.49, 0.46, 0.11, M.suitDark, M.boot);
+  const torso = new THREE.Group(); torso.position.y = 0.49; body.add(torso);
+  mk(CYL(0.18, 0.14, 0.41, 12), M.olive, 0, 0.18, 0, torso).scale.z = 0.67;
+  mk(CYL(0.145, 0.15, 0.035, 12), M.suitDark, 0, 0.015, 0, torso).scale.z = 0.72;
+  for (const side of [-1, 1]) { const strap = mk(BOX(0.026, 0.34, 0.018), M.hazardYellow, side * 0.10, 0.20, 0.12, torso); strap.rotation.z = side * 0.18; }
+  mk(SPH(0.14, 14), M.suitDark, 0, 0.20, -0.16, torso).scale.set(0.9, 1.3, 0.65);
+  mk(CYL(0.035, 0.035, 0.26, 10), M.steel, 0.10, 0.18, -0.20, torso);
   const ant = own(w, std({ color: 0x002a26, emissive: 0x00f5d4, emissiveIntensity: 2 }));
   mk(CYL(0.008, 0.008, 0.25, 6), M.steel, -0.08, 0.45, -0.18, torso); mk(SPH(0.02, 8), ant, -0.08, 0.58, -0.18, torso, false);
-  const armL = limb(torso, -0.23, 0.34, 0.33, 0.09, M.olive), armR = limb(torso, 0.23, 0.34, 0.33, 0.09, M.olive);
-  mk(BOX(0.1, 0.06, 0.1), M.suitDark, 0, -0.34, 0, armL); mk(BOX(0.1, 0.06, 0.1), M.suitDark, 0, -0.34, 0, armR);
+  const armL = limb(torso, -0.21, 0.35, 0.39, 0.085, M.olive), armR = limb(torso, 0.21, 0.35, 0.39, 0.085, M.olive);
+  for (const arm of [armL, armR]) mk(SPH(0.045, 12), M.suitDark, 0, -0.20, 0, arm.userData.bend).scale.set(0.85, 1.12, 0.8);
+  mk(CYL(0.07, 0.09, 0.06, 12), M.helmet, 0, 0.42, 0, torso);
   const head = new THREE.Group(); head.position.y = 0.48; torso.add(head);
-  mk(SPH(0.15, 18), M.helmet, 0, 0.1, 0, head);
-  const visor = mk(cachedGeo('visor', () => new THREE.SphereGeometry(0.152, 20, 8, -0.9 + Math.PI / 2, 1.8, 1.2, 0.55)), M.visor, 0, 0.1, 0, head, false);
+  mk(SPH(0.125, 20), M.helmet, 0, 0.1, 0, head).scale.set(1, 0.96, 1.05);
+  const visor = mk(cachedGeo('slimVisor', () => new THREE.SphereGeometry(0.13, 24, 10, -0.9 + Math.PI / 2, 1.8, 1.2, 0.55)), M.visor, 0, 0.1, 0, head, false);
   // rotating shoulder LIDAR dish
   const dish = new THREE.Group(); dish.position.set(0.2, 0.42, -0.02); torso.add(dish);
   mk(CYL(0.01, 0.01, 0.08, 6), M.steel, 0, 0.04, 0, dish);
@@ -2252,8 +2280,8 @@ function buildEcho(w) {
   const coneM = own(w, new THREE.MeshBasicMaterial({ color: 0x9ffff0, transparent: true, opacity: 0.07, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
   const cone = mk(cachedGeo('cone', () => { const cg = new THREE.ConeGeometry(1.6, 5, 24, 1, true); cg.translate(0, -2.5, 0); cg.rotateX(-Math.PI / 2 + 0.16); return cg; }), coneM, 0, 0.95, 0.15, group, false);
   cone.castShadow = false; cone.receiveShadow = false;
-  const glow = new THREE.PointLight(0x00f5d4, 0.5, 2.5, 2); glow.position.set(0, 0.9, 0.3); group.add(glow);
-  return { group, body, legL, legR, armL, armR, torso, head, dish, ant, visor, cone, coneM, kind: 'E' };
+  const glow = new THREE.PointLight(0x00f5d4, 0.35, 1.6, 2); glow.position.set(0, 0.9, 0.3); glow.castShadow = true; glow.shadow.mapSize.set(256, 256); glow.shadow.bias = -0.0004; group.add(glow);
+  return { group, body, legL, legR, armL, armR, torso, head, dish, ant, visor, cone, coneM, spot, kind: 'E' };
 }
 // Walk cycle plus anticipation and follow-through: a crouch before a pick-up or set-down, a shoulder
 // lean into a shove, a kick, a raised palm for a pin. `p.act` is { kind, t0 }.
@@ -2265,11 +2293,11 @@ function animateCharacter(ch, p, dt, t) {
   const s = Math.sin(p.walkPh);
   let legL = s * 0.7 * k, legR = -s * 0.7 * k, armL = -s * 0.6 * k, armR = s * 0.6 * k, crouch = 0, lean = k * 0.1;
   const carrying = ch.kind === 'A' ? !!(G.s && G.s.held) : !!(G.s && G.s.echo.carry);
-  if (carrying) { armL = armR = -2.6; }
+  if (carrying) { armL = armR = -1.7; }
   const a = p.act, at = a ? t - a.t0 : 9;
   if (a && at < 0.5) {
     const up = at < 0.12 ? ease(at / 0.12) : 1 - ease((at - 0.12) / 0.38);
-    if (a.kind === 'pick' || a.kind === 'drop' || a.kind === 'open' || a.kind === 'lay') { crouch = up * 0.16; lean = up * 0.5; armL = armR = -1.2 * up + (carrying ? -2.6 * (1 - up) : 0); }
+    if (a.kind === 'pick' || a.kind === 'drop' || a.kind === 'open' || a.kind === 'lay') { crouch = up * 0.16; lean = up * 0.5; armL = armR = -1.2 * up + (carrying ? -1.7 * (1 - up) : 0); }
     else if (a.kind === 'shove') { lean = 0.35 * up + 0.15; armL = armR = -1.5; legL = -0.5 * up; legR = 0.4 * up; }
     else if (a.kind === 'wheel') { armL = -1.8 - Math.sin(at * 20) * 0.4; armR = -1.8 + Math.sin(at * 20) * 0.4; lean = 0.15; }
     else if (a.kind === 'kick') { legR = -1.6 * up; lean = -0.2 * up; }
@@ -2278,6 +2306,9 @@ function animateCharacter(ch, p, dt, t) {
   } else if (a && at >= 0.5) p.act = null;
   if (p.bump > 0.05) { lean = Math.max(lean, 0.3 * p.bump); armL = armR = -1.4 * p.bump; }
   ch.legL.rotation.x = legL; ch.legR.rotation.x = legR; ch.armL.rotation.x = armL; ch.armR.rotation.x = armR;
+  ch.legL.userData.bend.rotation.x = Math.max(0, -s) * k * 0.65;
+  ch.legR.userData.bend.rotation.x = Math.max(0, s) * k * 0.65;
+  for (const arm of [ch.armL, ch.armR]) arm.userData.bend.rotation.x = carrying ? -0.55 : -0.12 - k * 0.12;
   ch.body.position.y = Math.abs(Math.cos(p.walkPh)) * 0.05 * k - crouch;
   ch.body.rotation.x += (lean - ch.body.rotation.x) * 0.3;
   ch.body.rotation.z += (clamp(-(p.turn || 0) * 0.25, -0.18, 0.18) - ch.body.rotation.z) * 0.15;
@@ -2287,7 +2318,11 @@ function animateCharacter(ch, p, dt, t) {
   ch.torso.scale.set((1 + breath * 0.01) / sq, (1 + breath * 0.015) * sq, (1 + breath * 0.01) / sq);
   ch.head.rotation.y = Math.sin(t * 0.6) * 0.15 * (1 - k);
   if (ch.kind === 'A') { const f = 0.85 + 0.15 * Math.sin(t * 13) * Math.sin(t * 5.1); ch.light.intensity = 1.2 * f; ch.flameM.emissiveIntensity = 2.5 * f; }
-  else { ch.dish.rotation.y = t * 3; ch.ant.emissiveIntensity = Math.sin(t * 5) > 0 ? 2.5 : 0.3; ch.coneM.opacity = 0.06 + 0.015 * Math.sin(t * 7); }
+  else {
+    ch.dish.rotation.y = t * 3; ch.ant.emissiveIntensity = Math.sin(t * 5) > 0 ? 2.5 : 0.3; ch.coneM.opacity = 0.06 + 0.015 * Math.sin(t * 7);
+    const distance = flashlightClearance(G.L, G.fut, p.rx + Math.sin(p.yaw) * 0.15, p.ry + Math.cos(p.yaw) * 0.15, p.yaw);
+    ch.cone.scale.setScalar(distance / 5);
+  }
 }
 
 /* ============================================================

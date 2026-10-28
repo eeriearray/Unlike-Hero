@@ -22,6 +22,11 @@ three.js r128 (loaded from cdnjs, so the first load needs internet). Every textu
 and music and effects are synthesised with the Web Audio API. Drag a view to orbit its camera, scroll to zoom,
 double-click to reset.
 
+The explorers use tapered clothing, rounded boots and gloves, and articulated elbows and knees. The Anchor
+wears a fitted tweed coat and brass goggles; the Echo wears an exploration suit with a harness, radio pack and
+visor. Cutaway walls retain invisible full-height shadow casters, and the Echo's visible beam is clipped against
+the current 2026 wall records, including plaster that opens or closes when water changes.
+
 ## Play
 
 - **One keyboard (default):** split screen. Anchor: `WASD`, `E` use, `Q` ping. Echo: arrows, `Enter` use, `.` pin,
