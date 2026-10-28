@@ -50,7 +50,7 @@ window.GAME_REGISTRY = [
     "version": "1.0.0",
     "sdk": "1.x",
     "entry": "index.html",
-    "thumbnail": "thumbnail.svg",
+    "thumbnail": "hub-banner.webp",
     "accent": "#D4AF37",
     "players": {
       "min": 1,
