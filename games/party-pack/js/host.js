@@ -80,7 +80,7 @@
     setTimeout(() => H.room.emit('host-up', {}), 50);
     setInterval(housekeeping, 1000);
     findLanAddress(); setInterval(() => { if (!H.game) findLanAddress(); }, 10000);   // picks up Wi-Fi joining later
-    setInterval(() => { H.hype = Math.max(0, H.hype - 1.5); renderHype(); }, 400);
+    setInterval(() => { H.hype = Math.max(0, H.hype - 1.5); if (!document.hidden) renderHype(); }, 400);
     // The host character: mouth flaps and the speech bubble (captions) shows while a line plays.
     PP.Voice.onSpeak((hostKey, text) => {
       const el = $('#host'), b = el.querySelector('.bubble');

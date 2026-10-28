@@ -16,7 +16,7 @@
 
   // Graphics quality: 0 high (shadows), 1 medium (default), 2 low (no haze/extra lights, 1x pixels, no antialiasing).
   // It drops a notch by itself whenever the browser loses the GPU context, and the player can set it from the table.
-  GL.getQuality = function () { try { var q = parseInt(localStorage.getItem('hub.casino.quality'), 10); if (q >= 0 && q <= 2) return q; } catch (e) {} return 1; };
+  GL.getQuality = function () { try { var q = parseInt(localStorage.getItem('hub.casino.quality'), 10); if (q >= 0 && q <= 2) return q; } catch (e) {} return global.HubPerformance?.low ? 2 : 1; };
   GL.setQuality = function (q) { try { localStorage.setItem('hub.casino.quality', String(q)); } catch (e) {} };
   var TOP = 0.8;                                         // height of the felt
   var TAU = Math.PI * 2;
@@ -53,8 +53,8 @@
     this.q = GL.getQuality();
     this.noShadow = this.coarse || this.q >= 1;
     this.maxDpr = this.q >= 2 ? 1 : this.q === 1 ? 1.25 : 1.5;
-    this.renderer = new T.WebGLRenderer({ antialias: this.q < 2 && !this.coarse });       // no powerPreference: asking for the discrete GPU can make dual-GPU laptops drop the context
-    this.renderer.setPixelRatio(Math.min(global.devicePixelRatio || 1, this.maxDpr));
+    this.renderer = new T.WebGLRenderer({ antialias: this.q < 2 && !this.coarse && !global.HubPerformance?.low });       // no powerPreference: asking for the discrete GPU can make dual-GPU laptops drop the context
+    this.renderer.setPixelRatio(global.HubPerformance?.pixelRatio(el.clientWidth, el.clientHeight, this.maxDpr) ?? Math.min(global.devicePixelRatio || 1, this.maxDpr));
     this.renderer.outputEncoding = T.sRGBEncoding;
     this.renderer.toneMapping = T.ACESFilmicToneMapping; this.renderer.toneMappingExposure = 1.12;
     this.renderer.shadowMap.enabled = !this.noShadow; this.renderer.shadowMap.type = T.PCFSoftShadowMap;
@@ -116,9 +116,10 @@
     this.canvas.addEventListener('wheel', this.onWheel, { passive: false });
     this.canvas.addEventListener('webglcontextlost', this.onLost); this.canvas.addEventListener('webglcontextrestored', this.onRestored);
     this.errors = 0;
+    this.renderGate = global.HubPerformance?.frameGate();
     (function loop() {
       if (!self.alive) return; self.raf = global.requestAnimationFrame(loop);
-      if (document.hidden || !self.visible || self.lost) return;
+      if (document.hidden || !self.visible || self.lost || (self.renderGate && !self.renderGate())) return;
       try { self.frame(); self.errors = 0; }
       catch (e) {
         // one bad frame must never leave a blank canvas: log it, keep going, and rebuild the scene if it keeps failing
@@ -213,6 +214,7 @@
   E.resize = function () {
     var w = Math.max(1, this.el.clientWidth), h = Math.max(1, this.el.clientHeight);
     if (w === this.w && h === this.h) return;
+    this.renderer.setPixelRatio((global.HubPerformance?.pixelRatio(w, h, this.maxDpr) ?? Math.min(global.devicePixelRatio || 1, this.maxDpr)) * (this.lowered ? 0.85 : 1));
     this.w = w; this.h = h; this.aspect = w / h; this.portrait = this.aspect < 1.2;           // compact: phones and narrow panes get the overhead view
     this.renderer.setSize(w, h, false);
     this.camera.aspect = this.aspect;
@@ -371,7 +373,7 @@
     var dt = Math.min(0.05, this.clock.getDelta()), t = this.clock.elapsedTime, self = this;
     this.frameMs = lerp(this.frameMs, dt * 1000, 0.05);
     // if the device can't hold ~30fps for a while, drop the resolution once
-    if (this.frameMs > 34) { this.slow += dt; if (this.slow > 2.5 && !this.lowered) { this.lowered = true; this.renderer.setPixelRatio(Math.max(0.75, Math.min(global.devicePixelRatio || 1, 1) * 0.85)); this.renderer.setSize(this.w, this.h, false); } } else this.slow = Math.max(0, this.slow - dt);
+    if (this.frameMs > 34) { this.slow += dt; if (this.slow > 2.5 && !this.lowered) { this.lowered = true; this.renderer.setPixelRatio((global.HubPerformance?.pixelRatio(this.w, this.h, this.maxDpr) ?? Math.min(global.devicePixelRatio || 1, 1)) * 0.85); this.renderer.setSize(this.w, this.h, false); } } else this.slow = Math.max(0, this.slow - dt);
     // lamp sways: the pool of light slides across the felt
     this.swing.rotation.z = Math.sin(t * 0.55) * 0.045; this.swing.rotation.x = Math.cos(t * 0.41) * 0.03;
     this.spot.intensity = 2.7 * (1 + Math.sin(t * 9.1) * 0.012 + Math.sin(t * 3.3) * 0.01);

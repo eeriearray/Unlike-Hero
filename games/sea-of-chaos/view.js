@@ -29,10 +29,11 @@ function islandShape(i) {
 export function makeView(canvas) {
  const T = window.THREE;
  T.ColorManagement.legacyMode = false;
- const mobile = matchMedia('(pointer:coarse)').matches;
+ const mobile = matchMedia('(pointer:coarse)').matches || !!window.HubPerformance?.low;
+ const resolution = window.HubPerformance?.createResolutionBudget(mobile ? 1.5 : 2);
  const reduced = matchMedia('(prefers-reduced-motion:reduce)').matches;
  const renderer = new T.WebGLRenderer({ canvas, antialias: !mobile, powerPreference: 'high-performance' });
- renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobile ? 1.5 : 2));
+ renderer.setPixelRatio(resolution?.ratio(innerWidth, innerHeight) ?? Math.min(devicePixelRatio || 1, mobile ? 1.5 : 2));
  renderer.outputEncoding = T.sRGBEncoding;
  renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.95;
  const scene = new T.Scene();
@@ -45,7 +46,7 @@ export function makeView(canvas) {
  // Desktop gets soft sun shadows from sails, masts and palms; phones skip them.
  if (!mobile) {
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap; sun.castShadow = true;
-  Object.assign(sun.shadow.camera, { left: -75, right: 75, top: 75, bottom: -75, near: 10, far: 260 }); sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.04;
+  Object.assign(sun.shadow.camera, { left: -75, right: 75, top: 75, bottom: -75, near: 10, far: 260 }); sun.shadow.mapSize.set(window.HubPerformance?.tier === 'balanced' ? 1024 : 2048, window.HubPerformance?.tier === 'balanced' ? 1024 : 2048); sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.04;
  }
  const shadowed = group => { if (mobile) return; group.traverse(o => { if (o.isMesh && !o.material.transparent && o.material.isMeshStandardMaterial) { o.castShadow = true; o.receiveShadow = true; } }); };
  const SUN_DIR = sun.position.clone().normalize();
@@ -624,6 +625,8 @@ export function makeView(canvas) {
  function removeShip(id) { const o = ships.get(id); if (!o) return; scene.remove(o.root); scene.remove(o.label.s); ships.delete(id); }
 
  function draw(w, me, dt, follow = me) {
+  if (document.hidden) return;
+  if (resolution?.sample(dt)) resize();
   time += dt; water.uniforms.time.value = time; water.uniforms.final.value = w.final ? 1 : 0;
   // Whirlpools and ship wakes are drawn by the sea shader itself.
   vortices = w.whirls || [];
@@ -737,7 +740,7 @@ export function makeView(canvas) {
 
  const v3 = new T.Vector3();
  function project(x, y, z) { v3.set(x, y, z).project(camera); return { x: (v3.x + 1) / 2 * innerWidth, y: (1 - v3.y) / 2 * innerHeight, visible: v3.z < 1 }; }
- function resize() { renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobile ? 1.5 : 2)); renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.fov = innerWidth < innerHeight ? 70 : 55; camera.updateProjectionMatrix(); }
+ function resize() { renderer.setPixelRatio(resolution?.ratio(innerWidth, innerHeight) ?? Math.min(devicePixelRatio || 1, mobile ? 1.5 : 2)); renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.fov = innerWidth < innerHeight ? 70 : 55; camera.updateProjectionMatrix(); }
  addEventListener('resize', resize); resize();
  function reset() { for (const id of [...ships.keys()]) removeShip(id); for (const o of lootObjs.values()) scene.remove(o.g); lootObjs.clear(); for (const o of powerObjs.values()) scene.remove(o.g); powerObjs.clear(); camReady = false; }
  return { draw, event, project, resize, reset, shipPosition: id => { const o = ships.get(id); return o ? { x: o.x, z: o.z } : null; } };

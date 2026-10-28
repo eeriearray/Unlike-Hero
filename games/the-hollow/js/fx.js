@@ -31,16 +31,19 @@
     var sx = sprite.getContext('2d'); sx.fillStyle = '#d6cdb4'; sx.beginPath(); sx.arc(6, 6, 4, 0, 6.283); sx.fill();
     var resize = function () { dust.c.width = innerWidth; dust.c.height = innerHeight; };
     resize(); addEventListener('resize', resize);
-    var count = innerWidth <= 960 ? 24 : 46;
+    var count = Math.round((innerWidth <= 960 ? 24 : 46) * (g.HubPerformance?.effects || 1));
+    var renderGate = g.HubPerformance?.frameGate(), lastDust = null;
     for (var i = 0; i < count; i++) dust.parts.push({ x: Math.random() * innerWidth, y: Math.random() * innerHeight, r: Math.random() * 1.6 + .3, vx: (Math.random() - .5) * .12, vy: -Math.random() * .12 - .02, a: Math.random() * .35 + .05, p: Math.random() * 6 });
     function allowed() { return !document.hidden && !reduced() && !P.reducedScares; }
-    function tick() {
+    function tick(now) {
       dust.raf = 0;
       if (!allowed()) { dust.x.clearRect(0, 0, dust.c.width, dust.c.height); dust.on = false; return; }
+      if (renderGate && !renderGate(now)) { dust.raf = requestAnimationFrame(tick); return; }
+      var dt = lastDust == null || !Number.isFinite(now) ? 1 : Math.min(3, Math.max(0, (now - lastDust) / 16.67)); lastDust = now;
       dust.on = true;
       var x = dust.x, w = dust.c.width, h = dust.c.height; x.clearRect(0, 0, w, h);
       dust.parts.forEach(function (q) {
-        q.x += q.vx + Math.sin(q.p += .004) * .08; q.y += q.vy;
+        q.x += (q.vx + Math.sin(q.p += .004 * dt) * .08) * dt; q.y += q.vy * dt;
         if (q.y < -4) { q.y = h + 4; q.x = Math.random() * w; } if (q.x < -4) q.x = w + 4; if (q.x > w + 4) q.x = -4;
         x.globalAlpha = q.a; x.drawImage(sprite, q.x - q.r, q.y - q.r, q.r * 2, q.r * 2);
       });

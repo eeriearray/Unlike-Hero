@@ -664,6 +664,7 @@
   }
   var lastTickSec = -1;
   setInterval(function () {
+    if (document.hidden) return;
     var r = remainingMs();
     if (r == null || app.screen !== 'game') return;
     var total = (app.view.settings.turnTimer || 1) * 1000;
