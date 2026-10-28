@@ -1253,6 +1253,8 @@ function applyRemotePos(who, q) {
   p.x = q.x; p.y = q.y;
   if (Math.hypot(p.tx - p.rx, p.ty - p.ry) > 2.5) { p.rx = p.tx; p.ry = p.ty; }
   if (who === 'E') trackStand(false);
+  // The partner's last step can complete the chamber without any local movement.
+  checkVictory();
 }
 function applyRemoteWorld(m) {
   const undo = m.part === 'all' && m.cause === 'rewind';
