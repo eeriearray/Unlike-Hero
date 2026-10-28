@@ -46,8 +46,8 @@ window.GAME_REGISTRY = [
   {
     "id": "chronolink",
     "title": "ChronoLink: Anchor & Echo",
-    "tagline": "One of you is in 1924, the other in the same facility's 2026 ruins. Plant a seed in the past to bridge a chasm in the future; piece together a burnt black box and a 1924 ledger to crack the boiler safe. 40 chambers of split-era logic puzzles.",
-    "version": "1.0.0",
+    "tagline": "One of you is in 1924, the other in the same building's 2026 ruins. Whatever the Anchor leaves somewhere spends a century there: dry planks become bridges, wet ones rot, acorns become trees, running water floods and erodes. 14 hand-built chambers.",
+    "version": "2.0.0",
     "sdk": "1.x",
     "entry": "index.html",
     "thumbnail": "hub-banner.webp",
@@ -61,13 +61,13 @@ window.GAME_REGISTRY = [
         "id": "anchor",
         "name": "The Anchor (1924)",
         "entry": "index.html",
-        "description": "WASD and E. Plants, turns valves, pulls levers and uses the Chronal Stash Box."
+        "description": "WASD and E. Carries planks and acorns, shoves crates, turns sluice wheels. Everything left behind ages into 2026."
       },
       {
         "id": "echo",
         "name": "The Echo (2026)",
         "entry": "index.html",
-        "description": "Arrows, Enter/E and F. Kicks rusted bars, loots the stash box and scans black boxes with LIDAR."
+        "description": "Arrows and Enter (F or . to pin). Walks the result, holds whatever it stands on still, pins tiles, kicks rusted bars and empties the Stash Box."
       }
     ],
     "multiplayer": {
@@ -84,8 +84,8 @@ window.GAME_REGISTRY = [
       "asymmetric",
       "puzzle",
       "time-travel",
-      "procedural",
-      "3D"
+      "3D",
+      "hand-crafted"
     ],
     "requires": [
       "keyboard",
