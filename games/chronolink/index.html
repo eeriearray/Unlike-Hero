@@ -116,6 +116,7 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
   <div id="linkTag" hidden></div>
   <div id="card" class="gone" aria-live="polite"><i id="cardNum">CHAMBER 01</i><b id="cardName"></b><span id="cardText"></span></div>
   <nav id="corner" aria-label="Game controls">
+    <button class="btn cy" id="roomBtn" hidden>Play online</button>
     <button class="ico" id="soundBtn" aria-label="Sound" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor" stroke="none"/><path class="waves" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/><path class="slash" d="M15.5 9.5l5 5M20.5 9.5l-5 5"/></svg></button>
     <button class="ico" id="viewBtn" aria-label="Split or solo view (Tab)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M12 5v14"/><rect class="half" x="12.6" y="5.6" width="7.3" height="12.8" rx="1.4" fill="currentColor" stroke="none" opacity=".35"/></svg></button>
     <button class="ico" id="menuBtn" aria-label="Menu (Esc)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14"/></svg></button>
@@ -123,9 +124,10 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
   <div id="log" aria-live="polite"></div>
 
   <div id="onlinePop" hidden>
-    <div class="note">Play on two devices through the hub server. Both enter the same 4-letter code.</div>
+    <div class="note">Create a room and send its code to your friend, or enter their code to join.</div>
     <input id="roomCode" maxlength="4" placeholder="CODE" aria-label="Room code" autocomplete="off">
-    <div class="actions"><button class="btn cy" id="roomJoin">Join</button><button class="btn" id="roomNew">New code</button><button class="btn" id="roomClose">Close</button></div>
+    <div class="actions"><button class="btn cy" id="roomJoin">Join room</button><button class="btn" id="roomNew">Create room</button><button class="btn" id="roomClose">Close</button></div>
+    <p class="note" id="roomStatus" role="status">Both devices must open this hub on the same Wi-Fi.</p>
   </div>
 
   <div class="overlay" id="menu" hidden>
@@ -158,6 +160,7 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
         <div class="who e"><h3>2026</h3><div class="kmap"><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></div><div class="kmap"><kbd>↵</kbd> use · <kbd>F</kbd> pin</div></div>
       </div>
       <button class="big" id="startBtn">Begin</button>
+      <button class="btn cy" id="introOnlineBtn" hidden>Play online · create or join a room</button>
       <span class="note"><kbd>H</kbd> hint · hold <kbd>R</kbd> to rewind · <kbd>Esc</kbd> menu</span>
     </div>
   </div>
@@ -1136,7 +1139,7 @@ const Net = {
   // the role this window was opened for (#anchor or #echo from the hub), if any
   want: /(^|[#&?])(role=)?anchor\b/i.test(location.hash + location.search) ? 'ANCHOR' : /(^|[#&?])(role=)?echo\b/i.test(location.hash + location.search) ? 'ECHO' : null,
   // Only a started, visible window links. A forgotten background tab must never take a chrononaut away.
-  ready() { return G.started && !document.hidden && !this.noLink; },
+  ready() { return G.started && (this.room || !document.hidden) && !this.noLink; },
   init() {
     try { this.bc = new BroadcastChannel('chronolink-sync'); this.bc.onmessage = e => this.recv(e.data); } catch (e) { this.bc = null; }
     setInterval(() => this.beat(), 1000);
@@ -1151,8 +1154,8 @@ const Net = {
     if (this.peer) {
       this.send({ t: 'hb', h: document.hidden });
       this.hiddenFor = document.hidden ? this.hiddenFor + 1 : 0;
-      if (this.hiddenFor >= 3) { this.send({ t: 'bye' }); this.unlink('This window was hidden · it plays both'); return; }
-      if (this.partnerHiddenSince && Date.now() - this.partnerHiddenSince > 3000) { this.send({ t: 'bye' }); this.unlink('Partner window hidden · this window plays both'); return; }
+      if (!this.room && this.hiddenFor >= 3) { this.send({ t: 'bye' }); this.unlink('This window was hidden · it plays both'); return; }
+      if (!this.room && this.partnerHiddenSince && Date.now() - this.partnerHiddenSince > 3000) { this.send({ t: 'bye' }); this.unlink('Partner window hidden · this window plays both'); return; }
       if (Date.now() - this.lastSeen > 4500) this.unlink('Partner lost · this window plays both');
     } else if (this.ready()) this.send({ t: 'hello', since: this.since, want: this.want });
   },
@@ -1163,9 +1166,11 @@ const Net = {
     log(role === 'ANCHOR' ? 'Linked · this window is 1924' : 'Linked · this window is 2026', 'sys');
     Sound.playRadioStatic();
     updateHUD();
+    if (this.room) { $('roomBtn').textContent = 'Room ' + this.code + ' · linked'; $('roomStatus').textContent = 'Partner connected · you play ' + (role === 'ANCHOR' ? '1924' : '2026'); }
   },
   unlink(msg) {
     this.peer = null; G.role = 'BOTH';
+    if (this.room) { $('roomBtn').textContent = 'Room ' + this.code; $('roomStatus').textContent = 'Room ' + this.code + ' · waiting for your friend to rejoin'; }
     if (this.want) { G.view = 'solo'; G.soloEra = ROLE_ERA[this.want]; } else G.view = 'split';
     applyView();
     log(msg, 'sys'); updateHUD();
@@ -1200,8 +1205,16 @@ const Net = {
   },
   joinRoom(code) {
     if (!hub) return;
+    if (this.peer) { this.send({ t: 'bye' }); this.unlink('Changing room'); }
+    if (this.bc) { this.bc.close(); this.bc = null; }
     if (this.room) try { this.room.leave(); } catch (e) { /* ignore */ }
+    this.noLink = false; this.code = code;
     this.room = hub.room('chronolink:' + code);
+    $('roomBtn').textContent = 'Room ' + code;
+    $('roomStatus').textContent = 'Room ' + code + ' · connecting… Share this code with your friend.';
+    this.room.on('status', status => {
+      $('roomStatus').textContent = status === 'connected' ? 'Room ' + code + ' · ' + (this.peer ? 'partner connected' : 'waiting for your friend to join') : 'Connection lost · reconnecting…';
+    });
     this.room.on('m', d => this.recv(d));
     this.room.on('peers', () => this.send({ t: 'hello', since: this.since, want: this.want }));
     this.send({ t: 'hello', since: this.since, want: this.want });
@@ -3224,11 +3237,12 @@ $('hintBtn').onclick = () => { setMenu(false); hint(); };
 $('vicStay').onclick = () => loadLevel(G.input, true);
 if (hub) {
   $('backBtn').hidden = false; $('backBtn').onclick = () => hub.exit();
-  $('onlineBtn').hidden = false;
-  $('onlineBtn').onclick = () => { setMenu(false); $('onlinePop').hidden = !$('onlinePop').hidden; if (!$('onlinePop').hidden) $('roomCode').focus(); };
+  const showRoom = () => { setMenu(false); $('onlinePop').hidden = false; $('roomCode').focus(); };
+  for (const id of ['onlineBtn', 'roomBtn', 'introOnlineBtn']) { $(id).hidden = false; $(id).onclick = showRoom; }
   $('roomClose').onclick = () => { $('onlinePop').hidden = true; };
-  $('roomNew').onclick = () => { const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; let c = ''; for (let i = 0; i < 4; i++) c += A[Math.floor(Math.random() * A.length)]; $('roomCode').value = c; };
-  $('roomJoin').onclick = () => { const c = $('roomCode').value.trim().toUpperCase().replace(/[^A-Z0-9]/g, ''); if (c.length === 4) { Net.joinRoom(c); $('onlinePop').hidden = true; } };
+  $('roomNew').onclick = () => { const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; const bytes = crypto.getRandomValues(new Uint8Array(4)); const c = Array.from(bytes, b => A[b % A.length]).join(''); $('roomCode').value = c; start(); Net.joinRoom(c); };
+  $('roomJoin').onclick = () => { const c = $('roomCode').value.trim().toUpperCase(); if (!/^[A-Z0-9]{4}$/.test(c)) { $('roomStatus').textContent = 'Enter your friend’s 4-letter room code.'; return; } $('roomCode').value = c; start(); Net.joinRoom(c); };
+  $('roomCode').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('roomJoin').click(); } });
 }
 addEventListener('resize', resize);
 

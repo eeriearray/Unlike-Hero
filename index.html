@@ -423,9 +423,40 @@ function setPartnerLink() {
   const url = new URL(g.path + other.entry, shareBase || location.href).href;
   $('#p-share').textContent = `${other.name}: ${url}`; $('#p-copy').hidden = false; $('#p-copy').dataset.url = url;
 }
-function closeGame() { if (cancelTrailer) cancelTrailer(); $('#player').hidden = true; $('#frame').src = 'about:blank'; document.body.style.overflow = ''; current = null; }
+function closeGame() {
+  if (cancelTrailer) cancelTrailer();
+  if (document.fullscreenElement || document.webkitFullscreenElement) {
+    const exit = document.exitFullscreen || document.webkitExitFullscreen;
+    if (exit) Promise.resolve(exit.call(document)).catch(() => {});
+  }
+  $('#player').hidden = true; $('#frame').src = 'about:blank'; document.body.style.overflow = ''; current = null;
+}
 $('#p-exit').onclick = closeGame;
-$('#p-full').onclick = () => { const el = $('#player'); (el.requestFullscreen ? el.requestFullscreen() : Promise.reject()).catch(() => toast('Fullscreen is not available here')); };
+function focusGame() {
+  if ($('#player').hidden) return;
+  if (cancelTrailer) $('#trailer-skip').focus();
+  else { $('#frame').focus(); $('#frame').contentWindow?.focus(); }
+}
+function syncFullscreen() {
+  $('#p-full').textContent = (document.fullscreenElement || document.webkitFullscreenElement) ? 'Exit fullscreen' : 'Fullscreen';
+  requestAnimationFrame(focusGame);
+}
+$('#p-full').onclick = async () => {
+  const el = $('#player');
+  try {
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      const exit = document.exitFullscreen || document.webkitExitFullscreen;
+      if (exit) await exit.call(document);
+    } else {
+      const enter = el.requestFullscreen || el.webkitRequestFullscreen;
+      if (!enter) throw new Error('unavailable');
+      await enter.call(el);
+    }
+  } catch { toast('Fullscreen is not available in this browser. Open the hub in a browser window.'); }
+  finally { syncFullscreen(); }
+};
+document.addEventListener('fullscreenchange', syncFullscreen);
+document.addEventListener('webkitfullscreenchange', syncFullscreen);
 $('#p-copy').onclick = () => { const u = $('#p-copy').dataset.url; (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(() => toast('Partner link copied'), () => toast(u)); };
 
 // messages from games (Hub SDK protocol)
