@@ -39,6 +39,13 @@ const server = createServer(async (req, res) => {
       res.end("window.HUB_CONFIG = { relayUrl: (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/relay', phoneHubUrl: " + JSON.stringify(phoneHubUrl) + " };\n");
       return;
     }
+    // The address friends on the same network can open, worked out fresh on every request so the hub can
+    // offer a new link right after this computer switches Wi-Fi or hotspot.
+    if (path === '/api/share') {
+      res.writeHead(200, { 'content-type': TYPES['.json'], 'cache-control': 'no-store' });
+      res.end(JSON.stringify(shareInfo()));
+      return;
+    }
     if (path.endsWith('/')) path += 'index.html';
     const rel = normalize(path).replace(/^([/\\])+/, '');
     if (rel.startsWith('..') || BLOCKED.test(rel.replace(/\\/g, '/'))) { res.writeHead(404).end('Not found'); return; }
@@ -162,6 +169,12 @@ function lanAddresses() {
 function localName() {
   if (platform() !== 'darwin') return '';
   try { const n = execFileSync('scutil', ['--get', 'LocalHostName'], { encoding: 'utf8' }).trim(); return n ? n + '.local' : ''; } catch { return ''; }
+}
+
+function shareInfo() {
+  const lan = lanAddresses(), ipv6 = lan.length ? [] : ipv6Addresses(), name = localName();
+  const url = lan.length ? `http://${lan[0]}:${PORT}/` : ipv6.length ? `http://[${ipv6[0]}]:${PORT}/` : null;
+  return { url, alternate: name ? `http://${name}:${PORT}/` : null, lan, ipv6, port: PORT };
 }
 
 /** Stable global IPv6 addresses of the network adapters (not temporary privacy addresses, not the 464XLAT one). */

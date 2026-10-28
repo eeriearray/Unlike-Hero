@@ -68,6 +68,7 @@ button:focus-visible,input:focus-visible,a:focus-visible,summary:focus-visible,s
 .phone-qr svg{display:block;width:100%;height:auto}
 .phone-share a{max-width:100%;overflow-wrap:anywhere;color:var(--ink);font:12px/1.5 var(--f-mono)}
 .phone-share .btn{width:100%}
+.phone-share-alt{color:var(--muted);font:11px/1.5 var(--f-mono);overflow-wrap:anywhere}
 .intro{display:flex;align-items:end;justify-content:space-between;gap:24px;padding:43px 0 27px;border-bottom:1px solid var(--line)}
 .eyebrow{color:var(--muted);font:600 11px/1 var(--f-mono);letter-spacing:0;text-transform:uppercase}
 .intro .eyebrow{display:block;margin-bottom:8px}
@@ -191,7 +192,9 @@ code{padding:2px 5px;border:1px solid var(--line);border-radius:3px;background:v
             <div id="phone-qr" class="phone-qr" role="img" aria-label="Scan to open the game hub on your phone" hidden></div>
             <p id="phone-share-help" role="status">Connect your phone to the same Wi-Fi or hotspot, then scan.</p>
             <a id="phone-share-link" hidden></a>
+            <span id="phone-share-alt" class="phone-share-alt" hidden></span>
             <button class="btn" id="phone-share-copy" type="button" hidden>Copy hub link</button>
+            <button class="btn" id="phone-share-refresh" type="button">Get new link</button>
           </section>
         </div>
       </details>
@@ -256,15 +259,33 @@ nameIn.addEventListener('change', () => { const p = player(); p.name = nameIn.va
 const relayIn = $('#relay-url'); relayIn.value = store.get('hub.relayUrl', '') || (window.HUB_CONFIG && window.HUB_CONFIG.relayUrl) || '';
 relayIn.addEventListener('change', () => store.set('hub.relayUrl', relayIn.value.trim()));
 
+// The link friends open. The hub server reports this computer's current network address, so after a switch to
+// another Wi-Fi or hotspot "Get new link" (or just reopening Connection) gives a link that works again.
+const loopback = /^(localhost|127(?:\.\d+){3}|\[?::1\]?)$/i.test(location.hostname);
+let shareBase = loopback ? (window.HUB_CONFIG && window.HUB_CONFIG.phoneHubUrl) || null : new URL('/', location.href).href;
+let shareAlt = null;
+async function refreshShare(announce) {
+  const before = shareBase;
+  try {
+    const r = await fetch('/api/share', { cache: 'no-store' });
+    if (r.ok) { const info = await r.json(); shareBase = info.url || (loopback ? null : new URL('/', location.href).href); shareAlt = info.alternate; }
+  } catch (e) { /* a static host without the hub server: keep what we have */ }
+  renderPhoneShare();
+  if (current) setPartnerLink();
+  if (announce && shareBase && before && shareBase !== before) toast('Network changed: new link ready');
+  return shareBase;
+}
 function renderPhoneShare() {
-  const loopback = /^(localhost|127(?:\.\d+){3}|\[?::1\]?)$/i.test(location.hostname);
-  const link = loopback ? window.HUB_CONFIG && window.HUB_CONFIG.phoneHubUrl : new URL('/', location.href).href;
-  const qrEl = $('#phone-qr'), linkEl = $('#phone-share-link'), copy = $('#phone-share-copy');
+  const link = shareBase;
+  const qrEl = $('#phone-qr'), linkEl = $('#phone-share-link'), copy = $('#phone-share-copy'), alt = $('#phone-share-alt');
   if (!link) {
-    $('#phone-share-help').textContent = 'Connect this computer to Wi-Fi or a phone hotspot, then refresh to get a QR code.';
+    qrEl.hidden = linkEl.hidden = copy.hidden = alt.hidden = true;
+    $('#phone-share-help').textContent = 'Connect this computer to Wi-Fi or a phone hotspot, then press Get new link.';
     return;
   }
+  $('#phone-share-help').textContent = 'Connect your phone to the same Wi-Fi or hotspot, then scan.';
   linkEl.href = link; linkEl.textContent = link; linkEl.hidden = false;
+  alt.hidden = !shareAlt || shareAlt === link; alt.textContent = 'Mac, iPhone or iPad can also use ' + shareAlt;
   try {
     const qr = window.qrcode(0, 'M'); qr.addData(link); qr.make();
     qrEl.innerHTML = qr.createSvgTag({ cellSize: 6, margin: 24, scalable: true });
@@ -272,13 +293,20 @@ function renderPhoneShare() {
   } catch (e) {
     $('#phone-share-help').textContent = 'Open the link below on a phone connected to the same Wi-Fi or hotspot.';
   }
-  copy.hidden = false;
+  copy.hidden = false; copy.textContent = 'Copy hub link';
   copy.onclick = async () => {
     try { await navigator.clipboard.writeText(link); copy.textContent = 'Copied'; }
     catch (e) { copy.textContent = 'Select the link to copy'; }
   };
 }
 renderPhoneShare();
+$('#phone-share-refresh').onclick = async () => { const b = $('#phone-share-refresh'); b.textContent = 'Checking…'; await refreshShare(true); b.textContent = 'Get new link'; };
+// refresh when the panel opens, when the network comes back, and every 10 s while the panel is open
+const connection = document.querySelector('.connection');
+connection.addEventListener('toggle', () => { if (connection.open) refreshShare(true); });
+addEventListener('online', () => refreshShare(true));
+setInterval(() => { if (connection.open || current) refreshShare(true); }, 10000);
+refreshShare(false);
 
 function entryUrl(game, entry) {
   const [file, hash] = (entry || game.entry).split('#');
@@ -375,11 +403,17 @@ function openGame(id, roleId) {
   $('#frame').src = 'about:blank';
   const launch = () => { $('#frame').src = entryUrl(g, role.entry); $('#frame').focus(); };
   const other = (g.roles || []).find(r => r.id !== roleId);
-  if (other) { const url = new URL(g.path + other.entry, location.href).href; $('#p-share').textContent = `${other.name}: ${url}`; $('#p-copy').hidden = false; $('#p-copy').dataset.url = url; }
-  else { $('#p-share').textContent = ''; $('#p-copy').hidden = true; }
+  setPartnerLink();
   $('#player').hidden = false; document.body.style.overflow = 'hidden';
   if (id === 'chronolink') playChronolinkTrailer(launch);
   else launch();
+}
+// The partner opens the other role from their own device, so the link uses the shareable address, not localhost.
+function setPartnerLink() {
+  const { g, role } = current, other = (g.roles || []).find(r => r.id !== role.id);
+  if (!other) { $('#p-share').textContent = ''; $('#p-copy').hidden = true; return; }
+  const url = new URL(g.path + other.entry, shareBase || location.href).href;
+  $('#p-share').textContent = `${other.name}: ${url}`; $('#p-copy').hidden = false; $('#p-copy').dataset.url = url;
 }
 function closeGame() { if (cancelTrailer) cancelTrailer(); $('#player').hidden = true; $('#frame').src = 'about:blank'; document.body.style.overflow = ''; current = null; }
 $('#p-exit').onclick = closeGame;

@@ -69,3 +69,18 @@ test('rooms are 16 connections unless the game asks for more', async () => {
   assert.equal(party.filter(w => w && !w.closedEarly).length, 20, 'Party Pack asked for 40');
   [...small, ...party].forEach(w => w && w.close());
 });
+
+test('the share endpoint reports the current network address fresh on every request', async () => {
+  const response = await fetch(`http://localhost:${PORT}/api/share`);
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('cache-control'), 'no-store');
+  const info = await response.json();
+  assert.equal(info.port, PORT);
+  assert.ok(Array.isArray(info.lan) && Array.isArray(info.ipv6));
+  if (info.url !== null) {
+    const url = new URL(info.url);
+    assert.equal(url.port, String(PORT));
+    assert.ok(!['localhost', '127.0.0.1', '[::1]'].includes(url.hostname), 'never a loopback address');
+    if (info.lan.length) assert.equal(url.hostname, info.lan[0]);
+  }
+});
