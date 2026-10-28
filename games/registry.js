@@ -46,7 +46,7 @@ window.GAME_REGISTRY = [
   {
     "id": "chronolink",
     "title": "ChronoLink: Anchor & Echo",
-    "tagline": "One of you is in 1924, the other in the same facility's 2026 ruins. Plant a seed in the past to bridge a chasm in the future; read a burnt black box in the future to disarm a boiler in the past. 1,000 generated chambers.",
+    "tagline": "One of you is in 1924, the other in the same facility's 2026 ruins. Plant a seed in the past to bridge a chasm in the future; piece together a burnt black box and a 1924 ledger to crack the boiler safe. 40 chambers of split-era logic puzzles.",
     "version": "1.0.0",
     "sdk": "1.x",
     "entry": "index.html",

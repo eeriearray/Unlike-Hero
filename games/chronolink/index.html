@@ -105,6 +105,19 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
   background:linear-gradient(180deg,#8a6a20,#f3d77a 45%,#e2bf55 55%,#7a5a14);box-shadow:inset 0 0 0 2px #5a4210}
 .tum.sel div{box-shadow:inset 0 0 0 2px #5a4210,0 0 0 2px #fff6d0,0 0 14px rgba(255,220,120,.6)}
 
+/* Notebooks: what each chrononaut has found so far. The answer only exists once both are read together. */
+.notes{position:absolute;z-index:3;max-width:min(320px,calc(50vw - 36px));padding:10px 13px 11px;border-radius:6px;pointer-events:none;display:grid;gap:7px;font:12.5px/1.4 var(--f-ui)}
+.notes h4{margin:0;font:11px/1 var(--f-mono);letter-spacing:.16em;text-transform:uppercase}
+.notes ul{margin:0;padding:0;list-style:none;display:grid;gap:3px}
+.notes li{padding-left:12px;position:relative}
+.notes li::before{content:'';position:absolute;left:0;top:.6em;width:5px;height:1px;background:currentColor;opacity:.6}
+.notes li.radio{font-family:var(--f-mono);letter-spacing:.04em}
+.notes.past{background:rgba(32,22,10,.82);color:#ecdcb8;box-shadow:inset 0 0 0 1px rgba(212,175,55,.45)}
+.notes.past h4{color:var(--brass)}
+.notes.future{background:rgba(2,18,20,.82);color:#bfeee3;box-shadow:inset 0 0 0 1px rgba(0,245,212,.35);font-family:var(--f-mono);font-size:12px}
+.notes.future h4{color:var(--neon)}
+#ledger{max-width:340px;margin:0;padding:8px 12px;list-style:none;display:grid;gap:3px;background:#f1e2bf;color:#3a2208;border-radius:3px;font:13px/1.35 Georgia,serif;box-shadow:inset 0 0 0 1px #b39553}
+#ledger li::before{content:'— '}
 #onlinePop{position:absolute;right:max(16px,env(safe-area-inset-right,0px));top:8px;z-index:9;background:#081311;border:1px solid #1d6b5e;border-radius:6px;padding:12px;display:grid;gap:8px;width:min(300px,calc(100% - 32px))}
 #onlinePop input{background:#030a09;border:1px solid #1d6b5e;border-radius:4px;padding:7px 9px;font:15px var(--f-mono);letter-spacing:.3em;text-transform:uppercase;width:100%}
 @media (max-width:520px){#lvlTag{font-size:30px}.lvlnav b{font-size:44px}}
@@ -123,7 +136,10 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
   </nav>
   <div id="log" aria-live="polite"></div>
 
+  <div class="notes past" id="notesPast" hidden aria-live="polite"></div>
+  <div class="notes future" id="notesFuture" hidden aria-live="polite"></div>
   <div id="safe" hidden role="dialog" aria-label="Boiler safety override">
+    <ul id="ledger" hidden aria-label="Boiler ledger"></ul>
     <div id="legend" hidden aria-label="Brass glyph plate"></div>
     <div id="tumblers"></div>
   </div>
@@ -137,7 +153,7 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
   <div class="overlay" id="menu" hidden>
     <div class="card menu" role="dialog" aria-label="Menu">
       <div class="mhead"><h2>Paused</h2><button class="ico" id="menuClose" aria-label="Resume"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-      <div class="lvlnav"><button class="btn" id="prev" aria-label="Previous level">◀</button><div><b id="lvlNum">1</b><br><span>of 1000</span></div><button class="btn" id="next" aria-label="Next level">▶</button></div>
+      <div class="lvlnav"><button class="btn" id="prev" aria-label="Previous level">◀</button><div><b id="lvlNum">1</b><br><span>of 40</span></div><button class="btn" id="next" aria-label="Next level">▶</button></div>
       <div class="mrow"><input id="jump" placeholder="Level # or seed" aria-label="Jump to level number or seed" autocomplete="off"><button class="btn" id="go">Go</button></div>
       <div class="meta"><span id="seedChip">SEED</span> · <span id="actChip">Act I</span><br><span id="linkChip">One window</span></div>
       <div class="cols">
@@ -210,51 +226,154 @@ function seedForLevel(n) {
   return s;
 }
 
-// Dependency steps per level: 3 at level 1, 6-8 from 101, 12-16 from 500.
-function baseSteps(n) {
-  if (n <= 100) return 3 + Math.floor((n - 1) / 34);
-  if (n < 500) return 6 + Math.floor((n - 101) / 134);
-  return Math.min(16, 12 + Math.floor((n - 500) / 125));
-}
-// Every 20 levels: intro (1-4), development (5-10), twist (11-16), climax (17-19, one step longer), breather (20, short).
-function cyclePos(n) { return ((n - 1) % 20) + 1; }
+// A short campaign of 40 chambers that ramps hard: every mechanic is in play by chamber 9.
+const MAX_LEVEL = 40;
+// Dependency steps per chamber: 4 at chamber 1, 7 by 13, 12 from 33.
+function baseSteps(n) { return Math.min(12, 4 + Math.floor((n - 1) / 4)); }
+// Every 10 chambers: 8-9 are the climax (one step longer), 10 is a shorter breather.
+function cyclePos(n) { return ((n - 1) % 10) + 1; }
 function stepsForLevel(n) {
   const b = baseSteps(n), c = cyclePos(n);
-  if (n > 1 && c === 20) return Math.max(3, b - 2);
-  if (c >= 17 && c <= 19) return Math.min(16, b + 1);
+  if (c === 10) return Math.max(4, b - 2);
+  if (c >= 8) return b + 1;
   return b;
 }
 // Glyphs for cipher codes: the 2026 black box shows these; the 1924 safe's brass plate maps them to digits.
 const GLYPHS = ['△', '○', '□', '◇', '✕', '◎', '☆', '⊕', '≡', '∴'];
 
+// Deduction puzzles: the answer is split between eras, so neither chrononaut can solve it alone.
+// `future` clues are fixed (what the 2026 wreck shows); 1924 clues are added from a pool until exactly one
+// candidate survives, then any clue that isn't needed is dropped. Each era's clues alone must leave doubt.
+function deduce(rng, cands, truth, future, pastPool, maxPast, universe) {
+  const fits = (c, clues) => clues.every(q => q.test(c));
+  const count = clues => cands.reduce((a, c) => a + (fits(c, clues) ? 1 : 0), 0);
+  if (count(future) < 2) return null;
+  const pool = rng.shuffle(pastPool.filter(q => q.test(truth)));
+  const past = [];
+  for (const q of pool) {
+    if (past.length >= maxPast) break;
+    const before = count(future.concat(past));
+    if (before === 1) break;
+    if (count(future.concat(past, [q])) < before) past.push(q);
+  }
+  if (count(future.concat(past)) !== 1) return null;
+  for (let i = past.length - 1; i >= 0; i--) {
+    const without = past.filter((q, j) => j !== i);
+    if (count(future.concat(without)) === 1) past.splice(i, 1);
+  }
+  if ((universe || cands).filter(c => fits(c, past)).length < 2) return null;
+  return { future, past };
+}
+const POS = ['first', 'second', 'third', 'fourth'], ALL_CODES = [];
+// A four-digit override: the 2026 black box survives with some digits burned out, and the 1924 boiler ledger
+// holds the arithmetic that pins them down. More digits burn as the campaign goes on.
+function codePuzzle(rng, n, cipher, glyphs) {
+  const hidden = n < 5 ? 1 : n < 15 ? 2 : 3, maxPast = hidden + 1;
+  for (let attempt = 0; attempt < 200; attempt++) {
+    const code = [0, 1, 2, 3].map(() => rng.range(0, 9));
+    const burned = rng.shuffle([0, 1, 2, 3]).slice(0, hidden).sort();
+    const cands = [];
+    if (!ALL_CODES.length) for (let v = 0; v < 10000; v++) ALL_CODES.push([(v / 1000) | 0, ((v / 100) | 0) % 10, ((v / 10) | 0) % 10, v % 10]);
+    for (let v = 0; v < Math.pow(10, hidden); v++) {
+      const c = code.slice(); let r = v;
+      for (const p of burned) { c[p] = r % 10; r = (r / 10) | 0; }
+      cands.push(c);
+    }
+    const shown = code.map((d, i) => burned.includes(i) ? '▯' : cipher ? glyphs[d] : String(d)).join(' ');
+    const future = [{ text: 'Black box: "override reset to ' + shown + '". The rest is charred.', short: shown.replace(/ /g, ''), test: () => true }];
+    const pool = [], S = code.reduce((a, b) => a + b, 0);
+    pool.push({ text: 'The four digits add up to ' + S + '.', test: c => c[0] + c[1] + c[2] + c[3] === S });
+    if (new Set(code).size === 4) pool.push({ text: 'No digit is used twice.', test: c => new Set(c).size === 4 });
+    for (let i = 0; i < 4; i++) {
+      pool.push({ text: 'The ' + POS[i] + ' digit is ' + (code[i] % 2 ? 'odd' : 'even') + '.', test: c => c[i] % 2 === code[i] % 2 });
+      if (code[i] === Math.max(...code) && code.filter(d => d === code[i]).length === 1) pool.push({ text: 'The ' + POS[i] + ' digit is the largest.', test: c => c.every((d, j) => j === i || d < c[i]) });
+      for (let j = 0; j < 4; j++) {
+        if (i === j) continue;
+        const a = code[i], b = code[j];
+        if (i < j) pool.push({ text: 'The ' + POS[i] + ' and ' + POS[j] + ' digits add up to ' + (a + b) + '.', test: c => c[i] + c[j] === a + b });
+        if (i < j && a * b > 0) pool.push({ text: 'The ' + POS[i] + ' and ' + POS[j] + ' digits multiply to ' + (a * b) + '.', test: c => c[i] * c[j] === a * b });
+        if (a > b) pool.push({ text: 'The ' + POS[i] + ' digit is ' + (a - b) + ' more than the ' + POS[j] + '.', test: c => c[i] - c[j] === a - b });
+        if (b > 0 && a === 2 * b) pool.push({ text: 'The ' + POS[i] + ' digit is double the ' + POS[j] + '.', test: c => c[i] === 2 * c[j] });
+        if (a > b) pool.push({ text: 'The ' + POS[i] + ' digit is bigger than the ' + POS[j] + '.', test: c => c[i] > c[j] });
+        if (i < j && a === b) pool.push({ text: 'The ' + POS[i] + ' and ' + POS[j] + ' digits are the same.', test: c => c[i] === c[j] });
+      }
+    }
+    // Every hidden digit needs a clue that touches it, or the ledger would read like an answer key.
+    const pz = deduce(rng, cands, code, future, pool, maxPast, ALL_CODES);
+    if (pz && pz.past.length >= Math.min(hidden, 2)) return { code: code.join(''), burned, puzzle: pz };
+  }
+  return null;
+}
+// Levers: 2026 wear shows part of the story, the 1924 procedure card the rest. `len` levers are pulled in order.
+const ROMAN = ['I', 'II', 'III'];
+function leverPuzzle(rng, len) {
+  const cands = [];
+  const perm = (pre) => { if (pre.length === len) { cands.push(pre); return; } for (let i = 0; i < 3; i++) if (!pre.includes(i)) perm(pre.concat(i)); };
+  perm([]);
+  let fallback = null;
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const seq = rng.pick(cands), R = ROMAN;
+    const fpool = [];
+    for (let x = 0; x < 3; x++) {
+      if (!seq.includes(x)) fpool.push({ text: 'Lever ' + R[x] + ' is rusted solid in the up position: it was never pulled.', short: R[x] + ' ✕', test: c => !c.includes(x) });
+      if (len > 1 && seq[len - 1] === x) fpool.push({ text: 'Lever ' + R[x] + ' has a snapped catch: it was the last one pulled.', short: R[x] + ' last', test: c => c[len - 1] === x });
+      if (len > 1 && seq[0] !== x) fpool.push({ text: 'Soot on lever ' + R[x] + ': the first pull was never this one.', short: R[x] + ' not 1st', test: c => c[0] !== x });
+    }
+    const ppool = [];
+    for (let x = 0; x < 3; x++) {
+      if (len === 1 && seq[0] !== x) ppool.push({ text: 'Lever ' + R[x] + ': EMERGENCY VENT. Do not pull.', test: c => !c.includes(x) });
+      if (len > 1) {
+        if (seq[0] !== x) ppool.push({ text: 'Never start with lever ' + R[x] + '.', test: c => c[0] !== x });
+        if (seq[len - 1] !== x) ppool.push({ text: 'Never finish on lever ' + R[x] + '.', test: c => c[len - 1] !== x });
+        if (!seq.includes(x)) ppool.push({ text: 'Lever ' + R[x] + ' vents the boiler. Leave it alone.', test: c => !c.includes(x) });
+      }
+      for (let y = 0; y < 3; y++) {
+        if (x === y || len === 1) continue;
+        const ix = seq.indexOf(x), iy = seq.indexOf(y);
+        if (ix >= 0 && iy >= 0 && ix < iy) ppool.push({ text: 'Pull lever ' + R[x] + ' before lever ' + R[y] + '.', test: c => c.indexOf(x) >= 0 && c.indexOf(y) > c.indexOf(x) });
+        if (ix >= 0 && iy === ix + 1) ppool.push({ text: 'Lever ' + R[y] + ' comes straight after lever ' + R[x] + '.', test: c => c.indexOf(x) >= 0 && c.indexOf(y) === c.indexOf(x) + 1 });
+      }
+    }
+    // Full sequences should need at least two lines of the 1924 card, not one lucky rule.
+    const minPast = len === 3 ? 2 : 1;
+    for (const f of rng.shuffle(fpool.slice())) {
+      const pz = deduce(rng, cands, seq, [f], ppool, 3);
+      if (pz && pz.past.length >= minPast) return { seq, puzzle: pz };
+      if (pz && !fallback) fallback = { seq, puzzle: pz };
+    }
+  }
+  return fallback;
+}
+
 const ACTS = [
   { from: 1, name: 'Act I', theme: 'Linear causality' },
-  { from: 101, name: 'Act II', theme: 'Causal feedback loops' },
-  { from: 351, name: 'Act III', theme: 'Multi-state combinatorics' },
-  { from: 651, name: 'Act IV', theme: 'The divergence' },
-  { from: 851, name: 'Act V', theme: 'The chronal depths' },
+  { from: 9, name: 'Act II', theme: 'Causal feedback loops' },
+  { from: 17, name: 'Act III', theme: 'Multi-state combinatorics' },
+  { from: 25, name: 'Act IV', theme: 'The divergence' },
+  { from: 33, name: 'Act V', theme: 'The chronal depths' },
 ];
 function actFor(n) { let a = ACTS[0]; for (const x of ACTS) if (n >= x.from) a = x; return a; }
 
 // PF = a past action reshapes the present. FP = a present clue unlocks the past.
 // PUSH: shove 1924 furniture and its 2026 ruin moves with it. SYNC: both stand on the same tile at the same moment.
-// Variants unlock later: cipher codes from 14, lever sequences from 24, decoys and hidden 2026 conduits from 101.
+// Variants unlock later: lever sequences from 10, cipher codes from 12, buried 2026 conduits from 24.
 const LINK_TYPES = {
   SEED:   { dir: 'PF', from: 1 },
   LEVER:  { dir: 'FP', from: 2 },
   ACID:   { dir: 'PF', from: 3 },
   PUSH:   { dir: 'PF', from: 4 },
-  SLUICE: { dir: 'PF', from: 6 },
-  STASH:  { dir: 'PF', from: 8 },
-  CRATE:  { dir: 'PF', from: 9 },
-  FLOW:   { dir: 'PF', from: 16 },
+  SLUICE: { dir: 'PF', from: 5 },
+  STASH:  { dir: 'PF', from: 6 },
+  CRATE:  { dir: 'PF', from: 7 },
+  FLOW:   { dir: 'PF', from: 9 },
   CODE:   { dir: 'FP', from: 1 },
 };
 // CRATE: a small push puzzle in 1924 whose 2026 ruins must end on weight plates only the Echo can see.
 // FLOW: two flood channels share one water supply; the sluice decides which one is dry.
-const SYNC_FROM = 11, CIPHER_FROM = 14, SEQUENCE_FROM = 24, DECOY_FROM = 30, HIDDEN_PIPES_FROM = 30, BURIED_PIPES_FROM = 101, TWO_CRATES_FROM = 120;
+const SYNC_FROM = 8, CIPHER_FROM = 12, SEQUENCE_FROM = 10, DECOY_FROM = 3, HIDDEN_PIPES_FROM = 11, BURIED_PIPES_FROM = 24, TWO_CRATES_FROM = 20;
+const SEED_CABINET_FROM = 14, THREE_LEVERS_FROM = 18, DECOY_BENCH_FROM = 6;
 function linkSteps(type, n) {
-  if (type === 'SEED') return n >= 40 ? 2 : 1;
+  if (type === 'SEED') return n >= SEED_CABINET_FROM ? 2 : 1;
   if (type === 'SLUICE' || type === 'PUSH' || type === 'SYNC') return 1;
   if (type === 'STASH') return 4;
   if (type === 'CRATE' || type === 'FLOW') return 3;
@@ -290,12 +409,16 @@ function chainLinks(rng, n, target) {
   }
   // Resonance plates: a beat where both chrononauts must regroup on the same tile.
   const c = cyclePos(n);
-  if (n >= SYNC_FROM && c !== 20 && (n <= SYNC_FROM + 1 || (c >= 11 && c <= 19) || rng.next() < 0.3)) {
-    const count = stepsForLevel(n) >= 12 && rng.next() < 0.5 ? 2 : 1;
-    for (let i = 0; i < count; i++) links.splice(rng.range(1, links.length), 0, { type: 'SYNC', dir: 'SYNC' });
+  if (n >= SYNC_FROM && c !== 10 && (n <= SYNC_FROM + 1 || c >= 6 || rng.next() < 0.4)) {
+    const count = stepsForLevel(n) >= 10 && rng.next() < 0.5 ? 2 : 1;
+    for (let i = 0; i < count; i++) {
+      const at = [];
+      for (let k = 1; k <= links.length; k++) if (links[k - 1].type !== 'SYNC' && (!links[k] || links[k].type !== 'SYNC')) at.push(k);
+      if (at.length) links.splice(rng.pick(at), 0, { type: 'SYNC', dir: 'SYNC' });
+    }
   }
-  // From level 9 every level (breathers aside) gets at least one puzzle that takes planning: crates or floods.
-  if (n >= LINK_TYPES.CRATE.from && c !== 20 && !links.some(l => l.type === 'CRATE' || l.type === 'FLOW')) {
+  // From the first crate room on, every level (breathers aside) gets a puzzle that takes planning: crates or floods.
+  if (n >= LINK_TYPES.CRATE.from && c !== 10 && !links.some(l => l.type === 'CRATE' || l.type === 'FLOW')) {
     const swap = links.map((l, i) => i).filter(i => links[i].dir === 'PF' && n - LINK_TYPES[links[i].type].from > 1);
     if (swap.length) links[rng.pick(swap)] = { type: n >= LINK_TYPES.FLOW.from && rng.next() < 0.5 ? 'FLOW' : 'CRATE', dir: 'PF' };
   }
@@ -346,17 +469,19 @@ function buildGraph(rng, n, links) {
       L.take = add('ANCHOR', 'take_' + L.item); L.deposit = add('ANCHOR', 'deposit_' + L.item);
       L.retrieve = add('ECHO', 'retrieve'); L.unlock = add('ECHO', L.item === 'key' ? 'unlock_vault' : 'unlock_cable');
     } else if (L.type === 'CODE') {
-      let code = ''; for (let d = 0; d < 4; d++) code += String(rng.range(d === 0 ? 1 : 0, 9));
-      L.code = code; L.read = add('ECHO', 'read'); L.override = add('ANCHOR', 'override');
+      L.cipher = n >= CIPHER_FROM; L.glyphs = rng.shuffle(GLYPHS.slice());
+      const cp = codePuzzle(rng, n, L.cipher, L.glyphs);
+      L.code = cp.code; L.burned = cp.burned; L.puzzle = cp.puzzle;
+      L.read = add('ECHO', 'read'); L.override = add('ANCHOR', 'override');
     } else if (L.type === 'LEVER') {
-      L.correct = rng.range(0, 2);
-      if (n >= SEQUENCE_FROM) { const order = rng.shuffle([0, 1, 2]); L.seq = order.slice(0, n >= 150 ? 3 : 2); L.correct = L.seq[0]; }
+      const lp = leverPuzzle(rng, n >= THREE_LEVERS_FROM ? 3 : n >= SEQUENCE_FROM ? 2 : 1);
+      if (lp.seq.length > 1) L.seq = lp.seq;
+      L.correct = lp.seq[0]; L.puzzle = lp.puzzle;
       L.scan = add('ECHO', 'scan'); L.lever = add('ANCHOR', 'lever');
     } else if (L.type === 'PUSH') { L.push = add('ANCHOR', 'push'); }
     else if (L.type === 'SYNC') { L.sync = add('BOTH', 'sync'); }
     else if (L.type === 'CRATE') { L.nCrates = n >= TWO_CRATES_FROM ? 2 : 1; L.crate = add('ANCHOR', 'crate'); }
     else if (L.type === 'FLOW') { L.toggle = 't' + i; L.flowOn = add('ANCHOR', 'flow_on'); L.ford = add('ECHO', 'ford'); L.flowOff = add('ANCHOR', 'flow_off'); }
-    if (L.type === 'CODE' && n >= CIPHER_FROM) { L.cipher = true; L.glyphs = rng.shuffle(GLYPHS.slice()); }
     L.openNode = L.nodes[L.nodes.length - 1].id;
   });
   // Spatial dependency: link i lives in section i, which a chrononaut reaches once the
@@ -454,6 +579,8 @@ function buildFacility(rng, n, links) {
     if (L.type === 'SLUICE') P({ kind: 'sluice', node: L.sluice.id }, { kind: 'deadwheel', cause: L.sluice.id }, { near: true });
     if (L.type === 'STASH') {
       P({ kind: 'workbench', node: L.take.id, item: L.item }, { kind: 'rottenbench' });
+      // A second bench holds the other material; only the 2026 lock says which one the box must carry.
+      if (n >= DECOY_BENCH_FROM) P({ kind: 'workbench', item: L.item === 'key' ? 'clay' : 'key', wrongItem: true }, { kind: 'rottenbench' }, { mustReach: true });
       P({ kind: 'stash', node: L.deposit.id, item: L.item }, { kind: 'stash', node: L.retrieve.id, item: L.item });
     }
     if (L.type === 'CODE') P({ kind: 'safe', node: L.override.id, code: L.code }, { kind: 'terminal', node: L.read.id, code: L.code }, { near: true });
@@ -463,14 +590,14 @@ function buildFacility(rng, n, links) {
     if (L.type === 'FLOW') P({ kind: 'sluice', node: L.flowOn.id, flow: true }, { kind: 'deadwheel', cause: L.toggle }, { near: true });
   });
   // Act II onward: decoy machines whose pipes run into dead ends, so players have to trace cause and effect.
-  if (n >= DECOY_FROM && cyclePos(n) !== 20) {
-    const count = 1 + Math.floor(K / 4);
+  if (n >= DECOY_FROM && cyclePos(n) !== 10) {
+    const count = 1 + Math.floor(K / 3);
     for (let k = 0; k < count; k++) {
       const sct = rng.range(0, K - 1), kind = rng.pick([['acidvalve', 'deadvalve'], ['sluice', 'deadwheel']]), key = 'x' + sct + 'd' + k;
       pairs[sct].push({ past: { kind: kind[0], node: key, decoy: true }, future: { kind: kind[1], cause: key, decoy: true } });
     }
   }
-  const H = 7 + rng.range(0, n > 200 ? 2 : 1);
+  const H = 7 + rng.range(0, n > 20 ? 2 : 1);
   const need = pairs.map((ps, i) => (links[i].type === 'CRATE' ? 7 + 2 * links[i].nCrates : 4) + Math.ceil(ps.reduce((a, q) => a + (q.span || 1), 0) / 2)); need.push(4);
   const base = need.reduce((a, b) => a + b, 0), barrierW = links.reduce((a, L) => a + (L.type === 'FLOW' ? 3 : 1), 0);
   const W = base + barrierW + 2 + rng.range(0, 2);
@@ -586,7 +713,7 @@ function buildFacility(rng, n, links) {
   const decoKinds = Object.keys(AGED), interior = [];
   for (let cy = 1; cy < H - 1; cy++) for (let cx = 1; cx < W - 1; cx++) if (!crateSections.has(past.zoneOfX[cx])) interior.push([cx, cy]);
   rng.shuffle(interior);
-  const decoN = Math.floor((W - 2) * (H - 2) * (n % 20 === 0 ? 0.04 : 0.07 + Math.min(0.05, n / 9000)));
+  const decoN = Math.floor((W - 2) * (H - 2) * (cyclePos(n) === 10 ? 0.04 : 0.07 + Math.min(0.05, n / 800)));
   let placed = 0;
   for (const [cx, cy] of interior) {
     if (placed >= decoN) break;
@@ -675,7 +802,7 @@ function buildFacility(rng, n, links) {
       }
       return null;
     };
-    const band = count === 1 ? (n < 40 ? [4, 9] : n < 200 ? [6, 12] : [8, 14]) : (n < 500 ? [10, 18] : [12, 22]);
+    const band = count === 1 ? (n < 12 ? [5, 10] : n < 25 ? [7, 13] : [9, 15]) : (n < 32 ? [11, 18] : [13, 22]);
     const cells = []; for (let i = 0; i < N; i++) if (slot[i]) cells.push(i);
     let best = null;
     for (let attempt = 0; attempt < 45; attempt++) {
@@ -726,10 +853,10 @@ function buildFacility(rng, n, links) {
 function generateLevel(input) {
   let n, seed, custom = false;
   const raw = String(input == null ? 1 : input).trim();
-  if (/^\d+$/.test(raw)) { n = Math.max(1, Math.min(1000, parseInt(raw, 10))); seed = seedForLevel(n); }
+  if (/^\d+$/.test(raw)) { n = Math.max(1, Math.min(MAX_LEVEL, parseInt(raw, 10))); seed = seedForLevel(n); }
   else {
     seed = raw.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16) || 'CHRONOLINK';
-    n = (hashStr(seed) % 1000) + 1; custom = true;
+    n = (hashStr(seed) % MAX_LEVEL) + 1; custom = true;
   }
   for (let attempt = 0; attempt < 60; attempt++) {
     const rng = new Mulberry32(seed + ':' + attempt);
@@ -741,7 +868,7 @@ function generateLevel(input) {
     const level = {
       n, seed, custom, input: custom ? seed : String(n), W, H, past, future, doors, links, nodes,
       // effort, not node count: a crate room or a flood counts as three steps of thinking
-      steps: links.reduce((a, l) => a + linkSteps(l.type, n), 0), act: actFor(n), chamber: rng.pick(CHAMBERS), breather: n % 20 === 0, attempt,
+      steps: links.reduce((a, l) => a + linkSteps(l.type, n), 0), act: actFor(n), chamber: rng.pick(CHAMBERS), breather: cyclePos(n) === 10, attempt,
     };
     const v = validateLevel(level);
     if (v.ok) { level.solution = v; return level; }
@@ -809,7 +936,7 @@ function validateInner(level, moveCrate) {
   return { ok: true, moves, steps: level.nodes.length, route };
 }
 
-root.ChronoCore = { TILE, GLYPHS, cyclePos, SYNC_FROM, CIPHER_FROM, SEQUENCE_FROM, DECOY_FROM, HIDDEN_PIPES_FROM, BURIED_PIPES_FROM, TWO_CRATES_FROM, Mulberry32, hashStr, seedForLevel, stepsForLevel, actFor, LINK_TYPES, linkSteps, NODE_TEXT, generateLevel, validateLevel, passable, astar, cheb };
+root.ChronoCore = { TILE, GLYPHS, MAX_LEVEL, THREE_LEVERS_FROM, SEED_CABINET_FROM, DECOY_BENCH_FROM, deduce, cyclePos, SYNC_FROM, CIPHER_FROM, SEQUENCE_FROM, DECOY_FROM, HIDDEN_PIPES_FROM, BURIED_PIPES_FROM, TWO_CRATES_FROM, Mulberry32, hashStr, seedForLevel, stepsForLevel, actFor, LINK_TYPES, linkSteps, NODE_TEXT, generateLevel, validateLevel, passable, astar, cheb };
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
 
@@ -1068,7 +1195,7 @@ const G = {
 const ROLE_ERA = { ANCHOR: 'past', ECHO: 'future' };
 function newPlayer(start) {
   return { x: start.x, y: start.y, rx: start.x, ry: start.y, vx: 0, vy: 0, yaw: Math.PI / 2, speed: 0, turn: 0, dir: { dx: 1, dy: 0 },
-    done: {}, inv: null, revealed: {}, sent: {}, prog: {}, crates: {}, stunUntil: 0, lockUntil: 0 };
+    done: {}, inv: null, revealed: {}, sent: {}, prog: {}, crates: {}, seen: {}, stunUntil: 0, lockUntil: 0 };
 }
 const isDone = id => !!(G.A && (G.A.done[id] || G.E.done[id]));
 const nodeById = id => G.level.nodes.find(n => n.id === id);
@@ -2770,8 +2897,8 @@ function loadLevel(input, share) {
   $('jump').value = '';
   updateHUD();
   log(`Level ${L.n} · ${L.chamber}. ${L.steps} causal steps.`, 'ok');
-  if (L.breather) log(LORE[(L.n / 20) % LORE.length | 0]);
-  if (L.n === 1) log('Tip: the Anchor acts first. Plant the acorn, then let the Echo cross.');
+  if (L.breather) log(LORE[(L.n / 10) % LORE.length | 0]);
+  if (L.n === 1) log('Tip: neither era holds a whole answer. Read both notebooks, then work it out together.');
   if (hub) hub.report('session-start', { level: L.n, seed: L.seed });
   Sound.playTemporalPing();
 }
@@ -2797,7 +2924,7 @@ function actionFor(who, o) {
     if (o.decoy) {
       // A red herring: it turns, its pipe lights up into a wall, and the pressure has to go somewhere.
       if (G.A.done[o.node]) return null;
-      return { label: 'Turn the wheel', run: () => { G.A.done[o.node] = true; G.fxTimes[o.node] = G.t; G.strain++; surgeFx(o.x, o.y, true); G.A.stunUntil = G.t + 0.8; broadcast('A'); } };
+      return { label: 'Turn the wheel', run: () => { G.A.done[o.node] = true; G.fxTimes[o.node] = G.t; G.strain++; surgeFx(o.x, o.y, true); G.A.stunUntil = G.t + 2.5; broadcast('A'); } };
     }
     if (o.kind === 'crate1924') {
       const L = G.level.links[o.crateLink];
@@ -2811,6 +2938,10 @@ function actionFor(who, o) {
       const L = G.level.links[o.crateLink];
       if (isDone(L.crate.id)) return null;
       return { label: 'Rewind the crates', run: () => rewindCrates(o) };
+    }
+    if (o.kind === 'workbench' && o.wrongItem) {
+      if (G.A.inv === o.item) return null;
+      return { label: 'Take ' + (o.item === 'key' ? 'key blank' : 'wet clay'), run: () => { G.A.inv = o.item; Sound.playLeverClunk(); broadcast('A'); } };
     }
     if (o.kind === 'sluice' && o.flow) {
       const L = G.level.links[o.link];
@@ -2828,12 +2959,14 @@ function actionFor(who, o) {
       case 'acidvalve': return { label: 'Open acid valve', run: () => complete(nd.id, 'A') };
       case 'workbench': return { label: 'Take ' + (o.item === 'key' ? 'key blank' : 'wet clay'), run: () => { G.A.inv = o.item; complete(nd.id, 'A'); } };
       case 'stash':
+        if (G.A.inv && G.A.inv !== o.item && (G.A.inv === 'key' || G.A.inv === 'clay')) return { label: 'Deposit ' + ITEM_NAMES[G.A.inv].toLowerCase(), run: () => wrongDeposit(o) };
         if (preBlocked(nd)) return { label: OBJ_NAMES.stash, blocked: 'The Stash Box carries objects across 102 years. Bring it something from the workbench.' };
         return { label: 'Deposit ' + ITEM_NAMES[o.item].toLowerCase(), run: () => { G.A.inv = null; complete(nd.id, 'A'); } };
       case 'sluice': return { label: 'Turn sluice wheel', run: () => complete(nd.id, 'A') };
       case 'wardrobe': return { label: 'Shove the wardrobe', run: () => complete(nd.id, 'A') };
       case 'safe':
         if (preBlocked(nd)) return { label: OBJ_NAMES.safe, blocked: 'Four brass tumblers. You don\'t know the code. The Echo may find it in a black box in the ruins.' };
+        if (G.t < G.A.lockUntil) return { label: OBJ_NAMES.safe, blocked: 'The boiler is still venting. The tumblers are jammed.' };
         return { label: 'Enter override code', run: () => openSafe(o) };
       case 'lever':
         if (isDone(nd.id) || leverPulled(o)) return null;
@@ -2948,8 +3081,8 @@ function onNodeDone(id, local) {
     case 'read':
       Sound.playRadioStatic();
       if (G.role !== 'ANCHOR') say('E', codeText(link));
-      log('2026 · Black box log: "Boiler safety override reset to ' + link.code + '."', 'e', 'ECHO');
-      if (G.role === 'ANCHOR') log('The Echo recovered a four-digit override code. Ask them for it, or wait for their radio call.');
+      log('2026 · The black box is half burned. Only part of the override survives.', 'e', 'ECHO');
+      if (G.role === 'ANCHOR') log('The Echo recovered part of the override code. The boiler ledger may fill the gaps.');
       break;
     case 'override': {
       const trap = objIn('past', o => o.barrier && o.openNode === id); if (trap) G.shocks.push({ era: 'past', x: trap.x, y: trap.y, t0: G.t });
@@ -2959,10 +3092,9 @@ function onNodeDone(id, local) {
     }
     case 'scan': {
       Sound.playTemporalPing();
-      const roman = ['I', 'II', 'III'][link.correct];
       if (G.role !== 'ANCHOR') say('E', wearText(link));
-      log('2026 · Wear marks on lever ' + roman + '. Someone pulled it thousands of times.', 'e', 'ECHO');
-      if (G.role === 'ANCHOR') log('The Echo found wear marks on the old lever bank. Ask which lever, or wait for their radio call.');
+      log('2026 · LIDAR picks out the old wear on the lever bank.', 'e', 'ECHO');
+      if (G.role === 'ANCHOR') log('The Echo scanned the old lever bank. Compare it with the lever card.');
       break;
     }
     case 'push': {
@@ -3084,11 +3216,16 @@ function pullLever(o) {
   broadcast('A');
 }
 // What the Echo can say about a lever bank: the right numeral, or for a sequence how worn each lever is.
-function wearText(L) {
-  if (!L.seq) return ['I', 'II', 'III'][L.correct];
-  return [0, 1, 2].map(i => { const k = L.seq.indexOf(i); return ['I', 'II', 'III'][i] + ' ' + (k < 0 ? '·' : '▮'.repeat(L.seq.length - k)); }).join('  ');
+// What the Echo can radio: only the part of the answer that survived in 2026.
+function wearText(L) { return L.puzzle.future[0].short; }
+const codeText = L => L.puzzle.future[0].short;
+// The other material went into the box: 102 years later it is no use, and the box has to be filled again.
+function wrongDeposit(o) {
+  const was = G.A.inv; G.A.inv = null; G.strain++;
+  surgeFx(o.x, o.y, true); G.A.stunUntil = G.t + 1.5;
+  log('1924 · The Stash Box rejects the ' + (was === 'key' ? 'key blank' : 'wet clay') + ' with a crack of static. Wrong material for 2026.', 'bad');
+  broadcast('A');
 }
-const codeText = L => L.cipher ? L.code.split('').map(d => L.glyphs[+d]).join('') : L.code;
 function surgeFx(x, y, local) {
   Sound.playSteamHiss(); Sound.error();
   steamBurst(x, y);
@@ -3105,6 +3242,8 @@ function closeSafe() { G.safe = null; $('safe').hidden = true; }
 function renderSafe() {
   const s = G.safe; if (!s) return;
   const L = G.level.links[s.o.link];
+  $('ledger').hidden = !L.puzzle;
+  if (L.puzzle) $('ledger').innerHTML = L.puzzle.past.map(q => '<li>' + q.text + '</li>').join('');
   $('legend').hidden = !L.cipher;
   if (L.cipher) $('legend').innerHTML = L.glyphs.map((g, d) => `<span><i>${g}</i><b>${d}</b></span>`).join('');
   $('tumblers').innerHTML = s.digits.map((d, i) => `<div class="tum${i === s.idx ? ' sel' : ''}"><button data-i="${i}" data-d="1" aria-label="Turn tumbler ${i + 1} up">▲</button><div>${d}</div><button data-i="${i}" data-d="-1" aria-label="Turn tumbler ${i + 1} down">▼</button></div>`).join('')
@@ -3117,7 +3256,7 @@ function submitSafe() {
   const s = G.safe; if (!s) return;
   const code = s.digits.join('');
   if (code === s.o.code) { closeSafe(); complete(s.o.node, 'A'); }
-  else { closeSafe(); G.strain++; surgeFx(s.o.x, s.o.y, true); G.A.stunUntil = G.t + 1; log('Wrong code (' + code + '). The boiler shudders and vents.', 'bad'); }
+  else { closeSafe(); G.strain++; surgeFx(s.o.x, s.o.y, true); G.A.stunUntil = G.t + 1.5; G.A.lockUntil = G.t + 6; log('Wrong code (' + code + '). The boiler vents and jams the tumblers.', 'bad'); }
 }
 function placeSafe() {
   const el = $('safe'); if (el.hidden) return;
@@ -3165,6 +3304,42 @@ function addPing(x, y, who, local) {
 }
 function ping(who) { const p = who === 'A' ? G.A : G.E; addPing(p.x, p.y, who, true); }
 
+// ----- notebooks -----
+// 1924 clues are read off the safe's ledger and the lever card when the Anchor walks up to them; 2026 clues
+// come from the black box and the LIDAR wear scan. Radio calls copy the 2026 fragment into the 1924 notebook.
+const NOTE_HEAD = { past: { CODE: 'Boiler ledger', LEVER: 'Lever card' }, future: { CODE: 'Black box', LEVER: 'Lever bank wear' } };
+function noteLines(era) {
+  const L = G.level, out = [];
+  for (const k of L.links) {
+    if (!k.puzzle || isDone(k.openNode)) continue;
+    const fo = L.future.objs.filter(o => o.link === k.index && (o.kind === 'terminal' || o.kind === 'leverbank'));
+    if (era === 'past') {
+      const po = L.past.objs.filter(o => o.link === k.index && (o.kind === 'safe' || o.kind === 'lever'));
+      if (!G.A.seen[k.index] && po.some(o => C.cheb(G.A.x, G.A.y, o.x, o.y) <= 2)) G.A.seen[k.index] = true;
+      const radio = fo.some(o => G.E.sent[o.id]);
+      if (!G.A.seen[k.index] && !radio) continue;
+      out.push({ head: NOTE_HEAD.past[k.type], lines: (G.A.seen[k.index] ? k.puzzle.past.map(q => q.text) : []).concat(radio ? ['Radio from 2026: ' + k.puzzle.future[0].short] : []), radio });
+    } else {
+      if (!isDone(k.type === 'CODE' ? k.read.id : k.scan.id)) continue;
+      out.push({ head: NOTE_HEAD.future[k.type], lines: k.puzzle.future.map(q => q.text) });
+    }
+  }
+  return out;
+}
+const notesKey = { past: '', future: '' };
+function updateNotes() {
+  for (const era of ['past', 'future']) {
+    const el = $(era === 'past' ? 'notesPast' : 'notesFuture');
+    const v = views().find(q => q.era === era);
+    const mine = G.role === 'BOTH' || ROLE_ERA[G.role] === era;
+    const groups = v && mine && !G.won ? noteLines(era) : [];
+    const html = groups.map(g => '<h4>' + g.head + '</h4><ul>' + g.lines.map(t => '<li' + (t.startsWith('Radio') ? ' class="radio"' : '') + '>' + t + '</li>').join('') + '</ul>').join('');
+    if (html !== notesKey[era]) { notesKey[era] = html; el.innerHTML = html; }
+    el.hidden = !html;
+    if (html) { el.style.left = (v.x + 20) + 'px'; el.style.top = (v.y + (v.x === 0 && v.y === 0 ? 72 : 18)) + 'px'; el.style.maxWidth = Math.min(320, v.w - 40) + 'px'; }
+  }
+}
+
 // ----- hints -----
 function activeNodes() { return G.level.nodes.filter(n => !isDone(n.id) && !preBlocked(n)); }
 function checkFlows() {
@@ -3184,7 +3359,7 @@ function checkSync() {
   }
 }
 function hintTargets(era) {
-  if (G.t - G.stepStart < 40 || G.won) return [];
+  if (G.t - G.stepStart < 150 || G.won) return [];
   const ids = [];
   for (const n of activeNodes()) {
     const room = n.actor === 'ANCHOR' ? 'past' : n.actor === 'ECHO' ? 'future' : era;
@@ -3208,7 +3383,7 @@ function checkVictory() {
     const bestStars = store.get('stars', {}); if (!L.custom && (bestStars[L.n] || 0) < stars) { bestStars[L.n] = stars; store.set('stars', bestStars); }
     $('vicStats').innerHTML = `<div class="stars" aria-label="${stars} of 3 stars">${'★'.repeat(stars)}<span>${'★'.repeat(3 - stars)}</span></div><div title="Time"><b>${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}</b><small>par ${Math.floor(par / 60)}:${String(par % 60).padStart(2, '0')}</small></div><div title="Wrong levers and codes"><b>${'✕'.repeat(Math.min(G.strain, 5)) || '✓'}</b></div>`;
     $('vicText').textContent = G.strain ? 'Both blast doors are open. The timeline bent, but it held.' : 'Both blast doors are open. A clean timeline, not one surge.';
-    $('victory').hidden = false; $('vicNext').hidden = L.n >= 1000 && !L.custom;
+    $('victory').hidden = false; $('vicNext').hidden = L.n >= C.MAX_LEVEL && !L.custom;
     store.set('best', Math.max(store.get('best', 0), L.custom ? 0 : L.n));
     if (hub) hub.report('session-end', { result: 'win', level: L.n, seconds: secs, strain: G.strain });
     let left = 8; $('vicCount').textContent = left;
@@ -3216,7 +3391,7 @@ function checkVictory() {
     G.vicTimer = setTimeout(() => { if (G.won) nextLevel(); }, 8000);
   }
 }
-function nextLevel() { const L = G.level; loadLevel(String(L.custom ? clamp(L.n + 1, 1, 1000) : Math.min(1000, L.n + 1)), true); }
+function nextLevel() { const L = G.level; loadLevel(String(L.custom ? clamp(L.n + 1, 1, C.MAX_LEVEL) : Math.min(C.MAX_LEVEL, L.n + 1)), true); }
 
 // ----- HUD -----
 function applyView() {
@@ -3242,7 +3417,7 @@ function updateHUD() {
   $('seedChip').textContent = (L.custom ? 'custom seed ' : 'seed ') + L.seed;
   const st = L.custom ? 0 : (store.get('stars', {})[L.n] || 0);
   $('actChip').textContent = L.act.name + ' · ' + L.chamber + (st ? ' · ' + '★'.repeat(st) + '☆'.repeat(3 - st) : '');
-  $('prev').disabled = L.n <= 1; $('next').disabled = L.n >= 1000;
+  $('prev').disabled = L.n <= 1; $('next').disabled = L.n >= C.MAX_LEVEL;
   $('linkTag').hidden = !Net.peer; $('unlinkBtn').hidden = !Net.peer;
   if (Net.peer) { const era = ROLE_ERA[G.role]; $('linkTag').className = era; $('linkTag').textContent = 'LINKED · ' + (era === 'past' ? '1924 ANCHOR' : '2026 ECHO'); }
   $('linkChip').textContent = Net.peer ? (G.role === 'ANCHOR' ? 'Linked · this window is 1924' : 'Linked · this window is 2026') : (Net.room ? $('linkChip').textContent : 'One window · both players');
@@ -3375,7 +3550,7 @@ function tick() {
   G.t += dt; G.frameDt = dt;
   if (G.level) {
     updatePlayers(dt); checkSync();
-    updateLidar(); emitters(dt); updateParticles(dt);
+    updateLidar(); emitters(dt); updateParticles(dt); updateNotes();
     G.pings = G.pings.filter(p => G.t - p.t0 < 8);
     G.ripples = G.ripples.filter(r => G.t - r.t0 < 2);
     if (Math.floor(G.t) !== Math.floor(G.t - dt) && G.t - G.stepStart > 11.5 && G.t - G.stepStart < 13) updateHUD();
@@ -3402,7 +3577,7 @@ $('soundBtn').onclick = () => Sound.setOn(!Sound.on);
 $('viewBtn').onclick = () => { if (G.view === 'split') { G.view = 'solo'; G.soloEra = G.role === 'BOTH' ? 'past' : ROLE_ERA[G.role]; } else G.view = 'split'; applyView(); };
 $('swapBtn').onclick = () => { G.soloEra = G.soloEra === 'past' ? 'future' : 'past'; applyView(); };
 $('prev').onclick = () => loadLevel(String(Math.max(1, G.level.n - 1)), true);
-$('next').onclick = () => loadLevel(String(Math.min(1000, G.level.n + 1)), true);
+$('next').onclick = () => loadLevel(String(Math.min(C.MAX_LEVEL, G.level.n + 1)), true);
 $('go').onclick = () => { const v = $('jump').value.trim(); if (v) { loadLevel(v, true); setMenu(false); } $('jump').blur(); };
 $('jump').addEventListener('keydown', e => { if (e.key === 'Enter') $('go').onclick(); });
 $('vicNext').onclick = () => nextLevel();
