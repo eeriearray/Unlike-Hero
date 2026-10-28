@@ -1783,8 +1783,6 @@ function buildWorld(era) {
   for (const s of stains) {
     const m = mk(cachedGeo('puddle', () => new THREE.CircleGeometry(1, 24)), past ? addMat(w, std({ color: 0x5a4632, roughness: 0.2, transparent: true, opacity: 0.55 })) : M.puddle, s.x, 0.006, s.y, S, false);
     m.rotation.x = -Math.PI / 2; m.scale.set(0.38, 0.3, 1);
-    // the leak itself: a dark stain on the ceiling beam above
-    mk(BOX(0.5, 0.04, 0.5), past ? M.darkWood : M.darkMetal, s.x, 2.45, s.y, S, false);
   }
   // 1924 trenches: an open pit with scaffold rails
   if (past) for (let i = 0; i < B.length; i++) if (B[i] === 't') {
@@ -1811,7 +1809,12 @@ function buildWorld(era) {
     for (let k = 0; k < 9; k++) { const r = mk(cachedGeo('rock', () => new THREE.DodecahedronGeometry(0.2, 0)), M.rubble, rnd(-0.35, 0.35), rnd(0.1, 0.8), rnd(-0.35, 0.35), g); r.rotation.set(rnd(0, 3), rnd(0, 3), 0); r.scale.setScalar(rnd(0.8, 1.6)); }
   }
   // 1924 doorways that will be rubble: a carved arch
-  if (past) for (let i = 0; i < B.length; i++) if (B[i] === 'r') { mk(BOX(0.12, 1.1, 0.12), M.brass, i % W - 0.45, 0.55, (i / W) | 0, S); mk(BOX(0.12, 1.1, 0.12), M.brass, i % W + 0.45, 0.55, (i / W) | 0, S); mk(BOX(1, 0.1, 0.14), M.brass, i % W, 1.1, (i / W) | 0, S); }
+  // (the jambs stand in the wall line and the lintel sits at the half-height wall top, so the frame never floats)
+  if (past) for (let i = 0; i < B.length; i++) if (B[i] === 'r') {
+    const x = i % W, y = (i / W) | 0, z = doorwayAlongZ(L, x, y), h = 0.66;
+    for (const sgn of [-1, 1]) mk(BOX(0.12, h, 0.12), M.brass, x + (z ? 0 : sgn * 0.45), h / 2, y + (z ? sgn * 0.45 : 0), S);
+    mk(BOX(z ? 0.14 : 1, 0.08, z ? 1 : 0.14), M.brass, x, h, y, S);
+  }
   // planters: 1924 brass-trimmed boxes of soil (a shaft of sunlight when sunlit); 2026 cracked stone tubs
   for (let i = 0; i < B.length; i++) if (B[i] === 'S' || B[i] === 's') {
     const x = i % W, y = (i / W) | 0, lit = B[i] === 'S';
@@ -1874,9 +1877,12 @@ function buildWorld(era) {
       w.updaters.push(t => { mat.opacity = G.s.locks?.[relay.id] ? 0.15 : 0.65 + Math.sin(t * 3) * 0.2; });
     }
   }
+  // (a pipe mouth on the inner face of a back or side wall; the cut-away near walls show no spout)
   for (let i = 0; i < B.length; i++) if (B[i] === 'W') {
     const x = i % W, y = (i / W) | 0;
-    mk(BOX(0.5, 0.3, 0.5), past ? M.copper : M.rust, x, 0.15, y, S);
+    if (y === H - 1 || x === W - 1) continue;
+    const [nx, nz] = inwardNormal(room, x, y), mouth = mk(CYL(0.16, 0.16, 0.22, 14), past ? M.copper : M.rust, x + nx * 0.5, 0.42, y + nz * 0.5, S);
+    mouth.rotation.set(nz ? Math.PI / 2 : 0, 0, nx ? Math.PI / 2 : 0);
   }
   // ----- walls: the near (front) perimeter is cut away low so the room always reads -----
   const walls = [], caps = [], plaster = [], culverts = [];
@@ -2029,12 +2035,14 @@ function buildWorld(era) {
     });
     return box;
   });
-  // 1924: the iron grille is raised over the doorway. 2026's version is a token (bars, rust or debris).
+  // 1924: the iron grille is open, rolled up on a drum that rests on the wall tops either side of the doorway.
+  // 2026's version is a token (bars, rust or debris).
   if (past) for (const bi of L.bars) {
-    const x = bi % W, y = (bi / W) | 0, g = new THREE.Group(); g.position.set(x, 1.15, y); S.add(g);
-    const vertical = doorwayAlongZ(L, x, y);
-    for (let i = 0; i < 7; i++) { const r = mk(CYL(0.022, 0.022, 0.3, 6), M.iron, 0, 0, -0.42 + i * 0.14, g); if (!vertical) r.position.set(-0.42 + i * 0.14, 0, 0); }
-    mk(BOX(vertical ? 0.06 : 1, 0.06, vertical ? 1 : 0.06), M.brass, 0, -0.15, 0, g);
+    const x = bi % W, y = (bi / W) | 0, g = new THREE.Group(); g.position.set(x, 0.7, y); S.add(g);
+    const alongZ = doorwayAlongZ(L, x, y);
+    const drum = mk(CYL(0.08, 0.08, 1.1, 12), M.iron, 0, 0, 0, g); drum.rotation.set(alongZ ? Math.PI / 2 : 0, 0, alongZ ? 0 : Math.PI / 2);
+    for (let i = 0; i < 7; i++) { const t = -0.42 + i * 0.14; mk(CYL(0.018, 0.018, 0.12, 6), M.iron, alongZ ? 0 : t, -0.12, alongZ ? t : 0, g); }
+    for (const sgn of [-1, 1]) mk(BOX(0.1, 0.1, 0.1), M.brass, alongZ ? 0 : sgn * 0.55, 0, alongZ ? sgn * 0.55 : 0, g);
   }
 
   // ----- players -----
