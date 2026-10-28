@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import { STILL_STANDING, RUST, EROSION } from './fixtures/chronolink-chambers.mjs';
 const html=readFileSync(new URL('../games/chronolink/index.html',import.meta.url),'utf8');
 const c=vm.createContext({});vm.runInContext(html.match(/<script id="chrono-core">([\s\S]*?)<\/script>/)[1],c);const C=c.ChronoCore;
 
@@ -19,8 +20,8 @@ test('every chamber blocks the Anchor until the Echo supplies a receiver frequen
     }
   }
 });
-test('the first chamber requires Anchor assistance, Echo exploration and a reply before the next bridge',()=>{
-  const L=C.getChamber(1),r=C.solve(L);
+test('the Still Standing fixture requires Anchor assistance, Echo exploration and a reply before the next bridge',()=>{
+  const L=C.parseChamber(STILL_STANDING,0),r=C.solve(L);
   assert.equal(r.ok,true);
   const path=Array.from(r.path);
   assert.ok(path.indexOf('A drop 4,1')<path.indexOf('E scan 6,2 A'));
@@ -29,8 +30,8 @@ test('the first chamber requires Anchor assistance, Echo exploration and a reply
   assert.equal(C.solve(L,{noRelayReads:true}).why,'exhausted','Anchor cannot complete it without an Echo read');
 });
 test('Rust and Erosion require two exchanges separated by world changes',()=>{
-  for(const n of [5,6,18,19]) {
-    const r=C.solve(C.getChamber(n));assert.equal(r.ok,true);
+  for(const def of [RUST,EROSION]) {
+    const n=def.name, r=C.solve(C.parseChamber(def,0));assert.equal(r.ok,true);
     const p=Array.from(r.path),first=p.findIndex(s=>s.startsWith('A unlock'));
     const last=p.findLastIndex(s=>s.startsWith('A unlock'));
     assert.ok(last>first+2,`chamber ${n} needs another exchange`);
@@ -38,7 +39,7 @@ test('Rust and Erosion require two exchanges separated by world changes',()=>{
   }
 });
 test('signal readouts reveal the frequency only to the Echo; Anchor must enter it',()=>{
-  const L=C.getChamber(1),r=L.relays[0],G={L,s:C.initState(L)};
+  const L=C.parseChamber(STILL_STANDING,0),r=L.relays[0],G={L,s:C.initState(L)};
   const nodes={},$=id=>nodes[id]||={focus(){},hidden:false,value:'',textContent:''};
   const ctx=vm.createContext({C,G,$,held:{A:[],E:[]},taps:{A:{},E:{}},Sound:{deny(){},chime(){}},log(){},focusControls(){},commit:n=>{G.s=n;},relay:r});
   vm.runInContext(html.slice(html.indexOf('let activeSignal = null;'),html.indexOf('function describeStep(')),ctx);

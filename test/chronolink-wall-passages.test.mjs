@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import { EROSION } from './fixtures/chronolink-chambers.mjs';
 const html=readFileSync(new URL('../games/chronolink/index.html',import.meta.url),'utf8');
 const between=(a,b)=>html.slice(html.indexOf(a),html.indexOf(b,html.indexOf(a)));
 class Group {
@@ -16,7 +17,7 @@ function setup(wet=false){
     BODY_R:0.26,
   });
   vm.runInContext(html.match(/<script id="chrono-core">([\s\S]*?)<\/script>/)[1],context);
-  const C=context.ChronoCore,L=C.getChamber(6),s=C.initState(L);
+  const C=context.ChronoCore,L=C.parseChamber(EROSION,0),s=C.initState(L);
   s.wheel[0]=wet?1:0;
   const flow=C.flowing(L,s),fut=C.deriveRaw(L,s,flow);
   context.C=C;context.G={L,s,flow,fut,t:0,E:{x:2,y:3},A:{x:2,y:3}};
@@ -33,7 +34,7 @@ test('intact plaster stops the Echo before its body can enter the wall',()=>{
   assert.equal(h.run('freeAt("E",2.3,3)'),false);
   assert.equal(h.run('freeAt("E",3,3)'),false);
 });
-test('running water opens the chamber-six plaster passage for Echo while Anchor still sees a solid wall',()=>{
+test('running water opens the Erosion fixture plaster passage for Echo while Anchor still sees a solid wall',()=>{
   const h=setup(true);
   assert.equal(h.run('G.fut[3*G.L.W+3].t'),'hole');
   assert.equal(h.run('freeAt("E",3,3)'),true);

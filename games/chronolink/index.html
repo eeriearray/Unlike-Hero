@@ -785,13 +785,27 @@ function solve(L, opts) {
     if (!d) { const flow = flowing(L, s); d = { flow, raw: deriveRaw(L, s, flow) }; if (rawCache.size > 50000) rawCache.clear(); rawCache.set(k, d); }
     return d;
   };
-  const isVol = i => volatile(L, i, null) || L.boxes.some(b => b.y * W + b.x === i);
-  // The Echo's exact spot matters only up to "zones": the parts of its region joined by tiles the past cannot change.
-  const zoneRep = (fut, c) => {
-    const seen = new Set([c]), q = [c]; let min = c;
-    while (q.length) { const k = q.pop(); if (k < min) min = k; const x = k % W, y = (k / W) | 0;
-      for (const [dx, dy] of DIRS4) { const nx = x + dx, ny = y + dy, j = ny * W + nx; if (nx < 0 || ny < 0 || nx >= W || ny >= L.H || seen.has(j)) continue; if (!walkRec(fut[j]) || isVol(j) || (fut[j].o && !BRIDGE_O[fut[j].o])) continue; seen.add(j); q.push(j); } }
-    return min;
+  const volMask = new Uint8Array(N);
+  for (let i = 0; i < N; i++) volMask[i] = volatile(L, i, null) || L.boxes.some(b => b.y * W + b.x === i) ? 1 : 0;
+  const isVol = i => volMask[i] === 1;
+  // The Echo's exact spot matters only up to "zones": the parts of its region joined by tiles the past cannot
+  // change. One labelling pass per position gives every tile its zone (the smallest tile index in it).
+  const zoneLabels = fut => {
+    const lab = new Int32Array(N).fill(-1), q = [];
+    const calm = j => walkRec(fut[j]) && !volMask[j] && !(fut[j].o && !BRIDGE_O[fut[j].o]);
+    for (let c = 0; c < N; c++) {
+      if (lab[c] !== -1) continue;
+      if (!calm(c)) { lab[c] = c; continue; }
+      lab[c] = c; q.length = 0; q.push(c);
+      while (q.length) { const k = q.pop(), x = k % W, y = (k / W) | 0;
+        for (const [dx, dy] of DIRS4) { const nx = x + dx, ny = y + dy, j = ny * W + nx; if (nx < 0 || ny < 0 || nx >= W || ny >= L.H || lab[j] !== -1 || !calm(j)) continue; lab[j] = c; q.push(j); } }
+    }
+    // a tile the past can change belongs with the calm area beside it (as walking there from it would)
+    const out = Int32Array.from(lab);
+    for (let c = 0; c < N; c++) if (lab[c] === c && !calm(c)) { const x = c % W, y = (c / W) | 0; let m = c;
+      for (const [dx, dy] of DIRS4) { const nx = x + dx, ny = y + dy, j = ny * W + nx; if (nx >= 0 && ny >= 0 && nx < W && ny < L.H && calm(j) && lab[j] < m) m = lab[j]; }
+      out[c] = m; }
+    return out;
   };
   // Holding a tile only helps on a bridge, or next to something that could open up while the Echo waits.
   const standMatters = (fut, c) => {
@@ -805,18 +819,38 @@ function solve(L, opts) {
     const ra = regionOf(L, st.a, (x, y) => walkPast(L, st.s, x, y, flow));
     const fut = deriveFuture(L, st.s, st.stand, raw);
     const re = regionOf(L, st.e, (x, y) => walkFuture(fut, L, x, y));
-    return { flow, raw, ra, fut, re };
+    return { flow, raw, ra, fut, re, zones: zoneLabels(fut) };
+  };
+  // The zone of one tile, found with a single flood (the same answer zoneLabels gives for that tile).
+  const zoneOf = (fut, c) => {
+    const calm = j => walkRec(fut[j]) && !volMask[j] && !(fut[j].o && !BRIDGE_O[fut[j].o]);
+    const seen = new Uint8Array(N), q = []; let m = c;
+    const flood = s0 => { seen[s0] = 1; q.push(s0); while (q.length) { const k = q.pop(); if (k < m) m = k; const x = k % W, y = (k / W) | 0;
+      for (const [dx, dy] of DIRS4) { const nx = x + dx, ny = y + dy, j = ny * W + nx; if (nx < 0 || ny < 0 || nx >= W || ny >= L.H || seen[j] || !calm(j)) continue; seen[j] = 1; q.push(j); } } };
+    if (calm(c)) flood(c);
+    else { const x = c % W, y = (c / W) | 0; for (const [dx, dy] of DIRS4) { const nx = x + dx, ny = y + dy, j = ny * W + nx; if (nx >= 0 && ny >= 0 && nx < W && ny < L.H && !seen[j] && calm(j)) flood(j); } }
+    return m;
+  };
+  // Cheap key for a candidate: reuse the parent's Anchor region when 1924 and the Anchor did not change.
+  const keyFast = (ns, parent, pd) => {
+    const pk = pastKey(ns.s), { flow, raw } = derive(ns.s);
+    let amin;
+    if (parent && pk === pastKey(parent.s) && ns.a.x === parent.a.x && ns.a.y === parent.a.y) amin = pd.amin;
+    else { const ra = regionOf(L, ns.a, (x, y) => walkPast(L, ns.s, x, y, flow)); amin = Math.min(...ra.cells); }
+    const ec = ns.s.echo, fut = ns.stand ? null : deriveFuture(L, ns.s, null, raw);
+    return amin + '|' + (ns.stand ? 's' + ns.stand.i + recKey(ns.stand.rec) : 'z' + zoneOf(fut, ns.e.y * W + ns.e.x)) + '|' + pk + '|' + ec.carry + '|' +
+      Object.keys(ec.hold).sort().map(k => k + recKey(ec.hold[k])).join(',') + '|' + Object.keys(ec.witness).sort().map(k => k + recKey(ec.witness[k])).join(',') + '|' + Object.keys(ec.reads || {}).sort().join(',');
   };
   const keyOf = (st, d) => {
     const ec = st.s.echo;
-    return Math.min(...d.ra.cells) + '|' + (st.stand ? 's' + st.stand.i + recKey(st.stand.rec) : 'z' + zoneRep(d.fut, st.e.y * W + st.e.x)) + '|' + pastKey(st.s) + '|' + ec.carry + '|' +
+    return Math.min(...d.ra.cells) + '|' + (st.stand ? 's' + st.stand.i + recKey(st.stand.rec) : 'z' + d.zones[st.e.y * W + st.e.x]) + '|' + pastKey(st.s) + '|' + ec.carry + '|' +
       Object.keys(ec.hold).sort().map(k => k + recKey(ec.hold[k])).join(',') + '|' + Object.keys(ec.witness).sort().map(k => k + recKey(ec.witness[k])).join(',') + '|' + Object.keys(ec.reads || {}).sort().join(',');
   };
   // `opts.start` lets the game ask for a hint from wherever the players are now.
   const os = opts.start;
   const start = os ? { s: cloneState(os.s), a: { x: os.a.x, y: os.a.y }, e: { x: os.e.x, y: os.e.y }, stand: os.stand ? { i: os.stand.i, rec: os.stand.rec } : null, path: [] }
     : { s: initState(L), a: L.startA, e: L.startE, stand: null, path: [] };
-  const seen = new Set([keyOf(start, expand(start))]);
+  const seen = new Set([keyFast(start, null, null)]);
   let frontier = [start], explored = 0;
   for (let depth = 0; depth < (opts.maxDepth || 80); depth++) {
     const next = [];
@@ -824,10 +858,11 @@ function solve(L, opts) {
       explored++;
       const d = expand(st), ss = st.s;
       if (d.ra.seen[X] && d.re.seen[X]) return { ok: true, depth, path: st.path, explored };
+      d.amin = Math.min(...d.ra.cells);
       const push = (s, a, e, stand, label) => {
         if (!s || s.paradox != null) return;
         const ns = { s, a, e, stand, path: opts.noPath ? null : st.path.concat(label) };
-        const k = keyOf(ns, expand(ns)); if (seen.has(k)) return; seen.add(k); next.push(ns);
+        const k = keyFast(ns, st, d); if (seen.has(k)) return; seen.add(k); next.push(ns);
       };
       const echoIdx = st.stand ? st.stand.i : null;
       const safe = n => n && n.paradox == null && !crushes(L, ss, n, echoIdx) ? n : null;
@@ -864,13 +899,15 @@ function solve(L, opts) {
         push(safe(actShove(L, ss, o.x, o.y, dx, dy)), { x: o.x, y: o.y }, st.e, st.stand, 'A shove ' + o.x + ',' + o.y + ' ' + dx + ',' + dy);
       }
       // Echo: walk to another zone, or stand on a tile whose 2026 state the past could change
-      const zones = new Set();
+      const zones = new Set(), hereZone = d.zones[st.e.y * W + st.e.x];
       for (const c of d.re.cells) {
         const x = c % W, y = (c / W) | 0;
         if (!opts.noStand && isVol(c) && !(st.stand && st.stand.i === c) && (!prune || standMatters(d.fut, c))) push(ss, st.a, { x, y }, { i: c, rec: d.fut[c] }, 'E stand ' + x + ',' + y);
-        const z = zoneRep(d.fut, c);
-        if (!zones.has(z)) { zones.add(z); if (st.stand || z !== zoneRep(d.fut, st.e.y * W + st.e.x)) push(ss, st.a, { x: z % W, y: (z / W) | 0 }, null, 'E go ' + (z % W) + ',' + ((z / W) | 0)); }
+        const z = d.zones[c];
+        if (!zones.has(z)) { zones.add(z); if (st.stand || z !== hereZone) push(ss, st.a, { x: z % W, y: (z / W) | 0 }, null, 'E go ' + (z % W) + ',' + ((z / W) | 0)); }
       }
+      // the 2026 the Echo sees once it steps off its standing tile (computed once per position)
+      const freeFut = st.stand ? deriveFuture(L, ss, null, d.raw) : d.fut;
       for (let i = 0; i < N; i++) {
         const x = i % W, y = (i / W) | 0;
         // act from the standing tile if it touches the target, otherwise walk off it to a neighbour first
@@ -879,7 +916,7 @@ function solve(L, opts) {
         if (!keep) { if (d.re.seen[i]) at = i; else for (const [dx, dy] of DIRS4) { const k = (y + dy) * W + x + dx; if (x + dx >= 0 && x + dx < W && k >= 0 && k < N && d.re.seen[k]) { at = k; break; } } }
         if (!keep && at == null) continue;
         const e2 = keep ? st.e : { x: at % W, y: (at / W) | 0 }, stand2 = keep ? st.stand : null;
-        const fut = keep ? d.fut : deriveFuture(L, ss, null, d.raw);
+        const fut = keep ? d.fut : freeFut;
         if (!keep && !walkRec(fut[at])) continue;
         if (!opts.noBox || fut[i].o !== 'box') { const a = echoAct(L, ss, fut, i); if (a) push(a.s, st.a, e2, stand2, 'E ' + a.kind + ' ' + x + ',' + y); }
         if (pinsMax && (volatile(L, i, fut[i]) || ss.echo.hold[i])) {
@@ -2653,7 +2690,7 @@ function drawOverlay(v, w, t) {
   goalChip(c, v, G.goals[who], era, t);
   // Hints use a wrapping DOM readout shared by both views, even when the other era has the next move.
   const hh = G.hint;
-  if (!hh && !G.won && G.started && G.t - G.lastProgress > 75) pill(c, v.x + v.w / 2, v.y + 62, 'Stuck? Press H for a hint', '#c89bff', G.t - G.lastProgress - 75);
+  if (!hh && !G.won && G.started && G.t - G.lastProgress > STUCK_NUDGE) pill(c, v.x + v.w / 2, v.y + 62, 'Stuck? Press H for a hint', '#c89bff', G.t - G.lastProgress - STUCK_NUDGE);
   // era title, controls and the Echo's pins
   c.textAlign = 'left'; c.textBaseline = 'alphabetic';
   const x0 = v.x + 22, y0 = v.y + v.h - 40;
@@ -3158,7 +3195,7 @@ function hintFrom(r) {
 let hintRequest = null;
 let hintWorker = (() => {
   try {
-    const src = $('chrono-core').textContent + '\nonmessage = e => { const L = ChronoCore.getChamber(e.data.n); const r = ChronoCore.solve(L, { start: e.data.start, maxStates: 150000 }); postMessage({ id: e.data.id, r: { ok: r.ok, why: r.why, depth: r.depth, path: r.path || [] } }); };';
+    const src = $('chrono-core').textContent + '\nonmessage = e => { const L = ChronoCore.getChamber(e.data.n); const r = ChronoCore.solve(L, { start: e.data.start, maxStates: 400000 }); postMessage({ id: e.data.id, r: { ok: r.ok, why: r.why, depth: r.depth, path: r.path || [] } }); };';
     const wk = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
     wk.onmessage = e => onHint(e.data.id, e.data.r);
     wk.onerror = () => { wk.terminate(); hintWorker = null; if (hintRequest) fallbackHint(hintRequest); };
@@ -3169,7 +3206,7 @@ let hintId = 0;
 function fallbackHint(request) {
   setTimeout(() => {
     if (G.hint?.id !== request.id) return;
-    try { onHint(request.id, C.solve(C.getChamber(request.n), { start: request.start, maxStates: 150000 })); }
+    try { onHint(request.id, C.solve(C.getChamber(request.n), { start: request.start, maxStates: 400000 })); }
     catch { onHint(request.id, { ok: false, why: 'unavailable' }); }
   }, 0);
 }
@@ -3231,9 +3268,8 @@ function blockerA(i) {
   if (b === '=') return { kind: 'water', text: 'Running water', fix: 'past' };
   return null;
 }
-// What the Anchor can do in 1924 about each 2026 blocker, in a few words.
-const HOW = { 'Chasm': 'bridge it', 'Plaster wall': 'run water beside it', 'Iron bars': 'get them wet', 'Old crate': 'move or soak it',
-  'Fallen tree': 'move the acorn', 'Flooded channel': 'turn the wheel', 'Flooded basin': 'turn the wheel' };
+// Chambers are long puzzles: the chip names what blocks the way, never how to fix it, and the hint nudge waits.
+const STUCK_NUDGE = 480;
 function routeBlocker(start, blockFn) {
   const L = G.L, N = L.W * L.H, dist = new Float64Array(N).fill(Infinity), prev = new Int32Array(N).fill(-1), done = new Uint8Array(N);
   const s0 = tileIdx(start.x, start.y), X = tileIdx(L.exit.x, L.exit.y); dist[s0] = 0;
@@ -3274,7 +3310,7 @@ function computeGoals(force) {
     const relay = L.relays.find(r => r.id === a.relay);
     G.goals.E = { kind: 'receiver', text: 'Receiver ' + relay.label + ' → read frequency to 1924', fix: 'future', ...relay.receiver };
   }
-  if (a && (a.kind === 'exit' || a.kind === 'wait') && e && e.fix === 'past' && e.x != null) G.goals.A = Object.assign({}, e, { text: '2026 · ' + e.text + (HOW[e.text] ? ' → ' + HOW[e.text] : '') });
+  if (a && (a.kind === 'exit' || a.kind === 'wait') && e && e.fix === 'past' && e.x != null) G.goals.A = Object.assign({}, e, { text: '2026 · ' + e.text });
   for (const who of ['A', 'E']) { const g = G.goals[who], prev = G.prevGoals && G.prevGoals[who]; g.t0 = prev && prev.text === g.text ? prev.t0 : G.t; }
   G.prevGoals = Object.assign({}, G.goals);
 }
@@ -3484,8 +3520,6 @@ function tick() {
     if (G.started) updatePlayers(dt);
     if (rewindKeys.size && G.started && !G.won && $('signalPop').hidden && $('menu').hidden) { G.rewindHold += rdt; if (G.rewindHold >= REWIND_HOLD) { G.rewindHold = 0.05; rewind(); } } else G.rewindHold = 0;
     updateTargets(); computeGoals(false); syncHintStatus();
-    // no change for a long while: offer a hint, then show where to look
-    if (G.started && !G.won && !G.hint && G.t - G.lastProgress > 150) requestHint(true);
     emitters(dt); updateParticles(dt);
     G.pings = G.pings.filter(p => G.t - p.t0 < 6);
     G.threads = G.threads.filter(th => G.t - th.t0 < th.dur);
