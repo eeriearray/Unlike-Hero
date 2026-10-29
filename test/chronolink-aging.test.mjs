@@ -99,3 +99,17 @@ test('an extracted item remains paradox-protected by identity after a stale snap
   assert.equal(C.actPick(L,stale,5,2).why,'taken');
   stale.held=stale.objs[0].id;assert.equal(C.actDrop(L,stale,6,2).why,'taken');
 });
+
+test('a frozen box distinguishes two planks of the same kind by their cargo identity',()=>{
+  const L=room({objs:[{k:'plank',x:2,y:2},{k:'plank',x:5,y:2}],boxes:[{x:3,y:2}],pins:1}),i=2*L.W+3;
+  let s=C.actDrop(L,C.actPick(L,C.initState(L),2,2),3,2);
+  s=C.echoPin(L,s,C.deriveFuture(L,s),i).s;
+  s=C.actDrop(L,C.actPick(L,s,3,2),2,2);
+  s=C.actDrop(L,C.actPick(L,s,5,2),3,2);
+  assert.equal(C.echoAct(L,s,C.deriveFuture(L,s),i).s.why,'unsealed');
+  s=C.echoPin(L,s,C.deriveFuture(L,s),i).s;
+  s=C.echoAct(L,s,C.deriveFuture(L,s),i).s;
+  assert.equal(s.echo.carry,'plank');
+  assert.equal(C.actPick(L,s,3,2).why,'taken');
+  assert.equal(C.actPick(L,s,2,2).held,'o0','the other plank is still an independent past object');
+});

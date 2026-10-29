@@ -1094,9 +1094,9 @@ function regionOf(L, start, walk) {
   }
   return { seen, cells };
 }
-// Source identity and cosmetic rot marks do not affect a frozen tile's legal
-// actions. Box identity/content does; keep it in the canonical key.
-function recKey(r) { return r ? r.t + ':' + (r.o || '') + ':' + (r.item || '') + ':' + (r.box || '') + (r.empty ? '!' : '') : '-'; }
+// Box cargo identity affects extraction and paradoxes. Other source labels and
+// cosmetic rot marks do not affect legal actions on a frozen record.
+function recKey(r) { return r ? r.t + ':' + (r.o || '') + ':' + (r.item || '') + ':' + (r.box || '') + (r.o === 'box' ? ':' + (r.src || '') : '') + (r.empty ? '!' : '') : '-'; }
 function solve(L, opts) {
   opts = opts || {};
   if (opts.noCapillary || opts.noSediment || opts.noSupports) L = Object.assign({}, L, {
