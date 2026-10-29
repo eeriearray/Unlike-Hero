@@ -334,6 +334,7 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
   </div>
 </main>
 
+<script src="../../shared/sdk/performance.js"></script>
 <script src="../../shared/sdk/hub-config.js"></script>
 <script src="../../shared/sdk/hub-sdk.js"></script>
 
@@ -1806,6 +1807,7 @@ function applyRemoteWorld(m) {
 const HAS3D = (() => { if (!window.THREE) return false; try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; } })();
 const cvs = $('game'), ovl = $('overlay'), octx = ovl.getContext('2d');
 let DPR = 1, VW = 800, VH = 600;
+const HP = window.HubPerformance, resBudget = HP ? HP.createResolutionBudget(1.5) : { ratio: () => Math.min(1.5, window.devicePixelRatio || 1), sample: () => false };
 const PAL = { brass: '#D4AF37', holo: '#00f5d4', hazard: '#ff3b3b', arc: '#7dd3fc', bio: '#10b981' };
 const renderer = HAS3D ? new THREE.WebGLRenderer({ canvas: cvs, antialias: true, powerPreference: 'high-performance' }) : null;
 if (renderer) {
@@ -1819,8 +1821,8 @@ if (renderer) {
 function th(x, y, s) { let h = (x * 374761393 + y * 668265263 + (s | 0) * 2246822519) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return (h ^ (h >>> 16)) >>> 0; }
 function resize() {
   const r = cvs.getBoundingClientRect();
-  DPR = Math.min(1.5, window.devicePixelRatio || 1);
   VW = Math.max(1, r.width); VH = Math.max(1, r.height);
+  DPR = resBudget.ratio(VW, VH);
   if (renderer) { renderer.setPixelRatio(DPR); renderer.setSize(VW, VH, false); }
   ovl.width = Math.round(VW * DPR); ovl.height = Math.round(VH * DPR);
 }
@@ -2161,7 +2163,7 @@ function buildWorld(era) {
     S.add(new THREE.HemisphereLight(0xffe2b8, 0x2a1406, 0.5));
     const sun = new THREE.DirectionalLight(0xffd9a0, 0.62);
     sun.position.set(cx - 9, 12, cz + 7); sun.target.position.set(cx, 0, cz); S.add(sun.target);
-    sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+    sun.castShadow = true; sun.shadow.mapSize.set(HP && HP.low ? 1024 : 1536, HP && HP.low ? 1024 : 1536);
     const ext = Math.max(W, H) * 0.75 + 2;
     Object.assign(sun.shadow.camera, { left: -ext, right: ext, top: ext, bottom: -ext, near: 1, far: 40 }); sun.shadow.bias = -0.0008; sun.shadow.radius = 4;
     S.add(sun);
@@ -2771,7 +2773,7 @@ function buildAnchor(w) {
   mk(BOX(0.07, 0.1, 0.07), M.brass, 0, 0, 0, lantern);
   const flameM = own(w, std({ color: 0x301000, emissive: 0xffb050, emissiveIntensity: 2.5 }));
   mk(BOX(0.05, 0.07, 0.075), flameM, 0, 0, 0, lantern, false);
-  const light = new THREE.PointLight(0xffb060, 1.2, 5.5, 2); light.position.set(0.3, 0.5, 0.3); light.castShadow = true; light.shadow.mapSize.set(256, 256); light.shadow.bias = -0.004; group.add(light);
+  const light = new THREE.PointLight(0xffb060, 1.2, 5.5, 2); light.position.set(0.3, 0.5, 0.3); group.add(light);
   return { group, body, legL, legR, armL, armR, torso, head, light, flameM, kind: 'A' };
 }
 function buildEcho(w) {
@@ -2803,7 +2805,7 @@ function buildEcho(w) {
   const coneM = own(w, new THREE.MeshBasicMaterial({ color: 0x9ffff0, transparent: true, opacity: 0.07, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
   const cone = mk(cachedGeo('cone', () => { const cg = new THREE.ConeGeometry(1.6, 5, 24, 1, true); cg.translate(0, -2.5, 0); cg.rotateX(-Math.PI / 2 + 0.16); return cg; }), coneM, 0, 0.95, 0.15, group, false);
   cone.castShadow = false; cone.receiveShadow = false;
-  const glow = new THREE.PointLight(0x00f5d4, 0.35, 1.6, 2); glow.position.set(0, 0.9, 0.3); glow.castShadow = true; glow.shadow.mapSize.set(256, 256); glow.shadow.bias = -0.0004; group.add(glow);
+  const glow = new THREE.PointLight(0x00f5d4, 0.35, 1.6, 2); glow.position.set(0, 0.9, 0.3); group.add(glow);
   return { group, body, legL, legR, armL, armR, torso, head, dish, ant, visor, cone, coneM, spot, kind: 'E' };
 }
 // Walk cycle plus anticipation and follow-through: a crouch before a pick-up or set-down, a shoulder
@@ -4024,7 +4026,7 @@ function updateTargets() {
     } else G.threadNow = { from: { x: tg.x, y: tg.y, h: tg.kind === 'drop' ? 0.3 : 0.5 }, to: { x: tg.x, y: tg.y } };
   }
 }
-let lastFrame = now();
+let lastFrame = now(), lastRaw = lastFrame;
 let frameErrors = 0;
 function frame() {
   requestAnimationFrame(frame);
@@ -4033,6 +4035,8 @@ function frame() {
 function tick() {
   const tn = now(), rdt = Math.min(0.05, tn - lastFrame); lastFrame = tn;
   G.t += rdt; G.frameDt = rdt;
+  if (resBudget.sample(tn - lastRaw)) resize();
+  lastRaw = tn;
   if (G.L) {
     for (const pd of G.pending.slice()) if (G.t >= pd.at) { G.pending.splice(G.pending.indexOf(pd), 1); pd.fn(); }
     // hit-stop: the world freezes for a beat when something lands
