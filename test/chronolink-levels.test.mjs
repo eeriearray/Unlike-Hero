@@ -16,8 +16,8 @@ const C = sandbox.ChronoCore;
 const room = (map, extra) => C.parseChamber(Object.assign({ name: 'test', card: '', map }, extra || {}), 0);
 const at = (L, recs, x, y) => recs[y * L.W + x];
 
-test('there are 19 hand-built chambers, each a closed rectangle with a start for both eras and an exit', () => {
-  assert.equal(C.MAX_LEVEL, 19);
+test('there are 25 authored chambers, each a closed rectangle with a start for both eras and an exit', () => {
+  assert.equal(C.MAX_LEVEL, 25);
   for (let n = 1; n <= C.MAX_LEVEL; n++) {
     const L = C.getChamber(n);
     assert.ok(L.name && L.card, `chamber ${n} has a name and a one-line card`);
@@ -45,8 +45,8 @@ test('later chambers combine more kinds of moves than the opening ones', () => {
   assert.ok(Math.max(...early) < Math.min(...late), `early ${early} vs late ${late}`);
 });
 
-// Proofs that a mechanic is required search the solver's narrowed move set (planks and acorns are only set down
-// where they can bridge, grow or be sealed): a full search of chambers this size takes too long for a test run.
+// Campaign necessity checks use the reduced move graph. Small unpruned fixtures in
+// chronolink-aging.test.mjs separately validate the new rules and interactions.
 test('each chamber that teaches a mechanic cannot be solved without it', () => {
   let checked = 0;
   for (let n = 1; n <= C.MAX_LEVEL; n++) {
@@ -54,6 +54,10 @@ test('each chamber that teaches a mechanic cannot be solved without it', () => {
     for (const need of L.needs) {
       const o = { noPath: true, maxStates: 800000 };
       if (need === 'stand') o.noStand = true;
+      else if (need === 'preserve') { o.noStand = true; o.pins = 0; }
+      else if (need === 'capillary') o.noCapillary = true;
+      else if (need === 'sediment') o.noSediment = true;
+      else if (need === 'support') o.noSupports = true;
       else if (need === 'box') o.noBox = true;
       else if (need === 'pin') o.pins = L.pinsMax - 1;
       const r = C.solve(L, o);
@@ -161,7 +165,7 @@ function randomState(L, rnd, steps) {
         const wi = C.wheelAt(L, x, y); if (wi >= 0) opts.push(() => { s = C.actWheel(L, s, wi); });
       }
       if (re.seen[i]) opts.push(() => { e = { x, y }; stand = { i, rec: fut[i] }; });
-      if (near(re.seen, i)) { const ea = C.echoAct(L, s, fut, i); if (ea) opts.push(() => { s = ea.s; }); }
+      if (near(re.seen, i)) { const ea = C.echoAct(L, s, fut, i); if (ea && ea.s.paradox == null) opts.push(() => { s = ea.s; }); }
     }
     for (const o of s.objs) if (o.k === 'crate') for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
       if (!ra.seen[(o.y - dy) * W + o.x - dx]) continue;

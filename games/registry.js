@@ -46,8 +46,8 @@ window.GAME_REGISTRY = [
   {
     "id": "chronolink",
     "title": "ChronoLink: Anchor & Echo",
-    "tagline": "Change the past to open the Echo’s route. Explore the future to decode the Anchor’s signal locks. Neither era holds the whole answer: 19 chambers of two-way co-op, shared discoveries and chained puzzles.",
-    "version": "2.1.0",
+    "tagline": "Change the past, explore its ruins, and borrow what time leaves behind. 25 co-op chambers of water, growing trees, preserved crossings and Echo-only signal clues.",
+    "version": "2.2.0",
     "sdk": "1.x",
     "entry": "index.html",
     "thumbnail": "hub-banner.webp",
@@ -61,7 +61,7 @@ window.GAME_REGISTRY = [
         "id": "anchor",
         "name": "The Anchor (1924)",
         "entry": "index.html#anchor",
-        "description": "WASD and E. Carries planks and acorns, shoves crates, turns sluice wheels. Everything left behind ages into 2026."
+        "description": "WASD and E. Carries timber, acorns and iron shores, shoves crates and routes water. Everything left behind ages into 2026."
       },
       {
         "id": "echo",

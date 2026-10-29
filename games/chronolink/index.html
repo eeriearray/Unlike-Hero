@@ -214,7 +214,7 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
         <p class="pb-eyebrow">Paused</p>
         <div class="pb-chamber">
           <button class="pb-step" id="prev" aria-label="Previous chamber">‹</button>
-          <span class="pb-num">Chamber <b id="lvlNum">1</b> <span id="lvlOf">of 19</span></span>
+          <span class="pb-num">Chamber <b id="lvlNum">1</b> <span id="lvlOf">of 25</span></span>
           <button class="pb-step" id="next" aria-label="Next chamber">›</button>
         </div>
         <h2 class="pb-title" id="pbTitle"><span id="actChip">Chamber</span></h2>
@@ -229,6 +229,9 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
           <li><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3c3 4 5 6.6 5 9a5 5 0 0 1-10 0c0-2.4 2-5 5-9z"/></svg><span><b>Wet</b> things don’t. Leaks and running water rot wood and rust iron.</span></li>
           <li><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 17V8M10 8c0-3 2.5-5 5.5-5 0 3-2.5 5-5.5 5zM10 11c0-2.5-2-4-4.5-4 0 2.5 2 4 4.5 4z"/></svg><span><b>Sunlit soil</b> turns an acorn into an ironwood that leans one way.</span></li>
           <li><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3.5" y="6" width="13" height="10" rx="1"/><path d="M3.5 9.5h13M8.5 9.5v2h3v-2"/></svg><span><b>The Stash Box</b> keeps the century out. The Echo can take it out new.</span></li>
+          <li id="ruleDamp" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14M7 3v4M13 8v4M7 13v4"/></svg><span><b>Porous stone</b> carries damp along its connected marked strip.</span></li>
+          <li id="ruleSediment" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 17h14M4 13h12M6 9h8M8 5h4"/></svg><span><b>Sediment</b> builds a bank in marked troughs and buries low passages.</span></li>
+          <li id="ruleShore" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 3h12M10 3v14M4 17h12M7 7h6M7 13h6"/></svg><span><b>Iron shores</b> in brass sockets support their slabs only while dry.</span></li>
         </ul>
       </section>
 
@@ -323,7 +326,7 @@ const MAP_CHARS = '#.,~;=cWpbtrSsXAE';
 // `pins` is how many chronal pins the Echo carries; `needs` lists mechanics the tests prove are required.
 const CHAMBERS = [
   {
-    name: 'Damp Foundations', card: 'One plank, two gaps, and a leak that rots whatever it touches.',
+    name: 'Damp Foundations', card: 'Two foundations share the timber. Only one stays dry.',
     map: [
       '#########################',
       '#...;...~..#.....;.######',
@@ -332,12 +335,12 @@ const CHAMBERS = [
       '##;.~.~.~.##....~~.=.,.X#',
       '#########################',
     ],
-    objs: [{ k: 'plank', x: 10, y: 3 }, { k: 'plank', x: 23, y: 2 }, { k: 'crate', x: 3, y: 1 }],
-    relays: [{ gate: { column: 7 }, receiver: { x: 2, y: 1 } }, { gate: { x: 23, y: 4 }, receiver: { x: 22, y: 4 } }],
+    objs: [{ k: 'plank', x: 2, y: 4 }, { k: 'plank', x: 23, y: 2 }, { k: 'crate', x: 3, y: 1 }],
+    relays: [{ gate: { column: 7 }, receiver: { x: 6, y: 2 } }, { gate: { x: 23, y: 4 }, receiver: { x: 22, y: 4 } }],
     exitFacing: 'E',
   },
   {
-    name: 'Seed and Stone', card: 'Trees lean one way and crates fill holes. Neither forgives a guess.',
+    name: 'Seed and Stone', card: 'Living wood and buried stone leave different routes behind.',
     map: [
       '#########################',
       '#A...s~..S..#......~=~..#',
@@ -347,13 +350,13 @@ const CHAMBERS = [
       '#.....S.#...#.###.r#c####',
       '#########################',
     ],
-    objs: [{ k: 'acorn', x: 13, y: 5 }, { k: 'crate', x: 11, y: 4 }, { k: 'crate', x: 22, y: 4 }],
+    objs: [{ k: 'acorn', x: 3, y: 4 }, { k: 'crate', x: 11, y: 4 }, { k: 'crate', x: 22, y: 4 }],
     planters: [{ x: 9, y: 1, dir: 'S', len: 2 }, { x: 6, y: 5, dir: 'N' }],
-    relays: [{ gate: { column: 8 }, receiver: { x: 2, y: 2 } }, { gate: { column: 20 }, receiver: { x: 7, y: 3 } }],
+    relays: [{ gate: { column: 8 }, receiver: { x: 7, y: 3 } }, { gate: { column: 20 }, receiver: { x: 16, y: 4 } }],
     exitFacing: 'E',
   },
   {
-    name: 'Floodgates', card: 'Every wheel turn floods something. Find the order that floods the right ones.',
+    name: 'Floodgates', card: 'Two courtyards inherit the same water.',
     map: [
       '#######W###################',
       '#A...=====...r....r..rrrr.#',
@@ -370,7 +373,7 @@ const CHAMBERS = [
     exitFacing: 'E',
   },
   {
-    name: 'Iron and Water', card: 'The water that rusts the bars rots the bridge as well.',
+    name: 'Iron and Water', card: 'Iron, timber and three branches of the same stream.',
     map: [
       '######W####################',
       '#A...~=...#...#....#.=.#..#',
@@ -389,7 +392,7 @@ const CHAMBERS = [
     exitFacing: 'E',
   },
   {
-    name: 'Worn Through', card: 'Water wears plaster away. Stand where the past cannot reach you.',
+    name: 'Worn Through', card: 'The building has more than one way to disappear.',
     map: [
       '#########################',
       '#A.r.~~.#....#....r.....#',
@@ -408,7 +411,7 @@ const CHAMBERS = [
     exitFacing: 'E',
   },
   {
-    name: 'Sealed Away', card: 'The Stash Box keeps out the century. The damp gets everything else.',
+    name: 'Sealed Away', card: 'A dry interior, a damp exterior, and unfinished business.',
     map: [
       '##########################',
       '#A....~...#.#.....;.######',
@@ -424,7 +427,7 @@ const CHAMBERS = [
     exitFacing: 'E',
   },
   {
-    name: 'Holding Pattern', card: 'Pin what you will need before 1924 takes it back.',
+    name: 'Holding Pattern', card: 'A round trip with more crossings than timber.',
     map: [
       '####################',
       '#A~.~;.##...~~..~..#',
@@ -442,7 +445,7 @@ const CHAMBERS = [
     exitFacing: 'E',
   },
   {
-    name: 'Trench and Timber', card: 'The plank is needed in both centuries, and the trees lean the wrong way.',
+    name: 'Trench and Timber', card: 'The orchard and the trench share a narrow supply.',
     map: [
       '########################',
       '#A..tr..t...#..t.;...S.#',
@@ -461,7 +464,7 @@ const CHAMBERS = [
     exitFacing: 'E',
   },
   {
-    name: 'Rust and Rot', card: 'Wear the wall through, rust the bars, and keep one bridge dry long enough.',
+    name: 'Rust and Rot', card: 'Some damage survives a change of water. Some does not.',
     map: [
       '##########################',
       '#A.r..~...#.#.....;.######',
@@ -481,7 +484,7 @@ const CHAMBERS = [
     exitFacing: 'E',
   },
   {
-    name: 'Capsule Garden', card: 'A preserved plank, a drowned seed and a crate that will not rot on its own.',
+    name: 'Capsule Garden', card: 'A garden, a delivery, and a route that changes behind you.',
     map: [
       '###########################',
       '#A....;.....#....~...r.=..#',
@@ -497,12 +500,12 @@ const CHAMBERS = [
     boxes: [{ x: 3, y: 2 }],
     gates: [{ id: 'j1a', x: 17, y: 6 }, { id: 'j1a', x: 21, y: 5 }, { id: 'j1a', x: 23, y: 5 }],
     wheels: [{ x: 9, y: 4, positions: [[], ['j1a']], start: 1 }],
-    relays: [{ gate: { column: 19 }, receiver: { x: 6, y: 2 } }, { gate: { x: 24, y: 3 }, receiver: { x: 4, y: 1 } }],
+    relays: [{ gate: { column: 19 }, receiver: { x: 6, y: 2 } }, { gate: { x: 24, y: 3 }, receiver: { x: 22, y: 3 } }],
     needs: ['stand', 'box'],
     exitFacing: 'E',
   },
   {
-    name: 'Long Erosion', card: 'Two walls to wear through, one plank to share between them.',
+    name: 'Long Erosion', card: 'Two courtyards disagree about the useful century.',
     map: [
       '##########################',
       '#A...r..t...#..r....#....#',
@@ -521,7 +524,7 @@ const CHAMBERS = [
     exitFacing: 'E',
   },
   {
-    name: 'Overgrown Vault', card: 'Grow, soak, kick and seal, in an order you will have to find.',
+    name: 'Overgrown Vault', card: 'The garden and the vault share one water supply.',
     map: [
       '###########################',
       '#A...~...r.=..#.....;.....#',
@@ -542,7 +545,7 @@ const CHAMBERS = [
     exitFacing: 'E',
   },
   {
-    name: 'Leaning Ground', card: 'Each tree leans where it leans. The Echo has to hold its nerve.',
+    name: 'Leaning Ground', card: 'The direction of growth changes the shape of the journey.',
     map: [
       '########################',
       '#A...s~~.S..#....r.t...#',
@@ -556,12 +559,12 @@ const CHAMBERS = [
     planters: [{ x: 9, y: 1, dir: 'S', len: 2 }, { x: 6, y: 5, dir: 'N' }],
     gates: [{ id: 'j1a', x: 17, y: 5 }],
     wheels: [{ x: 12, y: 4, positions: [[], ['j1a']], start: 1 }],
-    relays: [{ gate: { column: 8 }, receiver: { x: 6, y: 1 } }, { gate: { x: 22, y: 3 }, receiver: { x: 3, y: 1 } }],
+    relays: [{ gate: { column: 8 }, receiver: { x: 6, y: 1 } }, { gate: { x: 22, y: 3 }, receiver: { x: 20, y: 3 } }],
     needs: ['stand'],
     exitFacing: 'E',
   },
   {
-    name: 'Root Rot', card: 'The flood that opens the way drowns the bridge behind you.',
+    name: 'Root Rot', card: 'A living crossing and a passage worn through stone.',
     map: [
       '###################W########',
       '#A..rbbb~....#....~=...#...#',
@@ -582,7 +585,7 @@ const CHAMBERS = [
     exitFacing: 'E',
   },
   {
-    name: 'The Long Hold', card: 'The Echo holds the bridge while the plank is needed everywhere else.',
+    name: 'The Long Hold', card: 'The same timber has unfinished work in both centuries.',
     map: [
       '########################',
       '#A...r..~..#....r..t..t#',
@@ -600,7 +603,7 @@ const CHAMBERS = [
     exitFacing: 'E',
   },
   {
-    name: 'Compost Heap', card: 'Mulch, mud and a tree that will not wait for you.',
+    name: 'Compost Heap', card: 'The old timber and the ironwork inherit different fates.',
     map: [
       '############################',
       '#A...r..rrrrt#.t.#~...r.=..#',
@@ -612,19 +615,19 @@ const CHAMBERS = [
     ],
     objs: [{ k: 'crate', x: 4, y: 1 }, { k: 'crate', x: 13, y: 2 }, { k: 'acorn', x: 2, y: 2 }, { k: 'crate', x: 17, y: 3 }],
     planters: [{ x: 18, y: 5, dir: 'N' }],
-    bars: [{ x: 22, y: 3 }],
+    bars: [{ x: 5, y: 2 }, { x: 8, y: 2 }, { x: 22, y: 3 }],
     gates: [{ id: 'a', x: 5, y: 3 }, { id: 'b', x: 8, y: 3 }, { id: 'j1a', x: 18, y: 6 }, { id: 'j1a', x: 22, y: 5 }, { id: 'j1a', x: 24, y: 5 }],
     wheels: [{ x: 7, y: 2, positions: [[], ['a'], ['b']], start: 0 }, { x: 16, y: 2, positions: [[], ['j1a']], start: 1 }],
     relays: [{ gate: { column: 20 }, receiver: { x: 14, y: 3 } }, { gate: { x: 25, y: 3 }, receiver: { x: 16, y: 5 } }],
     exitFacing: 'E',
   },
   {
-    name: 'Pins and Needles', card: 'Two pins, two rusted doors and a round trip.',
+    name: 'Pins and Needles', card: 'One pin, two courtyards, and a return journey.',
     map: [
       '#######################',
       '#A..;.~..#t....#.=.#..#',
-      '#E.~~.;...t..........X#',
-      '##~########....c.=.c..#',
+      '#E.~......t..........X#',
+      '##;########....c.=.c..#',
       '#.........#....c.=.c..#',
       '#..........r###c#c#c###',
       '###############W#W#W###',
@@ -635,12 +638,12 @@ const CHAMBERS = [
     gates: [{ id: 'j1a', x: 15, y: 4 }, { id: 'j1a', x: 17, y: 4 }, { id: 'j1b', x: 19, y: 4 }],
     wheels: [{ x: 14, y: 4, positions: [[], ['j1a'], ['j1b']], start: 2 }],
     relays: [{ gate: { column: 16 }, receiver: { x: 2, y: 3 } }, { gate: { column: 20 }, receiver: { x: 12, y: 1 } }],
-    pins: 2,
-    needs: ['box'],
+    pins: 1,
+    needs: ['box', 'pin'],
     exitFacing: 'E',
   },
   {
-    name: 'Pit and Pin', card: 'Crates fill pits, pins hold bridges, and nothing can be wasted.',
+    name: 'Pit and Pin', card: 'Buried timber, borrowed crossings and a final delivery.',
     map: [
       '#####################',
       '#A.....;=;..#...~.###',
@@ -658,7 +661,7 @@ const CHAMBERS = [
     exitFacing: 'E',
   },
   {
-    name: 'The Last Divergence', card: 'Everything at once, in exactly one order.',
+    name: 'The Last Divergence', card: 'The last courtyard changes the journey that came before it.',
     map: [
       '###########################',
       '#A...r.....#...;bbbr...;..#',
@@ -680,6 +683,79 @@ const CHAMBERS = [
     exitFacing: 'E',
   },
 ];
+
+
+// Six authored extensions reuse the campaign's temporal courtyards, with a new
+// structural gallery attached at the old exit. All new resources stay in the
+// gallery: none can bypass the courtyard that precedes it.
+function structuralGallery(seed, name, card, variant) {
+  const d = JSON.parse(JSON.stringify(CHAMBERS[seed - 1]));
+  const oldW = d.map[0].length, rows = d.map.map(r => r.split(''));
+  let exit;
+  for (let y = 0; y < rows.length; y++) for (let x = 0; x < oldW; x++) if (rows[y][x] === 'X') exit = { x, y };
+  const offset = oldW, cy = Math.max(3, exit.y);
+  for (let y = 0; y < rows.length; y++) rows[y] = rows[y].concat(Array(20).fill('#'));
+  const pt = (x, dy = 0) => ({ x: offset + x, y: cy + dy });
+  const put = (x, dy, ch) => { const p = pt(x, dy); rows[p.y][p.x] = ch; };
+  rows[exit.y][exit.x] = '.';
+  for (let x = exit.x + 1; x <= offset; x++) rows[exit.y][x] = '.';
+  for (let y = exit.y; y <= cy; y++) rows[y][offset] = '.';
+  for (let x = offset; x < offset + 19; x++) rows[cy][x] = '.';
+  for (const x of [5, 9, 13, 14]) put(x, 0, 'r');
+  for (const x of [2, 3, 7, 11, 12]) put(x, -1, '.');
+  put(12, -3, 'W'); put(12, -2, 'c'); put(12, -1, '='); put(16, 0, 'X');
+  d.name = name; d.card = card; d.map = rows.map(r => r.join('')); d.exitFacing = 'E';
+  d.objs.push({ k: 'shore', ...pt(3, -1) });
+  d.wheels = d.wheels || []; d.gates = d.gates || []; d.bars = d.bars || [];
+  d.wheels.push({ ...pt(2, -1), positions: [[], ['gallery']], start: 0 });
+  d.gates.push({ id: 'gallery', ...pt(12, -2) }); d.bars.push(pt(8));
+  d.porous = [pt(12, -1), pt(11, -1), pt(11), pt(10), pt(9), pt(8)];
+  d.supports = [{ ...pt(3), span: [pt(5)], fall: [pt(4, -1)] },
+    { ...pt(7), span: [pt(9)], fall: [pt(6, -1)] },
+    { ...pt(11), span: [pt(13)], fall: [pt(10, -1)] }];
+  // The fallen frames occupy side alcoves, not a free bypass of the upper route.
+  for (const x of [4, 6, 10]) put(x, -1, '.');
+  d.deposits = [{ feed: pt(12, -1), fill: [pt(14)], bury: [pt(variant % 2 ? 10 : 6)] }];
+  if (variant === 1 || variant === 4) {
+    d.supports.splice(0, 1); d.deposits[0].fill.push(pt(5));
+  }
+  if (variant === 2 || variant === 3) {
+    d.supports.splice(1, 1); d.deposits[0].fill.push(pt(9));
+    // Filling the middle crossing buries the last shore socket: preserve the
+    // deposit, then drain before installing the shore for the last crossing.
+    d.deposits[0].bury = [pt(11)];
+  }
+  if (variant === 5) {
+    d.deposits[0].bury = [pt(3)];
+    d.porous.push(pt(7));
+  }
+  if ([2, 3, 5].includes(variant)) {
+    // The final setting is deliberately temporary. Reach the last deposited
+    // tile, then drain so the same shore can support the last slab.
+    put(16, 0, 'r'); put(15, 0, 'r'); put(18, 0, 'X');
+    for (const x of [15, 17]) put(x, -1, '.');
+    d.supports.push({ ...pt(15, -1), span: [pt(16)], fall: [pt(17, -1)] });
+    // Reclaiming the previous shore drops its frame across the final route.
+    // Echo must clear that damage; restoring the water cannot do it for them.
+    d.supports.find(s => s.x === pt(11).x && s.y === cy).fall = [pt(17)];
+    d.deposits[0].fill.push(pt(15));
+    d.porous.push(pt(12), pt(13), pt(14), pt(15), pt(15, -1));
+  }
+  d.map = rows.map(r => r.join(''));
+  d.relays = d.relays || [];
+  d.relays.push({ gate: { column: offset + 10 }, receiver: pt(12) });
+  d.needs = [['capillary'], ['sediment'], ['support'], ['stand'], ['box', 'preserve'], ['stand']][variant];
+  d.gallery = { entrance: exit, cut: offset };
+  return d;
+}
+CHAMBERS.push(
+  structuralGallery(18, 'The Thirsty Wall', 'Water finds a way through stone. Two routes inherit the cost.', 0),
+  structuralGallery(5, 'What the River Leaves', 'A new bank and a buried passage share the same source.', 1),
+  structuralGallery(9, 'Borrowed Ceiling', 'Every safe crossing rests on something needed elsewhere.', 2),
+  structuralGallery(15, 'Dry Passage', 'The way forward and the way back disagree about the water.', 3),
+  structuralGallery(7, 'The Last Delivery', 'The cargo has work to do before its final journey.', 4),
+  structuralGallery(16, 'A Building on Loan', 'The building remembers what you choose to keep.', 5),
+);
 
 const DIRS4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const DIRV = { E: [1, 0], W: [-1, 0], S: [0, 1], N: [0, -1] };
@@ -704,6 +780,8 @@ function parseChamber(def, n) {
   for (const g of def.gates || []) gates[g.y * W + g.x] = g.id;
   const planters = {};
   for (const p of def.planters || []) planters[p.y * W + p.x] = p;
+  const agingMask = new Uint8Array(W * H);
+  for (const p of [...(def.porous || []), ...(def.supports || []).flatMap(s => [s, ...(s.span || []), ...(s.fall || [])]), ...(def.deposits || []).flatMap(d => [...(d.fill || []), ...(d.bury || [])])]) agingMask[p.y * W + p.x] = 1;
   return {
     n, name: def.name, card: def.card, W, H, base, startA, startE, exit, gates, planters,
     exitFacing: def.exitFacing || null,
@@ -712,6 +790,10 @@ function parseChamber(def, n) {
     boxes: (def.boxes || []).map((b, i) => Object.assign({ id: 'box' + i }, b)),
     bars: (def.bars || []).map(b => b.y * W + b.x),
     pinsMax: def.pins || 0, objs0: def.objs || [], needs: def.needs || [],
+    porous: (def.porous || []).map(p => p.y * W + p.x),
+    deposits: def.deposits || [], supports: def.supports || [],
+    gallery: def.gallery || null,
+    agingMask,
   };
 }
 function chamberRelays(n, exit) {
@@ -806,17 +888,63 @@ function canPlace(L, s, k, x, y) {
 
 // ---------- 2026 ----------
 // A tile record: t = terrain, o = what stands on it, wet, src = the 1924 object behind it, rot = what rotted here.
-const SOLID_O = { oldcrate: 1, trunk: 1, bars: 1, rustbars: 1, box: 1, tree: 1 };
-const BRIDGE_O = { bridge: 1, pit: 1, roots: 1, echoplank: 1 };
+const SOLID_O = { oldcrate: 1, trunk: 1, bars: 1, rustbars: 1, box: 1, tree: 1, siltbank: 1, rustfall: 1 };
+const BRIDGE_O = { bridge: 1, pit: 1, roots: 1, echoplank: 1, stonebridge: 1, sediment: 1 };
 const WALK_T = { floor: 1, silt: 1, basin: 1, hole: 1, fill: 1 };
 function walkRec(r) {
   if (!r || (r.o && SOLID_O[r.o])) return false;
   if (r.t === 'chasm') return !!(r.o && BRIDGE_O[r.o]);
   return !!WALK_T[r.t];
 }
+// Damp travels only through authored porous masonry. It never becomes running water:
+// capillary damp ages objects, but cannot flood a basin or erode plaster.
+function capillaryWet(L, wet) {
+  const out = Uint8Array.from(wet), porous = new Set(L.porous || []), seen = new Set();
+  for (const start of porous) {
+    if (seen.has(start)) continue;
+    const group = [], queue = [start]; seen.add(start); let damp = false;
+    while (queue.length) {
+      const i = queue.pop(); group.push(i); damp = damp || !!wet[i];
+      const x = i % L.W, y = (i / L.W) | 0;
+      for (const [dx, dy] of DIRS4) {
+        const nx = x + dx, ny = y + dy, j = ny * L.W + nx;
+        if (nx < 0 || nx >= L.W || ny < 0 || ny >= L.H || !porous.has(j) || seen.has(j)) continue;
+        seen.add(j); queue.push(j);
+      }
+    }
+    if (damp) for (const i of group) out[i] = 1;
+  }
+  return out;
+}
+// Architectural effects are spatially explicit and use the same tile records as old
+// bridges and rusted bars. Pins freeze outcomes; they never feed back into water flow.
+function ageArchitecture(L, s, recs, flow) {
+  const idx = p => p.y * L.W + p.x;
+  for (const deposit of L.deposits || []) {
+    if (!flow[idx(deposit.feed)]) continue;
+    for (const p of deposit.fill || []) {
+      const r = recs[idx(p)]; r.t = 'fill'; r.o = 'sediment'; r.src = null;
+    }
+    for (const p of deposit.bury || []) {
+      const r = recs[idx(p)]; r.o = 'siltbank'; r.src = null;
+    }
+  }
+  for (const socket of L.supports || []) {
+    const shore = objAt(s, socket.x, socket.y), dry = !recs[idx(socket)].wet;
+    const supported = !L.noSupports && shore && shore.k === 'shore' && dry;
+    if (supported) for (const p of socket.span || []) {
+      const r = recs[idx(p)]; r.t = 'fill'; r.o = 'stonebridge'; r.src = shore.id;
+    }
+    else for (const p of socket.fall || []) {
+      const r = recs[idx(p)]; r.o = 'rustfall'; r.src = null;
+    }
+  }
+  return recs;
+}
 function deriveRaw(L, s, flow) {
   flow = flow || flowing(L, s);
-  const W = L.W, H = L.H, N = W * H, recs = new Array(N), wet = new Uint8Array(N), base = L.base;
+  const W = L.W, H = L.H, N = W * H, recs = new Array(N), base = L.base;
+  let wet = new Uint8Array(N);
   const nb = (i, f) => { const x = i % W, y = (i / W) | 0; if (x > 0) f(i - 1); if (x < W - 1) f(i + 1); if (y > 0) f(i - W); if (y < H - 1) f(i + W); };
   for (let i = 0; i < N; i++) if (base[i] === ',' || base[i] === ';') wet[i] = 1;
   for (let i = 0; i < N; i++) if (flow[i]) { wet[i] = 1; nb(i, k => { if (base[k] !== '#') wet[k] = 1; }); }
@@ -828,6 +956,7 @@ function deriveRaw(L, s, flow) {
     while (q.length) { const c = q.pop(); nb(c, k => { if (flow[k]) touch = true; if (base[k] === 'b' && !seen[k]) { seen[k] = 1; comp.push(k); q.push(k); } }); }
     if (touch) for (const c of comp) { flooded[c] = 1; wet[c] = 1; }
   }
+  wet = capillaryWet(L, wet);
   for (let i = 0; i < N; i++) {
     const b = base[i];
     let t = 'floor';
@@ -855,13 +984,15 @@ function deriveRaw(L, s, flow) {
       if (r.wet) r.o = 'mulch';
       else if (r.t === 'chasm') r.o = 'pit';
       else r.o = 'oldcrate';
+    } else if (o.k === 'shore') {
+      r.src = o.id; r.o = r.wet ? 'rustshore' : 'oldshore';
     } else if (o.k === 'acorn') {
       const p = L.planters[i];
       if (base[i] === 'S' && !r.wet && p) growTree(L, recs, i, p, o.id);
       else { r.src = o.id; r.rot = 'acorn'; }
     }
   }
-  return recs;
+  return ageArchitecture(L, s, recs, flow);
 }
 // An ironwood grows in the planter and leans along `dir`: its trunk spans any chasm in the way as a bridge.
 // With no chasm to cross it lies across the next `len` tiles (2 by default) and blocks them.
@@ -887,23 +1018,28 @@ function deriveFuture(L, s, stand, raw) {
 }
 function walkFuture(recs, L, x, y) { return x >= 0 && y >= 0 && x < L.W && y < L.H && walkRec(recs[y * L.W + x]); }
 // A tile whose 2026 state depends on what happens in 1924.
-function volatile(L, i, rec) { const b = L.base[i]; return isCrack(b) || b === '=' || b === 'p' || b === 'b' || !!(rec && (rec.o || rec.rot)); }
+function volatile(L, i, rec) {
+  const b = L.base[i];
+  return isCrack(b) || b === '=' || b === 'p' || b === 'b' || !!L.agingMask?.[i] || !!(rec && (rec.o || rec.rot));
+}
 
 // ---------- actions shared by the game and the solver ----------
 // Each returns a new state, null when impossible, or { paradox, why } when it would contradict what the Echo
 // has seen: crushing the spot the Echo stands on, or taking back an object the Echo already holds.
-function crushes(L, before, after, echoIdx) {
+function crushes(L, before, after, echoIdx, beforeRaw, afterRaw) {
   if (echoIdx == null) return false;
-  const a = deriveRaw(L, after)[echoIdx], b = deriveRaw(L, before)[echoIdx];
-  return !!(a.o && SOLID_O[a.o] && a.o !== b.o);
+  const a = (afterRaw || deriveRaw(L, after))[echoIdx], b = (beforeRaw || deriveRaw(L, before))[echoIdx];
+  return !!(a.o && SOLID_O[a.o] && (a.o !== b.o || a.src !== b.src));
 }
 // A locked signal barrier seals its tiles: nothing on them can be picked up, shoved or turned until it opens.
 function sealedByRelay(L, s, x, y) { const r = relayAt(L, x, y); return !!(r && !s.locks?.[r.id]); }
+function takenObject(s, id) { return Object.values(s.echo.witness).some(r => r.empty && r.src === id); }
 function actPick(L, s, x, y) {
   if (s.held || sealedByRelay(L, s, x, y)) return null;
   const bx = boxAt(L, x, y);
   const o = bx ? s.objs.find(q => q.box === bx.id) : objAt(s, x, y);
   if (!o || o.k === 'crate') return null;
+  if (takenObject(s, o.id)) return { paradox: y * L.W + x, why: 'taken' };
   if (bx && Object.values(s.echo.witness).some(r => r.box === bx.id && r.empty)) return { paradox: bx.y * L.W + bx.x, why: 'taken' };
   const n = cloneState(s), no = n.objs.find(q => q.id === o.id);
   no.box = null; n.held = o.id; return n;
@@ -911,6 +1047,7 @@ function actPick(L, s, x, y) {
 function actDrop(L, s, x, y) {
   if (!s.held) return null;
   const o = s.objs.find(q => q.id === s.held);
+  if (takenObject(s, o.id)) return { paradox: y * L.W + x, why: 'taken' };
   if (!canPlace(L, s, o.k, x, y)) return null;
   const n = cloneState(s), no = n.objs.find(q => q.id === o.id), bx = boxAt(L, x, y);
   no.x = x; no.y = y; if (bx) no.box = bx.id;
@@ -926,8 +1063,12 @@ function actWheel(L, s, wi) { const w = L.wheels[wi]; if (sealedByRelay(L, s, w.
 // The Echo's verbs act on a 2026 record `r` at tile i.
 function echoAct(L, s, fut, i) {
   const r = fut[i], ec = s.echo;
-  if (r.o === 'rustbars') { const n = cloneState(s); n.echo.witness[i] = { t: r.t, o: 'broken', wet: true, src: null }; return { s: n, kind: 'kick' }; }
+  if (r.o === 'rustbars' || r.o === 'rustfall') { const n = cloneState(s); n.echo.witness[i] = { t: r.t, o: 'broken', wet: r.wet, src: null }; return { s: n, kind: 'kick' }; }
   if (r.o === 'box' && !ec.carry && r.item && !(ec.witness[i] && ec.witness[i].empty)) {
+    // A pin preserves a box record, not a second instance of its cargo. The
+    // same source object must still be sealed when Echo makes the transfer.
+    const source = s.objs.find(o => o.id === r.src);
+    if (!source || source.box !== r.box || s.held === source.id) return { s: { paradox: i, why: 'unsealed' }, kind: 'open' };
     const n = cloneState(s); n.echo.carry = r.item; n.echo.witness[i] = Object.assign({}, r, { empty: true, item: null }); return { s: n, kind: 'open' };
   }
   if (ec.carry === 'plank' && r.t === 'chasm' && !r.o) { const n = cloneState(s); n.echo.carry = null; n.echo.witness[i] = { t: 'chasm', o: 'echoplank', wet: r.wet, src: null }; return { s: n, kind: 'lay' }; }
@@ -953,9 +1094,40 @@ function regionOf(L, start, walk) {
   }
   return { seen, cells };
 }
-function recKey(r) { return r ? r.t + ':' + (r.o || '') + (r.empty ? '!' : '') : '-'; }
+// Source identity and cosmetic rot marks do not affect a frozen tile's legal
+// actions. Box identity/content does; keep it in the canonical key.
+function recKey(r) { return r ? r.t + ':' + (r.o || '') + ':' + (r.item || '') + ':' + (r.box || '') + (r.empty ? '!' : '') : '-'; }
 function solve(L, opts) {
   opts = opts || {};
+  if (opts.noCapillary || opts.noSediment || opts.noSupports) L = Object.assign({}, L, {
+    porous: opts.noCapillary ? [] : L.porous, deposits: opts.noSediment ? [] : L.deposits, noSupports: !!opts.noSupports,
+  });
+  // Galleries are independent one-way chapters: all of their resources are local,
+  // their ruined spans cannot be bridged by courtyard timber, and no gallery
+  // water feeds the courtyard. Solve the courtyard to its exit, then search the
+  // gallery without needlessly rearranging the completed building behind it.
+  // Live-state hints retain every object, witness and pin; this is search only.
+  if (L.gallery && !opts.fullSearch) {
+    const { entrance, cut } = L.gallery, budget = opts.maxStates || 400000;
+    if (opts.start) {
+      const ss = opts.start.s, flow = flowing(L, ss), ra = regionOf(L, opts.start.a, (x, y) => walkPast(L, ss, x, y, flow));
+      const shore = ss.objs.find(o => o.k === 'shore'), box = shore?.box != null ? L.boxes.find(b => b.id === shore.box) : null;
+      const source = box || shore;
+      const accessible = !shore || shore.id === ss.held || (source && DIRS4.some(([dx, dy]) => ra.seen[(source.y + dy) * L.W + source.x + dx]));
+      const localShore = shore && !box && (shore.id === ss.held ? opts.start.a.x >= cut : shore.x >= cut);
+      // A player can carry the shore back into the courtyard. Do not call that
+      // a dead end merely because the normal forward chapter no longer applies.
+      if ((!localShore && !accessible) || (opts.start.e.x >= cut && !ra.seen[entrance.y * L.W + entrance.x])) return solve(Object.assign({}, L, { gallery: null }), Object.assign({}, opts, { fullSearch: true }));
+    }
+    if (opts.start && opts.start.e.x >= cut) return solve(Object.assign({}, L, { gallery: null, searchMinX: cut }), opts);
+    const first = solve(Object.assign({}, L, { gallery: null, exit: entrance, searchMaxX: cut - 1 }), Object.assign({}, opts, { returnState: true }));
+    if (!first.ok) return first;
+    if (first.explored >= budget) return { ok: false, why: 'limit', explored: first.explored };
+    const start = { s: first.end.s, a: { ...entrance }, e: { ...entrance }, stand: null, usedWheels: first.end.usedWheels };
+    const last = solve(Object.assign({}, L, { gallery: null, searchMinX: cut }), Object.assign({}, opts, { start, maxStates: budget - first.explored }));
+    if (!last.ok) return Object.assign({}, last, { explored: first.explored + last.explored });
+    return Object.assign({}, last, { depth: first.depth + last.depth, path: opts.noPath ? null : first.path.concat(last.path), explored: first.explored + last.explored, segmented: true });
+  }
   const W = L.W, N = W * L.H, X = L.exit.y * W + L.exit.x, maxStates = opts.maxStates || 400000;
   const pinsMax = opts.pins != null ? opts.pins : L.pinsMax, prune = opts.prune !== false;
   const Lp = Object.assign({}, L, { pinsMax });
@@ -991,7 +1163,7 @@ function solve(L, opts) {
   };
   // Holding a tile only helps on a bridge, or next to something that could open up while the Echo waits.
   const standMatters = (fut, c) => {
-    if (fut[c].t === 'chasm') return true;
+    if (fut[c].t === 'chasm' || BRIDGE_O[fut[c].o]) return true;
     const x = c % W, y = (c / W) | 0;
     for (const [dx, dy] of DIRS4) { const nx = x + dx, ny = y + dy, j = ny * W + nx; if (nx >= 0 && ny >= 0 && nx < W && ny < L.H && isVol(j) && !walkRec(fut[j])) return true; }
     return false;
@@ -1020,34 +1192,46 @@ function solve(L, opts) {
     if (parent && pk === pastKey(parent.s) && ns.a.x === parent.a.x && ns.a.y === parent.a.y) amin = pd.amin;
     else { const ra = regionOf(L, ns.a, (x, y) => walkPast(L, ns.s, x, y, flow)); amin = Math.min(...ra.cells); }
     const ec = ns.s.echo, fut = ns.stand ? null : deriveFuture(L, ns.s, null, raw);
-    return amin + '|' + (ns.stand ? 's' + ns.stand.i + recKey(ns.stand.rec) : 'z' + zoneOf(fut, ns.e.y * W + ns.e.x)) + '|' + pk + '|' + ec.carry + '|' +
+    return (opts.realMoves ? (ns.usedWheels || 0) + '|' : '') + amin + '|' + (ns.stand ? 's' + ns.stand.i + recKey(ns.stand.rec) : 'z' + zoneOf(fut, ns.e.y * W + ns.e.x)) + '|' + pk + '|' + ec.carry + '|' +
       Object.keys(ec.hold).sort().map(k => k + recKey(ec.hold[k])).join(',') + '|' + Object.keys(ec.witness).sort().map(k => k + recKey(ec.witness[k])).join(',') + '|' + Object.keys(ec.reads || {}).sort().join(',');
   };
   const keyOf = (st, d) => {
     const ec = st.s.echo;
-    return Math.min(...d.ra.cells) + '|' + (st.stand ? 's' + st.stand.i + recKey(st.stand.rec) : 'z' + d.zones[st.e.y * W + st.e.x]) + '|' + pastKey(st.s) + '|' + ec.carry + '|' +
+    return (opts.realMoves ? (st.usedWheels || 0) + '|' : '') + Math.min(...d.ra.cells) + '|' + (st.stand ? 's' + st.stand.i + recKey(st.stand.rec) : 'z' + d.zones[st.e.y * W + st.e.x]) + '|' + pastKey(st.s) + '|' + ec.carry + '|' +
       Object.keys(ec.hold).sort().map(k => k + recKey(ec.hold[k])).join(',') + '|' + Object.keys(ec.witness).sort().map(k => k + recKey(ec.witness[k])).join(',') + '|' + Object.keys(ec.reads || {}).sort().join(',');
   };
   // `opts.start` lets the game ask for a hint from wherever the players are now.
   const os = opts.start;
-  const start = os ? { s: cloneState(os.s), a: { x: os.a.x, y: os.a.y }, e: { x: os.e.x, y: os.e.y }, stand: os.stand ? { i: os.stand.i, rec: os.stand.rec } : null, path: [] }
+  const start = os ? { s: cloneState(os.s), a: { x: os.a.x, y: os.a.y }, e: { x: os.e.x, y: os.e.y }, stand: os.stand ? { i: os.stand.i, rec: os.stand.rec } : null, path: [], usedWheels: os.usedWheels || 0 }
     : { s: initState(L), a: L.startA, e: L.startE, stand: null, path: [] };
-  const seen = new Set([keyFast(start, null, null)]);
+  const seen = new Map([[keyFast(start, null, null), 0]]);
   let frontier = [start], explored = 0;
   for (let depth = 0; depth < (opts.maxDepth || 80); depth++) {
     const next = [];
     for (const st of frontier) {
+      if (st.searchKey && seen.get(st.searchKey) !== depth) continue;
       explored++;
       const d = expand(st), ss = st.s;
-      if (d.ra.seen[X] && d.re.seen[X]) return { ok: true, depth, path: st.path, explored };
+      if (d.ra.seen[X] && d.re.seen[X]) return { ok: true, depth, path: st.path, explored, ...(opts.returnState ? { end: { s: st.s, a: st.a, e: st.e, stand: st.stand, usedWheels: st.usedWheels || 0 } } : {}) };
       d.amin = Math.min(...d.ra.cells);
       const push = (s, a, e, stand, label) => {
         if (!s || s.paradox != null) return;
-        const ns = { s, a, e, stand, path: opts.noPath ? null : st.path.concat(label) };
-        const k = keyFast(ns, st, d); if (seen.has(k)) return; seen.add(k); next.push(ns);
+        const ns = { s, a, e, stand, path: opts.noPath ? null : st.path.concat(label), usedWheels: st.usedWheels || 0 };
+        // Optional 0/1 search measures puzzle actions rather than walking or communication.
+        // Only the first use of each wheel costs a point. Further reversals and
+        // cycling through intermediate settings cannot manufacture difficulty.
+        let cost = opts.realMoves && /^(E (go|scan)|A unlock) /.test(label) ? 0 : 1;
+        if (opts.realMoves && label.startsWith('A wheel ')) {
+          const bit = 1 << Number(label.split(' ')[2]);
+          cost = ns.usedWheels & bit ? 0 : 1; ns.usedWheels |= bit;
+        }
+        const nd = depth + cost, k = keyFast(ns, st, d);
+        if (seen.has(k) && seen.get(k) <= nd) return;
+        seen.set(k, nd); ns.searchKey = k;
+        (cost ? next : frontier).push(ns);
       };
       const echoIdx = st.stand ? st.stand.i : null;
-      const safe = n => n && n.paradox == null && !crushes(L, ss, n, echoIdx) ? n : null;
+      const safe = n => n && n.paradox == null && !crushes(L, ss, n, echoIdx, d.raw, echoIdx == null ? null : derive(n).raw) ? n : null;
       for (const relay of L.relays || []) {
         const r = relay.receiver, ri = r.y * W + r.x;
         if (!opts.noRelayReads && !ss.echo.reads?.[relay.id] && d.re.seen[ri]) {
@@ -1063,20 +1247,33 @@ function solve(L, opts) {
         if (from) push(unlockRelay(L, ss, relay.id, relay.code), from, st.e, st.stand, 'A unlock ' + at.x + ',' + at.y + ' ' + relay.label);
       }
       // With pruning, carried things are only set down where they can bridge, grow or be sealed, plus one
-      // spare floor tile so the Anchor can free its hands. Proofs that a mechanic is required run unpruned.
-      let spare = -1; if (prune) for (let i = 0; i < N; i++) if (L.base[i] === '.' && d.ra.seen[i] && !objAt(ss, i % W, (i / W) | 0)) { spare = i; break; }
+      // spare floor tile so the Anchor can free its hands. Dedicated gallery
+      // necessity fixtures also run with placement pruning disabled.
+      const inChapter = x => (L.searchMinX == null || x >= L.searchMinX) && (L.searchMaxX == null || x <= L.searchMaxX);
+      let spare = -1; if (prune) for (let i = 0; i < N; i++) if (inChapter(i % W) && L.base[i] === '.' && d.ra.seen[i] && !objAt(ss, i % W, (i / W) | 0)) { spare = i; break; }
       // Anchor: pick up, set down, turn wheels (from a reachable neighbour), shove crates
       for (let i = 0; i < N; i++) {
         const x = i % W, y = (i / W) | 0;
+        const recovery = !inChapter(x) && L.searchMinX != null && !ss.held && (objAt(ss, x, y)?.k === 'shore' || ss.objs.some(o => o.k === 'shore' && o.box != null && boxAt(L, x, y)?.id === o.box));
+        if (!inChapter(x) && !recovery) continue;
         let from = null;
         for (const [dx, dy] of DIRS4) { const k = (y + dy) * W + x + dx; if (x + dx >= 0 && x + dx < W && k >= 0 && k < N && d.ra.seen[k]) { from = { x: x + dx, y: y + dy }; break; } }
         if (!from) continue;
+        if (recovery) { push(safe(actPick(L, ss, x, y)), from, st.e, st.stand, 'A pick ' + x + ',' + y + ' @' + from.x + ',' + from.y); continue; }
         if (!ss.held) push(safe(actPick(L, ss, x, y)), from, st.e, st.stand, 'A pick ' + x + ',' + y + ' @' + from.x + ',' + from.y);
-        else if (!prune || '~=tSs'.includes(L.base[i]) || i === spare || boxAt(L, x, y)) push(safe(actDrop(L, ss, x, y)), from, st.e, st.stand, 'A drop ' + x + ',' + y + ' @' + from.x + ',' + from.y);
+        else if (!prune || '~=tSs'.includes(L.base[i]) || i === spare || boxAt(L, x, y) || L.supports.some(p => p.x === x && p.y === y)) push(safe(actDrop(L, ss, x, y)), from, st.e, st.stand, 'A drop ' + x + ',' + y + ' @' + from.x + ',' + from.y);
         const wi = wheelAt(L, x, y);
-        if (wi >= 0) push(safe(actWheel(L, ss, wi)), from, st.e, st.stand, 'A wheel ' + wi + ' @' + from.x + ',' + from.y);
+        if (wi >= 0) {
+          let turned = ss;
+          const turns = opts.realMoves ? L.wheels[wi].positions.length - 1 : 1;
+          for (let k = 1; k <= turns; k++) {
+            turned = safe(actWheel(L, turned, wi)); if (!turned) break;
+            push(turned, from, st.e, st.stand, 'A wheel ' + wi + ' @' + from.x + ',' + from.y + (k > 1 ? ' turns=' + k : ''));
+          }
+        }
       }
       for (const o of ss.objs) if (o.k === 'crate' && o.box == null) for (const [dx, dy] of DIRS4) {
+        if (!inChapter(o.x) || !inChapter(o.x + dx)) continue;
         if (!d.ra.seen[(o.y - dy) * W + o.x - dx]) continue;
         push(safe(actShove(L, ss, o.x, o.y, dx, dy)), { x: o.x, y: o.y }, st.e, st.stand, 'A shove ' + o.x + ',' + o.y + ' ' + dx + ',' + dy);
       }
@@ -1084,6 +1281,7 @@ function solve(L, opts) {
       const zones = new Set(), hereZone = d.zones[st.e.y * W + st.e.x];
       for (const c of d.re.cells) {
         const x = c % W, y = (c / W) | 0;
+        if (!inChapter(x)) continue;
         if (!opts.noStand && isVol(c) && !(st.stand && st.stand.i === c) && (!prune || standMatters(d.fut, c))) push(ss, st.a, { x, y }, { i: c, rec: d.fut[c] }, 'E stand ' + x + ',' + y);
         const z = d.zones[c];
         if (!zones.has(z)) { zones.add(z); if (st.stand || z !== hereZone) push(ss, st.a, { x: z % W, y: (z / W) | 0 }, null, 'E go ' + (z % W) + ',' + ((z / W) | 0)); }
@@ -1092,6 +1290,7 @@ function solve(L, opts) {
       const freeFut = st.stand ? deriveFuture(L, ss, null, d.raw) : d.fut;
       for (let i = 0; i < N; i++) {
         const x = i % W, y = (i / W) | 0;
+        if (!inChapter(x)) continue;
         // act from the standing tile if it touches the target, otherwise walk off it to a neighbour first
         const keep = st.stand && (st.stand.i === i || Math.abs(st.stand.i % W - x) + Math.abs(((st.stand.i / W) | 0) - y) === 1);
         let at = null;
@@ -1101,7 +1300,10 @@ function solve(L, opts) {
         const fut = keep ? d.fut : freeFut;
         if (!keep && !walkRec(fut[at])) continue;
         if (!opts.noBox || fut[i].o !== 'box') { const a = echoAct(L, ss, fut, i); if (a) push(a.s, st.a, e2, stand2, 'E ' + a.kind + ' ' + x + ',' + y + ' @' + e2.x + ',' + e2.y); }
-        if (pinsMax && (volatile(L, i, fut[i]) || ss.echo.hold[i])) {
+        // A fixed box never becomes walkable and its emptied witness cannot be
+        // reopened. Pinning its contents cannot improve a legal solution.
+        // Retain unpin actions for players who pinned one while experimenting.
+        if (pinsMax && (!prune || fut[i].o !== 'box' || ss.echo.hold[i]) && (volatile(L, i, fut[i]) || ss.echo.hold[i])) {
           const p = echoPin(Lp, ss, fut, i);
           if (p) push(p.s, st.a, e2, stand2, 'E ' + p.kind + ' ' + x + ',' + y + ' @' + e2.x + ',' + e2.y);
         }
@@ -1118,7 +1320,7 @@ function getChamber(n) { const i = Math.max(1, Math.min(CHAMBERS.length, n | 0))
 
 root.ChronoCore = {
   CHAMBERS, MAX_LEVEL: CHAMBERS.length, DIRV, SOLID_O, parseChamber, getChamber, initState, cloneState, flowing, walkPast, canPlace,
-  deriveRaw, deriveFuture, walkRec, walkFuture, volatile, objAt, boxAt, wheelAt, actPick, actDrop, actShove, actWheel, echoAct, echoPin,
+  deriveRaw, deriveFuture, capillaryWet, ageArchitecture, walkRec, walkFuture, volatile, objAt, boxAt, wheelAt, actPick, actDrop, actShove, actWheel, echoAct, echoPin,
   crushes, regionOf, solve, isCrack, relayAt, readRelay, unlockRelay,
 };
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -1127,7 +1329,7 @@ root.ChronoCore = {
 'use strict';
 const C = window.ChronoCore;
 const $ = id => document.getElementById(id);
-const hub = window.Hub ? Hub.init({ id: 'chronolink', version: '2.0.0', title: 'ChronoLink: Anchor & Echo' }) : null;
+const hub = window.Hub ? Hub.init({ id: 'chronolink', version: '2.2.0', title: 'ChronoLink: Anchor & Echo' }) : null;
 const store = hub && hub.storage ? hub.storage('chronolink') : {
   get(k, d) { try { const v = localStorage.getItem('chronolink.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem('chronolink.' + k, JSON.stringify(v)); } catch (e) { /* storage blocked */ } },
@@ -1966,6 +2168,28 @@ function buildWorld(era) {
     const m = mk(cachedGeo('puddle', () => new THREE.CircleGeometry(1, 24)), past ? addMat(w, std({ color: 0x5a4632, roughness: 0.2, transparent: true, opacity: 0.55 })) : M.puddle, s.x, 0.006, s.y, S, false);
     m.rotation.x = -Math.PI / 2; m.scale.set(0.38, 0.3, 1);
   }
+  // Porous strips, settling troughs and shore sockets are architectural markings,
+  // visible in both eras without marking a preferred solution or receiver frequency.
+  for (const i of L.porous) {
+    const x = i % W, y = (i / W) | 0;
+    for (const dz of [-0.28, 0, 0.28]) mk(BOX(0.8, 0.025, 0.08), past ? M.cream : M.silt, x, 0.02, y + dz, S, false);
+  }
+  for (const d of L.deposits) {
+    for (const p of [...(d.fill || []), ...(d.bury || [])]) {
+      for (const dx of [-0.42, 0.42]) mk(BOX(0.035, 0.12, 0.85), past ? M.copper : M.rust, p.x + dx, 0.02, p.y, S);
+    }
+    mk(BOX(0.7, 0.04, 0.12), past ? M.copper : M.rust, d.feed.x, 0.04, d.feed.y, S);
+  }
+  for (const socket of L.supports) {
+    for (const dx of [-0.25, 0.25]) mk(BOX(0.08, 0.035, 0.7), past ? M.brass : M.rust, socket.x + dx, 0.03, socket.y, S);
+    for (const p of socket.span || []) for (const dy of [-0.4, 0.4]) mk(BOX(0.9, 0.1, 0.08), past ? M.wallConcrete : M.rubble, p.x, past ? 0.12 : -0.2, p.y + dy, S);
+    // Riveted conduit makes the remote slab/socket relationship readable.
+    for (const p of socket.span || []) {
+      const dx = p.x - socket.x, dy = p.y - socket.y, len = Math.hypot(dx, dy);
+      const rail = mk(BOX(len, 0.025, 0.035), past ? M.brass : M.rust, (p.x + socket.x) / 2, 0.06, (p.y + socket.y) / 2, S, false);
+      rail.rotation.y = -Math.atan2(dy, dx);
+    }
+  }
   // 1924 trenches: an open pit with scaffold rails
   if (past) for (let i = 0; i < B.length; i++) if (B[i] === 't') {
     const x = i % W, y = (i / W) | 0;
@@ -1986,7 +2210,7 @@ function buildWorld(era) {
     }
   }
   // rubble that has filled 1924 doorways by 2026
-  if (!past) for (let i = 0; i < B.length; i++) if (B[i] === 'r') {
+  if (!past) for (let i = 0; i < B.length; i++) if (B[i] === 'r' && !L.supports.some(s => (s.span || []).some(p => p.y * W + p.x === i)) && !L.deposits.some(s => (s.fill || []).some(p => p.y * W + p.x === i))) {
     const g = new THREE.Group(); g.position.set(i % W, 0, (i / W) | 0); S.add(g);
     for (let k = 0; k < 9; k++) { const r = mk(cachedGeo('rock', () => new THREE.DodecahedronGeometry(0.2, 0)), M.rubble, rnd(-0.35, 0.35), rnd(0.1, 0.8), rnd(-0.35, 0.35), g); r.rotation.set(rnd(0, 3), rnd(0, 3), 0); r.scale.setScalar(rnd(0.8, 1.6)); }
   }
@@ -2231,7 +2455,7 @@ function buildWorld(era) {
   w.player = past ? buildAnchor(w) : buildEcho(w);
   if (!past) {
     w.carriedItems = {};
-    for (const kind of ['plank', 'acorn']) { const item = buildPastObj(w, { k: kind, x: 0, y: 0 }); item.g.visible = false; w.carriedItems[kind] = item; }
+    for (const kind of ['plank', 'acorn', 'shore']) { const item = buildPastObj(w, { k: kind, x: 0, y: 0 }); item.g.visible = false; w.carriedItems[kind] = item; }
   }
   const previewMat = own(w, new THREE.MeshBasicMaterial({ color: past ? 0xffd86a : 0x74ffdb, transparent: true, opacity: 0.5, depthWrite: false }));
   w.placementPreview = mk(BOX(0.92, 0.05, 0.34), previewMat, 0, 0.12, 0, S, false);
@@ -2290,6 +2514,10 @@ function buildPastObj(w, o) {
     mk(CYL(0.012, 0.012, 0.08, 6), M.darkWood, 0, 0.28, 0, body);
     const glowM = addMat(w, new THREE.MeshBasicMaterial({ color: 0xffd25a, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false }));
     mk(SPH(0.22, 12), glowM, 0, 0.16, 0, body, false);
+  } else if (o.k === 'shore') {
+    mk(CYL(0.045, 0.055, 0.85, 8), M.steel, 0, 0.45, 0, body);
+    for (const y of [0.05, 0.85]) mk(BOX(0.5, 0.07, 0.32), M.brass, 0, y, 0, body);
+    mk(TOR(0.09, 0.025, 12), M.copper, 0, 0.4, 0, body).rotation.x = Math.PI / 2;
   }
   w.scene.add(g);
   return { g, body, o, px: o.x, py: o.y, fx: o.x, fy: o.y, t0: -9, from: null, held: false, lift: 0 };
@@ -2302,8 +2530,10 @@ function tokenKey(rec, i) {
   let k = '';
   if (rec.t === 'deep' || rec.t === 'flood') k += 'water';
   if (b === 'p') k += rec.t === 'hole' ? 'hole' : 'plaster';
+  if (b === 'r' && rec.t === 'rubble' && (G.L.supports.some(s => (s.span || []).some(p => p.y * G.L.W + p.x === i)) || G.L.deposits.some(s => (s.fill || []).some(p => p.y * G.L.W + p.x === i)))) k += '|collapsed';
   if (rec.o) k += '|' + rec.o + (rec.empty ? '!' : '');
   else if (rec.rot) k += '|rot' + rec.rot;
+  if (G.L.porous.includes(i)) k += rec.wet ? '|damp' : '|dry';
   return k;
 }
 function buildToken(w, rec, i) {
@@ -2311,6 +2541,16 @@ function buildToken(w, rec, i) {
   const g = new THREE.Group(); g.position.set(x, 0, y);
   if (rec.o === 'bridge' || rec.o === 'echoplank') g.rotation.y = plankYaw(G.L, x, y);
   let h = 0.6;
+  if (b === 'r' && rec.t === 'rubble') {
+    for (let k = 0; k < 7; k++) {
+      const rock = mk(BOX(0.38, 0.25, 0.38), M.rubble, (k % 3 - 1) * 0.25, 0.15 + (k > 3 ? 0.3 : 0), (Math.floor(k / 3) - 1) * 0.25, g);
+      rock.rotation.set(0.12 * k, 0.35 * k, 0.2);
+    }
+  }
+  if (G.L.porous.includes(i) && rec.wet) {
+    mk(BOX(0.84, 0.014, 0.84), M.puddle, 0, 0.045, 0, g, false);
+    for (const dx of [-0.3, 0.3]) mk(BOX(0.045, 0.02, 0.7), M.moss, dx, 0.06, 0, g, false);
+  }
   if (b === 'p') {
     if (rec.t === 'hole') {
       const opening = new THREE.Group(); g.add(opening);
@@ -2344,6 +2584,27 @@ function buildToken(w, rec, i) {
     const st = mk(CYL(0.01, 0.02, 0.35, 5), M.rotWood, 0, 0.55, 0, g); st.rotation.z = 0.5; h = 0.8;
   }
   switch (rec.o) {
+    case 'stonebridge': {
+      mk(BOX(0.98, 0.2, 0.86), M.concrete[0], 0, -0.08, 0, g);
+      for (const dz of [-0.36, 0.36]) mk(BOX(0.9, 0.035, 0.04), M.rust, 0, 0.04, dz, g);
+      h = 0.3; break;
+    }
+    case 'sediment': case 'siltbank': {
+      const bank = rec.o === 'siltbank';
+      for (let layer = 0; layer < (bank ? 5 : 2); layer++) mk(BOX(0.96 - layer * 0.035, 0.16, 0.94 - layer * 0.025), layer % 2 ? M.silt : M.rubble, 0, (bank ? 0 : -0.24) + layer * 0.15, 0, g);
+      h = bank ? 1 : 0.3; break;
+    }
+    case 'rustfall': {
+      const slab = mk(BOX(0.8, 0.32, 0.8), M.rubble, 0, 0.32, 0, g); slab.rotation.z = 0.35;
+      for (let k = 0; k < 5; k++) mk(CYL(0.025, 0.025, 1.05, 6), M.rustLight, -0.32 + k * 0.16, 0.53, 0, g).rotation.z = 0.15;
+      h = 1.3; break;
+    }
+    case 'oldshore': case 'rustshore': {
+      const mat = rec.o === 'rustshore' ? M.rustLight : M.steel;
+      mk(CYL(0.045, 0.055, 0.85, 8), mat, 0, 0.45, 0, g);
+      for (const yy of [0.05, 0.85]) mk(BOX(0.5, 0.07, 0.32), mat, 0, yy, 0, g);
+      h = 1; break;
+    }
     case 'bridge': case 'oldplank': {
       const p = mk(BOX(0.98, 0.07, 0.36), M.rotWood, 0, rec.o === 'bridge' ? -0.02 : 0.035, 0, g); p.rotation.y = rnd(-0.08, 0.08);
       mk(SPH(0.09, 8), M.moss, rnd(-0.3, 0.3), 0.05, 0.05, g).scale.set(1.6, 0.3, 1);
@@ -2723,7 +2984,7 @@ function updateWorld(w, dt, t) {
   if (showH) { w.hintMark.position.set(h.x, 0, h.y); w.hintMark.children[0].scale.setScalar(0.5 + 0.08 * Math.sin(t * 5)); w.hintM.opacity = 0.6 + 0.35 * Math.sin(t * 5); }
   // goal marker: the first thing blocking this chrononaut's way out
   const goal = G.goals[who];
-  w.goal.visible = !!(goal && goal.x != null) && !G.won;
+  w.goal.visible = !!(goal && goal.kind === 'exit' && goal.x != null) && !G.won;
   if (w.goal.visible) {
     w.goal.position.set(goal.x, 0, goal.y);
     const col = goal.fix === 'past' ? 0xffc860 : goal.fix === 'future' ? 0x00f5d4 : 0xff6a4a;
@@ -2769,6 +3030,7 @@ function itemIcon(c, x, y, k, era) {
   c.strokeStyle = era === 'past' ? 'rgba(255,214,110,.7)' : 'rgba(0,245,212,.7)'; c.lineWidth = 1; c.stroke();
   if (k === 'acorn') { c.fillStyle = '#9a5a24'; c.beginPath(); c.ellipse(0, 1.5, 3.4, 4.2, 0, 0, 7); c.fill(); c.fillStyle = '#4a2c10'; c.beginPath(); c.ellipse(0, -2.5, 4, 2, 0, 0, 7); c.fill(); }
   else if (k === 'plank') { c.fillStyle = '#8b4513'; c.fillRect(-7, -2, 14, 4); c.fillStyle = PAL.brass; c.fillRect(-6, -2, 1.5, 4); c.fillRect(4.5, -2, 1.5, 4); }
+  else if (k === 'shore') { c.fillStyle = '#a7b4be'; c.fillRect(-1.5, -7, 3, 14); c.fillStyle = PAL.brass; c.fillRect(-6, -7, 12, 2); c.fillRect(-6, 5, 12, 2); }
   c.restore();
 }
 // Icons drawn with a few strokes: what kind of thing blocks the way.
@@ -2838,6 +3100,7 @@ function eraHint(era) {
   if (G.role !== 'BOTH' && ROLE_ERA[G.role] !== era) return 'Partner view · Drag Orbit';
   if (era === 'future' && G.s.echo.carry === 'plank') return 'Carrying plank · E / Enter or click a neighbouring gap';
   if (era === 'past' && G.s.objs.find(o => o.id === G.s.held)?.k === 'plank') return 'Carrying plank · E / Enter or click a placement tile';
+  if (era === 'past' && G.s.objs.find(o => o.id === G.s.held)?.k === 'shore') return 'Carrying iron shore · E / Enter at a brass socket';
   const pins = G.L && G.L.pinsMax ? ' · F Pin' : '';
   if (G.role !== 'BOTH' || G.view === 'solo') return 'WASD / Arrows Move · E / Enter Use' + (era === 'future' ? pins : '') + ' · Hold R Rewind';
   return era === 'past' ? 'WASD Move · E Use · Q Ping · Hold R Rewind' : 'Arrows Move · Enter Use' + (G.L && G.L.pinsMax ? ' · . Pin' : '') + ' · R-Shift Ping';
@@ -3029,6 +3292,9 @@ function loadLevel(input, share) {
   G.levelStart = G.t; G.hitstop = 0; G.denyT = null; G.lastProgress = G.t; G.hint = null; G.hints = 0;
   G.placementAim = null;
   $('signalPop').hidden = true; activeSignal = null;
+  $('ruleDamp').hidden = !L.porous.length;
+  $('ruleSediment').hidden = !L.deposits.length;
+  $('ruleShore').hidden = !L.supports.length;
   FX.clear && WORLD.past && FX.clear();
   recompute(); trackStand(true);
   $('victory').hidden = true;
@@ -3079,8 +3345,13 @@ function refresh(cause, causeTile) {
   G.wasHolding = holding;
   computeGoals(true);
 }
-const isBridge = r => !!(r && r.o && /^(bridge|pit|roots|echoplank)$/.test(r.o));
+const isBridge = r => !!(r && r.o && /^(bridge|pit|roots|echoplank|stonebridge|sediment)$/.test(r.o));
 function stampFor(a, b) {
+  if (b.o === 'sediment' && a.o !== 'sediment') return 'DEPOSIT';
+  if (b.o === 'siltbank' && a.o !== 'siltbank') return 'BURIED';
+  if (b.o === 'rustfall' && a.o !== 'rustfall') return 'COLLAPSE';
+  if (b.o === 'stonebridge' && a.o !== 'stonebridge') return 'SUPPORTED';
+  if (a.wet !== b.wet && a.o === b.o && a.t === b.t) return b.wet ? 'DAMP' : 'DRY';
   if (b.rot && !b.o && !(a.rot && !a.o)) return 'ROT · WET';
   if (isBridge(b) && !isBridge(a)) return b.o === 'roots' ? 'TREE' : 'BRIDGE';
   if (isBridge(a) && !isBridge(b)) return b.rot ? 'ROT' : 'GONE';
@@ -3102,7 +3373,7 @@ function stampFor(a, b) {
   if (a.o && !b.o && b.rot) return 'ROT';
   return null;
 }
-const STAMP_RANK = { 'ROT · WET': 7, BRIDGE: 9, TREE: 9, HOLE: 8, RUST: 8, KICK: 8, ROT: 7, FLOOD: 7, DRY: 7, GONE: 6, SEALED: 6, BLOCKED: 6, CRATE: 3 };
+const STAMP_RANK = { DEPOSIT: 8, BURIED: 8, COLLAPSE: 9, SUPPORTED: 9, DAMP: 5, 'ROT · WET': 7, BRIDGE: 9, TREE: 9, HOLE: 8, RUST: 8, KICK: 8, ROT: 7, FLOOD: 7, DRY: 7, GONE: 6, SEALED: 6, BLOCKED: 6, CRATE: 3 };
 // The before/after beat: hit-stop, the 2026 camera frames the change, the year counter rolls, the old state
 // dissolves as the new one grows in, and a stamp names what happened.
 function beat(changes, cause, causeTile) {
@@ -3123,9 +3394,9 @@ function beat(changes, cause, causeTile) {
   });
   later(delay, () => {
     const s = top.stamp;
-    if (s === 'BRIDGE' || s === 'TREE') Sound.bridge(); else if (s === 'ROT' || s === 'ROT · WET') Sound.rot(); else if (s === 'RUST') Sound.rust();
+    if (s === 'BRIDGE' || s === 'TREE' || s === 'SUPPORTED' || s === 'DEPOSIT') Sound.bridge(); else if (s === 'ROT' || s === 'ROT · WET') Sound.rot(); else if (s === 'RUST') Sound.rust();
     else if (s === 'FLOOD') Sound.flood(); else if (s === 'DRY') Sound.drain(); else if (s === 'HOLE') Sound.hole(); else if (s === 'KICK') Sound.shatter();
-    else if (s === 'GONE' || s === 'SEALED' || s === 'BLOCKED') Sound.thud();
+    else if (s === 'COLLAPSE') Sound.shatter(); else if (s === 'GONE' || s === 'SEALED' || s === 'BLOCKED' || s === 'BURIED') Sound.thud();
   });
   if (fromPast) later(0.12, () => Sound.playTemporalPing());
 }
@@ -3182,7 +3453,7 @@ function paradoxFx(i, why, local) {
   const x = i % G.L.W, y = (i / G.L.W) | 0;
   G.shocks.push({ era: 'future', x, y, t0: G.t, bad: true, big: true }); G.shocks.push({ era: 'past', x, y, t0: G.t, bad: true, big: true });
   // say what was observed: the Echo standing there, or the Echo already holding what 1924 wants back
-  G.stamps.push({ era: 'future', x, y, text: 'PARADOX', t0: G.t }); G.stamps.push({ era: 'past', x, y, text: why === 'taken' ? 'THE ECHO HAS IT' : 'THE ECHO IS HERE', t0: G.t });
+  G.stamps.push({ era: 'future', x, y, text: 'PARADOX', t0: G.t }); G.stamps.push({ era: 'past', x, y, text: why === 'unsealed' ? 'CARGO IS NO LONGER SEALED' : why === 'taken' ? 'THE ECHO HAS IT' : 'THE ECHO IS HERE', t0: G.t });
   for (let k = 0; k < 30; k++) { const a = Math.random() * 7, sp = rnd(1, 3); FX.spawn('past', 'chronal', x, 0.6, y, Math.cos(a) * sp, rnd(0.5, 2), Math.sin(a) * sp, 1, 0xff4060, { drag: 2 }); FX.spawn('future', 'chronal', x, 0.6, y, Math.cos(a) * sp, rnd(0.5, 2), Math.sin(a) * sp, 1, 0xff4060, { drag: 2 }); }
   Sound.paradox();
   if (local && Net.peer) Net.send({ t: 'fx', kind: 'paradox', i, why });
@@ -3223,7 +3494,8 @@ function placementTargets(who) {
     }
     if (!item || !C.canPlace(L, s, item.k, q.x, q.y)) return [];
     const b = L.base[tileIdx(q.x, q.y)], box = C.boxAt(L, q.x, q.y), plant = b === 'S' || b === 's', bridge = C.isCrack(b) || b === 't' || b === '=';
-    return [{ ...q, label: box ? 'Seal in box' : plant ? 'Plant' : bridge ? 'Lay across' : 'Set down', kind: 'drop', priority: box || plant ? 4 : bridge ? 3 : 1, run: () => C.actDrop(L, G.s, q.x, q.y) }];
+    const socket = item.k === 'shore' && L.supports.some(p => p.x === q.x && p.y === q.y);
+    return [{ ...q, label: box ? 'Seal in box' : socket ? 'Brace slab' : plant ? 'Plant' : bridge ? 'Lay across' : 'Set down', kind: 'drop', priority: box || plant || socket ? 4 : bridge ? 3 : 1, run: () => C.actDrop(L, G.s, q.x, q.y) }];
   });
 }
 function choosePlacement(who) {
@@ -3340,7 +3612,7 @@ function pin() {
 
 // ----- hints: the solver plans from where both chrononauts are right now -----
 // First press (or a long time without progress) says who should do something and where; a second press says what.
-const ITEM_WORD = { plank: 'plank', acorn: 'acorn', crate: 'crate' };
+const ITEM_WORD = { plank: 'plank', acorn: 'acorn', crate: 'crate', shore: 'iron shore' };
 let activeSignal = null;
 function closeSignal() { $('signalPop').hidden = true; activeSignal = null; focusControls(); }
 function openSignal(who, relay, target) {
@@ -3373,14 +3645,14 @@ function describeStep(step) {
     case 'scan': text = 'stand on receiver ' + m[3] + ' and read its frequency to the Anchor'; break;
     case 'unlock': text = 'ask the Echo for frequency ' + m[3] + ', then tune this signal lock'; break;
     case 'pick': { const bx = C.boxAt(L, x, y), o = bx ? G.s.objs.find(q => q.box === bx.id) : C.objAt(G.s, x, y); text = bx ? 'take the ' + ITEM_WORD[o.k] + ' out of the Stash Box' : 'pick up this ' + ITEM_WORD[o.k]; break; }
-    case 'drop': text = C.boxAt(L, x, y) ? 'seal the ' + item + ' in the Stash Box' : base === 'S' || base === 's' ? 'plant the acorn in this planter' : C.isCrack(base) || base === 't' || base === '=' ? 'lay the ' + item + ' across here' : 'set the ' + item + ' down here'; break;
+    case 'drop': text = C.boxAt(L, x, y) ? 'seal the ' + item + ' in the Stash Box' : held?.k === 'shore' && L.supports.some(p => p.x === x && p.y === y) ? 'brace the slab with the iron shore here' : base === 'S' || base === 's' ? 'plant the acorn in this planter' : C.isCrack(base) || base === 't' || base === '=' ? 'lay the ' + item + ' across here' : 'set the ' + item + ' down here'; break;
     case 'wheel': { const wh = L.wheels[+m[2]]; return { era, x: wh.x, y: wh.y, who: name, text: 'turn this wheel' }; }
     case 'shove': { const [dx, dy] = m[3].split(',').map(Number); text = 'shove this crate ' + (dx > 0 ? 'east' : dx < 0 ? 'west' : dy > 0 ? 'south' : 'north'); break; }
     case 'stand': text = 'stand here, and stay while 1924 changes'; break;
     case 'go': text = 'walk over here'; break;
     case 'pin': text = 'pin this tile'; break;
     case 'unpin': text = 'take the pin back from here'; break;
-    case 'kick': text = 'kick the rusted bars'; break;
+    case 'kick': text = G.fut[tileIdx(x, y)].o === 'rustfall' ? 'kick the fallen rusted frame' : 'kick the rusted bars'; break;
     case 'open': text = 'open the Stash Box'; break;
     case 'lay': text = 'lay the plank across here'; break;
     default: text = 'do this';
@@ -3448,9 +3720,13 @@ function syncHintStatus() {
 function blockerE(i) {
   const r = G.fut[i], b = G.L.base[i];
   if (C.walkRec(r)) return 0;
+  if (r.t === 'rubble' && G.L.supports.some(s => (s.span || []).some(p => tileIdx(p.x, p.y) === i))) return { kind: 'wall', text: 'Collapsed slab', fix: 'past' };
+  if (r.t === 'rubble' && G.L.deposits.some(s => (s.fill || []).some(p => tileIdx(p.x, p.y) === i))) return { kind: 'chasm', text: 'Settling trough', fix: 'past' };
   if (r.t === 'wall' && b === 'p') return { kind: 'wall', text: 'Plaster wall', fix: 'past' };
   if (r.t === 'wall' || r.t === 'rubble' || r.t === 'planter' || r.o === 'box' || r.o === 'tree') return null;
   if (r.o === 'rustbars') return { kind: 'bars', text: 'Rusted bars', fix: 'future' };
+  if (r.o === 'rustfall') return { kind: 'bars', text: 'Collapsed grille', fix: 'future' };
+  if (r.o === 'siltbank') return { kind: 'crate', text: 'Sediment bank', fix: 'past' };
   if (r.o === 'bars') return { kind: 'bars', text: 'Iron bars', fix: 'past' };
   if (r.o === 'oldcrate') return { kind: 'crate', text: 'Old crate', fix: 'past' };
   if (r.o === 'trunk') return { kind: 'tree', text: 'Fallen tree', fix: 'past' };
