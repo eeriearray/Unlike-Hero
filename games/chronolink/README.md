@@ -39,13 +39,28 @@ Capillary damp is **not running water**: it does not flood basins or erode plast
 
 All aging is recomputed immediately from the current past. There is no real-time waiting. Echo's occupied tile holds its previous record; pins keep records after Echo leaves. Echo's manual changes, including kicked grilles and laid pristine planks, persist through subsequent water changes. Newly solid interventions on Echo's tile are refused by the existing paradox check. A pinned box cannot duplicate cargo: its real source must still be sealed when Echo extracts it. Rewind restores the whole prior state.
 
-Goal chips identify obstacles. Only the exit receives an automatic navigation beacon; solver hint markers remain on request. Chamber cards name the subject without prescribing the tactic. After eight minutes without a change the game offers the existing “Press H” nudge.
+Goal chips identify obstacles. In the teaching chambers (1–11) they also say which era can fix each one, and after eight minutes without a change the game offers a “Press H” nudge. From chamber 12 on, chips only name the obstacle and there is no nudge: working out who acts, and when, is the puzzle. Only the exit receives an automatic navigation beacon; solver hint markers remain on request. Chamber cards name the subject without prescribing the tactic.
 
 ## Campaign
 
-The first 19 chambers retain a gradual teaching curve. The rebalance makes the initial receivers in **Damp Foundations** and **Seed and Stone** depend on a crossing, moves late receivers behind the garden/erosion work, requires both rusting branches in **Compost Heap**, and makes **Pins and Needles** require one pin for the return to its wet receiver. Fewer mandatory code steps or crate detours can make a shorter route a better cooperative puzzle.
+Chambers 1–11 are the teaching chapter. They introduce timber, crates, acorns, water, rust, erosion, the Stash Box, standing, pins and signal locks, with a gradual curve.
 
-Chambers 20–25 pair established courtyards with authored structural galleries. Their dependencies differ: permanent damage after temporary wetting; deposits that bury sockets; a bridge used only long enough to reach a refuge; and sediment that must be abandoned while the shore is reused. They introduce no extra controls or timed reflex requirements.
+Chambers 12–19 are **the Undercroft**, the hard chapter. It is a two-century warehouse. In 1924 the Anchor can walk over cracked floor, but crates can only be shoved, never pulled. By 2026 the cracks are chasms, and a dry crate is the Echo's only floor across one. A crate left on dry stone becomes a wall in its way. A crate in a leak becomes mulch, which the Echo can walk on but which bridges nothing. The Echo must stand on a filled pit to keep it while the crate moves on. Many opening moves are traps, so expect to rewind a lot.
+
+| # | Chamber | Shortest plan (real actions) |
+| --- | --- | ---: |
+| 12 | The Undercroft | 30 |
+| 13 | Cold Storage | 35 |
+| 14 | Settling Dust | 38 |
+| 15 | The Packing Room | 47 |
+| 16 | The Sunken Hall | 49 |
+| 17 | Long Shadows | 52 |
+| 18 | Quiet Weight | 57 |
+| 19 | The Deep Archive | 77 |
+
+For comparison, the longest teaching chamber needs 31, and the chambers that previously occupied slots 12–19 needed 8–25. The Undercroft maps were evolved by a search over layouts. A map was kept only when the solver's shortest plan was long, standing was required, and random wandering from the start often reached a dead end. Every crack, leak, trench and rubble tile that remains was checked: turning it into plain floor or wall makes the chamber easier or unsolvable. The hint (`H`) still works from any state, but it takes a few seconds to answer here.
+
+Chambers 20–25 pair courtyards from the first campaign (including The Long Hold, Compost Heap and Pit and Pin, which no longer appear on their own) with authored structural galleries. Their dependencies differ: permanent damage after temporary wetting; deposits that bury sockets; a bridge used only long enough to reach a refuge; and sediment that must be abandoned while the shore is reused. They introduce no extra controls or timed reflex requirements.
 
 | # | Chamber | Scored route / conservative chapter bound |
 | --- | --- | ---: |
@@ -64,6 +79,6 @@ These figures use the solver's reduced placement graph, with a separately relaxe
 
 Run `node --test test/chronolink-*.test.mjs`.
 
-The suite checks all 25 chambers within the 400,000-state solving budget, the new scored-action bounds, declared mechanic necessities, aging and paradox rules, immutable snapshots, rendering records, plan replay, live-state hint recovery, random mid-chamber solvability/dead ends, signal secrecy, controls, rewind synchronisation, victory, flashlight clipping, and wall passages.
+The suite checks all 25 chambers within the 400,000-state solving budget, the Undercroft's 30–77 action ramp and its trap density, the gallery scored-action bounds, declared mechanic necessities, aging and paradox rules, immutable snapshots, rendering records, plan replay, live-state hint recovery, random mid-chamber solvability/dead ends, signal secrecy, controls, rewind synchronisation, victory, flashlight clipping, and wall passages.
 
 `<script id="chrono-core">` is deterministic and DOM-free. The client and solver use the same `actPick`, `actDrop`, `actShove`, `actWheel`, `echoAct`, and `echoPin` functions. The new mechanics fit existing object, wheel, tile-record, pin, and witness state; the online/relay message protocol and hint UI are unchanged.

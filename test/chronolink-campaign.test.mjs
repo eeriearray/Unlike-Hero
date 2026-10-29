@@ -28,7 +28,7 @@ test('each new chamber requires at least 30 scored actions even with a fully sup
   for(let n=20;n<=25;n++){
     const seed=seeds[n-20];
     if(!prefix.has(seed)){
-      const r=C.solve(C.getChamber(seed),{realMoves:true,noPath:true,maxStates:400000});
+      const r=C.solve(C.courtyard(seed),{realMoves:true,noPath:true,maxStates:400000});
       assert.equal(r.ok,true,`courtyard ${seed}: ${r.why}`);prefix.set(seed,r.depth);
     }
     const L=C.getChamber(n),g=relaxedGallery(L),r=C.solve(g,{realMoves:true,maxStates:400000});
@@ -102,4 +102,18 @@ test('a live courtyard hint keeps the gallery boundary while its local shore is 
   const L=C.getChamber(20),start={s:C.initState(L),a:{...L.startA},e:{...L.startE},stand:null};
   const r=C.solve(L,{start,noPath:true,maxStates:400000});
   assert.equal(r.ok,true,r.why);assert.equal(r.segmented,true);assert.ok(r.explored<400000);
+});
+
+// The Undercroft's plans are real: every shove, stand and unlock replays through the same actions the game
+// uses, both chrononauts can then walk to the exit, and a hint from halfway through still finds the rest.
+test('Undercroft plans replay through shared actions and finish with both chrononauts at the exit',()=>{
+  for(let n=12;n<=19;n++){
+    const L=C.getChamber(n),r=C.solve(L,{maxStates:400000});assert.equal(r.ok,true,`chamber ${n}`);
+    const end=replay(L,r.path),X=L.exit.y*L.W+L.exit.x;
+    assert.ok(C.regionOf(L,end.a,(x,y)=>C.walkPast(L,end.s,x,y,C.flowing(L,end.s))).seen[X],`chamber ${n}: Anchor reaches the exit`);
+    const fut=C.deriveFuture(L,end.s,end.stand);
+    assert.ok(C.regionOf(L,end.e,(x,y)=>C.walkFuture(fut,L,x,y)).seen[X],`chamber ${n}: Echo reaches the exit`);
+    const mid=replay(L,r.path.slice(0,Math.floor(r.path.length/2))),hint=C.solve(L,{start:mid,noPath:true,maxStates:400000});
+    assert.equal(hint.ok,true,`chamber ${n} halfway: ${hint.why}`);
+  }
 });

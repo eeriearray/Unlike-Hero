@@ -39,9 +39,24 @@ test('every chamber is proven solvable by the solver, and needs at least 14 move
   }
 });
 
-test('later chambers combine more kinds of moves than the opening ones', () => {
+// The Undercroft is the hard chapter: counting only pushes, pickups, placements, standing and pins (walking,
+// reading and unlocking are free), the shortest plans run from 30 to more than 70 actions. The longest
+// teaching chamber needs 31.
+test('the Undercroft chambers need 30 to 77 real actions, rising through the chapter', () => {
+  const depths = [];
+  for (let n = 12; n <= 19; n++) {
+    const r = C.solve(C.getChamber(n), { realMoves: true, noPath: true, maxStates: 400000 });
+    assert.ok(r.ok, `chamber ${n}: ${r.why}`);
+    depths.push(r.depth);
+  }
+  assert.ok(depths.every(d => d >= 30), `depths ${depths}`);
+  assert.ok(depths.every((d, i) => i === 0 || d >= depths[i - 1]), `the chapter ramps: ${depths}`);
+  assert.ok(depths[7] >= 70, `the last chamber is the longest: ${depths}`);
+});
+
+test('the teaching chapter ends with more kinds of moves than it opens with', () => {
   const kinds = n => new Set(C.solve(C.getChamber(n), { maxStates: 400000 }).path.map(p => p.split(' ').slice(0, 2).join(' '))).size;
-  const early = [1, 2, 3].map(kinds), late = [10, 12, 17].map(kinds);
+  const early = [1, 2, 3].map(kinds), late = [10, 11].map(kinds);
   assert.ok(Math.max(...early) < Math.min(...late), `early ${early} vs late ${late}`);
 });
 
@@ -178,15 +193,20 @@ function randomState(L, rnd, steps) {
 }
 test('from random mid-chamber states the hint solver always finds the way out or proves a dead end', () => {
   let seed = 12345; const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
-  let solved = 0, dead = 0;
+  let solved = 0, dead = 0, deepSolved = 0, deepDead = 0;
   for (let n = 1; n <= C.MAX_LEVEL; n++) {
     const L = C.getChamber(n);
     for (let k = 0; k < 4; k++) {
       const start = randomState(L, rnd, 2 + k * 3);
       const r = C.solve(L, { start, noPath: true, maxStates: 400000 });
       assert.ok(r.ok || r.why === 'exhausted', `chamber ${n} random state ${k}: solver gave up (${r.why})`);
-      if (r.ok) solved++; else dead++;
+      // The Undercroft (12-19) is meant to be full of traps; the rest of the campaign is forgiving.
+      if (n >= 12 && n <= 19) { if (r.ok) deepSolved++; else deepDead++; }
+      else if (r.ok) solved++; else dead++;
     }
   }
   assert.ok(solved > dead * 3, `${solved} solvable vs ${dead} dead-end states`);
+  // A few aimless moves in the Undercroft often ruin the chamber; elsewhere they almost never do.
+  const deepRate = deepDead / (deepSolved + deepDead), rate = dead / (solved + dead);
+  assert.ok(deepRate >= 1 / 3 && deepRate >= rate * 10, `Undercroft dead ends ${deepDead}/${deepSolved + deepDead}, elsewhere ${dead}/${solved + dead}`);
 });

@@ -46,8 +46,8 @@ window.GAME_REGISTRY = [
   {
     "id": "chronolink",
     "title": "ChronoLink: Anchor & Echo",
-    "tagline": "Change the past, explore its ruins, and borrow what time leaves behind. 25 co-op chambers of water, growing trees, preserved crossings and Echo-only signal clues.",
-    "version": "2.2.0",
+    "tagline": "Change the past, explore its ruins, and borrow what time leaves behind. 25 co-op chambers, including the Undercroft: eight brutally hard two-century crate puzzles.",
+    "version": "2.3.0",
     "sdk": "1.x",
     "entry": "index.html",
     "thumbnail": "hub-banner.webp",

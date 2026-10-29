@@ -559,68 +559,12 @@ const CHAMBERS = [
     needs: ['stand'],
     exitFacing: 'E',
   },
-  {
-    name: 'Overgrown Vault', card: 'The garden and the vault share one water supply.',
-    map: [
-      '###########################',
-      '#A...~...r.=..#.....;.....#',
-      '#....~.###.=..#.....;.....#',
-      '#E...~t....=........;...X.#',
-      '#....~.#cc.=..#.....;.....#',
-      '#....S.##c.=..#############',
-      '#####cW##W#W###############',
-    ],
-    objs: [{ k: 'acorn', x: 6, y: 2 }, { k: 'crate', x: 8, y: 3 }, { k: 'plank', x: 12, y: 2 }],
-    planters: [{ x: 5, y: 5, dir: 'N' }],
-    bars: [{ x: 9, y: 3 }],
-    boxes: [{ x: 2, y: 5 }],
-    gates: [{ id: 'a', x: 5, y: 6 }, { id: 'a', x: 9, y: 5 }, { id: 'a', x: 11, y: 5 }],
-    wheels: [{ x: 2, y: 2, positions: [[], ['a']], start: 1 }],
-    relays: [{ gate: { column: 7 }, receiver: { x: 17, y: 3 } }, { gate: { x: 24, y: 3 }, receiver: { x: 12, y: 4 } }],
-    needs: ['box'],
-    exitFacing: 'E',
-  },
-  {
-    name: 'Leaning Ground', card: 'The direction of growth changes the shape of the journey.',
-    map: [
-      '########################',
-      '#A...s~~.S..#....r.t...#',
-      '#.....~.....#....##....#',
-      '#E....~.#.#tr....~p...X#',
-      '#.....~.#........cc....#',
-      '#.....S.#...#....c#....#',
-      '#################W######',
-    ],
-    objs: [{ k: 'acorn', x: 13, y: 3 }, { k: 'plank', x: 7, y: 2 }],
-    planters: [{ x: 9, y: 1, dir: 'S', len: 2 }, { x: 6, y: 5, dir: 'N' }],
-    gates: [{ id: 'j1a', x: 17, y: 5 }],
-    wheels: [{ x: 12, y: 4, positions: [[], ['j1a']], start: 1 }],
-    relays: [{ gate: { column: 8 }, receiver: { x: 6, y: 1 } }, { gate: { x: 22, y: 3 }, receiver: { x: 20, y: 3 } }],
-    needs: ['stand'],
-    exitFacing: 'E',
-  },
-  {
-    name: 'Root Rot', card: 'A living crossing and a passage worn through stone.',
-    map: [
-      '###################W########',
-      '#A..rbbb~....#....~=...#...#',
-      '#...#bbb~....#....~=...#...#',
-      '#E..pbbb~.........~=......X#',
-      '#...cbbb~r...#....~=...c...#',
-      '#...cbbb~....#....~=...c...#',
-      '#...cbbbSc...#....~=t..c...#',
-      '####W####W#############W####',
-    ],
-    objs: [{ k: 'acorn', x: 22, y: 3 }, { k: 'plank', x: 11, y: 2 }],
-    planters: [{ x: 8, y: 6, dir: 'N' }],
-    bars: [{ x: 23, y: 3 }],
-    gates: [{ id: 'a', x: 4, y: 6 }, { id: 'a', x: 9, y: 6 }, { id: 'j1a', x: 19, y: 1 }, { id: 'j1a', x: 23, y: 6 }],
-    wheels: [{ x: 14, y: 5, positions: [[], ['a']], start: 0 }, { x: 25, y: 6, positions: [[], ['j1a']], start: 1 }],
-    relays: [{ gate: { column: 20 }, receiver: { x: 17, y: 1 } }, { gate: { column: 24 }, receiver: { x: 8, y: 4 } }],
-    needs: ['stand'],
-    exitFacing: 'E',
-  },
-  {
+];
+
+// Courtyards that survive only inside the structural galleries (chambers 20-25). They were standalone
+// chambers in the first campaign; the galleries still rebuild them as the first half of a longer building.
+const COURTYARDS = {
+  15: {
     name: 'The Long Hold', card: 'The same timber has unfinished work in both centuries.',
     map: [
       '########################',
@@ -638,7 +582,7 @@ const CHAMBERS = [
     needs: ['stand'],
     exitFacing: 'E',
   },
-  {
+  16: {
     name: 'Compost Heap', card: 'The old timber and the ironwork inherit different fates.',
     map: [
       '############################',
@@ -657,28 +601,7 @@ const CHAMBERS = [
     relays: [{ gate: { column: 20 }, receiver: { x: 14, y: 3 } }, { gate: { x: 25, y: 3 }, receiver: { x: 16, y: 5 } }],
     exitFacing: 'E',
   },
-  {
-    name: 'Pins and Needles', card: 'One pin, two courtyards, and a return journey.',
-    map: [
-      '#######################',
-      '#A..;.~..#t....#.=.#..#',
-      '#E.~......t..........X#',
-      '##;########....c.=.c..#',
-      '#.........#....c.=.c..#',
-      '#..........r###c#c#c###',
-      '###############W#W#W###',
-    ],
-    objs: [{ k: 'plank', x: 13, y: 1 }],
-    bars: [{ x: 15, y: 2 }, { x: 19, y: 2 }],
-    boxes: [{ x: 7, y: 1 }],
-    gates: [{ id: 'j1a', x: 15, y: 4 }, { id: 'j1a', x: 17, y: 4 }, { id: 'j1b', x: 19, y: 4 }],
-    wheels: [{ x: 14, y: 4, positions: [[], ['j1a'], ['j1b']], start: 2 }],
-    relays: [{ gate: { column: 16 }, receiver: { x: 2, y: 3 } }, { gate: { column: 20 }, receiver: { x: 12, y: 1 } }],
-    pins: 1,
-    needs: ['box', 'pin'],
-    exitFacing: 'E',
-  },
-  {
+  18: {
     name: 'Pit and Pin', card: 'Buried timber, borrowed crossings and a final delivery.',
     map: [
       '#####################',
@@ -696,36 +619,149 @@ const CHAMBERS = [
     needs: ['stand', 'box'],
     exitFacing: 'E',
   },
+};
+
+
+// Chambers 12-19, the Undercroft: two-era warehouse puzzles. Shoved crates are the only floor the Echo has, a
+// crate left on dry stone is a wall in 2026, and nothing can be pulled back, so most early moves are traps.
+// They were evolved by search over layouts and kept only when the solver's shortest plan was long (30-77 moves),
+// standing was required, and wandering away from the start often led to a dead end. Every crack, leak, trench
+// and rubble tile left in a map makes the chamber easier (or unsolvable) if it is turned into plain floor or wall.
+CHAMBERS.push(
   {
-    name: 'The Last Divergence', card: 'The last courtyard changes the journey that came before it.',
+    name: 'The Undercroft', card: 'The floor below gave way long ago. The crates remember where it stood.',
     map: [
-      '###########################',
-      '#A...r.....#...;bbbr...;..#',
-      '#....##....#...;bbb#...;..#',
-      '#E...~p........;bbbp...;.X#',
-      '#....cc....#...;bbbc...;..#',
-      '#....c#....#...;bbbc...;..#',
-      '#####c###t##...;bbbc...;..#',
-      '#####c#...##...Sbbbc...;..#',
-      '#####W########Wc###W#######',
+      '###########',
+      '#..A..~#..#',
+      '#Et.##~~..#',
+      '#.~r.~~rrt#',
+      '#~~~..#X.~#',
+      '###########',
     ],
-    objs: [{ k: 'plank', x: 9, y: 7 }, { k: 'plank', x: 25, y: 1 }, { k: 'acorn', x: 10, y: 3 }],
-    planters: [{ x: 15, y: 7, dir: 'N' }],
-    boxes: [{ x: 12, y: 6 }],
-    gates: [{ id: 'a', x: 5, y: 5 }, { id: 'j1a', x: 15, y: 8 }, { id: 'j1a', x: 19, y: 7 }],
-    wheels: [{ x: 7, y: 7, positions: [[], ['a']], start: 1 }, { x: 13, y: 7, positions: [[], ['j1a']], start: 1 }],
-    relays: [{ gate: { x: 25, y: 3 }, receiver: { x: 25, y: 4 } }],
-    needs: ['stand', 'box'],
+    objs: [{ k: 'crate', x: 7, y: 2 }, { k: 'crate', x: 3, y: 2 }, { k: 'crate', x: 7, y: 3 }],
+    relays: [{ gate: { column: 4 }, receiver: { x: 2, y: 2 } }],
+    needs: ['stand'],
     exitFacing: 'E',
   },
-];
-
+  {
+    name: 'Cold Storage', card: 'Two crates, two centuries, and not enough floor for both.',
+    map: [
+      '##########',
+      '#~~~~~~..#',
+      '#~~#;.r.##',
+      '#~;..#...#',
+      '#~..;.X#.#',
+      '#E.#.A...#',
+      '##########',
+    ],
+    objs: [{ k: 'crate', x: 7, y: 2 }, { k: 'crate', x: 7, y: 3 }],
+    relays: [{ gate: { column: 8 }, receiver: { x: 2, y: 5 } }],
+    needs: ['stand'],
+    exitFacing: 'E',
+  },
+  {
+    name: 'Settling Dust', card: 'What you push in 1924 is what stands in 2026.',
+    map: [
+      '##########',
+      '#..#A....#',
+      '#~X.;.#.##',
+      '#~;#.##..#',
+      '#~.#.~..##',
+      '#.~E~~~..#',
+      '#.#.#....#',
+      '##########',
+    ],
+    objs: [{ k: 'crate', x: 6, y: 6 }, { k: 'crate', x: 1, y: 5 }, { k: 'crate', x: 3, y: 2 }, { k: 'crate', x: 6, y: 1 }],
+    relays: [{ gate: { column: 7 }, receiver: { x: 8, y: 5 } }],
+    needs: ['stand'],
+    exitFacing: 'E',
+  },
+  {
+    name: 'The Packing Room', card: 'Every crate is somebody\'s floor and somebody else\'s wall.',
+    map: [
+      '#############',
+      '#AE.#.#..t~.#',
+      '#.#.#..r.~;X#',
+      '#.~;..##;~;;#',
+      '##~~~###~~..#',
+      '#.~~~.~~~;.##',
+      '#############',
+    ],
+    objs: [{ k: 'crate', x: 8, y: 2 }, { k: 'crate', x: 10, y: 2 }, { k: 'crate', x: 2, y: 3 }, { k: 'crate', x: 10, y: 5 }],
+    relays: [{ gate: { column: 5 }, receiver: { x: 1, y: 3 } }],
+    needs: ['stand'],
+    exitFacing: 'E',
+  },
+  {
+    name: 'The Sunken Hall', card: 'Five crates, one way through, and a great many ways to fail.',
+    map: [
+      '###########',
+      '#.~r.;.~~.#',
+      '#~~;A;#X~.#',
+      '##~~~~##..#',
+      '#E~.;~~~~##',
+      '###########',
+    ],
+    objs: [{ k: 'crate', x: 3, y: 2 }, { k: 'crate', x: 2, y: 2 }, { k: 'crate', x: 5, y: 3 }, { k: 'crate', x: 4, y: 1 }, { k: 'crate', x: 6, y: 1 }],
+    relays: [{ gate: { column: 9 }, receiver: { x: 1, y: 1 } }],
+    needs: ['stand'],
+    exitFacing: 'E',
+  },
+  {
+    name: 'Long Shadows', card: 'Most moves down here cannot be taken back.',
+    map: [
+      '#############',
+      '#~.A.##.....#',
+      '#~#.t;.#....#',
+      '#..#~~~#..#.#',
+      '#..E#;~#....#',
+      '#...r..~X...#',
+      '##..#...#...#',
+      '#############',
+    ],
+    objs: [{ k: 'crate', x: 5, y: 5 }, { k: 'crate', x: 7, y: 5 }, { k: 'crate', x: 8, y: 3 }, { k: 'crate', x: 9, y: 4 }],
+    relays: [{ gate: { column: 11 }, receiver: { x: 8, y: 4 } }],
+    needs: ['stand'],
+    exitFacing: 'E',
+  },
+  {
+    name: 'Quiet Weight', card: 'The crate that saves you now is the wall that traps you later.',
+    map: [
+      '#############',
+      '#A~~.;~.~~~~#',
+      '#~~rr.~;.~~.#',
+      '#t~~#~#.#.#X#',
+      '#E~...#..#..#',
+      '#############',
+    ],
+    objs: [{ k: 'crate', x: 9, y: 1 }, { k: 'crate', x: 5, y: 2 }, { k: 'crate', x: 10, y: 2 }, { k: 'crate', x: 4, y: 1 }, { k: 'crate', x: 4, y: 2 }],
+    relays: [{ gate: { column: 7 }, receiver: { x: 3, y: 1 } }],
+    needs: ['stand'],
+    exitFacing: 'N',
+  },
+  {
+    name: 'The Deep Archive', card: 'The longest night in the building. Take your time.',
+    map: [
+      '#############',
+      '#E.~~~r..#..#',
+      '#.~~#~~;~~~~#',
+      '#....;~~~r~~#',
+      '#....#.#A#;X#',
+      '#############',
+    ],
+    objs: [{ k: 'crate', x: 8, y: 3 }, { k: 'crate', x: 9, y: 3 }, { k: 'crate', x: 9, y: 2 }, { k: 'crate', x: 1, y: 3 }],
+    relays: [{ gate: { column: 2 }, receiver: { x: 3, y: 3 } }],
+    needs: ['stand'],
+    exitFacing: 'E',
+  },
+);
 
 // Six authored extensions reuse the campaign's temporal courtyards, with a new
 // structural gallery attached at the old exit. All new resources stay in the
 // gallery: none can bypass the courtyard that precedes it.
+const courtyardDef = seed => COURTYARDS[seed] || CHAMBERS[seed - 1];
 function structuralGallery(seed, name, card, variant) {
-  const d = JSON.parse(JSON.stringify(CHAMBERS[seed - 1]));
+  const d = JSON.parse(JSON.stringify(courtyardDef(seed)));
   const oldW = d.map[0].length, rows = d.map.map(r => r.split(''));
   let exit;
   for (let y = 0; y < rows.length; y++) for (let x = 0; x < oldW; x++) if (rows[y][x] === 'X') exit = { x, y };
@@ -1353,9 +1389,11 @@ function solve(L, opts) {
 }
 
 function getChamber(n) { const i = Math.max(1, Math.min(CHAMBERS.length, n | 0)); return parseChamber(CHAMBERS[i - 1], i); }
+// A gallery's courtyard on its own (numbered by its place in the first campaign), for checking its share of the route.
+function courtyard(seed) { return parseChamber(courtyardDef(seed), seed); }
 
 root.ChronoCore = {
-  CHAMBERS, MAX_LEVEL: CHAMBERS.length, DIRV, SOLID_O, parseChamber, getChamber, initState, cloneState, flowing, walkPast, canPlace,
+  CHAMBERS, MAX_LEVEL: CHAMBERS.length, DIRV, SOLID_O, parseChamber, getChamber, courtyard, initState, cloneState, flowing, walkPast, canPlace,
   deriveRaw, deriveFuture, capillaryWet, ageArchitecture, walkRec, walkFuture, volatile, objAt, boxAt, wheelAt, actPick, actDrop, actShove, actWheel, echoAct, echoPin,
   crushes, regionOf, solve, isCrack, relayAt, readRelay, unlockRelay,
 };
@@ -1365,7 +1403,7 @@ root.ChronoCore = {
 'use strict';
 const C = window.ChronoCore;
 const $ = id => document.getElementById(id);
-const hub = window.Hub ? Hub.init({ id: 'chronolink', version: '2.2.0', title: 'ChronoLink: Anchor & Echo' }) : null;
+const hub = window.Hub ? Hub.init({ id: 'chronolink', version: '2.3.0', title: 'ChronoLink: Anchor & Echo' }) : null;
 const store = hub && hub.storage ? hub.storage('chronolink') : {
   get(k, d) { try { const v = localStorage.getItem('chronolink.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem('chronolink.' + k, JSON.stringify(v)); } catch (e) { /* storage blocked */ } },
@@ -3097,12 +3135,15 @@ function blockerIcon(c, x, y, kind, col) {
   else if (kind === 'wait') { c.beginPath(); c.arc(0, 0, 7, 0, 7); c.moveTo(0, 0); c.lineTo(0, -5); c.moveTo(0, 0); c.lineTo(4, 2); c.stroke(); }
   c.restore();
 }
-// The objective chip: what stands between me and my exit, and which era can fix it.
+// The objective chip: what stands between me and my exit. Teaching chambers also say which era can fix it;
+// after them, working out who acts (and when) is the puzzle, so the chip only names the obstacle.
+const GUIDED_CHAMBERS = 11;
 function goalChip(c, v, goal, era, t) {
   if (!goal) return;
-  const past = era === 'past', cx = v.x + v.w / 2, y = v.y + 18;
-  const col = goal.fix === 'past' ? ERA_COL.past : goal.fix === 'future' ? ERA_COL.future : goal.kind === 'exit' ? ERA_COL.ok : '#d8cbb1';
-  const tag = !goal.fix ? '' : goal.fix === era ? 'YOU CAN FIX' : goal.fix === 'past' ? '1924 CAN FIX' : '2026 CAN FIX';
+  const past = era === 'past', cx = v.x + v.w / 2, y = v.y + 18, guided = G.L.n <= GUIDED_CHAMBERS;
+  const fix = guided ? goal.fix : null;
+  const col = fix === 'past' ? ERA_COL.past : fix === 'future' ? ERA_COL.future : goal.kind === 'exit' ? ERA_COL.ok : '#d8cbb1';
+  const tag = !fix ? '' : fix === era ? 'YOU CAN FIX' : fix === 'past' ? '1924 CAN FIX' : '2026 CAN FIX';
   c.save();
   c.font = past ? '400 17px Limelight, Georgia, serif' : '16px "Share Tech Mono", monospace';
   const tw = c.measureText(goal.text).width;
@@ -3194,7 +3235,7 @@ function drawOverlay(v, w, t) {
   goalChip(c, v, G.goals[who], era, t);
   // Hints use a wrapping DOM readout shared by both views, even when the other era has the next move.
   const hh = G.hint;
-  if (!hh && !G.won && G.started && G.t - G.lastProgress > STUCK_NUDGE) pill(c, v.x + v.w / 2, v.y + 62, 'Stuck? Press H for a hint', '#c89bff', G.t - G.lastProgress - STUCK_NUDGE);
+  if (!hh && !G.won && G.started && G.L.n <= GUIDED_CHAMBERS && G.t - G.lastProgress > STUCK_NUDGE) pill(c, v.x + v.w / 2, v.y + 62, 'Stuck? Press H for a hint', '#c89bff', G.t - G.lastProgress - STUCK_NUDGE);
   // era title, controls and the Echo's pins
   c.textAlign = 'left'; c.textBaseline = 'alphabetic';
   const x0 = v.x + 22, y0 = v.y + v.h - 40;

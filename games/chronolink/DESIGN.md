@@ -6,7 +6,24 @@ The fun comes from negotiating what a shared resource must do next. Preserve the
 
 The implementation is authoritative. This document replaces older drafts describing automatic hints, removed cipher puzzles, or a campaign without signal locks.
 
+## The Undercroft (chambers 12–19)
+
+Playtest feedback, 29 October 2026: chamber 11 was beaten in eight minutes "with very little or no thinking". Long solver depth came from forced sequences, such as leapfrogging one plank or cycling a wheel, rather than from decisions, and mistakes were cheap. Almost every state a player could wander into was still solvable.
+
+The Undercroft replaces chambers 12–19 with puzzles built around irreversible decisions:
+
+- **The rules are the existing ones.** Crates are shoved and never pulled. Cracks are floor in 1924 and chasms by 2026. A dry crate on a crack is a pit the Echo can cross, and on dry stone it is a wall. A crate in a leak is mulch, which the Echo can walk on but which bridges nothing. Trenches stop the Anchor but are floor by 2026. Rubble is a 1924 doorway and is blocked by 2026. Every chamber has a signal lock.
+- **Where the difficulty comes from.** Each crate move serves 1924 and 2026 at once: it must not wall in the Anchor, and it must leave the Echo a floor. Standing on a pit holds it while its crate moves on. That is the only way to cross more chasm than there are crates, and it is proven necessary in every chamber (`needs: ['stand']`).
+- **How they were made.** A dedicated fast search over this subset of the rules evolved candidate layouts. It agreed with `solve` on 500 random rooms. Layouts were scored on the shortest plan's real actions, the number of distinct push lines, Echo participation, and search size. Each survivor was then simplified: every crack, leak, trench and rubble tile was turned into plain floor or wall wherever that kept the plan just as long and just as varied. The shipped maps are verified with the game's own `solve`.
+- **What the numbers say.** Shortest plans need 30, 35, 38, 47, 49, 52, 57 and 77 real actions; the longest teaching chamber needs 31. In the analyser's random walks (3–18 moves from the start), 111 of 192 sampled states were dead ends, including all 24 in one chamber. In the test suite's shorter walks, 41% were dead ends, against 1.5% in the rest of the campaign. Search sizes stay small enough (1.6k–135k states) for the in-game hint to answer within the 400k budget from any state tested.
+- **Less hand-holding.** From chamber 12 on, objective chips name the obstacle without saying which era can fix it. The automatic “Press H” nudge only appears in the teaching chapter.
+
+Limits: these figures come from the solver, not from a human playtest. Solver depth and trap density are the standard proxies for Sokoban-style difficulty, but they cannot show whether a given chamber takes one player one hour or five. Because no crate puzzle uses water, wheels, trees or the Stash Box, the Undercroft is one sustained style rather than a tour of every mechanic. The galleries (20–25) still combine the full rule set.
+
 ## Audit method and limits
+
+*This audit describes the first campaign. In it, chambers 12–19 were Overgrown Vault through The Last Divergence. The Long Hold, Compost Heap and Pit and Pin now survive only as the courtyards of galleries 23, 25 and 20.*
+
 
 Before editing, all 19 chambers were solved with the shipped pruned macro BFS and a 400,000-state budget. The depth below is the shortest route in that graph, **not a count of reasoning decisions**. Inspection covered map bottlenecks, returned action traces, cards, `needs` declarations, signal placement, goals, and hint code. Player waiting/obviousness assessments are design risks inferred from those traces, not results of a new human playtest.
 
