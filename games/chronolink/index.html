@@ -105,6 +105,67 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
 #card b{display:block;font:400 26px/1.1 var(--f-deco);color:var(--brass);letter-spacing:.04em}
 #card span{display:block;margin-top:5px;font:14px/1.35 var(--f-ui);color:#e8dcc0}
 #card i{font:normal 11px/1 var(--f-mono);letter-spacing:.2em;color:var(--neon)}
+/* Pause menu: a printed Art Deco programme, not a stack of panels. One frame, hairline rules, the chamber as
+   the headline, and the 1924 | 2026 split the screen itself uses. */
+.playbill{position:relative;width:min(640px,100%);max-height:calc(100% - 8px);overflow:auto;padding:34px 40px 28px;color:#e9dcc0;
+  background:radial-gradient(120% 80% at 50% 0%,#211709 0%,#120c06 55%,#0c0905 100%);
+  border:1px solid rgba(212,175,55,.55);box-shadow:0 0 0 6px #0b0806,0 0 0 7px rgba(212,175,55,.22),0 40px 90px rgba(0,0,0,.65)}
+.playbill::before,.playbill::after{content:"";position:absolute;width:22px;height:22px;border:1px solid rgba(212,175,55,.7);pointer-events:none}
+.playbill::before{top:10px;left:10px;border-right:0;border-bottom:0}
+.playbill::after{bottom:10px;right:10px;border-left:0;border-top:0}
+.pb-close{position:absolute;top:14px;right:16px;width:34px;height:34px;border:0;background:none;color:rgba(233,220,192,.55);font:300 28px/1 var(--f-ui)}
+.pb-close:hover{color:#fff}
+.pb-head{text-align:center;display:grid;justify-items:center;gap:6px;padding-bottom:22px;border-bottom:1px solid rgba(212,175,55,.28)}
+.pb-eyebrow{margin:0;font:600 11px/1 var(--f-ui);letter-spacing:.42em;text-transform:uppercase;color:rgba(212,175,55,.8)}
+.pb-chamber{display:flex;align-items:center;gap:14px;margin-top:6px}
+.pb-num{font:600 12px/1 var(--f-ui);letter-spacing:.2em;text-transform:uppercase;color:#b9a882}
+.pb-num b{font:400 15px/1 var(--f-deco);letter-spacing:.06em;color:#f3e8d2}
+.pb-step{width:28px;height:28px;border:1px solid rgba(212,175,55,.35);border-radius:50%;background:none;color:#d9c79c;font:18px/1 var(--f-ui);padding:0 0 2px}
+.pb-step:hover:not(:disabled){border-color:var(--brass);color:#fff}
+.pb-step:disabled{opacity:.25;cursor:default}
+.pb-title{margin:6px 0 0;font:400 clamp(30px,5.4vw,44px)/1.05 var(--f-deco);color:var(--brass);letter-spacing:.02em;text-wrap:balance;
+  text-shadow:0 1px 0 #5a3f0e,0 0 24px rgba(212,175,55,.25)}
+.pb-card{margin:0;max-width:44ch;font:italic 16px/1.45 Georgia,'Iowan Old Style',serif;color:#d8c8a6;text-wrap:balance}
+.pb-link{margin:4px 0 0;font:11px/1 var(--f-mono);letter-spacing:.1em;color:#8f8268}
+.pb-label{margin:0 0 10px;font:600 11px/1 var(--f-ui);letter-spacing:.32em;text-transform:uppercase;color:rgba(212,175,55,.75)}
+.pb-rules{padding:20px 0 18px;border-bottom:1px solid rgba(212,175,55,.28)}
+.pb-rules ul{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:12px 28px}
+.pb-rules li{display:grid;grid-template-columns:22px 1fr;gap:10px;align-items:start;font:14.5px/1.4 var(--f-ui);color:#d4c6a8}
+.pb-rules li b{color:#f3e8d2;font-weight:600}
+.pb-rules svg{width:20px;height:20px;margin-top:1px;fill:none;stroke:var(--brass);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.pb-split{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid rgba(212,175,55,.28)}
+.pb-era{padding:20px 0 18px}
+.pb-era.past{padding-right:24px;border-right:1px solid rgba(212,175,55,.28)}
+.pb-era.future{padding-left:24px}
+.pb-era h3{margin:0 0 12px;display:flex;align-items:baseline;gap:10px}
+.pb-era.past h3{font:400 24px/1 var(--f-deco);color:var(--brass)}
+.pb-era.future h3{font:400 22px/1 var(--f-mono);letter-spacing:.12em;color:var(--neon);text-shadow:0 0 14px rgba(0,255,204,.35)}
+.pb-era h3 small{font:600 11px/1 var(--f-ui);letter-spacing:.22em;text-transform:uppercase;color:#9d8f73;text-shadow:none}
+.pb-era dl,.pb-also{margin:0;display:grid;gap:8px}
+.pb-era dl div,.pb-also div{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.pb-era dt,.pb-also dt{font:14px/1.3 var(--f-ui);color:#cbbd9f}
+.pb-era dd,.pb-also dd{margin:0;display:flex;gap:4px;align-items:center;font:13px/1 var(--f-ui);color:#9d8f73;white-space:nowrap}
+.pb-era.future dt{color:#a9d6cc}
+.playbill kbd{min-width:22px;text-align:center;font:12px/1 var(--f-mono);padding:4px 5px 3px;border:1px solid #6b5a3a;border-bottom-width:2px;border-radius:3px;background:#1a130a;color:#f3e8d2}
+.pb-era.future kbd{border-color:#1d6b5e;background:#061714;color:#bff7ec}
+.pb-also{padding:18px 0;grid-template-columns:1fr 1fr;column-gap:28px;border-bottom:1px solid rgba(212,175,55,.28)}
+.pb-also dd span{color:#857a63;font-size:12px}
+.pb-foot{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:20px;flex-wrap:wrap}
+.pb-actions{display:flex;flex-wrap:wrap;gap:4px 18px}
+.pb-text{border:0;background:none;padding:6px 0;font:600 13px/1 var(--f-ui);letter-spacing:.06em;color:#cdb98c;border-bottom:1px solid transparent}
+.pb-text:hover{color:#fff;border-bottom-color:rgba(212,175,55,.6)}
+.pb-text.cy{color:#7ff5dc}
+.pb-resume{font:600 13px/1 var(--f-ui);letter-spacing:.32em;text-transform:uppercase;padding:14px 30px 13px;border:1px solid #f0d27a;
+  background:linear-gradient(180deg,#e9c95a,#b88d27);color:#1b1206;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 6px 18px rgba(0,0,0,.45)}
+.pb-resume:hover{filter:brightness(1.08)}
+@media (max-width:640px){
+  .playbill{padding:28px 20px 22px}
+  .pb-rules ul,.pb-also,.pb-split{grid-template-columns:1fr}
+  .pb-era.past{padding-right:0;border-right:0;border-bottom:1px solid rgba(212,175,55,.28)}
+  .pb-era.future{padding-left:0}
+  .pb-foot{flex-direction:column-reverse;align-items:stretch}
+  .pb-resume{width:100%}
+}
 .legend{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;font:12px/1.3 var(--f-ui);color:#cdbf9f}
 .legend div{background:#120d08;border:1px solid #3a2e1d;border-radius:4px;padding:7px 8px}
 .legend b{display:block;font:11px/1.2 var(--f-mono);letter-spacing:.08em;color:var(--brass);text-transform:uppercase;margin-bottom:3px}
@@ -147,23 +208,67 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
   </div>
 
   <div class="overlay" id="menu" hidden>
-    <div class="card menu" role="dialog" aria-label="Menu">
-      <div class="mhead"><h2>Paused</h2><button class="ico" id="menuClose" aria-label="Resume"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-      <div class="lvlnav"><button class="btn" id="prev" aria-label="Previous chamber">◀</button><div><b id="lvlNum">1</b><br><span id="lvlOf">of 14</span></div><button class="btn" id="next" aria-label="Next chamber">▶</button></div>
-      <div class="meta"><span id="actChip">Chamber</span><br><span id="linkChip">One window</span></div>
-      <div class="legend">
-        <div><b>Dry</b>Survives the century. A plank across cracks is a bridge.</div>
-        <div><b>Wet</b>Leaks and running water rot wood and rust iron.</div>
-        <div><b>Sunlit soil</b>An acorn grows into an ironwood that leans one way.</div>
-        <div><b>Stash Box</b>Sealed inside, nothing ages. The Echo can take it out.</div>
-      </div>
-      <div class="cols">
-        <div class="who"><h3>1924</h3><div class="kmap"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move, walk into crates to shove</div><div class="kmap"><kbd>E</kbd> pick up · set down · turn</div></div>
-        <div class="who e"><h3>2026</h3><div class="kmap"><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> move</div><div class="kmap"><kbd>↵</kbd> kick · open · lay <kbd>F</kbd> pin</div></div>
-      </div>
-      <p class="note">Stuck? Press <kbd>H</kbd> for a hint (twice for the exact move). Hold <kbd>R</kbd> to rewind one change. <kbd>Q</kbd> / <kbd>⇧</kbd> ping. <kbd>Tab</kbd> toggles the view. A second tab links automatically. Drag to orbit, scroll to zoom, double-click to reset.</p>
-      <div class="mrow"><button class="btn" id="hintBtn">Hint (H)</button><button class="btn" id="restartBtn">Restart chamber</button><button class="btn" id="swapBtn" hidden>Show 2026</button><button class="btn" id="unlinkBtn" hidden>Play both here</button><button class="btn cy" id="onlineBtn" hidden>Online</button><button class="btn" id="backBtn" hidden>← Hub</button></div>
-      <div class="actions"><button class="big" id="resumeBtn">Resume</button></div>
+    <div class="playbill" role="dialog" aria-labelledby="pbTitle">
+      <button class="pb-close" id="menuClose" aria-label="Resume">×</button>
+      <header class="pb-head">
+        <p class="pb-eyebrow">Paused</p>
+        <div class="pb-chamber">
+          <button class="pb-step" id="prev" aria-label="Previous chamber">‹</button>
+          <span class="pb-num">Chamber <b id="lvlNum">1</b> <span id="lvlOf">of 19</span></span>
+          <button class="pb-step" id="next" aria-label="Next chamber">›</button>
+        </div>
+        <h2 class="pb-title" id="pbTitle"><span id="actChip">Chamber</span></h2>
+        <p class="pb-card" id="pbCard"></p>
+        <p class="pb-link" id="linkChip">One window · both players</p>
+      </header>
+
+      <section class="pb-rules" aria-label="How a century changes things">
+        <h3 class="pb-label">What a century does</h3>
+        <ul>
+          <li><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="3.2"/><path d="M10 2v2.5M10 15.5V18M2 10h2.5M15.5 10H18M4.3 4.3l1.8 1.8M13.9 13.9l1.8 1.8M4.3 15.7l1.8-1.8M13.9 6.1l1.8-1.8"/></svg><span><b>Dry</b> things last. A plank across cracks is still a bridge.</span></li>
+          <li><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3c3 4 5 6.6 5 9a5 5 0 0 1-10 0c0-2.4 2-5 5-9z"/></svg><span><b>Wet</b> things don’t. Leaks and running water rot wood and rust iron.</span></li>
+          <li><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 17V8M10 8c0-3 2.5-5 5.5-5 0 3-2.5 5-5.5 5zM10 11c0-2.5-2-4-4.5-4 0 2.5 2 4 4.5 4z"/></svg><span><b>Sunlit soil</b> turns an acorn into an ironwood that leans one way.</span></li>
+          <li><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3.5" y="6" width="13" height="10" rx="1"/><path d="M3.5 9.5h13M8.5 9.5v2h3v-2"/></svg><span><b>The Stash Box</b> keeps the century out. The Echo can take it out new.</span></li>
+        </ul>
+      </section>
+
+      <section class="pb-split" aria-label="Controls">
+        <div class="pb-era past">
+          <h3>1924 <small>The Anchor</small></h3>
+          <dl>
+            <div><dt>Move</dt><dd><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></dd></div>
+            <div><dt>Pick up, set down, turn</dt><dd><kbd>E</kbd></dd></div>
+            <div><dt>Shove a crate</dt><dd>walk into it</dd></div>
+          </dl>
+        </div>
+        <div class="pb-era future">
+          <h3>2026 <small>The Echo</small></h3>
+          <dl>
+            <div><dt>Move</dt><dd><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></dd></div>
+            <div><dt>Kick, open, lay</dt><dd><kbd>↵</kbd></dd></div>
+            <div><dt>Pin a tile</dt><dd><kbd>F</kbd></dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <dl class="pb-also">
+        <div><dt>Hint</dt><dd><kbd>H</kbd> <span>the next move from here</span></dd></div>
+        <div><dt>Rewind</dt><dd>hold <kbd>R</kbd></dd></div>
+        <div><dt>Ping</dt><dd><kbd>Q</kbd> / <kbd>⇧</kbd></dd></div>
+        <div><dt>View</dt><dd><kbd>Tab</kbd> <span>drag to orbit, scroll to zoom</span></dd></div>
+      </dl>
+
+      <footer class="pb-foot">
+        <nav class="pb-actions" aria-label="Chamber actions">
+          <button class="pb-text" id="hintBtn">Hint</button>
+          <button class="pb-text" id="restartBtn">Restart chamber</button>
+          <button class="pb-text" id="swapBtn" hidden>Show 2026</button>
+          <button class="pb-text" id="unlinkBtn" hidden>Play both here</button>
+          <button class="pb-text cy" id="onlineBtn" hidden>Play online</button>
+          <button class="pb-text" id="backBtn" hidden>Back to the hub</button>
+        </nav>
+        <button class="pb-resume" id="resumeBtn">Resume</button>
+      </footer>
     </div>
   </div>
 
@@ -1886,9 +1991,9 @@ function buildWorld(era) {
     for (let k = 0; k < 9; k++) { const r = mk(cachedGeo('rock', () => new THREE.DodecahedronGeometry(0.2, 0)), M.rubble, rnd(-0.35, 0.35), rnd(0.1, 0.8), rnd(-0.35, 0.35), g); r.rotation.set(rnd(0, 3), rnd(0, 3), 0); r.scale.setScalar(rnd(0.8, 1.6)); }
   }
   // 1924 doorways that will be rubble: a carved arch
-  // (the jambs stand in the wall line and the lintel sits at the half-height wall top, so the frame never floats)
+  // (the jambs stand in the wall line, tall enough to walk under, so the frame reads as a doorway)
   if (past) for (let i = 0; i < B.length; i++) if (B[i] === 'r') {
-    const x = i % W, y = (i / W) | 0, z = doorwayAlongZ(L, x, y), h = 0.66;
+    const x = i % W, y = (i / W) | 0, z = doorwayAlongZ(L, x, y), h = 1.3;
     for (const sgn of [-1, 1]) mk(BOX(0.12, h, 0.12), M.brass, x + (z ? 0 : sgn * 0.45), h / 2, y + (z ? sgn * 0.45 : 0), S);
     mk(BOX(z ? 0.14 : 1, 0.08, z ? 1 : 0.14), M.brass, x, h, y, S);
   }
@@ -3455,7 +3560,8 @@ function updateHUD() {
   $('lvlTag').textContent = String(L.n).padStart(2, '0');
   $('lvlNum').textContent = L.n; $('lvlOf').textContent = 'of ' + C.MAX_LEVEL;
   const bt = store.get('times', {})[L.n];
-  $('actChip').textContent = L.name + (bt ? ' · best ' + Math.floor(bt / 60) + ':' + String(bt % 60).padStart(2, '0') : '');
+  $('actChip').textContent = L.name;
+  $('pbCard').textContent = L.card + (bt ? '  Best time ' + Math.floor(bt / 60) + ':' + String(bt % 60).padStart(2, '0') + '.' : '');
   $('prev').disabled = L.n <= 1; $('next').disabled = L.n >= C.MAX_LEVEL;
   $('linkTag').hidden = !Net.peer; $('unlinkBtn').hidden = !Net.peer;
   if (Net.peer) { const era = ROLE_ERA[G.role]; $('linkTag').className = era; $('linkTag').textContent = 'LINKED · ' + (era === 'past' ? '1924 ANCHOR' : '2026 ECHO'); }
@@ -3567,8 +3673,14 @@ function updatePlayers(dt) {
     const kA = 1 - Math.exp(-dt * (ix || iy ? ACCEL : DECEL));
     p.vx += (ix * MOVE_SPEED[who] - p.vx) * kA; p.vy += (iy * MOVE_SPEED[who] - p.vy) * kA;
     if (Math.abs(p.vx) < 0.01) p.vx = 0; if (Math.abs(p.vy) < 0.01) p.vy = 0;
-    const nx = p.rx + p.vx * dt; if (freeAt(who, nx, p.ry)) p.rx = nx; else p.vx *= 0.2;
-    const ny = p.ry + p.vy * dt; if (freeAt(who, p.rx, ny)) p.ry = ny; else p.vy *= 0.2;
+    // door assist: pushing against a wall beside an opening slides the chrononaut into the opening's lane,
+    // so a one-tile doorway does not need pixel-perfect lining up
+    const nx = p.rx + p.vx * dt;
+    if (freeAt(who, nx, p.ry)) p.rx = nx;
+    else { const lane = Math.round(p.ry), step = Math.abs(p.vx) * dt; if (p.vx && Math.abs(lane - p.ry) > 0.01 && freeAt(who, nx, lane) && freeAt(who, p.rx, p.ry + clamp(lane - p.ry, -step, step))) p.ry += clamp(lane - p.ry, -step, step); else p.vx *= 0.2; }
+    const ny = p.ry + p.vy * dt;
+    if (freeAt(who, p.rx, ny)) p.ry = ny;
+    else { const lane = Math.round(p.rx), step = Math.abs(p.vy) * dt; if (p.vy && Math.abs(lane - p.rx) > 0.01 && freeAt(who, lane, ny) && freeAt(who, p.rx + clamp(lane - p.rx, -step, step), p.ry)) p.rx += clamp(lane - p.rx, -step, step); else p.vy *= 0.2; }
     faceFromVelocity(p, dt);
     // walking squarely into a crate shoves it after a short lean
     if (who === 'A' && (ix || iy) && !frozen) {
