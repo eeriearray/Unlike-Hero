@@ -67,7 +67,7 @@ window.GAME_REGISTRY = [
         "id": "echo",
         "name": "The Echo (2026)",
         "entry": "index.html#echo",
-        "description": "Arrows and Enter (F or . to pin). Walks the result, holds whatever it stands on still, pins tiles, kicks rusted bars and empties the Stash Box."
+        "description": "Arrows and Enter (F or . to pin). Walks the result, holds whatever it stands on still, topples old crates into chasms, pins tiles, kicks rusted bars and empties the Stash Box."
       }
     ],
     "multiplayer": {

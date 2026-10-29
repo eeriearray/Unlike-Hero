@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-29T18:17:51.144Z",
+  "generated": "2026-10-29T21:00:50.291Z",
   "games": [
     {
       "id": "casino",
@@ -68,7 +68,7 @@
           "id": "echo",
           "name": "The Echo (2026)",
           "entry": "index.html#echo",
-          "description": "Arrows and Enter (F or . to pin). Walks the result, holds whatever it stands on still, pins tiles, kicks rusted bars and empties the Stash Box."
+          "description": "Arrows and Enter (F or . to pin). Walks the result, holds whatever it stands on still, topples old crates into chasms, pins tiles, kicks rusted bars and empties the Stash Box."
         }
       ],
       "multiplayer": {
