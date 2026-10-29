@@ -94,6 +94,7 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
 
 #onlinePop{position:absolute;right:max(16px,env(safe-area-inset-right,0px));top:8px;z-index:9;background:#081311;border:1px solid #1d6b5e;border-radius:6px;padding:12px;display:grid;gap:8px;width:min(300px,calc(100% - 32px))}
 #onlinePop input{background:#030a09;border:1px solid #1d6b5e;border-radius:4px;padding:7px 9px;font:15px var(--f-mono);letter-spacing:.3em;text-transform:uppercase;width:100%}
+#roomRole{background:#030a09;border:1px solid #1d6b5e;border-radius:4px;padding:7px 9px;color:var(--ink);font:15px var(--f-mono);width:100%}
 #signalPop{z-index:10}
 #signalFrequency{font:44px var(--f-mono);letter-spacing:.25em;color:var(--neon);padding:12px}
 #signalCode{width:160px;background:#080b0b;border:1px solid var(--brass);border-radius:4px;color:var(--ink);font:28px var(--f-mono);letter-spacing:.2em;padding:10px;text-align:center}
@@ -212,6 +213,9 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
   <div id="onlinePop" hidden>
     <div class="note">Create a room and send its code to your friend, or enter their code to join.</div>
     <input id="roomCode" maxlength="4" placeholder="CODE" aria-label="Room code" autocomplete="off">
+    <label class="note" for="roomRole">Your role when creating a room</label>
+    <select id="roomRole"><option value="ANCHOR">Anchor · 1924</option><option value="ECHO">Echo · 2026</option></select>
+    <div class="note">Your friend automatically plays the other role.</div>
     <div class="actions"><button class="btn cy" id="roomJoin">Join room</button><button class="btn" id="roomNew">Create room</button><button class="btn" id="roomClose">Close</button></div>
     <p class="note" id="roomStatus" role="status">Both devices must open this hub on the same Wi-Fi.</p>
   </div>
@@ -1723,11 +1727,17 @@ const Net = {
       case 'fx': if (m.kind === 'paradox' && Number.isFinite(m.i)) paradoxFx(m.i, m.why, false); break;
     }
   },
-  joinRoom(code) {
+  joinRoom(code, role = null) {
     if (!hub) return;
     if (this.peer) { this.send({ t: 'bye' }); this.unlink('Changing room'); }
     if (this.bc) { this.bc.close(); this.bc = null; }
     if (this.room) try { this.room.leave(); } catch (e) { /* ignore */ }
+    // Only the creator requests a role. A joiner's hub URL must not override that choice,
+    // even if the joiner's tab is older and therefore decides the handshake.
+    this.want = role === 'ANCHOR' || role === 'ECHO' ? role : null;
+    G.view = this.want ? 'solo' : 'split';
+    if (this.want) G.soloEra = ROLE_ERA[this.want];
+    applyView();
     this.noLink = false; this.code = code;
     this.room = hub.room('chronolink:' + code);
     $('roomBtn').textContent = 'Room ' + code;
@@ -4098,11 +4108,12 @@ $('hintBtn').onclick = () => { setMenu(false); hint(); };
 $('vicStay').onclick = () => loadLevel(G.input, true);
 if (hub) {
   $('backBtn').hidden = false; $('backBtn').onclick = () => hub.exit();
+  $('roomRole').value = Net.want || 'ANCHOR';
   const showRoom = () => { setMenu(false); $('onlinePop').hidden = false; $('roomCode').focus(); };
   for (const id of ['onlineBtn', 'roomBtn', 'introOnlineBtn']) { $(id).hidden = false; $(id).onclick = showRoom; }
   $('roomClose').onclick = () => { $('onlinePop').hidden = true; focusControls(); };
-  $('roomNew').onclick = () => { const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; const bytes = crypto.getRandomValues(new Uint8Array(4)); const c = Array.from(bytes, b => A[b % A.length]).join(''); $('roomCode').value = c; start(); Net.joinRoom(c); focusControls(); };
-  $('roomJoin').onclick = () => { const c = $('roomCode').value.trim().toUpperCase(); if (!/^[A-Z0-9]{4}$/.test(c)) { $('roomStatus').textContent = 'Enter your friend’s 4-letter room code.'; return; } $('roomCode').value = c; start(); Net.joinRoom(c); $('onlinePop').hidden = true; focusControls(); };
+  $('roomNew').onclick = () => { const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; const bytes = crypto.getRandomValues(new Uint8Array(4)); const c = Array.from(bytes, b => A[b % A.length]).join(''); $('roomCode').value = c; Net.joinRoom(c, $('roomRole').value); start(); focusControls(); };
+  $('roomJoin').onclick = () => { const c = $('roomCode').value.trim().toUpperCase(); if (!/^[A-Z0-9]{4}$/.test(c)) { $('roomStatus').textContent = 'Enter your friend’s 4-letter room code.'; return; } $('roomCode').value = c; Net.joinRoom(c); start(); $('onlinePop').hidden = true; focusControls(); };
   $('roomCode').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('roomJoin').click(); } });
 }
 addEventListener('resize', resize);
