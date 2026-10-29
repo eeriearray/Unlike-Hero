@@ -2096,6 +2096,25 @@ function exitGateYaw(L) {
   // The arch's normal faces into the chamber from the nearest outside wall.
   return Math.min(x, L.W - 1 - x) < Math.min(y, L.H - 1 - y) ? Math.PI / 2 : 0;
 }
+// Rubble is an aging outcome, not a signal gate. Mark its 1924 counterpart
+// in the floor so open rooms never acquire unexplained freestanding doorways.
+function buildPastRubbleSite(w, L, x, y) {
+  const g = new THREE.Group(), at = p => p.x === x && p.y === y;
+  const slab = (L.supports || []).some(s => (s.span || []).some(at)) || (L.deposits || []).some(d => (d.fill || []).some(at));
+  g.position.set(x, 0, y); g.userData.rubbleMarker = slab ? 'structural-slab' : 'aging-floor';
+  mk(BOX(0.94, 0.035, 0.94), M.channel, 0, -0.005, 0, g, false);
+  for (const side of [-0.43, 0.43]) {
+    mk(BOX(0.9, 0.008, 0.025), M.stonePast, 0, 0.017, side, g, false);
+    mk(BOX(0.025, 0.008, 0.9), M.stonePast, side, 0.017, 0, g, false);
+  }
+  if (slab) for (const side of [-0.34, 0.34]) {
+    mk(BOX(0.1, 0.01, 0.1), M.iron, side, 0.018, -0.34, g, false);
+    mk(BOX(0.1, 0.01, 0.1), M.iron, side, 0.018, 0.34, g, false);
+  }
+  else mk(BOX(0.025, 0.008, 0.82), M.stonePast, 0, 0.017, 0, g, false);
+  w.scene.add(g);
+  return g;
+}
 function flashlightClearance(L, future, x, y, yaw, range = 5) {
   let nearest = range;
   // Clip the decorative light volume too: an unshadowed cone otherwise draws through walls.
@@ -2214,13 +2233,8 @@ function buildWorld(era) {
     const g = new THREE.Group(); g.position.set(i % W, 0, (i / W) | 0); S.add(g);
     for (let k = 0; k < 9; k++) { const r = mk(cachedGeo('rock', () => new THREE.DodecahedronGeometry(0.2, 0)), M.rubble, rnd(-0.35, 0.35), rnd(0.1, 0.8), rnd(-0.35, 0.35), g); r.rotation.set(rnd(0, 3), rnd(0, 3), 0); r.scale.setScalar(rnd(0.8, 1.6)); }
   }
-  // 1924 doorways that will be rubble: a carved arch
-  // (the jambs stand in the wall line, tall enough to walk under, so the frame reads as a doorway)
-  if (past) for (let i = 0; i < B.length; i++) if (B[i] === 'r') {
-    const x = i % W, y = (i / W) | 0, z = doorwayAlongZ(L, x, y), h = 1.3;
-    for (const sgn of [-1, 1]) mk(BOX(0.12, h, 0.12), M.brass, x + (z ? 0 : sgn * 0.45), h / 2, y + (z ? sgn * 0.45 : 0), S);
-    mk(BOX(z ? 0.14 : 1, 0.08, z ? 1 : 0.14), M.brass, x, h, y, S);
-  }
+  // Inlaid stone panels identify future rubble/slabs without impersonating doors.
+  if (past) for (let i = 0; i < B.length; i++) if (B[i] === 'r') buildPastRubbleSite(w, L, i % W, (i / W) | 0);
   // planters: 1924 brass-trimmed boxes of soil (a shaft of sunlight when sunlit); 2026 cracked stone tubs
   for (let i = 0; i < B.length; i++) if (B[i] === 'S' || B[i] === 's') {
     const x = i % W, y = (i / W) | 0, lit = B[i] === 'S';
