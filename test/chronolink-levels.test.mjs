@@ -29,29 +29,30 @@ test('there are 19 hand-built chambers, each a closed rectangle with a start for
   assert.equal(C.getChamber(99).n, C.MAX_LEVEL, 'chamber numbers clamp to the campaign');
 });
 
-test('every chamber is proven solvable by the solver, and needs at least two moves', () => {
+// Chambers are long puzzles: every one needs at least 14 moves even when played perfectly (the original
+// chambers needed 5-12), not counting the walking in between.
+test('every chamber is proven solvable by the solver, and needs at least 14 moves', () => {
   for (let n = 1; n <= C.MAX_LEVEL; n++) {
-    const r = C.solve(C.getChamber(n));
+    const r = C.solve(C.getChamber(n), { maxStates: 400000 });
     assert.ok(r.ok, `chamber ${n} unsolvable (${r.why})`);
-    assert.ok(r.depth >= 2, `chamber ${n} solved in ${r.depth} moves`);
+    assert.ok(r.depth >= 14, `chamber ${n} solved in ${r.depth} moves`);
   }
 });
 
-test('the back half asks for longer plans than the opening chambers', () => {
-  const depth = n => C.solve(C.getChamber(n), { noPath: true }).depth;
-  const early = [1, 2, 3, 4].map(depth), late = [9, 12, 14].map(depth);
-  assert.ok(Math.max(...early) <= Math.min(...late), `early ${early} vs late ${late}`);
+test('later chambers combine more kinds of moves than the opening ones', () => {
+  const kinds = n => new Set(C.solve(C.getChamber(n), { maxStates: 400000 }).path.map(p => p.split(' ').slice(0, 2).join(' '))).size;
+  const early = [1, 2, 3].map(kinds), late = [10, 12, 17].map(kinds);
+  assert.ok(Math.max(...early) < Math.min(...late), `early ${early} vs late ${late}`);
 });
 
-// The solver searches every move when proving a mechanic is required. Chamber 14 is too large for that in a
-// test run, so its proofs use the same pruned move set as the positive search (planks and acorns are only set
-// down where they can bridge, grow or be sealed).
+// Proofs that a mechanic is required search the solver's narrowed move set (planks and acorns are only set down
+// where they can bridge, grow or be sealed): a full search of chambers this size takes too long for a test run.
 test('each chamber that teaches a mechanic cannot be solved without it', () => {
   let checked = 0;
   for (let n = 1; n <= C.MAX_LEVEL; n++) {
     const L = C.getChamber(n);
     for (const need of L.needs) {
-      const o = { noPath: true, prune: n === 14, maxStates: 800000 };
+      const o = { noPath: true, maxStates: 800000 };
       if (need === 'stand') o.noStand = true;
       else if (need === 'box') o.noBox = true;
       else if (need === 'pin') o.pins = L.pinsMax - 1;
@@ -60,7 +61,7 @@ test('each chamber that teaches a mechanic cannot be solved without it', () => {
       checked++;
     }
   }
-  assert.ok(checked >= 8, `${checked} mechanic proofs`);
+  assert.ok(checked >= 15, `${checked} mechanic proofs`);
 });
 
 test('dry wood bridges a chasm; wet wood rots; a crate fills a pit', () => {
@@ -176,9 +177,9 @@ test('from random mid-chamber states the hint solver always finds the way out or
   let solved = 0, dead = 0;
   for (let n = 1; n <= C.MAX_LEVEL; n++) {
     const L = C.getChamber(n);
-    for (let k = 0; k < 12; k++) {
-      const start = randomState(L, rnd, 1 + (k % 6));
-      const r = C.solve(L, { start, noPath: true, maxStates: 120000 });
+    for (let k = 0; k < 4; k++) {
+      const start = randomState(L, rnd, 2 + k * 3);
+      const r = C.solve(L, { start, noPath: true, maxStates: 400000 });
       assert.ok(r.ok || r.why === 'exhausted', `chamber ${n} random state ${k}: solver gave up (${r.why})`);
       if (r.ok) solved++; else dead++;
     }

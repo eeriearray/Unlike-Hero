@@ -66,7 +66,7 @@ stars for "no mistakes". Experimenting is never punished.
 
 - **Door status:** each era has an objective chip. It names the first thing on that player's shortest route to the
   exit and which era can fix it, e.g. "Chasm · 1924 CAN FIX" or "Rusted bars · YOU CAN FIX". A ring and beam mark the
-  blocker in the world. When the Anchor's own way is clear, its chip shows what 2026 needs ("2026 · Chasm → bridge it").
+  blocker in the world. When the Anchor's own way is clear, its chip shows what 2026 needs ("2026 · Chasm"), never how to fix it.
 - **Causal thread:** when the Anchor holds or stands by an object whose twin matters, a thread runs from it across
   the split divider to the twin in 2026. In solo view it runs to an edge arrow instead.
 - **Before/after beat:** on every 2026 change there is a 70 ms hit-stop and the 2026 camera frames the tile. The old
@@ -82,7 +82,14 @@ anticipation and a thud with a small shake. Shoves wind up, then the crate slide
 The near walls are cut away low and interior walls stand at half height, so nothing hides a player. The camera widens to keep the player and their current blocker in
 frame. On a solve, both exit gates flare, the divider dissolves, and a "Chamber NN sealed" stamp plays across both eras.
 
-## Chambers (19, hand-built; each teaches, then twists)
+## Harder campaign (after playtesting)
+
+The 19 chambers below were too easy (5-12 moves each). The current campaign joins two of them per chamber in
+teaching order and tunes each with the solver (moving objects, receivers and leaks; extra tiles survive only if
+they make the puzzle harder), for 14-34 puzzle moves per chamber. README.md lists the current chambers. The
+originals below are still the building blocks.
+
+## Original chambers (19, hand-built; each teaches, then twists)
 
 | # | Idea taught | Twist |
 | --- | --- | --- |

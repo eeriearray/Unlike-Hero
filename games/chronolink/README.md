@@ -64,8 +64,8 @@ the current 2026 wall records, including plaster that opens or closes when water
 - **Hints:** press `H` (or **Hint** in the menu). The solver plans from where both chrononauts are right now, in a
   Web Worker. A manual hint immediately shows the next instruction and whose move it is, even when that era
   is off-screen; its marker appears in the relevant era. If the worker fails, the game falls back to local search.
-  From a dead end it says to rewind. After 75 seconds
-  without a change a "Stuck? Press H" nudge appears, and after 150 seconds the first hint shows by itself.
+  From a dead end it says to rewind. After 8 minutes
+  without a change a "Stuck? Press H" nudge appears; hints never show by themselves.
 
 ## Clarity
 
@@ -80,27 +80,37 @@ the current 2026 wall records, including plaster that opens or closes when water
 
 ## Chambers
 
-| # | Chamber | Idea |
-| --- | --- | --- |
-| 1 | Still Standing | a plank across the cracks is a bridge; lift it and it vanishes |
-| 2 | Damp | wet rots wood; rot the crate blocking the Echo's corridor on purpose |
-| 3 | Ironwood | an acorn in a sunlit planter; one tree bridges, the other blocks the door |
-| 4 | Sluice | one wheel, two channels, wait between them |
-| 5 | Rust | the water that rusts the bars also rots the plank: cross first |
-| 6 | Erosion | water opens a hole in plaster and rots the bridge beside it |
-| 7 | Hold Still | stand on the bridge while the water opens the wall |
-| 8 | Time Capsule | seal the plank in the Stash Box; the Echo lays it over a wet chasm |
-| 9 | Pinned | pin the bridge so the Anchor can reuse the plank |
-| 10 | Leapfrog | stand on the bridge while the plank moves ahead |
-| 11 | Root and Rot | the water that opens the way drowns the tree |
-| 12 | Two Pins | there and back with one plank and two pins |
-| 13 | Long Way Round | while the Echo holds the bridge, the plank crosses a 1924 trench |
-| 14 | The Divergence | tree, flood, erosion, holding and the Stash Box in order |
-| 15 | Pit Stop | two crates, two gaps; crates cannot cross the stone channel between them |
-| 16 | Compost | a three-way wheel soaks one old crate at a time; wait between them |
-| 17 | Orchard | two acorns, four sunlit planters; only two lean the right way |
-| 18 | Rust Belt | kick each door while it is rusty: what the Echo breaks stays broken |
-| 19 | Overgrown | no planks: grow the tree, soak the crate, kick the bars, then dry the channel |
+Each chamber is a long puzzle: two of the original teaching rooms joined into one building, then tuned so the
+shortest possible solution is long. "Moves" counts the puzzle moves a perfect pair makes (picking up, setting
+down, shoving, turning, standing, pinning, kicking, opening, laying), not walking, relay readings or repeated
+wheel turns. The original chambers needed about 3-9.
+
+| # | Chamber | Built from | Moves |
+| --- | --- | --- | --- |
+| 1 | Damp Foundations | Still Standing + Damp | 20 |
+| 2 | Seed and Stone | Ironwood + Pit Stop | 24 |
+| 3 | Floodgates | Sluice + Compost | 15 |
+| 4 | Iron and Water | Rust + Rust Belt | 15 |
+| 5 | Worn Through | Erosion + Hold Still | 28 |
+| 6 | Sealed Away | Time Capsule + Damp | 16 |
+| 7 | Holding Pattern | Pinned + Still Standing | 34 |
+| 8 | Trench and Timber | Long Way Round + Orchard | 16 |
+| 9 | Rust and Rot | Erosion + Rust Belt | 27 |
+| 10 | Capsule Garden | Time Capsule + Overgrown | 14 |
+| 11 | Long Erosion | Long Way Round + Erosion | 18 |
+| 12 | Overgrown Vault | Overgrown + Time Capsule | 20 |
+| 13 | Leaning Ground | Ironwood + Hold Still | 16 |
+| 14 | Root Rot | Root and Rot + Rust | 15 |
+| 15 | The Long Hold | Hold Still + Long Way Round | 23 |
+| 16 | Compost Heap | Compost + Overgrown | 18 |
+| 17 | Pins and Needles | Two Pins + Rust Belt | 19 |
+| 18 | Pit and Pin | Pit Stop + Pinned | 29 |
+| 19 | The Last Divergence | Hold Still + The Divergence | 16 |
+
+The goal chip names what blocks the way but not how to fix it. Hints only come when asked for (`H`), and the
+"Stuck?" nudge waits 8 minutes. Rules that keep the solver and the game in step: a locked signal barrier seals
+whatever stands on its tiles, the Anchor sets things down before shoving a crate, a faced tile wins over side
+tiles when setting something down, and standing on a tile that can change pins that tile.
 
 ## Code
 

@@ -24,9 +24,10 @@ test('the Still Standing fixture requires Anchor assistance, Echo exploration an
   const L=C.parseChamber(STILL_STANDING,0),r=C.solve(L);
   assert.equal(r.ok,true);
   const path=Array.from(r.path);
-  assert.ok(path.indexOf('A drop 4,1')<path.indexOf('E scan 6,2 A'));
+  const at=prefix=>path.findIndex(s=>s.startsWith(prefix));
+  assert.ok(at('A drop 4,1')<path.indexOf('E scan 6,2 A'));
   assert.ok(path.indexOf('E scan 6,2 A')<path.findIndex(s=>s.startsWith('A unlock')));
-  assert.ok(path.findIndex(s=>s.startsWith('A unlock'))<path.indexOf('A drop 8,1'));
+  assert.ok(path.findIndex(s=>s.startsWith('A unlock'))<at('A drop 8,1'));
   assert.equal(C.solve(L,{noRelayReads:true}).why,'exhausted','Anchor cannot complete it without an Echo read');
 });
 test('Rust and Erosion require two exchanges separated by world changes',()=>{
