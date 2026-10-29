@@ -7,14 +7,14 @@ let d = src.def || src;
 const metric = def => {
   const r = fastSolve(compile(def), 400000);
   if (!r.ok) return null;
-  let lines = 0, last = '', echo = 0;
+  let lines = 0, last = '', echo = 0, eLines = 0;
   for (const p of r.path) {
-    if (p.startsWith('A shove')) { const [, , c, dd] = p.split(' '); const prev = last.split('|'); if (!(prev[0] === dd && +prev[1] === +c - +dd)) lines++; last = dd + '|' + c; }
+    if (p.startsWith('A shove') || p.startsWith('E topple')) { const [, , c, dd] = p.split(' '); const tag = p[0] + dd; const prev = last.split('|'); if (!(prev[0] === tag && +prev[1] === +c - +dd)) { lines++; if (p[0] === 'E') eLines++; } last = tag + '|' + c; }
     else { last = ''; if (/^E (stand|pin|unpin)/.test(p) || /^A (pick|drop)/.test(p)) { echo++; } }
   }
-  return { depth: r.depth, lines, echo, explored: r.explored, path: r.path };
+  return { depth: r.depth, lines, eLines, echo, explored: r.explored, path: r.path };
 };
-const better = (a, b) => a && a.depth >= b.depth && a.lines >= b.lines;
+const better = (a, b) => a && a.depth >= b.depth && a.lines >= b.lines && a.eLines >= b.eLines;
 let m = metric(d);
 console.log('start', m.depth, m.lines, m.echo, m.explored);
 const clone = x => JSON.parse(JSON.stringify(x));

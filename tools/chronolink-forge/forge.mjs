@@ -1,4 +1,5 @@
 // Evolves two-era crate rooms (the Undercroft style) by simulated annealing, scored with the fast solver.
+// Rooms where the Echo topples crates in fewer than two places are rejected.
 // usage: node forge.mjs <x|seed.json> <rngSeed> <minutes> <out.json> [W H]
 //   env PLANKS=n allows up to n planks; MAXEXP caps the fast search size (keep the game's hint budget in mind).
 import { compile, fastSolve } from './fast-solve.mjs';
@@ -68,22 +69,26 @@ function evaluate(d, budget) {
   // the Echo must not be able to leave before anything happens
   const r = fastSolve(P, budget);
   if (!r.ok || r.depth < 3 || r.explored > MAXEXP) return null;
-  // box lines: consecutive shoves of one crate in one direction count once
-  let lines = 0, last = '', stands = 0, pins = 0, unpins = 0, crates = new Set(), lastCrate = -1, switches = 0;
+  // box lines: consecutive shoves of one crate in one direction count once (either era)
+  let lines = 0, last = '', stands = 0, pins = 0, unpins = 0, lastCrate = -1, switches = 0, eShoves = 0, aLines = 0, eLines = 0, handoffs = 0, lastWho = '';
   for (const p of r.path) {
-    if (p.startsWith('A shove')) {
+    const who = p[0];
+    if (p.startsWith('A shove') || p.startsWith('E topple')) {
       const [, , c, dd] = p.split(' ');
-      const sig = dd; const prev = last.split('|');
-      if (!(prev[0] === dd && +prev[1] === +c - +dd)) lines++;
-      last = dd + '|' + c;
-      const moved = +c + +dd;
+      const prev = last.split('|');
+      if (!(prev[0] === who + dd && +prev[1] === +c - +dd)) { lines++; if (who === 'A') aLines++; else eLines++; }
+      last = who + dd + '|' + c;
       if (lastCrate !== +c && lastCrate !== -1) switches++;
-      lastCrate = moved;
-    } else { last = ''; if (p.startsWith('E stand')) stands++; else if (p.startsWith('E pin')) pins++; else if (p.startsWith('E unpin')) unpins++; }
+      lastCrate = +c + +dd;
+      if (who === 'E') eShoves++;
+    } else if (p.startsWith('A pick') || p.startsWith('A drop')) { last = ''; lines++; aLines++; }
+    else { last = ''; if (p.startsWith('E stand')) stands++; else if (p.startsWith('E pin')) pins++; else if (p.startsWith('E unpin')) unpins++; }
+    if (who === 'A' || who === 'E') { if (lastWho && who !== lastWho && !/scan|unlock/.test(p)) handoffs++; if (!/scan|unlock/.test(p)) lastWho = who; }
   }
-  const echo = stands + pins + unpins;
-  const score = 2.0 * lines + 1.2 * echo + 0.6 * switches + 0.4 * r.depth + 1.2 * Math.log2(Math.max(1, r.explored / 300)) - 0.5 * d.objs.length - (echo < 2 ? 10 : 0) - (lines < 3 ? 10 : 0);
-  return { score, depth: r.depth, lines, echo, switches, explored: r.explored };
+  const echo = stands + pins + unpins + eShoves;
+  const score = 2.0 * lines + 1.0 * echo + 1.5 * Math.min(eLines, aLines) + 0.6 * handoffs + 0.4 * switches + 0.4 * r.depth + 1.2 * Math.log2(Math.max(1, r.explored / 300))
+    + 4 * eLines - 0.5 * d.objs.length - (eLines < 2 ? 40 : 0) - (aLines < 3 ? 25 : 0);
+  return { score, depth: r.depth, lines, aLines, eLines, handoffs, echo, explored: r.explored };
 }
 const CAP = 120000, endAt = Date.now() + (+minArg || 5) * 60000;
 let cur, curE;

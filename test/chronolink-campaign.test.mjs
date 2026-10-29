@@ -23,7 +23,8 @@ function relaxedGallery(L) {
 // Use a fully supplied gallery (all pins free) to get a conservative lower bound.
 // Courtyard timber cannot cross rubble; gallery water cannot affect the courtyard.
 // This avoids claiming that a greedy chapter boundary proves a global optimum.
-test('each new chamber requires at least 30 scored actions even with a fully supplied gallery',()=>{
+// Since the Echo can topple crates, A Building on Loan's courtyard is three actions shorter (28 in all).
+test('each gallery chamber requires at least 28 scored actions even with a fully supplied gallery',()=>{
   const seeds=[18,5,9,15,7,16],prefix=new Map();
   for(let n=20;n<=25;n++){
     const seed=seeds[n-20];
@@ -37,7 +38,7 @@ test('each new chamber requires at least 30 scored actions even with a fully sup
     const actions=r.path.filter(p=>!/^E (go|scan) /.test(p)&&!p.startsWith('A unlock ')&&!p.startsWith('A wheel '));
     assert.equal(r.depth,actions.length+wheels.size,`gallery ${n}: repeats must be free`);
     assert.ok(turns.length>wheels.size,`gallery ${n}: exercise a repeated setting`);
-    assert.ok(prefix.get(seed)+r.depth>=30,`chamber ${n}: ${prefix.get(seed)} + ${r.depth}`);
+    assert.ok(prefix.get(seed)+r.depth>=28,`chamber ${n}: ${prefix.get(seed)} + ${r.depth}`);
   }
 });
 
@@ -79,9 +80,10 @@ function replay(L,path){
         if(verb==='scan'){const r=L.relays.find(r=>r.label===arg);next=C.readRelay(L,s,r.id);assert.ok(next,label);s=next;}
       }else{
         assert.ok(from&&region('E',fut).seen[idx(from)],label);
-        const keep=stand&&(stand.i===i||Math.abs(stand.i%W-p.x)+Math.abs(Math.floor(stand.i/W)-p.y)===1);
+        const keep=stand&&(verb==='topple'?stand.i===idx(from):stand.i===i||Math.abs(stand.i%W-p.x)+Math.abs(Math.floor(stand.i/W)-p.y)===1);
         e=from;if(!keep)stand=null;
-        const view=C.deriveFuture(L,s,stand),r=verb==='pin'||verb==='unpin'?C.echoPin(L,s,view,i):C.echoAct(L,s,view,i);
+        const view=C.deriveFuture(L,s,stand),[dx,dy]=verb==='topple'?arg.split(',').map(Number):[0,0];
+        const r=verb==='pin'||verb==='unpin'?C.echoPin(L,s,view,i):verb==='topple'?(assert.equal(from.x+dx,p.x,label),assert.equal(from.y+dy,p.y,label),C.echoTopple(L,s,view,i,dx,dy)):C.echoAct(L,s,view,i);
         assert.ok(r,label);assert.equal(r.kind,verb,label);s=r.s;
       }
     }

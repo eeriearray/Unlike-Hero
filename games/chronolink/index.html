@@ -271,6 +271,7 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
           <h3>2026 <small>The Echo</small></h3>
           <dl>
             <div><dt>Move</dt><dd><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></dd></div>
+            <div><dt>Topple a crate into a chasm</dt><dd>walk into it</dd></div>
             <div><dt>Kick, open, lay</dt><dd><kbd>↵</kbd></dd></div>
             <div><dt>Pin a tile</dt><dd><kbd>F</kbd></dd></div>
           </dl>
@@ -310,7 +311,7 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
         </div>
         <div class="who e"><h3>2026 · The Echo</h3>
           <div class="krow"><span class="kl">Move</span><span class="kmap"><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></span></div>
-          <div class="krow"><span class="kl">Kick · open · lay</span><span class="kmap"><kbd>↵</kbd></span></div>
+          <div class="krow"><span class="kl">Topple · kick · open · lay</span><span class="kmap"><kbd>↵</kbd></span></div>
           <div class="krow"><span class="kl">Pin a tile</span><span class="kmap"><kbd>F</kbd></span></div>
           <div class="krow"><span class="kl">Ping your partner</span><span class="kmap"><kbd>⇧</kbd></span></div>
         </div>
@@ -626,136 +627,138 @@ const COURTYARDS = {
 };
 
 
-// Chambers 12-19, the Undercroft: two-era warehouse puzzles. Shoved crates are the only floor the Echo has, a
-// crate left on dry stone is a wall in 2026, and nothing can be pulled back, so most early moves are traps.
-// They were evolved by search over layouts and kept only when the solver's shortest plan was long (30-77 moves),
-// standing was required, and wandering away from the start often led to a dead end. Every crack, leak, trench
+// Chambers 12-19, the Undercroft: two-era warehouse puzzles. Crates are the only floor the Echo has: the Anchor
+// shoves them in 1924 and the Echo topples them into chasms in 2026, a crate left on dry stone is a wall, and
+// nothing can be pulled back, so most early moves are traps. They were evolved by search over layouts and kept
+// only when the solver's shortest plan was long (30-69 moves), both standing and toppling were required, and
+// wandering away from the start often led to a dead end. Every crack, leak, trench
 // and rubble tile left in a map makes the chamber easier (or unsolvable) if it is turned into plain floor or wall.
 CHAMBERS.push(
   {
     name: 'The Undercroft', card: 'The floor below gave way long ago. The crates remember where it stood.',
     map: [
       '###########',
-      '#..A..~#..#',
-      '#Et.##~~..#',
-      '#.~r.~~rrt#',
-      '#~~~..#X.~#',
+      '#E.r......#',
+      '#~#.#....X#',
+      '#~~~.#~##.#',
+      '#~~A~~~~.;#',
       '###########',
     ],
-    objs: [{ k: 'crate', x: 7, y: 2 }, { k: 'crate', x: 3, y: 2 }, { k: 'crate', x: 7, y: 3 }],
-    relays: [{ gate: { column: 4 }, receiver: { x: 2, y: 2 } }],
-    needs: ['stand'],
+    objs: [{ k: 'crate', x: 2, y: 3 }, { k: 'crate', x: 8, y: 2 }, { k: 'crate', x: 3, y: 3 }, { k: 'crate', x: 5, y: 1 }, { k: 'crate', x: 9, y: 3 }],
+    relays: [{ gate: { column: 4 }, receiver: { x: 2, y: 1 } }],
+    needs: ['stand', 'topple'],
     exitFacing: 'E',
   },
   {
-    name: 'Cold Storage', card: 'Two crates, two centuries, and not enough floor for both.',
+    name: 'Cold Storage', card: 'Some crates are needed in 1924. Some are needed at the bottom of a hole.',
     map: [
-      '##########',
-      '#~~~~~~..#',
-      '#~~#;.r.##',
-      '#~;..#...#',
-      '#~..;.X#.#',
-      '#E.#.A...#',
-      '##########',
+      '############',
+      '#..#.#t.r#.#',
+      '#...;~~;~~~#',
+      '#...E#~;~#~#',
+      '#....#~~.#~#',
+      '#..Ar..~.r~#',
+      '#..r~.#.#X~#',
+      '############',
     ],
-    objs: [{ k: 'crate', x: 7, y: 2 }, { k: 'crate', x: 7, y: 3 }],
-    relays: [{ gate: { column: 8 }, receiver: { x: 2, y: 5 } }],
-    needs: ['stand'],
+    objs: [{ k: 'crate', x: 5, y: 2 }, { k: 'crate', x: 4, y: 6 }, { k: 'crate', x: 5, y: 5 }, { k: 'crate', x: 10, y: 5 }],
+    relays: [{ gate: { column: 2 }, receiver: { x: 6, y: 1 } }],
+    needs: ['stand', 'topple'],
     exitFacing: 'E',
   },
   {
-    name: 'Settling Dust', card: 'What you push in 1924 is what stands in 2026.',
+    name: 'Settling Dust', card: 'What you push in 1924 is what falls in 2026.',
     map: [
       '##########',
-      '#..#A....#',
-      '#~X.;.#.##',
-      '#~;#.##..#',
-      '#~.#.~..##',
-      '#.~E~~~..#',
-      '#.#.#....#',
+      '#..~t.r..#',
+      '#.#~~;.~##',
+      '#..~r.#~##',
+      '#r;~~~;..#',
+      '#~~~A##;;#',
+      '#E~##X...#',
       '##########',
     ],
-    objs: [{ k: 'crate', x: 6, y: 6 }, { k: 'crate', x: 1, y: 5 }, { k: 'crate', x: 3, y: 2 }, { k: 'crate', x: 6, y: 1 }],
-    relays: [{ gate: { column: 7 }, receiver: { x: 8, y: 5 } }],
-    needs: ['stand'],
+    objs: [{ k: 'crate', x: 4, y: 2 }, { k: 'crate', x: 3, y: 2 }, { k: 'crate', x: 7, y: 4 }, { k: 'crate', x: 7, y: 1 }],
+    relays: [{ gate: { column: 6 }, receiver: { x: 5, y: 1 } }],
+    needs: ['stand', 'topple'],
+    exitFacing: 'E',
+  },
+  {
+    name: 'The Sunken Hall', card: 'Four crates, one way through, and a great many ways to fail.',
+    map: [
+      '###########',
+      '#....#~~;X#',
+      '#..~;#~~Er#',
+      '#.#~~~~;..#',
+      '#.#..;A#;.#',
+      '###########',
+    ],
+    objs: [{ k: 'crate', x: 3, y: 3 }, { k: 'crate', x: 6, y: 3 }, { k: 'crate', x: 5, y: 4 }, { k: 'crate', x: 8, y: 1 }],
+    relays: [{ gate: { column: 2 }, receiver: { x: 4, y: 1 } }],
+    needs: ['stand', 'topple'],
     exitFacing: 'E',
   },
   {
     name: 'The Packing Room', card: 'Every crate is somebody\'s floor and somebody else\'s wall.',
     map: [
       '#############',
-      '#AE.#.#..t~.#',
-      '#.#.#..r.~;X#',
-      '#.~;..##;~;;#',
-      '##~~~###~~..#',
-      '#.~~~.~~~;.##',
+      '#..E#.#.t.;.#',
+      '##..tr~~Ar,.#',
+      '#.~.;.~;~r;;#',
+      '#....#.###X~#',
       '#############',
     ],
-    objs: [{ k: 'crate', x: 8, y: 2 }, { k: 'crate', x: 10, y: 2 }, { k: 'crate', x: 2, y: 3 }, { k: 'crate', x: 10, y: 5 }],
-    relays: [{ gate: { column: 5 }, receiver: { x: 1, y: 3 } }],
-    needs: ['stand'],
+    objs: [{ k: 'crate', x: 8, y: 3 }, { k: 'crate', x: 7, y: 2 }, { k: 'crate', x: 10, y: 1 }, { k: 'crate', x: 3, y: 4 }, { k: 'crate', x: 6, y: 2 }],
+    relays: [{ gate: { column: 1 }, receiver: { x: 4, y: 2 } }],
+    needs: ['stand', 'topple'],
     exitFacing: 'E',
   },
   {
-    name: 'The Sunken Hall', card: 'Five crates, one way through, and a great many ways to fail.',
-    map: [
-      '###########',
-      '#.~r.;.~~.#',
-      '#~~;A;#X~.#',
-      '##~~~~##..#',
-      '#E~.;~~~~##',
-      '###########',
-    ],
-    objs: [{ k: 'crate', x: 3, y: 2 }, { k: 'crate', x: 2, y: 2 }, { k: 'crate', x: 5, y: 3 }, { k: 'crate', x: 4, y: 1 }, { k: 'crate', x: 6, y: 1 }],
-    relays: [{ gate: { column: 9 }, receiver: { x: 1, y: 1 } }],
-    needs: ['stand'],
-    exitFacing: 'E',
-  },
-  {
-    name: 'Long Shadows', card: 'Most moves down here cannot be taken back.',
+    name: 'Long Shadows', card: 'Three crates. Most moves down here cannot be taken back.',
     map: [
       '#############',
-      '#~.A.##.....#',
-      '#~#.t;.#....#',
-      '#..#~~~#..#.#',
-      '#..E#;~#....#',
-      '#...r..~X...#',
-      '##..#...#...#',
+      '##A.#.##.#..#',
+      '#...r~..~;.X#',
+      '##;.#~~#;.;.#',
+      '#E~~~~.#~~.##',
+      '#..~~.~~~r###',
       '#############',
     ],
-    objs: [{ k: 'crate', x: 5, y: 5 }, { k: 'crate', x: 7, y: 5 }, { k: 'crate', x: 8, y: 3 }, { k: 'crate', x: 9, y: 4 }],
-    relays: [{ gate: { column: 11 }, receiver: { x: 8, y: 4 } }],
-    needs: ['stand'],
+    objs: [{ k: 'crate', x: 10, y: 2 }, { k: 'crate', x: 3, y: 2 }, { k: 'crate', x: 8, y: 2 }],
+    relays: [{ gate: { column: 6 }, receiver: { x: 5, y: 1 } }],
+    needs: ['stand', 'topple'],
     exitFacing: 'E',
   },
   {
     name: 'Quiet Weight', card: 'The crate that saves you now is the wall that traps you later.',
     map: [
       '#############',
-      '#A~~.;~.~~~~#',
-      '#~~rr.~;.~~.#',
-      '#t~~#~#.#.#X#',
-      '#E~...#..#..#',
+      '#A.#...#.~..#',
+      '#.~~;~.~~#..#',
+      '#.r~##~;~.~.#',
+      '##E~~.;r.#X.#',
       '#############',
     ],
-    objs: [{ k: 'crate', x: 9, y: 1 }, { k: 'crate', x: 5, y: 2 }, { k: 'crate', x: 10, y: 2 }, { k: 'crate', x: 4, y: 1 }, { k: 'crate', x: 4, y: 2 }],
-    relays: [{ gate: { column: 7 }, receiver: { x: 3, y: 1 } }],
-    needs: ['stand'],
-    exitFacing: 'N',
+    objs: [{ k: 'crate', x: 3, y: 2 }, { k: 'crate', x: 9, y: 3 }, { k: 'crate', x: 5, y: 2 }, { k: 'crate', x: 10, y: 2 }, { k: 'crate', x: 9, y: 1 }],
+    relays: [{ gate: { column: 7 }, receiver: { x: 1, y: 2 } }],
+    needs: ['stand', 'topple'],
+    exitFacing: 'E',
   },
   {
     name: 'The Deep Archive', card: 'The longest night in the building. Take your time.',
     map: [
-      '#############',
-      '#E.~~~r..#..#',
-      '#.~~#~~;~~~~#',
-      '#....;~~~r~~#',
-      '#....#.#A#;X#',
-      '#############',
+      '##########',
+      '#..~~.~X.#',
+      '#...;r,#.#',
+      '#.#;.t~.##',
+      '###~##~r##',
+      '#E~~~~~.##',
+      '###.rA#..#',
+      '##########',
     ],
-    objs: [{ k: 'crate', x: 8, y: 3 }, { k: 'crate', x: 9, y: 3 }, { k: 'crate', x: 9, y: 2 }, { k: 'crate', x: 1, y: 3 }],
-    relays: [{ gate: { column: 2 }, receiver: { x: 3, y: 3 } }],
-    needs: ['stand'],
+    objs: [{ k: 'crate', x: 3, y: 4 }, { k: 'crate', x: 6, y: 2 }, { k: 'crate', x: 4, y: 2 }],
+    relays: [{ gate: { column: 8 }, receiver: { x: 7, y: 5 } }],
+    needs: ['stand', 'topple'],
     exitFacing: 'E',
   },
 );
@@ -955,6 +958,7 @@ function canPlace(L, s, k, x, y) {
   if (x < 0 || y < 0 || x >= L.W || y >= L.H) return false;
   const b = L.base[y * L.W + x];
   if (relayAt(L, x, y)) return false;
+  if (s.echo.witness[y * L.W + x]?.shoved) return false;
   if (boxAt(L, x, y)) return k !== 'crate' && !s.objs.some(q => q.box === boxAt(L, x, y).id);
   if (b === 'S' || b === 's') return k === 'acorn' && !objAt(s, x, y);
   if (b === '#' || b === 'p' || b === 'W' || b === 'c' || wheelAt(L, x, y) >= 0 || objAt(s, x, y) || L.bars.includes(y * L.W + x)) return false;
@@ -1110,6 +1114,8 @@ function crushes(L, before, after, echoIdx, beforeRaw, afterRaw) {
 // A locked signal barrier seals its tiles: nothing on them can be picked up, shoved or turned until it opens.
 function sealedByRelay(L, s, x, y) { const r = relayAt(L, x, y); return !!(r && !s.locks?.[r.id]); }
 function takenObject(s, id) { return Object.values(s.echo.witness).some(r => r.empty && r.src === id); }
+// A crate the Echo has toppled in 2026 is where the Echo saw it fall: 1924 can no longer move it.
+function movedByEcho(s, id) { return Object.values(s.echo.witness).some(r => r.shoved && r.src === id); }
 function actPick(L, s, x, y) {
   if (s.held || sealedByRelay(L, s, x, y)) return null;
   const bx = boxAt(L, x, y);
@@ -1133,6 +1139,7 @@ function actShove(L, s, cx, cy, dx, dy) {
   // hands full: the Anchor sets things down before shoving (as E does in the game)
   const o = objAt(s, cx, cy); if (s.held || !o || o.k !== 'crate' || sealedByRelay(L, s, cx, cy)) return null;
   if (!canPlace(L, s, 'crate', cx + dx, cy + dy)) return null;
+  if (movedByEcho(s, o.id)) return { paradox: cy * L.W + cx, why: 'moved' };
   const n = cloneState(s), no = n.objs.find(q => q.id === o.id); no.x = cx + dx; no.y = cy + dy; return n;
 }
 function actWheel(L, s, wi) { const w = L.wheels[wi]; if (sealedByRelay(L, s, w.x, w.y)) return null; const n = cloneState(s); n.wheel[wi] = (n.wheel[wi] + 1) % L.wheels[wi].positions.length; return n; }
@@ -1149,6 +1156,19 @@ function echoAct(L, s, fut, i) {
   }
   if (ec.carry === 'plank' && r.t === 'chasm' && !r.o) { const n = cloneState(s); n.echo.carry = null; n.echo.witness[i] = { t: 'chasm', o: 'echoplank', wet: r.wet, src: null }; return { s: n, kind: 'lay' }; }
   return null;
+}
+// The Echo topples an old crate into the open chasm beside it, where it lands as a pit to walk over. Both
+// tiles are then the Echo's own record, like a kicked grille, and the crate's 1924 counterpart can no longer
+// be moved without a paradox. A crate on open floor is too heavy to slide; only the drop moves it.
+function echoTopple(L, s, fut, i, dx, dy) {
+  const r = fut[i], x = i % L.W + dx, y = ((i / L.W) | 0) + dy;
+  if (!r || r.o !== 'oldcrate' || s.echo.hold[i] || x < 1 || y < 1 || x >= L.W - 1 || y >= L.H - 1) return null;
+  const j = y * L.W + x, t = fut[j];
+  if (s.echo.hold[j] || t.o || t.t !== 'chasm') return null;
+  const n = cloneState(s);
+  n.echo.witness[i] = { t: r.t, o: null, wet: r.wet, src: null, shoved: true };
+  n.echo.witness[j] = { t: 'chasm', o: 'pit', wet: t.wet, src: r.src, shoved: true };
+  return { s: n, kind: 'topple' };
 }
 function echoPin(L, s, fut, i) {
   const n = cloneState(s);
@@ -1172,7 +1192,7 @@ function regionOf(L, start, walk) {
 }
 // Box cargo identity affects extraction and paradoxes. Other source labels and
 // cosmetic rot marks do not affect legal actions on a frozen record.
-function recKey(r) { return r ? r.t + ':' + (r.o || '') + ':' + (r.item || '') + ':' + (r.box || '') + (r.o === 'box' ? ':' + (r.src || '') : '') + (r.empty ? '!' : '') : '-'; }
+function recKey(r) { return r ? r.t + ':' + (r.o || '') + ':' + (r.item || '') + ':' + (r.box || '') + (r.o === 'box' || r.shoved ? ':' + (r.src || '') : '') + (r.empty ? '!' : '') : '-'; }
 function solve(L, opts) {
   opts = opts || {};
   if (opts.noCapillary || opts.noSediment || opts.noSupports) L = Object.assign({}, L, {
@@ -1384,6 +1404,18 @@ function solve(L, opts) {
           if (p) push(p.s, st.a, e2, stand2, 'E ' + p.kind + ' ' + x + ',' + y + ' @' + e2.x + ',' + e2.y);
         }
       }
+      // Echo: topple an old crate into a chasm from the tile behind it (staying put if it already stands there)
+      if (!opts.noTopple) for (let i = 0; i < N; i++) {
+        if (freeFut[i].o !== 'oldcrate' && d.fut[i].o !== 'oldcrate') continue;
+        const x = i % W, y = (i / W) | 0;
+        if (!inChapter(x)) continue;
+        for (const [dx, dy] of DIRS4) {
+          const b = i - dy * W - dx, keep = st.stand && st.stand.i === b;
+          if (!keep && !(d.re.seen[b] && walkRec(freeFut[b]))) continue;
+          const fut = keep ? d.fut : freeFut, a = echoTopple(L, ss, fut, i, dx, dy);
+          if (a) push(a.s, st.a, keep ? st.e : { x: b % W, y: (b / W) | 0 }, keep ? st.stand : null, 'E topple ' + x + ',' + y + ' ' + dx + ',' + dy + ' @' + (b % W) + ',' + ((b / W) | 0));
+        }
+      }
       if (explored + next.length > maxStates) return { ok: false, why: 'limit', explored };
     }
     if (!next.length) return { ok: false, why: 'exhausted', explored };
@@ -1398,7 +1430,7 @@ function courtyard(seed) { return parseChamber(courtyardDef(seed), seed); }
 
 root.ChronoCore = {
   CHAMBERS, MAX_LEVEL: CHAMBERS.length, DIRV, SOLID_O, parseChamber, getChamber, courtyard, initState, cloneState, flowing, walkPast, canPlace,
-  deriveRaw, deriveFuture, capillaryWet, ageArchitecture, walkRec, walkFuture, volatile, objAt, boxAt, wheelAt, actPick, actDrop, actShove, actWheel, echoAct, echoPin,
+  deriveRaw, deriveFuture, capillaryWet, ageArchitecture, walkRec, walkFuture, volatile, objAt, boxAt, wheelAt, actPick, actDrop, actShove, actWheel, echoAct, echoPin, echoTopple, movedByEcho,
   crushes, regionOf, solve, isCrack, relayAt, readRelay, unlockRelay,
 };
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -2885,7 +2917,7 @@ function animateCharacter(ch, p, dt, t) {
   if (a && at < 0.5) {
     const up = at < 0.12 ? ease(at / 0.12) : 1 - ease((at - 0.12) / 0.38);
     if (a.kind === 'pick' || a.kind === 'drop' || a.kind === 'open' || a.kind === 'lay') { crouch = up * 0.16; lean = up * 0.5; armL = armR = -1.2 * up + (carrying ? -1.7 * (1 - up) : 0); }
-    else if (a.kind === 'shove') { lean = 0.35 * up + 0.15; armL = armR = -1.5; legL = -0.5 * up; legR = 0.4 * up; }
+    else if (a.kind === 'shove' || a.kind === 'topple') { lean = 0.35 * up + 0.15; armL = armR = -1.5; legL = -0.5 * up; legR = 0.4 * up; }
     else if (a.kind === 'wheel') { armL = -1.8 - Math.sin(at * 20) * 0.4; armR = -1.8 + Math.sin(at * 20) * 0.4; lean = 0.15; }
     else if (a.kind === 'kick') { legR = -1.6 * up; lean = -0.2 * up; }
     else if (a.kind === 'pin') { armR = -2.9 * up; crouch = 0.06 * up; }
@@ -3555,7 +3587,7 @@ function paradoxFx(i, why, local) {
   const x = i % G.L.W, y = (i / G.L.W) | 0;
   G.shocks.push({ era: 'future', x, y, t0: G.t, bad: true, big: true }); G.shocks.push({ era: 'past', x, y, t0: G.t, bad: true, big: true });
   // say what was observed: the Echo standing there, or the Echo already holding what 1924 wants back
-  G.stamps.push({ era: 'future', x, y, text: 'PARADOX', t0: G.t }); G.stamps.push({ era: 'past', x, y, text: why === 'unsealed' ? 'CARGO IS NO LONGER SEALED' : why === 'taken' ? 'THE ECHO HAS IT' : 'THE ECHO IS HERE', t0: G.t });
+  G.stamps.push({ era: 'future', x, y, text: 'PARADOX', t0: G.t }); G.stamps.push({ era: 'past', x, y, text: why === 'unsealed' ? 'CARGO IS NO LONGER SEALED' : why === 'taken' ? 'THE ECHO HAS IT' : why === 'moved' ? 'THE ECHO TOPPLED IT' : 'THE ECHO IS HERE', t0: G.t });
   for (let k = 0; k < 30; k++) { const a = Math.random() * 7, sp = rnd(1, 3); FX.spawn('past', 'chronal', x, 0.6, y, Math.cos(a) * sp, rnd(0.5, 2), Math.sin(a) * sp, 1, 0xff4060, { drag: 2 }); FX.spawn('future', 'chronal', x, 0.6, y, Math.cos(a) * sp, rnd(0.5, 2), Math.sin(a) * sp, 1, 0xff4060, { drag: 2 }); }
   Sound.paradox();
   if (local && Net.peer) Net.send({ t: 'fx', kind: 'paradox', i, why });
@@ -3652,9 +3684,16 @@ function echoTarget() {
     if (!q.facing) continue;
     if (r.o === 'bars') return { x: q.x, y: q.y, label: 'Solid iron', h: 1.5, deny: true };
     if (r.o === 'box') return { x: q.x, y: q.y, label: r.empty ? 'Empty' : 'Nothing inside', h: 1.1, deny: true };
-    if (r.o === 'oldcrate') return { x: q.x, y: q.y, label: 'Too heavy', h: 1, deny: true };
+    if (r.o === 'oldcrate') return echoToppleTarget();
   }
   return null;
+}
+// The old crate the Echo faces, and whether there is a chasm beyond it to topple it into.
+function echoToppleTarget() {
+  const p = G.E, x = p.x + p.dir.dx, y = p.y + p.dir.dy;
+  if (x < 0 || y < 0 || x >= G.L.W || y >= G.L.H || G.fut[tileIdx(x, y)].o !== 'oldcrate') return null;
+  const topple = C.echoTopple(G.L, G.s, G.fut, tileIdx(x, y), p.dir.dx, p.dir.dy);
+  return topple ? { x, y, label: 'Topple into chasm', h: 1, run: () => topple.s, kind: 'topple' } : { x, y, label: 'Too heavy to slide', h: 1, deny: true };
 }
 function pinTarget() {
   const L = G.L, s = G.s, p = G.E; if (!L.pinsMax) return null;
@@ -3689,16 +3728,17 @@ function interact(who, selectedTarget) {
     G.shocks.push({ era: who === 'A' ? 'past' : 'future', x: tg.x, y: tg.y, t0: G.t });
     if (tg.kind === 'drop') { Sound.drop(); G.shake.past = Math.max(G.shake.past, 2.5); for (let i = 0; i < 14; i++) FX.spawn('past', 'dust', tg.x + rnd(-0.4, 0.4), 0.05, tg.y + rnd(-0.4, 0.4), rnd(-0.8, 0.8), rnd(0.2, 0.7), rnd(-0.8, 0.8), 0.9, 0xd8c8a0, { drag: 2 }); }
     if (tg.kind === 'wheel') { Sound.playLeverClunk(); later(0.2, () => Sound.flood()); G.shake.past = Math.max(G.shake.past, 2); }
-    if (tg.kind === 'shove') shoveFx(tg);
+    if (tg.kind === 'shove') shoveFx(tg, 'past');
+    if (tg.kind === 'topple') { shoveFx(tg, 'future'); Sound.bridge(); G.shake.future = Math.max(G.shake.future, 5); }
     if (tg.kind === 'kick') { Sound.shatter(); G.shake.future = 6; G.hitstop = 0.07; }
     if (tg.kind === 'open') { Sound.playDoorSlide(); Sound.chime(); }
     if (tg.kind === 'lay') { Sound.drop(); Sound.bridge(); }
   } });
   return true;
 }
-function shoveFx(tg) {
-  Sound.scrape(); G.shake.past = Math.max(G.shake.past, 3); G.hitstop = Math.max(G.hitstop, 0.05);
-  for (let i = 0; i < 16; i++) FX.spawn('past', 'dust', tg.x + rnd(-0.4, 0.4), 0.05, tg.y + rnd(-0.4, 0.4), rnd(-0.6, 0.6), rnd(0.2, 0.6), rnd(-0.6, 0.6), 0.8, 0xd8c8a0, { drag: 2 });
+function shoveFx(tg, era = 'past') {
+  Sound.scrape(); G.shake[era] = Math.max(G.shake[era], 3); G.hitstop = Math.max(G.hitstop, 0.05);
+  for (let i = 0; i < 16; i++) FX.spawn(era, 'dust', tg.x + rnd(-0.4, 0.4), 0.05, tg.y + rnd(-0.4, 0.4), rnd(-0.6, 0.6), rnd(0.2, 0.6), rnd(-0.6, 0.6), 0.8, 0xd8c8a0, { drag: 2 });
 }
 function pin() {
   if (G.won || !G.L.pinsMax) return;
@@ -3750,6 +3790,7 @@ function describeStep(step) {
     case 'drop': text = C.boxAt(L, x, y) ? 'seal the ' + item + ' in the Stash Box' : held?.k === 'shore' && L.supports.some(p => p.x === x && p.y === y) ? 'brace the slab with the iron shore here' : base === 'S' || base === 's' ? 'plant the acorn in this planter' : C.isCrack(base) || base === 't' || base === '=' ? 'lay the ' + item + ' across here' : 'set the ' + item + ' down here'; break;
     case 'wheel': { const wh = L.wheels[+m[2]]; return { era, x: wh.x, y: wh.y, who: name, text: 'turn this wheel' }; }
     case 'shove': { const [dx, dy] = m[3].split(',').map(Number); text = 'shove this crate ' + (dx > 0 ? 'east' : dx < 0 ? 'west' : dy > 0 ? 'south' : 'north'); break; }
+    case 'topple': { const [dx, dy] = m[3].split(',').map(Number); text = 'topple this old crate ' + (dx > 0 ? 'east' : dx < 0 ? 'west' : dy > 0 ? 'south' : 'north') + ' into the chasm'; break; }
     case 'stand': text = 'stand here, and stay while 1924 changes'; break;
     case 'go': text = 'walk over here'; break;
     case 'pin': text = 'pin this tile'; break;
@@ -3830,7 +3871,7 @@ function blockerE(i) {
   if (r.o === 'rustfall') return { kind: 'bars', text: 'Collapsed grille', fix: 'future' };
   if (r.o === 'siltbank') return { kind: 'crate', text: 'Sediment bank', fix: 'past' };
   if (r.o === 'bars') return { kind: 'bars', text: 'Iron bars', fix: 'past' };
-  if (r.o === 'oldcrate') return { kind: 'crate', text: 'Old crate', fix: 'past' };
+  if (r.o === 'oldcrate') return { kind: 'crate', text: 'Old crate', fix: null };
   if (r.o === 'trunk') return { kind: 'tree', text: 'Fallen tree', fix: 'past' };
   if (r.t === 'chasm') return { kind: 'chasm', text: 'Chasm', fix: G.s.echo.carry === 'plank' ? 'future' : 'past' };
   if (r.t === 'deep' || r.t === 'flood') return { kind: 'water', text: r.t === 'deep' ? 'Flooded channel' : 'Flooded basin', fix: 'past' };
@@ -4064,7 +4105,10 @@ function updatePlayers(dt) {
     if (who === 'A' && (ix || iy) && !frozen) {
       const fx = p.x + p.dir.dx, fy = p.y + p.dir.dy, o = C.objAt(G.s, fx, fy), into = Math.abs(ix) > Math.abs(iy) ? Math.sign(ix) === p.dir.dx && p.dir.dx : Math.sign(iy) === p.dir.dy && p.dir.dy;
       if (o && o.k === 'crate' && into) { p.bump += dt; if (p.bump > 0.16) { p.bump = 0; interact('A'); } } else p.bump = Math.max(0, p.bump - dt * 3);
-    } else if (who === 'A') p.bump = Math.max(0, p.bump - dt * 3);
+    } else if (who === 'E' && (ix || iy) && !frozen) {
+      const into = Math.abs(ix) > Math.abs(iy) ? Math.sign(ix) === p.dir.dx && p.dir.dx : Math.sign(iy) === p.dir.dy && p.dir.dy, tg = into ? echoToppleTarget() : null;
+      if (tg && !tg.deny) { p.bump += dt; if (p.bump > 0.16) { p.bump = 0; interact('E', tg); } } else p.bump = Math.max(0, p.bump - dt * 3);
+    } else p.bump = Math.max(0, p.bump - dt * 3);
     const cx = Math.round(p.rx), cy = Math.round(p.ry);
     if ((cx !== p.x || cy !== p.y) && walkable(who, cx, cy)) {
       p.x = cx; p.y = cy; sendPos(who);

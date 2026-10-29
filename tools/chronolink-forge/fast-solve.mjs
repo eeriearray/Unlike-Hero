@@ -1,5 +1,5 @@
-// Fast 0/1 BFS for a subset of ChronoLink: tiles # . , ~ ; t r, crates, planks, Echo standing, pins and column relays
-// (no water, trees, bars or Stash Box). compare.mjs checks it against the game's own solve().
+// Fast 0/1 BFS for a subset of ChronoLink: tiles # . , ~ ; t r, crates, planks, Echo standing, toppling, pins and
+// column relays (no water, trees, bars or Stash Box). compare.mjs checks it against the game's own solve().
 // Costs match the real solver's realMoves: shove/stand/pin/unpin = 1; walking, reads, unlocks = 0.
 export function compile(def) {
   const H = def.map.length, W = def.map[0].length, N = W * H;
@@ -39,8 +39,8 @@ export function fastSolve(P, maxStates = 300000) {
   const qa = new Int32Array(N), qe = new Int32Array(N);
   const futRec = new Int8Array(N);
   // state: { a, crates:Int array sorted, stand, standRec, pins: [[i,rec]...], reads, locks }
-  const key = st => st.a + '|' + st.crates.join(',') + '|' + st.planks.join(',') + '|' + st.held + '|' + st.e + '|' + st.stand + '|' + st.pins.map(p => p[0] + ':' + p[1]).join(',') + '|' + st.reads + '|' + st.locks;
-  const start = { a: P.A, e: P.E, crates: P.crates.slice(), planks: P.planks.slice(), held: 0, stand: -1, standRec: 0, pins: [], reads: 0, locks: 0, d: 0 };
+  const key = st => st.a + '|' + st.crates.join(',') + '|' + st.planks.join(',') + '|' + st.held + '|' + st.locked.join(',') + '|' + st.wit.map(w => w[0] + ':' + w[1]).join(',') + '|' + st.ek + '|' + st.stand + '|' + st.pins.map(p => p[0] + ':' + p[1]).join(',') + '|' + st.reads + '|' + st.locks;
+  const start = { a: P.A, e: P.E, crates: P.crates.slice(), planks: P.planks.slice(), held: 0, locked: [], wit: [], stand: -1, standRec: 0, pins: [], reads: 0, locks: 0, d: 0 };
   let cur = [start], nxt = [];
   const best = new Map();
   let explored = 0;
@@ -58,7 +58,7 @@ export function fastSolve(P, maxStates = 300000) {
     if (st.stand < 0) {
       computeFut(st);
       if (calm(st.e)) emin = zoneMin(st.e);
-      else { let m = Infinity; for (const d of D) if (calm(st.e + d)) m = Math.min(m, zoneMin(st.e + d)); if (m < Infinity) emin = m; }
+      else if (walkable(futRec[st.e])) { let m = Infinity; for (const d of D) if (calm(st.e + d)) m = Math.min(m, zoneMin(st.e + d)); if (m < Infinity) emin = m; }
     }
     return { amin, emin };
   };
@@ -66,14 +66,16 @@ export function fastSolve(P, maxStates = 300000) {
     for (let i = 0; i < N; i++) futRec[i] = rec(P, i, 0);
     for (const c of st.crates) futRec[c] = rec(P, c, 1);
     for (const c of st.planks) futRec[c] = rec(P, c, 2);
+    for (const [i, r] of st.wit) futRec[i] = r;
     for (const [i, r] of st.pins) futRec[i] = r;
     if (st.stand >= 0) futRec[st.stand] = st.standRec;
   };
+  const recFree = (st, i) => { const w = st.wit.find(q => q[0] === i); if (w) return w[1]; const p = st.pins.find(q => q[0] === i); if (p) return p[1]; return rec(P, i, st.crates.includes(i) ? 1 : st.planks.includes(i) ? 2 : 0); };
   let parent = null, label = '';
   const push = (st, cost) => {
     st.p = parent; st.l = label;
     const c = canon(st);
-    st.a = c.amin; if (st.stand < 0) st.e = c.emin;
+    st.a = c.amin; st.ek = st.stand < 0 ? c.emin : st.e;
     const k = key(st), nd = st.d + cost;
     const old = best.get(k);
     if (old != null && old <= nd) return;
@@ -124,7 +126,7 @@ export function fastSolve(P, maxStates = 300000) {
           } else {
             const b = base[i];
             if (!(b === '~' || b === 't' || i === spare)) continue;
-            if (P.relayCol[i] >= 0 || st.crates.includes(i) || st.planks.includes(i)) continue;
+            if (P.relayCol[i] >= 0 || st.crates.includes(i) || st.planks.includes(i) || st.wit.some(w => w[0] === i)) continue;
             const np = st.planks.concat([i]).sort((x, y) => x - y); label = 'A drop ' + i; push({ ...st, planks: np, held: 0, a: from }, 1);
           }
         }
@@ -133,12 +135,13 @@ export function fastSolve(P, maxStates = 300000) {
       for (let ci = 0; ci < (st.held ? 0 : st.crates.length); ci++) {
         const c = st.crates[ci];
         if (P.relayCol[c] >= 0 && !(st.locks & P.relays[P.relayCol[c]].bit)) continue;
+        if (st.locked.includes(c)) continue;
         for (const d of D) {
           const from = c - d, to = c + d;
           if (!aReg[from]) continue;
           const b = base[to];
           if (b === '#' || b === 't' || P.relayCol[to] >= 0) continue;
-          if (st.crates.includes(to) || st.planks.includes(to)) continue;
+          if (st.crates.includes(to) || st.planks.includes(to) || st.wit.some(w => w[0] === to)) continue;
           // paradox: a dry crate landing on the Echo's held floor tile
           if (st.stand === to && rec(P, to, 1) === 2) continue;
           const nc = st.crates.slice(); nc[ci] = to; nc.sort((x, y) => x - y);
@@ -150,10 +153,29 @@ export function fastSolve(P, maxStates = 300000) {
         const c = eq[h], b = base[c];
         if ((b === '~' || b === ';') && st.stand !== c) label = 'E stand ' + c, push({ ...st, e: c, stand: c, standRec: fr[c] }, 1);
       }
+      // echo shoves an old crate (solid kind 2) from the tile behind it
+      if (!P.noTopple) for (let i = 0; i < N; i++) {
+        if (fr[i] !== 2 && !(st.stand >= 0 && recFree(st, i) === 2)) continue;
+        if (st.pins.some(p => p[0] === i)) continue;
+        for (const d of D) {
+          const b = i - d, j = i + d;
+          if (j < W || j >= N - W || (j % W) === 0 || (j % W) === W - 1) continue;
+          const keep = st.stand === b, at = k => keep || st.stand < 0 ? fr[k] : recFree(st, k);
+          if (at(i) !== 2) continue;
+          if (!keep && !(eSeen[b] && walkable(at(b)))) continue;
+          if (st.pins.some(p => p[0] === j)) continue;
+          const t = at(j), chasm = t === 3 || t === 10;
+          if (!chasm) continue;
+          const nw = st.wit.filter(w => w[0] !== i && w[0] !== j).concat([[i, rec(P, i, 0)], [j, 4]]).sort((x, y) => x[0] - y[0]);
+          const nl = !st.wit.some(w => w[0] === i) && st.crates.includes(i) && !st.locked.includes(i) ? st.locked.concat([i]).sort((x, y) => x - y) : st.locked;
+          label = 'E topple ' + i + ' ' + d;
+          push({ ...st, wit: nw, locked: nl, e: keep ? st.e : b, stand: keep ? st.stand : -1, standRec: keep ? st.standRec : 0 }, 1);
+        }
+      }
       computeFut(st);
       {
         const zs = new Set();
-        for (let h = 0; h < eq.length; h++) { const c = eq[h]; if (!calm(c)) continue; const z = zoneMin(c); if (zs.has(z)) continue; zs.add(z); if (st.stand >= 0 || z !== st.e) label = '', push({ ...st, e: z, stand: -1, standRec: 0 }, 0); }
+        for (let h = 0; h < eq.length; h++) { const c = eq[h]; if (!calm(c)) continue; const z = zoneMin(c); if (zs.has(z)) continue; zs.add(z); if (st.stand >= 0 || z !== st.ek) label = '', push({ ...st, e: z, stand: -1, standRec: 0 }, 0); }
       }
       if (P.pins) {
         const near = new Uint8Array(N);
