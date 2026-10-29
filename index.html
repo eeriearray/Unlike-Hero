@@ -152,9 +152,9 @@ code{padding:2px 5px;border:1px solid var(--line);border-radius:3px;background:v
 /* iPad Safari sizes iframes to their content and ignores height:100% in a grid row, which left games black: pin the frame into a stage instead */
 .stage{position:relative;flex:1 1 auto;min-height:0;overflow:hidden;-webkit-overflow-scrolling:touch}
 .stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#050607}
-.game-trailer{position:absolute;inset:0;z-index:2;display:grid;place-items:center;background:#000}
+.game-trailer{position:absolute;inset:0;z-index:2;background:#000}
 .game-trailer[hidden]{display:none}
-.game-trailer video{display:block;width:100%;height:100%;object-fit:contain}
+.game-trailer video{position:absolute;inset:0;display:block;width:100%;height:100%;min-width:0;min-height:0;object-fit:contain;object-position:center}
 .trailer-skip{position:absolute;right:20px;bottom:20px;background:#111e;color:#fff;border-color:#aaa;font-size:12px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:30;background:var(--ink);color:var(--surface);border:1px solid var(--ink);border-radius:3px;padding:10px 16px;font:500 11px var(--f-mono)}
 @media(max-width:1000px){.wrap{padding-inline:28px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.intro h1{font-size:46px}}
