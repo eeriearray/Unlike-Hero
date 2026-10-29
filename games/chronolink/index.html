@@ -154,7 +154,7 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
 .pb-actions{display:flex;flex-wrap:wrap;gap:4px 18px}
 .pb-text{border:0;background:none;padding:6px 0;font:600 13px/1 var(--f-ui);letter-spacing:.06em;color:#cdb98c;border-bottom:1px solid transparent}
 .pb-text:hover{color:#fff;border-bottom-color:rgba(212,175,55,.6)}
-.pb-text.cy{color:#7ff5dc}
+.pb-text.cy{color:#7ff5dc;font-size:15px;padding:9px 14px;border:1px solid var(--neon);border-radius:4px;background:#0a2a25}
 .pb-resume{font:600 13px/1 var(--f-ui);letter-spacing:.32em;text-transform:uppercase;padding:14px 30px 13px;border:1px solid #f0d27a;
   background:linear-gradient(180deg,#e9c95a,#b88d27);color:#1b1206;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 6px 18px rgba(0,0,0,.45)}
 .pb-resume:hover{filter:brightness(1.08)}
@@ -171,6 +171,25 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
 .legend b{display:block;font:11px/1.2 var(--f-mono);letter-spacing:.08em;color:var(--brass);text-transform:uppercase;margin-bottom:3px}
 @media (max-width:640px){.legend{grid-template-columns:1fr 1fr}}
 @media (max-width:520px){#card b{font-size:21px}}
+
+/* Intro legibility: larger type, labelled controls and a clearly visible online button. */
+.card p{font-size:16px;line-height:1.55;color:#eadfc6}
+.who h3{font-size:22px}
+.who.e h3{font-size:17px;letter-spacing:.1em}
+.who.shared{background:#0f0b07;border-color:#5a4523}
+.who.shared h3{font:600 14px/1.1 var(--f-ui);letter-spacing:.2em;text-transform:uppercase;color:var(--marble)}
+.who.shared{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:2px 24px}
+.who.shared h3{grid-column:1/-1}
+.krow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:6px 0;border-top:1px solid rgba(255,255,255,.07);text-align:left}
+.krow:first-of-type{border-top:0}
+.kl{font:600 14.5px/1.25 var(--f-ui);color:#eadfc6}
+.who.e .kl{color:#c9f2e8}
+.krow .kmap{font:14px var(--f-mono);color:var(--marble);flex:none}
+.card kbd{font-size:15px;min-width:30px;padding:5px 8px 4px;text-align:center;border-bottom-width:3px;box-shadow:0 1px 0 rgba(0,0,0,.6)}
+.btn.online{font-size:15px;padding:12px 22px;color:#bff7ec;border-color:var(--neon);background:#0a2a25;box-shadow:0 0 0 1px rgba(0,255,204,.25),0 0 18px rgba(0,255,204,.2)}
+.btn.online:hover{background:#0e3a33}
+#intro{place-items:safe center}
+@media (max-height:760px){#intro .card{gap:10px;padding:16px}#intro .krow{padding:3px 0}#intro .card p{font-size:14.5px}}
 </style>
 </head>
 <body>
@@ -181,7 +200,7 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
   <div id="linkTag" hidden></div>
   <div id="card" class="gone" aria-live="polite"><i id="cardNum">CHAMBER 01</i><b id="cardName"></b><span id="cardText"></span></div>
   <nav id="corner" aria-label="Game controls">
-    <button class="btn cy" id="roomBtn" hidden>Play online</button>
+    <button class="btn cy online" id="roomBtn" hidden>Play online</button>
     <button class="btn" id="rewindBtn" title="Undo the last object change (hold R)">Rewind</button>
     <button class="ico" id="soundBtn" aria-label="Sound" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor" stroke="none"/><path class="waves" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/><path class="slash" d="M15.5 9.5l5 5M20.5 9.5l-5 5"/></svg></button>
     <button class="ico" id="viewBtn" aria-label="Split or solo view (Tab)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M12 5v14"/><rect class="half" x="12.6" y="5.6" width="7.3" height="12.8" rx="1.4" fill="currentColor" stroke="none" opacity=".35"/></svg></button>
@@ -280,12 +299,28 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
       <h1>ChronoLink<small>Anchor &amp; Echo</small></h1>
       <p style="text-align:center">One building, 102 years apart. The Anchor changes what survives into 2026. The Echo explores the result and reads frequencies that unlock the Anchor’s signal barriers. You each hold the other’s way forward. Find the matching relay letters and talk to each other.</p>
       <div class="cols" style="width:100%">
-        <div class="who"><h3>1924</h3><div class="kmap"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></div><div class="kmap"><kbd>E</kbd> pick up · set down</div></div>
-        <div class="who e"><h3>2026</h3><div class="kmap"><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></div><div class="kmap"><kbd>↵</kbd> use · <kbd>F</kbd> pin</div></div>
+        <div class="who"><h3>1924 · The Anchor</h3>
+          <div class="krow"><span class="kl">Move</span><span class="kmap"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span></div>
+          <div class="krow"><span class="kl">Pick up · set down · turn</span><span class="kmap"><kbd>E</kbd></span></div>
+          <div class="krow"><span class="kl">Ping your partner</span><span class="kmap"><kbd>Q</kbd></span></div>
+        </div>
+        <div class="who e"><h3>2026 · The Echo</h3>
+          <div class="krow"><span class="kl">Move</span><span class="kmap"><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></span></div>
+          <div class="krow"><span class="kl">Kick · open · lay</span><span class="kmap"><kbd>↵</kbd></span></div>
+          <div class="krow"><span class="kl">Pin a tile</span><span class="kmap"><kbd>F</kbd></span></div>
+          <div class="krow"><span class="kl">Ping your partner</span><span class="kmap"><kbd>⇧</kbd></span></div>
+        </div>
+      </div>
+      <div class="who shared" style="width:100%">
+        <h3>Both players</h3>
+        <div class="krow"><span class="kl">Hint</span><span class="kmap"><kbd>H</kbd></span></div>
+        <div class="krow"><span class="kl">Rewind (hold)</span><span class="kmap"><kbd>R</kbd></span></div>
+        <div class="krow"><span class="kl">Switch view</span><span class="kmap"><kbd>Tab</kbd></span></div>
+        <div class="krow"><span class="kl">Orbit · zoom</span><span class="kmap">drag · scroll</span></div>
+        <div class="krow"><span class="kl">Menu</span><span class="kmap"><kbd>Esc</kbd></span></div>
       </div>
       <button class="big" id="startBtn">Begin</button>
-      <button class="btn cy" id="introOnlineBtn" hidden>Play online · create or join a room</button>
-      <span class="note"><kbd>H</kbd> hint · hold <kbd>R</kbd> to rewind · <kbd>Esc</kbd> menu</span>
+      <button class="btn cy online" id="introOnlineBtn" hidden>Play online · create or join a room</button>
     </div>
   </div>
 
@@ -299,6 +334,7 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
   </div>
 </main>
 
+<script src="../../shared/sdk/performance.js"></script>
 <script src="../../shared/sdk/hub-config.js"></script>
 <script src="../../shared/sdk/hub-sdk.js"></script>
 
@@ -1771,6 +1807,7 @@ function applyRemoteWorld(m) {
 const HAS3D = (() => { if (!window.THREE) return false; try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; } })();
 const cvs = $('game'), ovl = $('overlay'), octx = ovl.getContext('2d');
 let DPR = 1, VW = 800, VH = 600;
+const HP = window.HubPerformance, resBudget = HP ? HP.createResolutionBudget(1.5) : { ratio: () => Math.min(1.5, window.devicePixelRatio || 1), sample: () => false };
 const PAL = { brass: '#D4AF37', holo: '#00f5d4', hazard: '#ff3b3b', arc: '#7dd3fc', bio: '#10b981' };
 const renderer = HAS3D ? new THREE.WebGLRenderer({ canvas: cvs, antialias: true, powerPreference: 'high-performance' }) : null;
 if (renderer) {
@@ -1784,8 +1821,8 @@ if (renderer) {
 function th(x, y, s) { let h = (x * 374761393 + y * 668265263 + (s | 0) * 2246822519) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return (h ^ (h >>> 16)) >>> 0; }
 function resize() {
   const r = cvs.getBoundingClientRect();
-  DPR = Math.min(1.5, window.devicePixelRatio || 1);
   VW = Math.max(1, r.width); VH = Math.max(1, r.height);
+  DPR = resBudget.ratio(VW, VH);
   if (renderer) { renderer.setPixelRatio(DPR); renderer.setSize(VW, VH, false); }
   ovl.width = Math.round(VW * DPR); ovl.height = Math.round(VH * DPR);
 }
@@ -2145,7 +2182,7 @@ function buildWorld(era) {
     S.add(new THREE.HemisphereLight(0xffe2b8, 0x2a1406, 0.5));
     const sun = new THREE.DirectionalLight(0xffd9a0, 0.62);
     sun.position.set(cx - 9, 12, cz + 7); sun.target.position.set(cx, 0, cz); S.add(sun.target);
-    sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+    sun.castShadow = true; sun.shadow.mapSize.set(HP && HP.low ? 1024 : 1536, HP && HP.low ? 1024 : 1536);
     const ext = Math.max(W, H) * 0.75 + 2;
     Object.assign(sun.shadow.camera, { left: -ext, right: ext, top: ext, bottom: -ext, near: 1, far: 40 }); sun.shadow.bias = -0.0008; sun.shadow.radius = 4;
     S.add(sun);
@@ -2750,7 +2787,7 @@ function buildAnchor(w) {
   mk(BOX(0.07, 0.1, 0.07), M.brass, 0, 0, 0, lantern);
   const flameM = own(w, std({ color: 0x301000, emissive: 0xffb050, emissiveIntensity: 2.5 }));
   mk(BOX(0.05, 0.07, 0.075), flameM, 0, 0, 0, lantern, false);
-  const light = new THREE.PointLight(0xffb060, 1.2, 5.5, 2); light.position.set(0.3, 0.5, 0.3); light.castShadow = true; light.shadow.mapSize.set(256, 256); light.shadow.bias = -0.004; group.add(light);
+  const light = new THREE.PointLight(0xffb060, 1.2, 5.5, 2); light.position.set(0.3, 0.5, 0.3); group.add(light);
   return { group, body, legL, legR, armL, armR, torso, head, light, flameM, kind: 'A' };
 }
 function buildEcho(w) {
@@ -2782,7 +2819,7 @@ function buildEcho(w) {
   const coneM = own(w, new THREE.MeshBasicMaterial({ color: 0x9ffff0, transparent: true, opacity: 0.07, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
   const cone = mk(cachedGeo('cone', () => { const cg = new THREE.ConeGeometry(1.6, 5, 24, 1, true); cg.translate(0, -2.5, 0); cg.rotateX(-Math.PI / 2 + 0.16); return cg; }), coneM, 0, 0.95, 0.15, group, false);
   cone.castShadow = false; cone.receiveShadow = false;
-  const glow = new THREE.PointLight(0x00f5d4, 0.35, 1.6, 2); glow.position.set(0, 0.9, 0.3); glow.castShadow = true; glow.shadow.mapSize.set(256, 256); glow.shadow.bias = -0.0004; group.add(glow);
+  const glow = new THREE.PointLight(0x00f5d4, 0.35, 1.6, 2); glow.position.set(0, 0.9, 0.3); group.add(glow);
   return { group, body, legL, legR, armL, armR, torso, head, dish, ant, visor, cone, coneM, spot, kind: 'E' };
 }
 // Walk cycle plus anticipation and follow-through: a crouch before a pick-up or set-down, a shoulder
@@ -4003,7 +4040,7 @@ function updateTargets() {
     } else G.threadNow = { from: { x: tg.x, y: tg.y, h: tg.kind === 'drop' ? 0.3 : 0.5 }, to: { x: tg.x, y: tg.y } };
   }
 }
-let lastFrame = now();
+let lastFrame = now(), lastRaw = lastFrame;
 let frameErrors = 0;
 function frame() {
   requestAnimationFrame(frame);
@@ -4012,6 +4049,8 @@ function frame() {
 function tick() {
   const tn = now(), rdt = Math.min(0.05, tn - lastFrame); lastFrame = tn;
   G.t += rdt; G.frameDt = rdt;
+  if (resBudget.sample(tn - lastRaw)) resize();
+  lastRaw = tn;
   if (G.L) {
     for (const pd of G.pending.slice()) if (G.t >= pd.at) { G.pending.splice(G.pending.indexOf(pd), 1); pd.fn(); }
     // hit-stop: the world freezes for a beat when something lands
