@@ -3831,7 +3831,9 @@ function placementTargets(who) {
   const L = G.L, s = G.s, p = who === 'A' ? G.A : G.E;
   if (!p || (who === 'A' ? !s.held : s.echo.carry !== 'plank')) return [];
   const item = who === 'A' ? s.objs.find(o => o.id === s.held) : null;
-  return around(p).flatMap(q => {
+  // the Anchor can also lay what it carries on the tile under its feet (a crack it is standing on)
+  const tiles = who === 'A' ? around(p).concat([{ x: p.x, y: p.y, here: true }]) : around(p);
+  return tiles.flatMap(q => {
     if (who === 'E') {
       const action = C.echoAct(L, s, G.fut, tileIdx(q.x, q.y));
       return action?.kind === 'lay' ? [{ ...q, label: 'Lay plank', kind: 'lay', priority: 3, run: () => C.echoAct(L, G.s, G.fut, tileIdx(q.x, q.y))?.s }] : [];
@@ -3839,7 +3841,8 @@ function placementTargets(who) {
     if (!item || !C.canPlace(L, s, item.k, q.x, q.y)) return [];
     const b = L.base[tileIdx(q.x, q.y)], box = C.boxAt(L, q.x, q.y), plant = b === 'S' || b === 's', bridge = C.isCrack(b) || b === 't' || b === '=';
     const socket = item.k === 'shore' && L.supports.some(p => p.x === q.x && p.y === q.y);
-    return [{ ...q, label: box ? 'Seal in box' : socket ? 'Brace slab' : plant ? 'Plant' : bridge ? 'Lay across' : 'Set down', kind: 'drop', priority: box || plant || socket ? 4 : bridge ? 3 : 1, run: () => C.actDrop(L, G.s, q.x, q.y) }];
+    // bare floor underfoot is the last resort: the plank would just sit under the Anchor
+    return [{ ...q, label: box ? 'Seal in box' : socket ? 'Brace slab' : plant ? 'Plant' : bridge ? (q.here ? 'Lay here' : 'Lay across') : 'Set down', kind: 'drop', priority: box || plant || socket ? 4 : bridge ? 3 : q.here ? 0 : 1, run: () => C.actDrop(L, G.s, q.x, q.y) }];
   });
 }
 function choosePlacement(who) {
@@ -3848,7 +3851,8 @@ function choosePlacement(who) {
   // a useful placement beside the chrononaut (across a trench or crack, into a planter or the Stash Box) beats
   // plain floor, whichever way it faces; facing only chooses between equally useful tiles. With a diagonal
   // camera a single key cannot always face every tile, and a plank is almost never meant for bare floor.
-  return targets.sort((a, b) => b.priority - a.priority || Number(!!b.facing) - Number(!!a.facing))[0] || null;
+  // Between equally useful tiles the one faced wins, then the one underfoot.
+  return targets.sort((a, b) => b.priority - a.priority || Number(!!b.facing) - Number(!!a.facing) || Number(!!b.here) - Number(!!a.here))[0] || null;
 }
 // A signal lock wins when the Anchor faces it; one beside or behind only counts if nothing else is in reach,
 // so a lock next to a plank never steals the E press meant for the plank.

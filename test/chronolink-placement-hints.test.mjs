@@ -40,3 +40,14 @@ test('a carried plank goes across an adjacent crack rather than onto the bare fl
  const target=h.run("choosePlacement('A')");assert.equal(target.label,'Lay across');assert.equal(target.x,3);assert.equal(target.y,2);
  h.G.placementAim={who:'A',x:1,y:2};assert.equal(h.run("choosePlacement('A')").label,'Set down','hover or click can still pick the floor');
 });
+test('the Anchor can lay a carried plank on the crack it is standing on',()=>{
+ const h=harness();h.G.s.held='o1';h.G.A.x=3;h.G.A.y=2;h.G.A.dir={dx:0,dy:1};
+ const target=h.run("choosePlacement('A')");assert.equal(target.label,'Lay here');assert.equal(target.x,3);assert.equal(target.y,2);
+ const next=target.run();assert.equal(next.held,null);assert.deepEqual([next.objs[1].x,next.objs[1].y],[3,2]);
+ h.G.A.x=1;h.G.A.y=3;assert.notEqual(h.run("choosePlacement('A')").x+','+h.run("choosePlacement('A')").y,'1,3','bare floor underfoot is never preferred');
+});
+test('standing on one crack beside another, the plank goes underfoot unless the Anchor faces the other',()=>{
+ const h=harness();h.G.s.held='o1';h.G.L.base[2*h.G.L.W+2]='~';h.G.A.x=2;h.G.A.y=2;h.G.A.dir={dx:0,dy:1};
+ let t=h.run("choosePlacement('A')");assert.equal(t.label,'Lay here');assert.deepEqual([t.x,t.y],[2,2]);
+ h.G.A.dir={dx:1,dy:0};t=h.run("choosePlacement('A')");assert.equal(t.label,'Lay across');assert.deepEqual([t.x,t.y],[3,2]);
+});
