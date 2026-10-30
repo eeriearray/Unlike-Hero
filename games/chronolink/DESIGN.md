@@ -136,3 +136,62 @@ Tests cover the new environmental rules, disconnected/diagonal damp strips, abse
 The browser smoke test opens the primary localhost game, starts a new chamber, checks the 25-chamber HUD and scene, and checks console errors. This is not a substitute for a two-person human playtest of every new solution. General search after unusual cross-chapter resource transport may be slower than the normal forward hint path; a budget limit is distinct from a proven dead end in the existing hint UI.
 
 Validation snapshot, 29 October 2026: all 25 start states solved within 400,000 states. The broad run passed 58 of 59 checks and exposed a live-hint chapter-boundary limit; that condition was fixed, its dedicated regression passed, and all 100 seeded random cases were rerun successfully (99 solvable, one proven dead end). The affected six-chamber sweep never exceeded 125,729 explored states. Cargo-identity and rendering checks were rerun after the final snapshot-key refinement. The entire broad suite was not rerun after these targeted fixes.
+
+
+## Echo environment interventions — 30 October 2026
+
+The Echo can now make three additional permanent changes. The shared DOM-free action functions return a fresh state and action kind, or null. Neither a manual witness nor a jam writes objects, wheel settings or hydraulic flow back into 1924.
+
+- **Fell tree (`echoFell`)**: walk into a grown tree or trunk, or face it and press Enter. The push follows the Echo's facing direction from the contacted tile. Clear that tree's old silhouette, then use `growTree` with the source planter's length to lay its trunk: consecutive chasms receive roots; dry tiles receive solid trunk, stopping at walls. The changed footprint becomes fixed witness records carrying the acorn's identity and trunk axis. Picking that acorn in 1924 causes “THE ECHO FELLED IT”. Another object's footprint and pinned tiles cannot be overwritten. A push with no changed landing is refused.
+- **Drain basin (`echoDrain`)**: chambers author `drains: [{x, y}]`. A dry grate is solid; damp rusts it. A kick drains the adjacent, cardinally connected flooded basin and fixes its dry records permanently, plus the broken grate. Disconnected basins are unaffected. Occupied or pinned flooded tiles prevent the action, so it never silently consumes another 1924 object. Fixed tiles refuse later placement; there is no movable past drain to paradox-lock.
+- **Jam wheel (`echoJam`)**: a wheel with `echo: true` exposes a future sluice-wheel record. Jamming writes a fixed wheel witness and `s.echo.jams[wheelIndex]`. Future derivation closes every gate assigned to that wheel, including when another wheel shares the gate. `flowing(L,s)` and `walkPast` remain unchanged; the Anchor may still turn its own wheel. Clone, rewind and network snapshots carry jams; the raw derivation cache and both solver keys distinguish them. Culvert flow indicators also use their own era's flow.
+
+Witnesses apply before pins and the standing-tile overlay, as before. Felling source identities and fixed-footprint flags participate in `recKey`. Each new verb costs one scored action. `noFell`, `noDrain` and `noJam` disable only the respective solver expansion for ablation. Actions use reachable neighbours; acting from the current standing tile preserves it. Client targeting, walk-into actions, hint text, sounds, effects and poses use the same verbs.
+
+### New chambers and proof
+
+| # | Name | Topic / necessity | Scored depth | Plain depth | Plain states | Ablation states |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| 26 | The Drowned Court | Drain the flooded court | 31 | 46 | 3,510 | 3,650 |
+| 27 | The Ironwood Reach | Fell ironwood over wet fractures | 33 | 54 | 8,841 | 22,067 |
+| 28 | The Last Sluice | Separate past and future water | 40 | 54 | 48,958 | 49,127 |
+
+The wings extend the Worn Through, Rust and Rot, and Holding Pattern courtyard/gallery combinations. Each has a topic-only card, a relay beyond its environmental obstacle, declared `needs`, and an east-facing exit. No definition for chambers 1–25 changes. The existing chapter boundary is retained, so the depths have the same segmented-search limitation as chambers 20–25. These are solver difficulty measures, not claims of human playtest difficulty.
+
+Tests replay both scored and ordinary plans through shared actions, validate both exit regions, solve and replay hints from halfway through, and include the new verbs in seeded random mid-chamber walks. Unit fixtures freeze inputs and check aging, object locks, placement reservations, pins, persistence and future-only hydraulics. Rendering checks cover both grate states and both wheel states. The campaign count assertion changes from 25 to 28 and necessity dispatch gains the three flags; existing difficulty and necessity assertions are retained.
+
+### Existing campaign remeasurement
+
+Scored depths before → after (no decreases):
+
+| Chamber | Before | After |
+| --- | ---: | ---: |
+| 1 | 13 | 13 |
+| 2 | 11 | 11 |
+| 3 | 14 | 14 |
+| 4 | 11 | 11 |
+| 5 | 23 | 23 |
+| 6 | 15 | 15 |
+| 7 | 31 | 31 |
+| 8 | 14 | 14 |
+| 9 | 21 | 21 |
+| 10 | 10 | 10 |
+| 11 | 15 | 15 |
+| 12 | 30 | 30 |
+| 13 | 49 | 49 |
+| 14 | 55 | 55 |
+| 15 | 57 | 57 |
+| 16 | 59 | 59 |
+| 17 | 60 | 60 |
+| 18 | 60 | 60 |
+| 19 | 69 | 69 |
+| 20 | 34 | 34 |
+| 21 | 30 | 30 |
+| 22 | 32 | 32 |
+| 23 | 33 | 33 |
+| 24 | 39 | 39 |
+| 25 | 28 | 28 |
+
+Browser verification used the isolated checkout at port 8082 with `?level=26`, `?level=27` and `?level=28`. A temporary test-server button replayed each ordinary solver plan through the live game's `commit()` and checked reachable movement before each action. All three reached the victory overlay, with no console errors. The user's port 8081 and main checkout were left untouched.
+
+Validation: `node --test test/chronolink-*.test.mjs` completed with 80 passing tests and zero failures. The final focused environment suite also passes all eight tests, including the additional wind-up regression: an Echo animation commits against current state without overwriting an intervening Anchor pickup. Registry generation and inline-script parsing pass; no existing difficulty or necessity assertion was weakened.

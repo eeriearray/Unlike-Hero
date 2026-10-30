@@ -19,7 +19,7 @@ function harness(){
 }
 test('every new aging record builds visible geometry in the same renderer as old tokens',()=>{
   const ctx=harness();
-  for(const o of ['sediment','siltbank','rustfall','stonebridge','oldshore','rustshore']){
+  for(const o of ['sediment','siltbank','rustfall','stonebridge','oldshore','rustshore','drain','rustdrain','sluicewheel','jammedwheel']){
     ctx.rec={t:'floor',o,wet:true};ctx.i=ctx.G.L.supports[0].y*ctx.G.L.W+ctx.G.L.supports[0].x;
     const token=vm.runInContext('buildToken(w,rec,i)',ctx);assert.ok(token.g.children.length,o);assert.ok(token.key.includes(o),o);
   }

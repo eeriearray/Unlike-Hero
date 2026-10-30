@@ -237,7 +237,7 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
         <p class="pb-eyebrow">Paused</p>
         <div class="pb-chamber">
           <button class="pb-step" id="prev" aria-label="Previous chamber">‹</button>
-          <span class="pb-num">Chamber <b id="lvlNum">1</b> <span id="lvlOf">of 25</span></span>
+          <span class="pb-num">Chamber <b id="lvlNum">1</b> <span id="lvlOf">of 28</span></span>
           <button class="pb-step" id="next" aria-label="Next chamber">›</button>
         </div>
         <h2 class="pb-title" id="pbTitle"><span id="actChip">Chamber</span></h2>
@@ -272,7 +272,8 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
           <dl>
             <div><dt>Move</dt><dd><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></dd></div>
             <div><dt>Topple a crate into a chasm</dt><dd>walk into it</dd></div>
-            <div><dt>Kick, open, lay</dt><dd><kbd>↵</kbd></dd></div>
+            <div><dt>Kick, open, lay, fell, drain, jam</dt><dd><kbd>↵</kbd></dd></div>
+            <div><dt>Fell, drain, jam</dt><dd>walk into it</dd></div>
             <div><dt>Pin a tile</dt><dd><kbd>F</kbd></dd></div>
           </dl>
         </div>
@@ -302,7 +303,7 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
   <div class="overlay" id="intro">
     <div class="card" style="width:min(560px,100%);justify-items:center;text-align:center">
       <h1>ChronoLink<small>Anchor &amp; Echo</small></h1>
-      <p style="text-align:center">One building, 102 years apart. The Anchor changes what survives into 2026. The Echo explores the result and reads frequencies that unlock the Anchor’s signal barriers. You each hold the other’s way forward. Find the matching relay letters and talk to each other.</p>
+      <p style="text-align:center">One building, 102 years apart. The Anchor changes what survives into 2026. The Echo reshapes the ruins, fells trees, drains basins, jams sluices and reads frequencies that unlock the Anchor’s signal barriers. You each hold the other’s way forward. Find the matching relay letters and talk to each other.</p>
       <div class="cols" style="width:100%">
         <div class="who"><h3>1924 · The Anchor</h3>
           <div class="krow"><span class="kl">Move</span><span class="kmap"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span></div>
@@ -312,6 +313,7 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
         <div class="who e"><h3>2026 · The Echo</h3>
           <div class="krow"><span class="kl">Move</span><span class="kmap"><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></span></div>
           <div class="krow"><span class="kl">Topple · kick · open · lay</span><span class="kmap"><kbd>↵</kbd></span></div>
+          <div class="krow"><span class="kl">Fell · drain · jam</span><span class="kmap"><kbd>↵</kbd> or walk into it</span></div>
           <div class="krow"><span class="kl">Pin a tile</span><span class="kmap"><kbd>F</kbd></span></div>
           <div class="krow"><span class="kl">Ping your partner</span><span class="kmap"><kbd>⇧</kbd></span></div>
         </div>
@@ -836,6 +838,46 @@ CHAMBERS.push(
   structuralGallery(16, 'A Building on Loan', 'The building remembers what you choose to keep.', 5),
 );
 
+// New wings retain the established resource-sharing courtyards and galleries.
+// Their final routes demand an irreversible intervention by the Echo.
+function echoWing(seed, variant, name, card, verb) {
+  const d = structuralGallery(seed, name, card, variant), rows = d.map.map(r => r.split(''));
+  let exit;
+  for (let y = 0; y < rows.length; y++) for (let x = 0; x < rows[y].length; x++) if (rows[y][x] === 'X') exit = { x, y };
+  const x0 = rows[0].length, cy = exit.y;
+  for (const row of rows) row.push(...Array(9).fill('#'));
+  const pt = (x, dy = 0) => ({ x: x0 + x, y: cy + dy });
+  const put = (x, dy, ch) => { const p = pt(x, dy); rows[p.y][p.x] = ch; };
+  rows[cy][exit.x] = '.';
+  for (let x = exit.x + 1; x <= x0 + 7; x++) rows[cy][x] = '.';
+  if (verb === 'fell') {
+    put(2, -1, 'S'); put(3, 0, ';'); put(4, 0, ';');
+    d.planters = [...(d.planters || []), { ...pt(2, -1), dir: 'S', len: 1 }];
+    d.objs.push({ k: 'acorn', ...pt(2, -1) });
+  } else {
+    put(2, 0, 'b'); put(3, 0, 'b'); put(4, 0, 'b');
+    put(3, -2, 'W'); put(3, -1, 'c');
+    if (verb === 'drain') {
+      put(1, -1, ','); d.drains = [pt(1, -1)];
+      // The grate touches the basin at its northern lip.
+      put(2, -1, 'b');
+    } else {
+      put(1, -1, '.');
+      d.wheels.push({ ...pt(1, -1), echo: true, positions: [['wing'], ['wing', 'unused']] });
+      d.gates.push({ ...pt(3, -1), id: 'wing' });
+    }
+  }
+  put(7, 0, 'X');
+  d.map = rows.map(r => r.join('')); d.needs = [verb];
+  d.relays.push({ gate: pt(6), receiver: pt(5) });
+  return d;
+}
+CHAMBERS.push(
+  echoWing(5, 1, 'The Drowned Court', 'A sunken court and the ironwork beneath its water.', 'drain'),
+  echoWing(9, 2, 'The Ironwood Reach', 'A century of growth hangs above the broken east wing.', 'fell'),
+  echoWing(7, 4, 'The Last Sluice', 'Two centuries share a wheel, but inherit different rivers.', 'jam'),
+);
+
 const DIRS4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const DIRV = { E: [1, 0], W: [-1, 0], S: [0, 1], N: [0, -1] };
 const isCrack = b => b === '~' || b === ';';
@@ -868,6 +910,7 @@ function parseChamber(def, n) {
     wheels: (def.wheels || []).map((w, i) => Object.assign({ id: 'w' + i }, w)),
     boxes: (def.boxes || []).map((b, i) => Object.assign({ id: 'box' + i }, b)),
     bars: (def.bars || []).map(b => b.y * W + b.x),
+    drains: (def.drains || []).map(p => p.y * W + p.x),
     pinsMax: def.pins || 0, objs0: def.objs || [], needs: def.needs || [],
     porous: (def.porous || []).map(p => p.y * W + p.x),
     deposits: def.deposits || [], supports: def.supports || [],
@@ -912,12 +955,12 @@ function initState(L) {
     locks: {},
     // hold: pinned tiles and their frozen 2026 record; witness: tiles the Echo changed by hand (kicked bars,
     // a plank it laid, a box it emptied), which the past can no longer rewrite.
-    echo: { carry: null, pins: [], hold: {}, witness: {}, reads: {} },
+    echo: { carry: null, pins: [], hold: {}, witness: {}, reads: {}, jams: {} },
   };
 }
 function cloneState(s) {
   return { objs: s.objs.map(o => Object.assign({}, o)), wheel: s.wheel.slice(), held: s.held, locks: { ...s.locks },
-    echo: { carry: s.echo.carry, pins: s.echo.pins.slice(), hold: Object.assign({}, s.echo.hold), witness: Object.assign({}, s.echo.witness), reads: { ...s.echo.reads } } };
+    echo: { carry: s.echo.carry, pins: s.echo.pins.slice(), hold: Object.assign({}, s.echo.hold), witness: Object.assign({}, s.echo.witness), reads: { ...s.echo.reads }, jams: { ...s.echo.jams } } };
 }
 
 // ---------- 1924 ----------
@@ -925,8 +968,13 @@ function objAt(s, x, y) { for (const o of s.objs) if (o.box == null && o.id !== 
 function boxAt(L, x, y) { for (const b of L.boxes) if (b.x === x && b.y === y) return b; return null; }
 function wheelAt(L, x, y) { for (let i = 0; i < L.wheels.length; i++) if (L.wheels[i].x === x && L.wheels[i].y === y) return i; return -1; }
 function gateOpen(L, s, id) { return L.wheels.some((w, i) => (w.positions[s.wheel[i]] || []).includes(id)); }
+// A jam closes every gate assigned to that future wheel, even if another wheel shares it.
+function futureGateOpen(L, s, id) {
+  if (L.wheels.some((w, i) => s.echo.jams?.[i] && w.positions.some(ids => ids.includes(id)))) return false;
+  return gateOpen(L, s, id);
+}
 // Running water: flood-fill from every inflow through channels and culverts, stopping at closed gates.
-function flowing(L, s) {
+function flowing(L, s, future = false) {
   const N = L.W * L.H, on = new Uint8Array(N), q = [];
   for (let i = 0; i < N; i++) if (L.base[i] === 'W') { on[i] = 1; q.push(i); }
   while (q.length) {
@@ -935,7 +983,7 @@ function flowing(L, s) {
       const nx = cx + dx, ny = cy + dy; if (nx < 0 || ny < 0 || nx >= L.W || ny >= L.H) continue;
       const k = ny * L.W + nx;
       if (on[k] || !conducts(L.base[k])) continue;
-      if (L.gates[k] != null && !gateOpen(L, s, L.gates[k])) continue;
+      if (L.gates[k] != null && !(future ? futureGateOpen(L, s, L.gates[k]) : gateOpen(L, s, L.gates[k]))) continue;
       on[k] = 1; q.push(k);
     }
   }
@@ -958,7 +1006,7 @@ function canPlace(L, s, k, x, y) {
   if (x < 0 || y < 0 || x >= L.W || y >= L.H) return false;
   const b = L.base[y * L.W + x];
   if (relayAt(L, x, y)) return false;
-  if (s.echo.witness[y * L.W + x]?.shoved) return false;
+  if (s.echo.witness[y * L.W + x]?.shoved || s.echo.witness[y * L.W + x]?.fixed) return false;
   if (boxAt(L, x, y)) return k !== 'crate' && !s.objs.some(q => q.box === boxAt(L, x, y).id);
   if (b === 'S' || b === 's') return k === 'acorn' && !objAt(s, x, y);
   if (b === '#' || b === 'p' || b === 'W' || b === 'c' || wheelAt(L, x, y) >= 0 || objAt(s, x, y) || L.bars.includes(y * L.W + x)) return false;
@@ -968,7 +1016,7 @@ function canPlace(L, s, k, x, y) {
 
 // ---------- 2026 ----------
 // A tile record: t = terrain, o = what stands on it, wet, src = the 1924 object behind it, rot = what rotted here.
-const SOLID_O = { oldcrate: 1, trunk: 1, bars: 1, rustbars: 1, box: 1, tree: 1, siltbank: 1, rustfall: 1 };
+const SOLID_O = { oldcrate: 1, trunk: 1, bars: 1, rustbars: 1, box: 1, tree: 1, siltbank: 1, rustfall: 1, drain: 1, rustdrain: 1, sluicewheel: 1, jammedwheel: 1 };
 const BRIDGE_O = { bridge: 1, pit: 1, roots: 1, echoplank: 1, stonebridge: 1, sediment: 1 };
 const WALK_T = { floor: 1, silt: 1, basin: 1, hole: 1, fill: 1 };
 function walkRec(r) {
@@ -1022,7 +1070,7 @@ function ageArchitecture(L, s, recs, flow) {
   return recs;
 }
 function deriveRaw(L, s, flow) {
-  flow = flow || flowing(L, s);
+  flow = Object.keys(s.echo.jams || {}).length ? flowing(L, s, true) : flow || flowing(L, s);
   const W = L.W, H = L.H, N = W * H, recs = new Array(N), base = L.base;
   let wet = new Uint8Array(N);
   const nb = (i, f) => { const x = i % W, y = (i / W) | 0; if (x > 0) f(i - 1); if (x < W - 1) f(i + 1); if (y > 0) f(i - W); if (y < H - 1) f(i + W); };
@@ -1072,6 +1120,8 @@ function deriveRaw(L, s, flow) {
       else { r.src = o.id; r.rot = 'acorn'; }
     }
   }
+  for (const i of L.drains || []) recs[i].o = recs[i].wet ? 'rustdrain' : 'drain';
+  for (let j = 0; j < L.wheels.length; j++) if (L.wheels[j].echo) { const w = L.wheels[j]; recs[w.y * W + w.x].o = s.echo.jams?.[j] ? 'jammedwheel' : 'sluicewheel'; }
   return ageArchitecture(L, s, recs, flow);
 }
 // An ironwood grows in the planter and leans along `dir`: its trunk spans any chasm in the way as a bridge.
@@ -1121,6 +1171,7 @@ function actPick(L, s, x, y) {
   const bx = boxAt(L, x, y);
   const o = bx ? s.objs.find(q => q.box === bx.id) : objAt(s, x, y);
   if (!o || o.k === 'crate') return null;
+  if (Object.values(s.echo.witness).some(r => r.felled && r.src === o.id)) return { paradox: y * L.W + x, why: 'felled' };
   if (takenObject(s, o.id)) return { paradox: y * L.W + x, why: 'taken' };
   if (bx && Object.values(s.echo.witness).some(r => r.box === bx.id && r.empty)) return { paradox: bx.y * L.W + bx.x, why: 'taken' };
   const n = cloneState(s), no = n.objs.find(q => q.id === o.id);
@@ -1129,6 +1180,7 @@ function actPick(L, s, x, y) {
 function actDrop(L, s, x, y) {
   if (!s.held) return null;
   const o = s.objs.find(q => q.id === s.held);
+  if (Object.values(s.echo.witness).some(r => r.felled && r.src === o.id)) return { paradox: y * L.W + x, why: 'felled' };
   if (takenObject(s, o.id)) return { paradox: y * L.W + x, why: 'taken' };
   if (!canPlace(L, s, o.k, x, y)) return null;
   const n = cloneState(s), no = n.objs.find(q => q.id === o.id), bx = boxAt(L, x, y);
@@ -1170,6 +1222,54 @@ function echoTopple(L, s, fut, i, dx, dy) {
   n.echo.witness[j] = { t: 'chasm', o: 'pit', wet: t.wet, src: r.src, shoved: true };
   return { s: n, kind: 'topple' };
 }
+// Manual future changes never feed back into 1924. Fixed records reserve their tiles.
+function echoFell(L, s, fut, i, dx, dy) {
+  const r = fut[i];
+  if (!r || !['tree', 'trunk'].includes(r.o) || Math.abs(dx) + Math.abs(dy) !== 1 || !r.src) return null;
+  if (Object.values(s.echo.witness).some(q => q.felled && q.src === r.src)) return null;
+  const source = s.objs.find(o => o.id === r.src);
+  if (!source || source.id === s.held || source.box != null || source.k !== 'acorn' || !L.planters[source.y * L.W + source.x]) return null;
+  const changed = new Set(), recs = fut.map(q => ({ ...q }));
+  // Clear this tree's previous silhouette before laying it in the push direction.
+  for (let j = 0; j < recs.length; j++) if (recs[j].src === r.src && ['tree', 'trunk', 'roots'].includes(recs[j].o)) {
+    if (s.echo.hold[j]) return null;
+    recs[j] = { ...recs[j], o: null }; changed.add(j);
+  }
+  const dir = Object.keys(DIRV).find(k => DIRV[k][0] === dx && DIRV[k][1] === dy);
+  const p = { x: i % L.W, y: Math.floor(i / L.W), dir, len: L.planters[source.y * L.W + source.x]?.len || 2 };
+  growTree(L, recs, i, p, r.src);
+  recs[i] = { ...recs[i], o: null };
+  for (let j = 0; j < recs.length; j++) if (recs[j].src === r.src && recs[j].o) changed.add(j);
+  if (![...changed].some(j => j !== i && recs[j].o && recs[j].o !== fut[j].o)) return null;
+  for (const j of changed) if (s.echo.hold[j] || ((fut[j].o || fut[j].src) && fut[j].src !== r.src) || s.echo.witness[j]?.fixed) return null;
+  const n = cloneState(s);
+  for (const j of changed) n.echo.witness[j] = { ...recs[j], src: r.src, fixed: true, felled: true, axis: dx ? 'x' : 'z' };
+  return { s: n, kind: 'fell' };
+}
+function echoDrain(L, s, fut, i) {
+  if (!(L.drains || []).includes(i) || fut[i]?.o !== 'rustdrain' || fut[i].src || s.echo.hold[i]) return null;
+  const basin = new Set(), queue = [i];
+  while (queue.length) {
+    const c = queue.pop(), x = c % L.W, y = Math.floor(c / L.W);
+    for (const [dx, dy] of DIRS4) {
+      const nx = x + dx, ny = y + dy, j = ny * L.W + nx;
+      if (nx < 0 || nx >= L.W || ny < 0 || ny >= L.H || basin.has(j) || L.base[j] !== 'b') continue;
+      basin.add(j); queue.push(j);
+    }
+  }
+  if (![...basin].some(j => fut[j].t === 'flood') || [...basin].some(j => s.echo.hold[j] || fut[j].src)) return null;
+  const n = cloneState(s);
+  n.echo.witness[i] = { ...fut[i], o: 'broken', fixed: true };
+  for (const j of basin) n.echo.witness[j] = { ...fut[j], t: 'basin', wet: false, fixed: true };
+  return { s: n, kind: 'drain' };
+}
+function echoJam(L, s, fut, i) {
+  const wi = wheelAt(L, i % L.W, Math.floor(i / L.W));
+  if (wi < 0 || fut[i]?.o !== 'sluicewheel' || s.echo.jams?.[wi] || s.echo.hold[i]) return null;
+  const n = cloneState(s); n.echo.jams[wi] = true;
+  n.echo.witness[i] = { ...fut[i], o: 'jammedwheel', fixed: true };
+  return { s: n, kind: 'jam' };
+}
 function echoPin(L, s, fut, i) {
   const n = cloneState(s);
   if (n.echo.hold[i]) { n.echo.pins = n.echo.pins.filter(p => p !== i); delete n.echo.hold[i]; return { s: n, kind: 'unpin' }; }
@@ -1190,9 +1290,9 @@ function regionOf(L, start, walk) {
   }
   return { seen, cells };
 }
-// Box cargo identity affects extraction and paradoxes. Other source labels and
-// cosmetic rot marks do not affect legal actions on a frozen record.
-function recKey(r) { return r ? r.t + ':' + (r.o || '') + ':' + (r.item || '') + ':' + (r.box || '') + (r.o === 'box' || r.shoved ? ':' + (r.src || '') : '') + (r.empty ? '!' : '') : '-'; }
+// Cargo, moved crates and ironwood silhouettes retain source identity: extraction,
+// felling and paradox checks distinguish otherwise identical frozen records.
+function recKey(r) { return r ? r.t + ':' + (r.o || '') + ':' + (r.item || '') + ':' + (r.box || '') + (r.o === 'box' || r.shoved || r.felled || r.o === 'tree' || r.o === 'trunk' || r.o === 'roots' ? ':' + (r.src || '') : '') + (r.empty ? '!' : '') + (r.fixed ? 'F' : '') + (r.felled ? 'T' : '') + (r.shoved ? 'S' : '') : '-'; }
 function solve(L, opts) {
   opts = opts || {};
   if (opts.noCapillary || opts.noSediment || opts.noSupports) L = Object.assign({}, L, {
@@ -1227,9 +1327,9 @@ function solve(L, opts) {
   const W = L.W, N = W * L.H, X = L.exit.y * W + L.exit.x, maxStates = opts.maxStates || 400000;
   const pinsMax = opts.pins != null ? opts.pins : L.pinsMax, prune = opts.prune !== false;
   const Lp = Object.assign({}, L, { pinsMax });
-  // 2026 depends only on the 1924 objects and wheels, so many states share one derivation
+  // Raw 2026 depends on past objects, wheel settings and future jams; witnesses overlay it.
   const rawCache = new Map();
-  const pastKey = s => s.objs.map(o => o.box != null ? 'B' + o.box : o.id === s.held ? 'H' : o.x + ',' + o.y).join(';') + '|' + s.wheel.join('') + '|' + Object.keys(s.locks || {}).sort().join(',');
+  const pastKey = s => s.objs.map(o => o.box != null ? 'B' + o.box : o.id === s.held ? 'H' : o.x + ',' + o.y).join(';') + '|' + s.wheel.join('') + '|' + Object.keys(s.locks || {}).sort().join(',') + '|' + Object.keys(s.echo.jams || {}).sort().join(',');
   const derive = s => {
     const k = pastKey(s); let d = rawCache.get(k);
     if (!d) { const flow = flowing(L, s); d = { flow, raw: deriveRaw(L, s, flow) }; if (rawCache.size > 50000) rawCache.clear(); rawCache.set(k, d); }
@@ -1396,12 +1496,26 @@ function solve(L, opts) {
         const fut = keep ? d.fut : freeFut;
         if (!keep && !walkRec(fut[at])) continue;
         if (!opts.noBox || fut[i].o !== 'box') { const a = echoAct(L, ss, fut, i); if (a) push(a.s, st.a, e2, stand2, 'E ' + a.kind + ' ' + x + ',' + y + ' @' + e2.x + ',' + e2.y); }
+        for (const [disabled, action] of [[opts.noDrain, echoDrain], [opts.noJam, echoJam]]) {
+          if (!disabled) { const result = action(L, ss, fut, i); if (result) push(result.s, st.a, e2, stand2, 'E ' + result.kind + ' ' + x + ',' + y + ' @' + e2.x + ',' + e2.y); }
+        }
         // A fixed box never becomes walkable and its emptied witness cannot be
         // reopened. Pinning its contents cannot improve a legal solution.
         // Retain unpin actions for players who pinned one while experimenting.
         if (pinsMax && (!prune || fut[i].o !== 'box' || ss.echo.hold[i]) && (volatile(L, i, fut[i]) || ss.echo.hold[i])) {
           const p = echoPin(Lp, ss, fut, i);
           if (p) push(p.s, st.a, e2, stand2, 'E ' + p.kind + ' ' + x + ',' + y + ' @' + e2.x + ',' + e2.y);
+        }
+      }
+      if (!opts.noFell) for (let i = 0; i < N; i++) {
+        if (!inChapter(i % W) || !['tree', 'trunk'].includes(d.fut[i].o) && !['tree', 'trunk'].includes(freeFut[i].o)) continue;
+        for (const [dx, dy] of DIRS4) {
+          const x = i % W - dx, y = Math.floor(i / W) - dy, b = y * W + x;
+          if (x < 0 || x >= W || y < 0 || y >= L.H) continue;
+          const keep = st.stand && st.stand.i === b;
+          if (!keep && !(d.re.seen[b] && walkRec(freeFut[b]))) continue;
+          const result = echoFell(L, ss, keep ? d.fut : freeFut, i, dx, dy);
+          if (result) push(result.s, st.a, { x, y }, keep ? st.stand : null, 'E fell ' + i % W + ',' + Math.floor(i / W) + ' ' + dx + ',' + dy + ' @' + x + ',' + y);
         }
       }
       // Echo: topple an old crate into a chasm from the tile behind it (staying put if it already stands there)
@@ -1430,7 +1544,7 @@ function courtyard(seed) { return parseChamber(courtyardDef(seed), seed); }
 
 root.ChronoCore = {
   CHAMBERS, MAX_LEVEL: CHAMBERS.length, DIRV, SOLID_O, parseChamber, getChamber, courtyard, initState, cloneState, flowing, walkPast, canPlace,
-  deriveRaw, deriveFuture, capillaryWet, ageArchitecture, walkRec, walkFuture, volatile, objAt, boxAt, wheelAt, actPick, actDrop, actShove, actWheel, echoAct, echoPin, echoTopple, movedByEcho,
+  deriveRaw, deriveFuture, capillaryWet, ageArchitecture, walkRec, walkFuture, volatile, objAt, boxAt, wheelAt, actPick, actDrop, actShove, actWheel, echoAct, echoPin, echoTopple, echoFell, echoDrain, echoJam, movedByEcho,
   crushes, regionOf, solve, isCrack, relayAt, readRelay, unlockRelay,
 };
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -2449,7 +2563,7 @@ function buildWorld(era) {
     const i = c.y * W + c.x, m = addMat(w, std({ color: 0x0a1820, emissive: 0x2a90c0, emissiveIntensity: 0, roughness: 0.1, metalness: 0.4 }));
     mk(BOX(0.6, 0.02, 0.6), m, c.x, c.h + 0.07, c.y, S, false);
     for (let k = -2; k <= 2; k++) mk(BOX(0.04, 0.03, 0.62), past ? M.brass : M.rust, c.x + k * 0.12, c.h + 0.09, c.y, S, false);
-    w.updaters.push(t => { m.emissiveIntensity = G.flow && G.flow[i] ? 0.8 + 0.3 * Math.sin(t * 6 + c.x) : 0; });
+    w.updaters.push(t => { m.emissiveIntensity = (past ? G.flow : G.futureFlow)?.[i] ? 0.8 + 0.3 * Math.sin(t * 6 + c.x) : 0; });
   }
   // ----- foundation: hollow stone shaft with piers, falling into fog -----
   const D = 14, stone = past ? M.stonePast : M.stoneFuture;
@@ -2669,7 +2783,7 @@ function tokenKey(rec, i) {
   if (rec.t === 'deep' || rec.t === 'flood') k += 'water';
   if (b === 'p') k += rec.t === 'hole' ? 'hole' : 'plaster';
   if (b === 'r' && rec.t === 'rubble' && (G.L.supports.some(s => (s.span || []).some(p => p.y * G.L.W + p.x === i)) || G.L.deposits.some(s => (s.fill || []).some(p => p.y * G.L.W + p.x === i)))) k += '|collapsed';
-  if (rec.o) k += '|' + rec.o + (rec.empty ? '!' : '');
+  if (rec.o) k += '|' + rec.o + (rec.empty ? '!' : '') + (rec.axis || '');
   else if (rec.rot) k += '|rot' + rec.rot;
   if (G.L.porous.includes(i)) k += rec.wet ? '|damp' : '|dry';
   return k;
@@ -2771,6 +2885,18 @@ function buildToken(w, rec, i) {
       for (let k = 0; k < 3; k++) { const st = mk(CYL(0.015, 0.02, 0.1, 5), M.cream, rnd(-0.3, 0.3), 0.05, rnd(-0.3, 0.3), g); mk(SPH(0.05, 8), M.terracotta, st.position.x, 0.11, st.position.z, g).scale.set(1, 0.5, 1); }
       h = 0.3; break;
     }
+    case 'drain': case 'rustdrain': {
+      const mat = rec.o === 'rustdrain' ? M.rustLight : M.steel;
+      for (let j = 0; j < 6; j++) mk(BOX(0.75, 0.05, 0.055), mat, 0, 0.08, -0.32 + j * 0.13, g);
+      for (const x of [-0.4, 0.4]) mk(BOX(0.06, 0.12, 0.86), mat, x, 0.06, 0, g);
+      h = 0.3; break;
+    }
+    case 'sluicewheel': case 'jammedwheel': {
+      // The wheel itself is a static machine; this token makes its jam visible.
+      if (rec.o === 'jammedwheel') { const wedge = mk(BOX(0.12, 0.65, 0.12), M.mahogany, 0.15, 0.55, 0.05, g); wedge.rotation.z = -0.55; }
+      else mk(TOR(0.34, 0.015, 24), M.rootGlow, 0, 0.6, 0, g);
+      h = 1; break;
+    }
     case 'bars': case 'rustbars': {
       const rust = rec.o === 'rustbars', m = rust ? M.rustLight : M.steel;
       const vertical = doorwayAlongZ(G.L, i % G.L.W, (i / G.L.W) | 0);
@@ -2793,7 +2919,7 @@ function buildToken(w, rec, i) {
     case 'roots': case 'trunk': {
       // the fallen ironwood, oriented along its lean
       const p = Object.values(G.L.planters).find(q => q.x === (rec.srcX != null ? rec.srcX : q.x)) || {};
-      const along = trunkAxis(i);
+      const along = rec.axis || trunkAxis(i);
       const lg = mk(CYL(0.24, 0.28, 1.04, 12), M.bark, 0, rec.o === 'roots' ? -0.02 : 0.26, 0, g); lg.rotation.set(along === 'x' ? 0 : Math.PI / 2, 0, along === 'x' ? Math.PI / 2 : 0);
       if (rec.o === 'trunk') for (let k = 0; k < 5; k++) mk(cachedGeo('leafy', () => new THREE.IcosahedronGeometry(0.32, 0)), k % 2 ? M.canopy : M.canopy2, rnd(-0.4, 0.4), rnd(0.4, 0.8), rnd(-0.4, 0.4), g);
       else for (let k = 0; k < 4; k++) { const r = mk(CYL(0.012, 0.025, rnd(0.7, 1.4), 5), M.rootGlow, rnd(-0.4, 0.4), -0.6, rnd(-0.2, 0.2), g, false); r.rotation.z = rnd(-0.3, 0.3); }
@@ -2924,9 +3050,10 @@ function animateCharacter(ch, p, dt, t) {
   if (a && at < 0.5) {
     const up = at < 0.12 ? ease(at / 0.12) : 1 - ease((at - 0.12) / 0.38);
     if (a.kind === 'pick' || a.kind === 'drop' || a.kind === 'open' || a.kind === 'lay') { crouch = up * 0.16; lean = up * 0.5; armL = armR = -1.2 * up + (carrying ? -1.7 * (1 - up) : 0); }
-    else if (a.kind === 'shove' || a.kind === 'topple') { lean = 0.35 * up + 0.15; armL = armR = -1.5; legL = -0.5 * up; legR = 0.4 * up; }
+    else if (a.kind === 'shove' || a.kind === 'topple' || a.kind === 'fell') { lean = 0.35 * up + 0.15; armL = armR = -1.5; legL = -0.5 * up; legR = 0.4 * up; }
     else if (a.kind === 'wheel') { armL = -1.8 - Math.sin(at * 20) * 0.4; armR = -1.8 + Math.sin(at * 20) * 0.4; lean = 0.15; }
-    else if (a.kind === 'kick') { legR = -1.6 * up; lean = -0.2 * up; }
+    else if (a.kind === 'jam') { lean = 0.3 * up; armL = -1.1; armR = -1.7 * up; }
+    else if (a.kind === 'kick' || a.kind === 'drain') { legR = -1.6 * up; lean = -0.2 * up; }
     else if (a.kind === 'pin') { armR = -2.9 * up; crouch = 0.06 * up; }
     else if (a.kind === 'deny') { ch.group.rotation.y += Math.sin(at * 50) * 0.12 * (1 - at * 2); }
   } else if (a && at >= 0.5) p.act = null;
@@ -3465,7 +3592,7 @@ function showCard() {
 }
 
 // ----- the timeline -----
-function recompute() { G.flow = C.flowing(G.L, G.s); G.raw = C.deriveRaw(G.L, G.s, G.flow); G.fut = C.deriveFuture(G.L, G.s, G.stand, G.raw); }
+function recompute() { G.flow = C.flowing(G.L, G.s); G.futureFlow = C.flowing(G.L, G.s, true); G.raw = C.deriveRaw(G.L, G.s, G.flow); G.fut = C.deriveFuture(G.L, G.s, G.stand, G.raw); }
 // The Echo's own tile is held: whatever 1924 does, the floor under the Echo stays as the Echo saw it.
 // When the Echo steps off, that tile catches up with the timeline (a bridge can collapse behind you).
 function trackStand(snap) {
@@ -3605,7 +3732,7 @@ function paradoxFx(i, why, local) {
   const x = i % G.L.W, y = (i / G.L.W) | 0;
   G.shocks.push({ era: 'future', x, y, t0: G.t, bad: true, big: true }); G.shocks.push({ era: 'past', x, y, t0: G.t, bad: true, big: true });
   // say what was observed: the Echo standing there, or the Echo already holding what 1924 wants back
-  G.stamps.push({ era: 'future', x, y, text: 'PARADOX', t0: G.t }); G.stamps.push({ era: 'past', x, y, text: why === 'unsealed' ? 'CARGO IS NO LONGER SEALED' : why === 'taken' ? 'THE ECHO HAS IT' : why === 'moved' ? 'THE ECHO TOPPLED IT' : 'THE ECHO IS HERE', t0: G.t });
+  G.stamps.push({ era: 'future', x, y, text: 'PARADOX', t0: G.t }); G.stamps.push({ era: 'past', x, y, text: why === 'felled' ? 'THE ECHO FELLED IT' : why === 'unsealed' ? 'CARGO IS NO LONGER SEALED' : why === 'taken' ? 'THE ECHO HAS IT' : why === 'moved' ? 'THE ECHO TOPPLED IT' : 'THE ECHO IS HERE', t0: G.t });
   for (let k = 0; k < 30; k++) { const a = Math.random() * 7, sp = rnd(1, 3); FX.spawn('past', 'chronal', x, 0.6, y, Math.cos(a) * sp, rnd(0.5, 2), Math.sin(a) * sp, 1, 0xff4060, { drag: 2 }); FX.spawn('future', 'chronal', x, 0.6, y, Math.cos(a) * sp, rnd(0.5, 2), Math.sin(a) * sp, 1, 0xff4060, { drag: 2 }); }
   Sound.paradox();
   if (local && Net.peer) Net.send({ t: 'fx', kind: 'paradox', i, why });
@@ -3700,11 +3827,22 @@ function echoTarget() {
     const act = C.echoAct(L, s, fut, i);
     if (act) return { x: q.x, y: q.y, label: act.kind === 'kick' ? 'Kick' : act.kind === 'open' ? 'Open box' : 'Lay plank', h: 1, run: () => act.s, kind: act.kind };
     if (!q.facing) continue;
+    const environment = echoEnvironmentTarget(); if (environment) return environment;
     if (r.o === 'bars') return { x: q.x, y: q.y, label: 'Solid iron', h: 1.5, deny: true };
     if (r.o === 'box') return { x: q.x, y: q.y, label: r.empty ? 'Empty' : 'Nothing inside', h: 1.1, deny: true };
     if (r.o === 'oldcrate') return echoToppleTarget();
   }
   return null;
+}
+function echoEnvironmentTarget() {
+  const p = G.E, x = p.x + p.dir.dx, y = p.y + p.dir.dy;
+  if (x < 0 || y < 0 || x >= G.L.W || y >= G.L.H) return null;
+  const i = tileIdx(x, y);
+  const result = C.echoFell(G.L, G.s, G.fut, i, p.dir.dx, p.dir.dy) || C.echoDrain(G.L, G.s, G.fut, i) || C.echoJam(G.L, G.s, G.fut, i);
+  if (!result) return null;
+  const action = { fell: C.echoFell, drain: C.echoDrain, jam: C.echoJam }[result.kind], dx = p.dir.dx, dy = p.dir.dy;
+  return { x, y, label: { fell: 'Fell tree', drain: 'Drain basin', jam: 'Jam wheel' }[result.kind], h: 1, kind: result.kind,
+    run: () => action(G.L, G.s, G.fut, i, dx, dy)?.s };
 }
 // The old crate the Echo faces, and whether there is a chasm beyond it to topple it into.
 function echoToppleTarget() {
@@ -3748,6 +3886,9 @@ function interact(who, selectedTarget) {
     if (tg.kind === 'wheel') { Sound.playLeverClunk(); later(0.2, () => Sound.flood()); G.shake.past = Math.max(G.shake.past, 2); }
     if (tg.kind === 'shove') shoveFx(tg, 'past');
     if (tg.kind === 'topple') { shoveFx(tg, 'future'); Sound.bridge(); G.shake.future = Math.max(G.shake.future, 5); }
+    if (tg.kind === 'fell') { shoveFx(tg, 'future'); Sound.bridge(); G.shake.future = 5; }
+    if (tg.kind === 'drain') { Sound.shatter(); Sound.flood(); G.shake.future = 3; shoveFx(tg, 'future'); }
+    if (tg.kind === 'jam') { Sound.playLeverClunk(); Sound.scrape(); shoveFx(tg, 'future'); }
     if (tg.kind === 'kick') { Sound.shatter(); G.shake.future = 6; G.hitstop = 0.07; }
     if (tg.kind === 'open') { Sound.playDoorSlide(); Sound.chime(); }
     if (tg.kind === 'lay') { Sound.drop(); Sound.bridge(); }
@@ -3813,6 +3954,9 @@ function describeStep(step) {
     case 'go': text = 'walk over here'; break;
     case 'pin': text = 'pin this tile'; break;
     case 'unpin': text = 'take the pin back from here'; break;
+    case 'fell': { const [dx, dy] = m[3].split(',').map(Number); text = 'fell this ironwood ' + (dx > 0 ? 'east' : dx < 0 ? 'west' : dy > 0 ? 'south' : 'north'); break; }
+    case 'drain': text = 'kick this rusted drain to empty the connected basin'; break;
+    case 'jam': text = 'jam this sluice wheel to close its gates in 2026'; break;
     case 'kick': text = G.fut[tileIdx(x, y)].o === 'rustfall' ? 'kick the fallen rusted frame' : 'kick the rusted bars'; break;
     case 'open': text = 'open the Stash Box'; break;
     case 'lay': text = 'lay the plank across here'; break;
@@ -4124,7 +4268,7 @@ function updatePlayers(dt) {
       const fx = p.x + p.dir.dx, fy = p.y + p.dir.dy, o = C.objAt(G.s, fx, fy), into = Math.abs(ix) > Math.abs(iy) ? Math.sign(ix) === p.dir.dx && p.dir.dx : Math.sign(iy) === p.dir.dy && p.dir.dy;
       if (o && o.k === 'crate' && into) { p.bump += dt; if (p.bump > 0.16) { p.bump = 0; interact('A'); } } else p.bump = Math.max(0, p.bump - dt * 3);
     } else if (who === 'E' && (ix || iy) && !frozen) {
-      const into = Math.abs(ix) > Math.abs(iy) ? Math.sign(ix) === p.dir.dx && p.dir.dx : Math.sign(iy) === p.dir.dy && p.dir.dy, tg = into ? echoToppleTarget() : null;
+      const into = Math.abs(ix) > Math.abs(iy) ? Math.sign(ix) === p.dir.dx && p.dir.dx : Math.sign(iy) === p.dir.dy && p.dir.dy, tg = into ? (echoEnvironmentTarget() || echoToppleTarget()) : null;
       if (tg && !tg.deny) { p.bump += dt; if (p.bump > 0.16) { p.bump = 0; interact('E', tg); } } else p.bump = Math.max(0, p.bump - dt * 3);
     } else p.bump = Math.max(0, p.bump - dt * 3);
     const cx = Math.round(p.rx), cy = Math.round(p.ry);

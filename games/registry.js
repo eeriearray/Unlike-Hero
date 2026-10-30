@@ -46,8 +46,8 @@ window.GAME_REGISTRY = [
   {
     "id": "chronolink",
     "title": "ChronoLink: Anchor & Echo",
-    "tagline": "Change the past, explore its ruins, and borrow what time leaves behind. 25 co-op chambers, including the Undercroft: eight brutally hard two-century crate puzzles.",
-    "version": "2.3.0",
+    "tagline": "Change the past and reshape its ruins. 28 co-op chambers with shared timber, ironwood, flooded courts and sluice wheels.",
+    "version": "2.4.0",
     "sdk": "1.x",
     "entry": "index.html",
     "thumbnail": "hub-banner.webp",
@@ -67,7 +67,7 @@ window.GAME_REGISTRY = [
         "id": "echo",
         "name": "The Echo (2026)",
         "entry": "index.html#echo",
-        "description": "Arrows and Enter (F or . to pin). Walks the result, holds whatever it stands on still, topples old crates into chasms, pins tiles, kicks rusted bars and empties the Stash Box."
+        "description": "Arrows and Enter (F or . to pin). Holds and pins tiles, topples crates, fells ironwood, drains flooded basins, jams future sluices, kicks rusted bars and opens the Stash Box."
       }
     ],
     "multiplayer": {

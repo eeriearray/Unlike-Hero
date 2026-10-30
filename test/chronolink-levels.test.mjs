@@ -16,8 +16,8 @@ const C = sandbox.ChronoCore;
 const room = (map, extra) => C.parseChamber(Object.assign({ name: 'test', card: '', map }, extra || {}), 0);
 const at = (L, recs, x, y) => recs[y * L.W + x];
 
-test('there are 25 authored chambers, each a closed rectangle with a start for both eras and an exit', () => {
-  assert.equal(C.MAX_LEVEL, 25);
+test('there are 28 authored chambers, each a closed rectangle with a start for both eras and an exit', () => {
+  assert.equal(C.MAX_LEVEL, 28);
   for (let n = 1; n <= C.MAX_LEVEL; n++) {
     const L = C.getChamber(n);
     assert.ok(L.name && L.card, `chamber ${n} has a name and a one-line card`);
@@ -74,6 +74,9 @@ test('each chamber that teaches a mechanic cannot be solved without it', () => {
       else if (need === 'sediment') o.noSediment = true;
       else if (need === 'support') o.noSupports = true;
       else if (need === 'box') o.noBox = true;
+      else if (need === 'fell') o.noFell = true;
+      else if (need === 'drain') o.noDrain = true;
+      else if (need === 'jam') o.noJam = true;
       else if (need === 'topple') o.noTopple = true;
       else if (need === 'pin') o.pins = L.pinsMax - 1;
       const r = C.solve(L, o);
@@ -205,6 +208,16 @@ function randomState(L, rnd, steps) {
     for (const o of s.objs) if (o.k === 'crate') for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
       if (!ra.seen[(o.y - dy) * W + o.x - dx]) continue;
       const n = C.actShove(L, s, o.x, o.y, dx, dy); if (n && !(stand && C.crushes(L, s, n, stand.i))) opts.push(() => { s = n; a = { x: o.x - dx + dx, y: o.y - dy + dy }; });
+    }
+    const free=C.deriveFuture(L,s,null);
+    for(let i=0;i<N;i++) for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+      const x=i%W-dx,y=Math.floor(i/W)-dy,b=y*W+x;
+      if(x<0||x>=W||y<0||y>=L.H||!re.seen[b]) continue;
+      const keep=stand?.i===b,view=keep?fut:free;
+      if(!C.walkRec(view[b])) continue;
+      for(const result of [C.echoFell(L,s,view,i,dx,dy),C.echoDrain(L,s,view,i),C.echoJam(L,s,view,i)]) {
+        if(result) opts.push(()=>{s=result.s;e={x,y};if(!keep)stand=null;});
+      }
     }
     if (!opts.length) break;
     opts[Math.floor(rnd() * opts.length)]();

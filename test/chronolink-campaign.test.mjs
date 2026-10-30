@@ -52,8 +52,8 @@ test('the three teaching galleries require their respective new mechanic even wi
 
 // Replay actual solver macros through the public actions, including the exact
 // positions from which actions are made. Check hint recovery inside each gallery.
-function replay(L,path){
-  let s=C.initState(L),a={...L.startA},e={...L.startE},stand=null;
+function replay(L,path,start){
+  let s=start?C.cloneState(start.s):C.initState(L),a={...(start?.a||L.startA)},e={...(start?.e||L.startE)},stand=start?.stand||null;
   const W=L.W,idx=p=>p.y*W+p.x;
   const region=(who,fut)=>who==='A'?C.regionOf(L,a,(x,y)=>C.walkPast(L,s,x,y,C.flowing(L,s))):C.regionOf(L,e,(x,y)=>C.walkFuture(fut,L,x,y));
   for(const label of path){
@@ -80,10 +80,10 @@ function replay(L,path){
         if(verb==='scan'){const r=L.relays.find(r=>r.label===arg);next=C.readRelay(L,s,r.id);assert.ok(next,label);s=next;}
       }else{
         assert.ok(from&&region('E',fut).seen[idx(from)],label);
-        const keep=stand&&(verb==='topple'?stand.i===idx(from):stand.i===i||Math.abs(stand.i%W-p.x)+Math.abs(Math.floor(stand.i/W)-p.y)===1);
+        const keep=stand&&((verb==='topple'||verb==='fell')?stand.i===idx(from):stand.i===i||Math.abs(stand.i%W-p.x)+Math.abs(Math.floor(stand.i/W)-p.y)===1);
         e=from;if(!keep)stand=null;
-        const view=C.deriveFuture(L,s,stand),[dx,dy]=verb==='topple'?arg.split(',').map(Number):[0,0];
-        const r=verb==='pin'||verb==='unpin'?C.echoPin(L,s,view,i):verb==='topple'?(assert.equal(from.x+dx,p.x,label),assert.equal(from.y+dy,p.y,label),C.echoTopple(L,s,view,i,dx,dy)):C.echoAct(L,s,view,i);
+        const view=C.deriveFuture(L,s,stand),[dx,dy]=(verb==='topple'||verb==='fell')?arg.split(',').map(Number):[0,0];
+        const r=verb==='pin'||verb==='unpin'?C.echoPin(L,s,view,i):(verb==='topple'||verb==='fell')?(assert.equal(from.x+dx,p.x,label),assert.equal(from.y+dy,p.y,label),(verb==='fell'?C.echoFell:C.echoTopple)(L,s,view,i,dx,dy)):verb==='drain'?C.echoDrain(L,s,view,i):verb==='jam'?C.echoJam(L,s,view,i):C.echoAct(L,s,view,i);
         assert.ok(r,label);assert.equal(r.kind,verb,label);s=r.s;
       }
     }
@@ -117,5 +117,61 @@ test('Undercroft plans replay through shared actions and finish with both chrono
     assert.ok(C.regionOf(L,end.e,(x,y)=>C.walkFuture(fut,L,x,y)).seen[X],`chamber ${n}: Echo reaches the exit`);
     const mid=replay(L,r.path.slice(0,Math.floor(r.path.length/2))),hint=C.solve(L,{start:mid,noPath:true,maxStates:400000});
     assert.equal(hint.ok,true,`chamber ${n} halfway: ${hint.why}`);
+  }
+});
+
+// Both scored and plain plans must be executable, not just solver claims.
+test('Echo wings require their new verbs, ramp above thirty actions, replay and recover halfway',()=>{
+  const depths=[];
+  for(const [n,option,target] of [[26,'noDrain',31],[27,'noFell',33],[28,'noJam',40]]){
+    const L=C.getChamber(n),r=C.solve(L,{realMoves:true,maxStates:400000,maxDepth:80});
+    assert.equal(r.ok,true,`chamber ${n}: ${r.why}`);assert.equal(r.depth,target);depths.push(r.depth);
+    const absent=C.solve(L,{[option]:true,maxStates:400000,maxDepth:80});
+    assert.equal(absent.why,'exhausted',`chamber ${n} requires ${option}`);
+    const plain=C.solve(L,{maxStates:400000,maxDepth:80});assert.equal(plain.ok,true);assert.ok(plain.explored<400000);assert.ok(plain.depth<80);
+    for(const plan of [r.path,plain.path]){
+      const end=replay(L,plan),X=L.exit.y*L.W+L.exit.x;
+      assert.ok(C.regionOf(L,end.a,(x,y)=>C.walkPast(L,end.s,x,y,C.flowing(L,end.s))).seen[X],`Anchor exit ${n}`);
+      const fut=C.deriveFuture(L,end.s,end.stand);
+      assert.ok(C.regionOf(L,end.e,(x,y)=>C.walkFuture(fut,L,x,y)).seen[X],`Echo exit ${n}`);
+      const mid=replay(L,plan.slice(0,Math.floor(plan.length/2)));
+      const hint=C.solve(L,{start:mid,maxStates:400000});assert.equal(hint.ok,true,`halfway ${n}: ${hint.why}`);
+      // Replay hints from an actual snapshot too, including wheel jams and witnesses.
+      const continuation=replay(L,hint.path,mid);
+      assert.ok(C.regionOf(L,continuation.e,(x,y)=>C.walkFuture(C.deriveFuture(L,continuation.s,continuation.stand),L,x,y)).seen[X]);
+    }
+  }
+  assert.ok(depths.every((d,i)=>d>=30&&(!i||d>depths[i-1])));
+});
+
+test('random late-wing experiments stay within the hint budget, including irreversible Echo actions',()=>{
+  let seed=427;const rnd=()=>((seed=(1664525*seed+1013904223)>>>0)/4294967296);
+  for(let n=26;n<=28;n++){
+    const L=C.getChamber(n),plan=C.solve(L).path;
+    for(let sample=0;sample<4;sample++){
+      // Sample the late gallery and wing, where the new verbs are reachable.
+      let start=replay(L,plan.slice(0,Math.floor(plan.length*(0.6+rnd()*0.39))));
+      for(let step=0;step<3;step++){
+        const {s,a,e,stand}=start,W=L.W,fut=C.deriveFuture(L,s,stand),free=C.deriveFuture(L,s,null);
+        const ra=C.regionOf(L,a,(x,y)=>C.walkPast(L,s,x,y,C.flowing(L,s))),re=C.regionOf(L,e,(x,y)=>C.walkFuture(fut,L,x,y)),choices=[];
+        for(let i=0;i<W*L.H;i++){
+          const x=i%W,y=Math.floor(i/W);
+          for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+            const from={x:x-dx,y:y-dy},b=from.y*W+from.x;
+            if(from.x<0||from.x>=W||from.y<0||from.y>=L.H)continue;
+            if(ra.seen[b]){
+              const wi=C.wheelAt(L,x,y),next=s.held?C.actDrop(L,s,x,y):C.actPick(L,s,x,y);
+              for(const ns of [next,wi>=0?C.actWheel(L,s,wi):null])if(ns&&ns.paradox==null&&!C.crushes(L,s,ns,stand?.i))choices.push({s:ns,a:from,e,stand});
+            }
+            const keep=stand?.i===b,view=keep?fut:free;
+            if(!re.seen[b]||!C.walkRec(view[b]))continue;
+            for(const result of [C.echoFell(L,s,view,i,dx,dy),C.echoDrain(L,s,view,i),C.echoJam(L,s,view,i)])if(result)choices.push({s:result.s,a,e:from,stand:keep?stand:null});
+          }
+        }
+        if(choices.length)start=choices[Math.floor(rnd()*choices.length)];
+      }
+      const hint=C.solve(L,{start,noPath:true,maxStates:400000});
+      assert.ok(hint.ok||hint.why==='exhausted',`chamber ${n}, experiment ${sample}: ${hint.why}`);
+    }
   }
 });
