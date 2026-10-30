@@ -51,3 +51,10 @@ test('standing on one crack beside another, the plank goes underfoot unless the 
  let t=h.run("choosePlacement('A')");assert.equal(t.label,'Lay here');assert.deepEqual([t.x,t.y],[2,2]);
  h.G.A.dir={dx:1,dy:0};t=h.run("choosePlacement('A')");assert.equal(t.label,'Lay across');assert.deepEqual([t.x,t.y],[3,2]);
 });
+test('standing on a signal lock line with a plank says the line stays clear instead of offering another tile',()=>{
+ const h=harness(),L=h.C.parseChamber({name:'lock line',map:['######','#..~.#','#.A~.#','#E.~X#','######'],objs:[{k:'plank',x:1,y:1}],relays:[{gate:{column:3},receiver:{x:1,y:3}}]},0);
+ const s=h.C.initState(L);s.locks.r0=true;s.held='o0';Object.assign(h.G,{L,s});h.G.fut=h.C.deriveRaw(L,s);h.ctx.tileIdx=(x,y)=>y*L.W+x;
+ h.G.A={x:3,y:2,dir:{dx:1,dy:0}};h.G.placementAim=null;
+ const t=h.run("choosePlacement('A')");assert.equal(t.label,'Lock line · keep clear');assert.equal(t.deny,true);
+ h.G.A={x:2,y:2,dir:{dx:-1,dy:0}};assert.equal(h.run("choosePlacement('A')").label,'Set down','away from the line nothing changes');
+});

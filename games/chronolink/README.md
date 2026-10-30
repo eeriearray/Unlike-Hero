@@ -14,7 +14,7 @@ The game remains one `index.html`, using three.js r128 from cdnjs. Textures are 
 - `?level=N` or `#N` opens chamber 1–28.
 - Drag to orbit, scroll to zoom, double-click to reset. Facing chooses among legal placements; clicking another adjacent legal tile explicitly aims the placement.
 
-Only Echo sees receiver frequencies. Anchor must enter the number manually at the matching signal barrier. Hints and shared objectives never reveal or automatically enter it.
+Only Echo sees receiver frequencies. Anchor must enter the number manually at the matching signal barrier. Hints and shared objectives never reveal or automatically enter it. A signal lock's line stays clear for good: nothing can be set down or shoved onto it, even after it opens.
 
 ## A century of consequences
 
