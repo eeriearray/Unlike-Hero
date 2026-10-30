@@ -30,6 +30,8 @@ export const POWERS = {
 };
 const clamp = (v, a, b) => Math.max(a, Math.min(b, Number(v) || 0));
 const damp = (rate, dt) => 1 - Math.exp(-rate * dt);
+// Forgiving default bots: players can outrun them and have time to dodge/reload.
+const BOT = Object.freeze({ throttle: 0.8, reload: 2.3, lead: 0.5, spread: 0.32, engage: 32 });
 
 function rng(seed) { let s = seed >>> 0 || 1; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
 
@@ -129,7 +131,7 @@ export function aimBroadside(w, s) {
  }
  if (!best) return null;
  const { o, rel, d } = best, side = rel < 0 ? 1 : -1; // 1 = starboard
- const lead = d / RULES.ballSpeed, ov = o.v || 0, of = forward(o.a || 0);
+ const lead = d / RULES.ballSpeed * (s.ai ? BOT.lead : 1), ov = o.v || 0, of = forward(o.a || 0);
  const px = o.x + of.x * ov * lead, pz = o.z + of.z * ov * lead;
  const beamDir = side > 0 ? s.a - Math.PI / 2 : s.a + Math.PI / 2;
  let dir = Math.atan2(px - s.x, pz - s.z);
@@ -148,7 +150,7 @@ function fire(w, s) {
   const sb = starboard(s.a), sx = s.x + sb.x * shot.side * 2.4, sz = s.z + sb.z * shot.side * 2.4;
   const life = clamp(shot.d / RULES.ballSpeed + 0.12, 0.35, RULES.range / RULES.ballSpeed + 0.1);
   for (let i = 0; i < count; i++) {
-   const k = i - (count - 1) / 2, wobble = s.ai ? (w.random() - 0.5) * 0.12 : 0;
+   const k = i - (count - 1) / 2, wobble = s.ai ? (w.random() - 0.5) * BOT.spread : 0;
    const dir = shot.dir + k * 0.035 + wobble;
    w.shots.push({ id: w.nextId++, by: s.id, team: s.team, x: sx + f.x * k * 1.6, z: sz + f.z * k * 1.6, y: 2,
     vx: Math.sin(dir) * RULES.ballSpeed + f.x * s.v * 0.5, vz: Math.cos(dir) * RULES.ballSpeed + f.z * s.v * 0.5,
@@ -156,7 +158,7 @@ function fire(w, s) {
   }
   emit(w, 'fire', { id: s.id, side: shot.side, x: sx, z: sz });
  }
- s.reload = RULES.reload;
+ s.reload = s.ai ? BOT.reload : RULES.reload;
 }
 
 function damage(w, s, amount, by) {
@@ -397,7 +399,7 @@ export function botControl(w, s) {
  const g = w.galleon && !w.galleon.dead ? w.galleon : null;
  let goal = null, fight = null;
  if (s.gold >= s.greed || (s.gold >= 6 && s.hp < 45) || (w.final && s.gold > 0 && homeD < 100) || (w.duration - w.t < 12 && s.gold > 0)) goal = home;
- else if (near && near.d < (s.hp > 40 ? 46 : 26)) fight = near.o;
+ else if (near && near.d < (s.hp > 40 ? BOT.engage : 22)) fight = near.o;
  else if (g && distance(g, s) < 110) fight = g;
  else {
   let best = -1;
@@ -408,7 +410,7 @@ export function botControl(w, s) {
   }
   goal = goal || { x: 0, z: 30 };
  }
- let desired, throttle = 1;
+ let desired, throttle = BOT.throttle;
  if (fight) {
   const d = distance(fight, s), to = Math.atan2(fight.x - s.x, fight.z - s.z);
   const port = angleDelta(to + Math.PI / 2, s.a), star = angleDelta(to - Math.PI / 2, s.a);
@@ -436,7 +438,8 @@ export function botControl(w, s) {
  return {
   throttle, turn: clamp(err * 2.2, -1, 1),
   fire: !!aim && aim.d < RULES.range - 6 && s.reload <= 0,
-  boost: (goal === home && s.gold > 10 && Math.abs(err) < 0.4 && homeD > 50) || (fight && s.hp < 30 && w.random() < 0.02),
+  // Save boosts for danger, giving players a chance to catch a treasure carrier.
+  boost: (w.whirls || []).some(h => distance(h, s) < h.r) || (!!fight && s.hp < 30 && w.random() < 0.02),
  };
 }
 

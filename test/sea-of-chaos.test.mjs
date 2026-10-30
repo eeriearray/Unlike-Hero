@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createMatch, step, aimBroadside, RULES } from '../games/sea-of-chaos/plunder.js';
+import { createMatch, step, aimBroadside, botControl, RULES } from '../games/sea-of-chaos/plunder.js';
 import { TEAMS, ISLANDS, EDGE, BANK_RADIUS, collideSea, shoreRadius } from '../games/sea-of-chaos/sea-map.js';
 import { snapshot, readSnapshot } from '../games/sea-of-chaos/network.js';
 
@@ -120,4 +120,52 @@ test('a whirlpool swallows a ship that drifts in, but a boost escapes the rim', 
  Object.assign(b, { x: h.x + h.r * 0.8, z: h.z, a: Math.PI / 2, v: 10, shield: 0, hp: 100 }); // heading away (+x)
  for (let i = 0; i < 4 * 30; i++) { h.speed = 0; step(w, { b: { throttle: 1, boost: true } }, 1 / 30); }
  assert.ok(!b.dead && Math.hypot(b.x - h.x, b.z - h.z) > h.r, 'boosting away from the rim escapes');
+});
+
+
+test('bots cruise below player full sail and save boosts for danger', () => {
+ const w = createMatch([{ id: 'bot', ai: true }], { seed: 31 });
+ const s = w.ships[0];
+ Object.assign(s, { x: 0, z: 30, a: 0, gold: 0 });
+ w.whirls = []; w.loot = [{ x: 0, z: 55, value: 8 }]; w.powers = [];
+ const cruise = botControl(w, s);
+ assert.ok(cruise.throttle > 0 && cruise.throttle <= 0.8);
+ assert.equal(cruise.boost, false);
+ Object.assign(s, { gold: 40, a: -Math.PI / 2 });
+ assert.equal(botControl(w, s).boost, false, 'a laden bot should not sprint home on cooldown');
+ w.whirls = [{ x: s.x + 12, z: s.z, r: RULES.whirlRadius }];
+ assert.equal(botControl(w, s).boost, true, 'bots can still escape a whirlpool');
+});
+
+test('moving-target aim stays precise for players but underleads for bots', () => {
+ const w = createMatch([{ id: 'a' }, { id: 'b' }], { seed: 32 });
+ const [a, b] = w.ships;
+ Object.assign(a, { x: 0, z: 30, a: 0 });
+ Object.assign(b, { x: 30, z: 30, a: 0, v: RULES.speed });
+ const player = aimBroadside(w, a);
+ assert.ok(Math.abs(player.dir - Math.atan2(30, RULES.speed * 30 / RULES.ballSpeed)) < 1e-9);
+ a.ai = true;
+ const bot = aimBroadside(w, a);
+ assert.equal(bot.target, player.target);
+ assert.ok(bot.dir > player.dir && bot.dir < Math.PI / 2, 'bots lead less, making moving players harder to hit');
+});
+
+test('bots leave a longer dodge window between broadsides without slowing player reloads', () => {
+ function volleys(ai) {
+  const w = createMatch([{ id: 'a', ai }, { id: 'b' }], { seed: 33 });
+  w.whirls = []; w.loot = []; w.chestClock = 99;
+  let fired = 0, last = 0;
+  for (let i = 0; i < 6 * 30; i++) {
+   // Hold the same broadside opportunity throughout, isolating firing cadence from navigation.
+   Object.assign(w.ships[0], { x: 0, z: 30, a: 0, v: 0, yawRate: 0, rudder: 0 });
+   Object.assign(w.ships[1], { x: 30, z: 30, v: 0, shield: 99 });
+   step(w, { a: { fire: true } });
+   fired += w.events.filter(e => e.n > last && e.type === 'fire' && e.id === 'a').length;
+   last = w.eventN;
+  }
+  return fired;
+ }
+ const player = volleys(false), bot = volleys(true);
+ assert.equal(player, 5, 'the player keeps the existing reload rate');
+ assert.ok(bot > 0 && bot <= player * 0.6, `${bot} bot volleys vs ${player} player volleys`);
 });

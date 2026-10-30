@@ -1,6 +1,6 @@
 # Sea of Chaos: Plunder · 6.0.0
 
-A fast pirate brawl for **1v1, 2v2 and 3v3**. Bots fill any empty berths.
+A fast pirate brawl for **1v1, 2v2 and 3v3**. Bots fill any empty berths. They cruise at 80% throttle, fire half as often as players, lead targets less accurately, and only pursue nearby rivals. They save boosts for danger, so you can outrun them or catch a ship carrying treasure.
 
 ## The game in one breath
 
