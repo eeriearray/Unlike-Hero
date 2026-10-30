@@ -369,6 +369,8 @@
     standings(w);
     for(const k of w.racers){
       const input=!k.human||k.autopilot>0?aiInput(w,k,dt):cleanInput(inputs[k.id]);
+      // Held controls ride in snapshots so online clients can predict other drivers between updates.
+      if(k.human)k.input={...input,hop:false,use:false,reset:false};
       drive(w,k,input,dt);
     }
     kartCollisions(w);standings(w);

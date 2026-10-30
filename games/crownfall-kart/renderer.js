@@ -54,7 +54,7 @@
       }
       this.csm=new root.CSM({camera:this.camera,parent:this.scene,cascades:settings.cascades,maxFar:this.quality==='performance'?90:260,shadowMapSize:settings.size,mode:'practical',lightDirection:new THREE.Vector3(.65,-.32,.7).normalize(),lightIntensity:2.6,lightNear:1,lightFar:800,lightMargin:180,shadowBias:-.000015});
       this.csm.fade=this.quality!=='performance';for(const light of this.csm.lights){light.color.set('#ffe0ac');light.shadow.normalBias=.025;}
-      this.trackKey='';this.materialsDirty=true;this.options=null;
+      this.trackKey='';this.materialsDirty=true;this.options=null;if(this.quality!=='performance')this.scenery.upgradeTextures();
       this.csm.updateFrustums();this.registerMaterials();if(this.profile)this.applyProfileLighting();
       this.ratioCap=settings.ratio;this.pixelRatio=root.HubPerformance?.pixelRatio(innerWidth,innerHeight,settings.ratio)??Math.min(devicePixelRatio||1,settings.ratio);
       this.post.quality=this.quality;
@@ -318,9 +318,10 @@
       if(battle)return;
       const dummy=new THREE.Object3D(),count=Math.floor(track.length/4);
       const solid=['gothic','sandstone','ice','timber'].includes(this.profile.border);
-      const railGeo=new THREE.BoxGeometry(solid?.3:.12,.35,4.1,1,12,1);const railPos=railGeo.attributes.position;for(let i=0;!solid&&i<railPos.count;i++)railPos.setX(i,railPos.getX(i)+Math.cos(railPos.getY(i)*36)*.045);railGeo.computeVertexNormals();
+      // Performance drops the rail ripple and rounds posts with fewer sides: these instance over a thousand times.
+      const low=this.quality==='performance',railGeo=new THREE.BoxGeometry(solid?.3:.12,.35,4.1,1,low?1:12,1);const railPos=railGeo.attributes.position;for(let i=0;!solid&&!low&&i<railPos.count;i++)railPos.setX(i,railPos.getX(i)+Math.cos(railPos.getY(i)*36)*.045);railGeo.computeVertexNormals();
       const rails=new THREE.InstancedMesh(railGeo,this.scenery.border,count*4);
-      const posts=new THREE.InstancedMesh(new THREE.CylinderGeometry(solid?.17:.065,solid?.2:.065,1.2,12),this.scenery.border,count*2);
+      const posts=new THREE.InstancedMesh(new THREE.CylinderGeometry(solid?.17:.065,solid?.2:.065,1.2,low?6:12),this.scenery.border,count*2);
       for(let i=0;i<count;i++)for(let side=0;side<2;side++){
         const distance=i*4,p=T.sample(track,distance,(side?1:-1)*(track.width/2+.25));
         const hidden=T.inGap(track,distance)||T.inGap(track,distance+2)||T.inGap(track,distance-2);
@@ -360,7 +361,7 @@
       this.materialsDirty=true;
       const group=new THREE.Group(),visual=new THREE.Group();group.add(visual);
       const stats=D.CLASSES[k.classId],color=ghost?'#9de5ef':k.color||stats.color;
-      const wheels=root.buildSportsCar(this,visual,color);
+      const wheels=root.buildSportsCar(this,visual,color,!ghost&&this.quality==='performance'&&k.id!==this.playerId);
       if(k.classId==='heavy'){visual.scale.set(1.08,1.06,1.08);}
       if(k.classId==='light')visual.scale.set(.89,.95,.91);
       const flames=[];for(const x of [-.38,.38]){const flame=this.mesh(new THREE.ConeGeometry(.19,1.3,7),'#9af7ed',visual,true);flame.rotation.x=-Math.PI/2;flame.position.set(x,.1,-1.65);flame.visible=false;flames.push(flame);}
@@ -541,7 +542,7 @@
       for(const [id,mesh]of this.entities)if(!needed.has(id)){this.dynamic.remove(mesh);if(mesh.isGroup)mesh.traverse(o=>{if(o.isMesh){o.geometry.dispose();if(o.userData.ownedMaterial)o.material.dispose();}});else mesh.geometry.dispose();this.entities.delete(id);}
     }
     render(world,playerId,dt,menu=false,ghostPose=null){
-      dt=D.clamp(dt,0,.05);this.build(world);const track=T.makeTrack(world.trackIndex),ids=new Set(world.racers.map(k=>k.id));
+      dt=D.clamp(dt,0,.05);this.playerId=playerId;this.build(world);const track=T.makeTrack(world.trackIndex),ids=new Set(world.racers.map(k=>k.id));
       for(const[id,m]of this.karts)if(!ids.has(id)){this.removeKart(m);this.karts.delete(id);this.lastMotion.delete(id);}
       const now=performance.now()/1000;
       for(const k of world.racers){

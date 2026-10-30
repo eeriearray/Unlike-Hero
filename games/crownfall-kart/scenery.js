@@ -5,7 +5,8 @@
     constructor(owner){
       this.owner=owner;this.textures=[];this.ready=[];this.failed=[];this.skyCache=new Map();this.materialTextures=new Map();
       const loader=new THREE.TextureLoader();
-      const load=(name,color)=>{const t=loader.load('assets/pbr/'+name,()=>this.ready.push(name),undefined,()=>this.failed.push(name));t.wrapS=t.wrapT=THREE.RepeatWrapping;t.encoding=color?THREE.sRGBEncoding:THREE.LinearEncoding;t.anisotropy=Math.min(8,owner.renderer.capabilities.getMaxAnisotropy());this.textures.push(t);return t;};
+      // Small 512px copies load first; Balanced and High swap in the full 2K maps (see upgradeTextures).
+      this.pbr=[];const load=(name,color)=>{const t=loader.load('assets/pbr/low/'+name,()=>this.ready.push(name),undefined,()=>this.failed.push(name));this.pbr.push([t,name]);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.encoding=color?THREE.sRGBEncoding:THREE.LinearEncoding;t.anisotropy=Math.min(8,owner.renderer.capabilities.getMaxAnisotropy());this.textures.push(t);return t;};
       this.road=new THREE.MeshStandardMaterial({color:0xffffff,map:load('asphalt_02_diff.jpg',true),normalMap:load('asphalt_02_nor_gl.jpg'),normalScale:new THREE.Vector2(.55,.55),roughnessMap:load('asphalt_02_rough.jpg'),roughness:1,metalness:0});
       this.rock=new THREE.MeshStandardMaterial({color:'#b9a48e',map:load('sandstone_cracks_diff.jpg',true),normalMap:load('sandstone_cracks_nor_gl.jpg'),normalScale:new THREE.Vector2(1.3,1.3),roughnessMap:load('sandstone_cracks_rough.jpg'),roughness:1,metalness:0,vertexColors:true});
       this.metal=new THREE.MeshStandardMaterial({color:'#a1a5a3',metalness:.85,roughness:.37,roughnessMap:this.road.roughnessMap});
@@ -16,6 +17,10 @@
       this.road.envMapIntensity=.3;this.rock.envMapIntensity=.35;this.needles.envMapIntensity=.35;this.bark.envMapIntensity=.35;
       this.border=new THREE.MeshPhysicalMaterial({roughness:.6,metalness:.4});
       this.materials=[this.border,this.road,this.rock,this.metal,this.bark,this.needles,this.glass,this.rubber];
+    }
+    upgradeTextures(){
+      if(this.upgraded)return;this.upgraded=true;const loader=new THREE.ImageLoader();
+      for(const [texture,name] of this.pbr)loader.load('assets/pbr/'+name,image=>{texture.image=image;texture.needsUpdate=true;});
     }
     setProfile(profile){
       this.profile=profile;const surface=profile.surface;

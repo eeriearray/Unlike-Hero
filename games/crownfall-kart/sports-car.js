@@ -18,8 +18,8 @@
     }
     const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));g.setIndex(indices);g.computeVertexNormals();return g;
   }
-  function batchStatic(group,sharedBox){
-    const buckets=new Map();for(const mesh of group.children){if(!mesh.isMesh||mesh.userData.cabin)continue;const list=buckets.get(mesh.material)||[];list.push(mesh);buckets.set(mesh.material,list);}
+  function batchStatic(group,sharedBox,mergeCabin=false){
+    const buckets=new Map();for(const mesh of group.children){if(!mesh.isMesh||(mesh.userData.cabin&&!mergeCabin))continue;const list=buckets.get(mesh.material)||[];list.push(mesh);buckets.set(mesh.material,list);}
     for(const [material,meshes] of buckets){
       if(meshes.length<2)continue;const positions=[],normals=[],uvs=[],indices=[],disposed=new Set();let offset=0;
       for(const mesh of meshes){mesh.updateMatrix();const g=mesh.geometry,p=g.attributes.position,n=g.attributes.normal,uv=g.attributes.uv,normalMatrix=new THREE.Matrix3().getNormalMatrix(mesh.matrix),v=new THREE.Vector3();
@@ -30,7 +30,8 @@
       const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));geometry.setIndex(indices);group.add(new THREE.Mesh(geometry,material));
     }
   }
-  root.buildSportsCar=function(o,visual,color){
+  // mergeCabin folds the glazing and pillars into the body batches; only karts nobody drives from inside can use it.
+  root.buildSportsCar=function(o,visual,color,mergeCabin=false){
     const low=o.quality==='performance';
     const paintKey=(low?'simple-paint:':'paint:')+color;
     if(!o.materials.has(paintKey))o.materials.set(paintKey,low?new THREE.MeshStandardMaterial({color,roughness:.7,metalness:.1}):new THREE.MeshPhysicalMaterial({color,metalness:.42,roughness:.34,clearcoat:1,clearcoatRoughness:.035,envMapIntensity:1.05}));
@@ -77,7 +78,7 @@
       for(let j=0;j<10;j++){const spoke=o.box(spin,Math.sign(x)*.11,0,0,.025,.025,.42,'#a1a5a3');spoke.rotation.x=j*Math.PI/5;spoke.material=metal;}
       const caliper=o.box(steering,Math.sign(x)*.05,.14,.1,.09,.14,.08,'#bf3b22');caliper.material=paint;
     }
-    batchStatic(visual,o.unitBox);for(const wheel of wheels)batchStatic(wheel.children[0],o.unitBox);
+    batchStatic(visual,o.unitBox,mergeCabin);for(const wheel of wheels)batchStatic(wheel.children[0],o.unitBox);
     visual.traverse(m=>{if(m.isMesh)m.castShadow=m.receiveShadow=true;});return wheels;
   };
 })(window);

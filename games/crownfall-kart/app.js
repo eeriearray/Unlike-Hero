@@ -11,6 +11,8 @@
   $('cpu-difficulty').onchange=()=>{difficulty=S.difficultyOf($('cpu-difficulty').value);storage.set('difficulty',difficulty);};
   let world=S.createWorld({classId}),accumulator=0,previous=performance.now(),uiTime=0,netTime=0,sessionActive=false;
   let ghost=null,recording=[],recordAt=0,lastCountdown=0,busy=false;
+  // Online prediction: the client steps its copy of the server world between snapshots so controls respond at once.
+  let netInput=null,predicted=0,serverPhase=null;const PREDICT_LIMIT=.25;
   const input=new KartInput(),audio=new KartAudio();let renderer;
   try{renderer=new KartRenderer($('world'));}catch(error){$('fatal').classList.remove('hidden');$('fatal-message').textContent='This game needs WebGL. Enable hardware acceleration or try a recent Chrome, Edge, Firefox or Safari browser.';console.error(error);return;}
   const graphicsNotes={performance:'Simplest graphics: lower resolution, no real-time shadows, smoke, weather or post effects. Fewer trees and simpler cars.',balanced:'Two shadow cascades, SSAO, bloom and atmospheric haze. Resolution adapts to frame time.',high:'Three shadow cascades, SSAO, cinematic focus and speed blur. Best on a dedicated GPU.'};
@@ -88,7 +90,7 @@
     setScreen('race');reportStart();
   }
   function quitToMenu(){
-    reportEnd(true);connection?.close();connection=null;room=null;paused=false;setBusy(false);$('resume').disabled=false;$('help').classList.add('hidden');setScreen('menu');document.querySelector(`[data-mode="${mode}"]`).click();document.querySelector(`[data-class="${classId}"]`).click();$('track').value=trackIndex;$('cpu-difficulty').value=difficulty;preview();message('Solo runs offline. Online rooms use the Unlike Hero server.');
+    reportEnd(true);connection?.close();connection=null;room=null;serverPhase=null;netInput=null;paused=false;setBusy(false);$('resume').disabled=false;$('help').classList.add('hidden');setScreen('menu');document.querySelector(`[data-mode="${mode}"]`).click();document.querySelector(`[data-class="${classId}"]`).click();$('track').value=trackIndex;$('cpu-difficulty').value=difficulty;preview();message('Solo runs offline. Online rooms use the Unlike Hero server.');
   }
   function togglePause(){
     if(screen==='race'){paused=!connection;setScreen('paused');$('pause-note').textContent=connection?'Online racing continues while this menu is open.':'Your race is paused.';$('restart').classList.toggle('hidden',!!connection);$('resume').focus();}
@@ -186,9 +188,10 @@
     }
     if(data.type==='state'){
       if(!data.world||!Array.isArray(data.world.racers))return;
-      const old=world;world=data.world;playerId=connection.id;mode=world.mode;
+      const old=serverPhase;world=data.world;serverPhase=world.phase;playerId=connection.id;mode=world.mode;
+      world.random=D.rng((world.seed+world.nextId)>>>0||1);world.events=[];predicted=0;accumulator=0;
       if(screen==='lobby'||screen==='menu'||(screen==='results'&&world.phase!=='results')){paused=false;setScreen('race');renderer.readyCamera=false;lastCountdown=0;reportStart();}
-      if(old.phase!=='results'&&world.phase==='results')showResults();
+      if(old!=='results'&&world.phase==='results')showResults();
     }
   }
   function showResults(){
@@ -262,7 +265,18 @@
   }
   function frame(now){
     const dt=Math.min(.1,(now-previous)/1000);previous=now;uiTime+=dt;netTime+=dt;
-    if(connection){if(netTime>=.05){netTime=0;connection.send({type:'input',input:input.read()});}}
+    if(connection){
+      const live=input.read();netInput=S.mergeInput(netInput,live);
+      if(netTime>=1/30){netTime=0;connection.send({type:'input',input:netInput});netInput=null;}
+      // Items and resets stay server-only; driving, drift hops and other karts are predicted locally.
+      if(['race','paused'].includes(screen)&&serverPhase&&serverPhase!=='results'&&world.phase!=='results'){
+        accumulator=Math.min(accumulator+dt,.1);const mine={...live,use:false,reset:false};
+        while(accumulator>=S.STEP&&predicted<PREDICT_LIMIT){
+          const inputs={};for(const k of world.racers)if(k.human)inputs[k.id]=k.id===playerId?mine:k.input;
+          S.step(world,inputs,S.STEP);world.events=[];mine.hop=false;accumulator-=S.STEP;predicted+=S.STEP;
+        }
+      }
+    }
     else if(screen==='race'&&!paused){
       accumulator=Math.min(accumulator+dt,.15);
       while(accumulator>=S.STEP){
