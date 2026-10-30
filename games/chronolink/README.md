@@ -7,7 +7,7 @@ The game remains one `index.html`, using three.js r128 from cdnjs. Textures are 
 ## Play
 
 - Launch the primary checkout with `npm run play`, then open **http://localhost:8081**.
-- Anchor: `WASD`, `E` use, `Q` ping, walk into a crate to shove it. Echo: arrows, `Enter` use, `.` / `F` pin, `Right Shift` ping, walk into an old crate to topple it into the chasm beyond. Face a tree/trunk, rusted drain grate or future sluice wheel and press `Enter` (or walk into it) to **Fell tree**, **Drain basin** or **Jam wheel**.
+- Anchor: `WASD`, `E` use, `Q` ping, walk into a crate to shove it. Echo: arrows, `Enter` use, `.` / `F` pin, `Right Shift` ping, walk into an old crate to topple it into the chasm beyond. Face a tree/trunk, rusted drain grate or future sluice wheel and press `Enter` to **Fell tree**, **Drain basin** or **Jam wheel**. These are permanent, so walking into them does nothing.
 - `Tab` switches split and solo views. Either movement set and use key operate the visible role in solo view.
 - `H` requests a hint. Hold `R` / `Backspace` to rewind a change. `Esc` opens the menu.
 - Two windows link with `BroadcastChannel('chronolink-sync')`. Online play uses the existing hub relay and four-letter room code.
@@ -56,13 +56,13 @@ The Echo has two jobs of its own. It stands on a filled pit to keep it while the
 | # | Chamber | Shortest plan (real actions) |
 | --- | --- | ---: |
 | 12 | The Undercroft | 30 |
-| 13 | Cold Storage | 49 |
-| 14 | Settling Dust | 55 |
-| 15 | The Sunken Hall | 57 |
+| 13 | The Sunken Hall | 43 |
+| 14 | Cold Storage | 48 |
+| 15 | Settling Dust | 55 |
 | 16 | The Packing Room | 59 |
-| 17 | Long Shadows | 60 |
-| 18 | Quiet Weight | 60 |
-| 19 | The Deep Archive | 69 |
+| 17 | Quiet Weight | 60 |
+| 18 | Long Shadows | 61 |
+| 19 | The Deep Archive | 68 |
 
 For comparison, the longest teaching chamber needs 31, and the chambers that previously occupied slots 12–19 needed 8–25. The Undercroft maps were evolved by a search over layouts. A map was kept only when the solver's shortest plan was long, needed the Echo to topple crates in at least two places, required standing, and random wandering from the start often reached a dead end. Every crack, leak, trench and rubble tile that remains was checked: turning it into plain floor or wall makes the chamber easier or unsolvable. The hint (`H`) still works from any state, but it takes a few seconds to answer here.
 
@@ -81,22 +81,22 @@ Scored actions count pickups, placements, shoves, meaningful observation stands,
 
 These figures use the solver's reduced placement graph, with a separately relaxed gallery supplying every pin for the lower-bound check. They are not a claim of a globally exhaustive minimum over every possible floor placement. Tests cover the target in the same macro-action model used by the existing campaign; selected necessity fixtures also search without placement pruning.
 
-## The Echo wings (26–28)
+## The sluice rooms (26–28)
 
-These three extensions reuse established courtyards and structural galleries, then add a final route that requires the Echo's new intervention. Their cards name the subject without revealing the solution.
+Three crate puzzles under running water. Each room has one sluice that only the Echo can jam and one rusted drain that only the Echo can kick open. Water in 2026 helps as much as it hurts. A crate in the wet becomes mulch the Echo can walk through, while a dry one stays a wall. A flooded basin blocks the way, and running water wears plaster through. Jamming or draining is permanent and changes all of that at once. In every room, jamming before the water has done its work leaves no way out.
 
-| # | Chamber | Required Echo action | Scored depth | Ordinary depth | States explored (ordinary) |
-| --- | --- | --- | ---: | ---: | ---: |
-| 26 | The Drowned Court | Drain basin | 31 | 46 | 3,510 |
-| 27 | The Ironwood Reach | Fell tree | 33 | 54 | 8,841 |
-| 28 | The Last Sluice | Jam wheel | 40 | 54 | 48,958 |
+| # | Chamber | The Echo must | Shortest plan (real actions) |
+| --- | --- | --- | ---: |
+| 26 | The Sluice Room | stand, drain, jam | 28 |
+| 27 | Low Water | stand, topple, drain, jam | 45 |
+| 28 | The Last Sluice | stand, drain, jam | 49 |
 
-All three necessity ablations exhaust within 400,000 states. Depths use the existing pruned, segmented macro solver: they measure actions, not human reasoning or a globally exhaustive minimum over arbitrary placements. The first 25 layouts are unchanged, and none of their measured scored depths decreases.
+Each of these requirements is proven with the solver, along with the rule that an early jam is a dead end. Chambers 2, 3 and 4 teach felling, jamming and draining one at a time.
 
 ## Verification
 
 Run `node --test test/chronolink-*.test.mjs`.
 
-The suite checks all 28 chambers within the 400,000-state solving budget, the Undercroft's 30–69 action ramp, its required topples and its trap density, the gallery scored-action bounds, declared mechanic necessities, aging and paradox rules, immutable snapshots, rendering records, plan replay, live-state hint recovery, random mid-chamber solvability/dead ends, signal secrecy, controls, rewind synchronisation, victory, flashlight clipping, and wall passages.
+The suite checks all 28 chambers within the 400,000-state solving budget, the Undercroft's 30–68 action ramp, its required topples and its trap density, the gallery scored-action bounds, declared mechanic necessities, aging and paradox rules, immutable snapshots, rendering records, plan replay, live-state hint recovery, random mid-chamber solvability/dead ends, signal secrecy, controls, rewind synchronisation, victory, flashlight clipping, and wall passages.
 
 `<script id="chrono-core">` is deterministic and DOM-free. The client and solver use the same `actPick`, `actDrop`, `actShove`, `actWheel`, `echoAct`, `echoPin`, `echoTopple`, `echoFell`, `echoDrain`, and `echoJam` functions. The new mechanics fit existing object, wheel, tile-record, pin, and witness state; the online/relay message protocol and hint UI are unchanged.

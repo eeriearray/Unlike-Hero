@@ -144,8 +144,11 @@ export function fastSolve(P, maxStates = 300000) {
           if (st.crates.includes(to) || st.planks.includes(to) || st.wit.some(w => w[0] === to)) continue;
           // paradox: a dry crate landing on the Echo's held floor tile
           if (st.stand === to && rec(P, to, 1) === 2) continue;
+          // the game also refuses a crate landing on the Echo's own tile: it must step elsewhere in its region first
+          let e2 = st.e;
+          if (st.stand < 0 && st.e === to && rec(P, to, 1) === 2) { const alt = eq.find(k => k !== to); if (alt == null) continue; e2 = alt; }
           const nc = st.crates.slice(); nc[ci] = to; nc.sort((x, y) => x - y);
-          label = 'A shove ' + c + ' ' + d; push({ ...st, crates: nc, a: c }, 1);
+          label = 'A shove ' + c + ' ' + d; push({ ...st, crates: nc, a: c, e: e2 }, 1);
         }
       }
       // echo: go to another zone (free), stand on a crack (1), pin/unpin (1)

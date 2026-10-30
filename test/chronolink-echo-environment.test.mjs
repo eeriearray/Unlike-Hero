@@ -94,10 +94,10 @@ test('an Echo wind-up uses current state instead of rewinding an intervening Anc
 test('teaching objective chips identify Echo interventions for trunks, channels and basins',()=>{
   const context=vm.createContext({C,G:{},tileIdx:(x,y)=>y*context.G.L.W+x});
   vm.runInContext(html.slice(html.indexOf('function blockerE('),html.indexOf('function blockerA(')),context);
-  for(const [n,type] of [[2,'trunk'],[3,'deep'],[4,'flood']]){
+  for(const [n,type] of [[2,'trunk'],[3,'flood'],[4,'flood']]){
     const L=C.getChamber(n);let s=C.initState(L);
     if(n===2)s=C.actDrop(L,C.actPick(L,s,3,4),5,5);
-    const fut=C.deriveFuture(L,s),i=n===3?3*L.W+9:fut.findIndex(r=>r.o===type||r.t===type);
+    const fut=C.deriveFuture(L,s),i=n===3?3*L.W+14:fut.findIndex(r=>r.o===type||r.t===type);
     assert.ok(i>=0);Object.assign(context.G,{L,s,fut});context.i=i;
     assert.equal(vm.runInContext('blockerE(i).fix',context),'future',`lesson ${n}`);
     if(n===4){context.i=fut.findIndex(r=>r.t==='deep');assert.equal(vm.runInContext('blockerE(i).fix',context),'past','a distant drain does not fix the first channel');}
@@ -112,6 +112,7 @@ test('lesson chips surface reachable new verbs without coaching later chambers',
     if(n===2)s=C.actDrop(L,C.actPick(L,s,3,4),5,5);
     Object.assign(G,{L,s,E:e,fut:C.deriveFuture(L,s)});
     if(n===4){assert.equal(vm.runInContext('teachingEchoGoal()',context),null,'do not direct Echo toward an unreachable drain');G.E={x:22,y:1};}
+    if(n===3){assert.equal(vm.runInContext('teachingEchoGoal()',context),null,'do not direct Echo toward an unreachable sluice');G.E={x:11,y:5};}
     const goal=vm.runInContext('teachingEchoGoal()',context);assert.equal(goal.text,text);assert.equal(goal.fix,'future');
     G.L={...L,n:12};assert.equal(vm.runInContext('teachingEchoGoal()',context),null,'no late-game coaching');
   }

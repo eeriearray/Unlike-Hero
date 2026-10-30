@@ -16,7 +16,7 @@ The Undercroft replaces chambers 12–19 with puzzles built around irreversible 
 - **Echo topple (new verb, available in every chamber).** Playtest feedback after the first Undercroft: as the Echo, "the only role is telling the code". The Echo can now walk into an old crate beside an open chasm and topple it in, where it lands as a pit. Both tiles become the Echo's own record, like a kicked grille. The crate's 1924 counterpart is then fixed: shoving it is a paradox ("THE ECHO TOPPLED IT"), and nothing can be set down on the two tiles. A crate on open floor cannot be slid. An earlier draft let the Echo slide crates anywhere, but that multiplied the 2026 layouts. Chamber 20's hint search then exceeded its 400k budget, while toppling keeps it at 139k.
 - **Where the difficulty comes from.** Each Anchor push serves 1924 and 2026 at once: it must not wall in the Anchor, and it must leave the Echo a floor or a crate to topple. Each topple trades a 1924 resource for a 2026 bridge. Standing on a pit holds it while its crate moves on. Both standing and toppling are proven necessary in every chamber (`needs: ['stand', 'topple']`).
 - **How they were made.** A dedicated fast search over this subset of the rules evolved candidate layouts. It agreed with `solve` on every one of 920 random rooms across its versions, 120 of them under the final topple rule. Layouts were scored on the shortest plan's real actions, distinct push lines in each era, Echo/Anchor handoffs, and search size. A layout was rejected when the Echo toppled crates in fewer than two places. Each survivor was then simplified: every crack, leak, trench and rubble tile was turned into plain floor or wall wherever that kept the plan just as long and just as varied. The shipped maps are verified with the game's own `solve`.
-- **What the numbers say.** Shortest plans need 30, 49, 55, 57, 59, 60, 60 and 69 real actions; the longest teaching chamber needs 31. Search sizes (13k–134k states) stay within the in-game hint's 400k budget from every random state tested, and no plan exceeds the solver's 80-move depth limit.
+- **What the numbers say.** Shortest plans need 30, 43, 48, 55, 59, 60, 61 and 68 real actions (after the Echo-occupancy fix below); the longest teaching chamber needs 31. Search sizes (13k–134k states) stay within the in-game hint's 400k budget from every random state tested, and no plan exceeds the solver's 80-move depth limit.
 - **Less hand-holding.** From chamber 12 on, objective chips name the obstacle without saying which era can fix it. The automatic “Press H” nudge only appears in the teaching chapter.
 
 Topple makes chambers 1, 2 and 25 two or three actions shorter; no other chamber changes. In 25, the Echo can topple a Compost Heap crate into the crack the Anchor used to fill, so the gallery bound below is now 28 rather than 30.
@@ -142,56 +142,34 @@ Validation snapshot, 29 October 2026: all 25 start states solved within 400,000 
 
 The Echo can now make three additional permanent changes. The shared DOM-free action functions return a fresh state and action kind, or null. Neither a manual witness nor a jam writes objects, wheel settings or hydraulic flow back into 1924.
 
-- **Fell tree (`echoFell`)**: walk into a grown tree or trunk, or face it and press Enter. The push follows the Echo's facing direction from the contacted tile. Clear that tree's old silhouette, then use `growTree` with the source planter's length to lay its trunk: consecutive chasms receive roots; dry tiles receive solid trunk, stopping at walls. The changed footprint becomes fixed witness records carrying the acorn's identity and trunk axis. Picking that acorn in 1924 causes “THE ECHO FELLED IT”. Another object's footprint and pinned tiles cannot be overwritten. A push with no changed landing is refused.
+- **Fell tree (`echoFell`)**: face a grown tree or trunk and press Enter. The push follows the Echo's facing direction from the contacted tile. Clear that tree's old silhouette, then use `growTree` with the source planter's length to lay its trunk: consecutive chasms receive roots; dry tiles receive solid trunk, stopping at walls. The changed footprint becomes fixed witness records carrying the acorn's identity and trunk axis. Picking that acorn in 1924 causes “THE ECHO FELLED IT”. Another object's footprint and pinned tiles cannot be overwritten. A push with no changed landing is refused.
 - **Drain basin (`echoDrain`)**: chambers author `drains: [{x, y}]`. A dry grate is solid; damp rusts it. A kick drains the adjacent, cardinally connected flooded basin and fixes its dry records permanently, plus the broken grate. Disconnected basins are unaffected. Occupied or pinned flooded tiles prevent the action, so it never silently consumes another 1924 object. Fixed tiles refuse later placement; there is no movable past drain to paradox-lock.
 - **Jam wheel (`echoJam`)**: a wheel with `echo: true` exposes a future sluice-wheel record. Jamming writes a fixed wheel witness and `s.echo.jams[wheelIndex]`. Future derivation closes every gate assigned to that wheel, including when another wheel shares the gate. `flowing(L,s)` and `walkPast` remain unchanged; the Anchor may still turn its own wheel. Clone, rewind and network snapshots carry jams; the raw derivation cache and both solver keys distinguish them. Culvert flow indicators also use their own era's flow.
 
-Witnesses apply before pins and the standing-tile overlay, as before. Felling source identities and fixed-footprint flags participate in `recKey`. Each new verb costs one scored action. `noFell`, `noDrain` and `noJam` disable only the respective solver expansion for ablation. Actions use reachable neighbours; acting from the current standing tile preserves it. Client targeting, walk-into actions, hint text, sounds, effects and poses use the same verbs.
+Witnesses apply before pins and the standing-tile overlay, as before. Felling source identities and fixed-footprint flags participate in `recKey`. Each new verb costs one scored action. `noFell`, `noDrain` and `noJam` disable only the respective solver expansion for ablation. Actions use reachable neighbours; acting from the current standing tile preserves it. Client targeting, hint text, sounds, effects and poses use the same verbs. Fell, drain and jam are Enter-only: they are permanent, so bumping into a tree, grate or wheel never triggers them. An Echo-only sluice has a single 1924 setting, so the Anchor sees it as “Seized open” rather than a wheel to turn.
 
-### New chambers and proof
+### Review and rework (Claude, 30 October 2026)
 
-| # | Name | Topic / necessity | Scored depth | Plain depth | Plain states | Ablation states |
-| --- | --- | --- | ---: | ---: | ---: | ---: |
-| 26 | The Drowned Court | Drain the flooded court | 31 | 46 | 3,510 | 3,650 |
-| 27 | The Ironwood Reach | Fell ironwood over wet fractures | 33 | 54 | 8,841 | 22,067 |
-| 28 | The Last Sluice | Separate past and future water | 40 | 54 | 48,958 | 49,127 |
+Codex's first version had three problems. Chambers 26–28 rebuilt galleries 21, 22 and 24 with one extra step each (31, 33 and 40 actions against 30, 32 and 39). The Undercroft gained a flooded basin by every exit that took one obvious jam to clear (+1 action each). And Floodgates got easier (14 → 11), because a new plank let the Anchor skip its long crate push. The rework:
 
-The wings extend the Worn Through, Rust and Rot, and Holding Pattern courtyard/gallery combinations. Each has a topic-only card, a relay beyond its environmental obstacle, declared `needs`, and an east-facing exit. No definition for chambers 1–25 changes. The existing chapter boundary is retained, so the depths have the same segmented-search limitation as chambers 20–25. These are solver difficulty measures, not claims of human playtest difficulty.
+- **Undercroft (12–19)** returns to its forged crate-only layouts (30–68 actions, standing and toppling required).
+- **Floodgates (3)** keeps its original wheels and crates. It gains a flooded basin past the trench, fed by an Echo-only sluice in the corner. Jamming is required, and the chamber needs 15 actions.
+- **Chambers 26–28** are new sluice rooms, forged with a solver over crates, water, one jammable sluice and one drain. That solver runs on the game's own `deriveRaw`, `echoTopple`, `echoJam` and `echoDrain`, and agreed with `solve` on 300 random rooms. A layout was kept only if, in the game's `solve`, the jam and the drain are both required and jamming before any other move is a dead end. Two grew from Undercroft crate rooms and differ from them and from each other in 32–37 tiles; one grew from a random room.
 
-Tests replay both scored and ordinary plans through shared actions, validate both exit regions, solve and replay hints from halfway through, and include the new verbs in seeded random mid-chamber walks. Unit fixtures freeze inputs and check aging, object locks, placement reservations, pins, persistence and future-only hydraulics. Rendering checks cover both grate states and both wheel states. The campaign count assertion changes from 25 to 28 and necessity dispatch gains the three flags; existing difficulty and necessity assertions are retained.
+| # | Name | Real actions | Plain depth | Plain states | Proven necessary | Jam first |
+| --- | --- | ---: | ---: | ---: | --- | --- |
+| 26 | The Sluice Room | 28 | 31 | 7,838 | jam, drain, stand | dead end |
+| 27 | Low Water | 45 | 49 | 10,728 | jam, drain, topple, stand | dead end |
+| 28 | The Last Sluice | 49 | 52 | 15,104 | jam, drain, stand | dead end |
+
+Felling is taught in chamber 2 but not yet reused.
+
+### Echo occupancy fix
+
+The solver used to let the Anchor push a crate onto the Echo's tile whenever the Echo was not holding a tile, on the assumption that it could step aside. The game refuses that move ("THE ECHO IS HERE"), and sometimes there is nowhere to step. Now an Anchor change is allowed only if some tile in the Echo's current region stays free, and the Echo moves there. This exposed two chambers that the game could not actually complete. The Sunken Hall's plan pushed crates through the Echo's two-tile pocket; opening one tile beside the start fixes it, at 43 actions instead of 57. The first sluice room had lost the leak under its crate during simplification, and keeping it restores the room. The Undercroft is now ordered by difficulty, and other depths moved by at most one action.
 
 ### Existing campaign remeasurement
 
-Scored depths before → after (no decreases):
+After the rework, chambers 1 and 4–25 keep the scored depths they had before the Echo environment work. Chamber 2 rises from 11 to 12 with its felling lesson, and chamber 3 from 14 to 15 with its jam lesson.
 
-| Chamber | Before | After |
-| --- | ---: | ---: |
-| 1 | 13 | 13 |
-| 2 | 11 | 11 |
-| 3 | 14 | 14 |
-| 4 | 11 | 11 |
-| 5 | 23 | 23 |
-| 6 | 15 | 15 |
-| 7 | 31 | 31 |
-| 8 | 14 | 14 |
-| 9 | 21 | 21 |
-| 10 | 10 | 10 |
-| 11 | 15 | 15 |
-| 12 | 30 | 30 |
-| 13 | 49 | 49 |
-| 14 | 55 | 55 |
-| 15 | 57 | 57 |
-| 16 | 59 | 59 |
-| 17 | 60 | 60 |
-| 18 | 60 | 60 |
-| 19 | 69 | 69 |
-| 20 | 34 | 34 |
-| 21 | 30 | 30 |
-| 22 | 32 | 32 |
-| 23 | 33 | 33 |
-| 24 | 39 | 39 |
-| 25 | 28 | 28 |
-
-Browser verification used the isolated checkout at port 8082 with `?level=26`, `?level=27` and `?level=28`. A temporary test-server button replayed each ordinary solver plan through the live game's `commit()` and checked reachable movement before each action. All three reached the victory overlay, with no console errors. The user's port 8081 and main checkout were left untouched.
-
-Validation: `node --test test/chronolink-*.test.mjs` completed with 80 passing tests and zero failures. The final focused environment suite also passes all eight tests, including the additional wind-up regression: an Echo animation commits against current state without overwriting an intervening Anchor pickup. Registry generation and inline-script parsing pass; no existing difficulty or necessity assertion was weakened.
+The wind-up regression from Codex's version is kept: an Echo animation commits against the current state, so it never overwrites an Anchor pickup made in between.

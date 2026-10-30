@@ -120,14 +120,19 @@ test('Undercroft plans replay through shared actions and finish with both chrono
   }
 });
 
-// Both scored and plain plans must be executable, not just solver claims.
-test('Echo wings require their new verbs, ramp above thirty actions, replay and recover halfway',()=>{
+// Both scored and plain plans must be executable, not just solver claims. In the sluice rooms the jam is a
+// decision about timing: each room needs it, and jamming before anything else leaves no way out.
+test('sluice rooms require the jam and the drain, punish an early jam, replay and recover halfway',()=>{
   const depths=[];
-  for(const [n,option,target] of [[26,'noDrain',31],[27,'noFell',33],[28,'noJam',40]]){
+  for(const [n,target] of [[26,28],[27,45],[28,49]]){
     const L=C.getChamber(n),r=C.solve(L,{realMoves:true,maxStates:400000,maxDepth:80});
     assert.equal(r.ok,true,`chamber ${n}: ${r.why}`);assert.equal(r.depth,target);depths.push(r.depth);
-    const absent=C.solve(L,{[option]:true,maxStates:400000,maxDepth:80});
-    assert.equal(absent.why,'exhausted',`chamber ${n} requires ${option}`);
+    for(const option of ['noJam','noDrain']){
+      const absent=C.solve(L,{[option]:true,noPath:true,maxStates:800000,maxDepth:80});
+      assert.equal(absent.why,'exhausted',`chamber ${n} requires ${option}`);
+    }
+    const s0=C.initState(L),w=L.wheels.find(q=>q.echo),jammed=C.echoJam(L,s0,C.deriveFuture(L,s0),w.y*L.W+w.x).s;
+    assert.equal(C.solve(L,{start:{s:jammed,a:L.startA,e:L.startE,stand:null},noPath:true,maxStates:800000}).why,'exhausted',`chamber ${n}: an early jam must be a mistake`);
     const plain=C.solve(L,{maxStates:400000,maxDepth:80});assert.equal(plain.ok,true);assert.ok(plain.explored<400000);assert.ok(plain.depth<80);
     for(const plan of [r.path,plain.path]){
       const end=replay(L,plan),X=L.exit.y*L.W+L.exit.x;
@@ -141,7 +146,7 @@ test('Echo wings require their new verbs, ramp above thirty actions, replay and 
       assert.ok(C.regionOf(L,continuation.e,(x,y)=>C.walkFuture(C.deriveFuture(L,continuation.s,continuation.stand),L,x,y)).seen[X]);
     }
   }
-  assert.ok(depths.every((d,i)=>d>=30&&(!i||d>depths[i-1])));
+  assert.ok(depths.every((d,i)=>!i||d>depths[i-1]),`the sluice rooms ramp: ${depths}`);
 });
 
 test('random late-wing experiments stay within the hint budget, including irreversible Echo actions',()=>{
