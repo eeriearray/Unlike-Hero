@@ -2033,7 +2033,7 @@ function applyRemoteWorld(m) {
   else pushHist();
   const s = C.cloneState(G.s);
   if ((m.part === 'past' || m.part === 'all') && Array.isArray(m.objs) && m.objs.length === s.objs.length && Array.isArray(m.wheel)) { s.objs = m.objs.map(o => Object.assign({}, o)); s.wheel = m.wheel.slice(); s.held = typeof m.held === 'string' ? m.held : null; s.locks = { ...m.locks }; }
-  if ((m.part === 'echo' || m.part === 'all') && m.echo && Array.isArray(m.echo.pins)) s.echo = { carry: m.echo.carry || null, pins: m.echo.pins.slice(), hold: Object.assign({}, m.echo.hold), witness: Object.assign({}, m.echo.witness), reads: { ...m.echo.reads } };
+  if ((m.part === 'echo' || m.part === 'all') && m.echo && Array.isArray(m.echo.pins)) s.echo = { carry: m.echo.carry || null, pins: m.echo.pins.slice(), hold: Object.assign({}, m.echo.hold), witness: Object.assign({}, m.echo.witness), reads: { ...m.echo.reads }, jams: { ...(m.echo.jams || {}) } };
   if (!undo) for (const relay of G.L?.relays || []) if (s.locks?.[relay.id] && !G.s.locks?.[relay.id]) { log('1924 · signal lock ' + relay.label + ' is open', 'sys'); Sound.chime(); }
   G.s = s;
   if (m.part === 'all') {
@@ -3273,7 +3273,7 @@ function updateWorld(w, dt, t) {
     });
     for (const k in w.pins) { const g = w.pins[k]; g.children[0].position.y = 1.25 + Math.sin(t * 3 + +k) * 0.08; g.children[0].rotation.y = t * 2; }
     // the Echo's own tile glows when it is holding off a change from 1924
-    const st = G.stand, held = st && G.raw && C.walkRec(st.rec) && tokenKey(G.raw[st.i], st.i) !== tokenKey(st.rec, st.i);
+    const st = G.stand, held = st && G.raw && C.walkRec(st.rec) && echoHolding();
     w.holdRing.visible = !!held;
     if (held) { w.holdRing.position.set(st.i % W, 0.06, (st.i / W) | 0); w.holdRing.scale.setScalar(0.45 + 0.05 * Math.sin(t * 8)); w.holdM.opacity = 0.6 + 0.3 * Math.sin(t * 8); }
   }
@@ -3661,6 +3661,13 @@ function trackStand(snap) {
   G.stand = { i, rec: G.fut[i] };
   if (prev && !snap) refresh('release', null); else recompute();
 }
+// Is the Echo's own tile refusing a change from 1924? Its own permanent changes (a felled tree, a toppled
+// crate, a laid plank) and pinned tiles are already fixed, so standing on them holds nothing.
+function echoHolding() {
+  const st = G.stand; if (!st || !G.raw) return false;
+  const settled = G.s.echo.witness[st.i] || G.s.echo.hold[st.i] || G.raw[st.i];
+  return tokenKey(settled, st.i) !== tokenKey(st.rec, st.i);
+}
 function refresh(cause, causeTile) {
   const before = G.fut;
   recompute();
@@ -3673,7 +3680,7 @@ function refresh(cause, causeTile) {
   if (WORLD.future) syncFuture(cause !== 'load');
   beat(changes, cause, causeTile);
   // the Echo's own tile just refused a change from 1924: say so
-  const st = G.stand, holding = !!(st && tokenKey(G.raw[st.i], st.i) !== tokenKey(st.rec, st.i));
+  const st = G.stand, holding = echoHolding();
   if (holding && !G.wasHolding && cause !== 'rewind') {
     const x = st.i % G.L.W, y = (st.i / G.L.W) | 0;
     later(0.35, () => { G.stamps.push({ era: 'future', x, y, text: 'HELD', t0: G.t }); G.shocks.push({ era: 'future', x, y, t0: G.t }); Sound.pin(); });

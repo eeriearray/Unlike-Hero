@@ -64,3 +64,12 @@ test('empty rewind explains that walking alone does not create an object-change 
   assert.match(h.notices[0],/Nothing to rewind/);
   h.run('rewind()'); assert.equal(h.notices.length,1);
 });
+
+test('a jammed sluice reaches the partner window with the rest of the Echo state',()=>{
+  const a=harness(), b=harness();
+  a.G.s.echo.jams={0:true}; a.G.s.echo.witness={5:{t:'floor',o:'jammedwheel',fixed:true}};
+  a.run("sendWorld('echo',{cause:'remote-echo'})");
+  b.receive(a.sent.shift());
+  assert.equal(b.G.s.echo.jams[0],true,'the partner sees the water shut off in 2026');
+  assert.equal(b.G.s.echo.witness[5].o,'jammedwheel');
+});
