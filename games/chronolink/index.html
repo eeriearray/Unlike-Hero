@@ -4364,6 +4364,14 @@ function updatePlayers(dt) {
     if (freeAt(who, p.rx, ny)) p.ry = ny;
     else { const lane = Math.round(p.rx), step = Math.abs(p.vy) * dt; if (p.vy && Math.abs(lane - p.rx) > 0.01 && freeAt(who, lane, ny) && freeAt(who, p.rx + clamp(lane - p.rx, -step, step), p.ry)) p.rx += clamp(lane - p.rx, -step, step); else p.vy *= 0.2; }
     faceFromVelocity(p, dt);
+    // pressing toward a tile the chrononaut cannot enter (a trench, a chasm, a wall) still turns it to face
+    // that tile, so a carried plank or an action can be aimed at it
+    if ((ix || iy) && p.speed <= 0.25) {
+      p.dir = Math.abs(ix) >= Math.abs(iy) ? { dx: Math.sign(ix), dy: 0 } : { dx: 0, dy: Math.sign(iy) };
+      let d = Math.atan2(p.dir.dx, p.dir.dy) - p.yaw;
+      while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2;
+      p.yaw += d * (1 - Math.exp(-dt * 14));
+    }
     // walking squarely into a crate shoves it after a short lean
     if (who === 'A' && (ix || iy) && !frozen) {
       const fx = p.x + p.dir.dx, fy = p.y + p.dir.dy, o = C.objAt(G.s, fx, fy), into = Math.abs(ix) > Math.abs(iy) ? Math.sign(ix) === p.dir.dx && p.dir.dx : Math.sign(iy) === p.dir.dy && p.dir.dy;
