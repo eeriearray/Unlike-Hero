@@ -390,12 +390,13 @@ const CHAMBERS = [
       '#.....~.....#......~=~..#',
       '#E....~.#.####.....;=~.X#',
       '#.....~.#...~......;=~..#',
-      '#.....S.#...#.###.r#c####',
+      '#....S;.#...#.###.r#c####',
       '#########################',
     ],
     objs: [{ k: 'acorn', x: 3, y: 4 }, { k: 'crate', x: 11, y: 4 }, { k: 'crate', x: 22, y: 4 }],
-    planters: [{ x: 9, y: 1, dir: 'S', len: 2 }, { x: 6, y: 5, dir: 'N' }],
+    planters: [{ x: 9, y: 1, dir: 'S', len: 2 }, { x: 5, y: 5, dir: 'N', len: 1 }],
     relays: [{ gate: { column: 8 }, receiver: { x: 7, y: 3 } }, { gate: { column: 20 }, receiver: { x: 16, y: 4 } }],
+    needs: ['fell'],
     exitFacing: 'E',
   },
   {
@@ -409,25 +410,28 @@ const CHAMBERS = [
       '#....=...=...#####c##c#####',
       '##################W##W#####',
     ],
-    objs: [{ k: 'crate', x: 22, y: 2 }, { k: 'crate', x: 12, y: 1 }],
+    objs: [{ k: 'crate', x: 22, y: 2 }, { k: 'crate', x: 12, y: 1 }, { k: 'plank', x: 8, y: 4 }],
     gates: [{ id: 'a', x: 6, y: 1 }, { id: 'b', x: 8, y: 1 }, { id: 'j1a', x: 18, y: 3 }, { id: 'j1b', x: 21, y: 3 }],
-    wheels: [{ x: 7, y: 5, positions: [['b'], ['a']], start: 0 }, { x: 14, y: 2, positions: [[], ['j1a'], ['j1b']], start: 0 }],
+    wheels: [{ x: 7, y: 5, echo: true, positions: [['b'], ['a', 'b']], start: 0 }, { x: 14, y: 2, positions: [[], ['j1a'], ['j1b']], start: 0 }],
     relays: [{ gate: { column: 8 }, receiver: { x: 9, y: 3 } }, { gate: { x: 25, y: 2 }, receiver: { x: 12, y: 4 } }],
+    needs: ['jam'],
     exitFacing: 'E',
   },
   {
     name: 'Iron and Water', card: 'Iron, timber and three branches of the same stream.',
     map: [
       '######W####################',
-      '#A...~=...#...#....#.=.#..#',
-      '#....~=..r#...#..........X#',
-      '#E...~=......#.....c.=.c..#',
-      '#....~=...c...t....c.=.c..#',
+      '#A...~=...#...#....#.=.,bb#',
+      '#....~=..r#...#.........bX#',
+      '#E...~=......#.....c.=.cbbW',
+      '#....~=...c...t....c.=.cbb#',
       '#....~=...c...#####c#c#c###',
       '#....~=...c...#####c#c#c###',
       '##########W########W#W#W###',
     ],
     objs: [{ k: 'plank', x: 4, y: 6 }],
+    needs: ['drain'],
+    drains: [{ x: 23, y: 1 }],
     bars: [{ x: 10, y: 3 }, { x: 19, y: 2 }, { x: 23, y: 2 }],
     gates: [{ id: 'a', x: 6, y: 1 }, { id: 'a', x: 10, y: 6 }, { id: 'j1a', x: 19, y: 4 }, { id: 'j1a', x: 21, y: 4 }, { id: 'j1b', x: 23, y: 4 }],
     wheels: [{ x: 4, y: 2, positions: [[], ['a']], start: 1 }, { x: 22, y: 4, positions: [[], ['j1a'], ['j1b']], start: 2 }],
@@ -629,139 +633,178 @@ const COURTYARDS = {
 };
 
 
-// Chambers 12-19, the Undercroft: two-era warehouse puzzles. Crates are the only floor the Echo has: the Anchor
+// Chambers 12-19, the Undercroft: warehouse puzzles with flooded receivers or exit approaches. The Anchor
 // shoves them in 1924 and the Echo topples them into chasms in 2026, a crate left on dry stone is a wall, and
 // nothing can be pulled back, so most early moves are traps. They were evolved by search over layouts and kept
 // only when the solver's shortest plan was long (30-69 moves), both standing and toppling were required, and
-// wandering away from the start often led to a dead end. Every crack, leak, trench
-// and rubble tile left in a map makes the chamber easier (or unsolvable) if it is turned into plain floor or wall.
+// wandering away from the start often led to a dead end. Each now also needs the sluice-jamming
+// lesson from chamber 3: shutting future water preserves the crate crossings without changing 1924.
 CHAMBERS.push(
   {
-    name: 'The Undercroft', card: 'The floor below gave way long ago. The crates remember where it stood.',
+    name: "The Undercroft",
+    card: "The floor below gave way long ago. The crates remember where it stood.",
     map: [
-      '###########',
-      '#E.r......#',
-      '#~#.#....X#',
-      '#~~~.#~##.#',
-      '#~~A~~~~.;#',
-      '###########',
+      "##W########",
+      "#.c########",
+      "#Ebr......#",
+      "#~#.#....X#",
+      "#~~~.#~##.#",
+      "#~~A~~~~.;#",
+      "###########",
     ],
-    objs: [{ k: 'crate', x: 2, y: 3 }, { k: 'crate', x: 8, y: 2 }, { k: 'crate', x: 3, y: 3 }, { k: 'crate', x: 5, y: 1 }, { k: 'crate', x: 9, y: 3 }],
-    relays: [{ gate: { column: 4 }, receiver: { x: 2, y: 1 } }],
-    needs: ['stand', 'topple'],
-    exitFacing: 'E',
+    objs: [{"k": "crate", "x": 2, "y": 4}, {"k": "crate", "x": 8, "y": 3}, {"k": "crate", "x": 3, "y": 4}, {"k": "crate", "x": 5, "y": 2}, {"k": "crate", "x": 9, "y": 4}],
+    relays: [{"gate": {"column": 4}, "receiver": {"x": 2, "y": 2}}],
+    needs: ["stand", "topple", "jam"],
+    exitFacing: "E",
+    wheels: [{"x": 1, "y": 1, "echo": true, "positions": [["deep"]]}],
+    gates: [{"x": 2, "y": 1, "id": "deep"}],
   },
   {
-    name: 'Cold Storage', card: 'Some crates are needed in 1924. Some are needed at the bottom of a hole.',
+    name: "Cold Storage",
+    card: "Some crates are needed in 1924. Some are needed at the bottom of a hole.",
     map: [
-      '############',
-      '#..#.#t.r#.#',
-      '#...;~~;~~~#',
-      '#...E#~;~#~#',
-      '#....#~~.#~#',
-      '#..Ar..~.r~#',
-      '#..r~.#.#X~#',
-      '############',
+      "############",
+      "#..#.#t.r#.#",
+      "#...;~~;~~~#",
+      "#...E#~;~#~#",
+      "#....#~~..~#",
+      "#..Ar..~.r~#",
+      "#..r~.#.cb~#",
+      "########cX##",
+      "########W###",
     ],
-    objs: [{ k: 'crate', x: 5, y: 2 }, { k: 'crate', x: 4, y: 6 }, { k: 'crate', x: 5, y: 5 }, { k: 'crate', x: 10, y: 5 }],
-    relays: [{ gate: { column: 2 }, receiver: { x: 6, y: 1 } }],
-    needs: ['stand', 'topple'],
-    exitFacing: 'E',
+    objs: [{"k": "crate", "x": 5, "y": 2}, {"k": "crate", "x": 4, "y": 6}, {"k": "crate", "x": 5, "y": 5}, {"k": "crate", "x": 10, "y": 5}],
+    relays: [{"gate": {"column": 2}, "receiver": {"x": 6, "y": 1}}],
+    needs: ["stand", "topple", "jam"],
+    exitFacing: "S",
+    wheels: [{"x": 9, "y": 4, "echo": true, "positions": [["deep"]]}],
+    gates: [{"x": 8, "y": 7, "id": "deep"}],
+    drains: [],
   },
   {
-    name: 'Settling Dust', card: 'What you push in 1924 is what falls in 2026.',
+    name: "Settling Dust",
+    card: "What you push in 1924 is what falls in 2026.",
     map: [
-      '##########',
-      '#..~t.r..#',
-      '#.#~~;.~##',
-      '#..~r.#~##',
-      '#r;~~~;..#',
-      '#~~~A##;;#',
-      '#E~##X...#',
-      '##########',
+      "##########",
+      "#..~t.r..#",
+      "#.#~~;.~##",
+      "#..~r.#~##",
+      "#r;~~~;..#",
+      "#~~~A.#;;#",
+      "#E~#cb...#",
+      "####cX####",
+      "####W#####",
     ],
-    objs: [{ k: 'crate', x: 4, y: 2 }, { k: 'crate', x: 3, y: 2 }, { k: 'crate', x: 7, y: 4 }, { k: 'crate', x: 7, y: 1 }],
-    relays: [{ gate: { column: 6 }, receiver: { x: 5, y: 1 } }],
-    needs: ['stand', 'topple'],
-    exitFacing: 'E',
+    objs: [{"k": "crate", "x": 4, "y": 2}, {"k": "crate", "x": 3, "y": 2}, {"k": "crate", "x": 7, "y": 4}, {"k": "crate", "x": 7, "y": 1}],
+    relays: [{"gate": {"column": 6}, "receiver": {"x": 5, "y": 1}}],
+    needs: ["stand", "topple", "jam"],
+    exitFacing: "S",
+    wheels: [{"x": 5, "y": 5, "echo": true, "positions": [["deep"]]}],
+    gates: [{"x": 4, "y": 7, "id": "deep"}],
+    drains: [],
   },
   {
-    name: 'The Sunken Hall', card: 'Four crates, one way through, and a great many ways to fail.',
+    name: "The Sunken Hall",
+    card: "Four crates, one way through, and a great many ways to fail.",
     map: [
-      '###########',
-      '#....#~~;X#',
-      '#..~;#~~Er#',
-      '#.#~~~~;..#',
-      '#.#..;A#;.#',
-      '###########',
+      "#########W##",
+      "#########c##",
+      "#.....~~;bX#",
+      "#..~;#~~Er##",
+      "#.#~~~~;..##",
+      "#.#..;A#;.##",
+      "############",
     ],
-    objs: [{ k: 'crate', x: 3, y: 3 }, { k: 'crate', x: 6, y: 3 }, { k: 'crate', x: 5, y: 4 }, { k: 'crate', x: 8, y: 1 }],
-    relays: [{ gate: { column: 2 }, receiver: { x: 4, y: 1 } }],
-    needs: ['stand', 'topple'],
-    exitFacing: 'E',
+    objs: [{"k": "crate", "x": 3, "y": 4}, {"k": "crate", "x": 6, "y": 4}, {"k": "crate", "x": 5, "y": 5}, {"k": "crate", "x": 8, "y": 2}],
+    relays: [{"gate": {"column": 2}, "receiver": {"x": 4, "y": 2}}],
+    needs: ["stand", "topple", "jam"],
+    exitFacing: "E",
+    wheels: [{"x": 5, "y": 2, "echo": true, "positions": [["deep"]]}],
+    gates: [{"x": 9, "y": 1, "id": "deep"}],
+    drains: [],
   },
   {
-    name: 'The Packing Room', card: 'Every crate is somebody\'s floor and somebody else\'s wall.',
+    name: "The Packing Room",
+    card: "Every crate is somebody's floor and somebody else's wall.",
     map: [
-      '#############',
-      '#..E#.#.t.;.#',
-      '##..tr~~Ar,.#',
-      '#.~.;.~;~r;;#',
-      '#....#.###X~#',
-      '#############',
+      "#############",
+      "#..E#.#.t.;.#",
+      "##..tr~~Ar,.#",
+      "#.~.;.~;~r;;#",
+      "#....#..#cb~#",
+      "#########cX##",
+      "#########W###",
     ],
-    objs: [{ k: 'crate', x: 8, y: 3 }, { k: 'crate', x: 7, y: 2 }, { k: 'crate', x: 10, y: 1 }, { k: 'crate', x: 3, y: 4 }, { k: 'crate', x: 6, y: 2 }],
-    relays: [{ gate: { column: 1 }, receiver: { x: 4, y: 2 } }],
-    needs: ['stand', 'topple'],
-    exitFacing: 'E',
+    objs: [{"k": "crate", "x": 8, "y": 3}, {"k": "crate", "x": 7, "y": 2}, {"k": "crate", "x": 10, "y": 1}, {"k": "crate", "x": 3, "y": 4}, {"k": "crate", "x": 6, "y": 2}],
+    relays: [{"gate": {"column": 1}, "receiver": {"x": 4, "y": 2}}],
+    needs: ["stand", "topple", "jam"],
+    exitFacing: "S",
+    wheels: [{"x": 7, "y": 4, "echo": true, "positions": [["deep"]]}],
+    gates: [{"x": 9, "y": 5, "id": "deep"}],
+    drains: [],
   },
   {
-    name: 'Long Shadows', card: 'Three crates. Most moves down here cannot be taken back.',
+    name: "Long Shadows",
+    card: "Three crates. Most moves down here cannot be taken back.",
     map: [
-      '#############',
-      '##A.#.##.#..#',
-      '#...r~..~;.X#',
-      '##;.#~~#;.;.#',
-      '#E~~~~.#~~.##',
-      '#..~~.~~~r###',
-      '#############',
+      "#####W#######",
+      "#####c#######",
+      "##A..b##.#..#",
+      "#...r~..~;.X#",
+      "##;.#~~#;.;.#",
+      "#E~~~~.#~~.##",
+      "#..~~.~~~r###",
+      "#############",
     ],
-    objs: [{ k: 'crate', x: 10, y: 2 }, { k: 'crate', x: 3, y: 2 }, { k: 'crate', x: 8, y: 2 }],
-    relays: [{ gate: { column: 6 }, receiver: { x: 5, y: 1 } }],
-    needs: ['stand', 'topple'],
-    exitFacing: 'E',
+    objs: [{"k": "crate", "x": 10, "y": 3}, {"k": "crate", "x": 3, "y": 3}, {"k": "crate", "x": 8, "y": 3}],
+    relays: [{"gate": {"column": 6}, "receiver": {"x": 5, "y": 2}}],
+    needs: ["stand", "topple", "jam"],
+    exitFacing: "E",
+    wheels: [{"x": 4, "y": 2, "echo": true, "positions": [["deep"]]}],
+    gates: [{"x": 5, "y": 1, "id": "deep"}],
+    drains: [],
   },
   {
-    name: 'Quiet Weight', card: 'The crate that saves you now is the wall that traps you later.',
+    name: "Quiet Weight",
+    card: "The crate that saves you now is the wall that traps you later.",
     map: [
-      '#############',
-      '#A.#...#.~..#',
-      '#.~~;~.~~#..#',
-      '#.r~##~;~.~.#',
-      '##E~~.;r.#X.#',
-      '#############',
+      "#############",
+      "#A.#...#.~..#",
+      "#.~~;~.~~...#",
+      "#.r~##~;~.~.#",
+      "##E~~.;r.cb.#",
+      "#########cX##",
+      "#########W###",
     ],
-    objs: [{ k: 'crate', x: 3, y: 2 }, { k: 'crate', x: 9, y: 3 }, { k: 'crate', x: 5, y: 2 }, { k: 'crate', x: 10, y: 2 }, { k: 'crate', x: 9, y: 1 }],
-    relays: [{ gate: { column: 7 }, receiver: { x: 1, y: 2 } }],
-    needs: ['stand', 'topple'],
-    exitFacing: 'E',
+    objs: [{"k": "crate", "x": 3, "y": 2}, {"k": "crate", "x": 9, "y": 3}, {"k": "crate", "x": 5, "y": 2}, {"k": "crate", "x": 10, "y": 2}, {"k": "crate", "x": 9, "y": 1}],
+    relays: [{"gate": {"column": 7}, "receiver": {"x": 1, "y": 2}}],
+    needs: ["stand", "topple", "jam"],
+    exitFacing: "S",
+    wheels: [{"x": 9, "y": 2, "echo": true, "positions": [["deep"]]}],
+    gates: [{"x": 9, "y": 5, "id": "deep"}],
+    drains: [],
   },
   {
-    name: 'The Deep Archive', card: 'The longest night in the building. Take your time.',
+    name: "The Deep Archive",
+    card: "The longest night in the building. Take your time.",
     map: [
-      '##########',
-      '#..~~.~X.#',
-      '#...;r,#.#',
-      '#.#;.t~.##',
-      '###~##~r##',
-      '#E~~~~~.##',
-      '###.rA#..#',
-      '##########',
+      "###########",
+      "#######X###",
+      "#..~~.~bccW",
+      "#...;r,..##",
+      "#.#;.t~.###",
+      "###~##~r###",
+      "#E~~~~~.###",
+      "###.rA#..##",
+      "###########",
     ],
-    objs: [{ k: 'crate', x: 3, y: 4 }, { k: 'crate', x: 6, y: 2 }, { k: 'crate', x: 4, y: 2 }],
-    relays: [{ gate: { column: 8 }, receiver: { x: 7, y: 5 } }],
-    needs: ['stand', 'topple'],
-    exitFacing: 'E',
+    objs: [{"k": "crate", "x": 3, "y": 5}, {"k": "crate", "x": 6, "y": 3}, {"k": "crate", "x": 4, "y": 3}],
+    relays: [{"gate": {"column": 8}, "receiver": {"x": 7, "y": 6}}],
+    needs: ["stand", "topple", "jam"],
+    exitFacing: "S",
+    wheels: [{"x": 7, "y": 3, "echo": true, "positions": [["deep"]]}],
+    gates: [{"x": 9, "y": 2, "id": "deep"}],
+    drains: [],
   },
 );
 
@@ -1326,6 +1369,7 @@ function solve(L, opts) {
   }
   const W = L.W, N = W * L.H, X = L.exit.y * W + L.exit.x, maxStates = opts.maxStates || 400000;
   const pinsMax = opts.pins != null ? opts.pins : L.pinsMax, prune = opts.prune !== false;
+  const hasFell = !opts.noFell && L.objs0.some(o => o.k === 'acorn');
   const Lp = Object.assign({}, L, { pinsMax });
   // Raw 2026 depends on past objects, wheel settings and future jams; witnesses overlay it.
   const rawCache = new Map();
@@ -1496,9 +1540,8 @@ function solve(L, opts) {
         const fut = keep ? d.fut : freeFut;
         if (!keep && !walkRec(fut[at])) continue;
         if (!opts.noBox || fut[i].o !== 'box') { const a = echoAct(L, ss, fut, i); if (a) push(a.s, st.a, e2, stand2, 'E ' + a.kind + ' ' + x + ',' + y + ' @' + e2.x + ',' + e2.y); }
-        for (const [disabled, action] of [[opts.noDrain, echoDrain], [opts.noJam, echoJam]]) {
-          if (!disabled) { const result = action(L, ss, fut, i); if (result) push(result.s, st.a, e2, stand2, 'E ' + result.kind + ' ' + x + ',' + y + ' @' + e2.x + ',' + e2.y); }
-        }
+        const environment = fut[i].o === 'rustdrain' && !opts.noDrain ? echoDrain : fut[i].o === 'sluicewheel' && !opts.noJam ? echoJam : null;
+        if (environment) { const result = environment(L, ss, fut, i); if (result) push(result.s, st.a, e2, stand2, 'E ' + result.kind + ' ' + x + ',' + y + ' @' + e2.x + ',' + e2.y); }
         // A fixed box never becomes walkable and its emptied witness cannot be
         // reopened. Pinning its contents cannot improve a legal solution.
         // Retain unpin actions for players who pinned one while experimenting.
@@ -1507,7 +1550,7 @@ function solve(L, opts) {
           if (p) push(p.s, st.a, e2, stand2, 'E ' + p.kind + ' ' + x + ',' + y + ' @' + e2.x + ',' + e2.y);
         }
       }
-      if (!opts.noFell) for (let i = 0; i < N; i++) {
+      if (hasFell) for (let i = 0; i < N; i++) {
         if (!inChapter(i % W) || !['tree', 'trunk'].includes(d.fut[i].o) && !['tree', 'trunk'].includes(freeFut[i].o)) continue;
         for (const [dx, dy] of DIRS4) {
           const x = i % W - dx, y = Math.floor(i / W) - dy, b = y * W + x;
@@ -4034,9 +4077,19 @@ function blockerE(i) {
   if (r.o === 'siltbank') return { kind: 'crate', text: 'Sediment bank', fix: 'past' };
   if (r.o === 'bars') return { kind: 'bars', text: 'Iron bars', fix: 'past' };
   if (r.o === 'oldcrate') return { kind: 'crate', text: 'Old crate', fix: null };
-  if (r.o === 'trunk') return { kind: 'tree', text: 'Fallen tree', fix: 'past' };
+  if (r.o === 'trunk') return { kind: 'tree', text: 'Ironwood trunk', fix: r.felled ? null : 'future' };
+  if (r.o === 'rustdrain') return { kind: 'water', text: 'Rusted drain', fix: 'future' };
   if (r.t === 'chasm') return { kind: 'chasm', text: 'Chasm', fix: G.s.echo.carry === 'plank' ? 'future' : 'past' };
-  if (r.t === 'deep' || r.t === 'flood') return { kind: 'water', text: r.t === 'deep' ? 'Flooded channel' : 'Flooded basin', fix: 'past' };
+  if (r.t === 'deep' || r.t === 'flood') {
+    // Name Echo only when an actual drain or jam changes this particular water tile.
+    const drains = G.L.drains.some(j => C.echoDrain(G.L, G.s, G.fut, j)?.s.echo.witness[i]?.t === 'basin');
+    const jams = G.L.wheels.some(w => {
+      if (!w.echo) return false;
+      const jam = C.echoJam(G.L, G.s, G.fut, tileIdx(w.x, w.y));
+      return jam && C.walkRec(C.deriveFuture(G.L, jam.s, G.stand)[i]);
+    });
+    return { kind: 'water', text: r.t === 'deep' ? 'Flooded channel' : 'Flooded basin', fix: drains || jams ? 'future' : 'past' };
+  }
   return null;
 }
 function blockerA(i) {
@@ -4077,12 +4130,33 @@ function routeBlocker(start, blockFn) {
   for (const c of path) if (info[c]) return Object.assign({ x: c % L.W, y: (c / L.W) | 0 }, info[c]);
   return { none: true };
 }
+// Surface the first environmental intervention once Echo can actually reach it.
+// Later chambers retain obstacle-only chips and receive no extra coaching.
+function teachingEchoGoal() {
+  const L = G.L;
+  if (L.n > GUIDED_CHAMBERS || !L.needs.some(v => ['fell', 'drain', 'jam'].includes(v))) return null;
+  const region = C.regionOf(L, G.E, (x, y) => C.walkFuture(G.fut, L, x, y));
+  for (let i = 0; i < G.fut.length; i++) {
+    const r = G.fut[i], x = i % L.W, y = Math.floor(i / L.W);
+    if (!['tree', 'trunk', 'rustdrain', 'sluicewheel'].includes(r.o)) continue;
+    for (const [dx, dy] of DIR4) {
+      const ax = x - dx, ay = y - dy;
+      if (ax < 0 || ax >= L.W || ay < 0 || ay >= L.H || !region.seen[ay * L.W + ax]) continue;
+      const action = L.needs.includes('fell') && C.echoFell(L, G.s, G.fut, i, dx, dy) ||
+        L.needs.includes('drain') && C.echoDrain(L, G.s, G.fut, i) ||
+        L.needs.includes('jam') && C.echoJam(L, G.s, G.fut, i);
+      if (action) return { x, y, kind: action.kind === 'fell' ? 'tree' : 'water',
+        text: { fell: 'Ironwood trunk', drain: 'Rusted drain', jam: 'Sluice wheel' }[action.kind], fix: 'future' };
+    }
+  }
+  return null;
+}
 function computeGoals(force) {
   if (!G.L || (!force && G.t - G.goalT < 0.25)) return;
   G.goalT = G.t;
   const L = G.L, X = L.exit;
   for (const [who, p, fn, other] of [['A', G.A, blockerA, '2026'], ['E', G.E, blockerE, '1924']]) {
-    let g = routeBlocker(p, fn);
+    let g = (who === 'E' ? teachingEchoGoal() : null) || routeBlocker(p, fn);
     if (!g) g = { kind: 'wait', text: 'Look around', fix: null };
     else if (g.none) g = p.x === X.x && p.y === X.y ? { kind: 'wait', text: 'Holding the gate for ' + other, fix: null } : { kind: 'exit', text: 'Exit open', fix: null, x: X.x, y: X.y };
     G.goals[who] = g;

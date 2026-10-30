@@ -39,10 +39,37 @@ test('every chamber is proven solvable by the solver, and needs at least 14 move
   }
 });
 
+// Every new environmental verb has one discoverable lesson before its first reuse.
+test('Echo environmental verbs are introduced singly in the teaching chapter before any plan uses them', () => {
+  const verbs = ['fell', 'jam', 'drain'];
+  for (const [verb, expected] of [['fell', 2], ['jam', 3], ['drain', 4]]) {
+    const first = C.CHAMBERS.findIndex(d => (d.needs || []).includes(verb)) + 1;
+    assert.equal(first, expected); assert.ok(first <= 11);
+    assert.deepEqual(Array.from(C.getChamber(first).needs).filter(v => verbs.includes(v)), [verb]);
+    for (let n = 1; n < first; n++) for (const realMoves of [false, true]) {
+      const r = C.solve(C.getChamber(n), {realMoves, maxStates:400000});
+      assert.ok(r.ok, `chamber ${n}: ${r.why}`);
+      assert.ok(!r.path.some(p => p.startsWith('E ' + verb + ' ')), `${verb} used before lesson in chamber ${n}`);
+    }
+  }
+  for (let n = 12; n <= C.MAX_LEVEL; n++) if (n <= 19 || n > 25) {
+    assert.ok(C.getChamber(n).needs.some(v => verbs.includes(v)), `chamber ${n} builds on a taught Echo verb`);
+  }
+});
+
+test('all eleven teaching chambers stay within 10–31 scored actions', () => {
+  for (let n = 1; n <= 11; n++) {
+    const r = C.solve(C.getChamber(n), {realMoves:true, maxStates:400000});
+    assert.ok(r.ok, `chamber ${n}: ${r.why}`);
+    assert.ok(r.depth >= 10 && r.depth <= 31, `chamber ${n}: ${r.depth}`);
+    assert.ok(r.explored < 400000);
+  }
+});
+
 // The Undercroft is the hard chapter: counting only shoves, topples, pickups, placements, standing and pins
 // (walking, reading and unlocking are free), the shortest plans run from 30 to 69 actions. The longest teaching
 // chamber needs 31.
-test('the Undercroft chambers need 30 to 69 real actions, rising through the chapter', () => {
+test('the Undercroft chambers need at least 30 real actions, rising through the chapter', () => {
   const depths = [];
   for (let n = 12; n <= 19; n++) {
     const r = C.solve(C.getChamber(n), { realMoves: true, noPath: true, maxStates: 400000 });

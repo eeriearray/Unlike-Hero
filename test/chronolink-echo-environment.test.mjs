@@ -89,3 +89,30 @@ test('an Echo wind-up uses current state instead of rewinding an intervening Anc
   G.s=C.actPick(L,G.s,7,3);G.fut=C.deriveFuture(L,G.s);
   const result=target.run();assert.equal(result.held,G.s.held);assert.equal(result.echo.jams[0],true);
 });
+
+
+test('teaching objective chips identify Echo interventions for trunks, channels and basins',()=>{
+  const context=vm.createContext({C,G:{},tileIdx:(x,y)=>y*context.G.L.W+x});
+  vm.runInContext(html.slice(html.indexOf('function blockerE('),html.indexOf('function blockerA(')),context);
+  for(const [n,type] of [[2,'trunk'],[3,'deep'],[4,'flood']]){
+    const L=C.getChamber(n);let s=C.initState(L);
+    if(n===2)s=C.actDrop(L,C.actPick(L,s,3,4),5,5);
+    const fut=C.deriveFuture(L,s),i=n===3?3*L.W+9:fut.findIndex(r=>r.o===type||r.t===type);
+    assert.ok(i>=0);Object.assign(context.G,{L,s,fut});context.i=i;
+    assert.equal(vm.runInContext('blockerE(i).fix',context),'future',`lesson ${n}`);
+    if(n===4){context.i=fut.findIndex(r=>r.t==='deep');assert.equal(vm.runInContext('blockerE(i).fix',context),'past','a distant drain does not fix the first channel');}
+  }
+});
+
+test('lesson chips surface reachable new verbs without coaching later chambers',()=>{
+  const G={},context=vm.createContext({C,G,GUIDED_CHAMBERS:11,DIR4:[[1,0],[-1,0],[0,1],[0,-1]]});
+  vm.runInContext(html.slice(html.indexOf('function teachingEchoGoal()'),html.indexOf('function computeGoals(force)')),context);
+  for(const [n,text] of [[2,'Ironwood trunk'],[3,'Sluice wheel'],[4,'Rusted drain']]){
+    const L=C.getChamber(n);let s=C.initState(L),e=L.startE;
+    if(n===2)s=C.actDrop(L,C.actPick(L,s,3,4),5,5);
+    Object.assign(G,{L,s,E:e,fut:C.deriveFuture(L,s)});
+    if(n===4){assert.equal(vm.runInContext('teachingEchoGoal()',context),null,'do not direct Echo toward an unreachable drain');G.E={x:22,y:1};}
+    const goal=vm.runInContext('teachingEchoGoal()',context);assert.equal(goal.text,text);assert.equal(goal.fix,'future');
+    G.L={...L,n:12};assert.equal(vm.runInContext('teachingEchoGoal()',context),null,'no late-game coaching');
+  }
+});
