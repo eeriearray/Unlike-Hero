@@ -138,7 +138,44 @@ test('bodyguard dies with the attacker and saves the target', () => {
   assert.ok(v.alive);
   assert.ok(!bg.alive);
   assert.ok(!maf.alive, 'the Mafioso carried out the hit and was killed');
+  assert.ok(maf.log.some(l => l.text.includes('Bodyguard protecting them intercepted your attack and killed you.')));
   assert.ok(gf.alive);
+});
+
+test('attacking the Bodyguard directly does not trigger a counterattack', () => {
+  for (const guarding of [false, true]) {
+    const { game } = makeGame({ players: 7, roles: ['villager', 'bodyguard', 'mafioso', 'godfather', 'villager', 'villager', 'villager'] });
+    game.advance();
+    const [v, bg, maf, gf] = game.players;
+    game.nightAction(gf.id, 'kill', bg.id);
+    game.nightAction(maf.id, 'kill', bg.id);
+    game.nightAction(bg.id, 'ability', guarding ? v.id : null);
+    assert.ok(game.nightAction(bg.id, 'ability', bg.id).error, 'Bodyguards cannot guard themselves');
+    game.advance();
+    assert.equal(bg.alive, false);
+    assert.equal(bg.deathCause, 'mafia');
+    assert.equal(maf.alive, true, 'killing a Bodyguard is not an automatic trade');
+    assert.ok(!maf.log.some(l => l.text.includes('intercepted your attack')));
+    assert.equal(gf.alive, true);
+    assert.equal(v.alive, true);
+    assert.deepEqual(game.dawn.deaths.map(d => d.id), [bg.id]);
+  }
+});
+
+test('a second Bodyguard can protect a Bodyguard targeted by the Mafia', () => {
+  const { game } = makeGame({ players: 7, roles: ['villager', 'bodyguard', 'mafioso', 'godfather', 'bodyguard', 'villager', 'villager'] });
+  game.advance();
+  const [v, target, maf, gf, protector] = game.players;
+  game.nightAction(gf.id, 'kill', target.id);
+  game.nightAction(maf.id, 'kill', target.id);
+  game.nightAction(target.id, 'ability', v.id);
+  game.nightAction(protector.id, 'ability', target.id);
+  game.advance();
+  assert.equal(target.alive, true, 'the chosen victim survives the interception');
+  assert.equal(protector.deathCause, 'bodyguard');
+  assert.equal(maf.deathCause, 'bodyguard_counter');
+  assert.equal(protector.alive, false);
+  assert.equal(maf.alive, false);
 });
 
 test('silenced players cannot talk but can vote', () => {

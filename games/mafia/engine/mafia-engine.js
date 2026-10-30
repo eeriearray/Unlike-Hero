@@ -44,7 +44,7 @@
       ability: { type: 'heal', verb: 'Heal', ui: 'syringe', target: 'anyAlive' } },
     bodyguard: { id: 'bodyguard', name: 'Bodyguard', team: 'town', icon: '🛡️', toggle: true, appearsEvil: false,
       summary: 'Muscle for hire, loyal to the town.',
-      abilityText: 'Each night, guard a player. If they are attacked, you fight off the attacker — and you both die.',
+      abilityText: 'Each night, guard another player. If they are attacked, you stop that attack, but you and the attacker both die. You cannot guard yourself; being attacked directly does not trigger a counterattack.',
       ability: { type: 'guard', verb: 'Guard', ui: 'shield', target: 'otherAlive' } },
     vigilante: { id: 'vigilante', name: 'Vigilante', team: 'town', icon: '🎯', toggle: true, appearsEvil: false,
       summary: 'A lone gun who takes justice into their own hands.',
@@ -824,6 +824,7 @@
         guards[t.id] = gs.slice(1);
         kill(bg, 'bodyguard', a.attacker);
         kill(a.attacker, 'bodyguard_counter', bg);
+        self.log(a.attacker, 'You attacked ' + t.name + ', but a Bodyguard protecting them intercepted your attack and killed you.', 'action');
         bg.stats.saves += 1; bg.stats.score += 3;
         self.log(t, 'You were attacked last night, but a bodyguard fought off your attacker!', 'saved');
         return;
