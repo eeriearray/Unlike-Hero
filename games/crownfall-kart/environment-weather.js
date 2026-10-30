@@ -19,9 +19,9 @@
       }
       this.setQuality(owner.quality);this.anchor=new THREE.Vector3();this.placed=false;
     }
-    setQuality(quality){if(!this.mesh)return;const factor=quality==='performance'?.3:quality==='balanced'?.65:1;this.count=Math.max(1,Math.floor(this.particles.length*factor));this.mesh.geometry.setDrawRange(0,this.count*(this.profile.weather.type==='rain'?2:1));if(this.dust)this.dust.geometry.setDrawRange(0,Math.ceil(80*factor));}
+    setQuality(quality){this.group.visible=quality!=='performance';if(!this.mesh)return;const factor=quality==='performance'?.3:quality==='balanced'?.65:1;this.count=Math.max(1,Math.floor(this.particles.length*factor));this.mesh.geometry.setDrawRange(0,this.count*(this.profile.weather.type==='rain'?2:1));if(this.dust)this.dust.geometry.setDrawRange(0,Math.ceil(80*factor));}
     update(dt,player,menu){
-      if(!this.mesh||!player)return;dt=Math.min(.05,Math.max(0,dt));this.time+=dt;const w=this.profile.weather,rain=w.type==='rain',mist=w.type==='mist',speed=menu?0:player.speed;
+      if(!this.group.visible||!this.mesh||!player)return;dt=Math.min(.05,Math.max(0,dt));this.time+=dt;const w=this.profile.weather,rain=w.type==='rain',mist=w.type==='mist',speed=menu?0:player.speed;
       if(!this.placed||this.anchor.distanceTo(new THREE.Vector3(player.x,player.y,player.z))>120){this.anchor.set(player.x,player.y,player.z);this.placed=true;}
       // Recenter the weather volume without making particles stick to the car/camera.
       const dx=player.x-this.anchor.x,dy=player.y-this.anchor.y,dz=player.z-this.anchor.z;

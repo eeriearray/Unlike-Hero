@@ -60,3 +60,25 @@ test('the authoritative server completes Rift Sprint at gate ten without requiri
   while(view.phase!=='results'&&packets++<1200){view=(await host.next('state')).world;if(packets%4===0)host.send({type:'input',input:{throttle:1,assist:true}});}
   const racer=view.racers.find(k=>k.id===host.id);assert.equal(view.phase,'results');assert.equal(racer.gate,10);assert.ok(racer.finishTime>0&&racer.finishTime<120);
 });
+
+test('lobby car choices belong to each player and only the host can configure the next race',async t=>{
+  const{url}=await setup(t),host=await client(url,t),guest=await client(url,t);
+  host.send({type:'create',mode:'race',track:0});const initial=await host.next('lobby');
+  guest.send({type:'join',code:initial.code});await guest.next('lobby');
+  guest.send({type:'select-car',classId:'heavy'});
+  const car=await host.next('lobby',d=>d.seats.some(s=>s.id===guest.id&&s.classId==='heavy'));
+  assert.equal(car.seats.find(s=>s.id===host.id).classId,'medium');
+  guest.send({type:'configure',mode:'sprint',track:3,difficulty:'hard'});assert.match((await guest.next('error')).message,/host/);
+  host.send({type:'configure',mode:'sprint',track:3,difficulty:'hard'});
+  const settings=await guest.next('lobby',d=>d.track===3);assert.equal(settings.mode,'sprint');assert.equal(settings.difficulty,'hard');
+  host.send({type:'configure',mode:'race',track:999,difficulty:'easy'});assert.match((await host.next('error')).message,/valid/);
+  guest.send({type:'select-car',classId:'__proto__'});assert.match((await guest.next('error')).message,/valid car/);
+  // A promoted host inherits working controls and the settings already chosen.
+  host.ws.close();await guest.next('lobby',d=>d.host===guest.id);
+  guest.send({type:'configure',mode:'race',track:2,difficulty:'easy'});await guest.next('lobby',d=>d.track===2);
+  guest.send({type:'start'});const world=(await guest.next('state')).world;
+  assert.equal(world.trackIndex,2);assert.equal(world.difficulty,'easy');assert.equal(world.mode,'race');
+  assert.equal(world.racers.find(k=>k.id===guest.id).classId,'heavy');
+  guest.send({type:'select-car',classId:'light'});assert.match((await guest.next('error')).message,/started/);
+  guest.send({type:'configure',mode:'battle',track:0,difficulty:'hard'});assert.match((await guest.next('error')).message,/started/);
+});

@@ -274,3 +274,7 @@ h1 small{margin-top:8px;padding:3px 8px 2px;border-radius:3px;background:var(--g
 @media(max-height:500px){.route-cue{top:58px}.notice{top:auto;bottom:10px;max-width:32vw;padding:5px 8px;font-size:12px}}
 .telemetry:has(#turbo-label:empty):has(#surface-label:empty) .turbo{display:none}
 @media(pointer:coarse){.mast kbd{display:none}}
+
+/* Keep the lightweight preset cheap on integrated GPUs, including HUD compositing. */
+body[data-graphics="performance"] :is(.position,.race-clock,.telemetry,.standings,.item-slot,.map-panel,.rival,.notice){backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none;background:#111318ed}
+body[data-graphics="performance"] .drift-glow{display:none}

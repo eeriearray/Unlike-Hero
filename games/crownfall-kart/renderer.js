@@ -5,7 +5,7 @@
     constructor(canvas){
       // r147 stores CSS colors in linear space only when legacy color management is disabled.
       THREE.ColorManagement.legacyMode=false;
-      this.renderer=new THREE.WebGLRenderer({canvas,antialias:!root.HubPerformance?.low,alpha:false,powerPreference:'high-performance'});
+      this.renderer=new THREE.WebGLRenderer({canvas,antialias:false,alpha:false,powerPreference:'high-performance'});
       this.renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.6));
       this.renderer.outputEncoding=THREE.sRGBEncoding;this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=.95;
       this.scene=new THREE.Scene();this.camera=new THREE.PerspectiveCamera(59,1,.1,1600);
@@ -29,7 +29,7 @@
       this.particleMesh=new THREE.Points(particleGeo,new THREE.PointsMaterial({size:.12,map:new THREE.CanvasTexture(glowCanvas),vertexColors:true,transparent:true,opacity:.7,blending:THREE.AdditiveBlending,depthWrite:false}));this.particleMesh.frustumCulled=false;this.scene.add(this.particleMesh);
       const streakGeo=new THREE.BufferGeometry();streakGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(36*6),3));
       this.streaks=new THREE.LineSegments(streakGeo,new THREE.LineBasicMaterial({color:'#c7ecff',transparent:true,opacity:0,depthTest:false,depthWrite:false}));this.streaks.frustumCulled=false;this.camera.add(this.streaks);this.scene.add(this.camera);
-      this.post=new root.KartPostProcessing(this.renderer);this.ambientWeather=new root.TrackWeather(this);this.initSmoke();this.setQuality(root.HubPerformance&&root.HubPerformance.tier!=='high'?'performance':'balanced');
+      this.post=new root.KartPostProcessing(this.renderer);this.ambientWeather=new root.TrackWeather(this);this.initSmoke();this.setQuality('performance');
       this.resize();window.addEventListener('resize',()=>this.resize());
     }
     registerMaterials(){
@@ -40,7 +40,7 @@
       const previousQuality=this.quality;
       this.quality=['performance','balanced','high'].includes(value)?value:'balanced';
       if(previousQuality===this.quality&&this.csm)return;
-      const settings={performance:{cascades:1,size:1024,ratio:1,scale:.85},balanced:{cascades:2,size:1536,ratio:1.25,scale:1},high:{cascades:3,size:2048,ratio:1.5,scale:1}}[this.quality];
+      const settings={performance:{cascades:1,size:256,ratio:1,scale:.65},balanced:{cascades:2,size:1536,ratio:1.25,scale:1},high:{cascades:3,size:2048,ratio:1.5,scale:1}}[this.quality];
       if(this.csm){
         this.csm.remove();for(const light of this.csm.lights)light.shadow.dispose();this.csm.dispose();
         // CSM removes its uniforms on disposal. Release each material's cached programs
@@ -52,6 +52,9 @@
       }
       this.csm=new root.CSM({camera:this.camera,parent:this.scene,cascades:settings.cascades,maxFar:this.quality==='performance'?90:260,shadowMapSize:settings.size,mode:'practical',lightDirection:new THREE.Vector3(.65,-.32,.7).normalize(),lightIntensity:2.6,lightNear:1,lightFar:800,lightMargin:180,shadowBias:-.000015});
       this.csm.fade=this.quality!=='performance';for(const light of this.csm.lights){light.color.set('#ffe0ac');light.shadow.normalBias=.025;}
+      this.renderer.shadowMap.enabled=this.quality!=='performance';
+      this.particleMesh.visible=this.smokeMesh.visible=this.streaks.visible=this.quality!=='performance';
+      this.trackKey='';this.materialsDirty=true;
       this.csm.updateFrustums();this.registerMaterials();this.scenery.setQuality(this.quality);this.ambientWeather.setQuality(this.quality);if(this.profile)this.applyProfileLighting();
       this.renderScale=settings.scale;this.ratioCap=settings.ratio;this.pixelRatio=root.HubPerformance?.pixelRatio(innerWidth,innerHeight,settings.ratio)??Math.min(devicePixelRatio||1,settings.ratio);this.renderer.setPixelRatio(this.pixelRatio*this.renderScale);
       this.post.quality=this.quality;this.post.resetHistory=true;this.resize();this.slowFrames=0;this.fastFrames=0;
@@ -71,13 +74,13 @@
       // Sustained frame budget feedback; no oscillation on isolated load/network spikes.
       this.slowFrames=dt>1/52?(this.slowFrames||0)+1:Math.max(0,(this.slowFrames||0)-1);
       this.fastFrames=dt<1/65?(this.fastFrames||0)+1:0;
-      const old=this.renderScale,max=this.quality==='performance'?.85:1;
-      if(this.slowFrames>100){this.renderScale=Math.max(.6,this.renderScale-.1);this.slowFrames=0;}
+      const old=this.renderScale,max=this.quality==='performance'?.65:1;
+      if(this.slowFrames>100){this.renderScale=Math.max(this.quality==='performance'?.4:.6,this.renderScale-.1);this.slowFrames=0;}
       if(this.fastFrames>360){this.renderScale=Math.min(max,this.renderScale+.05);this.fastFrames=0;}
       if(old!==this.renderScale){this.renderer.setPixelRatio(this.pixelRatio*this.renderScale);this.resize();}
       this.renderer.domElement.dataset.renderScale=this.renderScale.toFixed(2);
     }
-    mat(color,emissive=false){const key=color+emissive;if(!this.materials.has(key))this.materials.set(key,new THREE.MeshStandardMaterial({color,roughness:.78,metalness:.08,roughnessMap:emissive?null:this.scenery?.rock.roughnessMap,emissive:emissive?color:0,emissiveIntensity:emissive ? 3.2 : 0}));return this.materials.get(key);}
+    mat(color,emissive=false){const key=color+emissive;if(!this.materials.has(key)){this.materialsDirty=true;this.materials.set(key,new THREE.MeshStandardMaterial({color,roughness:.78,metalness:.08,roughnessMap:emissive?null:this.scenery?.rock.roughnessMap,emissive:emissive?color:0,emissiveIntensity:emissive ? 3.2 : 0}));}return this.materials.get(key);}
     mesh(geometry,color,parent=this.environment,emissive=false){const m=new THREE.Mesh(geometry,this.mat(color,emissive));parent.add(m);return m;}
     box(parent,x,y,z,sx,sy,sz,color,emissive=false){const m=this.mesh(this.unitBox,color,parent,emissive);m.position.set(x,y,z);m.scale.set(sx,sy,sz);return m;}
     resize(){const w=innerWidth,h=innerHeight;if(root.HubPerformance&&this.ratioCap){this.pixelRatio=root.HubPerformance.pixelRatio(w,h,this.ratioCap);this.renderer.setPixelRatio(this.pixelRatio*this.renderScale);}this.renderer.setSize(w,h,false);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();if(this.csm)this.csm.updateFrustums();if(this.post)this.post.resize(Math.round(w*this.renderer.getPixelRatio()),Math.round(h*this.renderer.getPixelRatio()));}
@@ -135,6 +138,7 @@
     build(world){
       const battle=world.mode==='battle',sourceTrack=T.makeTrack(world.trackIndex),profile=root.CrownEnvironments.get(sourceTrack),track={...sourceTrack,energy:profile.accent,accent:profile.accent,stone:profile.rock},key=`${world.trackIndex}:${battle}:${world.mode==='sprint'}`;
       if(key===this.trackKey)return;
+      this.materialsDirty=true;
       for(const texture of this.artTextures)texture.dispose();this.artTextures=[];this.signBoards=[];
       this.environment.traverse(o=>{if(o.userData.ownedMaterial)o.material.dispose();});this.disposeGroup(this.environment);this.trackKey=key;this.readyCamera=false;
       this.weather=null;this.clouds=[];this.lastMotion.clear();for(const p of this.particles)p.life=0;for(const p of this.smoke)p.life=0;
@@ -217,7 +221,7 @@
     buildRoadMarkers(track){
       const pad='#73ffdf',warn='#ffb347',danger='#ff5a4f';
       // A softer glow than the scenery's emissive trim, so amber, red and cyan stay recognisable instead of blooming to white.
-      const glow=(g,x,y,z,sx,sy,sz,color)=>{const key='marker:'+color;if(!this.materials.has(key))this.materials.set(key,new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:1.1,roughness:.6}));const m=new THREE.Mesh(this.unitBox,this.materials.get(key));m.position.set(x,y,z);m.scale.set(sx,sy,sz);g.add(m);return m;};
+      const glow=(g,x,y,z,sx,sy,sz,color)=>{const key='marker:'+color;if(!this.materials.has(key)){this.materialsDirty=true;this.materials.set(key,new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:1.1,roughness:.6}));}const m=new THREE.Mesh(this.unitBox,this.materials.get(key));m.position.set(x,y,z);m.scale.set(sx,sy,sz);g.add(m);return m;};
       const root=new THREE.Group();this.environment.add(root);
       const place=(s,lane=0,lift=0)=>{const g=new THREE.Group(),p=T.sample(track,s,lane);g.position.set(p.x,p.y+lift,p.z);g.rotation.y=p.heading;root.add(g);return g;};
       // Upward chevrons on a panel that faces oncoming drivers.
@@ -332,11 +336,12 @@
     coachwork(parent,color,x,y,z,width,height,length){
       const shape=new THREE.Shape(),w=width/2,h=height/2,r=Math.min(.16,h*.65);
       shape.moveTo(-w+r,-h);shape.lineTo(w-r,-h);shape.quadraticCurveTo(w,-h,w,-h+r);shape.lineTo(w,h-r);shape.quadraticCurveTo(w,h,w-r,h);shape.lineTo(-w+r,h);shape.quadraticCurveTo(-w,h,-w,h-r);shape.lineTo(-w,-h+r);shape.quadraticCurveTo(-w,-h,-w+r,-h);
-      const geo=new THREE.ExtrudeGeometry(shape,{depth:length-.12,bevelEnabled:true,bevelSegments:3,steps:1,bevelSize:.06,bevelThickness:.06,curveSegments:5});geo.translate(0,0,-(length-.12)/2);
+      const geo=new THREE.ExtrudeGeometry(shape,{depth:length-.12,bevelEnabled:this.quality!=='performance',bevelSegments:3,steps:1,bevelSize:.06,bevelThickness:.06,curveSegments:this.quality==='performance'?2:5});geo.translate(0,0,-(length-.12)/2);
       const key='paint:'+color;if(!this.materials.has(key))this.materials.set(key,new THREE.MeshPhysicalMaterial({color,metalness:.55,roughness:.25,clearcoat:1,clearcoatRoughness:.17,envMapIntensity:1.2}));
       const mesh=new THREE.Mesh(geo,this.materials.get(key));mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh;
     }
     makeKart(k,ghost=false){
+      this.materialsDirty=true;
       const group=new THREE.Group(),visual=new THREE.Group();group.add(visual);
       const stats=D.CLASSES[k.classId],color=ghost?'#9de5ef':k.color||stats.color;
       const wheels=root.buildSportsCar(this,visual,color);
@@ -377,6 +382,7 @@
       this.smokeMesh=new THREE.Points(geo,mat);this.smokeMesh.frustumCulled=false;this.scene.add(this.smokeMesh);
     }
     emitSmoke(k,dust,acceleration){
+      if(this.quality==='performance')return;
       const p=this.smoke[this.smokeCursor++%this.smoke.length],side=Math.random()<.5?-1:1;
       Object.assign(p,{x:k.x-Math.sin(k.yaw)*1.35+Math.cos(k.yaw)*side*(dust?.85:.36),y:k.y-(dust?.45:0),z:k.z-Math.cos(k.yaw)*1.35-Math.sin(k.yaw)*side*(dust?.85:.36),
         vx:-k.vx*.08+(Math.random()-.5)*1.4,vy:dust?.4:1.1,vz:-k.vz*.08+(Math.random()-.5)*1.4,life:dust?1.1:.85,maxLife:dust?1.1:.85,size:dust?.45:.24+acceleration*.008,dust});
@@ -391,6 +397,7 @@
       }for(const attribute of Object.values(a))attribute.needsUpdate=true;
     }
     emit(x,y,z,color,count=1,vx=0,vz=0){
+      if(this.quality==='performance')return;
       const c=new THREE.Color(color);
       for(let i=0;i<count;i++){
         const index=this.particleCursor++%this.particles.length,p=this.particles[index];
@@ -473,7 +480,7 @@
       if(world.time<(this.entityClock??0)-.01){this.trapSeen.clear();this.shotSeen.clear();}this.entityClock=world.time;
       const sync=(id,type,p,color)=>{
         needed.add(id);let mesh=this.entities.get(id);
-        if(!mesh){mesh=type==='hazard'?this.makeHazard():type==='trap'?this.makeMine():type==='shot'?this.makeShot(color,p.hunter):this.mesh(new THREE.OctahedronGeometry(.8),color,this.dynamic,true);this.entities.set(id,mesh);}
+        if(!mesh){this.materialsDirty=true;mesh=type==='hazard'?this.makeHazard():type==='trap'?this.makeMine():type==='shot'?this.makeShot(color,p.hunter):this.mesh(new THREE.OctahedronGeometry(.8),color,this.dynamic,true);this.entities.set(id,mesh);}
         if(type==='hazard'){
           // Roll across the road: spin follows the sideways travel, the warning ring stays flat on the asphalt.
           mesh.position.set(p.x,p.y,p.z);mesh.rotation.y=p.heading;const u=mesh.userData;u.stone.rotation.z=-(p.lane||0)/1.35;u.stone.rotation.x=time*.15;
@@ -538,7 +545,7 @@
         u.visual.position.y=.56*u.baseScale.y-.65+(k.invincible>0?Math.sin(now*14)*.04:0)+(this.reduced||u.hitPop>.6?0:Math.sin(u.hitPop/.6*Math.PI)*.9);
         u.shadow.position.y=(world.mode==='battle'?6:T.sample(track,k.s).y)-mesh.position.y+.05;
         u.shadow.visible=world.mode==='battle'||!T.inGap(track,k.s);
-        if(!menu&&!snap&&!k.eliminated){
+        if(this.quality!=='performance'&&!menu&&!snap&&!k.eliminated){
           u.smokeBudget=(u.smokeBudget||0)+dt*(k.speed>1?7+Math.max(0,acceleration)*.9:2);
           while(u.smokeBudget>=1){this.emitSmoke(k,false,Math.max(0,acceleration));u.smokeBudget--;}
           const dusty=k.grounded&&k.speed>4&&(k.surface==='mud'||(world.mode!=='battle'&&Math.abs(k.lane)>track.width/2-1.4));
@@ -566,7 +573,7 @@
         this.look.set(player.x-3*Math.cos(p.heading),player.y+.5,player.z+3*Math.sin(p.heading));
         this.camera.position.copy(this.follow);this.camera.up.set(0,1,0);this.camera.lookAt(this.look);this.readyCamera=false;this.cameraBlend=null;this.applyCockpit(null,'chase');this.camera.fov=59;this.camera.updateProjectionMatrix();this.shake=0;
       }else this.updateCamera(world,track,own,player,dt,now);
-      this.updateParticles(dt);this.updateSmoke(dt);this.updateBlasts(dt);this.ambientWeather.update(dt,player,menu);
+      if(this.quality!=='performance'){this.updateParticles(dt);this.updateSmoke(dt);}this.updateBlasts(dt);this.ambientWeather.update(dt,player,menu);
       for(const cloud of this.clouds){cloud.position.x=cloud.userData.origin.x+Math.sin(now*.025+cloud.userData.phase)*22;cloud.position.z=cloud.userData.origin.z+Math.cos(now*.018+cloud.userData.phase)*12;}
       const boardPosition=new THREE.Vector3();for(const board of this.signBoards){board.getWorldPosition(boardPosition);board.visible=boardPosition.distanceTo(this.camera.position)>8;}
       // Let the camera frustum clip racers naturally; proximity-based hiding pops during overtakes.
@@ -579,8 +586,8 @@
         streakPositions.setXYZ(i*2,Math.cos(angle)*r*this.camera.aspect,Math.sin(angle)*r,-3);
         streakPositions.setXYZ(i*2+1,Math.cos(angle)*(r+.25)*this.camera.aspect,Math.sin(angle)*(r+.25),-3);
       }streakPositions.needsUpdate=true;
-      this.registerMaterials();this.camera.updateMatrixWorld();
-      if(Math.abs((this.shadowFov||0)-this.camera.fov)>.3){this.csm.updateFrustums();this.shadowFov=this.camera.fov;}this.csm.update();
+      if(this.materialsDirty){this.registerMaterials();this.materialsDirty=false;}this.camera.updateMatrixWorld();
+      if(this.quality!=='performance'){if(Math.abs((this.shadowFov||0)-this.camera.fov)>.3){this.csm.updateFrustums();this.shadowFov=this.camera.fov;}this.csm.update();}
       this.renderer.info.autoReset=false;this.renderer.info.reset();this.post.render(this.scene,this.camera,this.reduced,menu?0:player.speed,dt);
       this.adaptResolution(dt,menu);
       this.frameCount=(this.frameCount||0)+1;

@@ -15,7 +15,8 @@
     const metal=s.metal.clone();metal.color.set(profile.border==='brass'?'#a48b52':'#69747e');metal.userData.environmentOwned=true;
     const glow=new THREE.MeshStandardMaterial({color:profile.accent,emissive:profile.accent,emissiveIntensity:2.8,roughness:.4});glow.userData.environmentOwned=true;
     const dark=new THREE.MeshStandardMaterial({color:'#101822',roughness:.58,metalness:.3,normalMap:s.rock.normalMap,normalScale:new THREE.Vector2(.2,.2)});dark.userData.environmentOwned=true;
-    const cylinder=new THREE.CylinderGeometry(1,1,1,32,6),cone=new THREE.ConeGeometry(1,1,40,10),sphere=s.rockGeometry(),arch=new THREE.TorusGeometry(1,.09,12,48,Math.PI),ring=new THREE.TorusGeometry(1,.045,12,64);
+    const low=owner.quality==='performance';
+    const cylinder=new THREE.CylinderGeometry(1,1,1,low?8:32,low?1:6),cone=new THREE.ConeGeometry(1,1,low?8:40,low?1:10),sphere=s.rockGeometry(),arch=new THREE.TorusGeometry(1,.09,low?4:12,low?16:48,Math.PI),ring=new THREE.TorusGeometry(1,.045,low?4:12,low?16:64);
     const bounds=track.bounds,cx=(bounds.minX+bounds.maxX)/2,cz=(bounds.minZ+bounds.maxZ)/2,radius=Math.max(bounds.maxX-bounds.minX,bounds.maxZ-bounds.minZ)*.64+55;
     const place=(i,n,extra=0)=>{const a=i/n*Math.PI*2;return {x:cx+Math.sin(a)*(radius+extra),z:cz+Math.cos(a)*(radius+extra),a};};
     function castle(x,y,z,scale=1,cathedral=false){
@@ -28,7 +29,7 @@
         for(let i=0;i<8;i++){const a=i/8*Math.PI*2;add(box,stone,tx+Math.sin(a)*4.4,h-1,tz+Math.cos(a)*4.4,1.2,3,1.2);}
       }
       add(arch,stone,0,9,-11.6,8,13,2);add(box,dark,0,7,-11.5,12,14,.2);
-      add(ring,metal,0,23,-11.7,5,5,1);add(new THREE.CircleGeometry(4.6,48),glow,0,23,-11.75,1,1,1);
+      add(ring,metal,0,23,-11.7,5,5,1);add(new THREE.CircleGeometry(4.6,low?16:48),glow,0,23,-11.75,1,1,1);
       for(let i=0;i<8;i++){const a=i*Math.PI/8;add(box,metal,0,23,-11.9,.24,10,.3,0,0,a);}
       for(const side of [-1,1])for(let i=0;i<4;i++){add(arch,stone,side*21,12,-7+i*5,7,17,1,0,Math.PI/2);add(box,stone,side*28,9,-7+i*5,2,18,2);}
       if(cathedral){add(box,stone,0,31,0,12,22,28);add(cone,metal,0,54,0,12,25,17,0,Math.PI/4);}
@@ -44,7 +45,7 @@
         break;
       case 'ruins':
         for(let i=0;i<42;i++){const p=place(i,42,-15),h=12+rng()*27;b.add(cylinder,stone,p.x,h/2-4,p.z,2.4,h,2.4);b.add(cylinder,stone,p.x,h-4,p.z,3.5,1,3.5);if(i%3===0)b.add(arch,stone,p.x,17,p.z,12,19,2,0,p.a);}
-        for(let i=0;i<9;i++){const p=place(i,9,35);b.add(new THREE.SphereGeometry(1,48,24,0,Math.PI*2,0,Math.PI/2),stone,p.x,15,p.z,24,12,24);}
+        for(let i=0;i<9;i++){const p=place(i,9,35);b.add(new THREE.SphereGeometry(1,low?12:48,low?8:24,0,Math.PI*2,0,Math.PI/2),stone,p.x,15,p.z,24,12,24);}
         break;
       case 'city':{
         const canvas=document.createElement('canvas');canvas.width=256;canvas.height=512;const c=canvas.getContext('2d');c.fillStyle='#080f1b';c.fillRect(0,0,256,512);
@@ -69,7 +70,7 @@
           if(i%5===0)for(const side of [-1,1])b.add(cylinder,s.bark,p.x+side*3,-9,p.z,1,12,1,0,0,side*.55);
         }break;}
       case 'observatory':{
-        const dome=new THREE.SphereGeometry(1,64,32,0,Math.PI*2,0,Math.PI/2),water=new THREE.MeshPhysicalMaterial({color:'#315a64',metalness:.25,roughness:.18,clearcoat:.8,normalMap:s.road.normalMap,normalScale:new THREE.Vector2(.15,.15),envMapIntensity:1});water.userData.environmentOwned=true;
+        const dome=new THREE.SphereGeometry(1,low?16:64,low?8:32,0,Math.PI*2,0,Math.PI/2),water=new THREE.MeshPhysicalMaterial({color:'#315a64',metalness:.25,roughness:.18,clearcoat:.8,normalMap:s.road.normalMap,normalScale:new THREE.Vector2(.15,.15),envMapIntensity:1});water.userData.environmentOwned=true;
         b.add(new THREE.PlaneGeometry(1800,1800,1,1),water,cx,-25,cz,1,1,1,-Math.PI/2);
         for(let i=0;i<8;i++){const p=place(i,8,-20);b.add(cylinder,stone,p.x,0,p.z,22,36,22);b.add(dome,metal,p.x,18,p.z,23,20,23);b.add(box,dark,p.x,29,p.z-18,3,18,8);b.add(cylinder,metal,p.x,41,p.z-8,2,27,2,.6);for(let j=0;j<3;j++)b.add(ring,glow,p.x,58,p.z,14+j*5,14+j*5,1,.5+j*.5,j*.6);}
         break;}

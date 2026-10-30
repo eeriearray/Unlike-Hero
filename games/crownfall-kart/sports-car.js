@@ -32,15 +32,15 @@
   }
   root.buildSportsCar=function(o,visual,color){
     const low=o.quality==='performance';
-    const paintKey='paint:'+color;
-    if(!o.materials.has(paintKey))o.materials.set(paintKey,new THREE.MeshPhysicalMaterial({color,metalness:.42,roughness:.34,clearcoat:1,clearcoatRoughness:.035,envMapIntensity:1.05}));
+    const paintKey=(low?'simple-paint:':'paint:')+color;
+    if(!o.materials.has(paintKey))o.materials.set(paintKey,low?new THREE.MeshStandardMaterial({color,roughness:.7,metalness:.1}):new THREE.MeshPhysicalMaterial({color,metalness:.42,roughness:.34,clearcoat:1,clearcoatRoughness:.035,envMapIntensity:1.05}));
     const paint=o.materials.get(paintKey),carbon=o.mat('#222320'),metal=o.scenery.metal,glass=o.scenery.glass;
     const add=(g,m,x=0,y=0,z=0)=>{const mesh=new THREE.Mesh(g,m);mesh.position.set(x,y,z);visual.add(mesh);return mesh;};
-    const body=add(loft([[-1.7,.05,.03],[-1.61,.7,.06],[-1.2,.91,.16],[-.65,.82,.14],[.35,.79,.15],[1.04,.88,.12],[1.57,.7,.02],[1.68,.03,.01]],low?32:96,low?24:48),paint);
+    const body=add(loft([[-1.7,.05,.03],[-1.61,.7,.06],[-1.2,.91,.16],[-.65,.82,.14],[.35,.79,.15],[1.04,.88,.12],[1.57,.7,.02],[1.68,.03,.01]],low?12:96,low?10:48),paint);
     body.name='96-section sculpted sports coupe';
     // Fastback glazing: flattened roof, sloped windscreen and tapering rear glass.
     const cabinPositions=[],cabinUV=[],cabinIndices=[];
-    const sections=low?20:48,sides=low?20:40;
+    const sections=low?8:48,sides=low?8:40;
     for(let i=0;i<=sections;i++){
       const t=i/sections,z=-1.03+t*1.88;
       const h=z<-.5?.38+(z+1.03)/.53*.43:z>.24?.81-(z-.24)/.61*.43:.81;
@@ -52,10 +52,10 @@
     add(cabin,glass).userData.cabin=true;o.coachwork(visual,color,0,.817,-.13,1.03,.045,.74).userData.cabin=true;
     for(const side of [-1,1]){
       // Sculpted fender lips, mirrors, sill, window frames and flush lamps.
-      for(const z of [-1.03,1.01]){const arch=add(new THREE.TorusGeometry(.405,.048,10,40,Math.PI),paint,side*.83,-.13,z);arch.rotation.y=Math.PI/2;arch.rotation.z=Math.PI/2;}
+      for(const z of [-1.03,1.01]){const arch=add(new THREE.TorusGeometry(.405,.048,low?4:10,low?12:40,Math.PI),paint,side*.83,-.13,z);arch.rotation.y=Math.PI/2;arch.rotation.z=Math.PI/2;}
       o.coachwork(visual,'#292a27',side*.78,-.05,0,.12,.12,2.7);
       // Wing mirrors count as cabin parts so they hide in the cockpit view, where they read as blobs beside the driver.
-      const mirror=add(new THREE.SphereGeometry(.12,20,12),paint,side*.81,.52,.36);mirror.scale.set(1.2,.6,1.5);mirror.userData.cabin=true;
+      const mirror=add(new THREE.SphereGeometry(.12,low?8:20,low?6:12),paint,side*.81,.52,.36);mirror.scale.set(1.2,.6,1.5);mirror.userData.cabin=true;
       for(const z of [-.73,.48]){const pillar=add(new THREE.CylinderGeometry(.018,.025,.42,10),paint,side*.55,.57,z);pillar.rotation.z=side*.25;pillar.rotation.x=z>0?-.6:.6;pillar.userData.cabin=true;}
       o.box(visual,side*.68,.21,1.44,.33,.06,.11,'#fff1d0',true);
       o.box(visual,side*.55,.23,-1.57,.51,.045,.05,'#ff2515',true);
@@ -71,9 +71,9 @@
     const wheels=[];
     for(const x of [-.84,.84])for(const z of [-1.03,1.01]){
       const steering=new THREE.Group(),spin=new THREE.Group();steering.position.set(x,-.17,z);steering.userData.front=z>0;steering.add(spin);visual.add(steering);wheels.push(steering);
-      const tire=new THREE.Mesh(new THREE.TorusGeometry(.275,.105,low?10:20,low?32:64),o.scenery.rubber);tire.rotation.y=Math.PI/2;spin.add(tire);
-      const rim=new THREE.Mesh(new THREE.TorusGeometry(.23,.025,low?6:12,low?24:48),metal);rim.rotation.y=Math.PI/2;rim.position.x=Math.sign(x)*.09;spin.add(rim);
-      const disc=new THREE.Mesh(new THREE.CylinderGeometry(.205,.205,.025,48),metal);disc.rotation.z=Math.PI/2;spin.add(disc);
+      const tire=new THREE.Mesh(new THREE.TorusGeometry(.275,.105,low?5:20,low?12:64),o.scenery.rubber);tire.rotation.y=Math.PI/2;spin.add(tire);
+      const rim=new THREE.Mesh(new THREE.TorusGeometry(.23,.025,low?4:12,low?12:48),metal);rim.rotation.y=Math.PI/2;rim.position.x=Math.sign(x)*.09;spin.add(rim);
+      const disc=new THREE.Mesh(new THREE.CylinderGeometry(.205,.205,.025,low?12:48),metal);disc.rotation.z=Math.PI/2;spin.add(disc);
       for(let j=0;j<10;j++){const spoke=o.box(spin,Math.sign(x)*.11,0,0,.025,.025,.42,'#a1a5a3');spoke.rotation.x=j*Math.PI/5;spoke.material=metal;}
       const caliper=o.box(steering,Math.sign(x)*.05,.14,.1,.09,.14,.08,'#bf3b22');caliper.material=paint;
     }

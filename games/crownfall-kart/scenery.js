@@ -81,15 +81,16 @@
       o.renderer.domElement.dataset.environment=p.id;
     }
     rockGeometry(radius=1){
-      const g=new THREE.SphereGeometry(radius,48,32),p=g.attributes.position,colors=[],uv=g.attributes.uv;
+      const g=new THREE.SphereGeometry(radius,this.owner.quality==='performance'?12:48,this.owner.quality==='performance'?8:32),p=g.attributes.position,colors=[],uv=g.attributes.uv;
       for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),z=p.getZ(i),s=1+.025*Math.sin(y*27)+.1*Math.sin(x*7+z*4)*Math.cos(y*9)+.025*Math.sin(z*23+x*12);p.setXYZ(i,x*s,y,z*s);const layer=.86+.055*Math.sin(y*37)+.025*Math.sin(y*83);colors.push(layer,layer*.94,layer*.85);uv.setXY(i,uv.getX(i)*7,uv.getY(i)*5);}
       g.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));g.computeVertexNormals();return g;
     }
     pineGeometry(){
       // Individually oriented needle sprays, merged once and instanced across the valley.
       const positions=[],colors=[],rng=D.rng(192);
-      for(let b=0;b<95;b++){const t=b/95,angle=b*2.3999,r=(1-t)*2.6,y=1+t*10;
-        for(let n=0;n<32;n++){const f=rng(),a=angle+(rng()-.5)*.8,x=Math.cos(a)*r*f,z=Math.sin(a)*r*f,py=y-f*.65+(rng()-.5)*.4;
+      const branches=this.owner.quality==='performance'?16:95,needles=this.owner.quality==='performance'?6:32;
+      for(let b=0;b<branches;b++){const t=b/branches,angle=b*2.3999,r=(1-t)*2.6,y=1+t*10;
+        for(let n=0;n<needles;n++){const f=rng(),a=angle+(rng()-.5)*.8,x=Math.cos(a)*r*f,z=Math.sin(a)*r*f,py=y-f*.65+(rng()-.5)*.4;
           const len=.22+rng()*.42,spread=.07+rng()*.08;
           positions.push(x-spread,py,z,x+spread,py,z,x+Math.cos(a)*len,py+.22,z+Math.sin(a)*len);
           const shade=.5+rng()*.5;for(let v=0;v<3;v++)colors.push(shade*.85,shade,shade*.72);
@@ -103,7 +104,7 @@
       const bounds=track.bounds,cx=(bounds.minX+bounds.maxX)/2,cz=(bounds.minZ+bounds.maxZ)/2;
       const radius=Math.max(bounds.maxX-bounds.minX,bounds.maxZ-bounds.minZ)*.65+110;
       // Detailed continuous valley floor and weather-eroded ridge, with horizontal sediment bands.
-      const rings=55,segments=256,positions=[],uvs=[],colors=[],indices=[];
+      const low=o.quality==='performance',rings=low?16:55,segments=low?64:256,positions=[],uvs=[],colors=[],indices=[];
       for(let j=0;j<=rings;j++)for(let i=0;i<=segments;i++){
         const a=i/segments*Math.PI*2,r=j/rings*(radius+480),ridge=Math.exp(-Math.pow((r-radius-90)/95,2));
         const erosion=Math.sin(a*19+r*.027)*10+Math.sin(a*43-r*.07)*4+Math.sin(r*.22+a*21)*2;
@@ -132,7 +133,7 @@
       root.buildTrackArchitecture(o,track,profile);
       this.setQuality(o.quality);
     }
-    setQuality(quality){if(this.trees){this.trees.count=this.trunks.count=quality==='performance'?Math.ceil(this.treeCount*.45):this.treeCount;}}
+    setQuality(quality){if(this.trees){this.trees.count=this.trunks.count=quality==='performance'?Math.ceil(this.treeCount*.18):this.treeCount;}}
   }
   root.TrackScenery=TrackScenery;
 })(window);

@@ -56,11 +56,25 @@ export default function attach({ httpServer, basePath = '/games/crownfall-kart/'
           if(target.members.size>=8){error(ws,'That room is full.');return;}
         }
         ws.name=String(data.name||'Racer').replace(/[\x00-\x1f<>]/g,'').slice(0,18)||'Racer';
-        ws.classId=D.CLASSES[data.classId]?data.classId:'medium';ws.code=target.code;target.members.set(ws.id,ws);
+        ws.classId=Object.hasOwn(D.CLASSES,data.classId)?data.classId:'medium';ws.code=target.code;target.members.set(ws.id,ws);
         broadcast(target,lobby(target));return;
       }
       if(!room)return;
       if(data.type==='leave'){leave(ws);return;}
+      if(data.type==='select-car'||data.type==='configure'){
+        if(room.world){error(ws,'The race has already started. Change settings in a new lobby.');return;}
+        if(data.type==='select-car'){
+          if(!Object.hasOwn(D.CLASSES,data.classId)){error(ws,'Choose a valid car.');return;}
+          ws.classId=data.classId;
+        }else{
+          if(room.host!==ws.id){error(ws,'Only the host can change race settings.');return;}
+          if(!['sprint','race','gp','battle'].includes(data.mode)||!Number.isInteger(data.track)||data.track<0||data.track>=D.TRACKS.length||!Object.hasOwn(S.DIFFICULTIES,data.difficulty)){
+            error(ws,'Choose a valid mode, map and CPU difficulty.');return;
+          }
+          room.mode=data.mode;room.track=data.track;room.difficulty=data.difficulty;
+        }
+        broadcast(room,lobby(room));return;
+      }
       if(data.type==='input'&&room.world?.phase!=='results')room.inputs[ws.id]={...S.mergeInput(room.inputs[ws.id],data.input),at:now};
       if(data.type==='start'){
         if(room.host!==ws.id){error(ws,'Only the host can start the race.');return;}

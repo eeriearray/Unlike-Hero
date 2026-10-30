@@ -100,7 +100,7 @@
       this.profile=profile;this.resetHistory=true;if(!this.enabled)return;const a=profile.atmosphere,u=this.composite.uniforms;
       u.profileFog.value.set(a.density,a.height,a.falloff);u.fogTint.value.set(a.color);u.grade.value.set(...a.grade);u.contrast.value=a.contrast;u.shadowLift.value=profile.light.intensity<2?1.1:.25;u.saturation.value=a.saturation;u.sunDirection.value.set(...profile.sky.sun).normalize();u.sunTint.value.set(profile.light.color);
     }
-    resize(w,h){if(!this.enabled)return;this.sceneTarget.setSize(w,h);this.bloomA.setSize(Math.max(1,Math.ceil(w/4)),Math.max(1,Math.ceil(h/4)));this.bloomB.setSize(this.bloomA.width,this.bloomA.height);this.aoTarget.setSize(Math.max(1,Math.ceil(w/2)),Math.max(1,Math.ceil(h/2)));this.composite.uniforms.resolution.value.set(w,h);this.resetHistory=true;}
+    resize(w,h){if(!this.enabled)return;if(this.quality==='performance'){w=1;h=1;}this.sceneTarget.setSize(w,h);this.bloomA.setSize(Math.max(1,Math.ceil(w/4)),Math.max(1,Math.ceil(h/4)));this.bloomB.setSize(this.bloomA.width,this.bloomA.height);this.aoTarget.setSize(Math.max(1,Math.ceil(w/2)),Math.max(1,Math.ceil(h/2)));this.composite.uniforms.resolution.value.set(w,h);this.resetHistory=true;}
     pass(material,target){this.quad.material=material;this.renderer.setRenderTarget(target);this.renderer.render(this.scene,this.camera);}
     render(scene,camera,reduced,speed=0,dt=1/60){
       const r=this.renderer;if(!this.enabled||this.quality==='performance'){r.setRenderTarget(null);r.render(scene,camera);this.resetHistory=true;return;}
