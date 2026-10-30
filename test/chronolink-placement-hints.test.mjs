@@ -35,3 +35,8 @@ test('manual hints show the other era’s actual instruction on the current play
  h.run('syncHintStatus()');assert.equal(el.hidden,false);assert.match(el.textContent,/Anchor: seal the plank/);
  h.G.hint=null;h.run('syncHintStatus()');assert.equal(el.hidden,true);
 });
+test('a carried plank goes across an adjacent crack rather than onto the bare floor the Anchor faces',()=>{
+ const h=harness();h.G.s.held='o1';h.G.A.dir={dx:-1,dy:0};
+ const target=h.run("choosePlacement('A')");assert.equal(target.label,'Lay across');assert.equal(target.x,3);assert.equal(target.y,2);
+ h.G.placementAim={who:'A',x:1,y:2};assert.equal(h.run("choosePlacement('A')").label,'Set down','hover or click can still pick the floor');
+});

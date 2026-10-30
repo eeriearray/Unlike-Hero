@@ -3845,8 +3845,10 @@ function placementTargets(who) {
 function choosePlacement(who) {
   const targets = placementTargets(who), aim = G.placementAim;
   if (aim?.who === who) { const selected = targets.find(q => q.x === aim.x && q.y === aim.y); if (selected) return selected; }
-  // a legal tile the chrononaut is facing wins; the priority order only chooses among tiles beside it
-  return targets.sort((a, b) => Number(!!b.facing) - Number(!!a.facing) || b.priority - a.priority)[0] || null;
+  // a useful placement beside the chrononaut (across a trench or crack, into a planter or the Stash Box) beats
+  // plain floor, whichever way it faces; facing only chooses between equally useful tiles. With a diagonal
+  // camera a single key cannot always face every tile, and a plank is almost never meant for bare floor.
+  return targets.sort((a, b) => b.priority - a.priority || Number(!!b.facing) - Number(!!a.facing))[0] || null;
 }
 // A signal lock wins when the Anchor faces it; one beside or behind only counts if nothing else is in reach,
 // so a lock next to a plank never steals the E press meant for the plank.
@@ -4352,6 +4354,8 @@ function updatePlayers(dt) {
     if (!freeAt(who, p.rx, p.ry)) { const k = Math.min(1, dt * 12); p.rx += (p.x - p.rx) * k; p.ry += (p.y - p.ry) * k; }
     const frozen = G.won || G.t < p.lockUntil || !$('menu').hidden || !$('signalPop').hidden;
     const [ix, iy] = frozen ? [0, 0] : inputVector(who);
+    // steering with the keys takes back a placement aimed by hovering the mouse; the facing tile decides again
+    if ((ix || iy) && G.placementAim?.who === who) G.placementAim = null;
     const kA = 1 - Math.exp(-dt * (ix || iy ? ACCEL : DECEL));
     p.vx += (ix * MOVE_SPEED[who] - p.vx) * kA; p.vy += (iy * MOVE_SPEED[who] - p.vy) * kA;
     if (Math.abs(p.vx) < 0.01) p.vx = 0; if (Math.abs(p.vy) < 0.01) p.vy = 0;
