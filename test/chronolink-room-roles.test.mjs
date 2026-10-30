@@ -62,3 +62,27 @@ test('room role defaults to the role requested by the hub URL', () => {
   assert.equal(client('anchor', 1, '#anchor').elements.roomRole.value, 'ANCHOR');
   assert.equal(client('default', 1).elements.roomRole.value, 'ANCHOR');
 });
+
+test('either partner can swap roles inside a room, and a reconnect keeps the swap', () => {
+  const host = client('host', 1), friend = client('friend', 2);
+  host.elements.roomRole.value = 'ANCHOR';
+  host.elements.roomNew.onclick();
+  friend.elements.roomCode.value = host.elements.roomCode.value;
+  friend.elements.roomJoin.onclick();
+  connect(host, friend);
+  assert.equal(host.G.role, 'ANCHOR'); assert.equal(friend.G.role, 'ECHO');
+  assert.equal(host.elements.roomSwap.hidden, false, 'the swap button appears once linked');
+  // the joiner asks to swap
+  friend.elements.roomSwap.onclick();
+  while (friend.sent.length) host.receive(friend.sent.shift());
+  assert.equal(host.G.role, 'ECHO'); assert.equal(friend.G.role, 'ANCHOR');
+  assert.equal(host.G.soloEra, 'future'); assert.equal(friend.G.soloEra, 'past');
+  host.run("Net.unlink('Partner left')"); friend.run("Net.unlink('Partner left')");
+  assert.equal(host.elements.roomSwap.hidden, true, 'no swap without a partner');
+  connect(host, friend);
+  assert.equal(host.G.role, 'ECHO'); assert.equal(friend.G.role, 'ANCHOR');
+  // and back again from the other side
+  host.elements.roomSwap.onclick();
+  while (host.sent.length) friend.receive(host.sent.shift());
+  assert.equal(host.G.role, 'ANCHOR'); assert.equal(friend.G.role, 'ECHO');
+});

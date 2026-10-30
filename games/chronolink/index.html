@@ -217,6 +217,7 @@ kbd{font:12px var(--f-mono);border:1px solid #6b5a3a;border-bottom-width:2px;bor
     <select id="roomRole"><option value="ANCHOR">Anchor · 1924</option><option value="ECHO">Echo · 2026</option></select>
     <div class="note">Your friend automatically plays the other role.</div>
     <div class="actions"><button class="btn cy" id="roomJoin">Join room</button><button class="btn" id="roomNew">Create room</button><button class="btn" id="roomClose">Close</button></div>
+    <button class="btn" id="roomSwap" hidden>Swap roles with your partner</button>
     <p class="note" id="roomStatus" role="status">Both devices must open this hub on the same Wi-Fi.</p>
   </div>
   <div class="overlay" id="signalPop" hidden>
@@ -1916,9 +1917,24 @@ const Net = {
     Sound.playRadioStatic();
     updateHUD();
     if (this.room) { $('roomBtn').textContent = 'Room ' + this.code + ' · linked'; $('roomStatus').textContent = 'Partner connected · you play ' + (role === 'ANCHOR' ? '1924' : '2026'); }
+    $('roomSwap').hidden = false;
+  },
+  // Either partner can swap roles while linked. Both windows switch, and each keeps its new role as the one it
+  // asks for, so a reconnect does not undo the swap.
+  swap() {
+    if (!this.peer) return;
+    this.send({ t: 'swap', to: this.peer });
+    this.takeRole(G.role === 'ANCHOR' ? 'ECHO' : 'ANCHOR');
+  },
+  takeRole(role) {
+    this.want = role; G.role = role; G.view = 'solo'; G.soloEra = ROLE_ERA[role];
+    applyView();
+    log(role === 'ANCHOR' ? 'Roles swapped · this window is now 1924' : 'Roles swapped · this window is now 2026', 'sys');
+    updateHUD();
+    if (this.room) $('roomStatus').textContent = 'Partner connected · you play ' + (role === 'ANCHOR' ? '1924' : '2026');
   },
   unlink(msg) {
-    this.peer = null; G.role = 'BOTH';
+    this.peer = null; G.role = 'BOTH'; $('roomSwap').hidden = true;
     if (this.room) { $('roomBtn').textContent = 'Room ' + this.code; $('roomStatus').textContent = 'Room ' + this.code + ' · waiting for your friend to rejoin'; }
     if (this.want) { G.view = 'solo'; G.soloEra = ROLE_ERA[this.want]; } else G.view = 'split';
     applyView();
@@ -1945,6 +1961,7 @@ const Net = {
     switch (m.t) {
       case 'hb': this.partnerHiddenSince = m.h ? (this.partnerHiddenSince || Date.now()) : 0; break;
       case 'bye': this.unlink('Partner left · this window plays both'); break;
+      case 'swap': this.takeRole(G.role === 'ANCHOR' ? 'ECHO' : 'ANCHOR'); break;
       case 'pos': applyRemotePos(m.who, m.p); break;
       case 'world': applyRemoteWorld(m); break;
       case 'level': loadLevel(String(m.input), false); break;
@@ -4436,6 +4453,7 @@ if (hub) {
   const showRoom = () => { setMenu(false); $('onlinePop').hidden = false; $('roomCode').focus(); };
   for (const id of ['onlineBtn', 'roomBtn', 'introOnlineBtn']) { $(id).hidden = false; $(id).onclick = showRoom; }
   $('roomClose').onclick = () => { $('onlinePop').hidden = true; focusControls(); };
+  $('roomSwap').onclick = () => { Net.swap(); $('onlinePop').hidden = true; focusControls(); };
   $('roomNew').onclick = () => { const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; const bytes = crypto.getRandomValues(new Uint8Array(4)); const c = Array.from(bytes, b => A[b % A.length]).join(''); $('roomCode').value = c; Net.joinRoom(c, $('roomRole').value); start(); focusControls(); };
   $('roomJoin').onclick = () => { const c = $('roomCode').value.trim().toUpperCase(); if (!/^[A-Z0-9]{4}$/.test(c)) { $('roomStatus').textContent = 'Enter your friend’s 4-letter room code.'; return; } $('roomCode').value = c; Net.joinRoom(c); start(); $('onlinePop').hidden = true; focusControls(); };
   $('roomCode').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('roomJoin').click(); } });
