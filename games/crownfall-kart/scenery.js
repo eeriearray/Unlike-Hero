@@ -131,9 +131,9 @@
         const scale=.8+rng()*.6;dummy.position.set(p.x,p.y-.4,p.z);dummy.scale.setScalar(scale);dummy.updateMatrix();trees.setMatrixAt(i,dummy.matrix);dummy.position.y+=5.1*scale;dummy.updateMatrix();trunks.setMatrixAt(i,dummy.matrix);});
       for(const m of [shelves,trees,trunks]){m.castShadow=m.receiveShadow=true;o.environment.add(m);}if(abyss||city||profile.architecture==='observatory')shelves.visible=false;this.trees=trees;this.trunks=trunks;this.treeCount=Math.floor(places.length*Math.min(1,profile.trees));
       root.buildTrackArchitecture(o,track,profile);
-      this.setQuality(o.quality);
+      this.setFoliage(o.options?.foliage??o.quality!=='performance');
     }
-    setQuality(quality){if(this.trees){this.trees.count=this.trunks.count=quality==='performance'?Math.ceil(this.treeCount*.18):this.treeCount;}}
+    setFoliage(full){if(this.trees){this.trees.count=this.trunks.count=full?this.treeCount:Math.ceil(this.treeCount*.18);}}
   }
   root.TrackScenery=TrackScenery;
 })(window);

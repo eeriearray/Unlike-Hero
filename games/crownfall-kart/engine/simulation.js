@@ -34,7 +34,8 @@
     const mode = ['sprint', 'race', 'gp', 'trial', 'battle'].includes(options.mode) ? options.mode : 'race';
     const trackIndex = D.mod(Math.floor(options.track || 0), D.TRACKS.length), track = T.makeTrack(trackIndex);
     const roster = (options.roster || [{ id: 'player', name: 'You', classId: options.classId || 'medium', human: true }]).slice(0, 8);
-    const count = mode === 'trial' ? 1 : 8, racers = [];
+    // Online hosts may race without CPU fillers: the grid is then just the human roster.
+    const count = mode === 'trial' ? 1 : options.bots === false ? Math.max(1, roster.length) : 8, racers = [];
     for (let i = 0; i < count; i++) {
       const seat = roster[i] || { id: `bot-${i}`, name: D.BOT_NAMES[(i-1+D.BOT_NAMES.length)%D.BOT_NAMES.length], classId: ['light','medium','heavy'][i%3], human: false };
       const classId = D.CLASSES[seat.classId] ? seat.classId : 'medium';
@@ -379,7 +380,7 @@
   }
   function nextGrandPrix(w){
     if(w.mode!=='gp'||w.round>=3||w.phase!=='results')return null;
-    return createWorld({difficulty:w.difficulty,mode:'gp',round:w.round+1,track:(w.trackIndex+1)%D.TRACKS.length,seed:w.seed+1,
+    return createWorld({bots:w.racers.some(k=>k.id.startsWith('bot-'))?undefined:false,difficulty:w.difficulty,mode:'gp',round:w.round+1,track:(w.trackIndex+1)%D.TRACKS.length,seed:w.seed+1,
       roster:w.racers.map(k=>({id:k.id,name:k.name,classId:k.classId,human:k.human})),points:Object.fromEntries(w.racers.map(k=>[k.id,k.points]))});
   }
   function snapshot(w){

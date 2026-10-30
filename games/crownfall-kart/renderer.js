@@ -36,10 +36,12 @@
       const register=m=>{if((m.isMeshStandardMaterial||m.isMeshPhysicalMaterial)&&!this.csm.shaders.has(m)){this.csm.setupMaterial(m);if(!this.materialDisposalHooks.has(m)){this.materialDisposalHooks.add(m);m.addEventListener('dispose',()=>this.csm?.shaders.delete(m));}}};
       this.scene.traverse(o=>{if(o.material)for(const m of Array.isArray(o.material)?o.material:[o.material])register(m);});
     }
-    setQuality(value){
+    // Each preset implies these individual settings; players can override any of them.
+    static graphicsDefaults(quality){const low=quality==='performance';return{shadows:!low,post:!low,effects:!low,weather:!low,foliage:!low,resolution:low?.65:1,nameTags:true};}
+    setQuality(value,options={}){
       const previousQuality=this.quality;
       this.quality=['performance','balanced','high'].includes(value)?value:'balanced';
-      if(previousQuality===this.quality&&this.csm)return;
+      if(previousQuality===this.quality&&this.csm){this.setOptions(options);return;}
       const settings={performance:{cascades:1,size:256,ratio:1,scale:.65},balanced:{cascades:2,size:1536,ratio:1.25,scale:1},high:{cascades:3,size:2048,ratio:1.5,scale:1}}[this.quality];
       if(this.csm){
         this.csm.remove();for(const light of this.csm.lights)light.shadow.dispose();this.csm.dispose();
@@ -52,14 +54,27 @@
       }
       this.csm=new root.CSM({camera:this.camera,parent:this.scene,cascades:settings.cascades,maxFar:this.quality==='performance'?90:260,shadowMapSize:settings.size,mode:'practical',lightDirection:new THREE.Vector3(.65,-.32,.7).normalize(),lightIntensity:2.6,lightNear:1,lightFar:800,lightMargin:180,shadowBias:-.000015});
       this.csm.fade=this.quality!=='performance';for(const light of this.csm.lights){light.color.set('#ffe0ac');light.shadow.normalBias=.025;}
-      this.renderer.shadowMap.enabled=this.quality!=='performance';
-      this.particleMesh.visible=this.smokeMesh.visible=this.streaks.visible=this.quality!=='performance';
-      this.trackKey='';this.materialsDirty=true;
-      this.csm.updateFrustums();this.registerMaterials();this.scenery.setQuality(this.quality);this.ambientWeather.setQuality(this.quality);if(this.profile)this.applyProfileLighting();
-      this.renderScale=settings.scale;this.ratioCap=settings.ratio;this.pixelRatio=root.HubPerformance?.pixelRatio(innerWidth,innerHeight,settings.ratio)??Math.min(devicePixelRatio||1,settings.ratio);this.renderer.setPixelRatio(this.pixelRatio*this.renderScale);
-      this.post.quality=this.quality;this.post.resetHistory=true;this.resize();this.slowFrames=0;this.fastFrames=0;
+      this.trackKey='';this.materialsDirty=true;this.options=null;
+      this.csm.updateFrustums();this.registerMaterials();if(this.profile)this.applyProfileLighting();
+      this.ratioCap=settings.ratio;this.pixelRatio=root.HubPerformance?.pixelRatio(innerWidth,innerHeight,settings.ratio)??Math.min(devicePixelRatio||1,settings.ratio);
+      this.post.quality=this.quality;
       if(previousQuality!==this.quality){for(const mesh of this.karts.values())this.removeKart(mesh);this.karts.clear();if(this.ghost){this.removeKart(this.ghost);this.ghost=null;}}
       this.renderer.domElement.dataset.graphics=this.quality;
+      this.setOptions(options);
+    }
+    setOptions(overrides={}){
+      const o=KartRenderer.graphicsDefaults(this.quality);
+      for(const key of Object.keys(o))if(typeof overrides?.[key]===typeof o[key])o[key]=overrides[key];
+      o.resolution=D.clamp(o.resolution,.5,1);
+      const shadowsChanged=this.options&&this.options.shadows!==o.shadows;this.options=o;
+      this.renderer.shadowMap.enabled=o.shadows;
+      // Shadow support is compiled into each program, so toggling it needs a recompile.
+      if(shadowsChanged)this.scene.traverse(obj=>{if(obj.material)for(const m of Array.isArray(obj.material)?obj.material:[obj.material])m.needsUpdate=true;});
+      this.particleMesh.visible=this.smokeMesh.visible=this.streaks.visible=o.effects;
+      this.scenery.setFoliage(o.foliage);this.ambientWeather.setQuality(this.quality);this.post.userEnabled=o.post;
+      this.renderScale=o.resolution;this.renderer.setPixelRatio(this.pixelRatio*this.renderScale);
+      this.post.resetHistory=true;this.resize();this.slowFrames=0;this.fastFrames=0;
+      this.renderer.domElement.dataset.graphicsOptions=JSON.stringify(o);
     }
     applyProfileLighting(){
       const p=this.profile;if(!p)return;
@@ -74,8 +89,9 @@
       // Sustained frame budget feedback; no oscillation on isolated load/network spikes.
       this.slowFrames=dt>1/52?(this.slowFrames||0)+1:Math.max(0,(this.slowFrames||0)-1);
       this.fastFrames=dt<1/65?(this.fastFrames||0)+1:0;
-      const old=this.renderScale,max=this.quality==='performance'?.65:1;
-      if(this.slowFrames>100){this.renderScale=Math.max(this.quality==='performance'?.4:.6,this.renderScale-.1);this.slowFrames=0;}
+      // The chosen resolution is the ceiling; sustained slow frames may still drop below it.
+      const old=this.renderScale,max=this.options.resolution;
+      if(this.slowFrames>100){this.renderScale=Math.max(Math.min(max,this.quality==='performance'?.4:.6),this.renderScale-.1);this.slowFrames=0;}
       if(this.fastFrames>360){this.renderScale=Math.min(max,this.renderScale+.05);this.fastFrames=0;}
       if(old!==this.renderScale){this.renderer.setPixelRatio(this.pixelRatio*this.renderScale);this.resize();}
       this.renderer.domElement.dataset.renderScale=this.renderScale.toFixed(2);
@@ -91,7 +107,7 @@
       const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,height),new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide}));mesh.userData.ownedMaterial=true;this.signBoards.push(mesh);return mesh;
     }
     disposeGroup(group){
-      const geometries=new Set();group.traverse(object=>{if(object.geometry&&object.geometry!==this.unitBox&&object.geometry!==this.unitRock)geometries.add(object.geometry);});
+      const geometries=new Set();group.traverse(object=>{if(object.geometry&&!object.isSprite&&object.geometry!==this.unitBox&&object.geometry!==this.unitRock)geometries.add(object.geometry);});
       group.clear();for(const geometry of geometries)geometry.dispose();
     }
     removeKart(mesh){
@@ -353,7 +369,20 @@
       const balloons=[];for(let i=0;i<3;i++){const b=this.mesh(new THREE.SphereGeometry(.4,10,8),color,group);b.position.set((i-1)*.8,2.5+Math.abs(i-1)*.25,-.5);balloons.push(b);const string=this.box(group,(i-1)*.4,1.65,-.5,.018,1.2,.018,'#b3a5be');balloons.push(string);}
       if(ghost){group.traverse(o=>{if(o.isMesh){o.material=o.material.clone();o.material.transparent=true;o.material.opacity=.28;o.material.depthWrite=false;}});}
       const cabin=[];visual.traverse(o=>{if(o.userData.cabin)cabin.push(o);});
-      group.userData={baseScale:visual.scale.clone(),bounceTime:1,lean:0,steer:0,visual,wheels,flames,sparks,balloons,shadow,ghost,cabin,classId:k.classId};this.dynamic.add(group);return group;
+      const tag=ghost?null:this.nameTag(k);if(tag)group.add(tag);
+      group.userData={baseScale:visual.scale.clone(),bounceTime:1,lean:0,steer:0,visual,wheels,flames,sparks,balloons,shadow,ghost,cabin,tag,classId:k.classId,name:k.name};this.dynamic.add(group);return group;
+    }
+    // A camera-facing label above the car; humans get a bright plate, CPU racers a muted one.
+    nameTag(k){
+      if(!k.name)return null;
+      const canvas=document.createElement('canvas');canvas.width=256;canvas.height=64;const ctx=canvas.getContext('2d');
+      ctx.font='bold 34px "Barlow Condensed",Arial,sans-serif';const text=k.name.toUpperCase(),width=Math.min(248,ctx.measureText(text).width+40);
+      ctx.fillStyle=k.human?'rgba(14,16,24,.82)':'rgba(14,16,24,.55)';ctx.beginPath();if(ctx.roundRect)ctx.roundRect(128-width/2,8,width,48,10);else ctx.rect(128-width/2,8,width,48);ctx.fill();
+      ctx.fillStyle=k.color||'#ffffff';ctx.fillRect(128-width/2+8,18,5,28);
+      ctx.fillStyle=k.human?'#ffffff':'#c9c3d2';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,132,33,width-30);
+      const texture=new THREE.CanvasTexture(canvas);texture.encoding=THREE.sRGBEncoding;
+      const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthWrite:false,fog:false}));
+      sprite.scale.set(2.6,.65,1);sprite.position.y=3.4;sprite.renderOrder=5;sprite.visible=false;sprite.userData.ownedMaterial=sprite.userData.ownedTexture=true;return sprite;
     }
     makeHazard(){
       const group=new THREE.Group(),stone=new THREE.Group();group.add(stone);stone.position.y=1.38;this.dynamic.add(group);
@@ -382,7 +411,7 @@
       this.smokeMesh=new THREE.Points(geo,mat);this.smokeMesh.frustumCulled=false;this.scene.add(this.smokeMesh);
     }
     emitSmoke(k,dust,acceleration){
-      if(this.quality==='performance')return;
+      if(!this.options.effects)return;
       const p=this.smoke[this.smokeCursor++%this.smoke.length],side=Math.random()<.5?-1:1;
       Object.assign(p,{x:k.x-Math.sin(k.yaw)*1.35+Math.cos(k.yaw)*side*(dust?.85:.36),y:k.y-(dust?.45:0),z:k.z-Math.cos(k.yaw)*1.35-Math.sin(k.yaw)*side*(dust?.85:.36),
         vx:-k.vx*.08+(Math.random()-.5)*1.4,vy:dust?.4:1.1,vz:-k.vz*.08+(Math.random()-.5)*1.4,life:dust?1.1:.85,maxLife:dust?1.1:.85,size:dust?.45:.24+acceleration*.008,dust});
@@ -397,7 +426,7 @@
       }for(const attribute of Object.values(a))attribute.needsUpdate=true;
     }
     emit(x,y,z,color,count=1,vx=0,vz=0){
-      if(this.quality==='performance')return;
+      if(!this.options.effects)return;
       const c=new THREE.Color(color);
       for(let i=0;i<count;i++){
         const index=this.particleCursor++%this.particles.length,p=this.particles[index];
@@ -516,10 +545,11 @@
       for(const[id,m]of this.karts)if(!ids.has(id)){this.removeKart(m);this.karts.delete(id);this.lastMotion.delete(id);}
       const now=performance.now()/1000;
       for(const k of world.racers){
-        let mesh=this.karts.get(k.id);if(!mesh||mesh.userData.classId!==k.classId){if(mesh)this.removeKart(mesh);mesh=this.makeKart(k);this.karts.set(k.id,mesh);}
+        let mesh=this.karts.get(k.id);if(!mesh||mesh.userData.classId!==k.classId||mesh.userData.name!==k.name){if(mesh)this.removeKart(mesh);mesh=this.makeKart(k);this.karts.set(k.id,mesh);}
         const target=new THREE.Vector3(k.x,k.y,k.z),snap=menu||!mesh.userData.placed||mesh.position.distanceTo(target)>12;
         mesh.position.lerp(target,snap?1:1-Math.exp(-18*dt));mesh.rotation.y+=D.angle(k.yaw-mesh.rotation.y)*(snap?1:1-Math.exp(-20*dt));mesh.userData.placed=true;mesh.visible=!k.eliminated;
-        const u=mesh.userData;u.visual.rotation.y=k.spin>0?(k.spin*18):k.drift?-k.driftSign*.08:0;
+        const u=mesh.userData;
+        if(u.tag){u.tag.visible=this.options.nameTags&&!menu&&k.id!==playerId&&mesh.position.distanceTo(this.camera.position)<70;u.tag.position.y=world.mode==='battle'?3.4:1.95;}u.visual.rotation.y=k.spin>0?(k.spin*18):k.drift?-k.driftSign*.08:0;
         const previous=this.lastMotion.get(k.id),blend=1-Math.exp(-14*dt);
         const acceleration=previous&&!snap?D.clamp((k.speed-previous.speed)/Math.max(dt,.001),-40,40):0;
         u.steer+=((k.visualSteer||0)-u.steer)*blend;
@@ -545,7 +575,7 @@
         u.visual.position.y=.56*u.baseScale.y-.65+(k.invincible>0?Math.sin(now*14)*.04:0)+(this.reduced||u.hitPop>.6?0:Math.sin(u.hitPop/.6*Math.PI)*.9);
         u.shadow.position.y=(world.mode==='battle'?6:T.sample(track,k.s).y)-mesh.position.y+.05;
         u.shadow.visible=world.mode==='battle'||!T.inGap(track,k.s);
-        if(this.quality!=='performance'&&!menu&&!snap&&!k.eliminated){
+        if(this.options.effects&&!menu&&!snap&&!k.eliminated){
           u.smokeBudget=(u.smokeBudget||0)+dt*(k.speed>1?7+Math.max(0,acceleration)*.9:2);
           while(u.smokeBudget>=1){this.emitSmoke(k,false,Math.max(0,acceleration));u.smokeBudget--;}
           const dusty=k.grounded&&k.speed>4&&(k.surface==='mud'||(world.mode!=='battle'&&Math.abs(k.lane)>track.width/2-1.4));
@@ -573,7 +603,7 @@
         this.look.set(player.x-3*Math.cos(p.heading),player.y+.5,player.z+3*Math.sin(p.heading));
         this.camera.position.copy(this.follow);this.camera.up.set(0,1,0);this.camera.lookAt(this.look);this.readyCamera=false;this.cameraBlend=null;this.applyCockpit(null,'chase');this.camera.fov=59;this.camera.updateProjectionMatrix();this.shake=0;
       }else this.updateCamera(world,track,own,player,dt,now);
-      if(this.quality!=='performance'){this.updateParticles(dt);this.updateSmoke(dt);}this.updateBlasts(dt);this.ambientWeather.update(dt,player,menu);
+      if(this.options.effects){this.updateParticles(dt);this.updateSmoke(dt);}this.updateBlasts(dt);this.ambientWeather.update(dt,player,menu);
       for(const cloud of this.clouds){cloud.position.x=cloud.userData.origin.x+Math.sin(now*.025+cloud.userData.phase)*22;cloud.position.z=cloud.userData.origin.z+Math.cos(now*.018+cloud.userData.phase)*12;}
       const boardPosition=new THREE.Vector3();for(const board of this.signBoards){board.getWorldPosition(boardPosition);board.visible=boardPosition.distanceTo(this.camera.position)>8;}
       // Let the camera frustum clip racers naturally; proximity-based hiding pops during overtakes.
@@ -587,7 +617,7 @@
         streakPositions.setXYZ(i*2+1,Math.cos(angle)*(r+.25)*this.camera.aspect,Math.sin(angle)*(r+.25),-3);
       }streakPositions.needsUpdate=true;
       if(this.materialsDirty){this.registerMaterials();this.materialsDirty=false;}this.camera.updateMatrixWorld();
-      if(this.quality!=='performance'){if(Math.abs((this.shadowFov||0)-this.camera.fov)>.3){this.csm.updateFrustums();this.shadowFov=this.camera.fov;}this.csm.update();}
+      if(this.options.shadows){if(Math.abs((this.shadowFov||0)-this.camera.fov)>.3){this.csm.updateFrustums();this.shadowFov=this.camera.fov;}this.csm.update();}
       this.renderer.info.autoReset=false;this.renderer.info.reset();this.post.render(this.scene,this.camera,this.reduced,menu?0:player.speed,dt);
       this.adaptResolution(dt,menu);
       this.frameCount=(this.frameCount||0)+1;

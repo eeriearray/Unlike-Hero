@@ -14,9 +14,30 @@
   const input=new KartInput(),audio=new KartAudio();let renderer;
   try{renderer=new KartRenderer($('world'));}catch(error){$('fatal').classList.remove('hidden');$('fatal-message').textContent='This game needs WebGL. Enable hardware acceleration or try a recent Chrome, Edge, Firefox or Safari browser.';console.error(error);return;}
   const graphicsNotes={performance:'Simplest graphics: lower resolution, no real-time shadows, smoke, weather or post effects. Fewer trees and simpler cars.',balanced:'Two shadow cascades, SSAO, bloom and atmospheric haze. Resolution adapts to frame time.',high:'Three shadow cascades, SSAO, cinematic focus and speed blur. Best on a dedicated GPU.'};
-  function applyGraphics(value){renderer.setQuality(value);for(const id of ['graphics-quality','lobby-graphics','pause-graphics'])$(id).value=renderer.quality;document.body.dataset.graphics=renderer.quality;$('graphics-note').textContent=graphicsNotes[renderer.quality]+(!renderer.post.enabled?' HDR post effects are unavailable on this device.':'');storage.set('graphics.v1',renderer.quality);}
+  // Each player's graphics stay on their own device: a preset plus individual overrides, editable in the garage, lobby and race menu.
+  const graphicsToggles=[['shadows','Shadows'],['post','Bloom, SSAO and haze'],['effects','Smoke and sparks'],['weather','Weather'],['foliage','Full foliage'],['nameTags','Name tags']];
+  let graphicsOverrides=storage.get('graphics.options.v1',{});if(!graphicsOverrides||typeof graphicsOverrides!=='object')graphicsOverrides={};
+  for(const box of document.querySelectorAll('[data-graphics-options]')){
+    for(const[key,text]of graphicsToggles){const label=document.createElement('label'),check=document.createElement('input');label.className='check';check.type='checkbox';check.dataset.option=key;label.append(check,` ${text}`);box.append(label);}
+    const row=document.createElement('label'),select=document.createElement('select');row.className='graphics-control';row.textContent='Resolution';select.dataset.option='resolution';
+    select.replaceChildren(...[[.5,'50%'],[.65,'65%'],[.8,'80%'],[1,'100%']].map(([value,text])=>{const option=document.createElement('option');option.value=String(value);option.textContent=text;return option;}));row.append(select);box.append(row);
+    box.addEventListener('change',event=>{
+      const key=event.target.dataset.option;if(!key)return;
+      const value=event.target.type==='checkbox'?event.target.checked:Number(event.target.value),next={...graphicsOverrides};
+      if(KartRenderer.graphicsDefaults(renderer.quality)[key]===value)delete next[key];else next[key]=value;
+      applyGraphics(renderer.quality,next);
+    });
+  }
+  function applyGraphics(value,overrides=graphicsOverrides){
+    graphicsOverrides=overrides;renderer.setQuality(value,overrides);
+    for(const id of ['graphics-quality','lobby-graphics','pause-graphics'])$(id).value=renderer.quality;document.body.dataset.graphics=renderer.quality;
+    for(const control of document.querySelectorAll('[data-option]')){const option=renderer.options[control.dataset.option];if(control.type==='checkbox')control.checked=option;else control.value=String(option);if(control.dataset.option==='post')control.disabled=!renderer.post.enabled;}
+    $('graphics-note').textContent=graphicsNotes[renderer.quality]+(Object.keys(overrides).length?' Custom settings are on.':'')+(!renderer.post.enabled?' HDR post effects are unavailable on this device.':'');
+    storage.set('graphics.v1',renderer.quality);storage.set('graphics.options.v1',overrides);
+  }
   applyGraphics(storage.get('graphics.v1','performance'));
-  for(const id of ['graphics-quality','lobby-graphics','pause-graphics'])$(id).addEventListener('change',event=>applyGraphics(event.target.value));
+  // Picking a preset starts its individual settings fresh.
+  for(const id of ['graphics-quality','lobby-graphics','pause-graphics'])$(id).addEventListener('change',event=>applyGraphics(event.target.value,{}));
   $('world').addEventListener('webglcontextlost',event=>{event.preventDefault();input.clear();paused=true;$('fatal').classList.remove('hidden');$('fatal-message').textContent='The graphics context was interrupted. Reload to reopen the track.';});
   $('name').value=storage.get('name',hub?.player()?.name==='Player'?'Racer':hub?.player()?.name||'Racer');
   // Driving is manual by default; touch screens start with auto accelerate and the gentle steering assist on.
@@ -138,9 +159,9 @@
   $('lobby-track').replaceChildren(...D.TRACKS.map((track,index)=>{const option=document.createElement('option');option.value=index;option.textContent=track.name;return option;}));
   $('lobby-car').replaceChildren(...Object.entries(D.CLASSES).map(([id,car])=>{const option=document.createElement('option');option.value=id;option.textContent=car.name;return option;}));
   $('lobby-car').onchange=()=>connection?.send({type:'select-car',classId:$('lobby-car').value});
-  for(const id of ['lobby-mode-select','lobby-track','lobby-difficulty'])$(id).onchange=()=>{
+  for(const id of ['lobby-mode-select','lobby-track','lobby-difficulty','lobby-bots'])$(id).onchange=()=>{
     if(room?.host!==playerId)return;
-    connection?.send({type:'configure',mode:$('lobby-mode-select').value,track:Number($('lobby-track').value),difficulty:$('lobby-difficulty').value});
+    connection?.send({type:'configure',mode:$('lobby-mode-select').value,track:Number($('lobby-track').value),difficulty:$('lobby-difficulty').value,bots:$('lobby-bots').value==='on'});
   };
   $('start-online').onclick=()=>connection?.send({type:'start'});
   $('copy-code').onclick=async()=>{try{await navigator.clipboard.writeText(room?.code||'');$('lobby-message').textContent='Room code copied.';}catch{$('lobby-message').textContent=`Room code: ${room?.code||''}`;}};
@@ -150,13 +171,15 @@
     if(data.type==='lobby'){
       room=data;mode=data.mode;trackIndex=data.track;difficulty=S.difficultyOf(data.difficulty);playerId=connection.id;setBusy(false);
       if(data.running){if(screen==='results'){$('next').disabled=data.host!==playerId;$('next').textContent=data.host!==playerId?'Waiting for the host':world.mode==='gp'&&world.round<3?'Next race':'Race again';}return;}
-      setScreen('lobby');$('copy-code').textContent=data.code;$('lobby-mode').textContent=`${{sprint:'Rift sprint',race:'Lap race',gp:'Grand Prix',battle:'Balloon battle'}[data.mode]} · ${D.TRACKS[data.track].name} · ${S.DIFFICULTIES[S.difficultyOf(data.difficulty)].name} CPU`;
+      setScreen('lobby');$('copy-code').textContent=data.code;$('lobby-mode').textContent=`${{sprint:'Rift sprint',race:'Lap race',gp:'Grand Prix',battle:'Balloon battle'}[data.mode]} · ${D.TRACKS[data.track].name} · ${data.bots===false?'No CPU racers':`${S.DIFFICULTIES[S.difficultyOf(data.difficulty)].name} CPU`}`;
       const host=data.host===playerId,seat=data.seats.find(seat=>seat.id===playerId);
       if(seat){classId=seat.classId;storage.set('class',classId);$('lobby-car').value=classId;$('lobby-car-note').textContent=D.CLASSES[classId].description;}
       $('lobby-mode-select').value=data.mode;$('lobby-mode-select').disabled=!host;
       $('lobby-track').value=data.track;$('lobby-track').disabled=!host||data.mode==='battle';
-      $('lobby-difficulty').value=difficulty;$('lobby-difficulty').disabled=!host;
-      $('lobby-settings-note').textContent=(host?'You choose the mode, map and CPU difficulty.':'The host chooses the mode, map and CPU difficulty.')+(data.mode==='battle'?' Battle uses the Hollow Ring arena.':data.mode==='gp'?' The chosen map is the first race of the cup.':'');
+      $('lobby-bots').value=data.bots===false?'off':'on';$('lobby-bots').disabled=!host;
+      $('lobby-difficulty').value=difficulty;$('lobby-difficulty').disabled=!host||data.bots===false;
+      $('lobby-bots-note').textContent=data.bots===false?'Only the people in this room race. Up to eight human racers.':'Empty seats are filled by AI. Up to eight human racers.';
+      $('lobby-settings-note').textContent=(host?'You choose the mode, map and CPU racers.':'The host chooses the mode, map and CPU racers.')+(data.bots===false&&data.mode==='battle'?' Battle without CPU racers needs at least two players.':'')+(data.mode==='battle'?' Battle uses the Hollow Ring arena.':data.mode==='gp'?' The chosen map is the first race of the cup.':'');
       $('seats').replaceChildren(...data.seats.map((seat,i)=>{const row=document.createElement('div');row.className='seat';const label=document.createElement('span');label.textContent=`${i+1}. ${seat.name}${seat.id===playerId?' · YOU':''}`;const info=document.createElement('small');info.textContent=`${D.CLASSES[seat.classId].name}${seat.id===data.host?' / HOST':''}`;row.append(label,info);return row;}));
       $('start-online').disabled=data.host!==playerId;$('start-online').textContent=data.host===playerId?'Start race':'Waiting for the host';
       $('lobby-message').textContent=data.host===playerId?'Ready when you are. Friends can join before you start.':'Choose your car. The host will start the race.';

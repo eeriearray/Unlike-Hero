@@ -11,7 +11,7 @@ export default function attach({ httpServer, basePath = '/games/crownfall-kart/'
   const wss = new WebSocketServer({ noServer: true, maxPayload: 2048 });
   const send = (ws, data) => { if (ws.readyState === 1 && ws.bufferedAmount < 128*1024) ws.send(JSON.stringify(data)); };
   const broadcast = (room, data) => { for (const ws of room.members.values()) send(ws,data); };
-  const lobby = room => ({ type:'lobby', code:room.code, host:room.host, mode:room.mode, track:room.track, difficulty:room.difficulty,
+  const lobby = room => ({ type:'lobby', code:room.code, host:room.host, mode:room.mode, track:room.track, difficulty:room.difficulty, bots:room.bots,
     seats:[...room.members.values()].map(ws=>({id:ws.id,name:ws.name,classId:ws.classId})), running:!!room.world });
   const error = (ws,message) => send(ws,{type:'error',message});
   function leave(ws) {
@@ -47,7 +47,7 @@ export default function attach({ httpServer, basePath = '/games/crownfall-kart/'
           if(rooms.size>=32){error(ws,'The track servers are full. Try again shortly.');return;}
           const letters='ABCDEFGHJKLMNPQRSTUVWXYZ';let code;
           do{code=Array.from({length:4},()=>letters[randomInt(letters.length)]).join('');}while(rooms.has(code));
-          target={code,host:ws.id,difficulty:S.difficultyOf(data.difficulty),mode:['sprint','race','gp','battle'].includes(data.mode)?data.mode:'race',track:D.clamp(Math.floor(Number(data.track)||0),0,D.TRACKS.length-1),members:new Map(),inputs:{},world:null,ticks:0,created:now};
+          target={code,host:ws.id,difficulty:S.difficultyOf(data.difficulty),mode:['sprint','race','gp','battle'].includes(data.mode)?data.mode:'race',track:D.clamp(Math.floor(Number(data.track)||0),0,D.TRACKS.length-1),bots:data.bots!==false,members:new Map(),inputs:{},world:null,ticks:0,created:now};
           rooms.set(code,target);
         }else{
           const code=String(data.code||'').trim().toUpperCase();target=rooms.get(code);
@@ -71,7 +71,8 @@ export default function attach({ httpServer, basePath = '/games/crownfall-kart/'
           if(!['sprint','race','gp','battle'].includes(data.mode)||!Number.isInteger(data.track)||data.track<0||data.track>=D.TRACKS.length||!Object.hasOwn(S.DIFFICULTIES,data.difficulty)){
             error(ws,'Choose a valid mode, map and CPU difficulty.');return;
           }
-          room.mode=data.mode;room.track=data.track;room.difficulty=data.difficulty;
+          if(data.bots!==undefined&&typeof data.bots!=='boolean'){error(ws,'Choose whether CPU racers fill empty seats.');return;}
+          room.mode=data.mode;room.track=data.track;room.difficulty=data.difficulty;if(data.bots!==undefined)room.bots=data.bots;
         }
         broadcast(room,lobby(room));return;
       }
@@ -80,7 +81,10 @@ export default function attach({ httpServer, basePath = '/games/crownfall-kart/'
         if(room.host!==ws.id){error(ws,'Only the host can start the race.');return;}
         if(room.world&&room.world.phase!=='results')return;
         if(room.world?.mode==='gp'&&room.world.round<3&&room.world.phase==='results')room.world=S.nextGrandPrix(room.world);
-        else room.world=S.createWorld({difficulty:room.difficulty,mode:room.mode,track:room.track,seed:randomInt(1,0x7fffffff),roster:[...room.members.values()].map(p=>({id:p.id,name:p.name,classId:p.classId,human:true}))});
+        else{
+          if(!room.bots&&room.mode==='battle'&&room.members.size<2){error(ws,'Balloon battle without CPU racers needs at least two players.');return;}
+          room.world=S.createWorld({bots:room.bots,difficulty:room.difficulty,mode:room.mode,track:room.track,seed:randomInt(1,0x7fffffff),roster:[...room.members.values()].map(p=>({id:p.id,name:p.name,classId:p.classId,human:true}))});
+        }
         // A disconnected seat stays an AI in subsequent tournament rounds.
         for(const k of room.world.racers)if(!room.members.has(k.id))k.human=false;
         room.inputs={};broadcast(room,{type:'state',world:S.snapshot(room.world)});

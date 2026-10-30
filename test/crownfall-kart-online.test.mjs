@@ -82,3 +82,16 @@ test('lobby car choices belong to each player and only the host can configure th
   guest.send({type:'select-car',classId:'light'});assert.match((await guest.next('error')).message,/started/);
   guest.send({type:'configure',mode:'battle',track:0,difficulty:'hard'});assert.match((await guest.next('error')).message,/started/);
 });
+
+test('the host can race without CPU racers, and the grid holds only the humans',async t=>{
+  const{url}=await setup(t),host=await client(url,t),guest=await client(url,t);
+  host.send({type:'create',mode:'battle',track:0});const initial=await host.next('lobby');assert.equal(initial.bots,true);
+  host.send({type:'configure',mode:'battle',track:0,difficulty:'normal',bots:'no'});assert.match((await host.next('error')).message,/CPU/);
+  host.send({type:'configure',mode:'battle',track:0,difficulty:'normal',bots:false});await host.next('lobby',d=>d.bots===false);
+  host.send({type:'start'});assert.match((await host.next('error')).message,/two players/);
+  guest.send({type:'join',code:initial.code});await host.next('lobby',d=>d.seats.length===2);
+  host.send({type:'configure',mode:'gp',track:1,difficulty:'normal',bots:false});await guest.next('lobby',d=>d.mode==='gp'&&d.bots===false);
+  host.send({type:'start'});const world=(await guest.next('state')).world;
+  assert.deepEqual(world.racers.map(k=>k.id).sort(),[host.id,guest.id].sort());
+  assert.ok(world.racers.every(k=>k.human));
+});

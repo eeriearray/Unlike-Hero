@@ -278,3 +278,12 @@ h1 small{margin-top:8px;padding:3px 8px 2px;border-radius:3px;background:var(--g
 /* Keep the lightweight preset cheap on integrated GPUs, including HUD compositing. */
 body[data-graphics="performance"] :is(.position,.race-clock,.telemetry,.standings,.item-slot,.map-panel,.rival,.notice){backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none;background:#111318ed}
 body[data-graphics="performance"] .drift-glow{display:none}
+
+/* Individual graphics toggles shared by the garage, lobby and race menu. */
+.graphics-details{margin:10px 0 0}
+.graphics-details summary{cursor:pointer;font:600 12px/1.4 var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+.graphics-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 14px;padding:10px 0 2px;text-align:left}
+.graphics-options .check{font-size:13px}
+.graphics-options .graphics-control{grid-column:1/-1;margin:0}
+.graphics-options .graphics-control small{grid-column:1/-1}
+@media(max-width:420px){.graphics-options{grid-template-columns:1fr}}
