@@ -2,7 +2,7 @@
 (function () {
   var TR = window.TR = window.TR || {};
   var input = TR.input = {
-    keys: {}, pressed: {}, yaw: Math.PI, pitch: 0.3, mouseDown: false, mouseClicked: false, locked: false, enabled: true, moveX: 0, moveZ: 0,
+    keys: {}, pressed: {}, yaw: Math.PI, pitch: 0.17, mouseDown: false, mouseClicked: false, locked: false, enabled: true, moveX: 0, moveZ: 0,
     down: function (code) { return !input.frozen && !!input.keys[code]; },
     hit: function (code) { return !input.frozen && !!input.pressed[code]; },
     endFrame: function () { input.pressed = {}; input.mouseClicked = false; },

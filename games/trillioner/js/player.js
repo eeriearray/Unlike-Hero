@@ -36,14 +36,14 @@
     part: part, ball: ball,
     pos: new THREE.Vector3(), vel: new THREE.Vector3(), heading: 0, grounded: true, jumps: 0, floor: 0, walkT: 0, group: null, parts: {}, squash: 0, hidden: false,
     init: function (scene) {
-      var fig = pl.figure(0x2f80ed, 0x3b2a20, 0xf7cfa6);
+      var fig = pl.figure(0xdedad0, 0x2a1d16, 0xdcae8a);
       pl.group = fig.group; pl.parts = fig.parts;
       scene.add(pl.group);
       pl.shadow = null;
     },
     /** A rounded, jointed person. The hero and online rivals share this body. */
     figure: function (SHIRT, HAIR, SKIN) {
-      var g = new THREE.Group(), p = {}, SHOE = 0xf4f4f4, TROUSER = 0x2e3a59;
+      var g = new THREE.Group(), p = {}, SHOE = 0x2a2b30, TROUSER = 0x2b3648;
       g.rotation.order = 'YXZ';
       // upper body hangs off the hips, so it can lean and twist on its own
       var hips = p.hips = new THREE.Group(); hips.position.y = 1.02; g.add(hips);
@@ -52,13 +52,13 @@
       p.body = part(0.78, 0.82, 0.46, SHIRT, 0, 0.38, 0, chest);
       part(0.44, 0.1, 0.05, 0xffffff, 0, 0.74, -0.22, chest);                  // collar
       part(0.26, 0.2, 0.26, SKIN, 0, 0.86, 0, chest);                          // neck
-      var head = p.headJ = new THREE.Group(); head.position.y = 0.96; chest.add(head);
+      var head = p.headJ = new THREE.Group(); head.position.y = 0.94; head.scale.setScalar(0.72); chest.add(head);
       p.head = ball(0.41, 0.44, 0.41, SKIN, 0, 0.34, 0, head);
       p.hairM = ball(0.43, 0.32, 0.43, HAIR, 0, 0.52, 0.04, head);              // hair
-      ball(0.09, 0.11, 0.05, 0x1d1d24, -0.15, 0.36, -0.39, head);              // eyes
-      ball(0.09, 0.11, 0.05, 0x1d1d24, 0.15, 0.36, -0.39, head);
+      ball(0.06, 0.05, 0.03, 0x1d1d24, -0.14, 0.38, -0.395, head);              // eyes
+      ball(0.06, 0.05, 0.03, 0x1d1d24, 0.14, 0.38, -0.395, head);
       ball(0.06, 0.06, 0.05, 0xf2b98c, 0, 0.26, -0.42, head);                  // nose
-      part(0.24, 0.05, 0.04, 0xb5503c, 0, 0.13, -0.39, head);                  // smile
+      part(0.2, 0.025, 0.03, 0x8a4a3a, 0, 0.14, -0.385, head);                 // mouth
       p.armL = limb(0.24, 0.5, 0.26, SHIRT, -0.53, 0.68, 0, chest);
       p.armR = limb(0.24, 0.5, 0.26, SHIRT, 0.53, 0.68, 0, chest);
       p.foreL = limb(0.2, 0.46, 0.22, SKIN, 0, -0.44, 0, p.armL);
@@ -199,9 +199,9 @@
       }
       p.crown.visible = stage >= 1;
       var fit = pl.look && pl.look.outfit;
-      p.base.shirt = fit || (stage >= 2 ? 0xffc53d : 0x2f80ed);
+      p.base.shirt = fit || (stage >= 2 ? 0xffc53d : 0xdedad0);
       if (pl.look && pl.look.trail) pl.carpetMesh.material.color.setHex(pl.look.trail);
-      p.base.leg = stage >= 2 ? 0xd59a14 : 0x2e3a59;
+      p.base.leg = stage >= 2 ? 0xd59a14 : 0x2b3648;
       TR.wardrobe.dress(p, pl.style);
       pl.showCarpet = stage >= 3;
       p.g1.visible = p.g2.visible = stage >= 4;

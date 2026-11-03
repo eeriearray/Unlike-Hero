@@ -10,8 +10,8 @@
   var DISTRICTS = {
     downtown: {
       id: 'downtown', name: 'Downtown', bounds: [-120, -120, 120, 120], budget: 360 * B, visible: 57 * B,
-      ground: 0xd9cfa8, walls: [0xf2c94c, 0xe0b23a, 0xc9d6e8, 0xf7dd8a], roofs: [0xd59a14, 0xfff0b0, 0x8fb2d9], neon: 0xe0a100, prop: 'lamp', crowd: 34,
-      filler: { shape: 'tower', hMin: 26, hMax: 62, step: 24, gap: 0.14 }, spawn: { x: -60, z: 8 }, palette: [0xfff3d6, 0xc99b3b, 0xffe9a8],
+      ground: 0x9e9c96, walls: [0x8a5a44, 0xa7a39b, 0x6d7f8e, 0xbcaa8b, 0x56595e, 0x7a4a3a], roofs: [0x4a4c50, 0x5e6064, 0x3a3c40], neon: 0xc8302a, prop: 'lamp', crowd: 34,
+      filler: { shape: 'tower', hMin: 28, hMax: 96, step: 24, gap: 0.14 }, spawn: { x: -60, z: 8 }, palette: [0xfff3d6, 0xc99b3b, 0xffe9a8],
       buildings: [
         { id: 'hotel', name: 'The Starting Hotel', x: -60, z: 40, w: 32, d: 22, h: 30, wall: 0xfff0c4, roof: 0xd59a14, door: 'n', enter: 1, neon: 1 },
         { id: 'trillion_tower', name: 'Trillion Tower', x: 60, z: -62, w: 36, d: 36, h: 132, wall: 0xffc53d, roof: 0xfff0b0, door: 's', enter: 1, neon: 1, helipad: 1 },
@@ -37,7 +37,7 @@
     },
     luxury: {
       id: 'luxury', name: 'Luxury Row', bounds: [120, -120, 360, 120], budget: 260 * B, visible: 59 * B,
-      ground: 0xf4c9d6, walls: [0xffb3c7, 0xffd6e0, 0xf7e7ee, 0xe89ab3], roofs: [0xd6547c, 0xfff0f4, 0xc73e6b], neon: 0xe0407e, prop: 'palm', crowd: 28,
+      ground: 0xb4afa2, walls: [0xd8cfbd, 0xc9bda8, 0xe2dccf, 0xb07a5c, 0x9aa3a8], roofs: [0x6a4a3c, 0x4f545a, 0x7d5642], neon: 0x7a1f3d, prop: 'palm', crowd: 28,
       filler: { shape: 'villa', hMin: 10, hMax: 22, step: 28, gap: 0.2 }, spawn: { x: 180, z: 0 }, palette: [0xfff0f4, 0xd6547c, 0xffe0ea],
       buildings: [
         { id: 'global_trade', name: 'Global Trade Tower', x: 240, z: -64, w: 40, d: 34, h: 96, wall: 0xf7e7ee, roof: 0xd6547c, door: 's', enter: 1, neon: 1, lobby: 40 },
@@ -57,7 +57,7 @@
     },
     suburbs: {
       id: 'suburbs', name: 'Suburbs', bounds: [-360, -360, -120, 120], budget: 200 * B, visible: 147 * B,
-      ground: 0x7ecb5e, walls: [0xffd6a5, 0xbde0fe, 0xcaffbf, 0xffc8dd, 0xfdffb6], roofs: [0xe56b6f, 0x6d9dc5, 0x8e7dbe], neon: 0xff8fab, prop: 'tree', crowd: 22,
+      ground: 0x66824a, walls: [0xcfc6b2, 0xa9b4b8, 0xb98f6e, 0x8fa08a, 0xd8d2c4], roofs: [0x5a4d44, 0x4a4f55, 0x7a4a3a], neon: 0x2c6e49, prop: 'tree', crowd: 22,
       filler: { shape: 'house', hMin: 5, hMax: 8, step: 24, gap: 0.2 }, spawn: { x: -180, z: 0 }, palette: [0xfffbe0, 0x8bbf6a, 0xfff2c4],
       buildings: [
         { id: 'mansion', name: 'Show Mansion', x: -200, z: 60, w: 36, d: 24, h: 14, wall: 0xfff5e0, roof: 0xe56b6f, door: 'n', enter: 1 },
@@ -83,7 +83,7 @@
     },
     industrial: {
       id: 'industrial', name: 'Industrial Zone', bounds: [-360, 120, 120, 360], budget: 160 * B, visible: 88 * B,
-      ground: 0x8d8f91, walls: [0x7f8489, 0x9a9d9f, 0xd07a35, 0x6b7076], roofs: [0xe8742a, 0x4f5459, 0xf0a030], neon: 0xff7a1a, prop: 'crate', crowd: 14,
+      ground: 0x74736c, walls: [0x6b6e70, 0x8a8d8a, 0x8c5a3a, 0x56595c, 0x77664f], roofs: [0x4a4d50, 0x5c4a3a, 0x3f4144], neon: 0xc25a18, prop: 'crate', crowd: 14,
       track: { x: -304, z: 336, rx: 44, rz: 17 },
       filler: { shape: 'factory', hMin: 7, hMax: 20, step: 30, gap: 0.2 }, spawn: { x: -30, z: 240 }, palette: [0xc9ccd0, 0x6b7076, 0xe8e0d0],
       buildings: [
@@ -113,7 +113,7 @@
     },
     harbour: {
       id: 'harbour', name: 'Harbour', bounds: [120, 120, 360, 360], land: [120, 120, 306, 282], budget: 120 * B, visible: 12 * B,
-      ground: 0xcbb994, walls: [0x4a90c2, 0xe25c4f, 0xf2c14e, 0x5fb49c], roofs: [0x2d5f86, 0x8d3a33, 0xa07a22], neon: 0x2ad0ff, prop: 'bollard', crowd: 18,
+      ground: 0x8f8a7c, walls: [0x3f6078, 0x8c3f36, 0xa58a4e, 0x4d7468, 0x6f7276], roofs: [0x2f4150, 0x5c332d, 0x4a4c50], neon: 0x1f6f8b, prop: 'bollard', crowd: 18,
       filler: { shape: 'container', hMin: 5, hMax: 11, step: 22, gap: 0.3 }, spawn: { x: 180, z: 136 }, palette: [0xe2f2fa, 0x3f7fa8, 0xbfe6f5],
       buildings: [
         { id: 'boatyard', name: 'Boatyard', x: 170, z: 252, w: 34, d: 24, h: 12, wall: 0xc9855a, roof: 0x7a4a2b, door: 'n', enter: 1 },
@@ -134,7 +134,7 @@
     },
     airport: {
       id: 'airport', name: 'Airport + Spaceport', bounds: [120, -360, 360, -120], budget: 120 * B, visible: 60 * B,
-      ground: 0xe6edf2, walls: [0xfafcff, 0xc7dcef, 0x9fc3e0], roofs: [0x3d8bd4, 0xf4f8fb], neon: 0x2f9de0, prop: 'beacon', crowd: 14,
+      ground: 0x98999a, walls: [0xc9ccce, 0x8fa0ae, 0x6b7f8f, 0xb0b4b6], roofs: [0x54606a, 0x6e7276], neon: 0x1d5f8f, prop: 'beacon', crowd: 14,
       filler: { shape: 'hangar', hMin: 8, hMax: 12, step: 40, gap: 0.55 }, spawn: { x: 150, z: -136 }, palette: [0xf6fbff, 0x9fc3e0, 0xe2f0fb],
       buildings: [
         { id: 'terminal', name: 'Airport Terminal', x: 180, z: -178, w: 46, d: 26, h: 14, wall: 0xfafcff, roof: 0x3d8bd4, door: 's', enter: 1, neon: 1 },
@@ -153,7 +153,7 @@
     },
     oldtown: {
       id: 'oldtown', name: 'Old Town', bounds: [-120, -360, 120, -120], budget: 60 * B, visible: 17 * B,
-      ground: 0xc8a27a, walls: [0xb5533c, 0xc66f4e, 0xa84832, 0xd18a5a], roofs: [0x6b3a26, 0x7d4a2c, 0x54301f], neon: 0xffb347, prop: 'lantern', crowd: 20,
+      ground: 0x96846a, walls: [0x8c4a36, 0x9c6a4c, 0x7a3e2e, 0xa98a6a, 0x6e5a48], roofs: [0x4a2f22, 0x5a3a2a, 0x3f2a20], neon: 0x8c5a1e, prop: 'lantern', crowd: 20,
       filler: { shape: 'brick', hMin: 8, hMax: 19, step: 22, gap: 0.15 }, spawn: { x: 0, z: -136 }, palette: [0xf2dfc6, 0x7d4a2c, 0xd9b48f],
       buildings: [
         { id: 'newspaper', name: 'The Daily Receipt', x: -62, z: -170, w: 32, d: 22, h: 16, wall: 0xd9c9a8, roof: 0x6b3a26, door: 's', enter: 1, neon: 1 },
@@ -232,7 +232,12 @@
       d.buildings.push(Object.assign({ shop: 1, wall: d.walls[i % d.walls.length], roof: d.roofs[i % d.roofs.length] }, s));
     });
     d.buildings.push({ id: k + '_change', name: 'Corner Shop', x: d.change.x, z: d.change.z, w: 14, d: 10, h: 8.8, door: d.change.door, shop: 1, neon: 1, wall: d.walls[0], roof: d.roofs[0] });
-    d.buildings.forEach(function (b) { if (!b.project) b.enter = 1; });
+    d.buildings.forEach(function (b, i) {
+      if (!b.project) b.enter = 1;
+      // real materials, not candy: a building takes its colours from what its district is built of
+      var h = 0; for (var c = 0; c < b.id.length; c++) h = (h * 31 + b.id.charCodeAt(c)) >>> 0;
+      b.wall = d.walls[h % d.walls.length]; b.roof = d.roofs[h % d.roofs.length];
+    });
   });
 
   return { DISTRICTS: DISTRICTS, ROADS: ROADS, UNDER_Y: UNDER_Y, DEEP_Y: DEEP_Y, B: B, SURFACE: 360 };

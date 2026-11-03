@@ -32,6 +32,7 @@
       hud.bal = el('div', 'hud-bal outlined', top);
       hud.clock = el('div', 'hud-clock', top);
       hud.pace = el('div', 'hud-pace', top);
+      hud.starEl = el('div', 'hud-stars', top);
       var rank = el('div', 'hud-rank', r);
       hud.rankName = el('b', '', rank);
       hud.nextT = el('span', '', rank);
@@ -50,6 +51,12 @@
       hud.musicEl.title = 'Music on or off (K)';
       hud.musicEl.onclick = function () { TR.audio.setMusicMuted(!TR.audio.musicMuted); hud.musicEl.blur(); };
       hud.musicBtn();
+    },
+    /** Refund heat, out of five. */
+    stars: function (n) {
+      if (hud.starN === n) return;
+      hud.starN = n;
+      hud.starEl.innerHTML = n ? '<i>' + '★'.repeat(n) + '</i>' + '★'.repeat(5 - n) : '';
     },
     musicBtn: function () {
       if (!hud.musicEl) return;

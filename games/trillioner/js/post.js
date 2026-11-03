@@ -37,7 +37,7 @@
   var BLUR_FRAG = 'varying vec2 vUv; uniform sampler2D tMap; uniform vec2 dir; void main(){ vec3 c = texture2D(tMap, vUv).rgb * 0.227; c += (texture2D(tMap, vUv + dir * 1.385).rgb + texture2D(tMap, vUv - dir * 1.385).rgb) * 0.316; c += (texture2D(tMap, vUv + dir * 3.231).rgb + texture2D(tMap, vUv - dir * 3.231).rgb) * 0.07; gl_FragColor = vec4(c, 1.0); }';
 
   var COMP_FRAG = [
-    'varying vec2 vUv; uniform sampler2D tScene, tAO, tBloomA, tBloomB; uniform vec2 px; uniform float useAO, bloom, tilt, night;',
+    'varying vec2 vUv; uniform sampler2D tScene, tAO, tBloomA, tBloomB; uniform vec2 px; uniform float useAO, bloom, tilt, night, drain, grain;',
     'vec3 toSRGB(vec3 c){ return mix(pow(c, vec3(0.41666)) * 1.055 - 0.055, c * 12.92, vec3(lessThanEqual(c, vec3(0.0031308)))); }',
     'void main(){',
     '  vec3 c = texture2D(tScene, vUv).rgb;',
@@ -49,11 +49,17 @@
     // soft highlights, a touch more colour, slightly warm lights and cool shadows
     '  c = c / (1.0 + max(c - 0.75, 0.0) * 0.45);',
     '  float l = dot(c, vec3(0.2126,0.7152,0.0722));',
-    '  c = mix(vec3(l), c, 1.16);',
-    '  c *= mix(vec3(0.97, 0.99, 1.05), vec3(1.03, 1.0, 0.96), smoothstep(0.05, 0.6, l));',
+    // the look: less colour overall, teal in the shadows, warm in the light
+    '  c = mix(vec3(l), c, 0.86);',
+    '  c *= mix(vec3(0.9, 0.98, 1.08), vec3(1.07, 1.0, 0.9), smoothstep(0.03, 0.55, l));',
     '  c = max(c, 0.0);',
     '  vec3 o = toSRGB(min(c, vec3(1.0)));',
-    '  o = mix(o, o * o * (3.0 - 2.0 * o), 0.22);',
+    '  o = mix(o, o * o * (3.0 - 2.0 * o), 0.42);',
+    // a refund drains the colour out for a moment
+    '  o = mix(o, vec3(dot(o, vec3(0.3, 0.59, 0.11))), drain);',
+    // lens edges and film grain
+    '  vec2 v = vUv - 0.5; o *= 1.0 - dot(v, v) * 0.55;',
+    '  o += (fract(sin(dot(vUv * 913.0 + grain, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) * 0.022;',
     '  gl_FragColor = vec4(o, 1.0);',
     '}'
   ].join('\n');
@@ -73,10 +79,10 @@
       post.mAO = pass(AO_FRAG, { tDepth: { value: null }, near: { value: 0.5 }, far: { value: 800 }, tanX: { value: 1 }, tanY: { value: 1 }, px: { value: new THREE.Vector2() } });
       post.mBright = pass(BRIGHT_FRAG, { tScene: { value: null } });
       post.mBlur = pass(BLUR_FRAG, { tMap: { value: null }, dir: { value: new THREE.Vector2() } });
-      post.mComp = pass(COMP_FRAG, { tScene: { value: null }, tAO: { value: null }, tBloomA: { value: null }, tBloomB: { value: null }, px: { value: new THREE.Vector2() }, useAO: { value: 1 }, bloom: { value: 1 }, tilt: { value: 1 }, night: { value: 0 } });
+      post.mComp = pass(COMP_FRAG, { drain: { value: 0 }, grain: { value: 0 }, tScene: { value: null }, tAO: { value: null }, tBloomA: { value: null }, tBloomB: { value: null }, px: { value: new THREE.Vector2() }, useAO: { value: 1 }, bloom: { value: 1 }, tilt: { value: 1 }, night: { value: 0 } });
     },
     configure: function (opts) {
-      post.on = opts.on; post.ao = opts.ao; post.samples = opts.samples || 0; post.tilt = opts.tilt ? 1 : 0;
+      post.on = opts.on; post.ao = opts.ao; post.samples = opts.samples || 0; post.tilt = 0;   // no tilt-shift: it makes a city look like a model of a city
       post.dispose();
     },
     dispose: function () {
@@ -129,7 +135,7 @@
       post.blur(post.b1, post.b2, post.b1, w >> 2, h >> 2);
       post.blur(post.b1, post.b3, post.b4, w >> 4, h >> 4);
       c.tScene.value = post.main.texture; c.tBloomA.value = post.b1.texture; c.tBloomB.value = post.b4.texture;
-      c.px.value.set(1 / w, 1 / h); c.useAO.value = post.ao ? 1 : 0; c.tilt.value = post.tilt;
+      c.px.value.set(1 / w, 1 / h); c.useAO.value = post.ao ? 1 : 0; c.tilt.value = post.tilt; c.drain.value = post.drain || 0; c.grain.value = (performance.now() % 1000) / 1000; post.drain = Math.max(0, (post.drain || 0) - 0.015);
       post.draw(post.mComp, null);
     }
   };

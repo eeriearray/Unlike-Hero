@@ -16,15 +16,15 @@
     under: { size: 10, colors: [0x4c3388, 0x553a95, 0x46307e, 0x5c40a0] }
   };
   var SKY = [ // hour, top, horizon, sun colour, sun, ambient, window glow
-    [0, 0x060a22, 0x1c2658, 0x9fb6ff, 0.3, 0.46, 1],
-    [4.8, 0x080d2a, 0x25305f, 0x9fb6ff, 0.3, 0.46, 1],
-    [6, 0x4a86d8, 0xffd0a8, 0xffd9a8, 0.85, 0.52, 0.45],
-    [8, 0x2f8fee, 0xc4eaff, 0xfff3dc, 1.25, 0.58, 0],
-    [16, 0x2f8fee, 0xc4eaff, 0xfff3dc, 1.25, 0.58, 0],
-    [18, 0x4c6cc8, 0xffaa6a, 0xffae70, 0.85, 0.52, 0.35],
-    [19.4, 0x1c2462, 0xe66a84, 0xff8a68, 0.42, 0.4, 0.8],
-    [21, 0x060a22, 0x1c2658, 0x9fb6ff, 0.3, 0.46, 1],
-    [24, 0x060a22, 0x1c2658, 0x9fb6ff, 0.3, 0.46, 1]
+    [0, 0x05070f, 0x161a2a, 0x8fa0c8, 0.26, 0.4, 1],
+    [4.8, 0x070a16, 0x1c2030, 0x8fa0c8, 0.26, 0.4, 1],
+    [6, 0x5a7ea8, 0xe8c9a0, 0xffd9ae, 1.0, 0.46, 0.35],
+    [8, 0x4f7fb4, 0xcfd6d4, 0xfff0d8, 1.32, 0.48, 0],
+    [16, 0x4f7fb4, 0xcfd6d4, 0xfff0d8, 1.32, 0.48, 0],
+    [18, 0x51688e, 0xe6a878, 0xffb070, 1.05, 0.44, 0.3],
+    [19.4, 0x1e2440, 0xc4664c, 0xff8050, 0.5, 0.34, 0.8],
+    [21, 0x05070f, 0x161a2a, 0x8fa0c8, 0.26, 0.4, 1],
+    [24, 0x05070f, 0x161a2a, 0x8fa0c8, 0.26, 0.4, 1]
   ].map(function (k) { return { h: k[0], top: new THREE.Color(k[1]), hor: new THREE.Color(k[2]), sun: new THREE.Color(k[3]), si: k[4], am: k[5], glow: k[6] }; });
 
   var shadeC = new THREE.Color();
@@ -79,6 +79,7 @@
       world.usigns = new TR.SignAtlas();
       ids.forEach(function (id) { var d = D.DISTRICTS[id]; if (d.level === 'under') world.buildUnder(d); else world.buildDistrict(d); });
       world.buildRails();
+      TR.street.build();
       TR.vehicles.scene = world.scene;
       TR.vehicles.buildRail();
       Object.keys(world.chunks).forEach(function (k) {
@@ -221,7 +222,7 @@
         var a = r.pts[i], b = r.pts[i + 1], len = Math.hypot(b[0] - a[0], b[1] - a[1]), ux = (b[0] - a[0]) / len, uz = (b[1] - a[1]) / len, px = -uz, pz = ux;
         walk.strip(a[0], a[1], b[0], b[1], r.w + 6, Y, 0xd8d4c9);
         walk.strip(a[0], a[1], b[0], b[1], r.w + 1, Y, 0x9a988f);
-        road.strip(a[0], a[1], b[0], b[1], r.w, Y, 0x3d414c);
+        road.strip(a[0], a[1], b[0], b[1], r.w, Y, 0x303236);
         var STEP = 3, wasCross = false, kerbStart = null, K = world.geo((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, 'flat');
         for (var s = 0; s < len; s += STEP) {
           var x = a[0] + ux * (s + STEP / 2), z = a[1] + uz * (s + STEP / 2), cross = world.crossing(x, z, ri);
@@ -385,13 +386,14 @@
       var wall = b.wall != null ? b.wall : d.walls[0], roof = b.roof != null ? b.roof : d.roofs[0], x = b.x, z = b.z, w = b.w, dd = b.d, h = b.h;
       var rng = new Rng('b:' + Math.round(x) + ',' + Math.round(z)), trim = shade(wall, 1.16), dark = shade(wall, 0.72);
       var FLOOR = h > 60 ? 6 : 3.7;
-      var rc = shape === 'container' ? 0.2 : Math.min(2.6, Math.min(w, dd) * 0.13);
+      var rc = shape === 'container' ? 0.1 : Math.min(0.35, Math.min(w, dd) * 0.03);
       g.rbox(x, y, z, w, h, dd, wall, rc, 0.2, 2);
       g.rbox(x, y, z, w + 0.8, 1.15, dd + 0.8, dark, rc + 0.3, 0.2, 1);                         // plinth
       for (var f = FLOOR * 2; f < h - 2; f += FLOOR * 2) g.rbox(x, y + f - 0.55, z, w + 0.5, 0.36, dd + 0.5, trim, rc + 0.2, 0.12, 1);  // string courses
       g.rbox(x, y + h - 0.7, z, w + 0.9, 0.7, dd + 0.9, trim, rc + 0.3, 0.22, 1);                  // cornice
       if (shape !== 'container') world.windows(x, y, z, w, h, dd, b, under, shape, FLOOR, rng);
       var top = y + h;
+      if (shape !== 'house' && !under && h > 7) TR.street.roofClutter(g, x, top, z, w, dd, rng);
       if (shape === 'house') {
         var along = dd >= w;
         g.rbox(x, top - 0.3, z, w + 1.5, 0.55, dd + 1.5, shade(roof, 0.8), rc + 0.5, 0.12, 1);
@@ -482,7 +484,7 @@
       }
     },
     parapet: function (g, x, y, z, w, d, color) {
-      var r = Math.min(2.6, Math.min(w, d) * 0.13);
+      var r = Math.min(0.35, Math.min(w, d) * 0.03);
       g.rbox(x, y, z, w - 0.4, 0.34, d - 0.4, shade(color, 0.72), r, 0.1, 1);
       g.rbox(x, y, z, w + 0.4, 0.92, d + 0.4, shade(color, 1.08), r + 0.1, 0.18, 1);
       g.rbox(x, y + 0.5, z, w - 1, 0.52, d - 1, shade(color, 0.72), r, 0.04, 1);
@@ -511,7 +513,7 @@
       var g = world.geo(x, z, 'window', under), hw = w / 2, hd = d / 2, boarded = b.boarded;
       var frame = boarded ? 0x4a3b2c : (shape === 'tower' ? 0x2f4a66 : shape === 'villa' ? 0xffffff : shape === 'brick' ? 0xf2e6cc : shape === 'house' ? 0xffffff : 0x53606d);
       var DIM = 0x4f83ad, LIT = 0xa8cfe2, BOARD = 0x2d241b;
-      var ww = h > 60 ? 3.4 : 1.9, wh = h > 60 ? 3.4 : 2, gap = h > 60 ? 5.4 : 4.4, start = shape === 'tower' ? 4.6 : 1.8, rc = Math.min(2.6, Math.min(w, d) * 0.13);
+      var ww = h > 60 ? 3.4 : 1.9, wh = h > 60 ? 3.4 : 2, gap = h > 60 ? 5.4 : 4.4, start = shape === 'tower' ? 4.6 : 1.8, rc = Math.min(0.35, Math.min(w, d) * 0.13);
       var ledge = h > 60 || boarded ? 0 : (shape === 'brick' ? 0xe6d4b4 : shape === 'villa' ? 0xffffff : shape === 'house' ? 0xfafafa : 0xc8ccd2);
       if (b.shop) start = Math.max(start, 5.2);
       [['s', w], ['n', w], ['e', d], ['w', d]].forEach(function (f) {
@@ -636,8 +638,8 @@
         // double glass doors, lit from inside, with a mat that says this one opens
         var cx = alongX ? 1.26 : 0, cz = alongX ? 0 : 1.26;
         var pw = dw / 2 - 0.4; cx = alongX ? dw * 0.25 : 0; cz = alongX ? 0 : dw * 0.25;
-        n.box(dx + f.nx * 0.5 - cx, y + 0.3, dz + f.nz * 0.5 - cz, alongX ? pw : 0.1, dh - 0.8, alongX ? 0.1 : pw, b.boarded ? 0x3a3328 : 0xffe2a0);
-        n.box(dx + f.nx * 0.5 + cx, y + 0.3, dz + f.nz * 0.5 + cz, alongX ? pw : 0.1, dh - 0.8, alongX ? 0.1 : pw, b.boarded ? 0x3a3328 : 0xffe2a0);
+        n.box(dx + f.nx * 0.5 - cx, y + 0.3, dz + f.nz * 0.5 - cz, alongX ? pw : 0.1, dh - 0.8, alongX ? 0.1 : pw, b.boarded ? 0x3a3328 : 0xc9b98a);
+        n.box(dx + f.nx * 0.5 + cx, y + 0.3, dz + f.nz * 0.5 + cz, alongX ? pw : 0.1, dh - 0.8, alongX ? 0.1 : pw, b.boarded ? 0x3a3328 : 0xc9b98a);
         g.box(dx + f.nx * 0.6, y, dz + f.nz * 0.6, alongX ? 0.24 : 0.14, dh, alongX ? 0.14 : 0.24, 0x23263a);
         g.box(dx + f.nx * 0.62 - cx * 0.2, y + 1.7, dz + f.nz * 0.62 - cz * 0.2, alongX ? 0.12 : 0.1, 0.9, alongX ? 0.1 : 0.12, 0xffd24a);
         g.box(dx + f.nx * 0.62 + cx * 0.2, y + 1.7, dz + f.nz * 0.62 + cz * 0.2, alongX ? 0.12 : 0.1, 0.9, alongX ? 0.1 : 0.12, 0xffd24a);
@@ -838,7 +840,7 @@
       world.sweeps = world.sweeps || [];
       world.sweeps.push({ m: m, t: 0, h: b.h, y: y });
       // a coat of gold over the whole building: the windows still show through, the roof goes solid
-      var coat = new THREE.Mesh(new THREE.BoxGeometry(b.w + 0.5, b.h + 0.4, b.d + 0.5), world.goldCoat || (world.goldCoat = new THREE.MeshLambertMaterial({ color: 0xffc53d, emissive: 0x9a6a00, emissiveIntensity: 0.55, transparent: true, opacity: 0.5, depthWrite: false })));
+      var coat = new THREE.Mesh(new THREE.BoxGeometry(b.w + 0.5, b.h + 0.4, b.d + 0.5), world.goldCoat || (world.goldCoat = new THREE.MeshLambertMaterial({ color: 0xffc53d, emissive: 0x9a6a00, emissiveIntensity: 0.55, transparent: true, opacity: 0.62, depthWrite: false })));
       coat.position.set(b.x, y + b.h / 2, b.z); coat.renderOrder = 1;
       world.runLayer.add(coat);
       var g = new TR.Geo(), n = Math.max(2, Math.floor(b.w / 9)), f = TrillionerLayout.frontOf(b), hh = Math.min(b.h * 0.72, 22);
@@ -1112,8 +1114,8 @@
       var sunCol = world.skyU.sunCol.value.copy(k0.sun).lerp(k1.sun, f), si = k0.si + (k1.si - k0.si) * f, am = k0.am + (k1.am - k0.am) * f, glow = k0.glow + (k1.glow - k0.glow) * f;
       var fogNear = 200, fogFar = 760;
       if (frantic) { hor.lerp(new THREE.Color(0xff3b5c), 0.22 + Math.sin(performance.now() * 0.004) * 0.06); top.lerp(new THREE.Color(0x4a1030), 0.2); }
-      if (weather === 'fog') { var fg = new THREE.Color(0xc4ccd4); hor.lerp(fg, 0.85); top.lerp(fg, 0.75); si *= 0.45; fogNear = 25; fogFar = 170; }
-      if (weather === 'rain') { var rn = new THREE.Color(0x76859a); hor.lerp(rn, 0.7); top.lerp(new THREE.Color(0x4a586c), 0.8); si *= 0.5; fogNear = 90; fogFar = 420; }
+      if (weather === 'fog') { var fg = new THREE.Color(0xaeb6bc).multiplyScalar(Math.max(0.1, Math.min(1, si / 1.1))); hor.lerp(fg, 0.75); top.lerp(fg, 0.6); si *= 0.6; fogNear = 60; fogFar = 300; }
+      if (weather === 'rain') { var dim = Math.max(0.12, Math.min(1, si / 1.1)), rn = new THREE.Color(0x76859a).multiplyScalar(dim); hor.lerp(rn, 0.7); top.lerp(new THREE.Color(0x4a586c).multiplyScalar(dim), 0.8); si *= 0.5; fogNear = 90; fogFar = 420; }
       var q = (TR.settings && TR.settings.drawDist) || 1;
       world.scene.fog.color.copy(hor);
       world.scene.fog.near += (fogNear * q - world.scene.fog.near) * 0.04;
@@ -1174,11 +1176,10 @@
     c.fillRect(x + 2, y + 2, this.cw - 4, this.ch - 4);
     var lum = (((color >> 16) & 255) * 0.299 + ((color >> 8) & 255) * 0.587 + (color & 255) * 0.114) / 255, dark = lum > 0.55;
     c.textAlign = 'center'; c.textBaseline = 'middle';
-    var fs = 66; c.font = '800 ' + fs + 'px -apple-system, "Segoe UI", Roboto, Arial, sans-serif';
-    while (c.measureText(text).width > this.cw - 30 && fs > 22) { fs -= 2; c.font = '800 ' + fs + 'px -apple-system, "Segoe UI", Roboto, Arial, sans-serif'; }
-    c.lineWidth = 3; c.strokeStyle = dark ? '#12142a' : '#ffffff'; c.strokeRect(x + 6, y + 6, this.cw - 12, this.ch - 12);
-    c.fillStyle = dark ? '#12142a' : '#ffffff';
-    if (!dark) { c.strokeStyle = 'rgba(0,0,0,.6)'; c.lineWidth = 6; c.lineJoin = 'round'; c.strokeText(text, x + this.cw / 2, y + this.ch / 2 + 2); }
+    var face = ['900 %px Impact, "Arial Narrow", Arial, sans-serif', 'italic 700 %px Georgia, "Times New Roman", serif', '700 %px "Helvetica Neue", Arial, sans-serif', '700 %px "American Typewriter", Georgia, serif'][this.i % 4], fs = 70;
+    c.font = face.replace('%', fs);
+    while (c.measureText(text).width > this.cw - 30 && fs > 22) { fs -= 2; c.font = face.replace('%', fs); }
+    c.fillStyle = dark ? '#16171c' : '#f4efe2';
     c.fillText(text, x + this.cw / 2, y + this.ch / 2 + 2);
     var s = this.size;
     return { u0: (x + 2) / s, u1: (x + this.cw - 2) / s, v0: 1 - (y + this.ch - 2) / s, v1: 1 - (y + 2) / s };
@@ -1194,12 +1195,10 @@
   };
   SignAtlas.prototype.add = function (name, b, d, base) {
     var color = b.boarded ? 0x5b4a3a : (d.neon || 0xffc53d), f = TrillionerLayout.frontOf(b), y = b.y != null ? b.y : (base || 0);
-    var w = Math.min(b.w * 0.9, 34), h = w * 0.19;
-    if (b.h < 12) { w = Math.min(w, 20); h = w * 0.19; }
-    var sy = y + Math.min(b.h - h * 0.6, 20);
-    if (b.shop) { h = Math.min(h, 2.6); w = Math.min(w, h * 5.3); sy = y + Math.min(b.h - h * 0.5 - 0.5, 5.15 + h / 2); }   // on the fascia, clear of the canopy
-    if (f.nz) this.addFlat(name, b.x, sy, b.z + f.nz * (b.d / 2 + 0.3), w, h, color, f.nz > 0 ? 0 : Math.PI);
-    else { w = Math.min(b.d * 0.9, 34); h = w * 0.19; this.addFlat(name, b.x + f.nx * (b.w / 2 + 0.3), sy, b.z, w, h, color, f.nx > 0 ? Math.PI / 2 : -Math.PI / 2); }
+    // a sign over the door, the size a shop would pay for
+    var h = Math.min(b.h < 12 ? 1.5 : 1.9, b.h * 0.2), w = Math.min((f.nz ? b.w : b.d) * 0.72, h * 8), sy = y + Math.min(b.h - h * 0.6 - 0.4, 5.45 + h / 2);
+    if (f.nz) this.addFlat(name, f.x, sy, b.z + f.nz * (b.d / 2 + 0.3), w, h, color, f.nz > 0 ? 0 : Math.PI);
+    else this.addFlat(name, b.x + f.nx * (b.w / 2 + 0.3), sy, f.z, w, h, color, f.nx > 0 ? Math.PI / 2 : -Math.PI / 2);
   };
   SignAtlas.prototype.mesh = function () {
     var g = new THREE.BufferGeometry();

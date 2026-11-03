@@ -2,7 +2,7 @@
 (function () {
   var TR = window.TR = window.TR || {};
   var cam = TR.cam = {
-    dist: 13, fx: new THREE.Vector3(), shake: 0, kick: 0, cur: new THREE.Vector3(0, 8, 10), look: new THREE.Vector3(),
+    dist: 9.5, fx: new THREE.Vector3(), shake: 0, kick: 0, cur: new THREE.Vector3(0, 8, 10), look: new THREE.Vector3(),
     /** Swing round a building you just bought. Moving cuts it short. */
     showOff: function (x, y, z, r, h) { cam.cine = { x: x, y: y, z: z, r: r, h: h, t: 0, dur: 2.2 }; },
     update: function (camera, target, dt, opts) {

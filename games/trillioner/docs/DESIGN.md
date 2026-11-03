@@ -927,3 +927,11 @@ any item that is unfinished or was changed from this brief.
 - A catch lowers `spent` as well as raising the balance, so balance plus spent still equals the start plus income.
 - Shops are safe. Agents wait about 16 units from the door, so leaving is the tense moment.
 - Agents past 90 units are not drawn and cast no shadows: five jointed figures were most of the draw calls.
+
+## Vision (user, overrides the brief's look)
+
+A GTA-like open-world city where the goal is to spend as much money as possible. Street-level, grounded and satirical, not a toy. The genre's ideas are fair game; its names, logos, fonts and assets are not.
+
+- Real materials instead of candy colours, so the gold you buy is the brightest thing in the city.
+- No tilt-shift. No big name boards: a shop gets a shop's sign, and the guide finds it for you.
+- The money is the only large number on screen. Refund heat is stars out of five.

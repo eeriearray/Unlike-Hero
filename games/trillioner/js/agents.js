@@ -65,6 +65,7 @@
         TR.audio.trumpet();
       }
       while (ag.list.length < want) ag.spawn(pos);
+      TR.hud.stars(want);
       var under = pos.y < -20 && !TR.interiors.current, skill = Math.min(1, spentB / 900), speed = 12.5 + skill * 6;
       ag.list.forEach(function (a, i) {
         // beyond this they are only a dot on the map: still chasing, not drawn
@@ -119,7 +120,7 @@
       sess.extra({ t: 'caught' }, function (r) {
         if (!r || !r.ok) return;
         TR.hud.bigText('REFUNDED!', '+' + TR.fmt(r.back) + ' back in your account');
-        TR.hud.flash(0.5);
+        TR.post.drain = 1; TR.fx.slow = Math.max(TR.fx.slow, 0.8);
         TR.audio.denied();
         TR.cam.shake = Math.max(TR.cam.shake, 0.7);
         TR.fx.bills({ x: pos.x, y: pos.y + 2, z: pos.z }, 50, 7);

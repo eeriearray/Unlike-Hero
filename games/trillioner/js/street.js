@@ -1,0 +1,146 @@
+/* The stuff a real street is full of: traffic lights, parked cars, bins, hydrants, rooftop clutter, billboards for things nobody needs. */
+(function () {
+  var TR = window.TR = window.TR || {};
+  var D = window.TRD.districts;
+  var CARS = [0x2b2d33, 0x8c8f94, 0xd8d8d4, 0x5a1f22, 0x1e2f4a, 0x3f4a3c, 0x6b5b45, 0xb9b4a8];
+  // Every ad is for something a billionaire would buy, or something nobody should.
+  var ADS = [
+    ['#101820', '#f2c230', 'EASY LOANS', 'You cannot afford not to.'],
+    ['#c8102e', '#ffffff', 'SENATOR KRUMB', 'He can be bought. Ask how!'],
+    ['#f4f1e8', '#17181c', 'DR. GLOSS', 'Teeth they can see from orbit'],
+    ['#0a5c5a', '#f4f1e8', 'NOTHING WATER', 'Now with less of everything'],
+    ['#17181c', '#ff4a3d', 'BURGER EMPIRE', 'The meat is legally meat'],
+    ['#2b2d6e', '#ffffff', 'TAX? WHAT TAX?', 'Offshore Friends LLC'],
+    ['#e8e2d0', '#a3271f', 'YOUR FACE HERE', 'Only $4,000,000,000'],
+    ['#222428', '#7dd3fc', 'PHONE FOR YOUR PHONE', 'It has been a long day for it']
+  ];
+
+  function adAtlas() {
+    var c = document.createElement('canvas'); c.width = 1024; c.height = 1024;
+    var g = c.getContext('2d');
+    ADS.forEach(function (a, i) {
+      var x = (i % 2) * 512, y = Math.floor(i / 2) * 256;
+      g.fillStyle = a[0]; g.fillRect(x, y, 512, 256);
+      g.fillStyle = a[1]; g.textAlign = 'left'; g.textBaseline = 'middle';
+      var fs = 74; g.font = '900 ' + fs + 'px Impact, "Arial Narrow", Arial, sans-serif';
+      while (g.measureText(a[2]).width > 470 && fs > 30) { fs -= 2; g.font = '900 ' + fs + 'px Impact, "Arial Narrow", Arial, sans-serif'; }
+      g.fillText(a[2], x + 22, y + 104);
+      g.font = 'italic 600 28px Georgia, serif';
+      g.fillText(a[3], x + 22, y + 186);
+      g.fillStyle = 'rgba(0,0,0,.12)'; for (var k = 0; k < 7; k++) g.fillRect(x + 73 * k, y, 2, 256);   // paper seams
+    });
+    var t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 8;
+    return t;
+  }
+  function roads() {
+    var out = [];
+    D.ROADS.forEach(function (r) { for (var i = 1; i < r.pts.length; i++) out.push({ a: r.pts[i - 1], b: r.pts[i], w: r.w }); });
+    return out;
+  }
+  function free(x, z, r) {
+    var W = TR.world;
+    if (W.isWater(x, z) || W.collide.near(x, z, r, []).some(function (b) { return b.y0 < 3 && x > b.x0 - r && x < b.x1 + r && z > b.z0 - r && z < b.z1 + r; })) return false;
+    return !D.ROADS.some(function (R) {
+      for (var i = 1; i < R.pts.length; i++) {
+        var a = R.pts[i - 1], b = R.pts[i], dx = b[0] - a[0], dz = b[1] - a[1], t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / (dx * dx + dz * dz)));
+        if (Math.hypot(x - a[0] - dx * t, z - a[1] - dz * t) < R.w / 2 + 0.6) return true;
+      }
+    });
+  }
+
+  var st = TR.street = {
+    /** A parked car, cheap enough to have hundreds of. Faces along (ux,uz). */
+    parked: function (g, x, z, ux, uz, color) {
+      var ry = Math.atan2(ux, uz), L = 2.1, W = 0.95, cos = Math.cos(ry), sin = Math.sin(ry);
+      function at(a, b) { return [x + a * cos + b * sin, z - a * sin + b * cos]; }
+      var p;
+      [[-W, -1.25], [W, -1.25], [-W, 1.25], [W, 1.25]].forEach(function (w) { p = at(w[0], w[1]); g.box(p[0], 0, p[1], 0.32, 0.6, 0.72, 0x101114, ry); });
+      g.box(x, 0.32, z, W * 2, 0.62, L * 2, color, ry);
+      p = at(0, 0.15); g.box(p[0], 0.94, p[1], W * 1.8, 0.56, L * 1.05, 0x1a232c, ry);
+      p = at(0, 0.15); g.box(p[0], 1.5, p[1], W * 1.7, 0.08, L * 0.92, color, ry);
+      p = at(0, -L); g.box(p[0], 0.42, p[1], W * 1.5, 0.2, 0.05, 0xf4f0d8, ry);
+      p = at(0, L); g.box(p[0], 0.42, p[1], W * 1.5, 0.2, 0.05, 0x8e1a1a, ry);
+      TR.world.collide.addBox(x, 0, z, Math.abs(ux) > 0.5 ? L * 2 : W * 2, 1.6, Math.abs(ux) > 0.5 ? W * 2 : L * 2);
+    },
+    trafficLight: function (g, n, x, z, nx, nz) {
+      g.cyl(x, 0, z, 0.1, 5.4, 0x2a2c30, 8);
+      g.box(x + nx * 1.4, 5.2, z + nz * 1.4, Math.abs(nx) * 2.8 + 0.12, 0.12, Math.abs(nz) * 2.8 + 0.12, 0x2a2c30);
+      var hx = x + nx * 2.6, hz = z + nz * 2.6;
+      g.box(hx, 4.1, hz, 0.42, 1.14, 0.42, 0x17181c);
+      n.box(hx, 4.86, hz - 0.22, 0.24, 0.24, 0.02, 0xc4241c).box(hx, 4.5, hz - 0.22, 0.24, 0.24, 0.02, 0x4a3c10).box(hx, 4.16, hz - 0.22, 0.24, 0.24, 0.02, 0x1a5a2c);
+      TR.world.collide.addBox(x, 0, z, 0.3, 5, 0.3);
+    },
+    furniture: function (g, x, z, rng) {
+      var r = rng.next();
+      if (r < 0.34) { g.cyl(x, 0, z, 0.3, 1, 0x3a3f3a, 10); g.cyl(x, 1, z, 0.33, 0.06, 0x23262a, 10); }         // bin
+      else if (r < 0.56) { g.cyl(x, 0, z, 0.15, 0.68, 0xa8291f, 8); g.cyl(x, 0.68, z, 0.09, 0.14, 0xc8c8c0, 6); } // hydrant
+      else if (r < 0.8) { g.box(x, 0, z, 0.72, 1.3, 0.56, rng.pick([0x234a7a, 0xa8291f, 0x2a6a4a, 0xc9a227])); g.box(x, 0.84, z - 0.29, 0.56, 0.34, 0.02, 0xb9c8d0); } // newspaper box
+      else { g.box(x, 0.48, z, 1.9, 0.09, 0.5, 0x4a3524); g.box(x, 0.48, z + 0.22, 1.9, 0.5, 0.08, 0x4a3524); g.box(x - 0.8, 0, z, 0.08, 0.5, 0.4, 0x222222); g.box(x + 0.8, 0, z, 0.08, 0.5, 0.4, 0x222222); } // bench
+      TR.world.collide.addBox(x, 0, z, 0.7, 1.2, 0.7);
+    },
+    /** Air conditioners, tanks and vents: every flat roof in a real city is a mess. */
+    roofClutter: function (g, x, top, z, w, d, rng) {
+      var n = 2 + rng.int(4);
+      for (var i = 0; i < n; i++) {
+        var px = x + rng.range(-w * 0.34, w * 0.34), pz = z + rng.range(-d * 0.34, d * 0.34), k = rng.next();
+        if (k < 0.5) { g.box(px, top, pz, 2.1, 1.25, 1.5, 0x8d9094); g.box(px, top + 1.25, pz, 1.3, 0.1, 1.3, 0x55585c); }
+        else if (k < 0.75) { g.box(px, top, pz, 0.2, 2.8, 0.2, 0x3f3226).box(px + 1.7, top, pz, 0.2, 2.8, 0.2, 0x3f3226).box(px, top, pz + 1.7, 0.2, 2.8, 0.2, 0x3f3226).box(px + 1.7, top, pz + 1.7, 0.2, 2.8, 0.2, 0x3f3226); g.cyl(px + 0.85, top + 2.8, pz + 0.85, 1.3, 2.6, 0x6e5238, 10, 1.2); }
+        else { g.box(px, top, pz, 0.7, 1.6, 0.7, 0x6a6d70); g.box(px, top + 1.6, pz, 0.95, 0.12, 0.95, 0x3a3c40); }
+      }
+    },
+    build: function () {
+      var W = TR.world, rng = new window.TrillionerRng.Rng('street'), segs = roads(), corners = {};
+      // junctions from where road segments meet
+      segs.forEach(function (s) { [s.a, s.b].forEach(function (p) { var k = p[0] + ',' + p[1]; (corners[k] = corners[k] || { x: p[0], z: p[1], n: 0, w: s.w }).n++; }); });
+      Object.keys(corners).forEach(function (k) {
+        var c = corners[k];
+        if (c.n < 2) return;
+        var off = c.w / 2 + 1.6;
+        [[off, off, -1, 0], [-off, -off, 1, 0]].forEach(function (s) {
+          var x = c.x + s[0], z = c.z + s[1];
+          if (free(x, z, 0.6)) st.trafficLight(W.geo(x, z, 'solid'), W.geo(x, z, 'neon'), x, z, s[2], s[3]);
+        });
+      });
+      // along each road: parked cars at the kerb, furniture on the pavement, a billboard now and then
+      var ads = { p: [], uv: [], idx: [] };
+      segs.forEach(function (s) {
+        var dx = s.b[0] - s.a[0], dz = s.b[1] - s.a[1], L = Math.hypot(dx, dz), ux = dx / L, uz = dz / L, nx = uz, nz = -ux;
+        for (var d = 16; d < L - 16; d += rng.range(9, 20)) {
+          var side = rng.next() < 0.5 ? 1 : -1, cx = s.a[0] + ux * d, cz = s.a[1] + uz * d;
+          if (rng.next() < 0.55) {
+            var kx = cx + nx * side * (s.w / 2 - 1.2), kz = cz + nz * side * (s.w / 2 - 1.2);
+            if (!W.isWater(kx, kz) && !W.collide.near(kx, kz, 2.4, []).some(function (b) { return b.y0 < 2 && kx > b.x0 - 2.4 && kx < b.x1 + 2.4 && kz > b.z0 - 2.4 && kz < b.z1 + 2.4; }) && Object.keys(corners).every(function (q) { return corners[q].n < 2 || Math.hypot(corners[q].x - kx, corners[q].z - kz) > 13; }))
+              st.parked(W.geo(kx, kz, 'solid'), kx, kz, ux * side, uz * side, rng.pick(CARS));
+          }
+          var fx = cx + nx * side * (s.w / 2 + 2.2), fz = cz + nz * side * (s.w / 2 + 2.2);
+          if (rng.next() < 0.5 && free(fx, fz, 1)) st.furniture(W.geo(fx, fz, 'solid'), fx, fz, rng);
+        }
+        for (var b = 40; b < L - 30; b += 130) {
+          var sd = (Math.floor(b) % 2) ? 1 : -1, bx = s.a[0] + ux * b + nx * sd * (s.w / 2 + 6), bz = s.a[1] + uz * b + nz * sd * (s.w / 2 + 6);
+          if (!free(bx, bz, 3.5)) continue;
+          var g = W.geo(bx, bz, 'solid'), hw = 7, y0 = 7.4, hh = 3.5, ad = rng.int(ADS.length), u0 = (ad % 2) * 0.5, v1 = 1 - Math.floor(ad / 2) * 0.25, v0 = v1 - 0.25;
+          g.cyl(bx - ux * 4, 0, bz - uz * 4, 0.24, y0, 0x3a3c40, 8); g.cyl(bx + ux * 4, 0, bz + uz * 4, 0.24, y0, 0x3a3c40, 8);
+          W.collide.addBox(bx, 0, bz, 8.6, 6, 1);
+          // both faces of the board
+          [[1, 0.06], [-1, -0.06]].forEach(function (f) {
+            var o = ads.p.length / 3, sx = -nx * sd * f[0] * 0.12, sz = -nz * sd * f[0] * 0.12, dirx = ux * f[0] * sd, dirz = uz * f[0] * sd;
+            [[-1, 0], [1, 0], [1, 1], [-1, 1]].forEach(function (c, i) {
+              ads.p.push(bx + sx + dirx * c[0] * hw, y0 + c[1] * hh * 2 - 0.2, bz + sz + dirz * c[0] * hw);
+              ads.uv.push(u0 + (c[0] + 1) * 0.25, c[1] ? v1 : v0);
+            });
+            ads.idx.push(o, o + 1, o + 2, o, o + 2, o + 3);
+          });
+          g.box(bx, y0 - 0.3, bz, Math.abs(ux) * (hw * 2 + 0.4) + 0.2, hh * 2 + 0.5, Math.abs(uz) * (hw * 2 + 0.4) + 0.2, 0x26282c);
+        }
+      });
+      if (ads.idx.length) {
+        var geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(ads.p, 3));
+        geo.setAttribute('uv', new THREE.Float32BufferAttribute(ads.uv, 2));
+        geo.setIndex(ads.idx);
+        var mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: adAtlas(), side: THREE.DoubleSide }));
+        W.surface.add(mesh);
+      }
+    }
+  };
+})();

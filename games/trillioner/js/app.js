@@ -524,7 +524,8 @@
         if (TR.battle) TR.battle.tick(view, pos);
         if (!room) TR.map.reveal(pos.x, pos.z);
         app.mapT = (app.mapT || 0) - 1;
-        if (app.mapT <= 0) { app.mapT = 2; TR.map.update(pos, TR.player.heading, under, { dots: TR.notebook.mapDots(view.me).concat(TR.agents.dots(), (app.claimed || []).map(function (s) { return { x: s.front.x, z: s.front.z, c: '#ffc53d', r: 3 }; })) }); }
+        TR.map.follow(pos, TR.vehicles.current ? TR.vehicles.current.heading : TR.player.heading, TR.input.yaw);
+        if (app.mapT <= 0) { app.mapT = 0.4; TR.map.update(pos, TR.player.heading, under, { dots: TR.notebook.mapDots(view.me).concat(TR.agents.dots(), (app.claimed || []).map(function (s) { return { x: s.front.x, z: s.front.z, c: '#ffc53d', r: 3 }; })) }); }
       }
       if (view.weather === 'rain' && !room && !under) for (var ri = 0; ri < 5; ri++) TR.fx.spawn(pos.x + (Math.random() - 0.5) * 70, pos.y + 30, pos.z + (Math.random() - 0.5) * 70, 0, -38, 0, 0xa8c8e8, 0.8, 0.6, 0);
       TR.life.update(dt, pos, app.t, room || under);

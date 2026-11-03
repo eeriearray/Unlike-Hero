@@ -21,18 +21,15 @@
     segs.forEach(function (s) {
       s.stops.sort(function (a, b) { return a - b; });
       var prev = null;
+      s.nodes = [];
       s.stops.forEach(function (t) {
         var n = node(s.a[0] + (s.b[0] - s.a[0]) * t, s.a[1] + (s.b[1] - s.a[1]) * t);
+        s.nodes.push({ n: n, t: t });
         if (prev != null && prev !== n) { var l = Math.hypot(nodes[n].x - nodes[prev].x, nodes[n].z - nodes[prev].z); links[n].push([prev, l]); links[prev].push([n, l]); }
         prev = n;
       });
     });
     return { nodes: nodes, links: links, segs: segs };
-  }
-  function closestNode(G, x, z) {
-    var best = 0, bd = 1e12;
-    G.nodes.forEach(function (n, i) { var d = (n.x - x) * (n.x - x) + (n.z - z) * (n.z - z); if (d < bd) { bd = d; best = i; } });
-    return best;
   }
   /** Where a point meets the nearest road, so the route joins it there, not at the nearest crossing. */
   function onRoad(G, x, z) {
@@ -40,7 +37,7 @@
     G.segs.forEach(function (s) {
       var dx = s.b[0] - s.a[0], dz = s.b[1] - s.a[1], t = Math.max(0, Math.min(1, ((x - s.a[0]) * dx + (z - s.a[1]) * dz) / (dx * dx + dz * dz)));
       var px = s.a[0] + dx * t, pz = s.a[1] + dz * t, d = (px - x) * (px - x) + (pz - z) * (pz - z);
-      if (d < bd) { bd = d; best = { x: px, z: pz }; }
+      if (d < bd) { bd = d; best = { x: px, z: pz, seg: s, t: t }; }
     });
     return best;
   }
@@ -57,7 +54,26 @@
     if (dist[to] === Infinity) return null;
     var out = [];
     for (var c = to; c >= 0; c = prev[c]) out.unshift(G.nodes[c]);
-    return out;
+    return { path: out, len: dist[to] };
+  }
+  /** The crossings either side of a point on a road. Trying both is what stops a route doubling back. */
+  function either(p) {
+    var below = null, above = null;
+    p.seg.nodes.forEach(function (e) { if (e.t <= p.t) below = e; if (e.t >= p.t && !above) above = e; });
+    return [below, above].filter(Boolean);
+  }
+  function roadRoute(G, a, b) {
+    if (a.seg === b.seg) return [a, b];
+    var best = null, bl = Infinity;
+    either(a).forEach(function (ea) {
+      either(b).forEach(function (eb) {
+        var r = shortest(G, ea.n, eb.n);
+        if (!r) return;
+        var na = r.path[0], nb = r.path[r.path.length - 1], l = r.len + Math.hypot(a.x - na.x, a.z - na.z) + Math.hypot(b.x - nb.x, b.z - nb.z);
+        if (l < bl) { bl = l; best = r.path; }
+      });
+    });
+    return best ? [a].concat(best, [b]) : null;
   }
 
   function doorX(s) { return s.front.x - s.front.nx * s.front.off; }
@@ -67,7 +83,7 @@
     on: true, target: null, route: [], t: 0, scan: 0,
     init: function (scene) {
       var sh = new THREE.Shape();
-      sh.moveTo(0, -1); sh.lineTo(1.25, 0.3); sh.lineTo(1.25, 1.05); sh.lineTo(0, -0.2); sh.lineTo(-1.25, 1.05); sh.lineTo(-1.25, 0.3); sh.closePath();
+      sh.moveTo(0, 1); sh.lineTo(-1.25, -0.3); sh.lineTo(-1.25, -1.05); sh.lineTo(0, 0.2); sh.lineTo(1.25, -1.05); sh.lineTo(1.25, -0.3); sh.closePath();   // tip at +y, which becomes -z: forward at rotation 0
       var geo = new THREE.ShapeGeometry(sh); geo.rotateX(-Math.PI / 2);
       gps.mesh = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ color: 0xff2fa8, transparent: true, opacity: 0.9, depthWrite: false, fog: false, toneMapped: false }), MAX);
       gps.mesh.frustumCulled = false; gps.mesh.count = 0; gps.mesh.renderOrder = 3;
@@ -86,8 +102,8 @@
     reset: function () { gps.target = null; gps.route = []; gps.scan = 0; gps.routeFor = null; if (gps.mesh) gps.mesh.count = 0; if (gps.pin) gps.pin.visible = false; if (TR.map) TR.map.route = null; },
     /** A road path between two points, for anyone who needs to get round a building. */
     pathBetween: function (ax, az, bx, bz) {
-      var G = gps.G, a = onRoad(G, ax, az), b = onRoad(G, bx, bz), mid = shortest(G, closestNode(G, a.x, a.z), closestNode(G, b.x, b.z));
-      return mid ? [a].concat(mid, [b, { x: bx, z: bz }]) : [{ x: bx, z: bz }];
+      var G = gps.G, mid = roadRoute(G, onRoad(G, ax, az), onRoad(G, bx, bz));
+      return mid ? mid.concat([{ x: bx, z: bz }]) : [{ x: bx, z: bz }];
     },
     toggle: function () { gps.on = !gps.on; TR.hud.toast(gps.on ? 'Guide on' : 'Guide off'); if (!gps.on) gps.reset(); },
 
@@ -130,9 +146,9 @@
       var tg = gps.target, G = gps.G;
       if (!tg) { gps.route = []; return; }
       if (tg.room || pos.y < -20 || tg.y < -20) { gps.route = [{ x: pos.x, z: pos.z }, { x: tg.x, z: tg.z }]; return; }
-      var a = onRoad(G, pos.x, pos.z), b = onRoad(G, tg.x, tg.z), mid = shortest(G, closestNode(G, a.x, a.z), closestNode(G, b.x, b.z));
+      var a = onRoad(G, pos.x, pos.z), b = onRoad(G, tg.x, tg.z), mid = roadRoute(G, a, b);
       var direct = Math.hypot(tg.x - pos.x, tg.z - pos.z);
-      gps.route = !mid || direct < 40 ? [{ x: pos.x, z: pos.z }, { x: tg.x, z: tg.z }] : [{ x: pos.x, z: pos.z }, a].concat(mid, [b, { x: tg.x, z: tg.z }]);
+      gps.route = !mid || direct < 40 ? [{ x: pos.x, z: pos.z }, { x: tg.x, z: tg.z }] : [{ x: pos.x, z: pos.z }].concat(mid, [{ x: tg.x, z: tg.z }]);
     },
     update: function (dt, sess, pos, t) {
       if (!gps.on || sess.view.over) return;
@@ -168,7 +184,7 @@
     draw: function (pos, t) {
       var r = gps.route, n = 0, tg = gps.target, m = gps.mesh;
       if (!r.length || !tg) { m.count = 0; gps.pin.visible = false; return; }
-      var inVehicle = !!TR.vehicles.current, step = inVehicle ? STEP * 1.8 : STEP * (tg.room ? 0.65 : 1), sc = inVehicle ? 2.2 : tg.room ? 0.6 : 1.3, y = pos.y < -20 || tg.room ? pos.y + 0.09 : 0.09;
+      var inVehicle = !!TR.vehicles.current, step = inVehicle ? STEP * 1.8 : STEP * (tg.room ? 0.65 : 1), sc = inVehicle ? 2 : tg.room ? 0.5 : 0.8, y = pos.y < -20 || tg.room ? pos.y + 0.09 : 0.09;
       var off = (t * (inVehicle ? 9 : 3.2)) % step, walked = 0, px = pos.x, pz = pos.z, first = true;
       for (var i = 1; i < r.length && n < MAX; i++) {
         var ax = i === 1 ? pos.x : r[i - 1].x, az = i === 1 ? pos.z : r[i - 1].z, bx = r[i].x, bz = r[i].z, l = Math.hypot(bx - ax, bz - az);

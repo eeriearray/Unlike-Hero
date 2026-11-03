@@ -6,12 +6,14 @@
   var map = TR.map = {
     canvas: null, ctx: null, base: null, fog: null, seen: new Uint8Array(GRID * GRID), full: null, pins: [],
     init: function (box) {
-      map.canvas = document.createElement('canvas'); map.canvas.width = map.canvas.height = 256;
+      map.canvas = document.createElement('canvas'); map.canvas.width = map.canvas.height = 512;
       box.appendChild(map.canvas);
+      map.box = box;
+      map.you = document.createElement('i'); map.you.className = 'map-you'; box.appendChild(map.you);
       map.ctx = map.canvas.getContext('2d');
       map.base = map.draw(false); map.ubase = map.draw(true);
     },
-    reset: function () { map.seen.fill(0); map.pins = []; },
+    reset: function () { map.seen.fill(1); map.pins = []; },   // like any city map: the streets are all on it
     /** Reveal cells around the player. */
     reveal: function (x, z) {
       var cx = Math.floor((x + EXTENT) / (EXTENT * 2) * GRID), cz = Math.floor((z + EXTENT) / (EXTENT * 2) * GRID), r = 6;
@@ -24,22 +26,22 @@
     draw: function (under) {
       var c = document.createElement('canvas'); c.width = c.height = 512;
       var g = c.getContext('2d');
-      g.fillStyle = under ? '#120a22' : '#2f9fe0'; g.fillRect(0, 0, 512, 512);
+      g.fillStyle = under ? '#120a22' : '#1c2a33'; g.fillRect(0, 0, 512, 512);
       Object.keys(D.DISTRICTS).forEach(function (k) {
         var d = D.DISTRICTS[k], b = d.land || d.bounds;
         if ((d.level === 'under') !== under) return;
-        g.fillStyle = '#' + ('000000' + d.ground.toString(16)).slice(-6);
+        g.fillStyle = under ? '#2a1d42' : d.id === 'suburbs' ? '#46583c' : '#55585a';
         g.fillRect(map.w2c(b[0], 512), map.w2c(b[1], 512), (b[2] - b[0]) / (EXTENT * 2) * 512, (b[3] - b[1]) / (EXTENT * 2) * 512);
         (d.buildings || []).forEach(function (bd) {
           if (bd.project) return;
-          g.fillStyle = '#' + ('000000' + (bd.roof || 0x444444).toString(16)).slice(-6);
+          g.fillStyle = under ? '#3a2a5a' : '#3c3f42';
           g.fillRect(map.w2c(bd.x - bd.w / 2, 512), map.w2c(bd.z - bd.d / 2, 512), bd.w / (EXTENT * 2) * 512, bd.d / (EXTENT * 2) * 512);
         });
       });
       if (!under) {
-        g.strokeStyle = '#3a3c44'; g.lineCap = 'round';
+        g.strokeStyle = '#c9ccce'; g.lineCap = 'round';
         D.ROADS.forEach(function (R) {
-          g.lineWidth = Math.max(2, R.w / (EXTENT * 2) * 512);
+          g.lineWidth = Math.max(2, R.w / (EXTENT * 2) * 512 * 0.8);
           g.beginPath();
           R.pts.forEach(function (p, i) { var x = map.w2c(p[0], 512), y = map.w2c(p[1], 512); if (i) g.lineTo(x, y); else g.moveTo(x, y); });
           g.stroke();
@@ -57,7 +59,7 @@
       (opts.dots || []).forEach(function (d) {
         g.fillStyle = d.c;
         g.beginPath(); g.arc(map.w2c(d.x, size), map.w2c(d.z, size), d.r || size / 90, 0, 7); g.fill();
-        if (d.label && size > 300) { g.fillStyle = '#fff'; g.font = '12px Arial'; g.fillText(d.label, map.w2c(d.x, size) + 7, map.w2c(d.z, size) + 4); }
+        if (d.label && size !== 512) { g.fillStyle = '#fff'; g.font = '12px Arial'; g.fillText(d.label, map.w2c(d.x, size) + 7, map.w2c(d.z, size) + 4); }
       });
       if (map.route && map.route.length > 1) {
         g.strokeStyle = '#ff2fa8'; g.lineWidth = size > 300 ? 4 : 3; g.lineJoin = 'round';
@@ -72,14 +74,12 @@
         g.beginPath(); g.arc(map.w2c(p.x, size), map.w2c(p.z, size), size / 70, 0, 7); g.fill();
       });
     },
-    update: function (pos, heading, under, opts) {
-      var g = map.ctx, size = 256;
-      map.paint(g, size, under, opts);
-      var x = map.w2c(pos.x, size), y = map.w2c(pos.z, size);
-      g.save(); g.translate(x, y); g.rotate(-heading);
-      g.fillStyle = '#fff'; g.strokeStyle = '#000'; g.lineWidth = 2;
-      g.beginPath(); g.moveTo(0, -10); g.lineTo(7, 8); g.lineTo(-7, 8); g.closePath(); g.fill(); g.stroke();
-      g.restore();
+    update: function (pos, heading, under, opts) { map.paint(map.ctx, 512, under, opts); },
+    /** Every frame: the map turns with the camera and slides under you. */
+    follow: function (pos, heading, yaw) {
+      var bw = map.box.clientWidth, bh = map.box.clientHeight, sc = 2.1 * bw / 512 * 1.6, x = map.w2c(pos.x, 512), y = map.w2c(pos.z, 512);
+      map.canvas.style.transform = 'translate(' + (bw / 2) + 'px,' + (bh / 2) + 'px) rotate(' + yaw + 'rad) scale(' + sc + ') translate(' + (-x) + 'px,' + (-y) + 'px)';
+      map.you.style.transform = 'translate(-50%,-50%) rotate(' + (yaw - heading) + 'rad)';
     }
   };
 })();

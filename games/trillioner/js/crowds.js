@@ -31,9 +31,9 @@
     add(KIND.skin, LIMB.foreL, function () { g.rbox(-0.5, 0.86, 0, 0.17, 0.48, 0.19, W, 0.08, 0.08, S); });
     add(KIND.skin, LIMB.foreR, function () { g.rbox(0.5, 0.86, 0, 0.17, 0.48, 0.19, W, 0.08, 0.08, S); });
     // head
-    add(KIND.skin, LIMB.head, function () { g.rbox(0, 1.82, 0, 0.22, 0.2, 0.22, W, 0.1, 0.05, 1); g.blob(0, 2.28, 0, 0.32, 0.36, 0.33, W); });
-    add(KIND.hair, LIMB.head, function () { g.blob(0, 2.4, 0.05, 0.345, 0.3, 0.34, W); });
-    add(KIND.paint, LIMB.head, function () { g.rbox(-0.13, 2.27, -0.32, 0.07, 0.1, 0.02, 0x1d1d24, 0.02, 0.02, 1); g.rbox(0.13, 2.27, -0.32, 0.07, 0.1, 0.02, 0x1d1d24, 0.02, 0.02, 1); });
+    add(KIND.skin, LIMB.head, function () { g.rbox(0, 1.82, 0, 0.22, 0.2, 0.22, W, 0.1, 0.05, 1); g.blob(0, 2.2, 0, 0.235, 0.27, 0.245, W); });
+    add(KIND.hair, LIMB.head, function () { g.blob(0, 2.3, 0.04, 0.25, 0.21, 0.25, W); });
+    add(KIND.paint, LIMB.head, function () { g.rbox(-0.09, 2.23, -0.235, 0.045, 0.05, 0.02, 0x1d1d24, 0.01, 0.01, 1); g.rbox(0.09, 2.23, -0.235, 0.045, 0.05, 0.02, 0x1d1d24, 0.01, 0.01, 1); });
     var geo = g.geometry();
     geo.setAttribute('aKind', new THREE.Float32BufferAttribute(aKind, 1));
     geo.setAttribute('aLimb', new THREE.Float32BufferAttribute(aLimb, 1));
