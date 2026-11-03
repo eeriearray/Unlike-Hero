@@ -118,7 +118,8 @@
       setTimeout(function () { if (own.reveal === r) { r.remove(); own.reveal = null; } }, 2600);
     },
     drawStuff: function (body, me) {
-      var run = TR.app.session.run, any = false;
+      var run = TR.app.session.run, any = false, kinds = Object.keys(me.goods).concat(Object.keys(me.owned)).filter(function (id) { return run.items[id]; }), usable = kinds.filter(function (id) { return TR.pads.useText(run.items[id]); }).length;
+      if (kinds.length) el('div', 'own-sum', body, '<b>' + usable + '</b> of your <b>' + kinds.length + '</b> purchases do something. The rest are just for show, and they follow you around.');
       function section(title, n) { el('h4', 'own-h', body, title + ' <small>' + n + '</small>'); return el('div', 'own-grid', body); }
       var mine = X.CATALOG.filter(function (x) { return me.extras[x.id]; });
       if (mine.length) { any = true; var g1 = section('Wardrobe and pets', mine.length); mine.forEach(function (x) { own.card(g1, x, me); }); }
@@ -137,7 +138,7 @@
         var g3 = section('Businesses', biz.length);
         biz.forEach(function (id) {
           var it = run.items[id];
-          el('div', 'own-card ' + RCLASS[goodsRarity(it.price)], g3, '<img data-thumb="g:' + TR.goods.kindFor(it) + '" alt=""><b>' + esc(it.name) + '</b><span>' + (it.income ? (it.income > 0 ? '+' : '') + TR.fmt(it.income) + '/s' : 'No income') + '</span>');
+          el('div', 'own-card ' + RCLASS[goodsRarity(it.price)], g3, '<img data-thumb="g:' + TR.goods.kindFor(it) + '" alt=""><b>' + esc(it.name) + '</b><span>' + (it.income ? (it.income > 0 ? '+' : '') + TR.fmt(it.income) + '/s' : 'No income') + '</span>' + own.useLine(it));
         });
       }
       var things = Object.keys(me.goods).filter(function (id) { return run.items[id]; }).sort(function (a, b) { return run.items[b].price - run.items[a].price; });
@@ -146,10 +147,15 @@
         var g4 = section('Things you bought', things.length);
         things.slice(0, 80).forEach(function (id) {
           var it = run.items[id], n = me.goods[id];
-          el('div', 'own-card ' + RCLASS[goodsRarity(it.price)], g4, '<img data-thumb="g:' + TR.goods.kindFor(it) + '" alt="">' + (n > 1 ? '<em>x' + n + '</em>' : '') + '<i class="rar">' + X.RARITY[goodsRarity(it.price)] + '</i><b>' + esc(it.name) + '</b><span>' + TR.fmt(it.price) + '</span>');
+          el('div', 'own-card ' + RCLASS[goodsRarity(it.price)], g4, '<img data-thumb="g:' + TR.goods.kindFor(it) + '" alt="">' + (n > 1 ? '<em>x' + n + '</em>' : '') + '<i class="rar">' + X.RARITY[goodsRarity(it.price)] + '</i><b>' + esc(it.name) + '</b><span>' + TR.fmt(it.price) + '</span>' + own.useLine(it));
         });
       }
       if (!any) el('div', 'own-note', body, 'Nothing yet. That is a lot of money to still be holding.');
+    },
+
+    useLine: function (it) {
+      var u = TR.pads.useText(it);
+      return u ? '<u class="use">' + esc(u) + '</u>' : '<u class="use none">Just for show</u>';
     },
 
     // ── throwing cash ──
@@ -164,6 +170,7 @@
         TR.fx.bills({ x: pos.x, y: pos.y + 2.8, z: pos.z }, 10, 9);
         TR.audio.buy(0, 1);
         TR.crowds.lureAt = { x: pos.x, y: pos.y, z: pos.z }; TR.crowds.lureT = 3;
+        TR.agents.distract(pos);
       });
     }
   };

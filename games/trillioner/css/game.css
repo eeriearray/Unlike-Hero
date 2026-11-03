@@ -349,3 +349,6 @@ job-obj.late em, .job-obj.late em { color:#ff5a4d; }
 job-obj small, .job-obj small { display:block; font-size:13px; font-weight:600; color:#e8e4d8; -webkit-text-stroke:3px #08090b; paint-order:stroke fill; }
 .own-open .phone, .own-open job-obj, .own-open .job-obj { display:none !important; }
 .toasts { bottom:calc(clamp(110px,14vw,170px) + 92px); }
+.own-card .use { text-decoration:none; display:block; font-size:11px; line-height:1.2; font-weight:700; color:#178a42; margin-top:3px; }
+.own-card .use.none { color:#9a8f7c; font-weight:600; }
+.own-sum { font-size:14px; font-weight:600; margin:0 0 8px; }

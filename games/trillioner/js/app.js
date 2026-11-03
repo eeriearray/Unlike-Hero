@@ -206,6 +206,7 @@
           if (ev.closing > 0) TR.hud.toast(name + ': deal closing in ' + Math.round(ev.closing / 1000) + 's', 'gold');
           else if (it) app.onOwned(it);
           if (it) app.checkClaim(it);
+          if (it && TR.pads.useText(it) && it.kind !== 'change') TR.hud.toast(it.name + ': ' + TR.pads.useText(it), 'gold');
         } else if (ev.type === 'closed') {
           var c = run.items[ev.item];
           TR.hud.toast(c.name + ': deal closed!', 'gold');
@@ -527,7 +528,6 @@
         if (TR.battle) TR.battle.tick(view, pos);
         if (!room) TR.map.reveal(pos.x, pos.z);
         app.mapT = (app.mapT || 0) - 1;
-        TR.map.follow(TR.interiors.current ? TR.interiors.returnTo : pos, TR.vehicles.current ? TR.vehicles.current.heading : TR.player.heading, TR.input.yaw);   // indoors, the map stays on the street outside
         if (app.mapT <= 0) { app.mapT = 0.4; TR.map.update(pos, TR.player.heading, under, { dots: TR.notebook.mapDots(view.me).concat(TR.agents.dots(), (app.claimed || []).map(function (s) { return { x: s.front.x, z: s.front.z, c: '#ffc53d', r: 3 }; })) }); }
       }
       if (view.weather === 'rain' && !room && !under) for (var ri = 0; ri < 5; ri++) TR.fx.spawn(pos.x + (Math.random() - 0.5) * 70, pos.y + 30, pos.z + (Math.random() - 0.5) * 70, 0, -38, 0, 0xa8c8e8, 0.8, 0.6, 0);
@@ -545,7 +545,7 @@
       if (TR.input.hit('Escape') && app.running) { if (app.paused) { TR.menus.close(); app.setPaused(false); } else { app.setPaused(true); TR.menus.pause(); } }
       if (app.running && !app.paused) {
         TR.hud.prompt(null);
-        if (TR.vehicles.current) TR.vehicles.drive(sim); else TR.player.update(sim);
+        if (TR.vehicles.current) TR.vehicles.drive(dt); else TR.player.update(dt);   // you never slow down: effects can, your hands cannot
         var evs = app.session.tick(dt);
         app.handleEvents(evs);
         if (!app.running) { TR.input.endFrame(); return; }
@@ -561,6 +561,7 @@
         TR.gps.update(dt, app.session, pos, app.t);
         TR.agents.update(dt, app.session, pos, app.t);
         TR.phone.update(dt, app.session);
+        TR.map.follow(TR.interiors.current ? TR.interiors.returnTo : pos, TR.vehicles.current ? TR.vehicles.current.heading : TR.player.heading, TR.input.yaw);   // indoors, the map stays on the street outside
         var me0 = app.session.view.me;
         if (me0.styleV !== app.styleV) { app.styleV = me0.styleV; TR.player.applyStyle(me0.style); TR.wardrobe.setPets(me0.style.pet, app.scene); }
         TR.wardrobe.updatePets(dt, pos, TR.player.heading, !!TR.vehicles.current);

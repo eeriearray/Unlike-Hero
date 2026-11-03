@@ -3,7 +3,7 @@
 (function () {
   var TR = window.TR = window.TR || {};
   var R = window.TRD.rules, B = R.B;
-  var TIERS = [[25, 1], [100, 2], [250, 3], [500, 4], [800, 5]], VEST = 0xff6a13, RADIUS = 0.7;
+  var TIERS = [[60, 1], [200, 2], [450, 3]], VEST = 0xff6a13, RADIUS = 0.7;
 
   function nameTag() {
     var c = document.createElement('canvas'); c.width = 256; c.height = 56;
@@ -53,7 +53,7 @@
       var room = TR.interiors.current;
       if (!room) return { x: pos.x, z: pos.z, hunt: true };
       var f = room.front, a = (i + 0.5) / Math.max(1, ag.list.length) * Math.PI - Math.PI / 2, nx = f.nx, nz = f.nz;
-      return { x: f.x + (nx * Math.cos(a) - nz * Math.sin(a)) * 16, z: f.z + (nz * Math.cos(a) + nx * Math.sin(a)) * 16, hunt: false };
+      return { x: f.x + (nx * Math.cos(a) - nz * Math.sin(a)) * 30, z: f.z + (nz * Math.cos(a) + nx * Math.sin(a)) * 30, hunt: false };
     },
     update: function (dt, sess, pos, t) {
       if (sess.view.me.heatOff > 0) {   // someone made a call: they all stand down
@@ -66,18 +66,33 @@
       TIERS.forEach(function (x) { if (spentB >= x[0]) want = x[1]; });
       if (want && !ag.noticed) {
         ag.noticed = true;
-        TR.hud.bigText('THE REFUND OFFICE', 'They want to give it all back. Run. Hide in a shop.');
+        TR.hud.bigText('THE REFUND OFFICE', 'They want to give it all back.');
+        TR.hud.toast('Refund agents stop to grab cash: hold G. Or sprint, drive, or duck into a shop.', 'gold');
         TR.audio.trumpet();
       }
       while (ag.list.length < want) ag.spawn(pos);
       TR.hud.stars(want);
-      var under = pos.y < -20 && !TR.interiors.current, skill = Math.min(1, spentB / 900), speed = 12.5 + skill * 6;
+      ag.rest = Math.max(0, (ag.rest || 0) - dt);
+      var under = pos.y < -20 && !TR.interiors.current, skill = Math.min(1, spentB / 900), speed = 11 + skill * 4.5;   // always slower than a sprint: you can get away if you are paying attention
       ag.list.forEach(function (a, i) {
         // beyond this they are only a dot on the map: still chasing, not drawn
         a.group.visible = !under && Math.hypot(a.x - pos.x, a.z - pos.z) < 90;
         if (under) return;
         if (a.stun > 0) { ag.stunned(a, dt, pos); return; }
-        var g = ag.goal(pos, i), dx = g.x - a.x, dz = g.z - a.z, d = Math.hypot(dx, dz);
+        var g = ag.goal(pos, i);
+        if (a.cash > 0) {   // there is money on the ground. Procedure can wait.
+          a.cash -= dt;
+          g = { x: a.cashX, z: a.cashZ, hunt: false };
+          if (Math.hypot(g.x - a.x, g.z - a.z) < 1.5) {   // scooping it up
+            a.parts.chest.rotation.x = 0.7;
+            a.group.position.set(a.x, a.y, a.z);
+            return;
+          }
+        } else if (ag.rest > 0) {   // they got one of you: they file the paperwork first
+          g = { x: a.x, z: a.z, hunt: false };
+        }
+        a.parts.chest.rotation.x = 0;
+        var dx = g.x - a.x, dz = g.z - a.z, d = Math.hypot(dx, dz);
         if (d > 230) { ag.place(a, pos); return; }
         var tx = g.x, tz = g.z;
         // blocked by a building: go round by road for a while
@@ -108,7 +123,7 @@
       });
     },
     contact: function (a, sess, pos) {
-      if (TR.interiors.current || Math.abs(pos.y - a.y) > 2.6) return;
+      if (TR.interiors.current || a.cash > 0 || Math.abs(pos.y - a.y) > 2.6) return;
       var d = Math.hypot(pos.x - a.x, pos.z - a.z), v = TR.vehicles.current;
       if (v) {
         var fast = Math.abs(v.speed) > 12;
@@ -130,7 +145,8 @@
         TR.cam.shake = Math.max(TR.cam.shake, 0.7);
         TR.fx.bills({ x: pos.x, y: pos.y + 2, z: pos.z }, 50, 7);
       });
-      a.stun = 5; a.vy = 0; a.vx = 0; a.vz = 0; a.spin = 0; a.paid = true;
+      a.stun = 5; a.vy = 0; a.vx = 0; a.vz = 0; a.spin = 0;
+      ag.rest = 25;   // nobody chases you for a while after a catch
     },
     stunned: function (a, dt, pos) {
       a.stun -= dt;
@@ -144,6 +160,20 @@
       }
       a.group.position.set(a.x, a.y, a.z);
       if (a.stun <= 0) { ag.place(a, pos); }
+    },
+    /** Thrown cash pulls in every agent who can see it. */
+    distract: function (pos) {
+      var n = 0;
+      ag.list.forEach(function (a, i) {
+        if (a.stun > 0 || Math.hypot(a.x - pos.x, a.z - pos.z) > 45) return;
+        if (a.cash <= 0 || !a.cash) n++;
+        a.cash = 5; a.route = null;
+        // it lands between you and them, well clear of you, so grabbing it does not bring them to you
+        var dx = a.x - pos.x, dz = a.z - pos.z, l = Math.hypot(dx, dz) || 1, far = Math.min(l, 11);
+        a.cashX = pos.x + dx / l * far + Math.sin(i * 2.4) * 1.6; a.cashZ = pos.z + dz / l * far + Math.cos(i * 2.4) * 1.6;
+        if (i === 0 || i % 2 === 0) TR.fx.bills({ x: a.cashX, y: pos.y + 1.2, z: a.cashZ }, 4, 4);
+      });
+      return n;
     },
     dots: function () {
       return ag.list.filter(function (a) { return a.stun <= 0; }).map(function (a) { return { x: a.x, z: a.z, c: '#ff6a13', r: 4 }; });

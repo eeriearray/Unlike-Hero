@@ -56,7 +56,7 @@
     stars: function (n) {
       if (hud.starN === n) return;
       hud.starN = n;
-      hud.starEl.innerHTML = n ? '<i>' + '★'.repeat(n) + '</i>' + '★'.repeat(5 - n) : '';
+      hud.starEl.innerHTML = n ? '<i>' + '★'.repeat(n) + '</i>' + '★'.repeat(3 - n) : '';
     },
     musicBtn: function () {
       if (!hud.musicEl) return;
@@ -71,7 +71,8 @@
       if (hud.shown == null) hud.shown = me.balance;
       var diff = me.balance - hud.shown;
       hud.shown = Math.abs(diff) < 100 ? me.balance : hud.shown + diff * Math.min(1, dt * 7);
-      hud.bal.textContent = TR.fmtFull(Math.round(hud.shown));
+      var balText = TR.fmtFull(Math.round(hud.shown));
+      if (balText !== hud.balText) { hud.balText = balText; hud.bal.textContent = balText; }
       hud.clock.textContent = view.mode === 'free' ? TR.fmtClock(view.hour) + ' · Free Roam' : TR.fmtClock(view.hour);
       hud.clock.classList.toggle('urgent', view.mode !== 'free' && view.dayMs - view.t < view.dayMs / 24);
       hud.rankName.textContent = me.rank;
@@ -80,8 +81,8 @@
       hud.pace.style.display = showPace ? '' : 'none';
       if (showPace) {
         var need = cfg.start * Math.min(1, view.t / view.dayMs), gap = me.spent - need, close = Math.abs(gap) < cfg.start * 0.005;
-        hud.pace.textContent = close ? 'On pace' : TR.fmt(Math.abs(gap)) + (gap < 0 ? ' behind pace' : ' ahead of pace');
-        hud.pace.className = 'hud-pace ' + (close ? '' : gap < 0 ? 'behind' : 'ahead');
+        var paceText = close ? 'On pace' : TR.fmt(Math.abs(gap)) + (gap < 0 ? ' behind pace' : ' ahead of pace');
+        if (paceText !== hud.paceText) { hud.paceText = paceText; hud.pace.textContent = paceText; hud.pace.className = 'hud-pace ' + (close ? '' : gap < 0 ? 'behind' : 'ahead'); }
       }
       var next = TR.app.nextTrophy(me);
       if (next) { hud.nextT.textContent = 'Next: ' + next.name + ' (' + TR.fmt(next.spent) + ')'; hud.rankBar.style.width = Math.min(100, me.spent / next.spent * 100) + '%'; }

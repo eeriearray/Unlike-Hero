@@ -53,6 +53,7 @@
       if (sess.gateFails(it.gate)) return 'locked';
       return 'open';
     },
+    useText: useText,
     update: function (dt, sess, pos, t) {
       pads.scanT -= dt;
       if (pads.scanT <= 0) { pads.scanT = 0.2; pads.scan(sess, pos); }
@@ -173,7 +174,22 @@
   };
 
   /** What a purchase will do to your income and what comes with it, for the label and prompt. */
+  var POWERS = { instantClose: 'Your big deals close instantly', phoneMap: 'Your map marks clues you pass, and your phone gets tips', broker: 'Opens the broker\'s secret deals', lobby: 'Opens deals only lobbyists can buy', diplomat: 'Opens doors with a Diplomatic Pass', observatory: 'Your map shows hidden doors and crates', fastTravel: 'Fly between districts from the map', editions: 'Newspapers bring you tips on hidden deals' };
+  /** What you can actually do with something, or null if it is only for show. */
+  function useText(it) {
+    var v = TR.vehicles, r = it.reward || {}, out = [];
+    (r.vehicles || []).forEach(function (k) { if (v.SPECS[k]) out.push('Ride the ' + v.SPECS[k].name + ' (Q to call)'); });
+    (r.gear || []).forEach(function (k) { if (v.GEAR[k]) out.push('Use the ' + v.GEAR[k].name + ' (Q)'); });
+    if (it.power && POWERS[it.power]) out.push(POWERS[it.power]);
+    if (it.wearable) out.push('You wear it');
+    if (it.hint) out.push('Gives you a clue');
+    if (it.income > 0) out.push('Earns +' + TR.fmt(it.income) + '/s');
+    else if (it.income < 0) out.push('Loses ' + TR.fmt(-it.income) + '/s');
+    return out.length ? out.join(' · ') : null;
+  }
   function dealText(it) {
+    var u = useText(it);
+    if (u) return u;
     var v = TR.vehicles, out = [];
     if (it.income > 0) out.push('Earns +' + TR.fmt(it.income) + '/s');
     else if (it.income < 0) out.push('Loses ' + TR.fmt(-it.income) + '/s');
@@ -208,7 +224,7 @@
       show: function (e, sess) {
         var it = e.pad.item, q = e.st === 'open' ? (e.pad.store ? { total: TR.pads.storeSum(e.pad.store, sess), mult: 1 } : sess.quote(it.id)) : null;
         var price = e.st === 'open' ? TR.fmt(q.total) + (q.mult > 1 ? ' x' + q.mult : '') : e.st === 'locked' ? 'LOCKED' : e.st === 'owned' ? 'YOURS' : 'SOLD';
-        var close = e.d2 < 324 && e.rank < 3, deal = close && e.st === 'open' && it.kind !== 'store' ? TR.pads.dealText(it).split(' · ')[0] : '';
+        var close = e.d2 < 324 && e.rank < 3, deal = close && e.st === 'open' && it.kind !== 'store' ? (TR.pads.dealText(it).split(' · ')[0] || 'Just for show') : '';
         var cp = TR.app.camera.position, sw = Math.max(4.2, Math.min(9, Math.hypot(cp.x - e.pad.x, cp.y - e.pad.y, cp.z - e.pad.z) * 0.34));   // the same size on screen, near or far
         s.visible = true;
         s.scale.set(sw, sw * H / W, 1);

@@ -227,7 +227,7 @@
     apply: function (l) {
       var L = LEVELS[l], A = TR.app;
       this.level = l;
-      A.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, L.ratio));
+      A.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, L.ratio, Math.max(1, 1920 / innerWidth)));   // past about 1080p, more pixels only cost frames
       A.resize();
       var sun = TR.world.sun;
       A.renderer.shadowMap.enabled = L.shadows;
@@ -242,8 +242,8 @@
     /** Auto drops a level after a few seconds under 40 FPS. */
     watch: function (fps, dt) {
       if (this.choice !== 'auto') return;
-      if (fps < 40) this.lowT += dt; else this.lowT = 0;
-      if (this.lowT > 3 && this.level !== 'low') {
+      if (fps < 48) this.lowT += dt; else this.lowT = 0;
+      if (this.lowT > 2 && this.level !== 'low') {
         this.lowT = 0;
         this.apply(this.level === 'high' ? 'medium' : 'low');
         TR.hud.toast('Quality lowered to keep things smooth.');
