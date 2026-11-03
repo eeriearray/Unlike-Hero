@@ -56,7 +56,7 @@
         fixed: [
           room('phone_company', 'Phone Company', 30 * B, 'phone_co', 'phone', { outside: 1, secret: 'phone_shop' }),
           room('brokers_licence', "Broker's Licence", 1 * B, 'alley_shop', 'scroll', { secret: 'broker_shop', building: 0 }),
-          room('lobby_firm', 'Lobby Firm', 3 * B, 'alley_shop', 'scroll', { secret: 'lobby_shop', building: 0 })
+          room('lobby_firm', 'Lobby Firm', 3 * B, 'lobby_office', 'scroll', { secret: 'lobby_shop', building: 0 })
         ],
         fill: [['Counterfeit Pinstripes', 3, { secret: 'broker_shop' }], ['Insider Tip (It Is Soup)', 3, { secret: 'broker_shop' }]] }
     ] },
@@ -65,6 +65,8 @@
         fixed: [
           b('grand_hotel_biz', 'Grand Hotel', 6 * B, 'grand_hotel', 'tower'), b('fashion_house_biz', 'Fashion House', 5 * B, 'fashion_house', 'hat'),
           ['diamond_fountain', 'Diamond Fountain', 1 * B, { site: 'tailor_row', required: 1, icon: 'gem' }],
+          ['golf_cart', 'Golf Cart, Pink', 200 * M, { site: 'tailor_row', required: 1, reward: { vehicles: ['golf_cart'] }, icon: 'car' }],
+          ['golden_umbrella', 'Golden Umbrella', 100 * M, { site: 'jewel_row', required: 1, reward: { gear: ['parachute'] }, icon: 'hat' }],
           ['tuxedo', 'A Proper Tuxedo', 50 * M, { site: 'tailor_row', required: 1, wearable: 'tuxedo', icon: 'hat' }]
         ],
         fill: [
@@ -98,6 +100,8 @@
         fixed: [
           b('wonderland_park', 'Wonderland Park', 25 * B, 'wonderland', 'flag'), b('zoo_biz', 'Zoo', 5 * B, 'zoo', 'paw'), b('pizza_chain', 'Pizza Chain', 3 * B, 'pizza_hq', 'can'),
           b('skate_shop_biz', 'Skate Shop', 1 * B, 'skate_shop', 'board'), b('school_biz', 'School', 1 * B, 'school', 'tower'), b('observatory_biz', 'Observatory', 2 * B, 'observatory', 'star'),
+          ['pogo_stick', 'Pogo Stick, Gold', 50 * M, { site: 'estate_agents', required: 1, reward: { vehicles: ['pogo_stick'] }, icon: 'board' }],
+          ['hot_air_balloon', 'Hot Air Balloon', 1 * B, { site: 'block_sales', required: 1, reward: { vehicles: ['hot_air_balloon'] }, icon: 'plane' }],
           ['mansion_a', 'Mansion: Modest', 0.2 * B, { required: 1, icon: 'house' }], ['mansion_b', 'Mansion: Less Modest', 0.4 * B, { required: 1, icon: 'house' }], ['mansion_c', 'Mansion: Two Pools', 0.6 * B, { required: 1, icon: 'house' }], ['mansion_d', 'Mansion: Own Weather', 1 * B, { required: 1, icon: 'house' }],
           ['hood_maple', 'Whole Neighbourhood: Maple Close', 3 * B, { site: 'block_sales', required: 1, icon: 'house' }], ['hood_oak', 'Whole Neighbourhood: Oak Drive', 5 * B, { site: 'block_sales', required: 1, icon: 'house' }], ['hood_pine', 'Whole Neighbourhood: Pine Court', 8 * B, { site: 'block_sales', required: 1, icon: 'house' }],
           ['zoo_lion', 'Zoo Animal: The Lion', 0.3 * B, { site: 'zoo', icon: 'paw' }], ['zoo_penguin', 'Zoo Animal: All the Penguins', 0.25 * B, { site: 'zoo', icon: 'paw' }], ['zoo_giraffe', 'Zoo Animal: Tall Gerald', 0.25 * B, { site: 'zoo', icon: 'paw' }], ['zoo_otter', 'Zoo Animal: An Otter Just for You', 0.2 * B, { site: 'zoo', icon: 'paw' }]
@@ -190,7 +194,8 @@
       { key: 'visible', target: 17 * B, site: 'antique_row',
         fixed: [
           b('fire_department', 'Fire Department', 6 * B, 'fire_station', 'fire'), b('newspaper_biz', 'Newspaper', 5 * B, 'newspaper', 'scroll'), b('museum_biz', 'Museum', 4 * B, 'museum', 'tower'),
-          b('theatre_biz', 'Theatre', 1 * B, 'theatre', 'hat'), b('laundromat', 'Laundromat', 10 * M, 'laundromat', 'house')
+          b('theatre_biz', 'Theatre', 1 * B, 'theatre', 'hat'), b('laundromat', 'Laundromat', 10 * M, 'laundromat', 'house'),
+          ['megaphone', 'Town Crier Megaphone', 20 * M, { site: 'antique_row', required: 1, reward: { gear: ['megaphone'] }, icon: 'hat' }]
         ],
         fill: [['Slightly Haunted Armchair', 0.2], ['Mirror That Compliments You', 0.2], ['Grandfather Clock, Plus Grandfather', 0.15], ['Printing Press Ink Bath', 0.1, { site: 'newspaper' }], ['Front Page Forever', 0.15, { site: 'newspaper' }], ['Dinosaur, Assorted Bones', 0.12, { site: 'museum' }], ['Dalmatian Pension Fund', 0.03, { site: 'fire_station' }], ['Velvet Seats, Front Row', 0.02, { site: 'theatre' }]] },
       { key: 'club', target: 20 * B, site: 'collectors_club',
@@ -210,6 +215,7 @@
           ['secret_casino_biz', 'Secret Casino', 15 * B, { site: 'secret_casino', outside: 1, building: 1, required: 1, secret: UNDER, icon: 'coin' }],
           ['vault_oddities_biz', 'Vault of Oddities', 6 * B, { site: 'vault_oddities', outside: 1, building: 1, required: 1, secret: UNDER, icon: 'gem' }],
           ['lake_resort_biz', 'Underground Lake Resort', 9 * B, { site: 'lake_resort', outside: 1, building: 1, required: 1, secret: UNDER, icon: 'fish' }],
+          ['sofa_kart', 'Sofa Kart', 500 * M, { site: 'bazaar', required: 1, secret: UNDER, reward: { vehicles: ['sofa_kart'] }, icon: 'car' }],
           ['mole_machine', 'Mole Machine', 8 * B, { site: 'under_station', required: 1, secret: UNDER, icon: 'wrench' }],
           ['hint_grey_a', "Mr. Grey's Hint: Fog", 2 * B, { site: 'grey_corner', secret: UNDER, hint: 'Grey taps the window. "Some doors in the harbour only open when you cannot see them."', kind: 'hint' }],
           ['hint_grey_b', "Mr. Grey's Hint: Towers", 4 * B, { site: 'grey_corner', secret: UNDER, hint: 'Grey counts on his fingers. "Four of a kind makes the world bigger. Ask the globe."', kind: 'hint' }],

@@ -10,11 +10,11 @@
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
-    module.exports = factory(require('./rng.js'), require('./data/rules.js'), require('./shuffle.js'), require('./data/trophies.js'), require('./data/events.js'));
+    module.exports = factory(require('./rng.js'), require('./data/rules.js'), require('./shuffle.js'), require('./data/trophies.js'), require('./data/events.js'), require('./data/secrets.js'));
   } else {
-    root.TrillionerEngine = factory(root.TrillionerRng, root.TRD.rules, root.TrillionerShuffle, root.TRD.trophies, root.TRD.events);
+    root.TrillionerEngine = factory(root.TrillionerRng, root.TRD.rules, root.TrillionerShuffle, root.TRD.trophies, root.TRD.events, root.TRD.secrets);
   }
-})(typeof self !== 'undefined' ? self : this, function (RngMod, R, Shuffle, Trophies, EventsData) {
+})(typeof self !== 'undefined' ? self : this, function (RngMod, R, Shuffle, Trophies, EventsData, SecretsData) {
   'use strict';
 
   var fmtShort = function (c) {
@@ -56,7 +56,7 @@
     this.run = Shuffle.buildRun(this.seed);
     this.items = this.run.items;
     this.stock = {};
-    for (var id in this.items) this.stock[id] = this.items[id].stock;
+    for (var id in this.items) this.stock[id] = this.items[id].surprise ? 0 : this.items[id].stock;
     this.t = 0;              // elapsed run time, ms
     this.acc = 0;            // unconsumed tick time, ms
     this.frozen = false;     // Perfect Zero window: clock and economy stop
@@ -177,7 +177,7 @@
     for (var k in p.boost) if (p.boost[k] > 0) p.boost[k] -= R.STEP_MS;
     for (k in p.ban) if (p.ban[k] > 0) p.ban[k] -= R.STEP_MS;
     if (p.travelCd > 0) p.travelCd -= R.STEP_MS;
-    if (this.t % 1000 === 0) this.checkTrophies(p);
+    if (this.t % 1000 === 0) { this.checkAutoSecrets(p); this.checkEditions(p); this.checkTrophies(p); }
     this.checkWin(p);
   };
 
@@ -248,7 +248,7 @@
       });
     } else {
       this.active.push({ id: ev.id, leftMs: def.secs * 1000, site: ev.site || null, deal: ev.deal || null });
-      if (ev.deal) { this.stock[ev.deal] = 1; }
+      if (ev.deal) { this.stock[ev.deal] = 1; this.broadcast({ type: 'stock', item: ev.deal, stock: 1 }); }
     }
     this.say(def.text, 'event');
     this.broadcast({ type: 'cityEvent', id: ev.id, text: def.text, site: ev.site || null, deal: ev.deal || null });
@@ -273,6 +273,7 @@
       if (g.hours && !hourIn(this.hourNow(), g.hours)) return g;
       if (g.weather && this.weather() !== g.weather) return g;
       if (g.wear && !p.wear[g.wear]) return g;
+      if (g.vehicle && !p.vehicles[g.vehicle]) return g;
       if (g.window) {
         var nowH = this.t / 1000 / this.cfg.secPerHour, win = this.run.windows[g.window];
         if (!win || nowH < win[0] || nowH >= win[1]) return g;
@@ -343,6 +344,7 @@
     if (ms > 0) p.closings.push({ item: item.id, leftMs: ms, total: ms });
     else this.applyReward(p, item);
     this.afterPurchase(p, item, q, ms);
+    if (p.powers.phoneMap && SecretsData.CALLS[item.id]) this.emit(p, { type: 'call', text: SecretsData.CALLS[item.id] });
     this.broadcast({ type: 'purchase', pid: p.id, item: item.id, paid: q.total, base: q.base, mult: q.mult, closing: ms, stock: this.stock[item.id] });
     if (q.base >= 1 * R.B || this.cfg.pvp) this.feedPush(p.name + ' bought ' + item.name + ' for ' + fmtShort(q.total));
     this.checkTrophies(p);
@@ -359,6 +361,24 @@
   };
   G.frenzyWindow = function () {
     return this.active.some(function (a) { return a.id === 'spree'; }) ? R.FRENZY_SPREE_MS : R.FRENZY_WINDOW_MS;
+  };
+
+  // Secrets that find you: gates that passed because of something you bought.
+  G.checkAutoSecrets = function (p) {
+    for (var k in this.run.secrets) {
+      var s = this.run.secrets[k];
+      if (s.look === 'auto' && !p.flags['s:' + k] && !this.gateFails(p, s.gate)) this.discover(p.id, k);
+    }
+  };
+  // The Newspaper: morning, noon and evening editions. Each new one carries a real clue.
+  G.checkEditions = function (p) {
+    if (!p.powers.editions) return;
+    var hoursIn = this.t / 1000 / this.cfg.secPerHour, no = Math.floor(hoursIn / 6);
+    if (p.lastEdition === no) return;
+    var first = p.lastEdition == null;
+    p.lastEdition = no;
+    var text = this.run.editions[first ? 0 : (no % (this.run.editions.length - 1)) + 1];
+    this.emit(p, { type: 'edition', text: text });
   };
 
   G.closeDeal = function (p, id) {
@@ -459,6 +479,10 @@
     if (p.flags['s:' + sid]) return { ok: true, already: true };
     var fail = this.gateFails(p, s.gate);
     if (fail) return { code: 'locked', error: fail.why || 'Locked.', gate: fail };
+    if (this.requireNear && s.pos) {
+      var dx = p.x - s.pos.x, dz = p.z - s.pos.z;
+      if (dx * dx + dz * dz > 400) return { code: 'far', error: 'You are too far away.' };
+    }
     p.flags['s:' + sid] = true;
     (s.opens || []).forEach(function (f) { p.flags[f] = true; });
     this.emit(p, { type: 'secret', id: sid, name: s.name, clue: s.clueText || null, note: s.note || null });

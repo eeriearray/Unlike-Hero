@@ -109,3 +109,10 @@ test('outdoor pads never sit on a door or inside a named building', () => {
     }
   }
 });
+
+test('at least 18 usable things exist and every one is sold', () => {
+  const usable = new Set();
+  for (const i of list) if (i.reward) { (i.reward.vehicles || []).forEach((v) => usable.add(v)); (i.reward.gear || []).forEach((g) => usable.add(g)); }
+  assert.ok(usable.size >= 18, `only ${usable.size}: ${[...usable]}`);
+  for (const need of ['hoverboard', 'sports_car', 'scooter', 'monster_truck', 'ladder_truck', 'elephant', 'speedboat', 'submarine', 'helicopter', 'launcher', 'wrecking_truck', 'money_cannon', 'mole_machine', 'jetpack', 'private_train']) assert.ok(usable.has(need), need);
+});

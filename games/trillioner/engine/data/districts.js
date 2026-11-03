@@ -28,7 +28,8 @@
       stalls: [
         { id: 'plaza_shops', name: 'Golden Plaza Shops', x: -60, z: -24, cols: 7, dir: 'x' },
         { id: 'tower_shops', name: 'Tower Row Boutiques', x: 60, z: -24, cols: 7, dir: 'x' },
-        { id: 'alley_shop', name: 'Unmarked Alley Shop', x: 96, z: 72, cols: 3, dir: 'x', spacing: 5 }
+        { id: 'alley_shop', name: 'Unmarked Alley Shop', x: 96, z: 72, cols: 3, dir: 'x', spacing: 5, plain: 1 },
+        { id: 'lobby_office', name: 'Very Friendly Office', x: -96, z: 88, cols: 1, dir: 'x', spacing: 5, plain: 1 }
       ],
       change: { x: 22, z: 22 },
       stairs: [{ x: -84, z: 30, to: 30, dir: 'e', len: 8 }],
@@ -73,7 +74,7 @@
         { id: 'block_sales', name: 'Whole Neighbourhoods', x: -300, z: -130, cols: 7, dir: 'x' },
         { id: 'park_lots', name: 'Parks Department Lots', x: -180, z: -130, cols: 6, dir: 'x', spacing: 7 },
         { id: 'garage_sale', name: 'Suspicious Garage Sale', x: -150, z: 40, cols: 2, dir: 'x', spacing: 5 },
-        { id: 'buried_safe', name: 'Buried Safe', x: -330, z: 100, cols: 2, dir: 'x', spacing: 5 }
+        { id: 'buried_safe', name: 'Buried Safe', x: -316, z: 94, cols: 2, dir: 'x', spacing: 5, plain: 1 }
       ],
       change: { x: -150, z: -26 },
       stairs: [{ x: -180, z: 40, to: 14, dir: 's', len: 8 }],
@@ -123,7 +124,7 @@
       stalls: [
         { id: 'pier_stalls', name: 'Pier Stalls', x: 214, z: 296, cols: 2, dir: 'z', spacing: 8 },
         { id: 'dock_lots', name: 'Timed Dock Lots', x: 190, z: 208, cols: 6, dir: 'x' },
-        { id: 'vault_lots', name: 'Treasure Auction', x: 262, z: 136, cols: 5, dir: 'x', spacing: 7 }
+        { id: 'vault_lots', name: 'Treasure Auction', x: 270, z: 136, cols: 5, dir: 'x', spacing: 7, plain: 1 }
       ],
       change: { x: 224, z: 136 },
       stairs: [{ x: 144, z: 170, to: 14, dir: 'e', len: 6 }],
@@ -142,7 +143,7 @@
       ],
       stalls: [
         { id: 'airport_deals', name: 'Airport Deals', x: 196, z: -138, cols: 6, dir: 'x', spacing: 7 },
-        { id: 'jetpack_shop', name: 'Hidden Gear Locker', x: 140, z: -340, cols: 2, dir: 'x', spacing: 5 }
+        { id: 'jetpack_shop', name: 'Hidden Gear Locker', x: 142, z: -340, cols: 2, dir: 'x', spacing: 5, plain: 1 }
       ],
       change: { x: 300, z: -134 },
       stairs: [{ x: 196, z: -198, to: 14, dir: 's', len: 7 }],

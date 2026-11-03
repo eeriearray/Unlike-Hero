@@ -6,8 +6,7 @@ const require = createRequire(import.meta.url);
 const Bot = require('../engine/bot.js');
 const seeds = Number(process.argv[2] || 20);
 const fmt = (c) => '$' + (c / 1e11).toFixed(1) + 'B';
-const strategies = { 'visible only': Bot.visibleOnly, 'all earners': Bot.allEarners };
-try { const Solver = require('./solver-core.js'); strategies['knows secrets'] = Solver.strategy; } catch { /* the solver arrives at M5 */ }
+const strategies = { 'visible only': Bot.visibleOnly, 'all earners': Bot.allEarners, 'knows secrets': Bot.knowsSecrets };
 for (const [name, strat] of Object.entries(strategies)) {
   let spent = 0, left = 0, wins = 0, t = 0, minLeft = Infinity, maxSpent = 0;
   for (let s = 1; s <= seeds; s++) {

@@ -76,6 +76,34 @@
       });
       if (hud.closHtml !== html) { hud.closings.innerHTML = html; hud.closHtml = html; }
     },
+    /** Vehicle wheel: Q opens it, a number key or a click picks. */
+    toggleWheel: function (me) { if (hud.wheel) hud.closeWheel(); else hud.openWheel(me); },
+    closeWheel: function () { if (hud.wheel) { hud.wheel.remove(); hud.wheel = null; hud.wheelPick = null; } },
+    openWheel: function (me) {
+      var opts = [], SP = TR.vehicles.SPECS, GR = TR.vehicles.GEAR;
+      Object.keys(me.vehicles).forEach(function (k) { if (SP[k]) opts.push({ kind: 'v', id: k, name: SP[k].name }); });
+      Object.keys(me.gear).forEach(function (k) { if (GR[k]) opts.push({ kind: 'g', id: k, name: GR[k].name }); });
+      if (!opts.length) { hud.toast('Nothing to call yet. Buy a business that comes with one!', 'bad'); return; }
+      var w = hud.wheel = el('div', 'wheel', hud.root);
+      opts.forEach(function (o, i) {
+        var a = i / opts.length * Math.PI * 2 - Math.PI / 2, r = Math.min(170, innerHeight * 0.33), b = el('button', 'wheel-btn', w, '<b>' + (i + 1 < 10 ? i + 1 : '') + '</b> ' + o.name);
+        b.style.left = 'calc(50% + ' + Math.cos(a) * r * 1.5 + 'px)'; b.style.top = 'calc(50% + ' + Math.sin(a) * r + 'px)';
+        b.onclick = function () { hud.pick(o); };
+      });
+      hud.wheelPick = function (i) { if (opts[i]) hud.pick(opts[i]); };
+      if (document.pointerLockElement) document.exitPointerLock();
+    },
+    pick: function (o) {
+      hud.closeWheel();
+      if (o.kind === 'g') { TR.vehicles.setGear(TR.vehicles.gear === o.id ? null : o.id); return; }
+      var err = TR.vehicles.summon(o.id);
+      if (err) { hud.toast(err, 'bad'); TR.audio.denied(); }
+    },
+    /** A clue, up long enough to read. */
+    clue: function (title, text) {
+      var c = el('div', 'cluebox', hud.root, '<b>' + title + '</b><br>' + text);
+      setTimeout(function () { c.classList.add('out'); setTimeout(function () { c.remove(); }, 600); }, 8000);
+    },
     carry: function (text) { hud.carryEl.style.display = text ? '' : 'none'; hud.carryEl.textContent = text || ''; },
     prompt: function (title, sub, hold, bad) {
       var p = hud.promptEl;

@@ -63,7 +63,8 @@
     thud: function () { if (!ensure()) return; noise(0.22, 0.32, 200, 0.6); },
     boom: function (v) { if (!ensure()) return; noise(0.9, 0.5 * (v || 1), 120, 0.4); tone(80, 0.7, 'sine', 0.35 * (v || 1), 0, 28); },
     cheer: function (v) { if (!ensure()) return; for (var i = 0; i < 5; i++) noise(0.9 + Math.random() * 0.6, 0.07 * v, 800 + Math.random() * 1400, 1.4, i * 0.05); },
-    horn: function (kind) { if (!ensure()) return; tone(392, 0.32, 'sawtooth', 0.13); tone(494, 0.32, 'sawtooth', 0.11); },
+    horn: function (notes) { if (!ensure()) return; notes = notes || [392, 494]; tone(notes[0], 0.32, 'sawtooth', 0.13); tone(notes[1], 0.32, 'sawtooth', 0.11); },
+    trumpet: function () { if (!ensure()) return; tone(300, 0.7, 'sawtooth', 0.2, 0, 620); tone(450, 0.7, 'square', 0.1, 0.05, 900); },
     engine: function (sound) {
       if (!ensure()) return;
       if (eng) { eng.g.gain.setTargetAtTime(0, ctx.currentTime, 0.05); var old = eng; setTimeout(function () { old.o.stop(); old.o2.stop(); }, 300); eng = null; }
@@ -83,7 +84,20 @@
       eng.g.gain.setTargetAtTime(d.vol * (0.45 + speedFrac * 0.55), t, 0.08);
     },
     ENGINES: {
-      car: { type: 'sawtooth', base: 60, range: 150, cut: 900, vol: 0.13 }
+      car: { type: 'sawtooth', base: 60, range: 150, cut: 900, vol: 0.13 },
+      hover: { type: 'sine', base: 220, range: 320, cut: 2400, vol: 0.09 },
+      scooter: { type: 'square', base: 110, range: 240, cut: 1400, vol: 0.06 },
+      truck: { type: 'sawtooth', base: 38, range: 70, cut: 500, vol: 0.2 },
+      elephant: { type: 'triangle', base: 40, range: 25, cut: 300, vol: 0.1 },
+      electric: { type: 'sine', base: 340, range: 200, cut: 3000, vol: 0.03 },
+      pogo: { type: 'triangle', base: 90, range: 40, cut: 600, vol: 0.02 },
+      boat: { type: 'sawtooth', base: 70, range: 110, cut: 700, vol: 0.14 },
+      sub: { type: 'sine', base: 55, range: 40, cut: 300, vol: 0.2 },
+      heli: { type: 'sawtooth', base: 24, range: 18, cut: 420, vol: 0.26 },
+      jet: { type: 'sawtooth', base: 150, range: 90, cut: 3000, vol: 0.09 },
+      burner: { type: 'triangle', base: 70, range: 10, cut: 300, vol: 0.06 },
+      train: { type: 'square', base: 46, range: 60, cut: 340, vol: 0.14 },
+      mole: { type: 'sawtooth', base: 48, range: 90, cut: 640, vol: 0.2 }
     }
   };
 })();

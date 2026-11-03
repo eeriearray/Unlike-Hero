@@ -62,3 +62,19 @@ html,body { margin:0; height:100%; overflow:hidden; background:#7ec8f0; font-fam
 canvas.chart { width:100%; height:120px; background:rgba(255,255,255,.06); border-radius:10px; display:block; }
 .perfect { position:absolute; top:18%; left:50%; transform:translateX(-50%); background:rgba(16,20,44,.92); border-radius:16px; padding:10px 18px; text-align:center; pointer-events:auto; min-width:300px; }
 .perfect b { color:var(--gold); font-size:24px; display:block; }
+
+.wheel { position:absolute; inset:0; background:rgba(10,12,30,.35); pointer-events:auto; }
+.wheel-btn { position:absolute; transform:translate(-50%,-50%); background:rgba(20,22,40,.92); color:#fff; border:2px solid var(--gold); border-radius:14px; padding:8px 14px; font:inherit; font-size:15px; cursor:pointer; white-space:nowrap; }
+.wheel-btn:hover { background:var(--gold); color:var(--ink); }
+.wheel-btn b { color:var(--gold); } .wheel-btn:hover b { color:var(--ink); }
+
+.cluebox { position:absolute; left:50%; top:44%; transform:translateX(-50%); width:min(460px,88vw); background:#fff8dc; color:#3a2a10; border-radius:6px; padding:12px 16px; font:17px/1.35 Georgia,serif; box-shadow:0 6px 24px rgba(0,0,0,.45); transition:opacity .6s; }
+.cluebox b { color:#8a4b00; }
+.cluebox.out { opacity:0; }
+.journal { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:min(600px,94vw); max-height:88vh; overflow:auto; background:#fff8dc; color:#3a2a10; border-radius:10px; padding:16px 20px; font:16px/1.35 Georgia,serif; box-shadow:0 10px 40px rgba(0,0,0,.5); pointer-events:auto; text-align:left; }
+.journal h2 { margin:0 0 6px; font-size:26px; } .journal h3 { margin:12px 0 4px; font-size:17px; color:#8a4b00; }
+.journal .clue { padding:6px 0; border-bottom:1px dashed #c9b47f; } .journal .note { padding:3px 0; font-style:italic; }
+.journal .dim { opacity:.7; font-style:italic; margin:2px 0; }
+.journal canvas { width:100%; max-width:480px; display:block; margin:0 auto; border-radius:8px; }
+.journal .btn { font-size:15px; padding:8px 14px; }
+.row.small { gap:6px; } .pin { font-size:12px; cursor:pointer; margin-left:6px; }

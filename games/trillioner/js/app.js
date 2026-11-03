@@ -3,6 +3,8 @@
   var TR = window.TR = window.TR || {};
   var Engine = window.TrillionerEngine, R = window.TRD.rules, Tr = window.TRD.trophies;
   var qs = new URLSearchParams(location.search);
+  window.__trErrors = [];
+  addEventListener('error', function (e) { window.__trErrors.push(String(e.message) + ' @' + (e.filename || '').split('/').pop() + ':' + e.lineno); });
   var DEBUG = qs.get('debug') === '1';
 
   /** Solo session: the engine runs right here. Online (M7) swaps this for a socket with the same shape. */
@@ -17,6 +19,10 @@
       buy: function (id) { var r = g.buy('me', id); s.view = g.viewFor('me'); return r; },
       demolish: function (id, truck) { var r = g.demolish('me', id, truck); s.view = g.viewFor('me'); return r; },
       setPos: function (x, y, z, h, inv, d) { g.setPos('me', x, y, z, h, inv, d); },
+      cannon: function (on) { var r = g.setCannon('me', on); s.view = g.viewFor('me'); return r; },
+      fastTravel: function (d) { return g.fastTravel('me', d); },
+      discover: function (id) { var r = g.discover('me', id); s.view = g.viewFor('me'); return r; },
+      setClock: function (h) { g.setClockHour(h); },
       finish: function () { var p = g.players.me; if (p.won) g.finish(p, g.isPerfect(p) ? 'perfect' : 'win'); else if (!g.over) { g.over = true; g.result = 'quit'; } },
       toss: function () { return g.toss('me'); },
       results: function () { return g.results('me'); }
@@ -76,11 +82,16 @@
       var run0 = app.session.run, sp = run0.spawn;
       TR.player.teleport(sp.x, sp.y, sp.z, 0);
       TR.player.setVisible(true);
+      TR.player.setGrowth(0);
+      app.statues = 0; app.ownedCount = 0; app.rocketBought = false; app.lastSafe = null; app.district = null;
+      TR.traffic.setOwned([]);
+      TR.vehicles.current = null; TR.vehicles.gear = null; TR.hud.carry(null); TR.hud.closeWheel();
       TR.world.resetRun();
+      TR.notebook.close();
+      TR.notebook.setRun(run0);
       TR.map.reset();
       Object.keys(run0.sites).forEach(function (k) { var st = run0.sites[k]; st.flag = st.rubble = st.built = false; });
-      Object.keys(TR.vehicles.placed).forEach(function (k) { TR.vehicles.placed[k].group.visible = false; });
-      if (TR.vehicles.current) TR.vehicles.leave();
+      TR.vehicles.hideAll();
       if (TR.interiors.current) TR.interiors.exit(TR.player);
       TR.player.teleport(sp.x, sp.y, sp.z, 0);
       TR.hud.show(true);
@@ -108,12 +119,14 @@
 
     tryBuy: function (id) {
       var r = app.session.buy(id);
+      if (r.ok) app.onBought(id);
       if (r.error) {
         if (r.code === 'broke') { TR.hud.toast('Too expensive', 'bad'); TR.audio.denied(); }
         else if (r.code !== 'sold') { TR.hud.toast(r.error, 'bad'); TR.audio.denied(); }
       }
       return r;
     },
+    onBought: function (id) {},
     tryDemolish: function (id, truck) {
       var r = app.session.demolish(id, truck);
       if (r.error) { TR.hud.toast(r.error, 'bad'); TR.audio.denied(); }
@@ -149,6 +162,24 @@
             TR.world.setBuildingGone(s.b.id, true);
             TR.world.addRubble(s.b, s.y || 0);
           }
+        } else if (ev.type === 'secret') {
+          TR.hud.toast('FOUND: ' + ev.name, 'gold');
+          if (ev.clue) { TR.hud.clue(ev.name, ev.clue); TR.notebook.addClue(ev.name, ev.clue, pos); }
+          if (ev.note && TR.save.note(ev.id, ev.note)) TR.hud.toast('Notebook: ' + ev.note);
+          TR.audio.buy(1, 4);
+        } else if (ev.type === 'edition') {
+          TR.hud.clue('The Daily Receipt', ev.text); TR.notebook.addClue('The Daily Receipt', ev.text, pos);
+        } else if (ev.type === 'call') {
+          TR.hud.clue('Incoming call', ev.text); TR.notebook.addClue('Incoming call', ev.text, pos);
+        } else if (ev.type === 'hint') {
+          TR.hud.clue('Mr. Grey', ev.text); TR.notebook.addClue('Mr. Grey', ev.text, pos);
+        } else if (ev.type === 'cityEvent') {
+          TR.hud.banner(ev.text); TR.world.headline(ev.text); TR.audio.cheer(0.6);
+          if (ev.site && run.sites[ev.site]) TR.hud.toast('Fire sale at ' + run.sites[ev.site].name + '!', 'gold');
+        } else if (ev.type === 'refund') {
+          if (ev.amount > 0) TR.hud.toast('Tax refund: +' + TR.fmt(ev.amount) + '. Rude.', 'bad');
+        } else if (ev.type === 'cannonEmpty') {
+          TR.hud.toast('The money cannon is spent.', 'gold');
         } else if (ev.type === 'won') {
           app.winSequence();
           TR.menus.perfectWindow();
@@ -159,6 +190,8 @@
     },
     onOwned: function (it) {
       var s = app.session.run.sites[it.site];
+      if (it.project || it.id.indexOf('park_') === 0) TR.world.addVisual(it.id.indexOf('park_') === 0 ? 'park' : it.id);
+      if (it.id === 'rocket') app.rocketBought = true;
       if (!it.building || !s || !s.b) return;
       if (s.b.project && !s.built) { s.built = true; TR.world.addProject(s.b, s.y || 0); }
       if (!s.flag) {
@@ -170,20 +203,70 @@
     /** The reward appears right beside the building, with a clear prompt. */
     deliverReward: function (ev) {
       var it = app.session.run.items[ev.item], s = app.session.run.sites[it.site], f = s.front || { x: TR.player.pos.x + 6, z: TR.player.pos.z };
+      var room = !!TR.interiors.current, base = room ? TR.interiors.returnTo : { x: f.x, y: s.y || 0, z: f.z };
       (ev.vehicles || []).forEach(function (k, i) {
         var spec = TR.vehicles.SPECS[k];
         if (!spec) return;
-        var pads = app.session.run.padPos[it.id];
-        var v = TR.vehicles.spawn(k, f.x + 9 + i * 7, s.y || 0, f.z + 7, 0);
-        TR.hud.toast('Your ' + spec.name + ' has arrived! Press F to get in.', 'gold');
+        var v;
+        if (spec.mode === 'water' || spec.mode === 'sub') {
+          var w = TR.vehicles.findWater({ x: base.x, z: base.z + 30 }) || { x: 214, z: 300 };
+          v = TR.vehicles.spawn(k, w.x + i * 9, spec.mode === 'sub' ? -1.5 : -1.2, w.z, 0);
+        } else v = TR.vehicles.spawn(k, base.x + 9 + i * 7, (base.y || 0) + 0.2, base.z + 7, 0);
+        if (spec.mode === 'jet') v.group.visible = false;
+        TR.hud.toast('Your ' + spec.name + ' is here! ' + (spec.mode === 'jet' ? 'Press Q to strap it on.' : 'Press F to get in, or Q from anywhere.'), 'gold');
         TR.fx.confetti(v.pos, 60, 10);
+      });
+      (ev.gear || []).forEach(function (g) {
+        TR.vehicles.setGear(g);
+        TR.hud.toast('You got the ' + TR.vehicles.GEAR[g].name + '! ' + TR.vehicles.GEAR[g].use, 'gold');
       });
     },
 
+    itemForBuilding: function (bid) {
+      var run = app.session.run, list = run.sites[bid] ? run.sites[bid].outside : [];
+      return list && list[0] || null;
+    },
+    /** Ladder truck rooftops. */
+    ladderSpots: function () { var b = TRD.districts.DISTRICTS.oldtown.buildings.filter(function (x) { return x.roofStall; })[0]; return [{ id: b.id, x: b.x, y: b.h + 0.8, z: b.z - 4 }]; },
+    onLadderUsed: function (spot) { app.tryDiscover('collectors_roof'); },
+    /** Drive the Mole Machine into the marked wall and click. */
+    tryMoleDig: function (v) {
+      var w = TR.world.moleWall;
+      if (Math.hypot(v.pos.x - w.x, v.pos.z - w.z) > 12 || v.pos.y < -80) { TR.hud.toast('Nothing to dig here. Look for red marks.', 'bad'); return; }
+      var r = app.session.discover('marked_wall');
+      if (r.error) { TR.hud.toast(r.error, 'bad'); return; }
+      TR.fx.explosion(v.pos, 1); TR.audio.boom(0.8); TR.cam.shake = 0.8;
+      TR.notebook.travel({ x: 0, y: TRD.districts.DEEP_Y, z: -170 });
+    },
+    tryDiscover: function (id) {
+      var r = app.session.discover(id), s = app.session.run.secrets[id];
+      if (r.error) { TR.hud.toast(r.error, 'bad'); TR.audio.denied(); return r; }
+      if (r.ok && !r.already && s.enter === 'under') {
+        var e = TRD.districts.DISTRICTS.under.entrances.filter(function (x) { return id === 'laundromat_back' ? x.id === 'laundromat' : id === 'factory_door' ? x.id === 'factory' : x.id === 'harbour'; })[0];
+        TR.notebook.travel({ x: e.x, y: TRD.districts.UNDER_Y, z: e.z });
+      }
+      return r;
+    },
+    /** Changes that follow the spent total: statues and the hero's growth. */
+    cityGrowth: function (me) {
+      var want = Math.floor(me.spent / (100 * R.B));
+      app.statues = app.statues || 0;
+      while (app.statues < want && app.statues < 9) { TR.world.addStatue(app.statues++); }
+      TR.player.setGrowth(me.spent);
+      var owned = Object.keys(me.vehicles).length;
+      if (owned !== app.ownedCount) { app.ownedCount = owned; TR.traffic.setOwned(owned ? [0xffc53d, 0xff2d2d, 0xffd24a].slice(0, Math.min(3, owned)) : []); }
+    },
     updateActions: function (dt) {
       var input = TR.input, vs = TR.vehicles, ints = TR.interiors;
+      if (input.hit('KeyN')) TR.notebook.toggle();
+      if (input.hit('KeyM')) TR.notebook.toggleMap();
+      if (input.hit('KeyQ')) TR.hud.toggleWheel(app.session.view.me);
+      if (TR.hud.wheelPick) for (var dk = 1; dk <= 9; dk++) if (input.hit('Digit' + dk)) { TR.hud.wheelPick(dk - 1); break; }
+      TR.vehicles.updateGear(dt, app.session);
+      TR.vehicles.drawPizzas(app.t);
       if (input.hit('KeyF')) {
-        if (vs.current) vs.leave();
+        if (ints.current) { /* doors use E */ }
+        else if (vs.current) vs.leave();
         else { var v = vs.nearest(TR.player.pos, 6); if (v) vs.board(v); }
       }
       // doors: hold E
@@ -262,8 +345,9 @@
         app.session.setPos(pos.x, pos.y, pos.z, TR.player.heading, room ? TR.interiors.current.id : null, dist);
         if (!room) TR.map.reveal(pos.x, pos.z);
         app.mapT = (app.mapT || 0) - 1;
-        if (app.mapT <= 0) { app.mapT = 2; TR.map.update(pos, TR.player.heading, under); }
+        if (app.mapT <= 0) { app.mapT = 2; TR.map.update(pos, TR.player.heading, under, { dots: TR.notebook.mapDots(view.me) }); }
       }
+      if (view.weather === 'rain' && !room && !under) for (var ri = 0; ri < 5; ri++) TR.fx.spawn(pos.x + (Math.random() - 0.5) * 70, pos.y + 30, pos.z + (Math.random() - 0.5) * 70, 0, -38, 0, 0xa8c8e8, 0.8, 0.6, 0);
       TR.crowds.update(dt, pos, app.t, room);
       TR.traffic.update(dt, pos, room || under);
     },
@@ -281,8 +365,11 @@
         if (!app.running) { TR.input.endFrame(); return; }
         var pos = TR.player.pos;
         TR.pads.update(dt, app.session, pos, app.t);
+        if (!TR.hud.pOn) TR.notebook.update(dt, app.session, pos);
         app.updateActions(dt);
         TR.hud.update(app.session.view, dt);
+        app.cityGrowth(app.session.view.me);
+        if (app.rocketBought && app.session.view.hour >= 0 && app.session.view.hour < 1) { app.rocketBought = false; TR.world.launchRocket(); TR.hud.banner('YOUR ROCKET HAS LAUNCHED!'); TR.audio.boom(1); TR.cam.shake = 0.6; }
         app.tickWorld(dt, pos);
       }
       TR.input.endFrame();

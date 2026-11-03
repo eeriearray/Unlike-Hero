@@ -5,7 +5,7 @@
   var CHUNK = 120, UY = D.UNDER_Y;
 
   var world = TR.world = {
-    scene: null, surface: null, under: null, collide: null, hemi: null, sun: null, chunks: {}, meshes: {}, ranges: {}, buildingBoxes: {}, runLayer: null,
+    scene: null, surface: null, under: null, collide: null, hemi: null, sun: null, chunks: {}, meshes: {}, ranges: {}, gone: {}, rails: [], buildingBoxes: {}, runLayer: null,
     windowMat: null, neonMat: null, waterMat: null, space: 'surface', fountains: [], screens: [], clockFaces: [], spinners: [], props: [],
 
     init: function (scene) {
@@ -43,6 +43,9 @@
       world.signs = new TR.SignAtlas();
       world.usigns = new TR.SignAtlas();
       ids.forEach(function (id) { var d = D.DISTRICTS[id]; if (d.level === 'under') world.buildUnder(d); else world.buildDistrict(d); });
+      world.buildRails();
+      TR.vehicles.scene = world.scene;
+      TR.vehicles.buildRail();
       Object.keys(world.chunks).forEach(function (k) {
         var layer = k.split(':')[1], geo = world.chunks[k], under = k.charAt(0) === 'u';
         var mesh = layer === 'solid' ? geo.mesh(world.solid, true, true) : layer === 'flat' ? geo.mesh(world.solid, false, true) : layer === 'window' ? geo.mesh(world.windowMat) : geo.mesh(world.neonMat);
@@ -64,6 +67,16 @@
     },
 
     SEABED: -24,
+
+    // Grind rails for the hoverboard, along the widest streets.
+    buildRails: function () {
+      [[[-60, 12], [-20, 12]], [[20, -12], [100, -12]], [[-110, 230], [-40, 230]], [[140, 12], [230, 12]], [[-200, 40], [-130, 40]], [[130, 212], [200, 212]], [[-60, -130], [60, -130]]].forEach(function (r) {
+        var a = r[0], b = r[1], y = 1.6, mx = (a[0] + b[0]) / 2, mz = (a[1] + b[1]) / 2, l = Math.hypot(b[0] - a[0], b[1] - a[1]), g = world.geo(mx, mz, 'neon');
+        g.box(mx, y - 0.1, mz, Math.abs(b[0] - a[0]) + 0.3, 0.2, Math.abs(b[1] - a[1]) + 0.3, 0xff7de9);
+        for (var i = 0; i <= 4; i++) { var px = a[0] + (b[0] - a[0]) * i / 4, pz = a[1] + (b[1] - a[1]) * i / 4; world.geo(px, pz, 'solid').box(px, 0, pz, 0.25, y, 0.25, 0x666a70); }
+        world.rails.push({ a: a, b: b, y: y, l: l });
+      });
+    },
 
     buildGround: function (d) {
       var b = d.land || d.bounds, step = CHUNK;
@@ -121,10 +134,12 @@
       });
       var box = world.buildingBoxes[id];
       if (box) box.off = !!gone;
+      if (gone) world.gone[id] = true; else delete world.gone[id];
     },
     /** New run: everything the last run did to the city is undone. */
     resetRun: function () {
-      Object.keys(world.ranges).forEach(function (id) { world.setBuildingGone(id, false); });
+      Object.keys(world.gone).forEach(function (id) { world.setBuildingGone(id, false); });
+      if (world.rocket) { world.rocket.position.y = 0; world.rocket.visible = true; world.rocketFlying = 0; }
       if (world.runLayer) {
         world.scene.remove(world.runLayer);
         world.runLayer.traverse(function (o) { if (o.geometry) o.geometry.dispose(); });
@@ -157,6 +172,38 @@
       g.box(b.x - b.w / 2, top, b.z, t, t, b.d + 1.4, gold).box(b.x + b.w / 2, top, b.z, t, t, b.d + 1.4, gold);
       world.runMesh(g, world.neonMat);
     },
+    /** Bought city projects that are not a whole building still change the street. */
+    addVisual: function (kind) {
+      var g = new TR.Geo(), n = new TR.Geo(), c = world.collide;
+      if (kind === 'harbour_bridge') {
+        for (var i = 0; i < 12; i++) { var x = 124 + i * 8; g.box(x + 4, 7, 300, 8.2, 0.8, 14, 0xd9352c); if (i % 3 === 0) { g.box(x, -3, 293, 1.2, 28, 1.2, 0xd9352c); g.box(x, -3, 307, 1.2, 28, 1.2, 0xd9352c); } }
+        world.projectBoxes.push(c.add(124, 7, 293, 220, 7.8, 307, { project: kind }));
+      } else if (kind === 'metro_line') {
+        TR.vehicles.RAIL.forEach(function (p) { n.box(p[0], TR.vehicles.RAIL_Y + 0.6, p[1], 7, 1, 7, 0x7dffea); n.box(p[0], 0, p[1], 2, TR.vehicles.RAIL_Y, 2, 0x2ad0ff); });
+      } else if (kind === 'golden_metro') {
+        g.box(-22, 0, -22, 22, 5, 14, 0xffc53d).box(-22, 5, -22, 26, 1, 18, 0xfff0b0);
+        world.projectBoxes.push(c.addBox(-22, 0, -22, 22, 6, 14, { project: kind }));
+      } else if (kind === 'free_wifi') {
+        [[-40, -40], [40, 40], [40, -14], [-14, 40]].forEach(function (p) { g.box(p[0], 0, p[1], 0.5, 12, 0.5, 0xaaaaaa); n.cyl(p[0], 12, p[1], 2, 0.3, 0x7dd8ff, 8); });
+      } else if (kind === 'skyline_show') {
+        [[60, -62], [-104, -104], [104, -104], [-104, 104], [104, 104]].forEach(function (p) { n.cyl(p[0], 80, p[1], 1, 400, 0xff7de9, 6, 5); });
+      } else if (kind === 'park') {
+        [[-150, -160], [-175, -160], [-200, -160]].forEach(function (p, i) {
+          n.strip(p[0] - 10, p[1], p[0] + 10, p[1], 20, 0.08, 0x5fd35f);
+          g.cyl(p[0] - 5, 0, p[1] + 4, 0.5, 3, 0x7a5230, 6).cyl(p[0] - 5, 2.4, p[1] + 4, 2.4, 3.6, 0x4fae4f, 7, 0.6).cyl(p[0] + 5, 0, p[1] - 4, 0.5, 3, 0x7a5230, 6).cyl(p[0] + 5, 2.4, p[1] - 4, 2.4, 3.6, 0x3d9b4a, 7, 0.6);
+        });
+      }
+      if (g.count) world.runMesh(g, world.solid, true);
+      if (n.count) world.runMesh(n, world.neonMat);
+    },
+    /** Statues rise in the plazas as the spent total climbs. */
+    addStatue: function (i) {
+      var spots = [[-30, -30], [30, 30], [-30, 30], [240, 48], [-160, -26], [-60, 226], [190, 136], [-6, -134], [160, -134]], s = spots[i % spots.length], g = new TR.Geo();
+      g.box(s[0], 0, s[1], 5, 2, 5, 0xeeeeee).box(s[0], 2, s[1], 2, 2.6, 1.2, 0xffc53d).box(s[0], 4.6, s[1], 1.5, 1.5, 1.5, 0xffc53d).box(s[0] - 1.3, 3, s[1], 0.6, 2.4, 0.6, 0xffc53d).box(s[0] + 1.3, 3.6, s[1], 0.6, 2.8, 0.6, 0xffc53d);
+      world.projectBoxes.push(world.collide.addBox(s[0], 0, s[1], 5, 2, 5, { statue: i }));
+      world.runMesh(g, world.solid, true);
+    },
+    launchRocket: function () { world.rocketFlying = 0.001; },
     /** A bought project rises from its lot. */
     addProject: function (b, y) {
       var g = new TR.Geo();
@@ -226,7 +273,7 @@
       (d.stalls || []).forEach(function (s) {
         var c = s.cols || 6, sp = s.spacing || 6, extent = c * sp / 2 + 4;
         taken.push(s.dir === 'z' ? [s.x - 6, s.z - extent, s.x + 22, s.z + extent] : [s.x - extent, s.z - 6, s.x + extent, s.z + 22]);
-        if (s.y == null) world.stallAwning(s, d);
+        if (s.y == null && !s.plain) world.stallAwning(s, d);
       });
       if (d.change) { taken.push([d.change.x - 16, d.change.z - 14, d.change.x + 16, d.change.z + 6]); world.fountain(d); }
       (d.stairs || []).forEach(function (st) { world.stair(st, d, 0, false); taken.push([st.x - 8, st.z - 8, st.x + 8, st.z + 8]); });
@@ -400,14 +447,21 @@
         world.prop(d, d.prop, x, y, z, rng, under);
       }
     },
+    /** A prop the monster truck can flatten. It gets its own vertex range and a tagged collision box. */
+    smashable: function (x, y, z, under, draw, size, h) {
+      var id = 'p' + (world.propN = (world.propN || 0) + 1);
+      world.tracked(id, x, z, under, draw);
+      world.buildingBoxes[id] = world.collide.addBox(x, y, z, size, h, size, { prop: id });
+    },
+    smash: function (id) { world.setBuildingGone(id, true); },
     prop: function (d, kind, x, y, z, rng, under) {
       var g = world.geo(x, z, 'solid', under), n = world.geo(x, z, 'neon', under), c = world.collide;
       if (kind === 'tree') { g.cyl(x, y, z, 0.5, 3, 0x7a5230, 6); g.cyl(x, y + 2.4, z, 2.4, 3.6, rng.pick([0x4fae4f, 0x62c262, 0x3d9b4a]), 7, 0.6); c.addBox(x, y, z, 0.8, 3, 0.8); }
       else if (kind === 'palm') { g.cyl(x, y, z, 0.45, 7, 0xb58a5a, 6, 0.3); for (var i = 0; i < 5; i++) { var a = i / 5 * 6.283; g.box(x + Math.cos(a) * 1.6, y + 6.8, z + Math.sin(a) * 1.6, 3.2, 0.25, 0.9, 0x3fb56b, -a); } c.addBox(x, y, z, 0.8, 7, 0.8); }
-      else if (kind === 'lamp') { g.box(x, y, z, 0.4, 6, 0.4, 0x3a3a44); n.box(x, y + 6, z, 1, 0.6, 1, 0xfff0b0); c.addBox(x, y, z, 0.5, 6, 0.5); }
-      else if (kind === 'lantern') { g.box(x, y, z, 0.3, 4, 0.3, 0x2f2118); n.box(x, y + 4, z, 0.8, 1, 0.8, 0xffb347); c.addBox(x, y, z, 0.4, 4, 0.4); }
-      else if (kind === 'crate') { var cs = rng.range(1.4, 2.6); g.box(x, y, z, cs, cs, cs, rng.pick([0xb07f4a, 0x8d6e4b, 0x4f5459])); c.addBox(x, y, z, cs, cs, cs, { prop: 1 }); }
-      else if (kind === 'bollard') { g.cyl(x, y, z, 0.5, 1.2, 0x333a44, 8, 0.4); c.addBox(x, y, z, 0.8, 1.2, 0.8); }
+      else if (kind === 'lamp') { world.smashable(x, y, z, under, function () { g.box(x, y, z, 0.4, 6, 0.4, 0x3a3a44); n.box(x, y + 6, z, 1, 0.6, 1, 0xfff0b0); }, 0.5, 6); }
+      else if (kind === 'lantern') { world.smashable(x, y, z, under, function () { g.box(x, y, z, 0.3, 4, 0.3, 0x2f2118); n.box(x, y + 4, z, 0.8, 1, 0.8, 0xffb347); }, 0.4, 4); }
+      else if (kind === 'crate') { var cs = rng.range(1.4, 2.6); world.smashable(x, y, z, under, function () { g.box(x, y, z, cs, cs, cs, rng.pick([0xb07f4a, 0x8d6e4b, 0x4f5459])); }, cs, cs); }
+      else if (kind === 'bollard') { world.smashable(x, y, z, under, function () { g.cyl(x, y, z, 0.5, 1.2, 0x333a44, 8, 0.4); }, 0.8, 1.2); }
       else if (kind === 'beacon') { g.box(x, y, z, 0.3, 2.4, 0.3, 0xdddddd); n.box(x, y + 2.4, z, 0.6, 0.6, 0.6, 0xff3b30); }
       else if (kind === 'mushroom') { var h = rng.range(2, 6); g.cyl(x, y, z, 0.5, h, 0xd6c2f0, 7, 0.35); n.cyl(x, y + h, z, h * 0.7, h * 0.3, rng.pick([0xc77dff, 0x7dffea, 0xff7de9]), 8, 0.2); c.addBox(x, y, z, 0.8, h, 0.8); }
     },
@@ -586,7 +640,16 @@
       world.sun.target.position.set(target.x, 0, target.z);
     },
 
-    update: function (dt, t) { if (world.sea) world.sea.position.y = -1.6 + Math.sin(t * 0.8) * 0.12; }
+    update: function (dt, t) {
+      if (world.sea) world.sea.position.y = -1.6 + Math.sin(t * 0.8) * 0.12;
+      if (world.rocketFlying) {
+        world.rocketFlying += dt;
+        var tf = world.rocketFlying;
+        world.rocket.position.y = tf * tf * 6;
+        for (var i = 0; i < 6; i++) TR.fx.spawn(world.rocket.position.x + (Math.random() - 0.5) * 8, world.rocket.position.y, world.rocket.position.z + (Math.random() - 0.5) * 8, (Math.random() - 0.5) * 14, -18, (Math.random() - 0.5) * 14, i % 2 ? 0xff7a1a : 0xffd24a, 1.2, 2.6, 0);
+        if (tf > 14) { world.rocketFlying = 0; world.rocket.visible = false; }
+      }
+    }
   };
 
   // All big signs share one texture atlas and one mesh.

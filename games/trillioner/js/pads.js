@@ -22,6 +22,7 @@
     state: function (pad, sess) { // 'open' | 'sold' | 'locked' | 'hidden' | 'owned'
       var it = pad.item, me = sess.view.me;
       if (it.secret && !me.flags[it.secret]) return 'hidden';
+      if (it.surprise && sess.stock(it.id) <= 0) return 'hidden';
       var o = me.owned[it.id];
       if (o && !o.demolished) return 'owned';
       if (o && o.demolished) return 'rubble';

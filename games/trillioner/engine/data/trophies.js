@@ -43,7 +43,7 @@
     { id: 'whole_store', name: 'I Will Take All of It', desc: 'Buy three whole stores', test: function (p) { return (p.stats.storesBought || 0) >= 3; } },
     { id: 'loss_leader', name: 'Loss Leader', desc: 'Own five losing businesses', test: function (p, c) { return count(p.owned, function (i) { var o = p.owned[i]; return !o.closing && !o.demolished && c.game.items[i].income < 0; }) >= 5; } },
     { id: 'early_bird', name: 'Early Bird', desc: 'Spend $100B before noon', test: function (p, c) { return p.spent >= 100 * B && c.game.t < 6 * 60000; } },
-    { id: 'night_shopper', name: 'Night Shopper', desc: 'Find the Night Market', test: function (p) { return !!p.flags['s:night_market']; } },
+    { id: 'night_shopper', name: 'Night Shopper', desc: 'Find the Night Market', test: function (p) { return !!p.flags['s:night_market_sign']; } },
     { id: 'gumshoe', name: 'Gumshoe', desc: 'Find 10 secrets', test: function (p) { return secrets(p) >= 10; } },
     { id: 'conspiracy', name: 'Conspiracy Board', desc: 'Find 25 secrets', test: function (p) { return secrets(p) >= 25; } },
     { id: 'useless', name: 'Fountain of Regret', desc: 'Buy the Diamond Fountain', test: ownsAll(['diamond_fountain']) },
