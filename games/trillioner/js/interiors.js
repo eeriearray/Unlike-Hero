@@ -60,12 +60,43 @@
         col.add(x - hw - 2, 0, z - hd - 2, x + hw + 2, h + 3, z - hd, { room: 1 }), col.add(x - hw - 2, 0, z + hd, x + hw + 2, h + 3, z + hd + 2, { room: 1 }),
         col.add(x - hw - 2, 0, z - hd, x - hw, h + 3, z + hd, { room: 1 }), col.add(x + hw, 0, z - hd, x + hw + 2, h + 3, z + hd, { room: 1 })
       ];
+      ints.globe = null;
+      if (site.b && site.b.lobby) ints.buildGlobe(site);
       ints.current = site;
       ints.returnTo = { x: site.front.x, y: site.y, z: site.front.z };
       TR.world.setSpace('room');
       player.teleport(x, 0, z + hd - 7.5, 0);
       TR.input.yaw = 0;
       if (TR.audio) TR.audio.door();
+    },
+    /** The Global Trade Tower lobby: a giant globe you can walk right over. Height comes from floorHere. */
+    buildGlobe: function (site) {
+      var r = site.room, R = 13, cx = r.ox, cz = r.oz + r.d / 2 - 20;
+      var c = document.createElement('canvas'); c.width = 1024; c.height = 512;
+      var g = c.getContext('2d'), rng = new TrillionerRng.Rng('globe');
+      g.fillStyle = '#2a8fd8'; g.fillRect(0, 0, 1024, 512);
+      for (var i = 0; i < 16; i++) {
+        var x = rng.range(0, 1024), y = rng.range(40, 470), n = 5 + rng.int(8);
+        g.fillStyle = rng.pick(['#5dbb63', '#6ec85a', '#c9b26a', '#4fae56']);
+        for (var k = 0; k < n; k++) { g.beginPath(); g.arc(x + rng.range(-70, 70), y + rng.range(-46, 46), rng.range(18, 62), 0, 7); g.fill(); }
+      }
+      g.fillStyle = '#f4f8ff'; g.fillRect(0, 0, 1024, 26); g.fillRect(0, 486, 1024, 26);
+      g.strokeStyle = 'rgba(255,255,255,.35)'; g.lineWidth = 2;
+      for (i = 1; i < 12; i++) { g.beginPath(); g.moveTo(i * 85, 0); g.lineTo(i * 85, 512); g.stroke(); }
+      for (i = 1; i < 6; i++) { g.beginPath(); g.moveTo(0, i * 85); g.lineTo(1024, i * 85); g.stroke(); }
+      var tex = new THREE.CanvasTexture(c); tex.encoding = THREE.sRGBEncoding;
+      var m = new THREE.Mesh(new THREE.SphereGeometry(R, 40, 28), new THREE.MeshLambertMaterial({ map: tex }));
+      m.position.set(cx, 0, cz); m.rotation.y = 0.8;
+      ints.group.add(m);
+      var ring = new TR.Geo(); ring.cyl(cx, 0, cz, R + 1.6, 0.3, 0xd8b45a, 40);
+      ints.group.add(ring.mesh(new THREE.MeshLambertMaterial({ vertexColors: true })));
+      ints.globe = { x: cx, z: cz, r: R };
+    },
+    /** The floor at a point in this room: flat, except on the globe. */
+    floorHere: function (p) {
+      var w = ints.globe; if (!w) return 0;
+      var dx = p.x - w.x, dz = p.z - w.z, d2 = dx * dx + dz * dz;
+      return d2 < w.r * w.r ? Math.sqrt(w.r * w.r - d2) : 0;
     },
     leaveRoom: function () {
       if (ints.group) {
@@ -75,6 +106,7 @@
       }
       ints.boxes.forEach(function (b) { b.off = true; });
       ints.boxes = [];
+      ints.globe = null;
       ints.current = null;
     },
     exit: function (player) {

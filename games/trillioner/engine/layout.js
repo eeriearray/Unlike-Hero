@@ -34,8 +34,8 @@
       var s = sites[sid];
       if (s.kind !== 'room') return;
       var cols = 5, count = Math.max(s.items.length + 1, 4), rows = Math.ceil(count / cols);
-      var w = Math.max(34, cols * 7 + 8), d = rows * 7 + 18;
-      s.room = { ox: ROOM_ORIGIN + (roomIndex % 12) * ROOM_GRID, oz: ROOM_ORIGIN + Math.floor(roomIndex / 12) * ROOM_GRID, w: w, d: d, h: Math.min(14, 9 + rows), y: s.y };
+      var w = Math.max(34, cols * 7 + 8), d = rows * 7 + 18 + (s.b.lobby || 0);
+      s.room = { ox: ROOM_ORIGIN + (roomIndex % 12) * ROOM_GRID, oz: ROOM_ORIGIN + Math.floor(roomIndex / 12) * ROOM_GRID, w: w, d: d, h: s.b.lobby ? 20 : Math.min(14, 9 + rows), y: s.y };
       roomIndex++;
       s.items.forEach(function (id, i) {
         var r = s.room, row = Math.floor(i / cols), col = i % cols;

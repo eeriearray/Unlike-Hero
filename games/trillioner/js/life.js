@@ -25,6 +25,15 @@
       [[10.2, Math.PI / 2], [-10.2, -Math.PI / 2]].forEach(function (s) { var p = new THREE.Mesh(new THREE.PlaneGeometry(30, 7), new THREE.MeshBasicMaterial({ map: tex })); p.position.set(s[0], 3.5, 0); p.rotation.y = s[1]; life.blimp.add(p); });
       TR.world.surface.add(life.blimp);
     },
+    /** Race cars lapping the track, whenever you are close enough to see them. */
+    racers: function (t, pos) {
+      var tr = window.TRD.districts.DISTRICTS.industrial.track;
+      if (pos.x > 3000 || pos.y < -5 || Math.hypot(pos.x - tr.x, pos.z - tr.z) > 220) return;
+      for (var i = 0; i < 4; i++) {
+        var a = t * (0.55 + i * 0.03) + i * 1.55, x = tr.x + Math.cos(a) * tr.rx, z = tr.z + Math.sin(a) * tr.rz;
+        TR.goods.put('car', x, 0.04, z, Math.atan2(Math.sin(a) * tr.rx, -Math.cos(a) * tr.rz), 2.6);
+      }
+    },
     update: function (dt, pos, t, hidden) {
       life.birds.visible = life.balloons.visible = !hidden;
       if (hidden) return;

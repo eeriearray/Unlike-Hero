@@ -45,11 +45,9 @@ Tests: `node --test --test-force-exit test/trillioner-*.test.mjs`. Simulators: `
 
 ## Audit against the brief: known gaps
 
-- Part 4: the giant walkable globe in the Global Trade Tower lobby is missing (the only globe is an outdoor statue). The Race Track has no visible track.
-- Part 3: Fire sale and Surprise auction are not marked on the map.
-- Part 5: owned vehicles in traffic are only a colour tint. Only a few buildings show boarded-up or neon state; the rest do not reflect whether they earn.
-- Part 6: repeated-symbol clues are missing, and graffiti is only a poster-style marker.
-- Part 7: trophies use a message pill, not a big popup.
-- Part 8: the $100B+ event has no helicopters.
-- Part 9: FPS not measured on integrated graphics, a dip to 23 FPS unexplained, real gamepad and touch untested, no human has won a run, Battle Spend not replayed in browser since the last rule and layout changes.
+Closed and viewed in the browser (seed 3): giant walkable globe in the Global Trade Tower lobby (height follows the sphere up to 13, camera stays outside it); Race Track oval with kerbs, chequered line, grandstand and four race cars; Fire sale and Surprise auction shown by a beam of light, a minimap dot and a labelled marker on the full map, cleared when the event ends; owned ground vehicles driving in traffic as themselves; earning buildings get neon and lit doors, money-losing ones get planks and dark doors; graffiti walls with the real clue sprayed on them; a repeating chalk eye near hidden doors, which writes a notebook entry on the second sighting; big queued trophy popup; helicopters at the $100B+ deal and each $100B milestone.
+
+Still open:
+
+- Part 9: FPS not measured on integrated graphics, real gamepad and touch untested, no human has won a run.
 - Changed at the user's request: no interest, all sales indoors, rounded rather than blocky, walk-in doors.

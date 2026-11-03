@@ -426,6 +426,8 @@
       }
       if (shape === 'tower' || shape === 'factory') world.roofJunk(g, x - w * 0.12, top, z + dd * 0.12, w * 0.5, dd * 0.5, rng);
       if (b.id) world.ornament(b, d, g, y, under);
+      if (b.busy) world.busySign(b, y, under);
+      if (b.boarded && b.id) world.boards(b, x, y, z, w, h, dd, g);
       var box = world.collide.addBox(x, y, z, w, h + 0.8, dd, b.id ? { building: b.id } : null);
       if (b.id) world.buildingBoxes[b.id] = box;
       if (!under && !y) world.aoRing(x - w / 2, z - dd / 2, x + w / 2, z + dd / 2, 3.2);
@@ -533,8 +535,70 @@
       });
     },
 
+    /** The Race Track: a real oval with kerbs, a chequered line and a grandstand. */
+    raceTrack: function (d, taken) {
+      var t = d.track, W = world.walk, g = world.geo(t.x, t.z, 'solid'), N = 48, i;
+      function pt(a, k) { return [t.x + Math.cos(a) * t.rx * k, t.z + Math.sin(a) * t.rz * k]; }
+      W.tile(t.x - t.rx - 6, t.z - t.rz - 6, t.x + t.rx + 6, t.z + t.rz + 6, 0.012, 0x74c256);
+      for (i = 0; i < N; i++) {
+        var a0 = i / N * 6.2832, a1 = (i + 1) / N * 6.2832, p0 = pt(a0, 1), p1 = pt(a1, 1), q0 = pt(a0, 1.2), q1 = pt(a1, 1.2), r0 = pt(a0, 0.8), r1 = pt(a1, 0.8);
+        W.strip(p0[0], p0[1], p1[0], p1[1], 8.4, 0.018, i % 2 ? 0xd9352c : 0xf6f6f0);
+        W.strip(p0[0], p0[1], p1[0], p1[1], 7.2, 0.02, 0x3d414c);
+      }
+      for (i = 0; i < 8; i++) for (var j = 0; j < 2; j++) W.tile(t.x + j * 1.2, t.z + t.rz - 3.6 + i * 0.9, t.x + j * 1.2 + 1.2, t.z + t.rz - 2.7 + i * 0.9, 0.022, (i + j) % 2 ? 0x111111 : 0xffffff);
+      // grandstand on the infield
+      for (i = 0; i < 4; i++) g.rbox(t.x, i * 0.9, t.z - 2 + i * 1.4, t.rx * 0.9, 0.9, 1.4, i % 2 ? 0xc8ccd2 : 0xe0442f, 0.15, 0.08, 1);
+      g.box(t.x, 3.6, t.z + 3.4, t.rx * 0.9, 3, 0.4, 0x8a8f96);
+      world.collide.addBox(t.x, 0, t.z + 0.2, t.rx * 0.9, 6, 6);
+      taken.push([t.x - t.rx - 7, t.z - t.rz - 7, t.x + t.rx + 7, t.z + t.rz + 7]);
+    },
+    /** A column of light over a place the whole city should know about. */
+    setBeam: function (site, color) {
+      if (!world.beam) {
+        var m = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.2, 260, 18, 1, true), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.32, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+        m.frustumCulled = false;
+        world.surface.add(m);
+        world.beam = m;
+      }
+      world.beam.visible = !!site;
+      if (site) { world.beam.position.set(site.front.x, 130, site.front.z); world.beam.material.color.setHex(color || 0xffc53d); }
+    },
+    /** A building shows its trade: neon and bright if it earns, boards and gloom if it loses. */
+    natureOf: function (bid) {
+      if (!world.natures) {
+        world.natures = {};
+        TRD.items.build().forEach(function (it) { if (it.bldg && it.income) world.natures[it.bldg] = it.income > 0 ? 'busy' : 'dead'; });
+      }
+      return world.natures[bid];
+    },
+    /** Pale planks nailed across every face of a building that loses money, readable from the street. */
+    boards: function (b, x, y, z, w, h, dd, g) {
+      var c = 0xc9a26b, tall = Math.min(h - 2, 13), o = 0.36;
+      [0.34, 0.66].forEach(function (lv) {
+        var py = y + tall * lv;
+        [-0.3, 0.3].forEach(function (u) {
+          [-0.45, 0.45].forEach(function (dy) {
+            g.box(x + u * w, py + dy, z + dd / 2 + o, w * 0.26, 0.5, 0.12, c);
+            g.box(x + u * w, py + dy, z - dd / 2 - o, w * 0.26, 0.5, 0.12, c);
+          });
+          var sp = dd * 0.26;
+          g.box(x + w / 2 + o, py + 0.45, z + u * dd, 0.12, 0.5, sp, c);
+          g.box(x + w / 2 + o, py - 0.45, z + u * dd, 0.12, 0.5, sp, c);
+          g.box(x - w / 2 - o, py + 0.45, z + u * dd, 0.12, 0.5, sp, c);
+          g.box(x - w / 2 - o, py - 0.45, z + u * dd, 0.12, 0.5, sp, c);
+        });
+      });
+    },
+    busySign: function (b, y, under) {
+      var n = world.geo(b.x, b.z, 'neon', under), top = y + b.h - 0.9, c = 0x4dffb0, t = 0.2;
+      n.box(b.x, top, b.z + b.d / 2 + 0.28, b.w - 3, t, t, c).box(b.x, top, b.z - b.d / 2 - 0.28, b.w - 3, t, t, c).box(b.x + b.w / 2 + 0.28, top, b.z, t, t, b.d - 3, c).box(b.x - b.w / 2 - 0.28, top, b.z, t, t, b.d - 3, c);
+      var f = TrillionerLayout.frontOf(b), wx = f.x - f.nx * f.off, wz = f.z - f.nz * f.off, side = f.nz ? 3.6 : 0, sd = f.nx ? 3.6 : 0;
+      n.box(wx + f.nx * 0.5 + side, y + 3.4, wz + f.nz * 0.5 + sd, f.nz ? 1.5 : 0.1, 0.7, f.nz ? 0.1 : 1.5, 0x4dffb0);   // lit OPEN panel by the door
+    },
     buildDistrict: function (d) {
       var taken = [];
+      if (d.track) world.raceTrack(d, taken);
+      (d.buildings || []).forEach(function (b) { var nat = world.natureOf(b.id); if (nat === 'dead') b.boarded = 1; if (nat === 'busy') { b.neon = 1; b.busy = 1; } });
       if (d.hill) world.hill(d);
       if (d.pier) world.pier(d);
       (d.runways || []).forEach(function (r) { world.runway(r); });
@@ -572,8 +636,8 @@
         // double glass doors, lit from inside, with a mat that says this one opens
         var cx = alongX ? 1.26 : 0, cz = alongX ? 0 : 1.26;
         var pw = dw / 2 - 0.4; cx = alongX ? dw * 0.25 : 0; cz = alongX ? 0 : dw * 0.25;
-        n.box(dx + f.nx * 0.5 - cx, y + 0.3, dz + f.nz * 0.5 - cz, alongX ? pw : 0.1, dh - 0.8, alongX ? 0.1 : pw, 0xffe2a0);
-        n.box(dx + f.nx * 0.5 + cx, y + 0.3, dz + f.nz * 0.5 + cz, alongX ? pw : 0.1, dh - 0.8, alongX ? 0.1 : pw, 0xffe2a0);
+        n.box(dx + f.nx * 0.5 - cx, y + 0.3, dz + f.nz * 0.5 - cz, alongX ? pw : 0.1, dh - 0.8, alongX ? 0.1 : pw, b.boarded ? 0x3a3328 : 0xffe2a0);
+        n.box(dx + f.nx * 0.5 + cx, y + 0.3, dz + f.nz * 0.5 + cz, alongX ? pw : 0.1, dh - 0.8, alongX ? 0.1 : pw, b.boarded ? 0x3a3328 : 0xffe2a0);
         g.box(dx + f.nx * 0.6, y, dz + f.nz * 0.6, alongX ? 0.24 : 0.14, dh, alongX ? 0.14 : 0.24, 0x23263a);
         g.box(dx + f.nx * 0.62 - cx * 0.2, y + 1.7, dz + f.nz * 0.62 - cz * 0.2, alongX ? 0.12 : 0.1, 0.9, alongX ? 0.1 : 0.12, 0xffd24a);
         g.box(dx + f.nx * 0.62 + cx * 0.2, y + 1.7, dz + f.nz * 0.62 + cz * 0.2, alongX ? 0.12 : 0.1, 0.9, alongX ? 0.1 : 0.12, 0xffd24a);

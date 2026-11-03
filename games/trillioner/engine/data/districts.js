@@ -40,7 +40,7 @@
       ground: 0xf4c9d6, walls: [0xffb3c7, 0xffd6e0, 0xf7e7ee, 0xe89ab3], roofs: [0xd6547c, 0xfff0f4, 0xc73e6b], neon: 0xe0407e, prop: 'palm', crowd: 28,
       filler: { shape: 'villa', hMin: 10, hMax: 22, step: 28, gap: 0.2 }, spawn: { x: 180, z: 0 }, palette: [0xfff0f4, 0xd6547c, 0xffe0ea],
       buildings: [
-        { id: 'global_trade', name: 'Global Trade Tower', x: 240, z: -64, w: 40, d: 34, h: 96, wall: 0xf7e7ee, roof: 0xd6547c, door: 's', enter: 1, neon: 1 },
+        { id: 'global_trade', name: 'Global Trade Tower', x: 240, z: -64, w: 40, d: 34, h: 96, wall: 0xf7e7ee, roof: 0xd6547c, door: 's', enter: 1, neon: 1, lobby: 40 },
         { id: 'dept_store', name: 'Grandiose Department Store', x: 180, z: 64, w: 40, d: 28, h: 20, wall: 0xffd6e0, roof: 0xc73e6b, door: 'n', enter: 1, neon: 1, wholeStore: 1 },
         { id: 'art_gallery', name: 'The Very Expensive Gallery', x: 300, z: 64, w: 38, d: 28, h: 18, wall: 0xfafafa, roof: 0xb48ad6, door: 'n', enter: 1, wholeStore: 1 },
         { id: 'grand_hotel', name: 'Grand Hotel', x: 310, z: -64, w: 32, d: 28, h: 40, wall: 0xffb3c7, roof: 0xfff0f4, door: 's', enter: 1, neon: 1 },
@@ -84,6 +84,7 @@
     industrial: {
       id: 'industrial', name: 'Industrial Zone', bounds: [-360, 120, 120, 360], budget: 160 * B, visible: 88 * B,
       ground: 0x8d8f91, walls: [0x7f8489, 0x9a9d9f, 0xd07a35, 0x6b7076], roofs: [0xe8742a, 0x4f5459, 0xf0a030], neon: 0xff7a1a, prop: 'crate', crowd: 14,
+      track: { x: -304, z: 336, rx: 44, rz: 17 },
       filler: { shape: 'factory', hMin: 7, hMax: 20, step: 30, gap: 0.2 }, spawn: { x: -30, z: 240 }, palette: [0xc9ccd0, 0x6b7076, 0xe8e0d0],
       buildings: [
         { id: 'dealership', name: 'Motor Mile Dealership', x: -30, z: 214, w: 30, d: 20, h: 11, wall: 0xfafafa, roof: 0xff3b30, door: 's', enter: 1, neon: 1, wholeStore: 1 },

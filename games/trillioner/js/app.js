@@ -119,6 +119,7 @@
       TR.notebook.close();
       TR.notebook.setRun(run0);
       TR.haul.reset();
+      TR.world.setBeam(null); app.eventSite = null;
       TR.dares.start(app.session, seed);
       TR.cam.cine = null;
       TR.map.reset();
@@ -139,7 +140,7 @@
 
     /** The floor under a point: surface, Under City, deepest level, or far below the water. */
     floorAt: function (p) {
-      if (p.x > 3000) return 0;
+      if (p.x > 3000) return TR.interiors.floorHere(p);
       if (p.y < -75) return TRD.districts.DEEP_Y;
       if (p.y < -20) return TRD.districts.UNDER_Y;
       return TR.world.isWater(p.x, p.z) ? -40 : 0;
@@ -205,8 +206,7 @@
           app.deliverReward(ev);
         } else if (ev.type === 'trophy') {
           var t = Tr.TROPHIES.filter(function (x) { return x.id === ev.id; })[0];
-          TR.hud.toast('TROPHY: ' + (t ? t.name : ev.id), 'gold');
-          TR.audio.buy(2, 3);
+          TR.hud.trophy(t ? t.name : ev.id, t && t.spent ? 'Spent ' + TR.fmt(t.spent) + ' in one run' : t && t.desc);
         } else if (ev.type === 'demolish') {
           TR.dares.bump('demolish', 1);
           var d = run.items[ev.item], s = d.bldg ? run.sites[d.bldg] : {};
@@ -234,7 +234,10 @@
           TR.hud.clue('Mr. Grey', ev.text); TR.notebook.addClue('Mr. Grey', ev.text, pos);
         } else if (ev.type === 'cityEvent') {
           TR.hud.banner(ev.text); TR.world.headline(ev.text); TR.audio.cheer(0.6);
-          if (ev.site && run.sites[ev.site]) TR.hud.toast('Fire sale at ' + run.sites[ev.site].name + '!', 'gold');
+          var evSite = ev.site ? run.sites[ev.site] : ev.deal ? run.sites[run.items[ev.deal].site] : null;
+          if (evSite) { TR.hud.toast((ev.site ? 'Fire sale at ' : 'Auction at ') + evSite.name + '. It is on your map.', 'gold'); TR.world.setBeam(evSite, ev.site ? 0xff7a1a : 0xff5ad1); app.eventSite = { site: evSite, id: ev.id }; }
+        } else if (ev.type === 'cityEventEnd') {
+          if (app.eventSite && app.eventSite.id === ev.id) { TR.world.setBeam(null); app.eventSite = null; }
         } else if (ev.type === 'refund') {
           if (ev.amount > 0) TR.hud.toast('Tax refund: +' + TR.fmt(ev.amount) + '. Rude.', 'bad');
         } else if (ev.type === 'cannonEmpty') {
@@ -342,10 +345,10 @@
     cityGrowth: function (me) {
       var want = Math.floor(me.spent / (100 * R.B));
       app.statues = app.statues || 0;
-      while (app.statues < want && app.statues < 9) { TR.world.addStatue(app.statues++); }
+      while (app.statues < want && app.statues < 9) { TR.world.addStatue(app.statues++); TR.fx.cityEvent('$' + (app.statues * 100) + 'B spent!', TR.player.pos); }
       TR.player.setGrowth(me.spent);
       var owned = Object.keys(me.vehicles).length;
-      if (owned !== app.ownedCount) { app.ownedCount = owned; TR.traffic.setOwned(owned ? [0xffc53d, 0xff2d2d, 0xffd24a].slice(0, Math.min(3, owned)) : []); }
+      if (owned !== app.ownedCount) { app.ownedCount = owned; TR.traffic.setOwned(Object.keys(me.vehicles)); }
     },
     /** The Trillion Tower elevator: penthouse Trophy Room or the roof helipad. */
     elevator: function (dt) {
@@ -518,6 +521,7 @@
         TR.pads.update(dt, app.session, pos, app.t);
         var moving = Math.hypot(TR.player.vel.x, TR.player.vel.z) > 1 || (TR.vehicles.current && Math.abs(TR.vehicles.current.speed) > 1);
         TR.haul.update(dt, pos, app.t, moving);
+        TR.life.racers(app.t, pos);
         TR.dares.update(dt, pos, app.t, app.session);
         TR.goods.end();
         if (!TR.hud.pOn) TR.notebook.update(dt, app.session, pos);
@@ -541,7 +545,7 @@
         return;
       }
       var v = TR.vehicles.current;
-      var cfl = TR.interiors.current ? 0 : TR.player.pos.y < -20 ? app.floorAt(TR.player.pos) : TR.world.isWater(TR.player.pos.x, TR.player.pos.z) ? -1 : 0;
+      var cfl = TR.interiors.current ? (TR.interiors.globe ? TR.interiors.floorHere(app.camera.position) + 0.8 : 0) : TR.player.pos.y < -20 ? app.floorAt(TR.player.pos) : TR.world.isWater(TR.player.pos.x, TR.player.pos.z) ? -1 : 0;
       TR.cam.update(app.camera, TR.player.pos, dt, v ? { dist: v.spec.cam, lift: 2.4, fov: 58 + Math.min(16, Math.abs(v.speed) * 0.34), floor: cfl } : { floor: cfl, fov: Math.hypot(TR.player.vel.x, TR.player.vel.z) > 14 ? 64 : 58 });
     },
 

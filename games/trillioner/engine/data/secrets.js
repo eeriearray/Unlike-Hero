@@ -46,6 +46,10 @@
     { id: 'club_knock', chain: 'club', district: 'oldtown', name: 'A door with a slot', look: 'door', spots: [{ x: -38, y: 0, z: -228 }, { x: -86, y: 0, z: -228 }], shuffled: 1, note: 'Private clubs keep private hours.' },
     { id: 'marked_wall', chain: 'deep', district: 'under', name: 'The marked wall', look: 'wall', spots: [{ x: 0, y: -60, z: -123 }], gate: [{ vehicle: 'mole_machine', why: 'A wall with red marks. You would need to dig.' }], opens: ['deep'], clue: 'The Mole Machine chews straight through. Beyond it, the deepest level.', note: 'The Under City has a basement.' },
     { id: 'grey_note', chain: 'greynote', district: 'under', name: 'A note on the platform', look: 'poster', spots: [{ x: -8, y: -60, z: 20 }, { x: 8, y: -60, z: 20 }], shuffled: 1, note: 'Mr. Grey sells hints. They are never the whole answer.' },
+    // graffiti: words sprayed on a wall, saying whatever the seed picked
+    { id: 'graffiti_docks', chain: 'graffiti', district: 'harbour', name: 'Graffiti by the docks', look: 'graffiti', spots: [{ x: 250, y: 0, z: 210 }, { x: 290, y: 0, z: 208 }], shuffled: 1, note: 'People spray the truth on walls.' },
+    { id: 'graffiti_mile', chain: 'graffiti', district: 'industrial', name: 'Graffiti on Motor Mile', look: 'graffiti', spots: [{ x: -200, y: 0, z: 228 }, { x: -220, y: 0, z: 252 }], shuffled: 1, note: 'Read the walls on Motor Mile.' },
+    { id: 'graffiti_lanes', chain: 'graffiti', district: 'oldtown', name: 'Graffiti in the lanes', look: 'graffiti', spots: [{ x: -100, y: 0, z: -228 }, { x: 100, y: 0, z: -252 }], shuffled: 1, note: 'Old Town has been writing on itself for years.' },
     { id: 'station_poster', chain: 'station', district: 'under', name: 'An old station poster', look: 'poster', spots: [{ x: -30, y: -60, z: 16 }, { x: 34, y: -60, z: 16 }], clue: 'NEXT TRAIN: NEVER. Gold-plated services by appointment.', note: 'The old subway still has one train left.' }
   ];
 

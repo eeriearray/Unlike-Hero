@@ -78,11 +78,33 @@
         TR.world.headline('BREAKING: ' + itemName);
         return;
       }
-      fx.coins(p, 140, 18); fx.bills(p, 200, 18); fx.confetti(p, 300, 22); fx.slow = 1.1; TR.cam.kick = 1.3; TR.cam.shake = 0.8;
-      a && a.buy(4, ev.mult); a && a.cheer(1.2); TR.crowds.cheer(5); TR.hud.flash(0.8);
+      fx.coins(p, 140, 18); fx.bills(p, 200, 18);
+      a && a.buy(4, ev.mult);
+      fx.cityEvent(itemName + ' bought!', p);
+    },
+    /** Full-city event: fireworks, helicopters overhead, a news banner. Fires for a $100B+ deal and each $100B milestone. */
+    cityEvent: function (text, p) {
+      var a = TR.audio;
+      fx.confetti(p, 300, 22); fx.slow = Math.max(fx.slow, 1.1); TR.cam.kick = 1.3; TR.cam.shake = 0.8;
+      a && a.cheer(1.2); TR.crowds.cheer(5); TR.hud.flash(0.8);
       for (var i = 0; i < 8; i++) setTimeout(function () { fx.firework(p.x + (Math.random() - 0.5) * 120, 50 + Math.random() * 40, p.z + (Math.random() - 0.5) * 120); a && a.boom(0.4); }, i * 260);
-      TR.hud.banner('CITY-WIDE NEWS: ' + itemName + ' bought!');
-      TR.world.headline(itemName + ' SOLD');
+      TR.hud.banner('CITY-WIDE NEWS: ' + text);
+      TR.world.headline(text);
+      fx.flyover(p);
+    },
+    /** News helicopters cross the sky and leave. */
+    flyover: function (p) {
+      fx.choppers = fx.choppers || [];
+      if (p.y < -5 || TR.interiors.current || fx.choppers.length) return;
+      for (var i = 0; i < 3; i++) {
+        var g = new THREE.Group(), m = TR.vehicles.SPECS.helicopter.build().mesh(new THREE.MeshLambertMaterial({ vertexColors: true }), false, false);
+        m.matrixAutoUpdate = true; g.add(m);
+        var rot = new THREE.Mesh(new THREE.BoxGeometry(11, 0.14, 0.7), new THREE.MeshLambertMaterial({ color: 0x222222 })); rot.position.y = 4.3; g.add(rot);
+        g.position.set(p.x - 150 - i * 34, 38 + i * 7, p.z - 34 + i * 34);
+        g.rotation.y = -Math.PI / 2;
+        fx.scene.add(g);
+        fx.choppers.push({ g: g, rot: rot, t: 0 });
+      }
     },
     /** A flag rises on a building when its deal goes through. */
     raiseFlag: function (x, y, z) {
@@ -119,6 +141,8 @@
         f.flag.position.y = 0.5 + f.t * 5.4;
         f.flag.rotation.y = Math.sin(performance.now() * 0.005 + i) * 0.25;
       }
+      (fx.choppers || []).forEach(function (c) { c.t += dt; c.g.position.x += 46 * dt; c.rot.rotation.y += dt * 30; if (c.t > 9) { fx.scene.remove(c.g); c.g.traverse(function (o) { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); } });
+      if (fx.choppers) fx.choppers = fx.choppers.filter(function (c) { return c.t <= 9; });
       fx.slow = Math.max(0, fx.slow - dt);
     },
     timeScale: function () { return fx.slow > 0 ? 0.35 : 1; }

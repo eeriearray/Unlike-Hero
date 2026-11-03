@@ -147,3 +147,28 @@ test('no road is blocked by a named building, a stall, a stair or a landmark', (
   }
   assert.deepEqual([...new Set(hits)], []);
 });
+
+test('graffiti walls and the race track stay clear of roads, buildings and doors', () => {
+  const Secrets = require('../games/trillioner/engine/data/secrets.js');
+  const blocks = [];
+  for (const s of Secrets.SECRETS) if (s.look === 'graffiti') for (const p of s.spots) blocks.push([s.id, p.x - 4, p.z - 0.35, p.x + 4, p.z + 0.35]);
+  const t = D.DISTRICTS.industrial.track;
+  assert.ok(t.x - t.rx * 1.2 > -360 && t.x + t.rx * 1.2 < 120 && t.z - t.rz * 1.2 > 120 && t.z + t.rz * 1.2 < 360, 'the track is on land');
+  blocks.push(['track', t.x - t.rx * 1.2, t.z - t.rz * 1.2, t.x + t.rx * 1.2, t.z + t.rz * 1.2]);
+  const hits = [];
+  for (const R of D.ROADS) for (let i = 0; i < R.pts.length - 1; i++) {
+    const [ax, az] = R.pts[i], [bx, bz] = R.pts[i + 1], l = Math.hypot(bx - ax, bz - az);
+    for (let s = 0; s <= l; s += 2) {
+      const x = ax + (bx - ax) * s / l, z = az + (bz - az) * s / l;
+      for (const b of blocks) if (x > b[1] - R.w / 2 && x < b[3] + R.w / 2 && z > b[2] - R.w / 2 && z < b[4] + R.w / 2) hits.push('road: ' + b[0]);
+    }
+  }
+  for (const d of Object.values(D.DISTRICTS)) {
+    if (d.level === 'under') continue;
+    for (const k of d.buildings) for (const b of blocks) {
+      const pad = 1;
+      if (k.x + k.w / 2 + pad > b[1] && k.x - k.w / 2 - pad < b[3] && k.z + k.d / 2 + pad > b[2] && k.z - k.d / 2 - pad < b[4]) hits.push(k.id + ': ' + b[0]);
+    }
+  }
+  assert.deepEqual([...new Set(hits)], []);
+});

@@ -18,6 +18,7 @@
     return g.geometry();
   }
 
+  function hiddenDriver(c) { var k = TR.vehicles.current; return k && c.own && k.spec.build && TR.traffic.drivers[k.kind] === c.own; }   // you are driving that one
   var tr = TR.traffic = {
     mesh: null, cars: [], paths: [], ownColors: [],
     init: function (scene, count) {
@@ -38,9 +39,23 @@
       }
       tr.count = count || total;
     },
-    setOwned: function (list) { tr.ownColors = list; },
+    /** Vehicles you own join the traffic as themselves. Each rides one of the regular cars' routes. */
+    setOwned: function (kinds) {
+      tr.drivers = tr.drivers || {};
+      Object.keys(tr.drivers).forEach(function (k) { if (kinds.indexOf(k) < 0) { tr.drivers[k].mesh.visible = false; tr.drivers[k].car.own = null; } });
+      kinds.filter(function (k) { var sp = TR.vehicles.SPECS[k]; return sp && sp.mode === 'ground'; }).slice(0, 8).forEach(function (k, i) {
+        var d = tr.drivers[k];
+        if (!d) {
+          var m = TR.vehicles.SPECS[k].build().mesh(new THREE.MeshLambertMaterial({ vertexColors: true }), true, false);
+          m.matrixAutoUpdate = true; m.frustumCulled = false;
+          tr.mesh.parent.add(m);
+          d = tr.drivers[k] = { mesh: m, car: tr.cars[i * 4 + 1] };
+        }
+        d.car.own = d; d.mesh.visible = true;
+      });
+    },
     update: function (dt, pos, hidden) {
-      if (hidden) { tr.mesh.count = 0; return; }
+      if (hidden) { tr.mesh.count = 0; Object.keys(tr.drivers || {}).forEach(function (k) { tr.drivers[k].mesh.visible = false; }); return; }
       var n = Math.min(tr.count, tr.cars.length);
       for (var i = 0; i < n; i++) {
         var c = tr.cars[i], path = c.path, seg = null;
@@ -52,6 +67,7 @@
           }
           var sc = c.down > 9.5 ? 1 : 0.0001;
           dummy.position.set(c.x, c.y, c.z); dummy.rotation.set(c.spin, c.h, c.spin * 0.6); dummy.scale.set(sc, sc, sc); dummy.updateMatrix();
+          if (c.own) c.own.mesh.visible = false;
           tr.mesh.setMatrixAt(i, dummy.matrix);
           tr.mesh.setColorAt(i, col.setHex(c.c));
           continue;
@@ -83,8 +99,9 @@
         c.x = seg.a[0] + ux * seg.l * t - uz * path.off * c.dir; c.z = seg.a[1] + uz * seg.l * t + ux * path.off * c.dir;
         c.h = Math.atan2(-ux * c.dir, -uz * c.dir);
         dummy.position.set(c.x, 0, c.z); dummy.rotation.set(0, c.h, 0); dummy.scale.set(1, 1, 1); dummy.updateMatrix();
+        if (c.own) { c.own.mesh.position.set(c.x, 0, c.z); c.own.mesh.rotation.y = c.h; c.own.mesh.visible = !hiddenDriver(c); dummy.scale.set(0.0001, 0.0001, 0.0001); dummy.updateMatrix(); }
         tr.mesh.setMatrixAt(i, dummy.matrix);
-        tr.mesh.setColorAt(i, col.setHex(tr.ownColors.length && i < tr.ownColors.length * 2 ? tr.ownColors[i % tr.ownColors.length] : c.c));
+        tr.mesh.setColorAt(i, col.setHex(c.c));
       }
       tr.mesh.count = n;
       tr.mesh.instanceMatrix.needsUpdate = true;

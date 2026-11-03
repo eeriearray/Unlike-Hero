@@ -105,6 +105,22 @@
       var err = TR.vehicles.summon(o.id);
       if (err) { hud.toast(err, 'bad'); TR.audio.denied(); }
     },
+    /** A trophy gets its own moment; several in a row wait their turn. */
+    trophy: function (name, sub) {
+      hud.tq = hud.tq || [];
+      hud.tq.push([name, sub]);
+      if (!hud.tBusy) hud.nextTrophy();
+    },
+    nextTrophy: function () {
+      var n = hud.tq.shift();
+      if (!n) { hud.tBusy = false; return; }
+      hud.tBusy = true;
+      var e = el('div', 'trophypop', hud.root, '<div class="cup"></div><div><small>TROPHY EARNED</small><b></b><span></span></div>');
+      e.querySelector('b').textContent = n[0]; e.querySelector('span').textContent = n[1] || '';
+      TR.audio.buy(3, 4); TR.audio.cheer(0.7);
+      TR.fx.confetti(TR.player.pos, 60, 10);
+      setTimeout(function () { e.remove(); hud.nextTrophy(); }, 2300);
+    },
     /** Big centre-screen moment. */
     bigText: function (a, b) {
       var e = el('div', 'bigtext', hud.root, '<b>' + a + '</b>' + (b ? '<span>' + b + '</span>' : ''));

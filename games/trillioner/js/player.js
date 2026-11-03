@@ -102,7 +102,8 @@
       if (pl.pos.y <= ground) {
         if (!pl.grounded && pl.vel.y < -9) { pl.squash = 0.32; TR.fx.dust(pl.pos); TR.fx.dust(pl.pos); }
         pl.pos.y = ground; pl.vel.y = 0; pl.grounded = true; pl.jumps = 0;
-      } else if (pl.pos.y - ground > 0.05) pl.grounded = false;
+      } else if (pl.grounded && pl.vel.y <= 0 && pl.pos.y - ground < 0.6) { pl.pos.y = ground; pl.vel.y = 0; }   // stay on the ground going downhill
+      else if (pl.pos.y - ground > 0.05) pl.grounded = false;
       if (wl > 0.1) {
         var want = Math.atan2(-pl.vel.x, -pl.vel.z), d = ((want - pl.heading + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
         pl.turnRate = d;
