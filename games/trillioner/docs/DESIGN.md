@@ -942,3 +942,9 @@ A GTA-like open-world city where the goal is to spend as much money as possible.
 - A job that cannot happen yet (not enough spent, no vehicle) is passed over, not waited for, so one job never silences the phone.
 - Rewards never pay money, because money is the enemy here. They give combo, time free of the Refund Office, a vehicle or a gift item that is never sold.
 - Solo modes only for now. Online rooms have their own pressure from rivals.
+
+## Usable items and the camera (user requests)
+
+- Every ordinary item gets a use from its name, in `engine/data/uses.js`. Wearables and pets are kept; everything else is one use per item bought. Uses never pay money.
+- The fallback, "put it down", is deliberately broad. Anything that is not obviously something else is an object you can place, which stops the crowd and the Refund Office nearby.
+- The mouse is optional. Automatic following turns A and D into steering. Running straight at the camera does not swing it, so backing up does not spin the world.

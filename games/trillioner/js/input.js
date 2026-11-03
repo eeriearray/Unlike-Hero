@@ -2,7 +2,7 @@
 (function () {
   var TR = window.TR = window.TR || {};
   var input = TR.input = {
-    keys: {}, pressed: {}, yaw: Math.PI, pitch: 0.17, mouseDown: false, mouseClicked: false, locked: false, enabled: true, moveX: 0, moveZ: 0,
+    lookAge: 99, keys: {}, pressed: {}, yaw: Math.PI, pitch: 0.17, mouseDown: false, mouseClicked: false, locked: false, enabled: true, moveX: 0, moveZ: 0,
     down: function (code) { return !input.frozen && !!input.keys[code]; },
     hit: function (code) { return !input.frozen && !!input.pressed[code]; },
     endFrame: function () { input.pressed = {}; input.mouseClicked = false; },
@@ -29,6 +29,7 @@
         var locked = document.pointerLockElement === canvas;
         input.locked = locked;
         if (!locked && !input.drag) return;
+        if (e.movementX || e.movementY) input.lookAge = 0;
         input.yaw -= e.movementX * 0.0026;
         input.pitch = Math.max(-0.55, Math.min(1.25, input.pitch + e.movementY * 0.0022));
       });
@@ -42,6 +43,7 @@
       input.padOn = true;
       var dz = function (v) { return Math.abs(v) < 0.16 ? 0 : v; };
       input.moveX = dz(gp.axes[0]); input.moveZ = -dz(gp.axes[1]);
+      if (dz(gp.axes[2] || 0) || dz(gp.axes[3] || 0)) input.lookAge = 0;
       input.yaw -= dz(gp.axes[2] || 0) * 0.05;
       input.pitch = Math.max(-0.55, Math.min(1.25, input.pitch + dz(gp.axes[3] || 0) * 0.035));
       var map = { 0: 'Space', 1: 'KeyF', 2: 'KeyE', 3: 'KeyQ', 4: 'ShiftLeft', 5: 'KeyH', 8: 'KeyM', 9: 'Escape', 12: 'KeyN', 13: 'KeyX' };
@@ -100,7 +102,7 @@
         for (var i = 0; i < e.changedTouches.length; i++) {
           var t = e.changedTouches[i];
           if (t.identifier !== lid) continue;
-          input.yaw -= (t.clientX - lx) * 0.006; input.pitch = Math.max(-0.55, Math.min(1.25, input.pitch + (t.clientY - ly) * 0.005));
+          input.lookAge = 0; input.yaw -= (t.clientX - lx) * 0.006; input.pitch = Math.max(-0.55, Math.min(1.25, input.pitch + (t.clientY - ly) * 0.005));
           lx = t.clientX; ly = t.clientY;
         }
       }, { passive: true });

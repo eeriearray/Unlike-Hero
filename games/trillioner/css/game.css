@@ -359,3 +359,7 @@ job-obj small, .job-obj small { display:block; font-size:13px; font-weight:600; 
 .own-open .quickuse { display:none; }
 .own-card .act { font-style:normal; display:block; margin-top:4px; background:#231a12; color:#f6efe0; font-size:12px; font-weight:700; text-align:center; padding:2px 0; border-radius:2px; }
 .own-card.dim .act { background:#b6ac99; }
+.hud-bottom { bottom:66px; }
+.carry { background:none; font-size:13px; font-weight:500; color:#d8d4c8; -webkit-text-stroke:3px #08090b; paint-order:stroke fill; border-radius:0; }
+.prompt { bottom:98px; }
+.banner { bottom:150px; }

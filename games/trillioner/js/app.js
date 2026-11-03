@@ -66,6 +66,7 @@
       TR.map.init(TR.hud.mapBox);
       TR.gps.init(app.scene);
       TR.agents.init(app.scene);
+      TR.cam.on = TR.save.get('autoCam', true);
       TR.phone.init();
       var au = TR.save.get('audio', null);
       if (au) { TR.audio.volume = au.volume; TR.audio.sfxVolume = au.sfxVolume; TR.audio.musicVolume = au.musicVolume; TR.audio.muted = au.muted; TR.audio.musicMuted = !!au.musicMuted; TR.hud.musicBtn(); }
@@ -399,6 +400,7 @@
       if (input.hit('KeyN')) TR.notebook.toggle();
       if (input.hit('KeyI')) { TR.own.open('stuff'); return; }
       if (input.hit('KeyJ')) TR.gps.toggle();
+      if (input.hit('KeyC')) TR.cam.toggleAuto();
       TR.own.rain(dt, app.session, TR.player.pos);
       TR.own.updateQuick(dt, app.session);
       var ctr = ints.counter;
