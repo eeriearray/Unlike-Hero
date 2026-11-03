@@ -487,7 +487,7 @@
       if (app.posT <= 0) {
         app.posT = 0.1;
         var dist = room ? TR.interiors.current.district : TR.world.districtAt(pos.x, pos.z, pos.y);
-        if (dist && dist !== app.district) { app.district = dist; TR.hud.toast(TRD.districts.DISTRICTS[dist].name, 'gold'); }
+        if (dist && dist !== app.district) { app.district = dist; TR.hud.area(TRD.districts.DISTRICTS[dist].name); }
         app.session.setPos(pos.x, pos.y, pos.z, TR.player.heading, room ? TR.interiors.current.id : null, dist);
         if (TR.battle) TR.battle.tick(view, pos);
         if (!room) TR.map.reveal(pos.x, pos.z);

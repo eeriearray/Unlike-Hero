@@ -1086,11 +1086,13 @@
     this.i++;
     c.fillStyle = '#' + new THREE.Color(color).getHexString();
     c.fillRect(x + 2, y + 2, this.cw - 4, this.ch - 4);
-    c.fillStyle = '#fff';
+    var lum = (((color >> 16) & 255) * 0.299 + ((color >> 8) & 255) * 0.587 + (color & 255) * 0.114) / 255, dark = lum > 0.55;
     c.textAlign = 'center'; c.textBaseline = 'middle';
-    var fs = 62; c.font = '900 ' + fs + 'px Arial Black, Arial, sans-serif';
-    while (c.measureText(text).width > this.cw - 28 && fs > 20) { fs -= 2; c.font = '900 ' + fs + 'px Arial Black, Arial, sans-serif'; }
-    c.strokeStyle = 'rgba(0,0,0,.55)'; c.lineWidth = 5; c.strokeText(text, x + this.cw / 2, y + this.ch / 2 + 2);
+    var fs = 66; c.font = '800 ' + fs + 'px -apple-system, "Segoe UI", Roboto, Arial, sans-serif';
+    while (c.measureText(text).width > this.cw - 30 && fs > 22) { fs -= 2; c.font = '800 ' + fs + 'px -apple-system, "Segoe UI", Roboto, Arial, sans-serif'; }
+    c.lineWidth = 3; c.strokeStyle = dark ? '#12142a' : '#ffffff'; c.strokeRect(x + 6, y + 6, this.cw - 12, this.ch - 12);
+    c.fillStyle = dark ? '#12142a' : '#ffffff';
+    if (!dark) { c.strokeStyle = 'rgba(0,0,0,.6)'; c.lineWidth = 6; c.lineJoin = 'round'; c.strokeText(text, x + this.cw / 2, y + this.ch / 2 + 2); }
     c.fillText(text, x + this.cw / 2, y + this.ch / 2 + 2);
     var s = this.size;
     return { u0: (x + 2) / s, u1: (x + this.cw - 2) / s, v0: 1 - (y + this.ch - 2) / s, v1: 1 - (y + 2) / s };
@@ -1119,7 +1121,7 @@
     g.setAttribute('uv', new THREE.Float32BufferAttribute(this.uv, 2));
     g.setIndex(this.index);
     var tex = new THREE.CanvasTexture(this.canvas);
-    tex.anisotropy = 8; tex.encoding = THREE.sRGBEncoding;
+    tex.anisotropy = 16; tex.encoding = THREE.sRGBEncoding;
     var m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide, transparent: true }));
     m.frustumCulled = false;
     return m;

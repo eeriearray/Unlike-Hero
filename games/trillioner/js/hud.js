@@ -158,9 +158,17 @@
       if (hold) b.firstChild.style.width = Math.min(100, hold * 100) + '%';
     },
     toast: function (text, kind) {
-      var t = el('div', 'toast outlined ' + (kind || ''), hud.toasts, text);
+      var kids = hud.toasts.children;
+      for (var i = 0; i < kids.length; i++) if (kids[i].textContent === text) return;   // never the same line twice
+      var t = el('div', 'toast ' + (kind || ''), hud.toasts);
+      t.textContent = text;
       setTimeout(function () { t.remove(); }, 2800);
-      while (hud.toasts.children.length > 4) hud.toasts.firstChild.remove();
+      while (hud.toasts.children.length > 3) hud.toasts.firstChild.remove();
+    },
+    /** Where you are, in its own spot under the clock. */
+    area: function (name) {
+      if (!hud.areaEl) hud.areaEl = el('div', 'area', hud.root);
+      hud.areaEl.textContent = name;
     },
     banner: function (text) { var b = el('div', 'banner outlined', hud.root, text); setTimeout(function () { b.remove(); }, 4000); },
     /** The price flies from the pad into the balance. */

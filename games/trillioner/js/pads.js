@@ -1,7 +1,7 @@
 /* Purchase pads: rings on the floor, floating labels near the player, walk-over and hold-E buying. */
 (function () {
   var TR = window.TR = window.TR || {};
-  var MAX = 260, HOLD_S = 0.45, REACH_SMALL = 2.2, REACH_BIG = 3.8, LABELS = 9, BIG_AT = window.TRD.rules.B;
+  var MAX = 260, HOLD_S = 0.45, REACH_SMALL = 2.2, REACH_BIG = 3.8, LABELS = 8, BIG_AT = window.TRD.rules.B;
   var dummy = new THREE.Object3D(), col = new THREE.Color();
 
   var pads = TR.pads = {
@@ -73,7 +73,8 @@
       // floating labels on the nearest pads
       for (var k = 0; k < LABELS; k++) {
         var lab = pads.labels[k], e = pads.active[k];
-        if (e && e.d2 < 900 && e.st !== 'sold' && e.st !== 'rubble') lab.show(e, sess);
+        if (e) e.rank = k;
+        if (e && e.d2 < 900 && e.d2 > 22 && e.st !== 'sold' && e.st !== 'rubble') lab.show(e, sess);   // right beside it, the prompt says the same thing
         else lab.sprite.visible = false;
       }
     },
@@ -187,40 +188,47 @@
     return 0x4a4a52;
   }
 
+  function wrapLines(g, text, maxW) {
+    var words = text.split(' '), lines = [], cur = '';
+    words.forEach(function (w) { var t = cur ? cur + ' ' + w : w; if (g.measureText(t).width > maxW && cur) { lines.push(cur); cur = w; } else cur = t; });
+    lines.push(cur);
+    return lines;
+  }
+  var FONT = '-apple-system, "Segoe UI", Roboto, Arial, sans-serif';
   function makeLabel(scene) {
-    var c = document.createElement('canvas'); c.width = 384; c.height = 128;
-    var tex = new THREE.CanvasTexture(c); tex.encoding = THREE.sRGBEncoding;
-    var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: true, transparent: true, fog: false }));
-    s.visible = false; s.scale.set(3.6, 1.2, 1);
+    var W = 640, H = 300, c = document.createElement('canvas'); c.width = W; c.height = H;
+    var tex = new THREE.CanvasTexture(c); tex.encoding = THREE.sRGBEncoding; tex.generateMipmaps = false; tex.minFilter = THREE.LinearFilter;
+    var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: true, transparent: true, fog: false, toneMapped: false }));
+    s.visible = false;
     scene.add(s);
     var key = '';
     return {
       sprite: s,
       show: function (e, sess) {
         var it = e.pad.item, q = e.st === 'open' ? (e.pad.store ? { total: TR.pads.storeSum(e.pad.store, sess), mult: 1 } : sess.quote(it.id)) : null;
-        var price = e.st === 'open' ? TR.fmt(q.total) + (q.mult > 1 ? ' x' + q.mult : '') : e.st === 'locked' ? 'LOCKED' : e.st === 'sold' ? 'SOLD' : e.st === 'owned' ? 'OWNED' : 'RUBBLE';
-        var deal = e.st === 'open' && it.kind !== 'store' ? dealText(it) : '', k = it.id + price;
+        var price = e.st === 'open' ? TR.fmt(q.total) + (q.mult > 1 ? ' x' + q.mult : '') : e.st === 'locked' ? 'LOCKED' : e.st === 'owned' ? 'YOURS' : 'SOLD';
+        var close = e.d2 < 324 && e.rank < 3, deal = close && e.st === 'open' && it.kind !== 'store' ? TR.pads.dealText(it).split(' · ')[0] : '';
+        var cp = TR.app.camera.position, sw = Math.max(4.2, Math.min(9, Math.hypot(cp.x - e.pad.x, cp.y - e.pad.y, cp.z - e.pad.z) * 0.34));   // the same size on screen, near or far
         s.visible = true;
-        s.position.set(e.pad.x, e.pad.y + (e.pad.item.building ? 7 : 3.4), e.pad.z);
-        if (k === key) return;
-        key = k;
+        s.scale.set(sw, sw * H / W, 1);
+        s.position.set(e.pad.x, e.pad.y + (it.building ? 6.2 : 3.4) + sw * H / W * 0.2, e.pad.z);
+        var kk = it.id + price + close + deal;
+        if (kk === key) return;
+        key = kk;
         var g = c.getContext('2d');
-        g.clearRect(0, 0, 384, 128);
-        g.fillStyle = 'rgba(18,20,44,.9)'; roundRect(g, 4, 6, 376, 116, 26); g.fill();
-        g.strokeStyle = e.st === 'open' ? 'rgba(255,197,61,.9)' : 'rgba(255,255,255,.25)'; g.lineWidth = 4; roundRect(g, 6, 8, 372, 112, 24); g.stroke();
-        g.textAlign = 'center';
-        g.fillStyle = e.st === 'open' ? '#ffc53d' : e.st === 'locked' ? '#d7a6ff' : '#aaa';
-        g.font = '900 46px Arial Black, Arial, sans-serif';
-        g.fillText(price, 192, 58);
-        g.fillStyle = '#fff';
-        var fs = deal ? 20 : 26; g.font = '700 ' + fs + 'px Arial, sans-serif';
-        while (g.measureText(it.name).width > 356 && fs > 13) { fs--; g.font = '700 ' + fs + 'px Arial, sans-serif'; }
-        g.fillText(it.name, 192, deal ? 80 : 98);
-        if (deal) {
-          g.fillStyle = it.income > 0 ? '#5dff8f' : it.income < 0 ? '#ff8a8a' : '#c8d0e0';
-          var ds = 22, line = deal.split(' · ')[0]; g.font = '800 ' + ds + 'px Arial, sans-serif';
-          g.fillText(line, 192, 108);
-        }
+        g.clearRect(0, 0, W, H);
+        g.font = '700 42px ' + FONT;
+        var lines = close ? wrapLines(g, it.name, W - 56).slice(0, 2) : [];
+        var bh = 104 + lines.length * 50 + (deal ? 54 : 0) + 8, top = H - bh - 2;
+        g.fillStyle = 'rgba(10,12,30,.96)'; roundRect(g, 4, top, W - 8, bh, 30); g.fill();
+        g.strokeStyle = e.st === 'open' ? '#ffd24a' : e.st === 'locked' ? '#c78bff' : '#8a8f9c'; g.lineWidth = 6; roundRect(g, 7, top + 3, W - 14, bh - 6, 28); g.stroke();
+        g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+        g.fillStyle = e.st === 'open' ? '#ffd24a' : e.st === 'locked' ? '#dcbcff' : '#d4d8e2';
+        g.font = '800 80px ' + FONT;
+        g.fillText(price, W / 2, top + 84);
+        g.fillStyle = '#ffffff'; g.font = '700 42px ' + FONT;
+        lines.forEach(function (l, i) { g.fillText(l, W / 2, top + 134 + i * 50); });
+        if (deal) { g.fillStyle = it.income > 0 ? '#6dffa0' : it.income < 0 ? '#ff9a9a' : '#d4d8e2'; g.font = '800 42px ' + FONT; g.fillText(deal, W / 2, top + 134 + lines.length * 50 + 2); }
         tex.needsUpdate = true;
       }
     };
