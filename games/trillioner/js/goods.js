@@ -14,7 +14,11 @@
     soldsign: function (g) { g.box(0, 0, 0, 0.3, 3.4, 0.3, 0xf4f4f4).box(0, 2.3, 0.3, 2.8, 1.2, 0.14, 0xd9352c).box(0, 2.56, 0.4, 2.2, 0.66, 0.03, 0xffffff); },
     gumball: function (g) { g.box(0, 0, 0, 0.7, 0.14, 0.7, 0xd9352c).box(0, 0.14, 0, 0.3, 0.9, 0.3, 0xd9352c).box(0, 1.04, 0, 0.72, 0.28, 0.72, 0xd9352c).box(0, 1.32, 0, 0.84, 0.72, 0.84, 0xbfeaff).box(0, 2.04, 0, 0.5, 0.14, 0.5, 0xd9352c); [[-0.2, 0xffd24a], [0.2, 0xff5a7a], [0, 0x4dabf7]].forEach(function (c, i) { g.box(c[0], 1.42 + i * 0.16, i % 2 ? 0.2 : -0.1, 0.22, 0.22, 0.22, c[1]); }); },
     gift: function (g) { g.box(0, 0, 0, 1, 0.8, 1, 0xff5a7a).box(0, 0, 0, 1.03, 0.82, 0.22, 0xffd24a).box(0, 0, 0, 0.22, 0.82, 1.03, 0xffd24a).box(-0.2, 0.82, 0, 0.36, 0.22, 0.16, 0xffd24a).box(0.2, 0.82, 0, 0.36, 0.22, 0.16, 0xffd24a); },
-    car: function (g) { g.box(0, 0.16, 0, 0.92, 0.28, 1.9, 0xff3b3b).box(0, 0.44, 0.08, 0.78, 0.28, 0.9, 0x213347).box(0, 0.72, 0.08, 0.8, 0.05, 0.92, 0xff3b3b); [[-0.46, -0.6], [0.46, -0.6], [-0.46, 0.6], [0.46, 0.6]].forEach(function (p) { g.wheel(p[0], 0.17, p[1], 0.17, 0.14, 0x18181c, 0xdddddd); }); },
+    car: function (g) {   // the same saloon as the street, small enough to carry
+      var c = TR.models.sedan(new TR.Geo(), 0xb8282c), k = 0.36;
+      for (var q = 0; q < c.p.length; q++) g.p.push(c.p[q] * k);
+      g.n.push.apply(g.n, c.n); g.c.push.apply(g.c, c.c); g.count += c.count;
+    },
     gem: function (g) { g.cyl(0, 0, 0, 0.14, 0.5, 0x4de1ff, 6, 0.62).cyl(0, 0.5, 0, 0.62, 0.3, 0x9af0ff, 6, 0.34); },
     ringb: function (g) { g.box(0, 0.05, 0, 0.8, 0.14, 0.2, 0xffd24a).box(-0.34, 0.05, 0, 0.14, 0.7, 0.2, 0xffd24a).box(0.34, 0.05, 0, 0.14, 0.7, 0.2, 0xffd24a).box(0, 0.65, 0, 0.8, 0.14, 0.2, 0xffd24a); g.cyl(0, 0.79, 0, 0.1, 0.22, 0x4de1ff, 6, 0.26).cyl(0, 1.01, 0, 0.26, 0.14, 0x9af0ff, 6, 0.1); },
     watch: function (g) { g.box(0, 0, 0, 0.3, 1.5, 0.08, 0x6b4d2c); g.cyl(0, 0.75, 0.04, 0.42, 0.12, 0xffd24a, 12).cyl(0, 0.87, 0.04, 0.34, 0.03, 0xffffff, 12); },

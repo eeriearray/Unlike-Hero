@@ -99,7 +99,7 @@
       for (var i = 0; i < 3; i++) {
         var g = new THREE.Group(), m = TR.vehicles.SPECS.helicopter.build().mesh(new THREE.MeshLambertMaterial({ vertexColors: true }), false, false);
         m.matrixAutoUpdate = true; g.add(m);
-        var rot = new THREE.Mesh(new THREE.BoxGeometry(11, 0.14, 0.7), new THREE.MeshLambertMaterial({ color: 0x222222 })); rot.position.y = 4.3; g.add(rot);
+        var rot = new THREE.Mesh(TR.models.rotorGeo(), new THREE.MeshLambertMaterial({ color: 0x1b1c20 })); rot.position.y = 4.3; g.add(rot);
         g.position.set(p.x - 150 - i * 34, 38 + i * 7, p.z - 34 + i * 34);
         g.rotation.y = -Math.PI / 2;
         fx.scene.add(g);

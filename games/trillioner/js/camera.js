@@ -8,7 +8,7 @@
     view: function () { return cam.VIEWS[cam.viewAt]; },
     /** The view and zoom you like are kept between runs. */
     loadView: function () {
-      cam.viewAt = TR.save.get('camView', 1); cam.zoom = TR.save.get('camZoom', 1);
+      cam.viewAt = TR.save.get('camView', 1); cam.zoom = Math.max(0.75, Math.min(1.7, TR.save.get('camZoom', 1)));
       cam.dist = cam.view().dist; TR.input.pitch = cam.view().pitch;
     },
     nextView: function () {
@@ -18,7 +18,7 @@
       TR.hud.toast('Camera: ' + cam.view().name);
     },
     wheel: function (dy) {
-      cam.zoom = Math.max(0.6, Math.min(1.8, cam.zoom * (dy > 0 ? 1.06 : 0.94)));
+      cam.zoom = Math.max(0.75, Math.min(1.7, cam.zoom * Math.exp(Math.max(-60, Math.min(60, dy)) * 0.0008)));   // gentle: a trackpad sends a lot of small scrolls
       TR.save.set('camZoom', cam.zoom);
     },
     roll: 0, aheadX: 0, aheadZ: 0, bob: 0, pull: 0, on: true,
@@ -84,7 +84,7 @@
       }
       var yawBefore = TR.input.yaw;
       cam.auto(target, dt, opts);
-      var yaw = TR.input.yaw, pitch = TR.input.pitch, want = (opts.dist ? opts.dist * cam.view().dist / 8.5 : cam.dist) * cam.zoom + cam.pullBack(dt);
+      var yaw = TR.input.yaw, pitch = TR.input.pitch, want = (opts.dist ? Math.max(opts.dist * 0.75, opts.dist * cam.view().dist / 8.5 * cam.zoom) : cam.dist * cam.zoom) + cam.pullBack(dt);   // a vehicle always has to fit on screen
       var dx = Math.sin(yaw) * Math.cos(pitch), dy = Math.sin(pitch), dz = Math.cos(yaw) * Math.cos(pitch);
       var fy = target.y + (opts.lift || 2.6);
       var d = want;

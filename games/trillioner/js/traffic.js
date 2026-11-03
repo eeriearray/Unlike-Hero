@@ -2,21 +2,9 @@
 (function () {
   var TR = window.TR = window.TR || {};
   var D = window.TRD.districts, dummy = new THREE.Object3D(), col = new THREE.Color();
-  var COLORS = [0xff4d4d, 0x3f83ff, 0xffd02e, 0x2ecf7a, 0xf4f4f4, 0xff8a1f, 0xa56bff, 0x37474f, 0x19b5c9, 0xff6fae];
+  var COLORS = [0x8e1f24, 0x1e3a66, 0xd8d6cf, 0x2b2d33, 0x8c8f94, 0x3f4a3c, 0xe2b93a, 0x5a4636, 0x2f6a78, 0xb8b4aa];
 
-  function carGeo() {
-    var g = new TR.Geo(), GLASS = 0x233a50;
-    g.soft = 0.42; g.softS = 2;
-    g.box(0, 0.42, 0, 2.5, 0.72, 5, 0xffffff);                       // body, tinted per car
-    g.box(0, 0.42, -2.55, 2.3, 0.5, 0.12, 0xdddddd).box(0, 0.42, 2.55, 2.3, 0.5, 0.12, 0xdddddd);
-    g.box(0, 1.14, 0.25, 2.2, 0.72, 2.5, GLASS);                     // cabin
-    g.box(0, 1.84, 0.25, 2.26, 0.12, 2.56, 0xffffff);                // roof
-    g.box(0, 1.14, -0.25 + 0.5, 0.2, 0.72, 0.2, 0xffffff);
-    g.box(-0.85, 0.72, -2.54, 0.44, 0.22, 0.1, 0xfff6c0).box(0.85, 0.72, -2.54, 0.44, 0.22, 0.1, 0xfff6c0);
-    g.box(-0.85, 0.72, 2.54, 0.44, 0.22, 0.1, 0xe02020).box(0.85, 0.72, 2.54, 0.44, 0.22, 0.1, 0xe02020);
-    [[-1.26, -1.6], [1.26, -1.6], [-1.26, 1.6], [1.26, 1.6]].forEach(function (p) { g.wheel(p[0], 0.42, p[1], 0.42, 0.32, 0x18181c, 0xc9ccd0); });
-    return g.geometry();
-  }
+  function carGeo() { return TR.models.sedan(new TR.Geo(), 0xffffff).geometry(); }
 
   function hiddenDriver(c) { var k = TR.vehicles.current; return k && c.own && k.spec.build && TR.traffic.drivers[k.kind] === c.own; }   // you are driving that one
   var tr = TR.traffic = {

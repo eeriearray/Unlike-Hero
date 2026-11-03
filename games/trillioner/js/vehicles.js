@@ -3,49 +3,8 @@
   var TR = window.TR = window.TR || {};
   var RAIL = [[-130, -130], [300, -130], [300, 130], [-130, 130]], RAIL_Y = 11;
 
-  function G() { var g = new TR.Geo(); g.soft = 0.42; g.softS = 2; return g; }
-  function carMesh(body, cab) {
-    var g = G(), glass = cab || 0x1c2d40;
-    g.box(0, 0.42, 0, 3, 0.62, 5.8, body);                                 // lower body
-    g.box(0, 1.04, -1.75, 2.8, 0.12, 1.9, body);                           // bonnet
-    g.box(0, 1.04, 0.3, 2.5, 0.72, 2.5, glass);                            // cabin glass
-    g.box(0, 1.76, 0.3, 2.56, 0.13, 2.56, body);                           // roof
-    g.box(-1.2, 1.04, 1.5, 0.1, 0.7, 0.12, body).box(1.2, 1.04, 1.5, 0.1, 0.7, 0.12, body);
-    g.box(0, 0.32, -2.95, 3.04, 0.32, 0.14, 0x22252c).box(0, 0.32, 2.95, 3.04, 0.32, 0.14, 0x22252c);
-    g.box(-1, 0.78, -2.92, 0.62, 0.24, 0.08, 0xfff6c0).box(1, 0.78, -2.92, 0.62, 0.24, 0.08, 0xfff6c0);
-    g.box(-1, 0.78, 2.92, 0.62, 0.24, 0.08, 0xff2a2a).box(1, 0.78, 2.92, 0.62, 0.24, 0.08, 0xff2a2a);
-    wheels(g, 1.46, 1.85, 0.46, 0.92);
-    return g;
-  }
-  function wheels(g, x, z, y, s) { [[-x, -z], [x, -z], [-x, z], [x, z]].forEach(function (p) { g.wheel(p[0], y, p[1], s / 2, 0.46, 0x18181c, 0xc9ccd0); }); }
-  var BUILD = {
-    sports_car: function () { // low wedge with a spoiler and a racing stripe
-      var g = G(), body = 0xff2d2d;
-      g.box(0, 0.36, 0, 3.1, 0.56, 6, body).box(0, 0.92, -2, 2.9, 0.1, 2, body).box(0, 0.92, 0.45, 2.5, 0.56, 2.1, 0x151f2c).box(0, 1.48, 0.45, 2.54, 0.11, 2.1, body);
-      g.box(0, 1.03, -2, 0.7, 0.02, 2, 0xffffff).box(0, 1.6, 0.45, 0.7, 0.02, 2.1, 0xffffff).box(0, 0.93, 2, 0.7, 0.02, 2, 0xffffff).box(0, 0.92, 2.1, 2.9, 0.02, 1.8, body);
-      g.box(-1.15, 1.02, 2.85, 0.14, 0.5, 0.2, 0x222222).box(1.15, 1.02, 2.85, 0.14, 0.5, 0.2, 0x222222).box(0, 1.5, 2.85, 3, 0.12, 0.62, 0x222222);
-      g.box(-1, 0.68, -3.02, 0.7, 0.2, 0.06, 0xfff6c0).box(1, 0.68, -3.02, 0.7, 0.2, 0.06, 0xfff6c0).box(-1, 0.68, 3.02, 0.7, 0.2, 0.06, 0xff2a2a).box(1, 0.68, 3.02, 0.7, 0.2, 0.06, 0xff2a2a);
-      g.box(-0.5, 0.2, 3.04, 0.32, 0.2, 0.2, 0x555a62).box(0.5, 0.2, 3.04, 0.32, 0.2, 0.2, 0x555a62);
-      wheels(g, 1.5, 1.95, 0.44, 0.88);
-      return g;
-    },
-    scooter: function () { var g = G(); g.box(0, 0.5, 0, 0.8, 0.5, 2.6, 0xffd24a).box(0, 1, 0.5, 0.8, 0.8, 1, 0xff7a59).box(0, 0.8, -1, 0.3, 1.4, 0.3, 0x444444).box(0, 2.1, -1, 1.4, 0.15, 0.15, 0x222222); wheels(g, 0, 1, 0.3, 0.6); g.box(0, 1.4, 1.1, 1.1, 1, 1.1, 0xff3b30); return g; },
-    monster_truck: function () { var g = G(); g.box(0, 2, 0, 3.8, 1.4, 6.4, 0x4caf50).box(0, 3.4, 0.4, 3, 1.2, 2.8, 0x1c2a3a); [[-2.4, -2.2], [2.4, -2.2], [-2.4, 2.2], [2.4, 2.2]].forEach(function (p) { g.cyl(p[0], 0, p[1], 1.5, 2.4, 0x18181c, 8); }); return g; },
-    ladder_truck: function () { var g = carMesh(0xd9302c, 0xffffff); g.box(0, 2.2, 0, 1, 0.5, 6.4, 0xdddddd); return g; },
-    elephant: function () { var g = G(), c = 0x9aa3ad; g.box(0, 1.8, 0, 3, 2.6, 5, c).box(0, 3, -3, 2.2, 2.2, 2.2, c).box(0, 0.8, -4.3, 0.6, 2.4, 0.6, c).box(-1.8, 3, -3, 1.6, 1.8, 0.3, 0xc2c9d1).box(1.8, 3, -3, 1.6, 1.8, 0.3, 0xc2c9d1); [[-1, -1.6], [1, -1.6], [-1, 1.6], [1, 1.6]].forEach(function (p) { g.box(p[0], 0, p[1], 0.9, 1.9, 0.9, c); }); g.box(0, 4.4, 0.4, 2.4, 0.3, 2.6, 0xd6547c); return g; },
-    hoverboard: function () { var g = G(); g.box(0, 0.5, 0, 1, 0.2, 3, 0x7dffea).box(0, 0.42, -1, 0.8, 0.08, 0.5, 0xc77dff).box(0, 0.42, 1, 0.8, 0.08, 0.5, 0xc77dff); return g; },
-    speedboat: function () { var g = G(); g.box(0, 0, 0, 3, 1.2, 7, 0xffffff).box(0, 0.4, -3.8, 1.8, 0.8, 1, 0xff3b30).box(0, 1.2, 0.6, 2.4, 0.9, 0.3, 0x7dd8ff); return g; },
-    submarine: function () { var g = G(); g.cyl(0, -1, 0, 1.6, 2.6, 0xffd24a, 8).box(0, -1, 0, 2.6, 2.6, 7.4, 0xffd24a).box(0, 1.6, 0, 1.2, 1.4, 1.6, 0xe0a100).box(0, -0.2, -3.8, 1.2, 1.2, 0.2, 0x7dd8ff); return g; },
-    helicopter: function () { var g = G(); g.box(0, 1, 0, 3, 2.6, 5, 0x3d8bd4).box(0, 1.7, -2.6, 2.4, 1.5, 0.4, 0x7dd8ff).box(0, 2.3, 4.6, 0.6, 0.7, 5.4, 0x2d6faa).box(0, 2.3, 7.2, 0.2, 2, 1, 0xffd24a).box(-1.6, 0, 0, 0.3, 0.3, 5, 0x333333).box(1.6, 0, 0, 0.3, 0.3, 5, 0x333333).box(0, 3.6, 0, 0.5, 0.6, 0.5, 0x333333); return g; },
-    wrecking_truck: function () { var g = carMesh(0xf2c200); g.box(0, 2, 2, 0.6, 3.4, 0.6, 0x444444).box(0, 5.4, 0, 0.5, 0.5, 5, 0x444444).box(0, 3.6, -2.6, 0.2, 1.8, 0.2, 0x222222); g.cyl(0, 2.2, -2.6, 1.1, 1.6, 0x222222, 8); return g; },
-    mole_machine: function () { var g = G(); g.box(0, 0.8, 0.6, 3.6, 2.6, 5, 0x8d6e4b); g.cyl(0, 0.9, -2.6, 2.1, 2.4, 0xc0c4c8, 8, 0.2); g.box(-2, 0, 0.6, 0.6, 1.2, 5, 0x222222).box(2, 0, 0.6, 0.6, 1.2, 5, 0x222222); return g; },
-    jetpack: function () { var g = G(); g.box(-0.5, 1, 0.6, 0.5, 1.3, 0.5, 0xc0c4c8).box(0.5, 1, 0.6, 0.5, 1.3, 0.5, 0xc0c4c8); return g; },
-    private_train: function () { var g = G(); g.box(0, 0.6, 0, 3.6, 3.2, 11, 0xffc53d).box(0, 3.8, 0, 3.9, 0.5, 11.3, 0xb58a00).box(0, 1.8, -5.6, 3, 1.6, 0.2, 0x7dd8ff); return g; },
-    golf_cart: function () { var g = G(); g.box(0, 0.5, 0, 2.4, 0.5, 3.6, 0xffffff).box(0, 1, 0.6, 2, 0.8, 0.6, 0xd6547c).box(0, 2.6, 0, 2.4, 0.15, 3, 0xd6547c).box(-1, 1, -1.4, 0.15, 1.6, 0.15, 0x777777).box(1, 1, -1.4, 0.15, 1.6, 0.15, 0x777777); wheels(g, 1.2, 1.2, 0.35, 0.7); return g; },
-    sofa_kart: function () { var g = G(); g.box(0, 0.6, 0, 3.2, 0.9, 2.2, 0xc77dff).box(0, 1.5, 0.9, 3.2, 1.3, 0.5, 0xa855e0).box(-1.5, 1.5, 0, 0.4, 0.7, 2.2, 0xa855e0).box(1.5, 1.5, 0, 0.4, 0.7, 2.2, 0xa855e0); wheels(g, 1.3, 0.9, 0.3, 0.6); return g; },
-    pogo_stick: function () { var g = G(); g.box(0, 0, 0, 0.3, 2.2, 0.3, 0xff3b30).box(0, 0.5, 0, 1.4, 0.15, 0.3, 0x222222); return g; },
-    hot_air_balloon: function () { var g = G(); g.cyl(0, 6, 0, 3.2, 3, 0xff7a59, 10, 5).cyl(0, 9, 0, 5, 3.2, 0xffd24a, 10, 3.2).box(0, 0, 0, 2.6, 1.6, 2.6, 0x8d6e4b); [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (p) { g.box(p[0], 1.6, p[1], 0.08, 4.6, 0.08, 0x333333); }); return g; }
-  };
+  // The models live in models.js. A spec's build() returns a fresh geometry builder.
+  function BUILD_OF(k) { return function () { return TR.models[k](new TR.Geo()); }; }
 
   var SPECS = {
     sports_car: { name: 'Sports Car', mode: 'ground', speed: 45, accel: 34, brake: 60, turn: 2.5, grip: 3.4, driftGrip: 1.15, radius: 1.9, height: 2, step: 0.8, cam: 15, sound: 'car', horn: [392, 494], drift: true, use: 'Hold Space to drift. H for the horn.' },
@@ -72,7 +31,7 @@
     megaphone: { name: 'Megaphone', use: 'Click to draw a crowd.' },
     parachute: { name: 'Golden Umbrella', use: 'Hold Space while falling to float.' }
   };
-  Object.keys(SPECS).forEach(function (k) { SPECS[k].build = BUILD[k]; });
+  Object.keys(SPECS).forEach(function (k) { SPECS[k].build = BUILD_OF(k); });
 
   var vs = TR.vehicles = {
     SPECS: SPECS, GEAR: GEAR, placed: {}, current: null, scene: null, gear: null, boostT: 0, RAIL: RAIL, RAIL_Y: RAIL_Y, grindT: 0,
@@ -111,8 +70,8 @@
         mesh.matrixAutoUpdate = true;
         var group = new THREE.Group(); group.add(mesh);
         if (spec.rotor) {
-          var rot = new THREE.Mesh(new THREE.BoxGeometry(11, 0.14, 0.7), new THREE.MeshLambertMaterial({ color: 0x222222 }));
-          rot.position.y = 4.3; group.add(rot);
+          var rot = new THREE.Mesh(TR.models.rotorGeo(), new THREE.MeshLambertMaterial({ color: 0x1b1c20 }));
+          rot.position.set(0, 4.3, 0.1); group.add(rot);
           group.userData.rotor = rot;
         }
         v = vs.placed[kind] = { kind: kind, spec: spec, group: group, pos: new THREE.Vector3(), vel: new THREE.Vector3(), speed: 0, heading: 0, slip: 0, vy: 0, fuel: spec.fuel || 0, railS: 0 };

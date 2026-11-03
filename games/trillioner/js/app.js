@@ -566,6 +566,7 @@
         if (!TR.hud.pOn) TR.notebook.update(dt, app.session, pos);
         TR.gps.update(dt, app.session, pos, app.t);
         TR.agents.update(dt, app.session, pos, app.t);
+        TR.street.update(dt, pos, !!TR.interiors.current || pos.y < -20);
         TR.phone.update(dt, app.session);
         TR.map.follow(TR.interiors.current ? TR.interiors.returnTo : pos, TR.vehicles.current ? TR.vehicles.current.heading : TR.player.heading, TR.input.yaw);   // indoors, the map stays on the street outside
         var me0 = app.session.view.me;

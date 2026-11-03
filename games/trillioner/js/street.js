@@ -2,7 +2,7 @@
 (function () {
   var TR = window.TR = window.TR || {};
   var D = window.TRD.districts;
-  var CARS = [0x2b2d33, 0x8c8f94, 0xd8d8d4, 0x5a1f22, 0x1e2f4a, 0x3f4a3c, 0x6b5b45, 0xb9b4a8];
+  var MAX_PARKED = 50, CARS = [0x2b2d33, 0x8c8f94, 0xd8d8d4, 0x5a1f22, 0x1e2f4a, 0x3f4a3c, 0x6b5b45, 0xb9b4a8];
   // Every ad is for something a billionaire would buy, or something nobody should.
   var ADS = [
     ['#101820', '#f2c230', 'EASY LOANS', 'You cannot afford not to.'],
@@ -65,17 +65,25 @@
 
   var st = TR.street = {
     /** A parked car, cheap enough to have hundreds of. Faces along (ux,uz). */
-    parked: function (g, x, z, ux, uz, color) {
-      var ry = Math.atan2(ux, uz), L = 2.1, W = 0.95, cos = Math.cos(ry), sin = Math.sin(ry);
-      function at(a, b) { return [x + a * cos + b * sin, z - a * sin + b * cos]; }
-      var p;
-      [[-W, -1.25], [W, -1.25], [-W, 1.25], [W, 1.25]].forEach(function (w) { p = at(w[0], w[1]); g.box(p[0], 0, p[1], 0.32, 0.6, 0.72, 0x101114, ry); });
-      g.box(x, 0.32, z, W * 2, 0.62, L * 2, color, ry);
-      p = at(0, 0.15); g.box(p[0], 0.94, p[1], W * 1.8, 0.56, L * 1.05, 0x1a232c, ry);
-      p = at(0, 0.15); g.box(p[0], 1.5, p[1], W * 1.7, 0.08, L * 0.92, color, ry);
-      p = at(0, -L); g.box(p[0], 0.42, p[1], W * 1.5, 0.2, 0.05, 0xf4f0d8, ry);
-      p = at(0, L); g.box(p[0], 0.42, p[1], W * 1.5, 0.2, 0.05, 0x8e1a1a, ry);
-      TR.world.collide.addBox(x, 0, z, Math.abs(ux) > 0.5 ? L * 2 : W * 2, 1.6, Math.abs(ux) > 0.5 ? W * 2 : L * 2);
+    parked: function (x, z, ux, uz, color) {
+      st.cars.push({ x: x, z: z, h: Math.atan2(-ux, -uz), c: color });
+      TR.world.collide.addBox(x, 0, z, Math.abs(ux) > 0.5 ? 5.4 : 2.5, 1.7, Math.abs(ux) > 0.5 ? 2.5 : 5.4);
+    },
+    /** Only the nearest are drawn, so a city full of parked cars costs what fifty do. */
+    update: function (dt, pos, hidden) {
+      st.t = (st.t || 0) - dt;
+      if (!st.mesh) return;
+      st.mesh.visible = !hidden;
+      if (st.t > 0 || hidden) return;
+      st.t = 0.6;
+      var near = st.cars.map(function (q) { return { q: q, d: (q.x - pos.x) * (q.x - pos.x) + (q.z - pos.z) * (q.z - pos.z) }; }).sort(function (a, b) { return a.d - b.d; }).slice(0, MAX_PARKED), o = new THREE.Object3D(), col = new THREE.Color();
+      near.forEach(function (e, i) {
+        o.position.set(e.q.x, 0, e.q.z); o.rotation.set(0, e.q.h, 0); o.updateMatrix();
+        st.mesh.setMatrixAt(i, o.matrix); st.mesh.setColorAt(i, col.setHex(e.q.c));
+      });
+      st.mesh.count = near.length;
+      st.mesh.instanceMatrix.needsUpdate = true;
+      if (st.mesh.instanceColor) st.mesh.instanceColor.needsUpdate = true;
     },
     trafficLight: function (g, n, x, z, nx, nz) {
       g.cyl(x, 0, z, 0.1, 5.4, 0x2a2c30, 8);
@@ -105,6 +113,11 @@
     },
     build: function () {
       var W = TR.world, rng = new window.TrillionerRng.Rng('street'), segs = roads(), corners = {};
+      st.cars = [];
+      st.mesh = new THREE.InstancedMesh(TR.models.sedan(new TR.Geo(), 0xffffff).geometry(), TR.tintedMaterial(), MAX_PARKED);
+      st.mesh.frustumCulled = false; st.mesh.castShadow = true; st.mesh.count = 0;
+      st.mesh.setColorAt(0, new THREE.Color(0xffffff));
+      W.surface.add(st.mesh);
       // junctions from where road segments meet
       segs.forEach(function (s) { [s.a, s.b].forEach(function (p) { var k = p[0] + ',' + p[1]; (corners[k] = corners[k] || { x: p[0], z: p[1], n: 0, w: s.w }).n++; }); });
       Object.keys(corners).forEach(function (k) {
@@ -125,7 +138,7 @@
           if (rng.next() < 0.55) {
             var kx = cx + nx * side * (s.w / 2 - 1.2), kz = cz + nz * side * (s.w / 2 - 1.2);
             if (!W.isWater(kx, kz) && !nearDoor(kx, kz) && !W.collide.near(kx, kz, 2.4, []).some(function (b) { return b.y0 > -5 && b.y0 < 2 && kx > b.x0 - 2.4 && kx < b.x1 + 2.4 && kz > b.z0 - 2.4 && kz < b.z1 + 2.4; }) && !segs.some(function (o) { return o !== s && distToSeg(kx, kz, o) < o.w / 2 + 6; }))
-              st.parked(W.geo(kx, kz, 'solid'), kx, kz, ux * side, uz * side, rng.pick(CARS));
+              st.parked(kx, kz, ux * side, uz * side, rng.pick(CARS));
           }
           var fx = cx + nx * side * (s.w / 2 + 2.2), fz = cz + nz * side * (s.w / 2 + 2.2);
           if (rng.next() < 0.5 && free(fx, fz, 1) && !nearDoor(fx, fz)) st.furniture(W.geo(fx, fz, 'solid'), fx, fz, rng);
