@@ -39,7 +39,8 @@
       hud.incomeV = el('div', '', inc);
       hud.mapBox = el('div', 'hud-map', r);
       var bot = el('div', 'hud-bottom', r);
-      hud.frenzy = el('div', 'frenzy', bot, '<b>x1</b> FRENZY<div class="bar"><i></i></div>');
+      hud.frenzy = el('div', 'frenzy', bot, '<b>x1</b> COMBO<div class="bar"><i></i></div>');
+      r.appendChild(hud.frenzy);
       hud.closings = el('div', 'closings', bot);
       hud.carryEl = el('div', 'carry', bot); hud.carryEl.style.display = 'none';
       hud.promptEl = el('div', 'prompt', r, '<div class="p1"></div><div class="p2"></div><div class="bar"><i></i></div><div class="p3"></div>');

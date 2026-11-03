@@ -12,7 +12,7 @@
     FRENZY_MIN: 100 * M,              // purchases under $100M neither build Frenzy nor pay it
     FRENZY_WINDOW_MS: 5000,
     FRENZY_SPREE_MS: 8000,
-    FRENZY_MAX: 5,
+    FRENZY_MAX: 10,
     FRENZY_EXTRA_CAP: 2 * B,
     BIG_DEAL: 10 * B,                 // closes over time; money leaves at the start
     CLOSE_MIN_MS: 10000,

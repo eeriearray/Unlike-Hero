@@ -3,8 +3,8 @@
   var TR = window.TR = window.TR || {};
   var input = TR.input = {
     keys: {}, pressed: {}, yaw: Math.PI, pitch: 0.3, mouseDown: false, mouseClicked: false, locked: false, enabled: true, moveX: 0, moveZ: 0,
-    down: function (code) { return !!input.keys[code]; },
-    hit: function (code) { return !!input.pressed[code]; },
+    down: function (code) { return !input.frozen && !!input.keys[code]; },
+    hit: function (code) { return !input.frozen && !!input.pressed[code]; },
     endFrame: function () { input.pressed = {}; input.mouseClicked = false; },
     init: function (canvas) {
       addEventListener('keydown', function (e) {
@@ -65,7 +65,7 @@
         document.body.classList.add('touch');
         var box = document.createElement('div'); box.className = 'touchui';
         box.innerHTML = '<div class="stick" id="t-stick"><i></i></div><div class="tbtns">' +
-          [['Space', 'Jump'], ['KeyE', 'Buy'], ['KeyF', 'Ride'], ['KeyQ', 'Call'], ['Mouse', 'Use'], ['KeyX', 'Wreck'], ['KeyM', 'Map'], ['KeyN', 'Note'], ['Escape', 'Menu']].map(function (b) { return '<button data-k="' + b[0] + '">' + b[1] + '</button>'; }).join('') + '</div>';
+          [['Space', 'Jump'], ['KeyE', 'Buy'], ['KeyF', 'Ride'], ['KeyQ', 'Call'], ['Mouse', 'Use'], ['KeyX', 'Wreck'], ['KeyG', 'Cash'], ['KeyI', 'Bag'], ['KeyM', 'Map'], ['KeyN', 'Note'], ['Escape', 'Menu']].map(function (b) { return '<button data-k="' + b[0] + '">' + b[1] + '</button>'; }).join('') + '</div>';
         ui.appendChild(box);
         box.querySelectorAll('[data-k]').forEach(function (b) {
           var k = b.getAttribute('data-k');
@@ -110,6 +110,7 @@
     },
     /** Movement intent relative to the camera, from keyboard (gamepad and touch feed moveX/moveZ later). */
     axes: function () {
+      if (input.frozen) return { x: 0, z: 0 };
       var x = (input.down('KeyD') || input.down('ArrowRight') ? 1 : 0) - (input.down('KeyA') || input.down('ArrowLeft') ? 1 : 0);
       var z = (input.down('KeyW') || input.down('ArrowUp') ? 1 : 0) - (input.down('KeyS') || input.down('ArrowDown') ? 1 : 0);
       x += input.moveX; z += input.moveZ;

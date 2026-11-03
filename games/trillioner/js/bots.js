@@ -2,6 +2,7 @@
 (function () {
   var TR = window.TR = window.TR || {};
   var COLORS = [0xff5a5a, 0x4dabf7, 0x51cf66, 0xcc5de8, 0xff922b, 0x20c997, 0xf06595, 0xffd43b];
+  var HAIRS = [0x2a1d16, 0xc98a2e, 0x111111, 0x7a3b1d, 0xe2d3b0, 0x3c2a60, 0x5b3a22, 0xb5462b], SKINS = [0xf7cfa6, 0xc98d5e, 0x8d5a3a, 0xf2c79a, 0xe0ac7e, 0x6f4429, 0xfad9b8, 0xd19a6a];
   var CARD_NAMES = { boost: 'Boost', ban: 'Ban', refund: 'Refund', gift: 'Forced Gift' };
   var CARD_TIPS = { boost: "Make a rival's losing company profitable for 60s", ban: 'Close a shop to a rival for 45s', refund: 'Add a rival $3B', gift: 'Send $5B of yours to a rival; they can refuse for $1B' };
   function esc(t) { return String(t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -29,16 +30,14 @@
     rig: function (b, i) {
       var r = bt.rigs[b.id];
       if (r) return r;
-      var g = new THREE.Group(), mat = function (c) { return new THREE.MeshLambertMaterial({ color: c }); };
-      var add = function (w, h, d, c, y) { var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(c)); m.position.y = y; m.castShadow = true; g.add(m); };
-      add(1.2, 1.2, 0.7, COLORS[i % COLORS.length], 1.3); add(0.95, 0.95, 0.95, 0xffd9a8, 2.4); add(1, 1, 0.55, 0x2e3a59, 0.45);
+      var fig = TR.player.figure(COLORS[i % COLORS.length], HAIRS[i % HAIRS.length], SKINS[i % SKINS.length]), g = fig.group;
       var c = document.createElement('canvas'); c.width = 256; c.height = 48;
       var x = c.getContext('2d'); x.fillStyle = 'rgba(16,18,40,.8)'; x.fillRect(0, 0, 256, 48); x.fillStyle = '#fff'; x.font = '800 26px Arial'; x.textAlign = 'center'; x.fillText(b.name, 128, 33);
       var nameTex = new THREE.CanvasTexture(c); nameTex.encoding = THREE.sRGBEncoding;
       var sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: nameTex, fog: false }));
-      sp.scale.set(5, 0.95, 1); sp.position.y = 4; g.add(sp);
+      sp.scale.set(5, 0.95, 1); sp.position.y = 3.7; g.add(sp);
       TR.app.scene.add(g);
-      return (bt.rigs[b.id] = { group: g, x: b.x, y: b.y, z: b.z, h: b.h });
+      return (bt.rigs[b.id] = { group: g, parts: fig.parts, x: b.x, y: b.y, z: b.z, h: b.h, sp: 0, walk: 0, last: performance.now() });
     },
     /** 10 times a second, from the main loop. */
     tick: function (view, pos) {
@@ -48,8 +47,13 @@
         if (b.id === view.me.id) return;
         var r = bt.rig(b, i), g = r.group;
         g.visible = (b.inv || null) === room && (b.y < -20) === under;
-        r.x += (b.x - r.x) * 0.4; r.y += (b.y - r.y) * 0.4; r.z += (b.z - r.z) * 0.4;
+        var nx = r.x + (b.x - r.x) * 0.4, nz = r.z + (b.z - r.z) * 0.4, now = performance.now(), dt = Math.max(0.005, (now - r.last) / 1000);
+        var sp = Math.min(20, Math.hypot(nx - r.x, nz - r.z) / dt);
+        r.last = now; r.sp += (sp - r.sp) * Math.min(1, dt * 6); r.walk += r.sp * dt * 1.2;
+        r.x = nx; r.z = nz; r.y += (b.y - r.y) * 0.4;
         g.position.set(r.x, r.y, r.z); g.rotation.y = b.h || 0;
+        if (b.styleV !== r.styleV) { r.styleV = b.styleV; TR.wardrobe.dress(r.parts, b.style); }
+        TR.player.stride(r.parts, Math.sin(r.walk), Math.cos(r.walk), Math.min(1, r.sp / 18), Math.min(1, r.sp / 7));
       });
       bt.drawBoard(view);
       bt.drawFeed(view);

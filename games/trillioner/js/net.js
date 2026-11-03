@@ -59,6 +59,7 @@
       fastTravel: function (d) { var v = s.view.me; if (v.travelCd > 0) return { error: 'The next flight is not ready.' }; if (!v.powers.fastTravel) return { error: 'You need the Airline.' }; link.req('cmd', { cmd: { t: 'fastTravel', district: d } }); return { ok: true, to: run.districtSpawn[d] }; },
       toss: function () { link.req('cmd', { cmd: { t: 'toss' } }, s.answer); return { error: 'Tossing...' }; },
       send: function (cmd, cb) { link.req('cmd', { cmd: cmd }, cb || s.answer); },
+      extra: function (cmd, cb) { link.req('cmd', { cmd: cmd }, function (r) { if (cb) cb(r); }); },
       answer: function (r) { if (r && r.error && r.code !== 'sold') { TR.hud.toast(r.code === 'broke' ? 'Too expensive' : r.error, 'bad'); TR.audio.denied(); } },
       setPos: function (x, y, z, h, inv, d) { link.raw({ t: 'pos', x: x, y: y, z: z, h: h, inv: inv, d: d }); },
       setClock: function () {},
@@ -73,7 +74,7 @@
     };
     return s;
   }
-  function blankMe(id) { return { id: id, name: '', balance: 300 * R.B, spent: 0, biz: 0, income: 0, frenzy: 1, frenzyLeft: 0, frenzyWindow: 5000, closings: [], owned: {}, goods: {}, vehicles: {}, gear: {}, powers: {}, flags: {}, wear: {}, trophies: {}, rank: 'Intern', visited: {}, stats: {}, cards: [], ban: {}, boost: {} }; }
+  function blankMe(id) { return { id: id, name: '', balance: 300 * R.B, spent: 0, biz: 0, income: 0, frenzy: 1, frenzyLeft: 0, extras: {}, style: { pet: [] }, styleV: 0, boxes: 0, rainUsed: 0, frenzyWindow: 5000, closings: [], owned: {}, goods: {}, vehicles: {}, gear: {}, powers: {}, flags: {}, wear: {}, trophies: {}, rank: 'Intern', visited: {}, stats: {}, cards: [], ban: {}, boost: {} }; }
 
   var net = TR.net = {
     link: null, session: null, room: null,
@@ -102,6 +103,9 @@
       net.session = NetSession(net.link, m);
       TR.menus.close();
       TR.app.startRun({ mode: 'battle', seed: m.seed, session: net.session });
+      // everyone starts side by side, not inside each other
+      var seat = getSeat(), slot = net.room && seat ? net.room.seats.map(function (x) { return x.id; }).indexOf(seat.playerId) : 0, sp = net.session.run.spawn;
+      if (slot >= 0) TR.player.teleport(sp.x + (slot % 4 - 1.5) * 3.2, sp.y, sp.z + Math.floor(slot / 4) * 3.2, 0);
       TR.battle.start(net.session);
     },
     tryResume: function () {

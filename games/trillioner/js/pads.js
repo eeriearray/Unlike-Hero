@@ -1,7 +1,7 @@
 /* Purchase pads: rings on the floor, floating labels near the player, walk-over and hold-E buying. */
 (function () {
   var TR = window.TR = window.TR || {};
-  var MAX = 260, HOLD_S = 0.45, REACH_SMALL = 2.2, REACH_BIG = 3.8, LABELS = 8, BIG_AT = window.TRD.rules.B;
+  var MAX = 260, HOLD_S = 0.45, REACH_SMALL = 3, REACH_BIG = 3.8, LABELS = 8, BIG_AT = window.TRD.rules.B;
   var dummy = new THREE.Object3D(), col = new THREE.Color();
 
   var pads = TR.pads = {
@@ -145,8 +145,9 @@
         TR.hud.prompt(it.name, 'Hold E: ' + TR.fmt(qs.total), pads.hold / HOLD_S, !qs.ok);
         return;
       }
-      var q = sess.quote(it.id);
-      if (!big2) {
+      var q = sess.quote(it.id), serious = it.building || it.income || it.reward || it.power || it.grants;
+      // run through a shop and things are yours. Only businesses and deals that change the game wait for E, so you can read them first.
+      if (!big2 || !serious) {
         if (!pads.stepOff[it.id] && pads.cool <= 0) {
           pads.cool = 0.14;
           var left = sess.stock(it.id);
@@ -160,7 +161,7 @@
         pads.hold += dt;
         if (pads.hold >= HOLD_S) { pads.hold = 0; pads.holding = null; TR.app.tryBuy(it.id); return; }
       } else { pads.hold = 0; pads.holding = null; }
-      TR.hud.prompt(it.name, 'Hold E: ' + TR.fmt(q.total) + (q.mult > 1 ? ' (Frenzy x' + q.mult + ')' : ''), pads.hold / HOLD_S, !q.ok, dealText(it));
+      TR.hud.prompt(it.name, 'Hold E: ' + TR.fmt(q.total) + (q.mult > 1 ? ' (Combo x' + q.mult + ')' : ''), pads.hold / HOLD_S, !q.ok, dealText(it));
     },
     demolishHold: function (dt, sess, it) {
       if (TR.input.down('KeyX')) {

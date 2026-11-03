@@ -295,3 +295,56 @@ test('property damage is spending, with a cap, and cannot go below zero', () => 
   assert.equal(g.damage('p1', 'prop').paid, 10 * M);
   assert.equal(p.balance, 0);
 });
+
+// ── Own It: spending on yourself ──
+{
+  const Extras = createRequire(import.meta.url)('../games/trillioner/engine/data/extras.js');
+  const fresh = () => { const G = new (createRequire(import.meta.url)('../games/trillioner/engine/engine.js').Game)({ seed: 7, mode: 'day', players: [{ id: 'me', name: 'Me' }] }); G.requireNear = false; return G; };
+  test('buying an extra takes exact cents, wears it, and cannot be bought twice', () => {
+    const g = fresh(), start = g.players.me.balance, x = Extras.BY_ID.hat_crown;
+    assert.equal(g.command('me', { t: 'extra', id: 'hat_crown' }).ok, true);
+    assert.equal(g.players.me.balance, start - x.price);
+    assert.equal(g.players.me.spent, x.price);
+    assert.equal(g.players.me.style.hat, 'hat_crown');
+    assert.equal(g.command('me', { t: 'extra', id: 'hat_crown' }).code, 'owned');
+    assert.equal(g.players.me.balance, start - x.price);
+  });
+  test('you must be inside a shop to buy an extra or open a box', () => {
+    const g = fresh(); g.requireNear = true;
+    assert.equal(g.command('me', { t: 'extra', id: 'hat_cap' }).code, 'far');
+    assert.equal(g.command('me', { t: 'box' }).code, 'far');
+    g.players.me.inv = 'plaza_shops';
+    assert.equal(g.command('me', { t: 'extra', id: 'hat_cap' }).ok, true);
+  });
+  test('you can only wear what you own, and at most 3 pets follow you', () => {
+    const g = fresh();
+    assert.ok(g.command('me', { t: 'wear', slot: 'hat', id: 'hat_cap' }).error);
+    for (const id of ['pet_pig', 'pet_dog', 'pet_cat', 'pet_tiger']) g.command('me', { t: 'extra', id });
+    assert.deepEqual(g.players.me.style.pet, ['pet_dog', 'pet_cat', 'pet_tiger']);
+    g.command('me', { t: 'wear', slot: 'pet', id: 'pet_cat' });
+    assert.deepEqual(g.players.me.style.pet, ['pet_dog', 'pet_tiger']);
+  });
+  test('mystery boxes are deterministic, stop at the limit and never repeat an item', () => {
+    const open = () => { const g = fresh(), got = []; for (let i = 0; i < 30; i++) { const r = g.command('me', { t: 'box' }); if (r.ok) got.push(r.id); } return { got, g }; };
+    const a = open(), b = open();
+    assert.deepEqual(a.got, b.got);
+    assert.equal(a.got.length, Extras.BOX_LIMIT);
+    assert.equal(new Set(a.got).size, a.got.length);
+    assert.equal(a.g.players.me.spent, Extras.BOX_LIMIT * Extras.BOX_PRICE);
+  });
+  test('throwing cash is rate limited and capped for the day', () => {
+    const g = fresh();
+    assert.equal(g.command('me', { t: 'rain' }).ok, true);
+    assert.equal(g.command('me', { t: 'rain' }).code, 'wait');
+    let thrown = 1;
+    for (let i = 0; i < 400; i++) { g.tick(0.25); if (g.command('me', { t: 'rain' }).ok) thrown++; }
+    assert.equal(thrown, Extras.RAIN_LIMIT);
+    assert.equal(g.players.me.rainUsed, Extras.RAIN_LIMIT);
+  });
+  test('all extras together cannot close the gap for a visible-only player', () => {
+    const shop = Extras.CATALOG.reduce((a, x) => a + x.price, 0);
+    const all = shop + Extras.BOX_LIMIT * Extras.BOX_PRICE + Extras.RAIN_LIMIT * Extras.RAIN_THROW;
+    assert.ok(shop <= Extras.SHOP_LIMIT);
+    assert.ok(all <= 110 * 100 * 1e9, 'visible-only left at least $540B, and must keep $400B unspent');
+  });
+}

@@ -46,6 +46,10 @@
         g.box(sx, 0, z - hd + 1.1, r.w / shelfN - 0.5, 3, 1.3, mix(accent, 0x000000, 0.2));
         for (var q = 0; q < 3; q++) { var gs = sr.range(0.5, 0.95); g.box(sx - 1 + q, 3, z - hd + 1.1, gs, gs, gs, sr.pick([0xff6b6b, 0x4dabf7, 0xffd43b, 0x51cf66, 0xcc5de8, 0xffffff])); }
       }
+      // the Style Counter: a mirror and a stack of mystery boxes, just inside the door
+      var cx = x - hw + 2.4, cz = z + hd - 8;
+      g.box(cx - 0.9, 0, cz, 0.4, 4.6, 3.4, 0xd8a72e).box(cx - 0.68, 0.25, cz, 0.08, 4.1, 2.9, 0xbfe6f5);
+      g.box(cx + 0.5, 0, cz + 2.7, 1.5, 1.1, 1.5, 0xffc53d).box(cx + 0.5, 1.1, cz + 2.7, 1.1, 0.8, 1.1, 0xff5ad1).box(cx + 0.5, 1.1, cz + 2.7, 1.14, 0.8, 0.22, 0xffffff);
       // exit door
       g.box(x, 0, z + hd - 0.5, 6.4, 5, 0.3, mix(accent, 0x000000, 0.25));
       g.box(x, 0, z + hd - 0.7, 5, 4.4, 0.3, 0x23263a);
@@ -60,6 +64,9 @@
         col.add(x - hw - 2, 0, z - hd - 2, x + hw + 2, h + 3, z - hd, { room: 1 }), col.add(x - hw - 2, 0, z + hd, x + hw + 2, h + 3, z + hd + 2, { room: 1 }),
         col.add(x - hw - 2, 0, z - hd, x - hw, h + 3, z + hd, { room: 1 }), col.add(x + hw, 0, z - hd, x + hw + 2, h + 3, z + hd, { room: 1 })
       ];
+      ints.boxes.push(col.addBox(cx - 0.8, 0, cz, 0.7, 4.6, 3.4, { room: 1 }), col.addBox(cx + 0.5, 0, cz + 2.7, 1.5, 1.9, 1.5, { room: 1 }));
+      ints.counter = { x: cx + 0.9, y: 0, z: cz + 0.6 };
+      ints.group.add(ints.counterSign(cx - 0.6, 5.45, cz));
       ints.globe = null;
       if (site.b && site.b.lobby) ints.buildGlobe(site);
       ints.current = site;
@@ -68,6 +75,17 @@
       player.teleport(x, 0, z + hd - 7.5, 0);
       TR.input.yaw = 0;
       if (TR.audio) TR.audio.door();
+    },
+    counterSign: function (x, y, z) {
+      var c = document.createElement('canvas'); c.width = 512; c.height = 128;
+      var g = c.getContext('2d');
+      g.fillStyle = '#17132b'; g.fillRect(0, 0, 512, 128);
+      g.strokeStyle = '#ffc53d'; g.lineWidth = 8; g.strokeRect(6, 6, 500, 116);
+      g.fillStyle = '#ffd23f'; g.font = '800 62px Arial'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('STYLE', 256, 66);
+      var t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding;
+      var m = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 0.9), new THREE.MeshBasicMaterial({ map: t }));
+      m.position.set(x, y, z); m.rotation.y = Math.PI / 2;
+      return m;
     },
     /** The Global Trade Tower lobby: a giant globe you can walk right over. Height comes from floorHere. */
     buildGlobe: function (site) {
@@ -107,6 +125,7 @@
       ints.boxes.forEach(function (b) { b.off = true; });
       ints.boxes = [];
       ints.globe = null;
+      ints.counter = null;
       ints.current = null;
     },
     exit: function (player) {

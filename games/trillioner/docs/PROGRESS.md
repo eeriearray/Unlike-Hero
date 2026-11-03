@@ -22,12 +22,14 @@ Tests: `node --test --test-force-exit test/trillioner-*.test.mjs`. Simulators: `
 | Second art pass and walk-in doors | Done | Post-processing, surface detail, glass, round trees and clouds. 60 FPS at 1892x984 on High (M4), up to 142 draw calls and 214k triangles. Camera checked at 1,040 door and pad positions: never inside a collision box |
 | M8 Finish | Done, with limits below | FPS measured on one machine; gamepad checked with a stubbed pad; touch checked with synthetic touch events |
 
+| Own It pass | Done, needs a human verdict | Requested by the user after "looks AI made, not fun". Run-through buying, combo up to x10, inventory (I), Style Counter in every shop, 54 wearables and pets, mystery boxes, throwing cash (hold G), pink GPS route (J toggles). Viewed in the browser; online rooms carry purchases and outfits between tabs. Full online match not played to the 8:00 end this pass |
+
 ## Measured
 
 - After the art pass, driving across the city at High, Apple M4, 946x492 at 2x: 60 FPS median, 60 minimum, worst frame 19 ms, about 100 draw calls and 117k triangles on that drive. Wide aerial views reached 161 draw calls and 136k triangles.
 - Boot to first playable: under 0.1 s from localhost (`window.__trBootMs`).
-- Solver, 100 seeds: 100 wins, average 14.3 minutes, worst 15.2, average spent $1,054B.
-- Visible-only bot, 100 seeds: no wins, at least $583B left, average spent $602B. All-earners bot: no wins, at least $318B left.
+- Solver, 100 seeds: 100 wins, average 16.1 minutes, worst 17.1, average spent $999B.
+- Visible-only bot, 100 seeds: no wins, at least $529B left, average spent $585B. All-earners bot: no wins, at least $293B left. All extras together cap at about $101B, so visible deals plus every extra still leave over $400B.
 - Complete solo run through the real client (solver decisions, seed 2026): won at 12:35, $1.038T spent, 27 secrets, no page errors. This predates the art pass; only the layout tests, solver and scripted views were rerun after it.
 - Battle Spend, 8 real minutes, two tabs and a bot: reached 8:00, Host won on lowest balance ($159B against $164B and $258B), attack cards and auction bids landed, no page errors. Also before the art pass.
 

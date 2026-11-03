@@ -27,6 +27,7 @@
       setClock: function (h) { g.setClockHour(h); },
       finish: function () { var p = g.players.me; if (p.won) g.finish(p, g.isPerfect(p) ? 'perfect' : 'win'); else if (!g.over) { g.over = true; g.result = 'quit'; } },
       toss: function () { return g.toss('me'); },
+      extra: function (cmd, cb) { var r = g.command('me', cmd); s.view = g.viewFor('me'); if (cb) cb(r); return r; },
       results: function () { return g.results('me'); }
     };
     return s;
@@ -63,6 +64,7 @@
       TR.traffic.init(app.scene, 44);
       TR.hud.init(ui);
       TR.map.init(TR.hud.mapBox);
+      TR.gps.init(app.scene);
       var au = TR.save.get('audio', null);
       if (au) { TR.audio.volume = au.volume; TR.audio.sfxVolume = au.sfxVolume; TR.audio.musicVolume = au.musicVolume; TR.audio.muted = au.muted; TR.audio.musicMuted = !!au.musicMuted; TR.hud.musicBtn(); }
       TR.quality.init();
@@ -120,6 +122,8 @@
       TR.notebook.setRun(run0);
       TR.haul.reset();
       TR.world.setBeam(null); app.eventSite = null;
+      TR.own.close(); TR.gps.reset();
+      app.styleV = -1;
       TR.dares.start(app.session, seed);
       TR.cam.cine = null;
       TR.map.reset();
@@ -372,6 +376,14 @@
       if (app.elevator(dt)) return;
       if (input.hit('KeyK')) { TR.audio.setMusicMuted(!TR.audio.musicMuted); TR.hud.toast(TR.audio.musicMuted ? 'Music off' : 'Music on'); }
       if (input.hit('KeyN')) TR.notebook.toggle();
+      if (input.hit('KeyI')) { TR.own.open('stuff'); return; }
+      if (input.hit('KeyJ')) TR.gps.toggle();
+      TR.own.rain(dt, app.session, TR.player.pos);
+      var ctr = ints.counter;
+      if (ctr && Math.hypot(TR.player.pos.x - ctr.x, TR.player.pos.z - ctr.z) < 3.4) {
+        TR.hud.prompt('Style Counter', 'Press E: clothes, jewellery, pets, mystery boxes');
+        if (input.hit('KeyE')) { TR.own.open('shop'); return; }
+      }
       if (input.hit('KeyM')) TR.notebook.toggleMap();
       if (input.hit('KeyQ')) TR.hud.toggleWheel(app.session.view.me);
       if (TR.hud.wheelPick) for (var dk = 1; dk <= 9; dk++) if (input.hit('Digit' + dk)) { TR.hud.wheelPick(dk - 1); break; }
@@ -525,6 +537,12 @@
         TR.dares.update(dt, pos, app.t, app.session);
         TR.goods.end();
         if (!TR.hud.pOn) TR.notebook.update(dt, app.session, pos);
+        TR.gps.update(dt, app.session, pos, app.t);
+        var me0 = app.session.view.me;
+        if (me0.styleV !== app.styleV) { app.styleV = me0.styleV; TR.player.applyStyle(me0.style); TR.wardrobe.setPets(me0.style.pet, app.scene); }
+        TR.wardrobe.updatePets(dt, pos, TR.player.heading, !!TR.vehicles.current);
+        TR.wardrobe.updateTrail(dt, pos, moving, me0.style);
+        TR.own.update();
         app.updateActions(dt);
         TR.hud.update(app.session.view, dt);
         app.cityGrowth(app.session.view.me);

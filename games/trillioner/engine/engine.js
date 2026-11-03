@@ -10,11 +10,11 @@
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
-    module.exports = factory(require('./rng.js'), require('./data/rules.js'), require('./shuffle.js'), require('./data/trophies.js'), require('./data/events.js'), require('./data/secrets.js'));
+    module.exports = factory(require('./rng.js'), require('./data/rules.js'), require('./shuffle.js'), require('./data/trophies.js'), require('./data/events.js'), require('./data/secrets.js'), require('./data/extras.js'));
   } else {
-    root.TrillionerEngine = factory(root.TrillionerRng, root.TRD.rules, root.TrillionerShuffle, root.TRD.trophies, root.TRD.events, root.TRD.secrets);
+    root.TrillionerEngine = factory(root.TrillionerRng, root.TRD.rules, root.TrillionerShuffle, root.TRD.trophies, root.TRD.events, root.TRD.secrets, root.TRD.extras);
   }
-})(typeof self !== 'undefined' ? self : this, function (RngMod, R, Shuffle, Trophies, EventsData, SecretsData) {
+})(typeof self !== 'undefined' ? self : this, function (RngMod, R, Shuffle, Trophies, EventsData, SecretsData, Extras) {
   'use strict';
 
   var fmtShort = function (c) {
@@ -80,6 +80,7 @@
       balance: this.cfg.start, spent: 0,
       owned: {}, goods: {}, vehicles: {}, gear: {}, powers: {}, flags: {}, wear: {},
       closings: [], frenzy: 1, frenzyLeft: 0,
+      extras: {}, style: { pet: [] }, styleV: 0, boxes: 0, rainUsed: 0, rainAt: -1e9,
       cannonOn: false, cannonUsed: 0,
       history: [this.cfg.start], best: null, trophies: {}, stats: { purchases: 0, demolished: 0, firstMoonHour: null, maxFrenzy: 1, truckDemos: 0 },
       income: 0, lastIncome: 0, rising: false, boost: {}, ban: {}, cards: [], cardsUsed: 0, giftUsed: false,
@@ -218,6 +219,10 @@
       case 'pickup': return this.pickupCard(pid, String(cmd.id));
       case 'play': return this.playCard(pid, String(cmd.kind), { target: String(cmd.target), site: cmd.site ? String(cmd.site) : null });
       case 'refuse': return this.refuseGift(pid);
+      case 'extra': return this.buyExtra(pid, String(cmd.id));
+      case 'wear': return this.wear(pid, String(cmd.slot), cmd.id == null ? null : String(cmd.id));
+      case 'box': return this.openBox(pid);
+      case 'rain': return this.rain(pid);
       default: return { error: 'Unknown command.' };
     }
   };
@@ -479,6 +484,80 @@
 
   // Chain rule (see docs/DESIGN.md, Decisions): a qualifying purchase within the window climbs one step
   // and the next one pays that multiplier. The chain resets to x1 only when the window runs out.
+  /** Money spent on yourself. Same ledger as everything else, and it can win you the game. */
+  G.spendSelf = function (p, amount) {
+    p.balance -= amount;
+    p.spent += amount;
+    this.checkTrophies(p);
+    this.checkWin(p);
+  };
+  G.takeExtra = function (p, x) {
+    p.extras[x.id] = true;
+    if (x.slot === 'pet') { p.style.pet = p.style.pet.concat(x.id).slice(-3); }
+    else p.style[x.slot] = x.id;
+    p.styleV++;
+  };
+  /** Clothes, jewellery, effects and pets are sold inside shops, like everything else. */
+  G.buyExtra = function (pid, id) {
+    var p = this.players[pid], x = Extras.BY_ID[id];
+    if (!x) return { code: 'unknown', error: 'Not for sale.' };
+    if (p.extras[id]) return { code: 'owned', error: 'You already own that.' };
+    if (this.frozen || this.over || p.won) return { code: 'closed', error: 'The day is over.' };
+    if (this.requireNear && !p.inv) return { code: 'far', error: 'Go inside a shop.' };
+    if (p.balance < x.price) return { code: 'broke', error: 'Too expensive' };
+    this.takeExtra(p, x);
+    if (x.rarity === 'l') this.feedPush(p.name + ' bought ' + x.name + ' for ' + fmtShort(x.price));
+    this.emit(p, { type: 'extra', id: id });
+    this.spendSelf(p, x.price);
+    return { ok: true, id: id, paid: x.price };
+  };
+  G.wear = function (pid, slot, id) {
+    var p = this.players[pid];
+    if (Extras.SLOTS.indexOf(slot) < 0) return { error: 'Bad slot.' };
+    if (id != null && (!p.extras[id] || Extras.BY_ID[id].slot !== slot)) return { error: 'You do not own that.' };
+    if (slot === 'pet') {
+      if (id == null) p.style.pet = [];
+      else if (p.style.pet.indexOf(id) >= 0) p.style.pet = p.style.pet.filter(function (k) { return k !== id; });
+      else p.style.pet = p.style.pet.concat(id).slice(-3);
+    } else if (id == null) delete p.style[slot];
+    else p.style[slot] = id;
+    p.styleV++;
+    return { ok: true };
+  };
+  /** A mystery box holds something you do not own yet. The seed and the box count decide what, so it stays deterministic. */
+  G.openBox = function (pid) {
+    var p = this.players[pid];
+    if (this.frozen || this.over || p.won) return { code: 'closed', error: 'The day is over.' };
+    if (this.requireNear && !p.inv) return { code: 'far', error: 'Go inside a shop.' };
+    if (p.boxes >= Extras.BOX_LIMIT) return { code: 'limit', error: 'No boxes left today.' };
+    if (p.balance < Extras.BOX_PRICE) return { code: 'broke', error: 'Too expensive' };
+    var left = Extras.CATALOG.filter(function (x) { return !p.extras[x.id]; });
+    if (!left.length) return { code: 'limit', error: 'You own everything already.' };
+    var rng = new RngMod.Rng('box:' + this.seed + ':' + pid + ':' + p.boxes), roll = rng.range(0, 100), rarity = 'c', sum = 0;
+    for (var i = 0; i < Extras.BOX_ODDS.length; i++) { sum += Extras.BOX_ODDS[i][1]; if (roll < sum) { rarity = Extras.BOX_ODDS[i][0]; break; } }
+    var pool = left.filter(function (x) { return x.rarity === rarity; });
+    if (!pool.length) pool = left;
+    var x = pool[Math.floor(rng.range(0, pool.length)) % pool.length];
+    p.boxes++;
+    this.takeExtra(p, x);
+    if (x.rarity === 'l') this.feedPush(p.name + ' opened a box and got ' + x.name + '!');
+    this.emit(p, { type: 'extra', id: x.id, box: true });
+    this.spendSelf(p, Extras.BOX_PRICE);
+    return { ok: true, id: x.id, paid: Extras.BOX_PRICE };
+  };
+  /** Throw cash in the air. Capped per day, and rate limited on the engine's clock. */
+  G.rain = function (pid) {
+    var p = this.players[pid];
+    if (this.frozen || this.over || p.won) return { code: 'closed', error: 'The day is over.' };
+    if (p.rainUsed >= Extras.RAIN_LIMIT) return { code: 'limit', error: 'Your arms are tired. No more throwing today.' };
+    if (this.t - p.rainAt < Extras.RAIN_GAP_MS) return { code: 'wait' };
+    var amount = Math.min(p.balance, Extras.RAIN_THROW);
+    if (amount <= 0) return { code: 'broke', error: 'Nothing left to throw' };
+    p.rainUsed++;
+    p.rainAt = this.t;
+    this.spendSelf(p, amount);
+    return { ok: true, paid: amount, left: Extras.RAIN_LIMIT - p.rainUsed };
+  };
   G.bumpFrenzy = function (p, base) {
     if (base < R.FRENZY_MIN) return;
     if (p.frenzyLeft > 0) p.frenzy = Math.min(R.FRENZY_MAX, p.frenzy + 1);
@@ -716,7 +795,8 @@
         frenzy: p.frenzy, frenzyLeft: p.frenzyLeft, frenzyWindow: this.frenzyWindow(), closings: p.closings, owned: p.owned, goods: p.goods,
         vehicles: p.vehicles, gear: p.gear, powers: p.powers, flags: p.flags, wear: p.wear, trophies: p.trophies, rank: this.rank(p),
         cannonOn: p.cannonOn, cannonUsed: p.cannonUsed, won: p.won, perfect: p.perfect, perfectLeft: p.perfectLeft, travelCd: p.travelCd,
-        visited: p.visited, best: p.best, stats: p.stats, cards: p.cards, ban: p.ban, boost: p.boost
+        visited: p.visited, best: p.best, stats: p.stats, cards: p.cards, ban: p.ban, boost: p.boost,
+        extras: p.extras, style: p.style, styleV: p.styleV, boxes: p.boxes, rainUsed: p.rainUsed
       },
       feed: this.feed.slice(-6)
     };
@@ -724,7 +804,7 @@
     if (this.cfg.pvp) {
       view.board = this.order.map(function (id) {
         var o = self.players[id];
-        return { id: o.id, name: o.name, bot: o.bot, balance: o.balance, spent: o.spent, x: o.x, y: o.y, z: o.z, h: o.h, inv: o.inv, connected: o.connected !== false };
+        return { id: o.id, name: o.name, bot: o.bot, balance: o.balance, spent: o.spent, x: o.x, y: o.y, z: o.z, h: o.h, inv: o.inv, connected: o.connected !== false, style: o.style, styleV: o.styleV };
       });
       view.auctions = this.auctions.filter(function (a) { return a.state === 'open'; }).map(function (a) { return { id: a.id, name: a.name, min: a.min, left: a.left, best: a.best, bestBid: a.bestBid }; });
       view.cardSpots = this.cardSpots.filter(function (c) { return !c.taken; }).map(function (c) { return { id: c.id, x: c.x, y: c.y, z: c.z, kind: c.kind }; });

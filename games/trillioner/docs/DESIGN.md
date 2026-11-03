@@ -911,3 +911,12 @@ No console errors in a complete run. Performance targets are measured and report
 The game appears in the hub with a thumbnail and README row, and node --test passes.
 Final report to the user: what is playable, how to start it, measured FPS, test results, simulator results and
 any item that is unfinished or was changed from this brief.
+
+## Own It decisions (user request, overrides the brief)
+
+- Extras live in `engine/data/extras.js`, outside the catalog budgets. Every sink is capped: wardrobe and pets about $71B, 20 mystery boxes at $1B, 200 cash throws at $50M. Together they cannot close the gap for a player who skips secrets.
+- Extras are bought only inside a shop, at the Style Counter, keeping the rule that nothing is sold on the road. The bag opens anywhere; the clock never stops.
+- Ordinary goods buy on touch. Anything with a business, income, reward, power or grant still waits for E, so the income can be read first, as the user asked.
+- Frenzy now reaches x10 and is shown as COMBO. The $2B extra cap per purchase stays.
+- Mystery boxes are seeded by run seed, player and box count, so the engine stays deterministic.
+- The guide favours nearby shops on foot and longer trips in a vehicle. Secrets stay off the route on purpose: finding them is still the way to win.

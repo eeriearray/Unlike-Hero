@@ -59,6 +59,14 @@
         g.beginPath(); g.arc(map.w2c(d.x, size), map.w2c(d.z, size), d.r || size / 90, 0, 7); g.fill();
         if (d.label && size > 300) { g.fillStyle = '#fff'; g.font = '12px Arial'; g.fillText(d.label, map.w2c(d.x, size) + 7, map.w2c(d.z, size) + 4); }
       });
+      if (map.route && map.route.length > 1) {
+        g.strokeStyle = '#ff2fa8'; g.lineWidth = size > 300 ? 4 : 3; g.lineJoin = 'round';
+        g.beginPath();
+        map.route.forEach(function (q, i) { var a = map.w2c(q.x, size), b = map.w2c(q.z, size); if (i) g.lineTo(a, b); else g.moveTo(a, b); });
+        g.stroke();
+        var e = map.route[map.route.length - 1];
+        g.fillStyle = '#ff2fa8'; g.beginPath(); g.arc(map.w2c(e.x, size), map.w2c(e.z, size), size / 45, 0, 7); g.fill();
+      }
       map.pins.forEach(function (p) {
         g.fillStyle = '#ff4d6d';
         g.beginPath(); g.arc(map.w2c(p.x, size), map.w2c(p.z, size), size / 70, 0, 7); g.fill();

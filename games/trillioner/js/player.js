@@ -1,4 +1,4 @@
-/* The blocky hero: arcade movement, double jump, visible growth. Collision size never changes. */
+/* The hero: arcade movement, double jump, visible growth. Collision size never changes. */
 (function () {
   var TR = window.TR = window.TR || {};
   var RADIUS = 0.7, HEIGHT = 2.6, WALK = 10, SPRINT = 18, ACCEL = 70, JUMP = 10.5, GRAVITY = 28;
@@ -33,9 +33,17 @@
     return g;
   }
   var pl = TR.player = {
+    part: part, ball: ball,
     pos: new THREE.Vector3(), vel: new THREE.Vector3(), heading: 0, grounded: true, jumps: 0, floor: 0, walkT: 0, group: null, parts: {}, squash: 0, hidden: false,
     init: function (scene) {
-      var g = pl.group = new THREE.Group(), p = pl.parts, SKIN = 0xf7cfa6, HAIR = 0x3b2a20, SHOE = 0xf4f4f4, SHIRT = 0x2f80ed, TROUSER = 0x2e3a59;
+      var fig = pl.figure(0x2f80ed, 0x3b2a20, 0xf7cfa6);
+      pl.group = fig.group; pl.parts = fig.parts;
+      scene.add(pl.group);
+      pl.shadow = null;
+    },
+    /** A rounded, jointed person. The hero and online rivals share this body. */
+    figure: function (SHIRT, HAIR, SKIN) {
+      var g = new THREE.Group(), p = {}, SHOE = 0xf4f4f4, TROUSER = 0x2e3a59;
       g.rotation.order = 'YXZ';
       // upper body hangs off the hips, so it can lean and twist on its own
       var hips = p.hips = new THREE.Group(); hips.position.y = 1.02; g.add(hips);
@@ -46,7 +54,7 @@
       part(0.26, 0.2, 0.26, SKIN, 0, 0.86, 0, chest);                          // neck
       var head = p.headJ = new THREE.Group(); head.position.y = 0.96; chest.add(head);
       p.head = ball(0.41, 0.44, 0.41, SKIN, 0, 0.34, 0, head);
-      ball(0.43, 0.32, 0.43, HAIR, 0, 0.52, 0.04, head);                       // hair
+      p.hairM = ball(0.43, 0.32, 0.43, HAIR, 0, 0.52, 0.04, head);              // hair
       ball(0.09, 0.11, 0.05, 0x1d1d24, -0.15, 0.36, -0.39, head);              // eyes
       ball(0.09, 0.11, 0.05, 0x1d1d24, 0.15, 0.36, -0.39, head);
       ball(0.06, 0.06, 0.05, 0xf2b98c, 0, 0.26, -0.42, head);                  // nose
@@ -60,9 +68,9 @@
       p.legR = limb(0.3, 0.52, 0.34, TROUSER, 0.2, -0.04, 0, hips);
       p.shinL = limb(0.26, 0.46, 0.3, TROUSER, 0, -0.46, 0, p.legL);
       p.shinR = limb(0.26, 0.46, 0.3, TROUSER, 0, -0.46, 0, p.legR);
-      part(0.3, 0.17, 0.52, SHOE, 0, -0.48, -0.08, p.shinL); part(0.3, 0.17, 0.52, SHOE, 0, -0.48, -0.08, p.shinR);
-      scene.add(g);
-      pl.shadow = null;
+      p.shoeL = part(0.3, 0.17, 0.52, SHOE, 0, -0.48, -0.08, p.shinL); p.shoeR = part(0.3, 0.17, 0.52, SHOE, 0, -0.48, -0.08, p.shinR);
+      p.base = { shirt: SHIRT, hair: HAIR, leg: TROUSER, shoe: SHOE };
+      return { group: g, parts: p };
     },
     teleport: function (x, y, z, h) { pl.pos.set(x, y, z); pl.vel.set(0, 0, 0); if (h != null) pl.heading = h; TR.cam.snap(pl.pos); pl.floor = y; },
     update: function (dt, moving) {
@@ -116,6 +124,19 @@
       pl.animate(dt, sp);
       pl.updateGrowth(dt);
     },
+    stride: function (p, s, c, run, go) {
+      // A walk cycle, set directly so the limbs stay in step. Forward swing is +x on the hip; a knee only folds backward (-x).
+      var hip = (0.62 + run * 0.42) * go, knee = (0.6 + run * 0.95) * go, arm = (0.5 + run * 0.55) * go;
+      p.legL.rotation.x = s * hip; p.legR.rotation.x = -s * hip;
+      // each knee folds while that leg swings forward, and the planted leg stays nearly straight
+      p.shinL.rotation.x = -Math.max(0, c) * knee - 0.04 * go; p.shinR.rotation.x = -Math.max(0, -c) * knee - 0.04 * go;
+      // opposite arm to opposite leg, with a bent elbow that bends more at a run
+      p.armL.rotation.x = -s * arm; p.armR.rotation.x = s * arm; p.armL.rotation.z = -0.08; p.armR.rotation.z = 0.08;
+      p.foreL.rotation.x = 0.28 + run * 0.95 * go + Math.max(0, s) * 0.3 * go; p.foreR.rotation.x = 0.28 + run * 0.95 * go + Math.max(0, -s) * 0.3 * go;
+      // the body is highest with the planted leg straight, the hips turn with the forward leg and the shoulders against it
+      p.chest.rotation.y = s * 0.12 * go; p.hips.rotation.y = -s * 0.1 * go; p.hips.rotation.z = c * 0.025 * go;
+      p.hips.position.y = 1.0 + Math.abs(s) * -0.05 * go + 0.03 * go;
+    },
     animate: function (dt, sp) {
       var p = pl.parts, t = pl.walkT, run = Math.min(1, sp / 18), go = Math.min(1, sp / 7);
       var s = Math.sin(t), c = Math.cos(t), k = 1 - Math.pow(0.0005, dt);
@@ -126,18 +147,8 @@
         to(p.armL, 'x', -0.7); to(p.armR, 'x', 0.8); to(p.armL, 'z', -0.5); to(p.armR, 'z', 0.5); to(p.foreL, 'x', 0.4); to(p.foreR, 'x', 0.4);
         to(p.chest, 'x', -0.08); to(p.hips, 'y', 0);
       } else {
-        // A walk cycle, set directly so the limbs stay in step. Forward swing is +x on the hip; a knee only folds backward (-x).
-        var hip = (0.62 + run * 0.42) * go, knee = (0.6 + run * 0.95) * go, arm = (0.5 + run * 0.55) * go;
-        p.legL.rotation.x = s * hip; p.legR.rotation.x = -s * hip;
-        // each knee folds while that leg swings forward, and the planted leg stays nearly straight
-        p.shinL.rotation.x = -Math.max(0, c) * knee - 0.04 * go; p.shinR.rotation.x = -Math.max(0, -c) * knee - 0.04 * go;
-        // opposite arm to opposite leg, with a bent elbow that bends more at a run
-        p.armL.rotation.x = -s * arm; p.armR.rotation.x = s * arm; p.armL.rotation.z = -0.08; p.armR.rotation.z = 0.08;
-        p.foreL.rotation.x = 0.28 + run * 0.95 * go + Math.max(0, s) * 0.3 * go; p.foreR.rotation.x = 0.28 + run * 0.95 * go + Math.max(0, -s) * 0.3 * go;
-        // the body is highest with the planted leg straight, the hips turn with the forward leg and the shoulders against it
+        pl.stride(p, s, c, run, go);
         to(p.chest, 'x', 0.04 * go + run * 0.16);
-        p.chest.rotation.y = s * 0.12 * go; p.hips.rotation.y = -s * 0.1 * go; p.hips.rotation.z = c * 0.025 * go;
-        p.hips.position.y = 1.0 + Math.abs(s) * -0.05 * go + 0.03 * go;
         // standing still: a slow breath
         if (go < 0.1) { p.chest.scale.y = 1 + Math.sin(performance.now() * 0.002) * 0.012; p.headJ.rotation.y = Math.sin(performance.now() * 0.0007) * 0.18; } else { p.chest.scale.y = 1; p.headJ.rotation.y *= 0.9; }
       }
@@ -169,6 +180,8 @@
       Object.keys(TR.vehicles.placed).forEach(function (k) { TR.vehicles.applySkin(TR.vehicles.placed[k]); });
     },
     /** Crown, gold outfit, carpet trail, bodyguards. Looks only; the collision stays the same size. */
+    /** Puts on what you bought. Runs through setGrowth, so clothes win over the automatic rank colours. */
+    applyStyle: function (style) { pl.style = style; pl.stage = -1; pl.setGrowth(pl.spentNow || 0); if (pl.hat) pl.hat.visible = !(style && style.hat); },
     setGrowth: function (spent) {
       var R = window.TRD.rules, p = pl.parts;
       pl.spentNow = spent;
@@ -186,12 +199,10 @@
       }
       p.crown.visible = stage >= 1;
       var fit = pl.look && pl.look.outfit;
-      p.body.material.color.setHex(fit || (stage >= 2 ? 0xffc53d : 0x2f80ed));
+      p.base.shirt = fit || (stage >= 2 ? 0xffc53d : 0x2f80ed);
       if (pl.look && pl.look.trail) pl.carpetMesh.material.color.setHex(pl.look.trail);
-      var sleeve = fit || (stage >= 2 ? 0xffc53d : 0x2f80ed), leg = stage >= 2 ? 0xd59a14 : 0x2e3a59;
-      p.armL.userData.mesh.material.color.setHex(sleeve); p.armR.userData.mesh.material.color.setHex(sleeve);
-      [p.legL, p.legR, p.shinL, p.shinR].forEach(function (j) { j.userData.mesh.material.color.setHex(leg); });
-      p.pelvis.material.color.setHex(leg);
+      p.base.leg = stage >= 2 ? 0xd59a14 : 0x2e3a59;
+      TR.wardrobe.dress(p, pl.style);
       pl.showCarpet = stage >= 3;
       p.g1.visible = p.g2.visible = stage >= 4;
       pl.fans = stage >= 5;
