@@ -42,3 +42,14 @@ Tests: `node --test --test-force-exit test/trillioner-*.test.mjs`. Simulators: `
 - Attack card targets are picked automatically (the richest or poorest rival), and Ban targets the rival's current shop or district, rather than a choice on screen.
 - The base of this branch is 114 commits behind `main`. Expect `README.md` and the generated registry to conflict on merge: keep both sides, then run `npm run registry`.
 - Two Putt Club tests fail on this branch (`sand grabs the ball`, `tees, cups and power-up crates`). They fail the same way at the branch's base commit and pass on current `main`.
+
+## Audit against the brief: known gaps
+
+- Part 4: the giant walkable globe in the Global Trade Tower lobby is missing (the only globe is an outdoor statue). The Race Track has no visible track.
+- Part 3: Fire sale and Surprise auction are not marked on the map.
+- Part 5: owned vehicles in traffic are only a colour tint. Only a few buildings show boarded-up or neon state; the rest do not reflect whether they earn.
+- Part 6: repeated-symbol clues are missing, and graffiti is only a poster-style marker.
+- Part 7: trophies use a message pill, not a big popup.
+- Part 8: the $100B+ event has no helicopters.
+- Part 9: FPS not measured on integrated graphics, a dip to 23 FPS unexplained, real gamepad and touch untested, no human has won a run, Battle Spend not replayed in browser since the last rule and layout changes.
+- Changed at the user's request: no interest, all sales indoors, rounded rather than blocky, walk-in doors.
