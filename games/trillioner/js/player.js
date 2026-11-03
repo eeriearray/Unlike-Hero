@@ -21,18 +21,27 @@
   var pl = TR.player = {
     pos: new THREE.Vector3(), vel: new THREE.Vector3(), heading: 0, grounded: true, jumps: 0, floor: 0, walkT: 0, group: null, parts: {}, squash: 0, hidden: false,
     init: function (scene) {
-      var g = pl.group = new THREE.Group(), p = pl.parts;
-      p.body = part(1.2, 1.2, 0.7, 0x2f80ed, 0, 1.3, 0, g);
-      p.head = part(0.95, 0.95, 0.95, 0xffd9a8, 0, 2.4, 0, g);
-      part(0.14, 0.2, 0.05, 0x222222, -0.22, 2.48, -0.49, g);
-      part(0.14, 0.2, 0.05, 0x222222, 0.22, 2.48, -0.49, g);
-      part(0.36, 0.08, 0.05, 0x8b3a2b, 0, 2.2, -0.49, g);
-      p.armL = part(0.36, 1.1, 0.42, 0xffd9a8, -0.82, 1.35, 0, g);
-      p.armR = part(0.36, 1.1, 0.42, 0xffd9a8, 0.82, 1.35, 0, g);
-      p.legL = part(0.5, 0.9, 0.55, 0x2e3a59, -0.32, 0.45, 0, g);
-      p.legR = part(0.5, 0.9, 0.55, 0x2e3a59, 0.32, 0.45, 0, g);
+      var g = pl.group = new THREE.Group(), p = pl.parts, SKIN = 0xf7cfa6, HAIR = 0x3b2a20, SHOE = 0xf4f4f4;
+      p.body = part(1.02, 1.02, 0.56, 0x2f80ed, 0, 1.4, 0, g);
+      part(1.04, 0.16, 0.58, 0x1d4f9e, 0, 0.98, 0, g);                       // belt line
+      part(0.5, 0.14, 0.04, 0xffffff, 0, 1.8, -0.3, g);                      // collar
+      part(0.36, 0.18, 0.36, SKIN, 0, 1.98, 0, g);                           // neck
+      p.head = part(0.92, 0.84, 0.84, SKIN, 0, 2.48, 0, g);
+      part(0.98, 0.3, 0.92, HAIR, 0, 2.86, 0.03, g);                         // hair
+      part(0.98, 0.46, 0.14, HAIR, 0, 2.66, 0.42, g);
+      part(0.14, 0.17, 0.03, 0x1d1d24, -0.2, 2.54, -0.43, g);                // eyes
+      part(0.14, 0.17, 0.03, 0x1d1d24, 0.2, 2.54, -0.43, g);
+      part(0.32, 0.06, 0.03, 0xb5503c, 0, 2.26, -0.43, g);                   // smile
+      p.armL = part(0.3, 1, 0.34, 0x2f80ed, -0.68, 1.4, 0, g);
+      p.armR = part(0.3, 1, 0.34, 0x2f80ed, 0.68, 1.4, 0, g);
+      p.legL = part(0.42, 0.9, 0.44, 0x2e3a59, -0.26, 0.5, 0, g);
+      p.legR = part(0.42, 0.9, 0.44, 0x2e3a59, 0.26, 0.5, 0, g);
       [p.armL, p.armR, p.legL, p.legR].forEach(function (m) { m.geometry.translate(0, -m.geometry.parameters.height / 2 + 0.05, 0); m.position.y += m.geometry.parameters.height / 2 - 0.05; });
+      // hands and shoes ride on the limbs that swing
+      var hL = part(0.28, 0.24, 0.3, SKIN, 0, -0.98, 0, p.armL), hR = part(0.28, 0.24, 0.3, SKIN, 0, -0.98, 0, p.armR);
+      part(0.46, 0.22, 0.6, SHOE, 0, -0.88, -0.07, p.legL); part(0.46, 0.22, 0.6, SHOE, 0, -0.88, -0.07, p.legR);
       scene.add(g);
+      pl.shadow = null;
     },
     teleport: function (x, y, z, h) { pl.pos.set(x, y, z); pl.vel.set(0, 0, 0); if (h != null) pl.heading = h; TR.cam.snap(pl.pos); pl.floor = y; },
     update: function (dt, moving) {
@@ -112,7 +121,7 @@
       if (stage === pl.stage) return;
       pl.stage = stage;
       if (!p.crown) {
-        p.crown = part(0.9, 0.35, 0.9, 0xffc53d, 0, 3.05, 0, pl.group); p.crown.castShadow = false;
+        p.crown = part(0.9, 0.35, 0.9, 0xffc53d, 0, 3.16, 0, pl.group); p.crown.castShadow = false;
         p.g1 = guard(); p.g2 = guard();
         pl.carpet = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.2), new THREE.MeshBasicMaterial({ color: 0xd9352c }));
         pl.carpetMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(2.2, 0.05, 2.4), new THREE.MeshBasicMaterial({ color: 0xd9352c }), 40);
@@ -124,6 +133,7 @@
       var fit = pl.look && pl.look.outfit;
       p.body.material.color.setHex(fit || (stage >= 2 ? 0xffc53d : 0x2f80ed));
       if (pl.look && pl.look.trail) pl.carpetMesh.material.color.setHex(pl.look.trail);
+      p.armL.material.color.setHex(fit || (stage >= 2 ? 0xffc53d : 0x2f80ed)); p.armR.material.color.setHex(fit || (stage >= 2 ? 0xffc53d : 0x2f80ed));
       p.legL.material.color.setHex(stage >= 2 ? 0xd59a14 : 0x2e3a59); p.legR.material.color.setHex(stage >= 2 ? 0xd59a14 : 0x2e3a59);
       pl.showCarpet = stage >= 3;
       p.g1.visible = p.g2.visible = stage >= 4;

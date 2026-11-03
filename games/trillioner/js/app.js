@@ -43,9 +43,10 @@
       app.renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, powerPreference: 'high-performance' });
       app.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
       app.renderer.shadowMap.enabled = true;
-      app.renderer.shadowMap.type = THREE.PCFShadowMap;
+      app.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      app.renderer.outputEncoding = THREE.sRGBEncoding;
       app.scene = new THREE.Scene();
-      app.camera = new THREE.PerspectiveCamera(62, 1, 0.3, 1400);
+      app.camera = new THREE.PerspectiveCamera(58, 1, 0.5, 1400);
       addEventListener('resize', app.resize);
       app.resize();
       TR.world.init(app.scene);
@@ -448,7 +449,7 @@
       }
       var v = TR.vehicles.current;
       var cfl = TR.interiors.current ? 0 : TR.player.pos.y < -20 ? app.floorAt(TR.player.pos) : TR.world.isWater(TR.player.pos.x, TR.player.pos.z) ? -1 : 0;
-      TR.cam.update(app.camera, TR.player.pos, dt, v ? { dist: v.spec.cam, lift: 2.4, fov: 62 + Math.min(16, Math.abs(v.speed) * 0.34), floor: cfl } : { floor: cfl });
+      TR.cam.update(app.camera, TR.player.pos, dt, v ? { dist: v.spec.cam, lift: 2.4, fov: 58 + Math.min(16, Math.abs(v.speed) * 0.34), floor: cfl } : { floor: cfl });
     },
 
     loop: function (now) {

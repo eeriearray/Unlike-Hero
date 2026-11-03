@@ -2,13 +2,19 @@
 (function () {
   var TR = window.TR = window.TR || {};
   var D = window.TRD.districts, dummy = new THREE.Object3D(), col = new THREE.Color();
-  var SHIRTS = [0xff6b6b, 0x4dabf7, 0x51cf66, 0xffd43b, 0xcc5de8, 0xff922b, 0x20c997, 0xf06595, 0xffffff];
+  var SHIRTS = [0xff6b6b, 0x4dabf7, 0x51cf66, 0xffd43b, 0xcc5de8, 0xff922b, 0x20c997, 0xf06595, 0xf8f8f8, 0x5c7cfa, 0xe64980, 0x94d82d];
 
   function bodyGeometry() {
-    var g = new TR.Geo();
-    g.box(0, 1.0, 0, 1, 1.2, 0.6, 0xffffff);                 // shirt, tinted per person
-    g.box(-0.26, 0, 0, 0.4, 1, 0.5, 0x8892a8).box(0.26, 0, 0, 0.4, 1, 0.5, 0x8892a8);
-    g.box(0, 2.2, 0, 0.8, 0.8, 0.8, 0xffe0b8);
+    var g = new TR.Geo(), SKIN = 0xf2c39a, TROUSER = 0x0000ff, SHOE = 0x2a2a33, HAIR = 0x3a2a20;
+    g.box(-0.22, 0, 0.02, 0.32, 0.18, 0.5, SHOE).box(0.22, 0, 0.02, 0.32, 0.18, 0.5, SHOE);
+    g.box(-0.22, 0.18, 0, 0.3, 0.72, 0.34, TROUSER).box(0.22, 0.18, 0, 0.3, 0.72, 0.34, TROUSER);
+    g.box(0, 0.9, 0, 0.82, 0.92, 0.44, 0xffffff);
+    g.box(-0.5, 0.98, 0, 0.2, 0.74, 0.26, 0xffffff).box(0.5, 0.98, 0, 0.2, 0.74, 0.26, 0xffffff);
+    g.box(-0.5, 0.78, 0, 0.18, 0.2, 0.22, SKIN).box(0.5, 0.78, 0, 0.18, 0.2, 0.22, SKIN);
+    g.box(0, 1.82, 0, 0.26, 0.12, 0.26, SKIN);
+    g.box(0, 1.94, 0, 0.66, 0.62, 0.62, SKIN);
+    g.box(0, 2.44, 0.04, 0.72, 0.22, 0.68, HAIR).box(0, 2.1, 0.32, 0.7, 0.36, 0.1, HAIR);
+    g.box(-0.15, 2.2, -0.32, 0.09, 0.11, 0.02, 0x1d1d24).box(0.15, 2.2, -0.32, 0.09, 0.11, 0.02, 0x1d1d24);
     return g.geometry();
   }
 
@@ -16,12 +22,12 @@
     mesh: null, people: [], max: 150, scareAt: null, scareT: 0, lureAt: null, lureT: 0, cheerT: 0,
     init: function (scene, count) {
       cr.max = count || 150;
-      cr.mesh = new THREE.InstancedMesh(bodyGeometry(), new THREE.MeshLambertMaterial({ vertexColors: true }), 240);
+      cr.mesh = new THREE.InstancedMesh(bodyGeometry(), TR.tintedMaterial(), 240);
       cr.mesh.frustumCulled = false;
-      cr.mesh.castShadow = false;
+      cr.mesh.castShadow = true;
       cr.mesh.setColorAt(0, col.setHex(0xffffff));
       scene.add(cr.mesh);
-      for (var i = 0; i < 240; i++) cr.people.push({ x: 1e6, z: 1e6, y: 0, h: 0, sp: 2, c: SHIRTS[i % SHIRTS.length], s: 0.9 + (i % 5) * 0.05, ph: i * 0.7, act: 0, off: true });
+      for (var i = 0; i < 240; i++) cr.people.push({ x: 1e6, z: 1e6, y: 0, h: 0, sp: 2, c: SHIRTS[i % SHIRTS.length], s: 0.92 + (i % 5) * 0.05, ph: i * 0.7, act: 0, off: true });
       cr.mesh.count = 0;
     },
     place: function (p, cx, cz, y, near) {
@@ -79,7 +85,7 @@
         } else if (cr.cheerT > 0 && d2 < 2500) sp = 0;
         p.x += -Math.sin(h) * sp * dt; p.z += -Math.cos(h) * sp * dt;
         if (d2 < 1.6) { var dl = Math.sqrt(d2) || 1; p.x = pos.x + dx / dl * 1.3; p.z = pos.z + dz / dl * 1.3; }
-        var bob = Math.abs(Math.sin(t * 7 + p.ph)) * 0.16;
+        var bob = Math.abs(Math.sin(t * 7 + p.ph)) * 0.09;
         if (cr.cheerT > 0 && d2 < 2500) bob = Math.abs(Math.sin(t * 9 + p.ph)) * 1.1;
         dummy.position.set(p.x, p.y + bob, p.z); dummy.rotation.set(0, h, 0); dummy.scale.set(p.s, p.s, p.s); dummy.updateMatrix();
         cr.mesh.setMatrixAt(count, dummy.matrix);

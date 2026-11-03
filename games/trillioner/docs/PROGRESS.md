@@ -17,15 +17,17 @@ Tests: `node --test --test-force-exit test/trillioner-*.test.mjs`. Simulators: `
 | M5 Secrets | Done | Solver 100/100. Preview: Mr. Grey, sunken vault, clock tower, asteroid, broker, corner towers and mole chains played |
 | M6 Meta and polish | Done | Preview: menus, tutorial, Clout shop, settings, quality levels, Daily City, Free Roam, Trophy Room |
 | M7 Battle Spend | Done | Socket tests pass. Two browser tabs completed matches, including a mid-match reload that reclaimed the seat |
+| Art pass | Done | Requested after M8: sRGB lighting, sky dome, clouds, tiled ground, road markings and zebra crossings, new building shapes, characters, cars, pads, rooms, HUD. Viewed in every district, at dawn, day, sunset and night, and in a room |
 | M8 Finish | Done, with limits below | FPS measured on one machine; gamepad checked with a stubbed pad; touch checked with synthetic touch events |
 
 ## Measured
 
-- Driving across six districts at High, Apple M4, 946x492 at 2x: 60 FPS median, 60 minimum, worst frame 18 ms, at most 129 draw calls and 59k triangles.
+- After the art pass, driving across the city at High, Apple M4, 946x492 at 2x: 60 FPS median, 60 minimum, worst frame 19 ms, about 100 draw calls and 117k triangles on that drive. Wide aerial views reached 161 draw calls and 136k triangles.
 - Boot to first playable: under 0.1 s from localhost (`window.__trBootMs`).
 - Solver, 100 seeds: 100 wins, average 14.3 minutes, worst 15.2, average spent $1,054B.
 - Visible-only bot, 100 seeds: no wins, at least $583B left, average spent $602B. All-earners bot: no wins, at least $318B left.
-- Complete solo run through the real client (solver decisions, seed 2026): won at 12:35, $1.038T spent, 27 secrets, no page errors.
+- Complete solo run through the real client (solver decisions, seed 2026): won at 12:35, $1.038T spent, 27 secrets, no page errors. This predates the art pass; only the layout tests, solver and scripted views were rerun after it.
+- Battle Spend, 8 real minutes, two tabs and a bot: reached 8:00, Host won on lowest balance ($159B against $164B and $258B), attack cards and auction bids landed, no page errors. Also before the art pass.
 
 ## Known limits
 

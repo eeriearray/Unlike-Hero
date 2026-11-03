@@ -34,7 +34,8 @@
       add(1.2, 1.2, 0.7, COLORS[i % COLORS.length], 1.3); add(0.95, 0.95, 0.95, 0xffd9a8, 2.4); add(1, 1, 0.55, 0x2e3a59, 0.45);
       var c = document.createElement('canvas'); c.width = 256; c.height = 48;
       var x = c.getContext('2d'); x.fillStyle = 'rgba(16,18,40,.8)'; x.fillRect(0, 0, 256, 48); x.fillStyle = '#fff'; x.font = '800 26px Arial'; x.textAlign = 'center'; x.fillText(b.name, 128, 33);
-      var sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), fog: false }));
+      var nameTex = new THREE.CanvasTexture(c); nameTex.encoding = THREE.sRGBEncoding;
+      var sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: nameTex, fog: false }));
       sp.scale.set(5, 0.95, 1); sp.position.y = 4; g.add(sp);
       TR.app.scene.add(g);
       return (bt.rigs[b.id] = { group: g, x: b.x, y: b.y, z: b.z, h: b.h });

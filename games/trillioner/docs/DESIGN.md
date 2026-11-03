@@ -45,6 +45,8 @@ Each one is a call made while building. "Changed" means it departs from a litera
 18. **Moon before breakfast** means bought between midnight and the 6AM end of the day, because Spaceport deals need a night-time discovery first.
 19. **Battle Spend bots** buy about once every 5 seconds and never buy earners, leaving roughly $120B to $180B at the end, so a good shopper can beat them. Two bots never target the same pad.
 20. **Forced Gift** gives the rival 10 seconds to refuse. Gifts count as spending for the giver.
+22. **Art direction.** Colours are authored in sRGB and lit in linear space, with no tone mapping, so the toy colours stay saturated. All art is still generated from code.
+23. **Camera and awnings.** Door awnings have a collision box above head height so the camera cannot end up inside one.
 21. **Solver scope.** Bots move with a travel model (distance x 1.25 / vehicle speed, 1.5 s per room, 0.4 s per purchase). They do not steer through the 3D city. Browser flood fills and drives cover that side.
 
 ---

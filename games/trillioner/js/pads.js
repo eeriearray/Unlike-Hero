@@ -7,11 +7,18 @@
   var pads = TR.pads = {
     list: [], rings: null, tops: null, labels: [], hold: 0, holding: null, stepOff: {}, cool: 0, scanT: 0, active: [],
     init: function (scene) {
-      pads.rings = new THREE.InstancedMesh(new THREE.CylinderGeometry(1.5, 1.7, 0.18, 16), new THREE.MeshBasicMaterial({ color: 0xffffff }), MAX);
-      pads.tops = new THREE.InstancedMesh(new THREE.OctahedronGeometry(0.55), new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x444444 }), MAX);
-      pads.rings.frustumCulled = pads.tops.frustumCulled = false;
-      pads.rings.setColorAt(0, col.setHex(0xffffff)); pads.tops.setColorAt(0, col.setHex(0xffffff));
-      scene.add(pads.rings, pads.tops);
+      pads.rings = new THREE.InstancedMesh(new THREE.CylinderGeometry(1.5, 1.62, 0.14, 24), new THREE.MeshBasicMaterial({ color: 0xffffff }), MAX);
+      var coin = new THREE.CylinderGeometry(0.62, 0.62, 0.16, 18); coin.rotateX(Math.PI / 2);
+      pads.tops = new THREE.InstancedMesh(coin, new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x555555 }), MAX);
+      var glow = document.createElement('canvas'); glow.width = 4; glow.height = 64;
+      var gx = glow.getContext('2d'), gr = gx.createLinearGradient(0, 0, 0, 64);
+      gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(1, 'rgba(255,255,255,.55)');
+      gx.fillStyle = gr; gx.fillRect(0, 0, 4, 64);
+      var beam = new THREE.CylinderGeometry(1.42, 1.5, 3.2, 20, 1, true); beam.translate(0, 1.6, 0);
+      pads.beams = new THREE.InstancedMesh(beam, new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(glow), transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, fog: false }), MAX);
+      pads.rings.frustumCulled = pads.tops.frustumCulled = pads.beams.frustumCulled = false;
+      pads.rings.setColorAt(0, col.setHex(0xffffff)); pads.tops.setColorAt(0, col.setHex(0xffffff)); pads.beams.setColorAt(0, col.setHex(0xffffff));
+      scene.add(pads.rings, pads.tops, pads.beams);
       for (var i = 0; i < LABELS; i++) pads.labels.push(makeLabel(scene));
     },
     /** Called once per run with the run's items. */
@@ -79,19 +86,23 @@
       for (var i = 0; i < n; i++) {
         var e = pads.active[i], p = e.pad, big = p.item.price >= BIG_AT, s = big ? 1.5 : 0.95;
         if (p.item.kind === 'change') s = 0.62;
-        dummy.position.set(p.x, p.y + 0.1, p.z); dummy.rotation.set(0, 0, 0); dummy.scale.set(s, 1, s); dummy.updateMatrix();
+        dummy.position.set(p.x, p.y + 0.09, p.z); dummy.rotation.set(0, 0, 0); dummy.scale.set(s, 1, s); dummy.updateMatrix();
         pads.rings.setMatrixAt(i, dummy.matrix);
-        pads.rings.setColorAt(i, col.setHex(stateColor(e.st, p.item)));
-        var live = e.st === 'open';
-        dummy.position.y = p.y + (live ? 1.5 + Math.sin(t * 2.2 + i) * 0.16 : 0.5);
-        dummy.rotation.y = t * 1.4 + i;
-        var ts = live ? (big ? 1.2 : 0.8) : 0.4; if (p.item.kind === 'change') ts *= 0.6;
+        var hue = stateColor(e.st, p.item), live = e.st === 'open', pulse = live ? 0.75 + Math.sin(t * 3 + i) * 0.25 : 0;
+        pads.rings.setColorAt(i, col.setHex(hue));
+        dummy.scale.set(s, live ? (big ? 1.2 : 0.8) * (0.75 + pulse * 0.3) : 0.001, s); dummy.updateMatrix();
+        pads.beams.setMatrixAt(i, dummy.matrix);
+        pads.beams.setColorAt(i, col.setHex(hue));
+        dummy.position.y = p.y + (live ? 1.5 + Math.sin(t * 2.2 + i) * 0.14 : 0.42);
+        dummy.rotation.y = live ? t * 2 + i : 0;
+        var ts = live ? (big ? 1.25 : 0.82) : 0.34; if (p.item.kind === 'change') ts *= 0.62;
         dummy.scale.set(ts, ts, ts); dummy.updateMatrix();
         pads.tops.setMatrixAt(i, dummy.matrix);
-        pads.tops.setColorAt(i, col.setHex(stateColor(e.st, p.item)));
+        pads.tops.setColorAt(i, col.setHex(hue));
       }
-      pads.rings.count = pads.tops.count = n;
-      pads.rings.instanceMatrix.needsUpdate = pads.tops.instanceMatrix.needsUpdate = true;
+      pads.rings.count = pads.tops.count = pads.beams.count = n;
+      pads.rings.instanceMatrix.needsUpdate = pads.tops.instanceMatrix.needsUpdate = pads.beams.instanceMatrix.needsUpdate = true;
+      if (pads.beams.instanceColor) pads.beams.instanceColor.needsUpdate = true;
       if (pads.rings.instanceColor) pads.rings.instanceColor.needsUpdate = true;
       if (pads.tops.instanceColor) pads.tops.instanceColor.needsUpdate = true;
     },
@@ -155,17 +166,17 @@
   };
 
   function stateColor(st, item) {
-    if (st === 'open') return item.kind === 'change' ? 0x7dd8ff : item.price >= BIG_AT ? 0xffc53d : 0x5dff8f;
-    if (st === 'locked') return 0xb36bff;
-    if (st === 'owned') return 0xffe9a0;
-    return 0x333338;
+    if (st === 'open') return item.kind === 'change' ? 0x45c6ff : item.kind === 'store' ? 0xff5ad1 : item.price >= BIG_AT ? 0xffb820 : 0x2fe877;
+    if (st === 'locked') return 0xa55bff;
+    if (st === 'owned') return 0xffe08a;
+    return 0x4a4a52;
   }
 
   function makeLabel(scene) {
     var c = document.createElement('canvas'); c.width = 384; c.height = 128;
-    var tex = new THREE.CanvasTexture(c);
+    var tex = new THREE.CanvasTexture(c); tex.encoding = THREE.sRGBEncoding;
     var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: true, transparent: true, fog: false }));
-    s.visible = false; s.scale.set(5.4, 1.8, 1);
+    s.visible = false; s.scale.set(4.5, 1.5, 1);
     scene.add(s);
     var key = '';
     return {
@@ -180,7 +191,8 @@
         key = k;
         var g = c.getContext('2d');
         g.clearRect(0, 0, 384, 128);
-        g.fillStyle = 'rgba(16,18,40,.82)'; roundRect(g, 4, 6, 376, 116, 22); g.fill();
+        g.fillStyle = 'rgba(18,20,44,.9)'; roundRect(g, 4, 6, 376, 116, 26); g.fill();
+        g.strokeStyle = e.st === 'open' ? 'rgba(255,197,61,.9)' : 'rgba(255,255,255,.25)'; g.lineWidth = 4; roundRect(g, 6, 8, 372, 112, 24); g.stroke();
         g.textAlign = 'center';
         g.fillStyle = e.st === 'open' ? '#ffc53d' : e.st === 'locked' ? '#d7a6ff' : '#aaa';
         g.font = '900 46px Arial Black, Arial, sans-serif';

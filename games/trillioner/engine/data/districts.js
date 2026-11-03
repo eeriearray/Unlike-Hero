@@ -13,7 +13,7 @@
       ground: 0xd9cfa8, walls: [0xf2c94c, 0xe0b23a, 0xc9d6e8, 0xf7dd8a], roofs: [0xd59a14, 0xfff0b0, 0x8fb2d9], neon: 0xe0a100, prop: 'lamp', crowd: 34,
       filler: { shape: 'tower', hMin: 26, hMax: 62, step: 24, gap: 0.14 }, spawn: { x: -60, z: 8 }, palette: [0xfff3d6, 0xc99b3b, 0xffe9a8],
       buildings: [
-        { id: 'hotel', name: 'The Starting Hotel', x: -60, z: 30, w: 32, d: 22, h: 30, wall: 0xfff0c4, roof: 0xd59a14, door: 'n', enter: 1, neon: 1 },
+        { id: 'hotel', name: 'The Starting Hotel', x: -60, z: 40, w: 32, d: 22, h: 30, wall: 0xfff0c4, roof: 0xd59a14, door: 'n', enter: 1, neon: 1 },
         { id: 'trillion_tower', name: 'Trillion Tower', x: 60, z: -62, w: 36, d: 36, h: 132, wall: 0xffc53d, roof: 0xfff0b0, door: 's', enter: 1, neon: 1, helipad: 1 },
         { id: 'bank', name: 'Bank of Everything', x: -60, z: -62, w: 36, d: 24, h: 26, wall: 0xeae6d8, roof: 0x7d8fa8, door: 's', enter: 1 },
         { id: 'exchange', name: 'Stock Exchange', x: 60, z: 48, w: 40, d: 26, h: 22, wall: 0xfafafa, roof: 0x3d6cb9, door: 'n', enter: 1, neon: 1 },
@@ -32,8 +32,8 @@
         { id: 'lobby_office', name: 'Very Friendly Office', x: -96, z: 88, cols: 1, dir: 'x', spacing: 5, plain: 1 }
       ],
       change: { x: 22, z: 22 },
-      stairs: [{ x: -84, z: 30, to: 30, dir: 'e', len: 8 }],
-      landmarks: [{ kind: 'screen', text: 'SPEND MORE', x: 60, z: 16, h: 18, w: 36 }]
+      stairs: [{ x: -84, z: 40, to: 30, dir: 'e', len: 8 }],
+      landmarks: [{ kind: 'screen', text: 'SPEND MORE', x: 88, z: 20, h: 22, w: 24 }]
     },
     luxury: {
       id: 'luxury', name: 'Luxury Row', bounds: [120, -120, 360, 120], budget: 260 * B, visible: 59 * B,

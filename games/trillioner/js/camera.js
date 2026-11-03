@@ -2,12 +2,12 @@
 (function () {
   var TR = window.TR = window.TR || {};
   var cam = TR.cam = {
-    dist: 11, fx: new THREE.Vector3(), shake: 0, kick: 0, cur: new THREE.Vector3(0, 8, 10), look: new THREE.Vector3(),
+    dist: 13, fx: new THREE.Vector3(), shake: 0, kick: 0, cur: new THREE.Vector3(0, 8, 10), look: new THREE.Vector3(),
     update: function (camera, target, dt, opts) {
       opts = opts || {};
       var yaw = TR.input.yaw, pitch = TR.input.pitch, want = opts.dist || cam.dist;
       var dx = Math.sin(yaw) * Math.cos(pitch), dy = Math.sin(pitch), dz = Math.cos(yaw) * Math.cos(pitch);
-      var fy = target.y + (opts.lift || 2.2);
+      var fy = target.y + (opts.lift || 2.6);
       var d = want;
       if (TR.world && TR.world.collide) d = Math.max(1.6, TR.world.collide.rayClip(target.x, fy, target.z, dx, dy, dz, want) - 0.5);
       var floor = (opts.floor != null ? opts.floor : target.y - 40) + 0.5;
@@ -20,7 +20,7 @@
       var s = cam.shake * cam.shake;
       camera.position.set(cam.cur.x + (Math.random() - 0.5) * s, cam.cur.y + (Math.random() - 0.5) * s, cam.cur.z + (Math.random() - 0.5) * s);
       camera.lookAt(target.x, fy - 0.5 + cam.kick * 0.4, target.z);
-      camera.fov += ((opts.fov || 62) + cam.kick * 6 - camera.fov) * Math.min(1, dt * 6);
+      camera.fov += ((opts.fov || 58) + cam.kick * 6 - camera.fov) * Math.min(1, dt * 6);
       camera.updateProjectionMatrix();
     },
     snap: function (target) { cam.cur.set(target.x + 8, target.y + 6, target.z + 8); }

@@ -1,6 +1,7 @@
 /* Merged-geometry builder and collision grid. Everything in the city is built from these boxes. */
 (function () {
   var TR = window.TR = window.TR || {};
+  THREE.ColorManagement.legacyMode = false;   // colours are authored in sRGB and lit in linear space
   var C = new THREE.Color();
 
   function Geo() { this.p = []; this.n = []; this.c = []; this.uv = null; this.count = 0; }
@@ -25,7 +26,7 @@
       self.tri(ax, ya, az, bx, ya, bz, cx, yb, cz, wnx, ny, wnz, r, g, b, sA, sA, sB);
       self.tri(ax, ya, az, cx, yb, cz, dx, yb, dz, wnx, ny, wnz, r, g, b, sA, sB, sB);
     }
-    var lo = 0.74, hi = 1;
+    var lo = 0.68, hi = 1.03;
     face([-hw, hd], [hw, hd], [hw, hd], [-hw, hd], y, y1, 0, 0, 1, lo, hi);
     face([hw, -hd], [-hw, -hd], [-hw, -hd], [hw, -hd], y, y1, 0, 0, -1, lo, hi);
     face([hw, hd], [hw, -hd], [hw, -hd], [hw, hd], y, y1, 1, 0, 0, lo, hi);
@@ -60,6 +61,53 @@
     this.tri(x0 + px, y, z0 + pz, x1 - px, y, z1 - pz, x0 - px, y, z0 - pz, 0, 1, 0, r, g, b, 1, 1, 1);
     return this;
   };
+  /** One flat quad on a wall or floor, no thickness. Corners a, b, c, d run counter-clockwise seen from outside. */
+  Geo.prototype.quad = function (ax, ay, az, bx, by, bz, cx, cy, cz, dx, dy, dz, nx, ny, nz, color, sLow, sHigh) {
+    C.setHex(color);
+    var lo = sLow == null ? 1 : sLow, hi = sHigh == null ? lo : sHigh;
+    this.tri(ax, ay, az, bx, by, bz, cx, cy, cz, nx, ny, nz, C.r, C.g, C.b, lo, lo, hi);
+    this.tri(ax, ay, az, cx, cy, cz, dx, dy, dz, nx, ny, nz, C.r, C.g, C.b, lo, hi, hi);
+    return this;
+  };
+  /** A flat rectangle on the ground. */
+  Geo.prototype.tile = function (x0, z0, x1, z1, y, color, s) { return this.quad(x0, y, z1, x1, y, z1, x1, y, z0, x0, y, z0, 0, 1, 0, color, s == null ? 1 : s); };
+  /** A panel on a facade: side is 'n','s','e','w' of a box centred x,z with half sizes hw,hd. u runs along the wall. */
+  Geo.prototype.panel = function (side, x, z, hw, hd, off, u, y, w, h, color) {
+    var a = u - w / 2, b = u + w / 2, y1 = y + h;
+    if (side === 's') { var zs = z + hd + off; return this.quad(x + a, y, zs, x + b, y, zs, x + b, y1, zs, x + a, y1, zs, 0, 0, 1, color); }
+    if (side === 'n') { var zn = z - hd - off; return this.quad(x - a, y, zn, x - b, y, zn, x - b, y1, zn, x - a, y1, zn, 0, 0, -1, color); }
+    if (side === 'e') { var xe = x + hw + off; return this.quad(xe, y, z - a, xe, y, z - b, xe, y1, z - b, xe, y1, z - a, 1, 0, 0, color); }
+    var xw = x - hw - off; return this.quad(xw, y, z + a, xw, y, z + b, xw, y1, z + b, xw, y1, z + a, -1, 0, 0, color);
+  };
+  /** Pitched roof. The ridge runs along z when alongZ, otherwise along x. */
+  Geo.prototype.gable = function (x, y, z, w, h, d, color, alongZ) {
+    C.setHex(color);
+    var r = C.r, g = C.g, b = C.b, hw = w / 2, hd = d / 2, y1 = y + h, l, nn, ny;
+    if (alongZ) {
+      l = Math.hypot(hw, h); nn = h / l; ny = hw / l;
+      this.tri(x - hw, y, z + hd, x, y1, z + hd, x, y1, z - hd, -nn, ny, 0, r, g, b, 0.9, 1.05, 1.05); this.tri(x - hw, y, z + hd, x, y1, z - hd, x - hw, y, z - hd, -nn, ny, 0, r, g, b, 0.9, 1.05, 0.9);
+      this.tri(x + hw, y, z - hd, x, y1, z - hd, x, y1, z + hd, nn, ny, 0, r, g, b, 0.9, 1.05, 1.05); this.tri(x + hw, y, z - hd, x, y1, z + hd, x + hw, y, z + hd, nn, ny, 0, r, g, b, 0.9, 1.05, 0.9);
+      this.tri(x - hw, y, z + hd, x + hw, y, z + hd, x, y1, z + hd, 0, 0, 1, r, g, b, 0.8, 0.8, 0.9); this.tri(x + hw, y, z - hd, x - hw, y, z - hd, x, y1, z - hd, 0, 0, -1, r, g, b, 0.8, 0.8, 0.9);
+    } else {
+      l = Math.hypot(hd, h); nn = h / l; ny = hd / l;
+      this.tri(x + hw, y, z + hd, x + hw, y1, z, x - hw, y1, z, 0, ny, nn, r, g, b, 0.9, 1.05, 1.05); this.tri(x + hw, y, z + hd, x - hw, y1, z, x - hw, y, z + hd, 0, ny, nn, r, g, b, 0.9, 1.05, 0.9);
+      this.tri(x - hw, y, z - hd, x - hw, y1, z, x + hw, y1, z, 0, ny, -nn, r, g, b, 0.9, 1.05, 1.05); this.tri(x - hw, y, z - hd, x + hw, y1, z, x + hw, y, z - hd, 0, ny, -nn, r, g, b, 0.9, 1.05, 0.9);
+      this.tri(x + hw, y, z - hd, x + hw, y1, z, x + hw, y, z + hd, 1, 0, 0, r, g, b, 0.8, 0.9, 0.8); this.tri(x - hw, y, z + hd, x - hw, y1, z, x - hw, y, z - hd, -1, 0, 0, r, g, b, 0.8, 0.9, 0.8);
+    }
+    return this;
+  };
+  /** Wheel: a cylinder lying on its side, axis along x. */
+  Geo.prototype.wheel = function (x, y, z, r, w, color, hub) {
+    C.setHex(color);
+    var n = 10, cr = C.r, cg = C.g, cb = C.b, hw = w / 2;
+    for (var i = 0; i < n; i++) {
+      var a0 = i / n * 6.2832, a1 = (i + 1) / n * 6.2832, y0 = y + Math.cos(a0) * r, z0 = z + Math.sin(a0) * r, y1 = y + Math.cos(a1) * r, z1 = z + Math.sin(a1) * r, ny = Math.cos((a0 + a1) / 2), nz = Math.sin((a0 + a1) / 2);
+      this.tri(x - hw, y0, z0, x + hw, y0, z0, x + hw, y1, z1, 0, ny, nz, cr, cg, cb, 1, 1, 1); this.tri(x - hw, y0, z0, x + hw, y1, z1, x - hw, y1, z1, 0, ny, nz, cr, cg, cb, 1, 1, 1);
+      this.tri(x + hw, y, z, x + hw, y1, z1, x + hw, y0, z0, 1, 0, 0, cr, cg, cb, 1, 1, 1); this.tri(x - hw, y, z, x - hw, y0, z0, x - hw, y1, z1, -1, 0, 0, cr, cg, cb, 1, 1, 1);
+    }
+    if (hub != null) { var o = (x > 0 ? 1 : -1) * (hw + 0.01); this.quad(x + o, y - r * 0.45, z - r * 0.45 * (o > 0 ? -1 : 1), x + o, y - r * 0.45, z + r * 0.45 * (o > 0 ? -1 : 1), x + o, y + r * 0.45, z + r * 0.45 * (o > 0 ? -1 : 1), x + o, y + r * 0.45, z - r * 0.45 * (o > 0 ? -1 : 1), o > 0 ? 1 : -1, 0, 0, hub); }
+    return this;
+  };
   Geo.prototype.geometry = function () {
     var g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(this.p, 3));
@@ -73,6 +121,20 @@
     return m;
   };
   TR.Geo = Geo;
+
+  /** Instanced bodies: white parts take the instance colour, pure blue parts a darker second colour, the rest stay as painted. */
+  TR.tintedMaterial = function () {
+    var m = new THREE.MeshLambertMaterial({ vertexColors: true });
+    m.onBeforeCompile = function (sh) {
+      sh.vertexShader = sh.vertexShader.replace('#include <color_vertex>',
+        'vColor = vec3(1.0); vColor *= color;\n' +
+        '#ifdef USE_INSTANCING_COLOR\n' +
+        'if (abs(color.r - color.g) < 0.02 && abs(color.g - color.b) < 0.02 && color.r > 0.25) vColor = instanceColor.xyz * color.r;\n' +
+        'else if (color.r < 0.01 && color.g < 0.01 && color.b > 0.1) vColor = instanceColor.zxy * 0.45 * color.b + vec3(0.03);\n' +
+        '#endif\n');
+    };
+    return m;
+  };
 
   // ───── collision: axis-aligned boxes in a hash grid ─────
   var CELL = 24;

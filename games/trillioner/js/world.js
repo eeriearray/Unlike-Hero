@@ -4,6 +4,36 @@
   var D = window.TRD.districts, Rng = window.TrillionerRng.Rng;
   var CHUNK = 120, UY = D.UNDER_Y;
 
+  // Ground art by district: tile size and the colours the tiles are drawn from.
+  var GROUND = {
+    downtown: { size: 6, colors: [0xefe6cc, 0xe8dcbc, 0xf3ecd8, 0xe3d6b2], inlay: 0xd9b45a },
+    luxury: { size: 8, colors: [0xfbdde6, 0xf7cfdb, 0xfdeaf0, 0xf5c5d4], check: 1 },
+    suburbs: { size: 10, colors: [0x7fd05c, 0x76c854, 0x88d864, 0x6fc04e], grass: 1 },
+    industrial: { size: 12, colors: [0xa8abad, 0x9ea1a4, 0xb0b3b4, 0x97999c], stain: 1 },
+    harbour: { size: 7, colors: [0xdcc9a0, 0xd3bf94, 0xe3d2ac, 0xcbb688] },
+    airport: { size: 14, colors: [0xb4c0c8, 0xaab7c0, 0xbcc7ce, 0xa3b0b9] },
+    oldtown: { size: 5, colors: [0xcf9a6e, 0xc48c60, 0xd8a67c, 0xba8256], check: 0 },
+    under: { size: 10, colors: [0x4c3388, 0x553a95, 0x46307e, 0x5c40a0] }
+  };
+  var SKY = [ // hour, top, horizon, sun colour, sun, ambient, window glow
+    [0, 0x060a22, 0x1c2658, 0x9fb6ff, 0.3, 0.46, 1],
+    [4.8, 0x080d2a, 0x25305f, 0x9fb6ff, 0.3, 0.46, 1],
+    [6, 0x4a86d8, 0xffd0a8, 0xffd9a8, 0.85, 0.52, 0.45],
+    [8, 0x2f8fee, 0xc4eaff, 0xfff6e2, 1.1, 0.64, 0],
+    [16, 0x2f8fee, 0xc4eaff, 0xfff6e2, 1.1, 0.64, 0],
+    [18, 0x4c6cc8, 0xffaa6a, 0xffae70, 0.85, 0.52, 0.35],
+    [19.4, 0x1c2462, 0xe66a84, 0xff8a68, 0.42, 0.4, 0.8],
+    [21, 0x060a22, 0x1c2658, 0x9fb6ff, 0.3, 0.46, 1],
+    [24, 0x060a22, 0x1c2658, 0x9fb6ff, 0.3, 0.46, 1]
+  ].map(function (k) { return { h: k[0], top: new THREE.Color(k[1]), hor: new THREE.Color(k[2]), sun: new THREE.Color(k[3]), si: k[4], am: k[5], glow: k[6] }; });
+
+  var shadeC = new THREE.Color();
+  /** A lighter or darker version of a hex colour. */
+  function shade(hex, k) {
+    var r = (hex >> 16) & 255, g = (hex >> 8) & 255, b = hex & 255;
+    return (Math.min(255, Math.round(r * k)) << 16) | (Math.min(255, Math.round(g * k)) << 8) | Math.min(255, Math.round(b * k));
+  }
+
   var world = TR.world = {
     scene: null, surface: null, under: null, collide: null, hemi: null, sun: null, chunks: {}, meshes: {}, ranges: {}, gone: {}, rails: [], buildingBoxes: {}, runLayer: null,
     windowMat: null, neonMat: null, waterMat: null, space: 'surface', fountains: [], screens: [], clockFaces: [], spinners: [], props: [],
@@ -16,18 +46,24 @@
       world.under.visible = false;
       scene.add(world.surface, world.under);
       world.solid = new THREE.MeshLambertMaterial({ vertexColors: true });
-      world.windowMat = new THREE.MeshLambertMaterial({ vertexColors: true, emissive: 0xffe9a0, emissiveIntensity: 0 });
+      world.windowMat = new THREE.MeshLambertMaterial({ vertexColors: true, emissive: 0xffd98a, emissiveIntensity: 0 });
+      // Only some panes light up at night: panes drawn in the lighter colour are the lit ones.
+      world.windowMat.onBeforeCompile = function (sh) {
+        sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n totalEmissiveRadiance *= step(0.42, vColor.g);');
+      };
       world.neonMat = new THREE.MeshBasicMaterial({ vertexColors: true });
-      world.hemi = new THREE.HemisphereLight(0xffffff, 0x8a9a7a, 0.62);
+      world.hemi = new THREE.HemisphereLight(0xdcefff, 0xb7a58c, 0.6);
       scene.add(world.hemi);
-      world.sun = new THREE.DirectionalLight(0xfff4d8, 0.9);
+      world.sun = new THREE.DirectionalLight(0xfff4d8, 1);
       world.sun.castShadow = true;
-      world.sun.shadow.mapSize.set(1536, 1536);
+      world.sun.shadow.mapSize.set(2048, 2048);
       var sc = world.sun.shadow.camera;
-      sc.left = -70; sc.right = 70; sc.top = 70; sc.bottom = -70; sc.near = 10; sc.far = 420;
-      world.sun.shadow.bias = -0.0008;
+      sc.left = -95; sc.right = 95; sc.top = 95; sc.bottom = -95; sc.near = 10; sc.far = 460;
+      world.sun.shadow.bias = -0.0004;
+      world.sun.shadow.normalBias = 0.5;
       scene.add(world.sun, world.sun.target);
-      scene.fog = new THREE.Fog(0x87ceeb, 150, 640);
+      scene.fog = new THREE.Fog(0xc4eaff, 200, 760);
+      world.buildSky(scene);
       world.buildCity();
     },
 
@@ -38,6 +74,8 @@
 
     buildCity: function () {
       var ids = Object.keys(D.DISTRICTS);
+      world.walk = new TR.Geo(); world.road = new TR.Geo(); world.paint = new TR.Geo();
+      world.aoP = []; world.aoC = [];
       ids.forEach(function (id) { if (D.DISTRICTS[id].level !== 'under') world.buildGround(D.DISTRICTS[id]); });
       D.ROADS.forEach(world.buildRoad);
       world.signs = new TR.SignAtlas();
@@ -55,15 +93,93 @@
       });
       world.surface.add(world.signs.mesh());
       world.under.add(world.usigns.mesh());
-      // the sea, with a floor for the submarine
-      var sea = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), world.waterMat = new THREE.MeshLambertMaterial({ color: 0x2f9fe0, transparent: true, opacity: 0.82 }));
-      sea.rotation.x = -Math.PI / 2; sea.position.y = -1.6; sea.renderOrder = 2;
+      world.buildDecals();
+      world.buildClouds();
+      world.buildSea();
+      world.animated();
+    },
+
+    // Pavements, roads and paint are one decal layer drawn over the ground, in order, so they never fight each other.
+    buildDecals: function () {
+      var all = new TR.Geo();
+      [world.walk, world.road, world.paint].forEach(function (g) { all.p = all.p.concat(g.p); all.n = all.n.concat(g.n); all.c = all.c.concat(g.c); });
+      var mat = new THREE.MeshLambertMaterial({ vertexColors: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4, depthWrite: false });
+      var m = all.mesh(mat, false, true);
+      m.frustumCulled = false; m.renderOrder = 1;
+      world.surface.add(m);
+      // soft contact shadows at the foot of every building
+      var g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(world.aoP, 3));
+      g.setAttribute('color', new THREE.Float32BufferAttribute(world.aoC, 4));
+      var ao = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -6, fog: false }));
+      ao.frustumCulled = false; ao.renderOrder = 2;
+      world.surface.add(ao);
+    },
+    /** A dark soft ring on the ground around a box. */
+    aoRing: function (x0, z0, x1, z1, r, strength) {
+      var P = world.aoP, C2 = world.aoC, a = strength == null ? 0.38 : strength, y = 0.03;
+      function q(ax, az, bx, bz, cx, cz, dx, dz) { // a,b inner edge; c,d outer edge
+        P.push(ax, y, az, bx, y, bz, cx, y, cz, ax, y, az, cx, y, cz, dx, y, dz);
+        C2.push(0, 0, 0, a, 0, 0, 0, a, 0, 0, 0, 0, 0, 0, 0, a, 0, 0, 0, 0, 0, 0, 0, 0);
+      }
+      q(x0, z1, x1, z1, x1 + r, z1 + r, x0 - r, z1 + r); q(x1, z1, x1, z0, x1 + r, z0 - r, x1 + r, z1 + r);
+      q(x1, z0, x0, z0, x0 - r, z0 - r, x1 + r, z0 - r); q(x0, z0, x0, z1, x0 - r, z1 + r, x0 - r, z0 - r);
+    },
+
+    // The sky: a gradient dome with sun, moon and stars that follows the camera.
+    buildSky: function (scene) {
+      world.skyU = { top: { value: new THREE.Color() }, hor: { value: new THREE.Color() }, sunDir: { value: new THREE.Vector3(0, 1, 0) }, sunCol: { value: new THREE.Color() }, night: { value: 0 } };
+      var mat = new THREE.ShaderMaterial({
+        side: THREE.BackSide, depthWrite: false, depthTest: false, fog: false, uniforms: world.skyU,
+        vertexShader: 'varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+        fragmentShader: 'varying vec3 vD; uniform vec3 top,hor,sunCol,sunDir; uniform float night;' +
+          'float h(vec3 p){ return fract(sin(dot(floor(p),vec3(12.98,78.23,37.72)))*43758.55); }' +
+          'void main(){ vec3 d=normalize(vD); float t=pow(clamp(d.y,0.0,1.0),0.55); vec3 c=mix(hor,top,t); float s=max(dot(d,sunDir),0.0);' +
+          'c+=sunCol*(pow(s,6.0)*0.22+pow(s,60.0)*0.5+smoothstep(0.9985,0.9992,s)*3.0);' +
+          'float st=h(d*180.0); c+=vec3(1.0)*night*step(0.9975,st)*clamp(d.y*4.0,0.0,1.0);' +
+          'gl_FragColor=vec4(c,1.0);\n#include <encodings_fragment>\n}'
+      });
+      world.sky = new THREE.Mesh(new THREE.SphereGeometry(100, 24, 16), mat);
+      world.sky.frustumCulled = false; world.sky.renderOrder = -10;
+      scene.add(world.sky);
+    },
+    // Fluffy blocky clouds, one mesh.
+    buildClouds: function () {
+      var rng = new Rng('clouds'), g = new TR.Geo();
+      for (var i = 0; i < 34; i++) {
+        var x = rng.range(-720, 720), z = rng.range(-720, 720), y = rng.range(150, 225), n = 3 + rng.int(4), base = rng.range(16, 34);
+        for (var k = 0; k < n; k++) {
+          var w = base * rng.range(0.7, 1.5), d = base * rng.range(0.6, 1.1), h = base * rng.range(0.28, 0.5);
+          g.box(x + rng.range(-base, base) * 1.1, y + rng.range(0, 6), z + rng.range(-base, base) * 0.6, w, h, d, 0xffffff);
+        }
+      }
+      world.cloudMat = new THREE.MeshLambertMaterial({ vertexColors: true, emissive: 0xffffff, emissiveIntensity: 0.28 });
+      world.clouds = g.mesh(world.cloudMat, false, false);
+      world.clouds.matrixAutoUpdate = true; world.clouds.frustumCulled = false;
+      world.surface.add(world.clouds);
+    },
+    // Water with a moving ripple texture and a sparkle.
+    buildSea: function () {
+      var c = document.createElement('canvas'); c.width = c.height = 256;
+      var x = c.getContext('2d'), rng = new Rng('water');
+      x.fillStyle = '#ffffff'; x.fillRect(0, 0, 256, 256);
+      for (var i = 0; i < 520; i++) {
+        var px = rng.range(0, 256), py = rng.range(0, 256), l = rng.range(10, 44);
+        x.strokeStyle = rng.next() < 0.5 ? 'rgba(255,255,255,.9)' : 'rgba(150,205,240,.75)';
+        x.lineWidth = rng.range(1, 3);
+        x.beginPath(); x.moveTo(px, py); x.quadraticCurveTo(px + l / 2, py + rng.range(-3, 3), px + l, py); x.stroke();
+      }
+      var tex = new THREE.CanvasTexture(c);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(110, 110); tex.anisotropy = 4; tex.encoding = THREE.sRGBEncoding;
+      world.waterTex = tex;
+      var mat = world.waterMat = new THREE.MeshPhongMaterial({ color: 0x2aa6e8, map: tex, specular: 0xbfe8ff, shininess: 90, transparent: true, opacity: 0.86 });
+      var sea = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), mat);
+      sea.rotation.x = -Math.PI / 2; sea.position.y = -1.6; sea.renderOrder = 3;
       world.surface.add(sea);
       world.sea = sea;
-      var bed = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), new THREE.MeshLambertMaterial({ color: 0x1b4f6b }));
+      var bed = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), new THREE.MeshLambertMaterial({ color: 0x175a7e }));
       bed.rotation.x = -Math.PI / 2; bed.position.y = world.SEABED;
       world.surface.add(bed);
-      world.animated();
     },
 
     SEABED: -24,
@@ -71,36 +187,62 @@
     // Grind rails for the hoverboard, along the widest streets.
     buildRails: function () {
       [[[-100, -11], [-40, -11]], [[20, -12], [100, -12]], [[-110, 230], [-40, 230]], [[140, 12], [230, 12]], [[-200, 40], [-130, 40]], [[130, 212], [200, 212]], [[-60, -130], [60, -130]]].forEach(function (r) {
-        var a = r[0], b = r[1], y = 1.6, mx = (a[0] + b[0]) / 2, mz = (a[1] + b[1]) / 2, l = Math.hypot(b[0] - a[0], b[1] - a[1]), g = world.geo(mx, mz, 'neon');
-        g.box(mx, y - 0.1, mz, Math.abs(b[0] - a[0]) + 0.3, 0.2, Math.abs(b[1] - a[1]) + 0.3, 0xff7de9);
+        var a = r[0], b = r[1], y = 1.6, mx = (a[0] + b[0]) / 2, mz = (a[1] + b[1]) / 2, l = Math.hypot(b[0] - a[0], b[1] - a[1]), g = world.geo(mx, mz, 'solid');
+        g.box(mx, y - 0.1, mz, Math.abs(b[0] - a[0]) + 0.3, 0.2, Math.abs(b[1] - a[1]) + 0.3, 0xdfe4ea);
         for (var i = 0; i <= 4; i++) { var px = a[0] + (b[0] - a[0]) * i / 4, pz = a[1] + (b[1] - a[1]) * i / 4; world.geo(px, pz, 'solid').box(px, 0, pz, 0.25, y, 0.25, 0x666a70); }
         world.rails.push({ a: a, b: b, y: y, l: l });
       });
     },
 
     buildGround: function (d) {
-      var b = d.land || d.bounds, step = CHUNK;
-      for (var x = b[0]; x < b[2]; x += step) for (var z = b[1]; z < b[3]; z += step) {
-        var x1 = Math.min(x + step, b[2]), z1 = Math.min(z + step, b[3]);
-        world.geo((x + x1) / 2, (z + z1) / 2, 'flat').box((x + x1) / 2, -30, (z + z1) / 2, x1 - x, 30, z1 - z, d.ground);
+      var b = d.land || d.bounds, art = GROUND[d.id], S = art.size, rng = new Rng('ground:' + d.id);
+      for (var x = b[0]; x < b[2]; x += S) for (var z = b[1]; z < b[3]; z += S) {
+        var x1 = Math.min(x + S, b[2]), z1 = Math.min(z + S, b[3]), cx = (x + x1) / 2, cz = (z + z1) / 2, c = rng.pick(art.colors);
+        if (art.check) c = art.colors[(Math.floor((x - b[0]) / S) + Math.floor((z - b[1]) / S)) % 2 ? 0 : 2];
+        if (art.inlay && Math.floor((x - b[0]) / S) % 6 === 0 && Math.floor((z - b[1]) / S) % 6 === 0) c = art.inlay;
+        if (art.stain && rng.next() < 0.04) c = 0x7f8285;
+        world.geo(cx, cz, 'flat').tile(x, z, x1, z1, 0, c);
       }
+      // skirt so the land has a side at the water
+      var g = world.geo((b[0] + b[2]) / 2, (b[1] + b[3]) / 2, 'flat');
+      g.box((b[0] + b[2]) / 2, -30, (b[1] + b[3]) / 2, b[2] - b[0], 29.98, b[3] - b[1], 0xb9a57e);
     },
 
-    buildRoad: function (r) {
+    buildRoad: function (r, ri) {
+      var walk = world.walk, road = world.road, paint = world.paint, Y = 0.02;
       for (var i = 0; i < r.pts.length - 1; i++) {
-        var a = r.pts[i], b = r.pts[i + 1], len = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.ceil(len / CHUNK);
-        for (var s = 0; s < n; s++) {
-          var t0 = s / n, t1 = (s + 1) / n, x0 = a[0] + (b[0] - a[0]) * t0, z0 = a[1] + (b[1] - a[1]) * t0, x1 = a[0] + (b[0] - a[0]) * t1, z1 = a[1] + (b[1] - a[1]) * t1;
-          var g = world.geo((x0 + x1) / 2, (z0 + z1) / 2, 'flat');
-          g.strip(x0, z0, x1, z1, r.w + 4, 0.02, 0xc9c9c2);
-          g.strip(x0, z0, x1, z1, r.w, 0.04, 0x45474f);
-          var segLen = len / n, dashes = Math.floor(segLen / 9), ux = (x1 - x0) / segLen, uz = (z1 - z0) / segLen;
-          for (var k = 0; k < dashes; k++) {
-            var px = x0 + ux * (k * 9 + 2), pz = z0 + uz * (k * 9 + 2);
-            g.strip(px, pz, px + ux * 4, pz + uz * 4, 0.5, 0.06, 0xfff2b0);
+        var a = r.pts[i], b = r.pts[i + 1], len = Math.hypot(b[0] - a[0], b[1] - a[1]), ux = (b[0] - a[0]) / len, uz = (b[1] - a[1]) / len, px = -uz, pz = ux;
+        walk.strip(a[0], a[1], b[0], b[1], r.w + 6, Y, 0xd8d4c9);
+        walk.strip(a[0], a[1], b[0], b[1], r.w + 1, Y, 0x9a988f);
+        road.strip(a[0], a[1], b[0], b[1], r.w, Y, 0x3d414c);
+        var STEP = 3, wasCross = false;
+        for (var s = 0; s < len; s += STEP) {
+          var x = a[0] + ux * (s + STEP / 2), z = a[1] + uz * (s + STEP / 2), cross = world.crossing(x, z, ri);
+          var x0 = a[0] + ux * s, z0 = a[1] + uz * s, x1 = x0 + ux * STEP, z1 = z0 + uz * STEP, off = r.w / 2 - 0.55;
+          if (!cross) {
+            paint.strip(x0 + px * off, z0 + pz * off, x1 + px * off, z1 + pz * off, 0.28, Y, 0xf2f2ea);
+            paint.strip(x0 - px * off, z0 - pz * off, x1 - px * off, z1 - pz * off, 0.28, Y, 0xf2f2ea);
+            if (Math.floor(s / STEP) % 3 === 0) paint.strip(x0, z0, x0 + ux * 3.4, z0 + uz * 3.4, 0.36, Y, 0xffd24a);
           }
+          if (cross !== wasCross && s > 0) { // zebra crossing where the road meets a junction
+            var back = cross ? -2.6 : 2.6, zx = x0 + ux * back, zz = z0 + uz * back;
+            for (var k = -r.w / 2 + 1; k < r.w / 2 - 0.5; k += 1.7) paint.strip(zx + px * k - ux * 1.6, zz + pz * k - uz * 1.6, zx + px * k + ux * 1.6, zz + pz * k + uz * 1.6, 0.8, Y, 0xf6f6ee);
+          }
+          wasCross = cross;
         }
       }
+    },
+    /** Is this point of a road inside another road? */
+    crossing: function (x, z, self) {
+      for (var r = 0; r < D.ROADS.length; r++) {
+        if (r === self) continue;
+        var R = D.ROADS[r];
+        for (var i = 0; i < R.pts.length - 1; i++) {
+          var a = R.pts[i], b = R.pts[i + 1], vx = b[0] - a[0], vz = b[1] - a[1], t = Math.max(0, Math.min(1, ((x - a[0]) * vx + (z - a[1]) * vz) / (vx * vx + vz * vz)));
+          if (Math.hypot(x - a[0] - vx * t, z - a[1] - vz * t) < R.w / 2 + 1) return true;
+        }
+      }
+      return false;
     },
 
     roadDist: function (x, z) {
@@ -213,45 +355,90 @@
     },
 
     addBuilding: function (b, d, base, under) {
-      var y = b.y != null ? b.y : (base || 0), g = world.geo(b.x, b.z, 'solid', under), shape = d.filler && !b.id ? d.filler.shape : null;
-      var wall = b.wall != null ? b.wall : d.walls[0], roof = b.roof != null ? b.roof : d.roofs[0];
-      g.box(b.x, y, b.z, b.w, b.h, b.d, wall);
-      if (shape === 'house') { // gabled roof from stepped blocks
-        g.box(b.x, y + b.h, b.z, b.w + 1, 1, b.d + 1, roof).box(b.x, y + b.h + 1, b.z, b.w * 0.66, 1, b.d + 1, roof).box(b.x, y + b.h + 2, b.z, b.w * 0.3, 1, b.d + 1, roof);
+      var y = b.y != null ? b.y : (base || 0), g = world.geo(b.x, b.z, 'solid', under), shape = d.filler ? d.filler.shape : 'under';
+      var wall = b.wall != null ? b.wall : d.walls[0], roof = b.roof != null ? b.roof : d.roofs[0], x = b.x, z = b.z, w = b.w, dd = b.d, h = b.h;
+      var rng = new Rng('b:' + Math.round(x) + ',' + Math.round(z)), trim = shade(wall, 1.16), dark = shade(wall, 0.72);
+      var FLOOR = h > 60 ? 6 : 3.7;
+      g.box(x, y, z, w, h, dd, wall);
+      g.box(x, y, z, w + 0.7, 1.1, dd + 0.7, dark);                                   // plinth
+      // corner quoins soften the box into something toy-like
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (c) { g.box(x + c[0] * (w / 2), y + 1.1, z + c[1] * (dd / 2), 0.9, h - 1.1, 0.9, trim); });
+      for (var f = FLOOR * 2; f < h - 2; f += FLOOR * 2) g.box(x, y + f - 0.5, z, w + 0.45, 0.28, dd + 0.45, trim);  // ledges every other floor
+      if (shape !== 'container') world.windows(x, y, z, w, h, dd, b, under, shape, FLOOR, rng);
+      var top = y + h;
+      if (shape === 'house') {
+        var along = dd >= w;
+        g.gable(x, top, z, w + 1.4, Math.min(w, dd) * 0.42, dd + 1.4, roof, along);
+        if (rng.next() < 0.7) g.box(x + w * 0.22, top + 0.4, z + dd * 0.15, 1.1, 3.2, 1.1, 0xb5533c);
       } else if (shape === 'tower') {
-        g.box(b.x, y + b.h, b.z, b.w * 0.7, 3, b.d * 0.7, roof).box(b.x, y + b.h + 3, b.z, b.w * 0.34, 3, b.d * 0.34, wall);
+        world.parapet(g, x, top, z, w, dd, trim);
+        g.box(x, top, z, w * 0.72, 3.4, dd * 0.72, shade(wall, 0.92)).box(x, top + 3.4, z, w * 0.72 + 0.5, 0.35, dd * 0.72 + 0.5, roof);
+        g.box(x, top + 3.75, z, w * 0.38, 3.2, dd * 0.38, wall).cyl(x, top + 6.95, z, 0.3, 7, 0xd9d9d9, 6, 0.08);
       } else if (shape === 'factory') {
-        g.box(b.x, y + b.h, b.z, b.w + 1, 0.8, b.d + 1, roof);
-        g.cyl(b.x + b.w * 0.25, y + b.h, b.z, 1.2, 7, 0x6b6f75, 8, 0.9);
+        var teeth = Math.max(2, Math.floor(w / 7));
+        for (var i = 0; i < teeth; i++) g.gable(x - w / 2 + (i + 0.5) * (w / teeth), top, z, w / teeth, 2.4, dd, i % 2 ? roof : shade(roof, 0.86), true);
+        g.cyl(x + w * 0.28, top, z - dd * 0.28, 1.1, 8, 0x6b6f75, 8, 0.8).cyl(x + w * 0.28, top + 8, z - dd * 0.28, 0.95, 0.6, 0xd9352c, 8);
       } else if (shape === 'hangar') {
-        g.cyl(b.x, y + b.h, b.z, b.w * 0.45, 2.4, roof, 10, b.w * 0.2);
+        for (var k = 0; k < 5; k++) { var t0 = k / 5, t1 = (k + 1) / 5, hx = w / 2 * Math.cos(t0 * Math.PI / 2), ry = Math.sin(t1 * Math.PI / 2) * w * 0.28; g.box(x, top + Math.sin(t0 * Math.PI / 2) * w * 0.28, z, hx * 2, ry - Math.sin(t0 * Math.PI / 2) * w * 0.28, dd, k % 2 ? roof : shade(roof, 0.92)); }
       } else if (shape === 'brick') {
-        g.box(b.x, y + b.h, b.z, b.w + 1.2, 0.7, b.d + 1.2, roof).box(b.x + b.w * 0.25, y + b.h, b.z, 2, 3, 2, 0x7d4a2c);
+        g.gable(x, top, z, w + 1.2, Math.min(w, dd) * 0.34, dd + 1.2, roof, dd >= w);
+        g.box(x + w * 0.26, top, z, 1.5, 3.6, 1.5, 0x7d4a2c).box(x + w * 0.26, top + 3.6, z, 1.9, 0.3, 1.9, 0x3a2115);
       } else if (shape === 'villa') {
-        g.box(b.x, y + b.h, b.z, b.w + 1.6, 0.8, b.d + 1.6, roof).box(b.x, y + b.h + 0.8, b.z, b.w * 0.5, 1.4, b.d * 0.5, 0xfff0f4);
+        world.parapet(g, x, top, z, w, dd, 0xfff4f7);
+        for (var c2 = 0; c2 < Math.floor(w / 5); c2++) g.cyl(x - w / 2 + (c2 + 0.5) * (w / Math.floor(w / 5)), y + 1.1, z + dd / 2 + 1.2, 0.42, h * 0.55, 0xfff4f7, 8);
+        g.box(x, y + 1.1 + h * 0.55, z + dd / 2 + 1.2, w, 0.5, 2.6, 0xfff4f7);
+        g.box(x, top, z, w * 0.46, 1.6, dd * 0.46, roof);
       } else if (shape === 'container') {
-        g.box(b.x, y + b.h, b.z, b.w * 0.8, 3, b.d * 0.8, d.walls[Math.abs(Math.floor(b.x)) % d.walls.length]);
-      } else g.box(b.x, y + b.h, b.z, b.w + 1, 0.8, b.d + 1, roof);
-      if (shape !== 'container') world.windows(b.x, y, b.z, b.w, b.h, b.d, b.boarded, under);
-      var box = world.collide.addBox(b.x, y, b.z, b.w, b.h + 0.8, b.d, b.id ? { building: b.id } : null);
+        world.containers(g, x, y, z, w, h, dd, d, rng);
+      } else {
+        world.parapet(g, x, top, z, w, dd, roof);
+        world.roofJunk(g, x, top, z, w, dd, rng);
+      }
+      if (shape === 'tower' || shape === 'factory') world.roofJunk(g, x - w * 0.12, top, z + dd * 0.12, w * 0.5, dd * 0.5, rng);
+      var box = world.collide.addBox(x, y, z, w, h + 0.8, dd, b.id ? { building: b.id } : null);
       if (b.id) world.buildingBoxes[b.id] = box;
+      if (!under && !y) world.aoRing(x - w / 2, z - dd / 2, x + w / 2, z + dd / 2, 3.2);
+    },
+    parapet: function (g, x, y, z, w, d, color) {
+      g.box(x, y, z, w + 0.6, 0.25, d + 0.6, shade(color, 0.85));
+      g.box(x, y, z - d / 2, w + 0.6, 0.9, 0.5, color).box(x, y, z + d / 2, w + 0.6, 0.9, 0.5, color).box(x - w / 2, y, z, 0.5, 0.9, d + 0.6, color).box(x + w / 2, y, z, 0.5, 0.9, d + 0.6, color);
+    },
+    roofJunk: function (g, x, y, z, w, d, rng) {
+      var n = 1 + rng.int(3);
+      for (var i = 0; i < n; i++) {
+        var px = x + rng.range(-0.3, 0.3) * w, pz = z + rng.range(-0.3, 0.3) * d, t = rng.next();
+        if (t < 0.4) g.box(px, y + 0.2, pz, 2.2, 1.3, 1.7, 0xc4c8cc).box(px, y + 1.5, pz, 1.2, 0.2, 1.2, 0x7f8388);
+        else if (t < 0.7) { g.cyl(px, y + 2, pz, 1.3, 2.4, 0x8d6e4b, 8).cyl(px, y + 4.4, pz, 1.5, 0.9, 0x6b4d2c, 8, 0.1); [[-1, -1], [1, 1], [-1, 1], [1, -1]].forEach(function (c) { g.box(px + c[0] * 0.9, y + 0.2, pz + c[1] * 0.9, 0.2, 1.9, 0.2, 0x444444); }); }
+        else g.box(px, y + 0.2, pz, 2.6, 0.5, 2.6, 0xe7ebee).box(px, y + 0.7, pz, 2, 0.1, 2, 0x8fc6e6);
+      }
+    },
+    // Harbour stacks are containers, not buildings: ribbed, painted, stacked.
+    containers: function (g, x, y, z, w, h, d, dist, rng) {
+      var rows = Math.max(1, Math.round(h / 3)), cols = Math.max(1, Math.floor(w / 6.4));
+      g.box(x, y, z, w + 0.1, 0.1, d + 0.1, 0x444444);
+      for (var r = 0; r < rows; r++) for (var c = 0; c < cols; c++) {
+        var cw = w / cols, cx = x - w / 2 + (c + 0.5) * cw, cy = y + (r / rows) * h, col = rng.pick([0xd9483b, 0x2f8fd0, 0xf2c14e, 0x3fae8c, 0xee7c30, 0x7d5fc4]);
+        g.box(cx, cy, z, cw - 0.2, h / rows - 0.1, d + 0.3, col);
+        for (var k = 0; k < 5; k++) g.box(cx - cw / 2 + (k + 0.5) * cw / 5, cy + 0.15, z, 0.14, h / rows - 0.4, d + 0.42, shade(col, 0.8));
+      }
     },
 
-    windows: function (x, y, z, w, h, d, boarded, under) {
-      var g = world.geo(x, z, 'window', under), color = boarded ? 0x4a3b2c : 0x3f6e96, rows = Math.max(1, Math.floor((h - 2) / 3.6));
-      if (h > 60) rows = Math.floor(rows / 2);
-      var stepY = h > 60 ? 7.2 : 3.6;
-      for (var r = 0; r < rows; r++) {
-        var wy = y + 2 + r * stepY, nx = Math.max(1, Math.floor(w / (h > 60 ? 8 : 4.4))), nz = Math.max(1, Math.floor(d / (h > 60 ? 8 : 4.4)));
-        for (var i = 0; i < nx; i++) {
-          var wx = x - w / 2 + (i + 0.5) * (w / nx);
-          g.box(wx, wy, z + d / 2, 2, 1.9, 0.14, color); g.box(wx, wy, z - d / 2, 2, 1.9, 0.14, color);
+    windows: function (x, y, z, w, h, d, b, under, shape, FLOOR, rng) {
+      var g = world.geo(x, z, 'window', under), hw = w / 2, hd = d / 2, boarded = b.boarded;
+      var frame = boarded ? 0x4a3b2c : (shape === 'tower' ? 0x2f4a66 : shape === 'villa' ? 0xffffff : shape === 'brick' ? 0xf2e6cc : shape === 'house' ? 0xffffff : 0x53606d);
+      var DIM = 0x4f83ad, LIT = 0xa8cfe2, BOARD = 0x2d241b;
+      var ww = h > 60 ? 3.4 : 1.9, wh = h > 60 ? 3.4 : 2, gap = h > 60 ? 5.4 : 4.4, start = shape === 'tower' ? 4.6 : 1.8;
+      [['s', w], ['n', w], ['e', d], ['w', d]].forEach(function (f) {
+        var side = f[0], len = f[1], n = Math.max(1, Math.floor((len - 1.6) / gap));
+        for (var fl = start; fl + wh < h - 0.7; fl += FLOOR) {
+          for (var i = 0; i < n; i++) {
+            var u = -len / 2 + (i + 0.5) * (len / n);
+            g.panel(side, x, z, hw, hd, 0.05, u, y + fl - 0.14, ww + 0.28, wh + 0.28, frame);
+            g.panel(side, x, z, hw, hd, 0.09, u, y + fl, ww, wh, boarded ? BOARD : rng.next() < 0.38 ? LIT : DIM);
+          }
         }
-        for (i = 0; i < nz; i++) {
-          var wz = z - d / 2 + (i + 0.5) * (d / nz);
-          g.box(x + w / 2, wy, wz, 0.14, 1.9, 2, color); g.box(x - w / 2, wy, wz, 0.14, 1.9, 2, color);
-        }
-      }
+        if (shape === 'tower') g.panel(side, x, z, hw, hd, 0.05, 0, y + 1.3, len - 2.4, 2.9, 0x355a78); // glass shopfronts
+      });
     },
 
     buildDistrict: function (d) {
@@ -284,10 +471,17 @@
 
     door: function (b, d) {
       var f = TrillionerLayout.frontOf(b), y = b.y || 0, g = world.geo(b.x, b.z, 'solid'), n = world.geo(b.x, b.z, 'neon');
-      var dw = 5, dh = 4.4, dx = f.nx ? (f.x - f.nx * 5.5) : f.x, dz = f.nz ? (f.z - f.nz * 5.5) : f.z;
-      g.box(dx + f.nx * 0.2, y, dz + f.nz * 0.2, f.nz ? dw : 0.3, dh, f.nz ? 0.3 : dw, b.enter ? 0x2b2b3f : 0x8a8a8a);
-      if (b.enter) n.box(dx + f.nx * 0.3, y + dh, dz + f.nz * 0.3, f.nz ? dw + 1 : 0.3, 0.5, f.nz ? 0.3 : dw + 1, b.neon ? (d.neon || 0xffc53d) : 0xfff0c0);
-      if (b.boarded) for (var i = 0; i < 3; i++) g.box(dx + f.nx * 0.4, y + 0.8 + i * 1.3, dz + f.nz * 0.4, f.nz ? dw + 1 : 0.2, 0.3, f.nz ? 0.2 : dw + 1, 0x8d6e4b);
+      var dw = 5, dh = 4.4, dx = f.nx ? (f.x - f.nx * 5.5) : f.x, dz = f.nz ? (f.z - f.nz * 5.5) : f.z, alongX = !!f.nz;
+      var col = b.boarded ? 0x4a3b2c : (b.neon ? (d.neon || 0xffc53d) : shade(b.wall || d.walls[0], 0.62));
+      g.box(dx + f.nx * 0.2, y, dz + f.nz * 0.2, alongX ? dw + 1.2 : 0.3, dh + 0.5, alongX ? 0.3 : dw + 1.2, shade(col, 0.8));
+      g.box(dx + f.nx * 0.34, y, dz + f.nz * 0.34, alongX ? dw : 0.3, dh, alongX ? 0.3 : dw, b.enter ? 0x202436 : 0x7a7f88);
+      if (b.enter) {
+        n.box(dx + f.nx * 0.5, y + 0.5, dz + f.nz * 0.5, alongX ? dw - 1 : 0.12, dh - 1.2, alongX ? 0.12 : dw - 1, 0xffe9b0);
+        g.box(dx + f.nx * 1.3, y + dh + 0.1, dz + f.nz * 1.3, alongX ? dw + 2 : 2.8, 0.35, alongX ? 2.8 : dw + 2, col); // awning
+        world.collide.addBox(dx + f.nx * 1.3, y + dh + 0.1, dz + f.nz * 1.3, alongX ? dw + 2 : 2.8, 0.35, alongX ? 2.8 : dw + 2);
+        g.box(dx + f.nx * 1.4, y, dz + f.nz * 1.4, alongX ? dw + 2 : 2.8, 0.14, alongX ? 2.8 : dw + 2, 0xc8c4b8);       // doorstep
+      }
+      if (b.boarded) for (var i = 0; i < 3; i++) g.box(dx + f.nx * 0.6, y + 0.8 + i * 1.3, dz + f.nz * 0.6, alongX ? dw + 1 : 0.2, 0.3, alongX ? 0.2 : dw + 1, 0x8d6e4b);
     },
 
     // The hill: stacked terraces, low enough to walk up.
@@ -295,7 +489,7 @@
       var h = d.hill, b = d.bounds;
       for (var i = 0; i < h.steps; i++) {
         var half = h.top / 2 + (h.steps - 1 - i) * h.run, x0 = Math.max(b[0], h.x - half), x1 = Math.min(b[2], h.x + half), z0 = Math.max(b[1], h.z - half), z1 = Math.min(b[3], h.z + half);
-        var top = (i + 1) * h.rise, c = i % 2 ? 0x74c256 : 0x7ecb5e;
+        var top = (i + 1) * h.rise, c = i % 2 ? 0x74cc56 : 0x82d862;
         world.geo((x0 + x1) / 2, (z0 + z1) / 2, 'flat').box((x0 + x1) / 2, top - h.rise, (z0 + z1) / 2, x1 - x0, h.rise, z1 - z0, c);
         world.collide.add(x0, 0, z0, x1, top, z1, { hill: 1 });
       }
@@ -321,13 +515,25 @@
       g.cyl(b.x, b.h + 0.85, b.z, 10, 0.1, 0x2d2d3a, 16);
       g.box(b.x - 3, b.h + 0.95, b.z, 1.2, 0.1, 8, 0xffffff).box(b.x + 3, b.h + 0.95, b.z, 1.2, 0.1, 8, 0xffffff).box(b.x, b.h + 0.95, b.z, 6, 0.1, 1.2, 0xffffff);
     },
+    // A market stall row: counter behind the pads and a striped awning on posts.
     stallAwning: function (s, d) {
-      var c = s.cols || 6, sp = s.spacing || 6, len = c * sp, g = world.geo(s.x, s.z, 'solid');
-      var ax = s.dir === 'z' ? s.x - 5 : s.x, az = s.dir === 'z' ? s.z : s.z - 5;
-      g.box(ax, 0, az, s.dir === 'z' ? 1 : len, 3, s.dir === 'z' ? len : 1, d.walls[1 % d.walls.length]);
-      g.box(ax, 3, az, s.dir === 'z' ? 3 : len + 1, 0.5, s.dir === 'z' ? len + 1 : 3, d.neon || 0xffc53d);
-      world.collide.addBox(ax, 0, az, s.dir === 'z' ? 1 : len, 3, s.dir === 'z' ? len : 1);
-      world.signs.addFlat(s.name, ax, 5.4, az, Math.min(len, 24), Math.min(len, 24) * 0.17, d.neon || 0xffc53d, s.dir === 'z' ? Math.PI / 2 : 0);
+      var c = s.cols || 6, sp = s.spacing || 6, len = c * sp, g = world.geo(s.x, s.z, 'solid'), alongZ = s.dir === 'z';
+      var ax = alongZ ? s.x - 5 : s.x, az = alongZ ? s.z : s.z - 5, a = d.neon || 0xffc53d, stripes = Math.max(4, Math.floor(len / 3));
+      g.box(ax, 0, az, alongZ ? 1.6 : len, 1.5, alongZ ? len : 1.6, 0xb98a5a);
+      g.box(ax, 1.5, az, alongZ ? 1.9 : len + 0.3, 0.16, alongZ ? len + 0.3 : 1.9, 0xe9d8b8);
+      for (var i = 0; i < stripes; i++) {
+        var u = -len / 2 + (i + 0.5) * (len / stripes), col = i % 2 ? a : 0xfffaf0;
+        g.box(alongZ ? ax + 0.7 : ax + u, 4.3, alongZ ? az + u : az + 0.7, alongZ ? 4 : len / stripes, 0.3, alongZ ? len / stripes : 4, col);
+      }
+      [-1, 1].forEach(function (e) {
+        var px = alongZ ? ax + 2.3 : ax + e * (len / 2), pz = alongZ ? az + e * (len / 2) : az + 2.3, qx = alongZ ? ax - 1 : ax + e * (len / 2), qz = alongZ ? az + e * (len / 2) : az - 1;
+        g.box(px, 0, pz, 0.25, 4.4, 0.25, 0x6b4d2c).box(qx, 0, qz, 0.25, 4.4, 0.25, 0x6b4d2c);
+      });
+      // a few goods on the counter
+      var rng = new Rng('stall:' + s.id);
+      for (i = 0; i < c * 2; i++) { var v = -len / 2 + (i + 0.5) * (len / (c * 2)), gs = rng.range(0.35, 0.7); g.box(alongZ ? ax : ax + v, 1.66, alongZ ? az + v : az, gs, gs, gs, rng.pick(d.walls.concat([a, 0xffffff]))); }
+      world.collide.addBox(ax, 0, az, alongZ ? 1.6 : len, 1.5, alongZ ? len : 1.6);
+      world.signs.addFlat(s.name, ax + (alongZ ? 2.6 : 0), 5.5, az + (alongZ ? 0 : 2.6), Math.min(len, 22), Math.min(len, 22) * 0.17, a, alongZ ? Math.PI / 2 : 0);
     },
     /** A spiral fire escape with a bridge to the roof: the rooftop route every district gets. */
     stair: function (st, d, base, under) {
@@ -432,20 +638,27 @@
       }
     },
 
-    // Street props, one look per district.
+    // Street props, one look per district, plus smaller decoration along the pavements.
     scatter: function (d, taken) {
-      var rng = new Rng('props:' + d.id), b = d.land || d.bounds, under = d.level === 'under', y = under ? UY : 0, n = under ? 70 : 60, tries = 0, placed = 0;
-      while (placed < n && tries++ < n * 8) {
-        var x = rng.range(b[0] + 3, b[2] - 3), z = rng.range(b[1] + 3, b[3] - 3), rd = under ? 8 : world.roadDist(x, z);
-        if (rd < 1.5 || (!under && rd > 7)) continue;
+      var rng = new Rng('props:' + d.id), b = d.land || d.bounds, under = d.level === 'under', y = under ? UY : 0, area = (b[2] - b[0]) * (b[3] - b[1]);
+      var n = under ? 150 : Math.round(area / 620), tries = 0, placed = 0;
+      while (placed < n && tries++ < n * 10) {
+        var x = rng.range(b[0] + 3, b[2] - 3), z = rng.range(b[1] + 3, b[3] - 3), rd = under ? 8 : world.roadDist(x, z), green = d.id === 'suburbs' || d.id === 'luxury';
+        if (rd < 3.2 || (!under && !green && rd > 7)) continue;
         var clash = false;
         for (var i = 0; i < taken.length; i++) { var t = taken[i]; if (x > t[0] && x < t[2] && z > t[1] && z < t[3]) { clash = true; break; } }
         if (clash) continue;
-        var near = world.collide.near(x, z, 2, []).some(function (bx) { return x > bx.x0 - 1.5 && x < bx.x1 + 1.5 && z > bx.z0 - 1.5 && z < bx.z1 + 1.5; });
+        var near = world.collide.near(x, z, 2.4, []).some(function (bx) { return !(bx.tag && bx.tag.hill) && x > bx.x0 - 2 && x < bx.x1 + 2 && z > bx.z0 - 2 && z < bx.z1 + 2; });
         if (near) continue;
         placed++;
-        world.prop(d, d.prop, x, y, z, rng, under);
+        var kind = d.prop, pick = rng.next();
+        if (!under && pick < 0.3) kind = world.EXTRA[d.id][rng.int(world.EXTRA[d.id].length)];
+        world.prop(d, kind, x, y, z, rng, under);
       }
+    },
+    EXTRA: {
+      downtown: ['planter', 'bench', 'bin', 'tree'], luxury: ['hedgeball', 'parasol', 'planter', 'tree'], suburbs: ['fence', 'mailbox', 'flowers', 'tree'],
+      industrial: ['barrel', 'pallet', 'cone'], harbour: ['crate', 'barrel', 'net'], airport: ['cone', 'sign'], oldtown: ['barrel', 'flowers', 'bench', 'tree']
     },
     /** A prop the monster truck can flatten. It gets its own vertex range and a tagged collision box. */
     smashable: function (x, y, z, under, draw, size, h) {
@@ -456,14 +669,60 @@
     smash: function (id) { world.setBuildingGone(id, true); },
     prop: function (d, kind, x, y, z, rng, under) {
       var g = world.geo(x, z, 'solid', under), n = world.geo(x, z, 'neon', under), c = world.collide;
-      if (kind === 'tree') { g.cyl(x, y, z, 0.5, 3, 0x7a5230, 6); g.cyl(x, y + 2.4, z, 2.4, 3.6, rng.pick([0x4fae4f, 0x62c262, 0x3d9b4a]), 7, 0.6); c.addBox(x, y, z, 0.8, 3, 0.8); }
-      else if (kind === 'palm') { g.cyl(x, y, z, 0.45, 7, 0xb58a5a, 6, 0.3); for (var i = 0; i < 5; i++) { var a = i / 5 * 6.283; g.box(x + Math.cos(a) * 1.6, y + 6.8, z + Math.sin(a) * 1.6, 3.2, 0.25, 0.9, 0x3fb56b, -a); } c.addBox(x, y, z, 0.8, 7, 0.8); }
-      else if (kind === 'lamp') { world.smashable(x, y, z, under, function () { g.box(x, y, z, 0.4, 6, 0.4, 0x3a3a44); n.box(x, y + 6, z, 1, 0.6, 1, 0xfff0b0); }, 0.5, 6); }
-      else if (kind === 'lantern') { world.smashable(x, y, z, under, function () { g.box(x, y, z, 0.3, 4, 0.3, 0x2f2118); n.box(x, y + 4, z, 0.8, 1, 0.8, 0xffb347); }, 0.4, 4); }
-      else if (kind === 'crate') { var cs = rng.range(1.4, 2.6); world.smashable(x, y, z, under, function () { g.box(x, y, z, cs, cs, cs, rng.pick([0xb07f4a, 0x8d6e4b, 0x4f5459])); }, cs, cs); }
-      else if (kind === 'bollard') { world.smashable(x, y, z, under, function () { g.cyl(x, y, z, 0.5, 1.2, 0x333a44, 8, 0.4); }, 0.8, 1.2); }
-      else if (kind === 'beacon') { g.box(x, y, z, 0.3, 2.4, 0.3, 0xdddddd); n.box(x, y + 2.4, z, 0.6, 0.6, 0.6, 0xff3b30); }
-      else if (kind === 'mushroom') { var h = rng.range(2, 6); g.cyl(x, y, z, 0.5, h, 0xd6c2f0, 7, 0.35); n.cyl(x, y + h, z, h * 0.7, h * 0.3, rng.pick([0xc77dff, 0x7dffea, 0xff7de9]), 8, 0.2); c.addBox(x, y, z, 0.8, h, 0.8); }
+      if (kind === 'tree') {
+        var th = rng.range(2.6, 3.6), leaf = rng.pick(d.id === 'oldtown' ? [0x6fa84a, 0x8ab04a] : [0x4cb84c, 0x5fc95a, 0x3daa4e, 0x74cf58]);
+        g.cyl(x, y, z, 0.42, th, 0x7a5230, 6, 0.3);
+        g.box(x, y + th - 0.2, z, 3.6, 2.2, 3.6, leaf).box(x + 0.5, y + th + 1.6, z - 0.3, 2.6, 1.7, 2.6, shade(leaf, 1.1)).box(x - 1, y + th + 0.4, z + 0.9, 1.9, 1.6, 1.9, shade(leaf, 0.9));
+        c.addBox(x, y, z, 0.7, th, 0.7);
+        if (!under) world.aoRing(x - 1.2, z - 1.2, x + 1.2, z + 1.2, 1.5, 0.26);
+      } else if (kind === 'palm') {
+        g.cyl(x, y, z, 0.42, 7.4, 0xb58a5a, 6, 0.24);
+        for (var i = 0; i < 7; i++) { var a = i / 7 * 6.283; g.box(x + Math.cos(a) * 1.7, y + 7.2 - (i % 2) * 0.3, z + Math.sin(a) * 1.7, 3.8, 0.2, 1, i % 2 ? 0x37b667 : 0x4fcf7c, -a); }
+        c.addBox(x, y, z, 0.7, 7, 0.7);
+      } else if (kind === 'lamp') {
+        world.smashable(x, y, z, under, function () { g.box(x, y, z, 0.7, 0.5, 0.7, 0x2c2f3a).box(x, y, z, 0.26, 6.4, 0.26, 0x3a3f4c).box(x + 0.8, y + 6.3, z, 1.9, 0.16, 0.26, 0x3a3f4c); n.box(x + 1.5, y + 5.95, z, 0.9, 0.34, 0.6, 0xfff2c0); }, 0.5, 6);
+      } else if (kind === 'lantern') {
+        world.smashable(x, y, z, under, function () { g.box(x, y, z, 0.22, 4, 0.22, 0x2f2118).box(x, y + 4, z, 1, 0.14, 1, 0x2f2118).box(x, y + 5.15, z, 1, 0.14, 1, 0x2f2118); n.box(x, y + 4.14, z, 0.72, 1, 0.72, 0xffb347); }, 0.4, 4);
+      } else if (kind === 'crate') {
+        var cs = rng.range(1.4, 2.4), cc = rng.pick([0xc0915a, 0xa97c49, 0x8d6e4b]);
+        world.smashable(x, y, z, under, function () { g.box(x, y, z, cs, cs, cs, cc).box(x, y + cs * 0.45, z, cs + 0.08, cs * 0.1, cs + 0.08, shade(cc, 0.7)); }, cs, cs);
+      } else if (kind === 'bollard') {
+        world.smashable(x, y, z, under, function () { g.cyl(x, y, z, 0.42, 1.1, 0x2a3442, 8, 0.32).cyl(x, y + 1.1, z, 0.46, 0.2, 0xf2c14e, 8); }, 0.8, 1.2);
+      } else if (kind === 'beacon') {
+        g.box(x, y, z, 0.2, 2.2, 0.2, 0xf4f4f4).box(x, y + 1, z, 0.22, 0.4, 0.22, 0xe0442f); n.box(x, y + 2.2, z, 0.5, 0.5, 0.5, 0xff4a30);
+      } else if (kind === 'mushroom') {
+        var h = rng.range(2, 6), mc = rng.pick([0xc77dff, 0x7dffea, 0xff7de9]);
+        g.cyl(x, y, z, 0.5, h, 0xe6dcf5, 7, 0.32); n.cyl(x, y + h, z, h * 0.72, h * 0.32, mc, 9, 0.12);
+        c.addBox(x, y, z, 0.8, h, 0.8);
+      } else if (kind === 'planter') {
+        world.smashable(x, y, z, under, function () { g.box(x, y, z, 3, 0.8, 1.4, 0xbfb7a4).box(x, y + 0.8, z, 2.7, 0.7, 1.1, 0x4fbf5a); for (var k = 0; k < 5; k++) g.box(x - 1.1 + k * 0.55, y + 1.5, z + (k % 2 ? 0.2 : -0.2), 0.3, 0.3, 0.3, [0xff5a7a, 0xffd24a, 0xffffff][k % 3]); }, 2, 1.4);
+      } else if (kind === 'bench') {
+        world.smashable(x, y, z, under, function () { g.box(x, y + 0.55, z, 3, 0.16, 0.8, 0x9c6b3d).box(x, y + 1, z - 0.36, 3, 0.5, 0.12, 0x9c6b3d).box(x - 1.2, y, z, 0.2, 0.55, 0.7, 0x333842).box(x + 1.2, y, z, 0.2, 0.55, 0.7, 0x333842); }, 1.5, 1);
+      } else if (kind === 'bin') {
+        world.smashable(x, y, z, under, function () { g.cyl(x, y, z, 0.42, 1.2, 0x3f7a55, 8, 0.48).cyl(x, y + 1.2, z, 0.52, 0.12, 0x2c5a3e, 8); }, 0.8, 1.2);
+      } else if (kind === 'hedgeball') {
+        world.smashable(x, y, z, under, function () { g.box(x, y, z, 1, 0.8, 1, 0xfff4f7).box(x, y + 0.8, z, 1.5, 1.5, 1.5, 0x3daa4e).box(x, y + 1.05, z, 1.9, 1, 1, 0x3daa4e).box(x, y + 1.05, z, 1, 1, 1.9, 0x3daa4e); }, 1, 1.5);
+      } else if (kind === 'parasol') {
+        g.box(x, y, z, 0.14, 3, 0.14, 0xffffff).cyl(x, y + 2.7, z, 2.2, 0.8, rng.pick([0xff7aa2, 0xffffff, 0xffd24a]), 8, 0.15);
+      } else if (kind === 'fence') {
+        for (var fi = 0; fi < 6; fi++) g.box(x + fi * 0.8 - 2, y, z, 0.26, 1.1, 0.12, 0xffffff);
+        g.box(x, y + 0.7, z, 4.6, 0.14, 0.1, 0xffffff);
+      } else if (kind === 'mailbox') {
+        g.box(x, y, z, 0.16, 1, 0.16, 0x8d6e4b).box(x, y + 1, z, 0.5, 0.42, 0.9, rng.pick([0xe0442f, 0x2f8fd0, 0xffffff]));
+      } else if (kind === 'flowers') {
+        for (var fl = 0; fl < 9; fl++) { var fx = x + rng.range(-1.2, 1.2), fz = z + rng.range(-1.2, 1.2); g.box(fx, y, fz, 0.1, 0.45, 0.1, 0x3daa4e).box(fx, y + 0.45, fz, 0.32, 0.26, 0.32, rng.pick([0xff5a7a, 0xffd24a, 0xffffff, 0xc77dff])); }
+      } else if (kind === 'barrel') {
+        var bc = rng.pick([0xc0602f, 0x2f6fb5, 0x6d7278, 0x8d6e4b]);
+        world.smashable(x, y, z, under, function () { g.cyl(x, y, z, 0.62, 1.6, bc, 9).cyl(x, y + 0.45, z, 0.65, 0.12, shade(bc, 0.7), 9).cyl(x, y + 1.1, z, 0.65, 0.12, shade(bc, 0.7), 9); }, 1.1, 1.6);
+      } else if (kind === 'pallet') {
+        world.smashable(x, y, z, under, function () { g.box(x, y, z, 2.2, 0.22, 2.2, 0xa97c49).box(x, y + 0.22, z, 1.9, 1, 1.9, rng.pick([0xe9d8b8, 0x7a8aa0, 0xb07f4a])); }, 2, 1.2);
+      } else if (kind === 'cone') {
+        world.smashable(x, y, z, under, function () { g.box(x, y, z, 0.9, 0.1, 0.9, 0x222222).cyl(x, y + 0.1, z, 0.36, 0.95, 0xff7a1a, 8, 0.05).cyl(x, y + 0.45, z, 0.26, 0.2, 0xffffff, 8, 0.2); }, 0.7, 1);
+      } else if (kind === 'net') {
+        g.box(x, y, z, 2.4, 0.34, 2.4, 0x5f7f6a).box(x + 0.2, y + 0.34, z, 1.4, 0.26, 1.5, 0x7f9f8a).cyl(x - 0.8, y + 0.3, z + 0.7, 0.3, 0.5, 0xffd24a, 7);
+      } else if (kind === 'sign') {
+        g.box(x, y, z, 0.16, 2.4, 0.16, 0x777b80).box(x, y + 2, z, 2.2, 1, 0.1, 0xffd24a);
+      }
     },
 
     buildUnder: function (d) {
@@ -471,7 +730,8 @@
       for (var x = b[0]; x < b[2]; x += CHUNK) for (var z = b[1]; z < b[3]; z += CHUNK) {
         var cx = x + CHUNK / 2, cz = z + CHUNK / 2;
         g = world.geo(cx, cz, 'flat', true);
-        g.box(cx, y - 2, cz, CHUNK, 2, CHUNK, ((x + z) / CHUNK) % 2 ? 0x4c3388 : 0x553a95);
+        var ur = new Rng('u:' + x + ',' + z), art = GROUND.under;
+        for (var ti = 0; ti < CHUNK; ti += art.size) for (var tj = 0; tj < CHUNK; tj += art.size) g.tile(x + ti, z + tj, x + ti + art.size, z + tj + art.size, y, ur.pick(art.colors));
         g.box(cx, y + 34, cz, CHUNK, 2, CHUNK, 0x1c1030);
       }
       var c = world.collide, h = 40;
@@ -531,7 +791,7 @@
       // The clock tower's face always shows the in-game time.
       var ct = world.clockTower, cv = document.createElement('canvas'); cv.width = 128; cv.height = 128;
       world.clockCtx = cv.getContext('2d');
-      world.clockTex = new THREE.CanvasTexture(cv);
+      world.clockTex = new THREE.CanvasTexture(cv); world.clockTex.encoding = THREE.sRGBEncoding;
       var mat = new THREE.MeshBasicMaterial({ map: world.clockTex });
       [[0, 0, 6.6, 0], [0, 0, -6.6, Math.PI], [6.6, 0, 0, Math.PI / 2], [-6.6, 0, 0, -Math.PI / 2]].forEach(function (f) {
         var m = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), mat);
@@ -541,7 +801,7 @@
       // Headlines on city screens
       var sv = document.createElement('canvas'); sv.width = 512; sv.height = 256;
       world.screenCtx = sv.getContext('2d');
-      world.screenTex = new THREE.CanvasTexture(sv);
+      world.screenTex = new THREE.CanvasTexture(sv); world.screenTex.encoding = THREE.sRGBEncoding;
       world.screens.forEach(function (l) {
         var m = new THREE.Mesh(new THREE.PlaneGeometry(l.w, l.w / 2), new THREE.MeshBasicMaterial({ map: world.screenTex, side: THREE.DoubleSide }));
         m.position.set(l.x, l.h + l.w / 4, l.z);
@@ -620,40 +880,56 @@
     /** Sky, sun and window lights for an hour of the clock. */
     setTime: function (hour, weather, target, frantic) {
       if (Math.floor(hour * 60) !== world.lastMinute) { world.lastMinute = Math.floor(hour * 60); world.drawClock(hour); }
-      if (world.space === 'under') {
-        var uc = new THREE.Color(0x22143f);
+      if (world.space !== 'surface') {
+        var under = world.space === 'under', uc = new THREE.Color(under ? 0x241542 : 0x14162a);
         world.scene.background = uc; world.scene.fog.color.copy(uc);
-        world.scene.fog.near = 70; world.scene.fog.far = 330;
-        world.hemi.intensity = 1.05; world.hemi.color.setHex(0xd8b8ff); world.sun.intensity = 0.15;
-        world.windowMat.emissiveIntensity = 1;
-        world.sun.position.set(target.x + 20, target.y + 120, target.z + 20); world.sun.target.position.set(target.x, target.y, target.z);
+        world.scene.fog.near = under ? 80 : 2000; world.scene.fog.far = under ? 340 : 4000;
+        world.hemi.color.setHex(under ? 0xd8b8ff : 0xfff4e4); world.hemi.groundColor.setHex(under ? 0x4a2f7a : 0xb9a58c);
+        world.hemi.intensity = under ? 1.05 : 1;
+        world.sun.intensity = under ? 0.25 : 0.32;
+        world.sun.color.setHex(0xfff0dc);
+        world.windowMat.emissiveIntensity = 1.1;
+        world.sky.visible = false;
+        world.sun.position.set(target.x + 30, target.y + 140, target.z + 30); world.sun.target.position.set(target.x, target.y, target.z);
         return;
       }
-      world.hemi.color.setHex(0xffffff);
-      var sunUp = Math.sin((hour - 6) / 12 * Math.PI);            // 1 at noon, -1 at midnight
-      var day = Math.max(0, Math.min(1, sunUp * 3 + 0.35));
-      var dusk = Math.max(0, 1 - Math.abs(sunUp) * 4) * (sunUp > -0.25 ? 1 : 0);
-      var sky = new THREE.Color(0x10163a).lerp(new THREE.Color(0x7fd0ff), day).lerp(new THREE.Color(0xff9a5a), dusk * 0.6);
-      var fogNear = 170, fogFar = 700;
-      if (frantic) sky.lerp(new THREE.Color(0xff3b5c), 0.18 + Math.sin(performance.now() * 0.004) * 0.05);
-      if (weather === 'fog') { sky.lerp(new THREE.Color(0xc4ccd4), 0.75); fogNear = 25; fogFar = 170; }
-      if (weather === 'rain') { sky.lerp(new THREE.Color(0x6b7787), 0.6); fogNear = 90; fogFar = 420; }
+      world.sky.visible = true;
+      world.scene.background = null;
+      var k0 = SKY[0], k1 = SKY[1];
+      for (var i = 0; i < SKY.length - 1; i++) if (hour >= SKY[i].h && hour < SKY[i + 1].h) { k0 = SKY[i]; k1 = SKY[i + 1]; break; }
+      var f = (hour - k0.h) / (k1.h - k0.h), top = world.skyU.top.value, hor = world.skyU.hor.value;
+      top.copy(k0.top).lerp(k1.top, f); hor.copy(k0.hor).lerp(k1.hor, f);
+      var sunCol = world.skyU.sunCol.value.copy(k0.sun).lerp(k1.sun, f), si = k0.si + (k1.si - k0.si) * f, am = k0.am + (k1.am - k0.am) * f, glow = k0.glow + (k1.glow - k0.glow) * f;
+      var fogNear = 200, fogFar = 760;
+      if (frantic) { hor.lerp(new THREE.Color(0xff3b5c), 0.22 + Math.sin(performance.now() * 0.004) * 0.06); top.lerp(new THREE.Color(0x4a1030), 0.2); }
+      if (weather === 'fog') { var fg = new THREE.Color(0xc4ccd4); hor.lerp(fg, 0.85); top.lerp(fg, 0.75); si *= 0.45; fogNear = 25; fogFar = 170; }
+      if (weather === 'rain') { var rn = new THREE.Color(0x76859a); hor.lerp(rn, 0.7); top.lerp(new THREE.Color(0x4a586c), 0.8); si *= 0.5; fogNear = 90; fogFar = 420; }
       var q = (TR.settings && TR.settings.drawDist) || 1;
-      world.scene.background = sky;
-      world.scene.fog.color.copy(sky);
+      world.scene.fog.color.copy(hor);
       world.scene.fog.near += (fogNear * q - world.scene.fog.near) * 0.04;
       world.scene.fog.far += (fogFar * q - world.scene.fog.far) * 0.04;
-      world.hemi.intensity = 0.42 + day * 0.32;
-      world.sun.intensity = 0.1 + day * 0.85;
-      world.sun.color.setHex(dusk > 0.3 ? 0xffc48a : 0xfff4d8);
-      world.windowMat.emissiveIntensity = (1 - day) * 0.95;
-      var a = (hour - 6) / 12 * Math.PI;
-      world.sun.position.set(target.x + Math.cos(a) * 140, 60 + Math.max(0.15, sunUp) * 150, target.z + 70);
-      world.sun.target.position.set(target.x, 0, target.z);
+      world.hemi.color.copy(top).lerp(new THREE.Color(0xffffff), 0.55);
+      world.hemi.groundColor.setHex(0xb7a58c);
+      world.hemi.intensity = am;
+      world.sun.intensity = si; world.sun.color.copy(sunCol);
+      world.windowMat.emissiveIntensity = glow * 1.15;
+      if (world.cloudMat) { world.cloudMat.emissive.copy(hor).lerp(top, 0.2); world.cloudMat.emissiveIntensity = 0.55; }
+      // the sun rises east (+x) and sets west; at night the same light is the moon
+      var a = hour >= 6 && hour < 19 ? (hour - 6) / 13 * Math.PI : ((hour + 5) % 24) / 11 * Math.PI, sx = Math.cos(a), sy = Math.max(0.28, Math.sin(a));
+      world.skyU.sunDir.value.set(sx, Math.max(0.1, Math.sin(a)), 0.3).normalize();
+      world.skyU.night.value = glow > 0.7 ? glow : 0;
+      var ox = Math.round(target.x / 8) * 8, oz = Math.round(target.z / 8) * 8;  // snapped so shadows do not shimmer
+      world.sun.position.set(ox + sx * 170, sy * 240, oz + 80);
+      world.sun.target.position.set(ox, 0, oz);
     },
 
     update: function (dt, t) {
-      if (world.sea) world.sea.position.y = -1.6 + Math.sin(t * 0.8) * 0.12;
+      if (world.sea) {
+        world.sea.position.y = -1.6 + Math.sin(t * 0.8) * 0.12;
+        world.waterTex.offset.set(t * 0.012, t * 0.007);
+      }
+      if (world.sky && TR.app.camera) world.sky.position.copy(TR.app.camera.position);
+      if (world.clouds) world.clouds.position.x = (t * 1.6) % 300 - 150;
       if (world.rocketFlying) {
         world.rocketFlying += dt;
         var tf = world.rocketFlying;
@@ -709,7 +985,7 @@
     g.setAttribute('uv', new THREE.Float32BufferAttribute(this.uv, 2));
     g.setIndex(this.index);
     var tex = new THREE.CanvasTexture(this.canvas);
-    tex.anisotropy = 4;
+    tex.anisotropy = 8; tex.encoding = THREE.sRGBEncoding;
     var m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide, transparent: true }));
     m.frustumCulled = false;
     return m;

@@ -216,8 +216,8 @@
   // ───── Quality ─────
   var LEVELS = {
     low: { ratio: 1, shadows: false, map: 512, crowd: 36, cars: 18, draw: 0.62, windows: 150 },
-    medium: { ratio: 1.25, shadows: true, map: 1024, crowd: 64, cars: 30, draw: 0.82, windows: 240 },
-    high: { ratio: 2, shadows: true, map: 1536, crowd: 90, cars: 44, draw: 1, windows: 340 }
+    medium: { ratio: 1.25, shadows: true, map: 1024, crowd: 64, cars: 30, draw: 0.82, windows: 300 },
+    high: { ratio: 2, shadows: true, map: 2048, crowd: 90, cars: 44, draw: 1, windows: 460 }
   };
   TR.quality = {
     choice: 'auto', level: 'high', lowT: 0,

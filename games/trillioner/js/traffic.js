@@ -2,13 +2,18 @@
 (function () {
   var TR = window.TR = window.TR || {};
   var D = window.TRD.districts, dummy = new THREE.Object3D(), col = new THREE.Color();
-  var COLORS = [0xff5252, 0x448aff, 0xffd740, 0x69f0ae, 0xffffff, 0xff9100, 0xb388ff, 0x37474f];
+  var COLORS = [0xff4d4d, 0x3f83ff, 0xffd02e, 0x2ecf7a, 0xf4f4f4, 0xff8a1f, 0xa56bff, 0x37474f, 0x19b5c9, 0xff6fae];
 
   function carGeo() {
-    var g = new TR.Geo();
-    g.box(0, 0.45, 0, 2.6, 0.9, 5.2, 0xffffff);
-    g.box(0, 1.35, 0.2, 2.2, 0.8, 2.6, 0xcfe6f5);
-    g.box(-1.3, 0, -1.6, 0.4, 0.8, 0.9, 0x18181c).box(1.3, 0, -1.6, 0.4, 0.8, 0.9, 0x18181c).box(-1.3, 0, 1.6, 0.4, 0.8, 0.9, 0x18181c).box(1.3, 0, 1.6, 0.4, 0.8, 0.9, 0x18181c);
+    var g = new TR.Geo(), GLASS = 0x233a50;
+    g.box(0, 0.42, 0, 2.5, 0.72, 5, 0xffffff);                       // body, tinted per car
+    g.box(0, 0.42, -2.55, 2.3, 0.5, 0.12, 0xdddddd).box(0, 0.42, 2.55, 2.3, 0.5, 0.12, 0xdddddd);
+    g.box(0, 1.14, 0.25, 2.2, 0.72, 2.5, GLASS);                     // cabin
+    g.box(0, 1.84, 0.25, 2.26, 0.12, 2.56, 0xffffff);                // roof
+    g.box(0, 1.14, -0.25 + 0.5, 0.2, 0.72, 0.2, 0xffffff);
+    g.box(-0.85, 0.72, -2.54, 0.44, 0.22, 0.1, 0xfff6c0).box(0.85, 0.72, -2.54, 0.44, 0.22, 0.1, 0xfff6c0);
+    g.box(-0.85, 0.72, 2.54, 0.44, 0.22, 0.1, 0xe02020).box(0.85, 0.72, 2.54, 0.44, 0.22, 0.1, 0xe02020);
+    [[-1.26, -1.6], [1.26, -1.6], [-1.26, 1.6], [1.26, 1.6]].forEach(function (p) { g.wheel(p[0], 0.42, p[1], 0.42, 0.32, 0x18181c, 0xc9ccd0); });
     return g.geometry();
   }
 
@@ -21,7 +26,8 @@
         tr.paths.push({ seg: seg, len: len, off: R.w / 4 });
       });
       var total = 56;
-      tr.mesh = new THREE.InstancedMesh(carGeo(), new THREE.MeshLambertMaterial({ vertexColors: true }), total);
+      tr.mesh = new THREE.InstancedMesh(carGeo(), TR.tintedMaterial(), total);
+      tr.mesh.castShadow = true;
       tr.mesh.frustumCulled = false;
       tr.mesh.setColorAt(0, col.setHex(0xffffff));
       scene.add(tr.mesh);
