@@ -14,9 +14,10 @@ Each one is a call made while building. "Changed" means it departs from a litera
 2. **Frenzy and small change.** Purchases under $100M neither build nor pay Frenzy, so the exact finish stays exact.
 3. **Visible budgets (changed).** Part 4's rows give Luxury $60B + Suburbs $150B + Industrial $90B = $300B before counting the
    visible parts of Downtown, Harbour, Airport and Old Town, so its "about $300B fully visible" and "at least $1.1T
-   hidden" cannot both hold. Part 6 allows $300B to $450B from visible shops. Built: those three rows are as written,
-   the other four add exactly $150B (Downtown $77B, Airport $58B, Harbour $12B, Old Town $3B), so **$450B is visible and $950B needs
-   discovery or a key purchase**.
+   hidden" cannot both hold. Part 6 allows $300B to $450B from visible shops. Built: **$440B is visible and $960B needs
+   discovery or a key purchase** (Downtown $57B, Luxury $59B, Suburbs $147B, Industrial $88B, Harbour $12B, Airport $60B,
+   Old Town $17B, Under City $0). The Bank and Mint open with Exchange hours, because the Airport and Old Town deals the
+   chains depend on had to stay visible.
 4. **Win and closing deals.** Income only starts at closing, so "below $1M, income $0 or less" could fire while a
    profitable deal is still closing. The win waits until no deal is closing.
 5. **"End immediately" and the Perfect Zero window.** The win shows at once and clock and economy freeze for the 60-second
@@ -35,7 +36,16 @@ Each one is a call made while building. "Changed" means it departs from a litera
     Airport + Spaceport are north; Downtown and Luxury Row in the middle; Industrial Zone across the south-west; Harbour
     south-east. Under City has the same footprint below ground.
 
-More decisions are added as later milestones make them.
+12. **Interior rooms** sit far outside the city and are generated when someone walks in, with the city hidden. There is no loading screen.
+13. **Fog and timed lots.** Fog comes in three times a day, 2.5 in-game hours each, so Harbour deals are always possible. Fog is weather, separate from the five random events.
+14. **Rooftop routes** are spiral fire escapes with a bridge to the roof. Every district has at least one.
+15. **Price shuffling** touches only filler items, not the items the brief names, so its income table and required prices stay true on every seed.
+16. **Surprise auction deals** sit outside the district budgets; they exist only while their event runs.
+17. **Own usable things:** pogo stick, golf cart, hot air balloon, sofa kart, megaphone, golden umbrella. Total 21.
+18. **Moon before breakfast** means bought between midnight and the 6AM end of the day, because Spaceport deals need a night-time discovery first.
+19. **Battle Spend bots** buy about once every 5 seconds and never buy earners, leaving roughly $120B to $180B at the end, so a good shopper can beat them. Two bots never target the same pad.
+20. **Forced Gift** gives the rival 10 seconds to refuse. Gifts count as spending for the giver.
+21. **Solver scope.** Bots move with a travel model (distance x 1.25 / vehicle speed, 1.5 s per room, 0.4 s per purchase). They do not steer through the 3D city. Browser flood fills and drives cover that side.
 
 ---
 

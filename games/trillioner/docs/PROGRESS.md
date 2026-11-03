@@ -1,14 +1,39 @@
 # Trillioner: progress
 
 Resume here. Work happens on branch `claude/trillioner-game-build-0e4dcf`. Run the hub from this worktree with the `hub-8090` preview
-config. Debug: `games/trillioner/?debug=1`. `TR.app.advance(seconds)` steps the game synchronously, for testing a hidden preview.
+config, and restart it after changing `engine/` or `server/`, because the server keeps the engine it loaded. Debug: `games/trillioner/?debug=1`.
+`TR.app.advance(seconds)` steps the game synchronously, for testing a hidden preview.
+
+Tests: `node --test --test-force-exit test/trillioner-*.test.mjs`. Simulators: `node games/trillioner/tools/solver.mjs 100` and
+`node games/trillioner/tools/balance.mjs 100`.
 
 | Milestone | State | Evidence |
 | --- | --- | --- |
-| M0 Setup | Done | Opens from hub and directly; ledger tests pass |
+| M0 Setup | Done | Opens from the hub and from file:// (headless Chrome: HUD live, $1T balance); ledger tests pass |
 | M1 Feel | Done | Played in preview: walk to pad, hold E, car arrives, boards, reaches speed 45, drifts |
-| M2 Economy | Done | 22 ledger tests pass; balance tool runs whole days; real run in preview: went broke, froze, results screen, Clout saved |
-| M3 All 8 districts | Done | Content test: 8 districts, exact budgets, 421 items. Preview: all districts rendered, flood fill connects every door and pad on foot and by car (Hangar 13 walled by design), drove all 7 surface districts, 40/40 rooms enter and exit, pier walkable. Under City reached via debug only until M5 entrances |
-| M4 Usable things | Done | 21 usable things (test). Preview: all 17 vehicles driven at spec speed; ladder, trumpet, wreck, smash, grind, launcher, cannon ($200M/s, stops), megaphone, umbrella, fast travel, rocket launch all exercised |
-| M5 Secrets | Done | `tools/solver.mjs 100`: 100/100 wins, avg 14.3 min, worst 15.4. Visible-only left at least $400B on 100 seeds, all-earners never wins. Preview: Mr. Grey, sunken vault, clock tower, asteroid, broker, corner towers, mole chains played; notebook and map |
-| M6 Meta and polish | Done | Preview: menus, how-to, tutorial steps, Clout shop buys and equips looks, settings and quality levels apply, Daily City seed and local board, Free Roam loops with time slider, pause stops the clock, Trophy Room reached by the tower elevator, music sequencer runs. No page errors |
+| M2 Economy | Done | Balance tool runs whole days; browser run: broke, frozen window, results, Clout saved, persisted after reload |
+| M3 All 8 districts | Done | Content test: 8 districts, exact budgets. Preview: every district rendered, flood fill connects doors and pads on foot and by car, 40/40 rooms enter and exit |
+| M4 Usable things | Done | 21 usable things. Preview: all 17 vehicles driven at spec speed; every ability and gear item exercised |
+| M5 Secrets | Done | Solver 100/100. Preview: Mr. Grey, sunken vault, clock tower, asteroid, broker, corner towers and mole chains played |
+| M6 Meta and polish | Done | Preview: menus, tutorial, Clout shop, settings, quality levels, Daily City, Free Roam, Trophy Room |
+| M7 Battle Spend | Done | Socket tests pass. Two browser tabs completed matches, including a mid-match reload that reclaimed the seat |
+| M8 Finish | Done, with limits below | FPS measured on one machine; gamepad checked with a stubbed pad; touch checked with synthetic touch events |
+
+## Measured
+
+- Driving across six districts at High, Apple M4, 946x492 at 2x: 60 FPS median, 60 minimum, worst frame 18 ms, at most 129 draw calls and 59k triangles.
+- Boot to first playable: under 0.1 s from localhost (`window.__trBootMs`).
+- Solver, 100 seeds: 100 wins, average 14.3 minutes, worst 15.2, average spent $1,054B.
+- Visible-only bot, 100 seeds: no wins, at least $583B left, average spent $602B. All-earners bot: no wins, at least $318B left.
+- Complete solo run through the real client (solver decisions, seed 2026): won at 12:35, $1.038T spent, 27 secrets, no page errors.
+
+## Known limits
+
+- FPS has **not** been measured on integrated graphics, which is what the brief's target names. Quality levels and the automatic drop exist; they were switched by hand, and the automatic drop never fired because FPS never fell.
+- Nobody has played a full day by hand. The feel checks were scripted input through the real controls, and the win came from a bot. "A first-time player cannot easily finish it" rests on the bots, not on people.
+- Real gamepads and real touch screens are untested.
+- The visible-only bot spends about $600B, above Part 6's $300B to $450B, because Frenzy adds about $160B on top of $440B of visible deals. It still leaves well over the required $400B.
+- Battle Spend clients build the city from the seed, so a determined cheater could read secret spots from their own browser. The server still refuses a purchase or discovery whose conditions are not met.
+- Attack card targets are picked automatically (the richest or poorest rival), and Ban targets the rival's current shop or district, rather than a choice on screen.
+- The base of this branch is 114 commits behind `main`. Expect `README.md` and the generated registry to conflict on merge: keep both sides, then run `npm run registry`.
+- Two Putt Club tests fail on this branch (`sand grabs the ball`, `tees, cups and power-up crates`). They fail the same way at the branch's base commit and pass on current `main`.

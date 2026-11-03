@@ -67,7 +67,10 @@
       TR.world.setTime(9, 'clear', TR.player.pos);
       app.ready = true;
       if (DEBUG) app.debugPanel(ui);
-      if (qs.get('autostart') !== '1' && (qs.get('room') || (TR.net.getSeat() && TR.net.tryResume()))) { if (qs.get('room') && !TR.net.getSeat()) TR.net.lobby(); }
+      var seat0 = TR.net.getSeat(), invite = (qs.get('room') || '').toUpperCase();
+      if (invite && seat0 && seat0.code !== invite) { TR.net.clearSeat(); seat0 = null; }   // an invite beats a seat from an older room
+      if (qs.get('autostart') !== '1' && seat0 && TR.net.tryResume()) { /* back in the match */ }
+      else if (qs.get('autostart') !== '1' && invite) TR.net.lobby();
       else if (qs.get('autostart') === '1') app.startRun({ mode: 'day', seed: Number(qs.get('seed')) || undefined });
       else TR.menus.title();
       app.last = performance.now();
