@@ -187,12 +187,16 @@
 
     SEABED: -24,
 
-    // Grind rails for the hoverboard, along the widest streets.
+    // Grind rails for the hoverboard, in open ground: never across a road, a pavement or a doorway.
+    RAILS: [[[14, -15], [40, -15]], [[-30, 36], [10, 36]], [[-110, 256], [-50, 256]], [[132, 14], [160, 14]], [[-280, 104], [-250, 104]], [[128, 214], [168, 214]], [[60, -140], [96, -140]]],
     buildRails: function () {
-      [[[-100, -11], [-40, -11]], [[20, -12], [100, -12]], [[-110, 230], [-40, 230]], [[140, 12], [230, 12]], [[-200, 40], [-130, 40]], [[130, 212], [200, 212]], [[-60, -130], [60, -130]]].forEach(function (r) {
+      world.RAILS.forEach(function (r) {
         var a = r[0], b = r[1], y = 1.6, mx = (a[0] + b[0]) / 2, mz = (a[1] + b[1]) / 2, l = Math.hypot(b[0] - a[0], b[1] - a[1]), g = world.geo(mx, mz, 'solid');
-        g.box(mx, y - 0.1, mz, Math.abs(b[0] - a[0]) + 0.3, 0.2, Math.abs(b[1] - a[1]) + 0.3, 0xdfe4ea);
-        for (var i = 0; i <= 4; i++) { var px = a[0] + (b[0] - a[0]) * i / 4, pz = a[1] + (b[1] - a[1]) * i / 4; world.geo(px, pz, 'solid').box(px, 0, pz, 0.25, y, 0.25, 0x666a70); }
+        g.rbox(mx, y - 0.14, mz, Math.abs(b[0] - a[0]) + 0.3, 0.26, Math.abs(b[1] - a[1]) + 0.3, 0xdfe4ea, 0.1, 0.1, 1);
+        var n = Math.max(2, Math.round(l / 6));
+        for (var i = 0; i <= n; i++) { var px = a[0] + (b[0] - a[0]) * i / n, pz = a[1] + (b[1] - a[1]) * i / n; g.cyl(px, 0, pz, 0.14, y - 0.1, 0x666a70, 8).cyl(px, 0, pz, 0.32, 0.1, 0x555960, 8); }
+        // solid to anyone on the ground; jump or ride up onto it
+        world.collide.add(Math.min(a[0], b[0]) - 0.2, 0, Math.min(a[1], b[1]) - 0.2, Math.max(a[0], b[0]) + 0.2, y + 0.1, Math.max(a[1], b[1]) + 0.2, { rail: 1 });
         world.rails.push({ a: a, b: b, y: y, l: l });
       });
     },
@@ -390,7 +394,8 @@
       var top = y + h;
       if (shape === 'house') {
         var along = dd >= w;
-        g.gable(x, top, z, w + 1.4, Math.min(w, dd) * 0.42, dd + 1.4, roof, along);
+        g.rbox(x, top - 0.3, z, w + 1.5, 0.55, dd + 1.5, shade(roof, 0.8), rc + 0.5, 0.12, 1);
+        g.gable(x, top + 0.2, z, w + 0.5, Math.min(w, dd) * 0.42, dd + 0.5, roof, along);
         if (rng.next() < 0.7) g.box(x + w * 0.22, top + 0.4, z + dd * 0.15, 1.1, 3.2, 1.1, 0xb5533c);
       } else if (shape === 'tower') {
         world.parapet(g, x, top, z, w, dd, trim);
@@ -398,12 +403,15 @@
         g.box(x, top + 3.75, z, w * 0.38, 3.2, dd * 0.38, wall).cyl(x, top + 6.95, z, 0.3, 7, 0xd9d9d9, 6, 0.08);
       } else if (shape === 'factory') {
         var teeth = Math.max(2, Math.floor(w / 7));
-        for (var i = 0; i < teeth; i++) g.gable(x - w / 2 + (i + 0.5) * (w / teeth), top, z, w / teeth, 2.4, dd, i % 2 ? roof : shade(roof, 0.86), true);
+        g.rbox(x, top - 0.3, z, w + 0.8, 0.5, dd + 0.8, shade(roof, 0.8), rc + 0.3, 0.1, 1);
+        for (var i = 0; i < teeth; i++) g.gable(x - w / 2 + 0.3 + (i + 0.5) * ((w - 0.6) / teeth), top + 0.2, z, (w - 0.6) / teeth, 2.4, dd - 0.4, i % 2 ? roof : shade(roof, 0.86), true);
         g.cyl(x + w * 0.28, top, z - dd * 0.28, 1.1, 8, 0x6b6f75, 8, 0.8).cyl(x + w * 0.28, top + 8, z - dd * 0.28, 0.95, 0.6, 0xd9352c, 8);
       } else if (shape === 'hangar') {
+        g.rbox(x, top - 0.2, z, w + 0.4, 0.4, dd + 0.4, shade(roof, 0.8), rc, 0.1, 1);
         for (var k = 0; k < 5; k++) { var t0 = k / 5, t1 = (k + 1) / 5, hx = w / 2 * Math.cos(t0 * Math.PI / 2), ry = Math.sin(t1 * Math.PI / 2) * w * 0.28; g.box(x, top + Math.sin(t0 * Math.PI / 2) * w * 0.28, z, hx * 2, ry - Math.sin(t0 * Math.PI / 2) * w * 0.28, dd, k % 2 ? roof : shade(roof, 0.92)); }
       } else if (shape === 'brick') {
-        g.gable(x, top, z, w + 1.2, Math.min(w, dd) * 0.34, dd + 1.2, roof, dd >= w);
+        g.rbox(x, top - 0.3, z, w + 1.4, 0.55, dd + 1.4, shade(roof, 0.8), rc + 0.5, 0.12, 1);
+        g.gable(x, top + 0.2, z, w + 0.4, Math.min(w, dd) * 0.34, dd + 0.4, roof, dd >= w);
         g.box(x + w * 0.26, top, z, 1.5, 3.6, 1.5, 0x7d4a2c).box(x + w * 0.26, top + 3.6, z, 1.9, 0.3, 1.9, 0x3a2115);
       } else if (shape === 'villa') {
         world.parapet(g, x, top, z, w, dd, 0xfff4f7);
@@ -543,6 +551,10 @@
       });
       (d.stairs || []).forEach(function (st) { world.stair(st, d, 0, false); taken.push([st.x - 8, st.z - 8, st.x + 8, st.z + 8]); });
       (d.landmarks || []).forEach(function (l) { world.landmark(l, d); var r = (l.r || (l.w || 20) / 2) + 8; taken.push([l.x - r, l.z - r, l.x + r, l.z + r]); });
+      world.RAILS.forEach(function (r) {
+        var b = d.bounds, mx = (r[0][0] + r[1][0]) / 2, mz = (r[0][1] + r[1][1]) / 2;
+        if (mx >= b[0] && mx < b[2] && mz >= b[1] && mz < b[3]) taken.push([Math.min(r[0][0], r[1][0]) - 4, Math.min(r[0][1], r[1][1]) - 4, Math.max(r[0][0], r[1][0]) + 4, Math.max(r[0][1], r[1][1]) + 4]);
+      });
       world.fill(d, taken);
       world.scatter(d, taken);
     },
@@ -718,7 +730,7 @@
         W.tile(x0, z - 0.8, x1, z + 0.8, 0.016, 0xe6dcc2);
         for (i = 0; i < Math.max(2, Math.floor(w * h / 70)); i++) { var a = rng.range(x0 + 1.5, x1 - 1.5), b = rng.range(z0 + 1.5, z1 - 1.5); if (Math.abs(b - z) > 2) { if (kind === 'garden' && i % 2) world.prop(d, 'flowers', a, 0, b, rng, false); else tree(a, b); } }
         if (kind === 'pond' || kind === 'pool') { var r = Math.min(w, h) * 0.26; world.geo(x, z, 'neon').cyl(x, 0.02, z, r, 0.05, kind === 'pool' ? 0x4dd6ff : 0x3da8c8, 16); g.cyl(x, 0, z, r + 0.5, 0.05, 0xd8d4c9, 16); }
-        if (kind === 'playground' && w > 9) { g.box(x - 2, 0, z + 2.4, 0.2, 3, 0.2, 0xff5a7a).box(x + 2, 0, z + 2.4, 0.2, 3, 0.2, 0xff5a7a).box(x, 3, z + 2.4, 4.3, 0.2, 0.2, 0xff5a7a).box(x - 0.8, 1, z + 2.4, 0.7, 0.1, 0.3, 0xffd24a).box(x + 0.8, 1, z + 2.4, 0.7, 0.1, 0.3, 0x4dabf7); }
+        if (kind === 'playground' && w > 9) { c.addBox(x - 2, 0, z + 2.4, 0.4, 3, 0.4); c.addBox(x + 2, 0, z + 2.4, 0.4, 3, 0.4); g.box(x - 2, 0, z + 2.4, 0.2, 3, 0.2, 0xff5a7a).box(x + 2, 0, z + 2.4, 0.2, 3, 0.2, 0xff5a7a).box(x, 3, z + 2.4, 4.3, 0.2, 0.2, 0xff5a7a).box(x - 0.8, 1, z + 2.4, 0.7, 0.1, 0.3, 0xffd24a).box(x + 0.8, 1, z + 2.4, 0.7, 0.1, 0.3, 0x4dabf7); }
       } else if (kind === 'square' || kind === 'market') {
         var sc = d.id === 'oldtown' ? 0xdab18a : d.id === 'luxury' ? 0xfff0f4 : 0xf3e6c2;
         W.tile(x0, z0, x1, z1, 0.015, sc);
@@ -822,6 +834,7 @@
         world.smashable(x, y, z, under, function () { g.cyl(x, y, z, 0.42, 1.1, 0x2a3442, 8, 0.32).cyl(x, y + 1.1, z, 0.46, 0.2, 0xf2c14e, 8); }, 0.8, 1.2);
       } else if (kind === 'beacon') {
         g.box(x, y, z, 0.2, 2.2, 0.2, 0xf4f4f4).box(x, y + 1, z, 0.22, 0.4, 0.22, 0xe0442f); n.box(x, y + 2.2, z, 0.5, 0.5, 0.5, 0xff4a30);
+        c.addBox(x, y, z, 0.4, 2.6, 0.4);
       } else if (kind === 'mushroom') {
         var h = rng.range(2, 6), mc = rng.pick([0xc77dff, 0x7dffea, 0xff7de9]);
         g.cyl(x, y, z, 0.5, h, 0xe6dcf5, 7, 0.32); n.cyl(x, y + h, z, h * 0.72, h * 0.32, mc, 9, 0.12);
@@ -836,11 +849,14 @@
         world.smashable(x, y, z, under, function () { g.box(x, y, z, 1, 0.8, 1, 0xfff4f7).blob(x, y + 1.6, z, 1.05, 1.05, 1.05, 0x3daa4e); }, 1, 1.5);
       } else if (kind === 'parasol') {
         g.box(x, y, z, 0.14, 3, 0.14, 0xffffff).cyl(x, y + 2.7, z, 2.2, 0.8, rng.pick([0xff7aa2, 0xffffff, 0xffd24a]), 8, 0.15);
+        c.addBox(x, y, z, 0.4, 3, 0.4);
       } else if (kind === 'fence') {
         for (var fi = 0; fi < 6; fi++) g.box(x + fi * 0.8 - 2, y, z, 0.26, 1.1, 0.12, 0xffffff);
         g.box(x, y + 0.7, z, 4.6, 0.14, 0.1, 0xffffff);
+        c.addBox(x, y, z, 4.8, 1.1, 0.3);
       } else if (kind === 'mailbox') {
         g.box(x, y, z, 0.16, 1, 0.16, 0x8d6e4b).box(x, y + 1, z, 0.5, 0.42, 0.9, rng.pick([0xe0442f, 0x2f8fd0, 0xffffff]));
+        c.addBox(x, y, z, 0.5, 1.4, 0.8);
       } else if (kind === 'flowers') {
         for (var fl = 0; fl < 9; fl++) { var fx = x + rng.range(-1.2, 1.2), fz = z + rng.range(-1.2, 1.2); g.box(fx, y, fz, 0.1, 0.45, 0.1, 0x3daa4e).box(fx, y + 0.45, fz, 0.32, 0.26, 0.32, rng.pick([0xff5a7a, 0xffd24a, 0xffffff, 0xc77dff])); }
       } else if (kind === 'barrel') {
@@ -852,8 +868,10 @@
         world.smashable(x, y, z, under, function () { g.box(x, y, z, 0.9, 0.1, 0.9, 0x222222).cyl(x, y + 0.1, z, 0.36, 0.95, 0xff7a1a, 8, 0.05).cyl(x, y + 0.45, z, 0.26, 0.2, 0xffffff, 8, 0.2); }, 0.7, 1);
       } else if (kind === 'net') {
         g.box(x, y, z, 2.4, 0.34, 2.4, 0x5f7f6a).box(x + 0.2, y + 0.34, z, 1.4, 0.26, 1.5, 0x7f9f8a).cyl(x - 0.8, y + 0.3, z + 0.7, 0.3, 0.5, 0xffd24a, 7);
+        c.addBox(x, y, z, 2.4, 0.6, 2.4);
       } else if (kind === 'sign') {
         g.box(x, y, z, 0.16, 2.4, 0.16, 0x777b80).box(x, y + 2, z, 2.2, 1, 0.1, 0xffd24a);
+        c.addBox(x, y, z, 0.4, 3, 0.4);
       }
     },
 
@@ -1111,7 +1129,7 @@
     var w = Math.min(b.w * 0.9, 34), h = w * 0.19;
     if (b.h < 12) { w = Math.min(w, 20); h = w * 0.19; }
     var sy = y + Math.min(b.h - h * 0.6, 20);
-    if (b.shop) sy = y + Math.min(b.h - h * 0.5 - 0.3, 6.2);
+    if (b.shop) { h = Math.min(h, 2.6); w = Math.min(w, h * 5.3); sy = y + Math.min(b.h - h * 0.5 - 0.5, 5.15 + h / 2); }   // on the fascia, clear of the canopy
     if (f.nz) this.addFlat(name, b.x, sy, b.z + f.nz * (b.d / 2 + 0.3), w, h, color, f.nz > 0 ? 0 : Math.PI);
     else { w = Math.min(b.d * 0.9, 34); h = w * 0.19; this.addFlat(name, b.x + f.nx * (b.w / 2 + 0.3), sy, b.z, w, h, color, f.nx > 0 ? Math.PI / 2 : -Math.PI / 2); }
   };

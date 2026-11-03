@@ -67,6 +67,13 @@
         }
         var dx = c.x - pos.x, dz = c.z - pos.z, d2 = dx * dx + dz * dz;
         var fx = -Math.sin(c.h), fz = -Math.cos(c.h), ahead = -(dx * fx + dz * fz), want = c.v;
+        if (!TR.vehicles.current && pos.y < 2.2 && d2 < 16) { // a pedestrian cannot stand inside a car
+          var along = -dx * fx - dz * fz, across = dx * fz - dz * fx;
+          if (Math.abs(along) < 3.1 && Math.abs(across) < 1.9) {
+            var side = across >= 0 ? 1 : -1;
+            var out = 1.9 - Math.abs(across); pos.x -= fz * side * out; pos.z += fx * side * out;
+          }
+        }
         if (ahead > 0 && ahead < 16 && Math.abs(dx * fz - dz * fx) < 3.5) want = 0;
         c.cur += Math.max(-30 * dt, Math.min(14 * dt, want - c.cur));
         c.s += c.cur * dt * c.dir;

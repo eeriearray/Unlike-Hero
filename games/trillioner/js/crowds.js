@@ -54,20 +54,20 @@
     'if (limb > 0.5 && limb < 4.5) {',                                   // legs
     '  float side = limb < 2.5 ? 1.0 : -1.0, s = sw * side, c = cw * side;',
     '  float hip = -s * 0.62 * amp;',                                    // legs swing opposite each other
-    '  float knee = max(0.0, c) * 1.05 * amp + 0.1 * amp;',              // the knee folds as the leg comes through
-    '  if (limb == 2.0 || limb == 4.0) q = about(q, 0.56, knee);',
+    '  float knee = max(0.0, -c) * 0.95 * amp + 0.06 * amp;',            // the knee folds as the leg comes forward; a knee only bends backward
+    '  if (limb == 2.0 || limb == 4.0) q = about(q, 0.56, -knee);',
     '  q = about(q, 1.04, hip);',
     '} else if (limb > 4.5 && limb < 8.5) {',                            // arms
     '  float side = limb < 6.5 ? -1.0 : 1.0, s = sw * side;',
     '  float sh = -s * 0.5 * amp;',
-    '  if (cheer > 0.5) sh = -2.7 + sin(ph * 2.0 + side) * 0.25;',
-    '  if (limb == 6.0 || limb == 8.0) q = about(q, 1.32, -(0.28 + max(0.0, s) * 0.55) * max(amp, 0.25));',
+    '  if (cheer > 0.5) sh = 2.7 + sin(ph * 2.0 + side) * 0.25;',
+    '  if (limb == 6.0 || limb == 8.0) q = about(q, 1.32, (0.28 + max(0.0, -s) * 0.45) * max(amp, 0.25));',
     '  q = about(q, 1.76, sh);',
     '}',
     'float twist = sw * 0.09 * amp;',                                    // shoulders counter-rotate a little
     'if (q.y > 0.95) { float t = twist * smoothstep(0.95, 1.8, q.y); float c2 = cos(t), s2 = sin(t); q.xz = mat2(c2, -s2, s2, c2) * q.xz; }',
     'if (q.y > 1.0) q.z -= amp * 0.09 * (q.y - 1.0);',                   // lean into the walk
-    'q.y += abs(cw) * 0.055 * amp;',                                     // the body rises over each step
+    'q.y += abs(cw) * 0.05 * amp;',                                     // the body rises over each step
     'q.x += sw * 0.02 * amp;',
     'if (limb == 9.0) q.y += sin(ph * 2.0) * 0.008;',
     'transformed = q;'

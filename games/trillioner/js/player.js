@@ -23,6 +23,7 @@
     return j;
   }
 
+  function run01(sp) { return Math.min(1, Math.max(0, (sp - 8) / 10)); }   // cadence: quick steps walking, longer strides running
   function guard() {
     var g = new THREE.Group();
     part(1.2, 1.3, 0.7, 0x111118, 0, 1.3, 0, g); part(0.9, 0.9, 0.9, 0xd8b48c, 0, 2.4, 0, g); part(0.92, 0.2, 0.2, 0x000000, 0, 2.5, -0.42, g);
@@ -90,6 +91,13 @@
       pl.pos.x += pl.vel.x * dt; pl.pos.y += pl.vel.y * dt; pl.pos.z += pl.vel.z * dt;
       var base = TR.app.floorAt(pl.pos);
       TR.world.collide.resolve(pl.pos, RADIUS, HEIGHT, 0.75, base);
+      // parked vehicles are solid too
+      for (var vk in TR.vehicles.placed) {
+        var pv = TR.vehicles.placed[vk];
+        if (!pv.group.visible || pv.spec.mode === 'jet' || Math.abs(pv.pos.y - pl.pos.y) > 3) continue;
+        var vx = pl.pos.x - pv.pos.x, vz = pl.pos.z - pv.pos.z, vd = Math.hypot(vx, vz), vr = pv.spec.radius + RADIUS;
+        if (vd < vr && vd > 0.001) { pl.pos.x = pv.pos.x + vx / vd * vr; pl.pos.z = pv.pos.z + vz / vd * vr; }
+      }
       var ground = pl.pos.ground;
       if (pl.pos.y <= ground) {
         if (!pl.grounded && pl.vel.y < -9) { pl.squash = 0.32; TR.fx.dust(pl.pos); TR.fx.dust(pl.pos); }
@@ -103,7 +111,7 @@
       var sp = Math.hypot(pl.vel.x, pl.vel.z);
       pl.dustT = (pl.dustT || 0) - dt;
       if (sp > 14 && pl.grounded && pl.dustT <= 0) { pl.dustT = 0.09; TR.fx.dust(pl.pos); }
-      pl.walkT += sp * dt * (sp > 12 ? 0.62 : 0.92);
+      pl.walkT += sp * dt * (1.42 - run01(sp) * 0.42);
       pl.animate(dt, sp);
       pl.updateGrowth(dt);
     },
@@ -117,17 +125,18 @@
         to(p.armL, 'x', -0.7); to(p.armR, 'x', 0.8); to(p.armL, 'z', -0.5); to(p.armR, 'z', 0.5); to(p.foreL, 'x', 0.4); to(p.foreR, 'x', 0.4);
         to(p.chest, 'x', -0.08); to(p.hips, 'y', 0);
       } else {
-        // legs swing from the hip, knees fold as each leg comes through, more of everything when running
-        var hip = (0.45 + run * 0.5) * go, knee = (0.7 + run * 0.85) * go;
-        to(p.legL, 'x', s * hip); to(p.legR, 'x', -s * hip);
-        to(p.shinL, 'x', -Math.max(0, -c) * knee - 0.06 * go); to(p.shinR, 'x', -Math.max(0, c) * knee - 0.06 * go);
-        // arms swing against the legs, elbows bend when running
-        var arm = (0.4 + run * 0.6) * go;
-        to(p.armL, 'x', -s * arm); to(p.armR, 'x', s * arm); to(p.armL, 'z', -0.07); to(p.armR, 'z', 0.07);
-        to(p.foreL, 'x', 0.2 + run * 0.95 * go); to(p.foreR, 'x', 0.2 + run * 0.95 * go);
-        // the body rises over each step, the hips turn, the shoulders turn back, and it leans into a run
-        to(p.chest, 'x', 0.05 * go + run * 0.2); to(p.chest, 'y', -s * 0.14 * go); to(p.hips, 'y', s * 0.12 * go);
-        p.hips.position.y = 1.02 + Math.abs(c) * 0.07 * go - (1 - go) * 0.0;
+        // A walk cycle, set directly so the limbs stay in step. Forward swing is +x on the hip; a knee only folds backward (-x).
+        var hip = (0.62 + run * 0.42) * go, knee = (0.6 + run * 0.95) * go, arm = (0.5 + run * 0.55) * go;
+        p.legL.rotation.x = s * hip; p.legR.rotation.x = -s * hip;
+        // each knee folds while that leg swings forward, and the planted leg stays nearly straight
+        p.shinL.rotation.x = -Math.max(0, c) * knee - 0.04 * go; p.shinR.rotation.x = -Math.max(0, -c) * knee - 0.04 * go;
+        // opposite arm to opposite leg, with a bent elbow that bends more at a run
+        p.armL.rotation.x = -s * arm; p.armR.rotation.x = s * arm; p.armL.rotation.z = -0.08; p.armR.rotation.z = 0.08;
+        p.foreL.rotation.x = 0.28 + run * 0.95 * go + Math.max(0, s) * 0.3 * go; p.foreR.rotation.x = 0.28 + run * 0.95 * go + Math.max(0, -s) * 0.3 * go;
+        // the body is highest with the planted leg straight, the hips turn with the forward leg and the shoulders against it
+        to(p.chest, 'x', 0.04 * go + run * 0.16);
+        p.chest.rotation.y = s * 0.12 * go; p.hips.rotation.y = -s * 0.1 * go; p.hips.rotation.z = c * 0.025 * go;
+        p.hips.position.y = 1.0 + Math.abs(s) * -0.05 * go + 0.03 * go;
         // standing still: a slow breath
         if (go < 0.1) { p.chest.scale.y = 1 + Math.sin(performance.now() * 0.002) * 0.012; p.headJ.rotation.y = Math.sin(performance.now() * 0.0007) * 0.18; } else { p.chest.scale.y = 1; p.headJ.rotation.y *= 0.9; }
       }

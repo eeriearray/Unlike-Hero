@@ -115,6 +115,8 @@
   Geo.prototype.gable = function (x, y, z, w, h, d, color, alongZ) {
     C.setHex(color);
     var r = C.r, g = C.g, b = C.b, hw = w / 2, hd = d / 2, y1 = y + h, l, nn, ny;
+    this.tri(x - hw, y, z - hd, x + hw, y, z - hd, x + hw, y, z + hd, 0, -1, 0, r, g, b, 0.55, 0.55, 0.55);
+    this.tri(x - hw, y, z - hd, x + hw, y, z + hd, x - hw, y, z + hd, 0, -1, 0, r, g, b, 0.55, 0.55, 0.55);
     if (alongZ) {
       l = Math.hypot(hw, h); nn = h / l; ny = hw / l;
       this.tri(x - hw, y, z + hd, x, y1, z + hd, x, y1, z - hd, -nn, ny, 0, r, g, b, 0.9, 1.05, 1.05); this.tri(x - hw, y, z + hd, x, y1, z - hd, x - hw, y, z - hd, -nn, ny, 0, r, g, b, 0.9, 1.05, 0.9);

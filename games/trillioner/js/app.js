@@ -188,7 +188,7 @@
           TR.fx.purchase(ev, pos, name);
           TR.dares.bump('buys');
           if (ev.store) TR.dares.bump('stores');
-          if (it && !it.building) {
+          if (it && !it.building && it.kind !== 'change') {
             var from = run.padPos[it.id], kind = TR.goods.kindFor(it);
             TR.haul.add(kind, from, Math.min(1.2, 0.75 + Math.log10(Math.max(1, it.price / 1e9)) * 0.2));
             if (ev.store) for (var hi = 0; hi < 5; hi++) TR.haul.add(kind, from, 0.9);

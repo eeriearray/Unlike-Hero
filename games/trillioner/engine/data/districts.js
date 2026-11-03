@@ -70,10 +70,10 @@
         { id: 'stadium', name: 'The Stadium', x: -170, z: -310, w: 60, d: 48, h: 16, wall: 0xdfe6ee, roof: 0x3b7dd8, door: 's', project: 1 }
       ],
       shops: [
-        { id: 'estate_agents', name: 'Mansions For Sale', x: -295, z: 4, w: 30, d: 14, h: 9, door: 's', neon: 1 },
-        { id: 'block_sales', name: 'Whole Neighbourhoods', x: -300, z: -145, w: 30, d: 14, h: 9, door: 's' },
-        { id: 'park_lots', name: 'Parks Department', x: -180, z: -145, w: 30, d: 14, h: 9, door: 's' },
-        { id: 'garage_sale', name: 'Suspicious Garage Sale', x: -150, z: 54, w: 14, d: 10, h: 5, door: 'n' },
+        { id: 'estate_agents', name: 'Mansions For Sale', x: -295, z: 4, w: 30, d: 14, h: 9.2, door: 's', neon: 1 },
+        { id: 'block_sales', name: 'Whole Neighbourhoods', x: -300, z: -145, w: 30, d: 14, h: 9.2, door: 's' },
+        { id: 'park_lots', name: 'Parks Department', x: -180, z: -145, w: 30, d: 14, h: 9.2, door: 's' },
+        { id: 'garage_sale', name: 'Suspicious Garage Sale', x: -150, z: 54, w: 14, d: 10, h: 8.8, door: 'n' },
         { id: 'buried_safe', name: 'Garden Shed', x: -316, z: 94, w: 8, d: 8, h: 4, door: 'n', plain: 1, lock: 'buried_safe', lockWhy: 'Padlocked. Someone buried the key somewhere in the hedges.' }
       ],
       change: { x: -150, z: -26, door: 'e' },
@@ -96,10 +96,10 @@
         { id: 'power_station', name: 'Power Station', x: -96, z: 324, w: 40, d: 30, h: 16, wall: 0x7a8aa0, roof: 0x3a4a5a, door: 'n', project: 1 }
       ],
       shops: [
-        { id: 'parts_row', name: 'Motor Mile Parts', x: -92, z: 212, w: 32, d: 14, h: 9, door: 's', neon: 1 },
-        { id: 'tyre_yard', name: "Big Rick's Tyres", x: 30, z: 269, w: 30, d: 14, h: 9, door: 'n', neon: 1 },
-        { id: 'freight_row', name: 'Freight Sidings Office', x: -300, z: 269, w: 30, d: 14, h: 9, door: 'n' },
-        { id: 'lobby_lots_ind', name: 'Permit Office', x: -40, z: 335, w: 30, d: 14, h: 9, door: 'n' },
+        { id: 'parts_row', name: 'Motor Mile Parts', x: -92, z: 212, w: 32, d: 14, h: 9.2, door: 's', neon: 1 },
+        { id: 'tyre_yard', name: "Big Rick's Tyres", x: 30, z: 269, w: 30, d: 14, h: 9.2, door: 'n', neon: 1 },
+        { id: 'freight_row', name: 'Freight Sidings Office', x: -300, z: 269, w: 30, d: 14, h: 9.2, door: 'n' },
+        { id: 'lobby_lots_ind', name: 'Permit Office', x: -40, z: 335, w: 30, d: 14, h: 9.2, door: 'n' },
         { id: 'crane_deal', name: 'Crane Cabin', x: -270, z: 214, y: 28.6, w: 7, d: 5, h: 3.4, door: 's', frontOff: 2, plain: 1, lock: 'crane_deal', lockWhy: 'Rusted shut. There must be a latch around here.' }
       ],
       change: { x: 16, z: 226, door: 's' },
@@ -123,8 +123,8 @@
       ],
       shops: [
         { id: 'pier_stalls', name: 'Pier Kiosk', x: 214, z: 322, y: 0.2, w: 6, d: 8, h: 5, door: 'n', neon: 1 },
-        { id: 'dock_lots', name: 'Dock Lots Office', x: 190, z: 221, w: 30, d: 14, h: 9, door: 'n' },
-        { id: 'vault_lots', name: 'Treasure Auction', x: 270, z: 146, w: 30, d: 14, h: 9, door: 'n', plain: 1, lock: 'treasure_auction', lockWhy: 'CLOSED UNTIL THE VAULT IS RAISED, says the sign.' }
+        { id: 'dock_lots', name: 'Dock Lots Office', x: 190, z: 221, w: 30, d: 14, h: 9.2, door: 'n' },
+        { id: 'vault_lots', name: 'Treasure Auction', x: 270, z: 146, w: 30, d: 14, h: 9.2, door: 'n', plain: 1, lock: 'treasure_auction', lockWhy: 'CLOSED UNTIL THE VAULT IS RAISED, says the sign.' }
       ],
       change: { x: 232, z: 146, door: 'n' },
       stairs: [{ x: 144, z: 170, to: 14, dir: 'e', len: 6 }],
@@ -142,7 +142,7 @@
         { id: 'hangar_13', name: 'Hangar 13', x: 322, z: -326, w: 30, d: 24, h: 12, wall: 0x7c8a96, roof: 0x4a5560, door: 's', enter: 1, walled: 1, lock: 'hangar13', lockWhy: 'Sealed. Maybe the crates in the yard say why.' }
       ],
       shops: [
-        { id: 'airport_deals', name: 'Airport Deals', x: 196, z: -146, w: 34, d: 14, h: 9, door: 's', neon: 1 },
+        { id: 'airport_deals', name: 'Airport Deals', x: 196, z: -146, w: 34, d: 14, h: 9.2, door: 's', neon: 1 },
         { id: 'jetpack_shop', name: 'Gear Locker', x: 142, z: -340, w: 8, d: 8, h: 4, door: 's', plain: 1, lock: 'jetpack_shop', lockWhy: 'TEST PILOTS ONLY. Someone left a spare key around here.' }
       ],
       change: { x: 330, z: -146, door: 's' },
@@ -163,10 +163,10 @@
         { id: 'club_house', name: 'Tall Brick House', x: 22, z: -200, w: 24, d: 22, h: 24, wall: 0x8c4a33, roof: 0x3a2115, door: 'w', roofStall: 1 }
       ],
       shops: [
-        { id: 'antique_row', name: 'Antique Row', x: -28, z: -146, w: 28, d: 14, h: 9, door: 's' },
+        { id: 'antique_row', name: 'Antique Row', x: -28, z: -146, w: 28, d: 14, h: 9.2, door: 's' },
         { id: 'collectors_club', name: "Collectors' Club", x: 22, z: -206, y: 24.8, w: 8, d: 5, h: 3.5, door: 's', frontOff: 2, lock: 'collectors', lockWhy: 'Members arrive by ladder. You came the wrong way.' },
-        { id: 'night_market', name: 'Night Market', x: 78, z: -222, w: 30, d: 14, h: 9, door: 'n', neon: 1 },
-        { id: 'private_club', name: 'The Private Club', x: -60, z: -222, w: 30, d: 14, h: 9, door: 'n' }
+        { id: 'night_market', name: 'Night Market', x: 78, z: -222, w: 30, d: 14, h: 9.2, door: 'n', neon: 1 },
+        { id: 'private_club', name: 'The Private Club', x: -60, z: -222, w: 30, d: 14, h: 9.2, door: 'n' }
       ],
       change: { x: 40, z: -146, door: 's' },
       stairs: [{ x: -84, z: -170, to: 16, dir: 'e', len: 6 }],
@@ -189,8 +189,8 @@
         { id: 'lake_resort', name: 'Underground Lake Resort', x: 150, z: -90, w: 38, d: 24, h: 12, wall: 0x4fb3a3, roof: 0x1f6f63, door: 's', enter: 1, neon: 1 }
       ],
       shops: [
-        { id: 'grey_corner', name: "Mr. Grey's Corner", x: -40, z: -46, w: 16, d: 10, h: 7, door: 's', neon: 1 },
-        { id: 'bulk_stalls', name: 'Bazaar Bulk Hall', x: 40, z: 78, w: 30, d: 14, h: 9, door: 'n', wholeStore: 1, neon: 1 },
+        { id: 'grey_corner', name: "Mr. Grey's Corner", x: -40, z: -46, w: 16, d: 10, h: 8.8, door: 's', neon: 1 },
+        { id: 'bulk_stalls', name: 'Bazaar Bulk Hall', x: 40, z: 78, w: 30, d: 14, h: 9.2, door: 'n', wholeStore: 1, neon: 1 },
         { id: 'deep_level', name: 'The Deepest Shop', x: 0, z: -195, y: DEEP_Y, w: 24, d: 12, h: 8, door: 's', plain: 1 }
       ],
       change: { x: -30, z: 60, door: 's' },
@@ -230,7 +230,7 @@
     (d.shops || []).forEach(function (s, i) {
       d.buildings.push(Object.assign({ shop: 1, wall: d.walls[i % d.walls.length], roof: d.roofs[i % d.roofs.length] }, s));
     });
-    d.buildings.push({ id: k + '_change', name: 'Corner Shop', x: d.change.x, z: d.change.z, w: 14, d: 10, h: 7, door: d.change.door, shop: 1, neon: 1, wall: d.walls[0], roof: d.roofs[0] });
+    d.buildings.push({ id: k + '_change', name: 'Corner Shop', x: d.change.x, z: d.change.z, w: 14, d: 10, h: 8.8, door: d.change.door, shop: 1, neon: 1, wall: d.walls[0], roof: d.roofs[0] });
     d.buildings.forEach(function (b) { if (!b.project) b.enter = 1; });
   });
 
