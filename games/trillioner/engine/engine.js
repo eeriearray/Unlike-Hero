@@ -383,7 +383,7 @@
   };
 
   G.afterPurchase = function (p, item, q, ms) {
-    if (item.id === 'moon_land' && this.t < 6 * 60000) p.stats.moonBeforeBreakfast = true;
+    if (item.id === 'moon_land' && this.hourNow() < 6) p.stats.moonBeforeBreakfast = true;
   };
 
   /** "Buy the whole store": everything left and unlocked at one site, as one purchase. */
@@ -524,6 +524,16 @@
   G.say = function (text, kind) { this.feedPush(text, kind); };
   G.feedPush = function (text, kind) { this.feed.push({ text: text, kind: kind || 'buy', t: this.t }); if (this.feed.length > 24) this.feed.shift(); };
   G.drain = function (pid) { var p = this.players[pid], e = p.events; p.events = []; return e; };
+
+  /** The end-of-run summary. Never counts undiscovered secrets. */
+  G.results = function (pid) {
+    var p = this.players[pid], flags = Object.keys(p.flags).filter(function (k) { return k.indexOf('s:') === 0; });
+    if (p.history[p.history.length - 1] !== p.balance) p.history.push(p.balance);
+    return {
+      result: this.result || 'quit', spent: p.spent, left: p.balance, trophies: Object.keys(p.trophies), clout: this.clout(p), secrets: flags.length,
+      history: p.history.slice(), best: p.best, won: p.won, perfect: p.perfect, ms: this.t, winner: this.winner
+    };
+  };
 
   /** What leaves the engine for one player. Online, this is all the player ever receives. */
   G.viewFor = function (pid) {

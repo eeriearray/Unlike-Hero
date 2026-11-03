@@ -72,7 +72,6 @@
       var flag = new THREE.Mesh(new THREE.BoxGeometry(3, 1.8, 0.1), new THREE.MeshBasicMaterial({ color: 0xffc53d }));
       flag.position.set(1.5, 0.5, 0); g.add(flag);
       g.position.set(x, y, z);
-      fx.scene.add(g);
       fx.flags.push({ flag: flag, t: 0 });
       return g;
     },

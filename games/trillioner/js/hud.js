@@ -49,6 +49,7 @@
     show: function (v) { hud.root.style.display = v ? '' : 'none'; if (v) { hud.shown = 0; } },
     update: function (view, dt) {
       var me = view.me;
+      if (me.won) TR.menus.updatePerfect(me);
       // the balance rolls toward the real number
       var diff = me.balance - hud.shown;
       hud.shown = Math.abs(diff) < 100 ? me.balance : hud.shown + diff * Math.min(1, dt * 7);

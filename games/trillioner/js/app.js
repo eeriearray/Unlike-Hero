@@ -16,7 +16,10 @@
       gateFails: function (gate) { return g.gateFails(g.players.me, gate); },
       buy: function (id) { var r = g.buy('me', id); s.view = g.viewFor('me'); return r; },
       demolish: function (id, truck) { var r = g.demolish('me', id, truck); s.view = g.viewFor('me'); return r; },
-      setPos: function (x, y, z, h, inv, d) { g.setPos('me', x, y, z, h, inv, d); }
+      setPos: function (x, y, z, h, inv, d) { g.setPos('me', x, y, z, h, inv, d); },
+      finish: function () { var p = g.players.me; if (p.won) g.finish(p, g.isPerfect(p) ? 'perfect' : 'win'); else if (!g.over) { g.over = true; g.result = 'quit'; } },
+      toss: function () { return g.toss('me'); },
+      results: function () { return g.results('me'); }
     };
     return s;
   }
@@ -69,7 +72,15 @@
       var sp = app.session.run.spawn;
       TR.player.teleport(sp.x, sp.y, sp.z, 0);
       TR.player.setVisible(true);
+      TR.world.resetRun();
+      Object.keys(TR.vehicles.placed).forEach(function (k) { TR.vehicles.placed[k].group.visible = false; });
+      if (TR.vehicles.current) TR.vehicles.leave();
+      if (TR.interiors.current) TR.interiors.exit(TR.player);
+      TR.player.teleport(sp.x, sp.y, sp.z, 0);
       TR.hud.show(true);
+      app.mode = opts.mode;
+      app.ended = false;
+      app.paused = false;
       app.running = true;
       TR.input.yaw = 0;
       if (window.Hub) Hub.report('session-start', { mode: opts.mode, seed: seed });
@@ -118,16 +129,30 @@
           TR.audio.buy(2, 3);
         } else if (ev.type === 'demolish') {
           var d = run.items[ev.item], s = run.sites[d.site];
-          TR.fx.explosion(s.b ? { x: s.b.x, y: 4, z: s.b.z } : pos, 2);
+          TR.fx.explosion(s.b ? { x: s.b.x, y: (s.y || 0) + 4, z: s.b.z } : pos, 2);
           TR.audio.boom(1);
           TR.cam.shake = 1;
+          if (s.b && !s.rubble) {
+            s.rubble = true;
+            TR.world.setBuildingGone(s.b.id, true);
+            TR.world.addRubble(s.b, s.y || 0);
+          }
+        } else if (ev.type === 'won') {
+          app.winSequence();
+          TR.menus.perfectWindow();
+        } else if (ev.type === 'over') {
+          app.endRun(ev);
         }
       });
     },
     onOwned: function (it) {
       var s = app.session.run.sites[it.site];
-      if (it.building && s && s.b && !s.flag) {
-        s.flag = TR.fx.raiseFlag(s.b.x, s.b.h + 0.8, s.b.z);
+      if (!it.building || !s || !s.b) return;
+      if (s.b.project && !s.built) { s.built = true; TR.world.addProject(s.b, null, s.y || 0); }
+      if (!s.flag) {
+        s.flag = true;
+        TR.world.runLayer.add(TR.fx.raiseFlag(s.b.x, (s.y || 0) + s.b.h + 0.8, s.b.z));
+        TR.world.addTrim(s.b, s.y || 0);
       }
     },
     /** The reward appears right beside the building, with a clear prompt. */
@@ -175,15 +200,45 @@
       return null;
     },
 
+    winSequence: function () {
+      var p = TR.player.pos;
+      TR.hud.banner('FLAT BROKE! YOU DID IT!');
+      TR.audio.buy(4, 5); TR.audio.cheer(1.4);
+      TR.fx.confetti(p, 400, 24); TR.cam.shake = 1; TR.fx.slow = 1.6;
+      for (var i = 0; i < 14; i++) setTimeout(function () { TR.fx.firework(p.x + (Math.random() - 0.5) * 140, 40 + Math.random() * 60, p.z + (Math.random() - 0.5) * 140); TR.audio.boom(0.35); }, i * 240);
+    },
+    endRun: function (ev) {
+      if (app.ended) return;
+      app.ended = true;
+      app.running = false;
+      TR.menus.closePerfect();
+      TR.audio.engine(null);
+      var res = app.session.results(), earned = TR.save.recordRun(res, app.mode);
+      if (window.Hub) Hub.report('session-end', { result: res.won ? 'win' : 'lose', spent: res.spent, durationMs: res.ms, mode: app.mode, perfect: res.perfect });
+      if (document.pointerLockElement) document.exitPointerLock();
+      if (res.perfect) TR.hud.banner('PERFECT ZERO!');
+      TR.hud.show(false);
+      TR.menus.results(res, earned);
+    },
+    /** Quit a run from the pause menu: it still pays out. */
+    quitRun: function () { app.session.finish(); app.endRun({ result: 'quit' }); },
+    setPaused: function (v) {
+      if (app.session && app.session.online) v = false;
+      app.paused = v;
+      if (v && document.pointerLockElement) document.exitPointerLock();
+    },
+
     /** One simulation frame. Debug and tests call this directly when the page is hidden. */
     frame: function (dt) {
       var ts = TR.fx.timeScale(), sim = dt * ts;
       app.t += dt;
+      if (TR.input.hit('Escape') && app.running) { if (app.paused) { TR.menus.close(); app.setPaused(false); } else { app.setPaused(true); TR.menus.pause(); } }
       if (app.running && !app.paused) {
         TR.hud.prompt(null);
         if (TR.vehicles.current) TR.vehicles.drive(sim); else TR.player.update(sim);
         var evs = app.session.tick(dt);
         app.handleEvents(evs);
+        if (!app.running) { TR.input.endFrame(); return; }
         var pos = TR.player.pos;
         TR.pads.update(dt, app.session, pos, app.t);
         app.updateActions(dt);
@@ -224,6 +279,11 @@
       b('+$100B', function () { app.me().balance += 100 * R.B; });
       b('-$100B', function () { var p = app.me(); p.balance = Math.max(0, p.balance - 100 * R.B); });
       b('Hour+1', function () { var g = app.session.game; g.setClockHour((g.hourNow() + 1) % 24); });
+      b('Broke', function () { app.me().balance = 50 * R.M; });
+      b('Secrets', function () { app.showSecrets = !app.showSecrets; });
+      Object.keys(TRD.districts.DISTRICTS).forEach(function (k) {
+        b(k, function () { var sp = app.session.run.districtSpawn[k]; if (TR.interiors.current) TR.interiors.exit(TR.player); TR.player.teleport(sp.x, sp.y, sp.z, 0); });
+      });
     },
     me: function () { return app.session.game.players.me; }
   };

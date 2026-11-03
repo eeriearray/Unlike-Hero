@@ -5,7 +5,7 @@
   var CHUNK = 120;
 
   var world = TR.world = {
-    scene: null, surface: null, collide: null, hemi: null, sun: null, chunks: {}, buildingBoxes: {}, sky: 0x87ceeb,
+    scene: null, surface: null, collide: null, hemi: null, sun: null, chunks: {}, meshes: {}, ranges: {}, buildingBoxes: {}, runLayer: null, sky: 0x87ceeb,
     windowMat: null, neonMat: null, signMat: null, waterMat: null,
 
     init: function (scene) {
@@ -45,6 +45,7 @@
         var mesh = layer === 'solid' ? geo.mesh(world.solid, true, true) : layer === 'flat' ? geo.mesh(world.solid, false, true) : layer === 'window' ? geo.mesh(world.windowMat) : geo.mesh(world.neonMat);
         mesh.frustumCulled = true;
         mesh.geometry.computeBoundingSphere();
+        world.meshes[k] = mesh;
         world.surface.add(mesh);
       });
       world.surface.add(world.signs.mesh());
@@ -94,6 +95,59 @@
       return best;
     },
 
+    /** Runs fn, remembering which vertices it wrote so the building can be erased when demolished. */
+    tracked: function (id, x, z, fn) {
+      var layers = ['solid', 'window', 'neon'], before = layers.map(function (l) { return world.geo(x, z, l).p.length; });
+      fn();
+      if (!id) return;
+      var key = Math.floor(x / CHUNK) + ',' + Math.floor(z / CHUNK);
+      world.ranges[id] = layers.map(function (l, i) { return { chunk: key + ':' + l, from: before[i], to: world.geo(x, z, l).p.length }; });
+    },
+    setBuildingGone: function (id, gone) {
+      (world.ranges[id] || []).forEach(function (r) {
+        var m = world.meshes[r.chunk]; if (!m) return;
+        var attr = m.geometry.attributes.position;
+        if (!m.userData.backup) m.userData.backup = attr.array.slice();
+        for (var i = r.from; i < r.to; i++) attr.array[i] = gone ? 0 : m.userData.backup[i];
+        attr.needsUpdate = true;
+      });
+      var box = world.buildingBoxes[id];
+      if (box) box.off = !!gone;
+    },
+    /** New run: everything the last run did to the city is undone. */
+    resetRun: function () {
+      Object.keys(world.ranges).forEach(function (id) { world.setBuildingGone(id, false); });
+      if (world.runLayer) { world.scene.remove(world.runLayer); world.runLayer.traverse(function (o) { if (o.geometry) o.geometry.dispose(); }); }
+      world.runLayer = new THREE.Group();
+      world.scene.add(world.runLayer);
+    },
+    /** Rubble lot where a building stood. Stays for the run. */
+    addRubble: function (b, y) {
+      var g = new TR.Geo(), r = new Rng('rubble:' + b.id), cols = [0x8a8378, 0x6f6a62, 0xa89f90, 0x5a554e];
+      g.box(b.x, y, b.z, b.w, 0.3, b.d, 0x77706a);
+      for (var i = 0; i < 26; i++) {
+        var s = r.range(1, 4);
+        g.box(b.x + r.range(-b.w / 2, b.w / 2) * 0.9, y + 0.2, b.z + r.range(-b.d / 2, b.d / 2) * 0.9, s, r.range(0.5, 2.4), s * r.range(0.7, 1.5), r.pick(cols), r.range(0, 3));
+      }
+      world.runLayer.add(g.mesh(world.solid, true, true));
+      world.runLayer.children[world.runLayer.children.length - 1].updateMatrix();
+    },
+    /** The owner's flag and a gold trim around the roof. */
+    addTrim: function (b, y) {
+      var g = new TR.Geo(), top = y + b.h + 0.8, t = 0.7, gold = 0xffc53d;
+      g.box(b.x, top, b.z - b.d / 2, b.w + 1.4, t, t, gold).box(b.x, top, b.z + b.d / 2, b.w + 1.4, t, t, gold);
+      g.box(b.x - b.w / 2, top, b.z, t, t, b.d + 1.4, gold).box(b.x + b.w / 2, top, b.z, t, t, b.d + 1.4, gold);
+      world.runLayer.add(g.mesh(world.neonMat));
+    },
+    /** A bought project rises from its lot. */
+    addProject: function (b, d, y) {
+      var g = new TR.Geo();
+      g.box(b.x, y, b.z, b.w, b.h, b.d, b.wall).box(b.x, y + b.h, b.z, b.w + 1, 0.8, b.d + 1, b.roof);
+      world.runLayer.add(g.mesh(world.solid, true, true));
+      var box = world.collide.addBox(b.x, y, b.z, b.w, b.h + 0.8, b.d, { project: b.id });
+      world.projectBoxes = world.projectBoxes || []; world.projectBoxes.push(box);
+    },
+
     addBuilding: function (b, d, base) {
       var y = base || 0, g = world.geo(b.x, b.z, 'solid');
       var wall = b.wall != null ? b.wall : d.walls[0], roof = b.roof != null ? b.roof : d.roofs[0];
@@ -129,8 +183,7 @@
       var taken = [];
       (d.buildings || []).forEach(function (b) {
         if (!b.project) {
-          world.addBuilding(b, d);
-          world.door(b, d);
+          world.tracked(b.id, b.x, b.z, function () { world.addBuilding(b, d); world.door(b, d); });
           world.signs.add(b.name, b, d);
         }
         taken.push([b.x - b.w / 2 - 6, b.z - b.d / 2 - 6, b.x + b.w / 2 + 6, b.z + b.d / 2 + 6]);

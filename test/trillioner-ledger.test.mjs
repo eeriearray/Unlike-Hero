@@ -236,3 +236,39 @@ test('the day ends after exactly 24 real minutes', () => {
   assert.equal(g.result, 'timeup');
   assert.equal(g.t, 24 * 60 * 1000);
 });
+
+test('Clout: 1 per $1B rounded down, at least 1, win +200, Perfect Zero +500', () => {
+  const g = fresh();
+  const p = g.players.p1;
+  assert.equal(g.clout(p), 1);
+  p.spent = 2.9 * B;
+  assert.equal(g.clout(p), 2);
+  p.won = true;
+  assert.equal(g.clout(p), 202);
+  p.perfect = true;
+  assert.equal(g.clout(p), 702);
+});
+
+test('the money cannon stops at its $30B limit and counts as spending', () => {
+  const g = fresh();
+  const p = g.players.p1;
+  p.gear.money_cannon = true;
+  assert.equal(g.setCannon('p1', true).ok, true);
+  const before = p.spent;
+  steps(g, 10);
+  assert.equal(p.spent - before, 200 * M);
+  steps(g, 2000);
+  assert.equal(p.cannonUsed, 30 * B);
+  assert.equal(p.spent - before, 30 * B);
+  assert.equal(p.cannonOn, false);
+  assert.equal(g.setCannon('p1', true).code, 'empty');
+});
+
+test('a whole simulated day runs to 24:00 through the bot and stays in integer cents', () => {
+  const Bot = require('../games/trillioner/engine/bot.js');
+  const r = Bot.playDay(3, Bot.visibleOnly);
+  assert.equal(r.result, 'timeup');
+  assert.equal(r.ms, 24 * 60000);
+  assert.ok(Number.isSafeInteger(r.player.balance) && Number.isSafeInteger(r.player.spent));
+  assert.ok(r.player.history.length >= 90);
+});
