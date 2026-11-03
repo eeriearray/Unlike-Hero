@@ -24,7 +24,7 @@
       var dx = Math.sin(yaw) * Math.cos(pitch), dy = Math.sin(pitch), dz = Math.cos(yaw) * Math.cos(pitch);
       var fy = target.y + (opts.lift || 2.6);
       var d = want;
-      if (TR.world && TR.world.collide) d = Math.max(1.6, TR.world.collide.rayClip(target.x, fy, target.z, dx, dy, dz, want) - 0.5);
+      if (TR.world && TR.world.collide) d = Math.max(1.6, TR.world.collide.rayClip(target.x, fy, target.z, dx, dy, dz, want) - 0.8);
       var floor = (opts.floor != null ? opts.floor : target.y - 40) + 0.5;
       var gx = target.x + dx * d, gy = Math.max(floor, fy + dy * d), gz = target.z + dz * d;
       var k = 1 - Math.pow(0.0005, dt);

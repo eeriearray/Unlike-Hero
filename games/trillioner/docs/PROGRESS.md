@@ -19,6 +19,7 @@ Tests: `node --test --test-force-exit test/trillioner-*.test.mjs`. Simulators: `
 | M7 Battle Spend | Done | Socket tests pass. Two browser tabs completed matches, including a mid-match reload that reclaimed the seat |
 | Art pass | Done | Requested after M8: sRGB lighting, sky dome, clouds, tiled ground, road markings and zebra crossings, new building shapes, characters, cars, pads, rooms, HUD. Viewed in every district, at dawn, day, sunset and night, and in a room |
 | Fun pass | Done, needs a human verdict | Requested after playtest. Goods on display, haul line, building moments, rampage and fines, dares, receipts, filled lots, birds, balloons, blimp, smoke. Exercised by scripted input in the preview; 60 FPS with a full haul while wrecking cars, 113 draw calls, 122k triangles |
+| Second art pass and walk-in doors | Done | Post-processing, surface detail, glass, round trees and clouds. 60 FPS at 1892x984 on High (M4), up to 142 draw calls and 214k triangles. Camera checked at 1,040 door and pad positions: never inside a collision box |
 | M8 Finish | Done, with limits below | FPS measured on one machine; gamepad checked with a stubbed pad; touch checked with synthetic touch events |
 
 ## Measured

@@ -19,8 +19,8 @@
     [0, 0x060a22, 0x1c2658, 0x9fb6ff, 0.3, 0.46, 1],
     [4.8, 0x080d2a, 0x25305f, 0x9fb6ff, 0.3, 0.46, 1],
     [6, 0x4a86d8, 0xffd0a8, 0xffd9a8, 0.85, 0.52, 0.45],
-    [8, 0x2f8fee, 0xc4eaff, 0xfff6e2, 1.1, 0.64, 0],
-    [16, 0x2f8fee, 0xc4eaff, 0xfff6e2, 1.1, 0.64, 0],
+    [8, 0x2f8fee, 0xc4eaff, 0xfff3dc, 1.25, 0.58, 0],
+    [16, 0x2f8fee, 0xc4eaff, 0xfff3dc, 1.25, 0.58, 0],
     [18, 0x4c6cc8, 0xffaa6a, 0xffae70, 0.85, 0.52, 0.35],
     [19.4, 0x1c2462, 0xe66a84, 0xff8a68, 0.42, 0.4, 0.8],
     [21, 0x060a22, 0x1c2658, 0x9fb6ff, 0.3, 0.46, 1],
@@ -40,17 +40,15 @@
 
     init: function (scene) {
       world.scene = scene;
+      world.buildSky(scene);
       world.collide = new TR.Collide();
       world.surface = new THREE.Group();
       world.under = new THREE.Group();
       world.under.visible = false;
       scene.add(world.surface, world.under);
-      world.solid = new THREE.MeshLambertMaterial({ vertexColors: true });
-      world.windowMat = new THREE.MeshLambertMaterial({ vertexColors: true, emissive: 0xffd98a, emissiveIntensity: 0 });
+      world.solid = TR.surfaceDetail(new THREE.MeshLambertMaterial({ vertexColors: true }));
       // Only some panes light up at night: panes drawn in the lighter colour are the lit ones.
-      world.windowMat.onBeforeCompile = function (sh) {
-        sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n totalEmissiveRadiance *= step(0.42, vColor.g);');
-      };
+      world.windowMat = TR.glassDetail(new THREE.MeshPhongMaterial({ vertexColors: true, emissive: 0xffd98a, emissiveIntensity: 0, specular: 0xffffff, shininess: 120 }), world.skyU.hor);
       world.neonMat = new THREE.MeshBasicMaterial({ vertexColors: true });
       world.hemi = new THREE.HemisphereLight(0xdcefff, 0xb7a58c, 0.6);
       scene.add(world.hemi);
@@ -63,7 +61,6 @@
       world.sun.shadow.normalBias = 0.5;
       scene.add(world.sun, world.sun.target);
       scene.fog = new THREE.Fog(0xc4eaff, 200, 760);
-      world.buildSky(scene);
       world.buildCity();
     },
 
@@ -103,7 +100,7 @@
     buildDecals: function () {
       var all = new TR.Geo();
       [world.walk, world.road, world.paint].forEach(function (g) { all.p = all.p.concat(g.p); all.n = all.n.concat(g.n); all.c = all.c.concat(g.c); });
-      var mat = new THREE.MeshLambertMaterial({ vertexColors: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4, depthWrite: false });
+      var mat = TR.surfaceDetail(new THREE.MeshLambertMaterial({ vertexColors: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4, depthWrite: false }));
       var m = all.mesh(mat, false, true);
       m.frustumCulled = false; m.renderOrder = 1;
       world.surface.add(m);
@@ -149,8 +146,8 @@
       for (var i = 0; i < 34; i++) {
         var x = rng.range(-720, 720), z = rng.range(-720, 720), y = rng.range(150, 225), n = 3 + rng.int(4), base = rng.range(16, 34);
         for (var k = 0; k < n; k++) {
-          var w = base * rng.range(0.7, 1.5), d = base * rng.range(0.6, 1.1), h = base * rng.range(0.28, 0.5);
-          g.box(x + rng.range(-base, base) * 1.1, y + rng.range(0, 6), z + rng.range(-base, base) * 0.6, w, h, d, 0xffffff);
+          var w = base * rng.range(0.5, 0.95), d = base * rng.range(0.4, 0.7), h = base * rng.range(0.26, 0.46);
+          g.blob(x + (k / Math.max(1, n - 1) - 0.5) * base * 2.2, y + rng.range(-1, 4), z + rng.range(-base, base) * 0.35, w, h, d, 0xffffff);
         }
       }
       world.cloudMat = new THREE.MeshLambertMaterial({ vertexColors: true, emissive: 0xffffff, emissiveIntensity: 0.28 });
@@ -180,6 +177,12 @@
       var bed = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), new THREE.MeshLambertMaterial({ color: 0x175a7e }));
       bed.rotation.x = -Math.PI / 2; bed.position.y = world.SEABED;
       world.surface.add(bed);
+      // foam where the sea meets the land
+      var fg = new TR.Geo(), edges = [[-360, -360, 360, -360], [360, -360, 360, 120], [306, 120, 360, 120], [306, 120, 306, 282], [120, 282, 306, 282], [120, 282, 120, 360], [-360, 360, 120, 360], [-360, -360, -360, 360]];
+      edges.forEach(function (e) { fg.strip(e[0], e[1], e[2], e[3], 2.4, -1.42, 0xe8f7ff); });
+      world.foam = fg.mesh(new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.8 }));
+      world.foam.renderOrder = 4; world.foam.frustumCulled = false;
+      world.surface.add(world.foam);
     },
 
     SEABED: -24,
@@ -476,10 +479,19 @@
       g.box(dx + f.nx * 0.2, y, dz + f.nz * 0.2, alongX ? dw + 1.2 : 0.3, dh + 0.5, alongX ? 0.3 : dw + 1.2, shade(col, 0.8));
       g.box(dx + f.nx * 0.34, y, dz + f.nz * 0.34, alongX ? dw : 0.3, dh, alongX ? 0.3 : dw, b.enter ? 0x202436 : 0x7a7f88);
       if (b.enter) {
-        n.box(dx + f.nx * 0.5, y + 0.5, dz + f.nz * 0.5, alongX ? dw - 1 : 0.12, dh - 1.2, alongX ? 0.12 : dw - 1, 0xffe9b0);
-        g.box(dx + f.nx * 1.3, y + dh + 0.1, dz + f.nz * 1.3, alongX ? dw + 2 : 2.8, 0.35, alongX ? 2.8 : dw + 2, col); // awning
-        world.collide.addBox(dx + f.nx * 1.3, y + dh + 0.1, dz + f.nz * 1.3, alongX ? dw + 2 : 2.8, 0.35, alongX ? 2.8 : dw + 2);
-        g.box(dx + f.nx * 1.4, y, dz + f.nz * 1.4, alongX ? dw + 2 : 2.8, 0.14, alongX ? 2.8 : dw + 2, 0xc8c4b8);       // doorstep
+        // double glass doors, lit from inside, with a mat that says this one opens
+        var cx = alongX ? 1.26 : 0, cz = alongX ? 0 : 1.26;
+        n.box(dx + f.nx * 0.5 - cx, y + 0.3, dz + f.nz * 0.5 - cz, alongX ? 2.1 : 0.1, dh - 0.8, alongX ? 0.1 : 2.1, 0xffe2a0);
+        n.box(dx + f.nx * 0.5 + cx, y + 0.3, dz + f.nz * 0.5 + cz, alongX ? 2.1 : 0.1, dh - 0.8, alongX ? 0.1 : 2.1, 0xffe2a0);
+        g.box(dx + f.nx * 0.6, y, dz + f.nz * 0.6, alongX ? 0.24 : 0.14, dh, alongX ? 0.14 : 0.24, 0x23263a);
+        g.box(dx + f.nx * 0.62 - cx * 0.2, y + 1.7, dz + f.nz * 0.62 - cz * 0.2, alongX ? 0.12 : 0.1, 0.9, alongX ? 0.1 : 0.12, 0xffd24a);
+        g.box(dx + f.nx * 0.62 + cx * 0.2, y + 1.7, dz + f.nz * 0.62 + cz * 0.2, alongX ? 0.12 : 0.1, 0.9, alongX ? 0.1 : 0.12, 0xffd24a);
+        var canopy = alongX ? [dw + 2, 3.2] : [3.2, dw + 2];
+        g.box(dx + f.nx * 1.5, y + dh + 0.1, dz + f.nz * 1.5, canopy[0], 0.35, canopy[1], col);
+        world.collide.addBox(dx + f.nx * 1.5, y + dh + 0.1, dz + f.nz * 1.5, canopy[0], 0.35, canopy[1]);
+        n.box(dx + f.nx * 3, y + dh + 0.02, dz + f.nz * 3, alongX ? dw + 2 : 0.14, 0.14, alongX ? 0.14 : dw + 2, 0xffe9b0);
+        g.box(dx + f.nx * 1.8, y, dz + f.nz * 1.8, alongX ? dw + 1 : 3.2, 0.12, alongX ? 3.2 : dw + 1, 0xc8c4b8);
+        g.box(dx + f.nx * 1.8, y + 0.12, dz + f.nz * 1.8, alongX ? dw - 0.6 : 2.4, 0.03, alongX ? 2.4 : dw - 0.6, 0xc73e4f);
       }
       if (b.boarded) for (var i = 0; i < 3; i++) g.box(dx + f.nx * 0.6, y + 0.8 + i * 1.3, dz + f.nz * 0.6, alongX ? dw + 1 : 0.2, 0.3, alongX ? 0.2 : dw + 1, 0x8d6e4b);
     },
@@ -533,6 +545,8 @@
       var rng = new Rng('stall:' + s.id);
       for (i = 0; i < c * 2; i++) { var v = -len / 2 + (i + 0.5) * (len / (c * 2)), gs = rng.range(0.35, 0.7); g.box(alongZ ? ax : ax + v, 1.66, alongZ ? az + v : az, gs, gs, gs, rng.pick(d.walls.concat([a, 0xffffff]))); }
       world.collide.addBox(ax, 0, az, alongZ ? 1.6 : len, 1.5, alongZ ? len : 1.6);
+      // the awning stops the camera, above head height so nobody walks into it
+      world.collide.addBox(alongZ ? ax + 0.7 : ax, 4.3, alongZ ? az : az + 0.7, alongZ ? 4 : len, 3.2, alongZ ? len : 4);
       world.signs.addFlat(s.name, ax + (alongZ ? 2.6 : 0), 5.5, az + (alongZ ? 0 : 2.6), Math.min(len, 22), Math.min(len, 22) * 0.17, a, alongZ ? Math.PI / 2 : 0);
     },
     /** A spiral fire escape with a bridge to the roof: the rooftop route every district gets. */
@@ -743,7 +757,7 @@
       if (kind === 'tree') {
         var th = rng.range(2.6, 3.6), leaf = rng.pick(d.id === 'oldtown' ? [0x6fa84a, 0x8ab04a] : [0x4cb84c, 0x5fc95a, 0x3daa4e, 0x74cf58]);
         g.cyl(x, y, z, 0.42, th, 0x7a5230, 6, 0.3);
-        g.box(x, y + th - 0.2, z, 3.6, 2.2, 3.6, leaf).box(x + 0.5, y + th + 1.6, z - 0.3, 2.6, 1.7, 2.6, shade(leaf, 1.1)).box(x - 1, y + th + 0.4, z + 0.9, 1.9, 1.6, 1.9, shade(leaf, 0.9));
+        g.blob(x, y + th + 0.9, z, 2.2, 1.9, 2.2, leaf).blob(x + 0.7, y + th + 2.3, z - 0.4, 1.5, 1.3, 1.5, shade(leaf, 1.12)).blob(x - 1.1, y + th + 0.5, z + 0.9, 1.25, 1.1, 1.25, shade(leaf, 0.9));
         c.addBox(x, y, z, 0.7, th, 0.7);
         if (!under) world.aoRing(x - 1.2, z - 1.2, x + 1.2, z + 1.2, 1.5, 0.26);
       } else if (kind === 'palm') {
@@ -772,7 +786,7 @@
       } else if (kind === 'bin') {
         world.smashable(x, y, z, under, function () { g.cyl(x, y, z, 0.42, 1.2, 0x3f7a55, 8, 0.48).cyl(x, y + 1.2, z, 0.52, 0.12, 0x2c5a3e, 8); }, 0.8, 1.2);
       } else if (kind === 'hedgeball') {
-        world.smashable(x, y, z, under, function () { g.box(x, y, z, 1, 0.8, 1, 0xfff4f7).box(x, y + 0.8, z, 1.5, 1.5, 1.5, 0x3daa4e).box(x, y + 1.05, z, 1.9, 1, 1, 0x3daa4e).box(x, y + 1.05, z, 1, 1, 1.9, 0x3daa4e); }, 1, 1.5);
+        world.smashable(x, y, z, under, function () { g.box(x, y, z, 1, 0.8, 1, 0xfff4f7).blob(x, y + 1.6, z, 1.05, 1.05, 1.05, 0x3daa4e); }, 1, 1.5);
       } else if (kind === 'parasol') {
         g.box(x, y, z, 0.14, 3, 0.14, 0xffffff).cyl(x, y + 2.7, z, 2.2, 0.8, rng.pick([0xff7aa2, 0xffffff, 0xffd24a]), 8, 0.15);
       } else if (kind === 'fence') {
@@ -959,7 +973,8 @@
         world.hemi.intensity = under ? 1.05 : 1;
         world.sun.intensity = under ? 0.25 : 0.32;
         world.sun.color.setHex(0xfff0dc);
-        world.windowMat.emissiveIntensity = 1.1;
+        world.windowMat.emissiveIntensity = 1.5;
+        world.neonMat.color.setScalar(under ? 1.9 : 1.3);
         world.sky.visible = false;
         world.sun.position.set(target.x + 30, target.y + 140, target.z + 30); world.sun.target.position.set(target.x, target.y, target.z);
         return;
@@ -983,7 +998,8 @@
       world.hemi.groundColor.setHex(0xb7a58c);
       world.hemi.intensity = am;
       world.sun.intensity = si; world.sun.color.copy(sunCol);
-      world.windowMat.emissiveIntensity = glow * 1.15;
+      world.windowMat.emissiveIntensity = glow * 1.7;
+      world.neonMat.color.setScalar(1 + glow * 1.5);
       if (world.cloudMat) { world.cloudMat.emissive.copy(hor).lerp(top, 0.2); world.cloudMat.emissiveIntensity = 0.55; }
       // the sun rises east (+x) and sets west; at night the same light is the moon
       var a = hour >= 6 && hour < 19 ? (hour - 6) / 13 * Math.PI : ((hour + 5) % 24) / 11 * Math.PI, sx = Math.cos(a), sy = Math.max(0.28, Math.sin(a));

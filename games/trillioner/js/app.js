@@ -42,6 +42,7 @@
       TR.input.init(canvas);
       TR.input.initTouch(ui);
       app.renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, powerPreference: 'high-performance' });
+      TR.post.init(app.renderer);
       app.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
       app.renderer.shadowMap.enabled = true;
       app.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -361,28 +362,42 @@
         else if (vs.current) vs.leave();
         else { var v = vs.nearest(TR.player.pos, 6); if (v) vs.board(v); }
       }
-      // doors: hold E
+      // doors: walk into one and you are through it
       var door = app.nearDoor();
-      if (door && !vs.current) {
-        if (input.down('KeyE')) {
-          app.doorHold = (app.doorHold || 0) + dt;
-          if (app.doorHold > 0.3) { app.doorHold = 0; if (door.exit) ints.exit(TR.player); else ints.enter(door.site, TR.player); input.keys.KeyE = false; }
-        } else app.doorHold = 0;
-        if (!TR.hud.pOn) TR.hud.prompt(door.exit ? 'Exit' : door.site.name, 'Hold E to ' + (door.exit ? 'leave' : 'enter'), app.doorHold ? app.doorHold / 0.3 : 0);
+      app.doorCool = Math.max(0, (app.doorCool || 0) - dt);
+      if (door && door.touch && app.doorCool <= 0 && !ints.isLocked) {
+        var slowEnough = !vs.current || Math.abs(vs.current.speed) < 14;
+        if (app.walkingInto(door) && slowEnough) {
+          if (vs.current) vs.leave();
+          app.doorCool = 0.6;
+          TR.notebook.fadeFlash();
+          if (door.exit) ints.exit(TR.player); else ints.enter(door.site, TR.player);
+          TR.hud.prompt(null);
+          return;
+        }
       }
+      if (door && !TR.hud.pOn && !vs.current) TR.hud.prompt(door.exit ? 'Way out' : door.site.name, door.exit ? 'Walk through the door' : 'Walk in');
       if (!door && !vs.current && TR.vehicles.nearest(TR.player.pos, 5) && !TR.hud.pOn) TR.hud.prompt(TR.vehicles.nearest(TR.player.pos, 5).spec.name, 'Press F to get in');
     },
+    /** True while the player is pressing or moving toward the door. */
+    walkingInto: function (door) {
+      var v = TR.vehicles.current ? TR.vehicles.current.vel : TR.player.vel;
+      return v.x * door.nx + v.z * door.nz < -1;
+    },
+    /** The door the player is close to. touch means right up against it. nx,nz point out of the doorway. */
     nearDoor: function () {
-      var p = TR.player.pos, ints = TR.interiors;
+      var p = TR.player.pos, ints = TR.interiors, reachPad = TR.vehicles.current ? TR.vehicles.current.spec.radius + 1.4 : 2.2;
       if (ints.current) {
-        var d = ints.doorPos();
-        return Math.hypot(p.x - d.x, p.z - d.z) < 4 ? { exit: true } : null;
+        var d = ints.doorPos(), out = d.z + 1.5 - p.z;
+        if (Math.abs(p.x - d.x) > 4 || out > 7) return null;
+        return { exit: true, nx: 0, nz: -1, touch: out < reachPad + 0.3 };
       }
       var sites = app.session.run.sites;
       for (var id in sites) {
         var s = sites[id];
-        if (s.kind !== 'room') continue;
-        if (Math.hypot(p.x - s.front.x, p.z - s.front.z) < 3.2 && Math.abs(p.y - s.y) < 3) return { site: s };
+        if (s.kind !== 'room' || Math.abs(p.y - s.y) > 3) continue;
+        var f = s.front, wx = f.x - f.nx * 5.5, wz = f.z - f.nz * 5.5, along = (p.x - wx) * f.nx + (p.z - wz) * f.nz, side = (p.x - wx) * f.nz - (p.z - wz) * f.nx;
+        if (along > -0.5 && along < 7 && Math.abs(side) < 3.4) return { site: s, nx: f.nx, nz: f.nz, touch: along < reachPad + 0.6 };
       }
       return null;
     },
@@ -514,14 +529,14 @@
       app.fpsAcc += dt; app.fpsN++;
       if (app.fpsAcc >= 0.5) { app.fps = app.fpsN / app.fpsAcc; TR.quality.watch(app.fps, app.fpsAcc); TR.world.lod(TR.player.pos, app.camera); app.fpsAcc = 0; app.fpsN = 0; if (app.dbgFps) app.dbgFps.textContent = app.fps.toFixed(0) + ' FPS, ' + app.renderer.info.render.calls + ' calls'; }
       app.frame(dt);
-      app.renderer.render(app.scene, app.camera);
+      TR.post.render(app.scene, app.camera);
     },
 
     /** Runs n seconds of game time synchronously. Used for testing a hidden preview. */
     advance: function (seconds, dt) {
       dt = dt || 1 / 60;
       for (var i = 0; i < seconds / dt; i++) app.frame(dt);
-      app.renderer.render(app.scene, app.camera);
+      TR.post.render(app.scene, app.camera);
     },
 
     debugPanel: function (ui) {

@@ -96,6 +96,25 @@
     }
     return this;
   };
+  /** A smooth low-poly ball, for leaves and clouds. Colour darkens toward the underside. */
+  var ICO = (function () {
+    var t = (1 + Math.sqrt(5)) / 2, v = [[-1, t, 0], [1, t, 0], [-1, -t, 0], [1, -t, 0], [0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t], [t, 0, -1], [t, 0, 1], [-t, 0, -1], [-t, 0, 1]].map(function (p) { var l = Math.hypot(p[0], p[1], p[2]); return [p[0] / l, p[1] / l, p[2] / l]; });
+    var f = [[0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11], [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8], [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9], [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]];
+    var out = [], mid = function (a, b) { var m = [a[0] + b[0], a[1] + b[1], a[2] + b[2]], l = Math.hypot(m[0], m[1], m[2]); return [m[0] / l, m[1] / l, m[2] / l]; };
+    f.forEach(function (q) { var a = v[q[0]], b = v[q[1]], c = v[q[2]], ab = mid(a, b), bc = mid(b, c), ca = mid(c, a); out.push(a, ab, ca, b, bc, ab, c, ca, bc, ab, bc, ca); });
+    return out;
+  })();
+  Geo.prototype.blob = function (x, y, z, rx, ry, rz, color) {
+    C.setHex(color);
+    for (var i = 0; i < ICO.length; i++) {
+      var n = ICO[i], s = 0.74 + 0.3 * (n[1] * 0.5 + 0.5);
+      this.p.push(x + n[0] * rx, y + n[1] * ry, z + n[2] * rz);
+      this.n.push(n[0], n[1], n[2]);
+      this.c.push(C.r * s, C.g * s, C.b * s);
+    }
+    this.count += ICO.length;
+    return this;
+  };
   /** Wheel: a cylinder lying on its side, axis along x. */
   Geo.prototype.wheel = function (x, y, z, r, w, color, hub) {
     C.setHex(color);

@@ -17,12 +17,12 @@
       });
       nb.doors = [];
       D.DISTRICTS.under.entrances.forEach(function (e) {
-        nb.doors.push({ x: e.surface.x, y: 0, z: e.surface.z, to: { x: e.x, y: D.UNDER_Y, z: e.z }, label: 'Way down', down: true, id: e.id });
-        nb.doors.push({ x: e.x, y: D.UNDER_Y, z: e.z - 3, to: { x: e.surface.x, y: 0, z: e.surface.z + 3 }, label: 'Way up', id: e.id });
+        nb.doors.push({ x: e.surface.x, y: 0, z: e.surface.z, to: { x: e.x, y: D.UNDER_Y, z: e.z + 3 }, label: 'Way down', down: true, id: e.id });
+        nb.doors.push({ x: e.x, y: D.UNDER_Y, z: e.z - 3, to: { x: e.surface.x, y: 0, z: e.surface.z + 5 }, label: 'Way up', id: e.id });
         g.box(e.x, D.UNDER_Y, e.z - 6, 7, 6, 0.6, 0x3a2360);
         n.box(e.x, D.UNDER_Y + 6, e.z - 5.6, 7.6, 0.6, 0.3, 0xc77dff);
       });
-      nb.doors.push({ x: 0, y: D.DEEP_Y, z: -160, to: { x: 0, y: D.UNDER_Y, z: -118 }, label: 'Climb back up', deep: true });
+      nb.doors.push({ x: 0, y: D.DEEP_Y, z: -160, to: { x: 0, y: D.UNDER_Y, z: -116 }, label: 'Climb back up', deep: true });
       n.box(0, D.DEEP_Y, -158, 6, 5, 0.4, 0x7dffea);
       if (g.count) TR.world.runMesh(g, TR.world.solid, true);
       if (n.count) TR.world.runMesh(n, TR.world.neonMat);
@@ -70,7 +70,7 @@
       var door = null;
       if (me.flags.under || me.flags.deep) nb.doors.forEach(function (d) {
         if (d.down && !me.flags.under) return;
-        if (Math.hypot(d.x - pos.x, d.z - pos.z) < 3.4 && Math.abs(d.y - pos.y) < 5) door = d;
+        if (Math.hypot(d.x - pos.x, d.z - pos.z) < 6 && Math.abs(d.y - pos.y) < 5) door = d;
       });
       if (best) {
         var fail = sess.gateFails(best.s.gate);
@@ -78,8 +78,14 @@
         nb.holdE(dt, 'Something odd here', 'Hold E to look closer', function () { TR.app.tryDiscover(best.id); });
         return;
       }
-      if (door && !TR.vehicles.current) { nb.holdE(dt, door.label, 'Hold E', function () { nb.travel(door.to); }); return; }
       nb.holding = 0;
+      // a way down or up works like any door: walk into it. It re-arms once you have stepped away.
+      nb.doorCool = Math.max(0, (nb.doorCool || 0) - dt);
+      if (door && !TR.vehicles.current) {
+        var near = Math.hypot(door.x - pos.x, door.z - pos.z), moving = Math.hypot(TR.player.vel.x, TR.player.vel.z) > 1;
+        if (near < 2.4 && moving && nb.doorCool <= 0) { nb.doorCool = 1.5; nb.travel(door.to); return; }
+        if (!TR.hud.pOn) TR.hud.prompt(door.label, 'Walk in');
+      }
     },
     holdE: function (dt, title, sub, fn) {
       if (TR.input.down('KeyE')) {
@@ -87,6 +93,14 @@
         if (nb.holding >= 0.4) { nb.holding = 0; TR.input.keys.KeyE = false; fn(); return; }
       } else nb.holding = 0;
       TR.hud.prompt(title, sub, nb.holding / 0.4);
+    },
+    /** A quick dip to black, so a door feels like a door. */
+    fadeFlash: function () {
+      var f = document.createElement('div');
+      f.style.cssText = 'position:absolute;inset:0;background:#0a0618;opacity:.9;transition:opacity .28s;pointer-events:none';
+      TR.hud.root.appendChild(f);
+      requestAnimationFrame(function () { requestAnimationFrame(function () { f.style.opacity = 0; }); });
+      setTimeout(function () { f.remove(); }, 330);
     },
     /** The brief elevator ride between the surface and the Under City. */
     travel: function (to) {

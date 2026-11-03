@@ -1,7 +1,7 @@
 :root { --gold:#ffc53d; --ink:#1a1a2e; --ok:#3ddc6e; --bad:#ff5a5a; --panel:rgba(18,20,44,.66); }
 * { box-sizing:border-box; }
 html,body { margin:0; height:100%; overflow:hidden; background:#7ec8f0; font-family:"Arial Rounded MT Bold","Trebuchet MS",system-ui,sans-serif; color:#fff; -webkit-user-select:none; user-select:none; touch-action:none; }
-#view { position:fixed; inset:0; width:100%; height:100%; display:block; filter:saturate(1.1) contrast(1.04); }
+#view { position:fixed; inset:0; width:100%; height:100%; display:block; }
 #ui::before { content:""; position:absolute; inset:0; pointer-events:none; background:radial-gradient(ellipse at center, transparent 62%, rgba(10,12,40,.24) 100%); }
 #ui { position:fixed; inset:0; pointer-events:none; }
 #ui button, #ui .clicky, #ui input { pointer-events:auto; }

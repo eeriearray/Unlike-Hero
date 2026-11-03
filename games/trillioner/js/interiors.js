@@ -63,7 +63,7 @@
       ints.current = site;
       ints.returnTo = { x: site.front.x, y: site.y, z: site.front.z };
       TR.world.setSpace('room');
-      player.teleport(x, 0, z + hd - 7, 0);
+      player.teleport(x, 0, z + hd - 7.5, 0);
       TR.input.yaw = 0;
       if (TR.audio) TR.audio.door();
     },

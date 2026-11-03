@@ -46,7 +46,7 @@
         '<p><b>Your money fights back.</b> Interest pays you 0.5% an hour while you hold $1B or more, and businesses earn. Boarded-up ones lose money, which helps. You can demolish what you own for 40% of its price.</p>' +
         '<p><b>Shops in plain sight are nowhere near enough.</b> Look on roofs, follow rumours, open odd doors, read the paper, try things at night.</p>' +
         '<p><b>Frenzy:</b> buy $100M or more within 5 seconds of your last big buy and prices climb, up to x5.</p>' +
-        '<table class="keys"><tr><td>WASD, Shift, Space</td><td>Move, sprint, double jump</td></tr><tr><td>Mouse</td><td>Camera (click the game to capture it)</td></tr><tr><td>Walk over a small pad</td><td>Buy it</td></tr><tr><td>Hold E</td><td>Buy a big deal, or use a door</td></tr><tr><td>Hold X</td><td>Demolish what you own, at its pad</td></tr><tr><td>Q, then a number</td><td>Call a vehicle or pick an item</td></tr><tr><td>F</td><td>Get in or out</td></tr><tr><td>Left mouse, H</td><td>Use your item or ability, horn</td></tr><tr><td>M, N, Esc</td><td>Map, notebook, pause</td></tr></table>' +
+        '<table class="keys"><tr><td>WASD, Shift, Space</td><td>Move, sprint, double jump</td></tr><tr><td>Mouse</td><td>Camera (click the game to capture it)</td></tr><tr><td>Walk over a small pad</td><td>Buy it</td></tr><tr><td>Walk into a door</td><td>Go inside, or back out</td></tr><tr><td>Hold E</td><td>Buy a big deal</td></tr><tr><td>Hold X</td><td>Demolish what you own, at its pad</td></tr><tr><td>Q, then a number</td><td>Call a vehicle or pick an item</td></tr><tr><td>F</td><td>Get in or out</td></tr><tr><td>Left mouse, H</td><td>Use your item or ability, horn</td></tr><tr><td>M, N, Esc</td><td>Map, notebook, pause</td></tr></table>' +
         menus.back() + '</div>');
       on(s, 'm-back', menus.title);
     },
@@ -111,7 +111,7 @@
       var resume = function () { menus.close(); TR.app.setPaused(false); };
       on(s, 'p-go', resume);
       on(s, 'p-set', function () { menus.settings(menus.pause); });
-      on(s, 'p-how', function () { var ss = screen('<div class="panel left"><h2 class="outlined">Controls</h2><table class="keys"><tr><td>WASD, Shift, Space</td><td>Move, sprint, double jump</td></tr><tr><td>Hold E</td><td>Big deals and doors</td></tr><tr><td>Hold X</td><td>Demolish at the pad</td></tr><tr><td>Q, F</td><td>Vehicle wheel, get in or out</td></tr><tr><td>Left mouse, H</td><td>Use item, horn</td></tr><tr><td>M, N</td><td>Map, notebook</td></tr></table>' + menus.back() + '</div>'); on(ss, 'm-back', menus.pause); });
+      on(s, 'p-how', function () { var ss = screen('<div class="panel left"><h2 class="outlined">Controls</h2><table class="keys"><tr><td>WASD, Shift, Space</td><td>Move, sprint, double jump</td></tr><tr><td>Walk into a door</td><td>Go inside</td></tr><tr><td>Hold E</td><td>Big deals</td></tr><tr><td>Hold X</td><td>Demolish at the pad</td></tr><tr><td>Q, F</td><td>Vehicle wheel, get in or out</td></tr><tr><td>Left mouse, H</td><td>Use item, horn</td></tr><tr><td>M, N</td><td>Map, notebook</td></tr></table>' + menus.back() + '</div>'); on(ss, 'm-back', menus.pause); });
       on(s, 'p-end', function () { menus.close(); TR.app.paused = false; TR.app.quitRun(); });
       var tm = s.querySelector('#p-time');
       if (tm) tm.oninput = function (e) { TR.app.session.setClock(+e.target.value); TR.world.setTime(+e.target.value, 'clear', TR.player.pos); };
@@ -161,8 +161,8 @@
   // ───── first-run tutorial: one line at a time, shown once, skippable ─────
   var STEPS = [
     { text: 'WASD to move. Shift to sprint. Space to jump, twice. Click the game to steer with the mouse.', done: function (c) { return c.moved > 12; } },
-    { text: 'You have $1 trillion and until 6AM to get rid of it. See the green pads across the street? Walk over one to buy it.', done: function (c, me) { return me.stats.purchases >= 1; } },
-    { text: 'Gold pads are big deals. Stand on one and hold E.', done: function (c, me) { return Object.keys(me.owned).length >= 1; } },
+    { text: 'You have $1 trillion and until 6AM to get rid of it. See the shop stalls across the street? Run into anything on display to buy it.', done: function (c, me) { return me.stats.purchases >= 1; } },
+    { text: 'For Sale boards are big deals. Stand by one and hold E. Doors just open: walk in.', done: function (c, me) { return Object.keys(me.owned).length >= 1; } },
     { text: 'Money keeps coming in. See your income on the left? You win below $1M with income at $0 or less. Boarded-up businesses lose money.', hold: 8 },
     { text: 'Press M for the map. Shops in plain sight will not be enough: look on roofs, follow rumours, try doors. N opens your notebook.', hold: 8 },
     { text: 'Buy a business that comes with a vehicle (try Motor Mile, south of here), then press Q to call it. Good luck spending.', hold: 8 }
@@ -234,6 +234,7 @@
       if (L.shadows && sun.shadow.mapSize.x !== L.map) { sun.shadow.mapSize.set(L.map, L.map); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } }
       A.scene.traverse(function (o) { if (o.material) o.material.needsUpdate = true; });
       TR.settings = { drawDist: L.draw, windows: L.windows };
+      TR.post.configure({ on: l !== 'low', ao: l === 'high', samples: l === 'high' ? 4 : 2, tilt: l === 'high' });
       TR.crowds.max = L.crowd;
       TR.traffic.count = L.cars;
     },
