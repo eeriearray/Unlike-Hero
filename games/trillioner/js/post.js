@@ -42,7 +42,7 @@
     'void main(){',
     '  vec3 c = texture2D(tScene, vUv).rgb;',
     // the miniature look: the top and bottom of the frame drift gently out of focus
-    '  float off = abs(vUv.y - 0.46), blur = smoothstep(0.26, 0.54, off) * tilt;',
+    '  float off = abs(vUv.y - 0.48), blur = smoothstep(0.34, 0.56, off) * tilt;',
     '  if (blur > 0.01) { vec3 s = vec3(0.0); for (int i = 0; i < 8; i++) { float a = float(i) * 0.7854; s += texture2D(tScene, vUv + vec2(cos(a), sin(a)) * px * blur * 2.2).rgb; } c = mix(c, s / 8.0, min(1.0, blur * 1.3)); }',
     '  if (useAO > 0.5) { float ao = 0.0; for (int x = -1; x <= 1; x++) for (int y = -1; y <= 1; y++) ao += texture2D(tAO, vUv + vec2(float(x), float(y)) * px * 2.0).r; ao /= 9.0; c *= mix(1.0, ao, 0.92); }',
     '  c += (texture2D(tBloomA, vUv).rgb * 0.55 + texture2D(tBloomB, vUv).rgb * 0.75) * bloom;',
@@ -109,6 +109,9 @@
     render: function (scene, camera) {
       var r = post.r;
       r.info.reset();
+      // shadows redraw every other frame: half the triangles, and the eye cannot tell
+      post.tick = (post.tick || 0) + 1;
+      r.shadowMap.needsUpdate = post.tick % 2 === 0;
       if (!post.on) { r.setRenderTarget(null); r.render(scene, camera); return; }
       var s = r.getDrawingBufferSize(new THREE.Vector2()), w = s.x, h = s.y;
       if (w !== post.w || h !== post.h) { post.dispose(); post.build(w, h); }
@@ -159,7 +162,21 @@
           '  float joint = 1.0 - min(smoothstep(0.0, 0.05, cy) * smoothstep(1.0, 0.95, cy), smoothstep(0.0, 0.03, cx) * smoothstep(1.0, 0.97, cx));',
           '  float block = tq(vec2(floor((uvw.x + ox) / 1.6), row));',
           '  float streak = tf(vec2(uvw.x * 0.5, uvw.y * 0.05));',
-          '  diffuseColor.rgb *= 1.0 + fade * (0.05 * (block - 0.5) - 0.1 * joint) + 0.1 * (streak - 0.5);',
+          '  diffuseColor.rgb *= 1.0 + fade * fade * (0.04 * (block - 0.5) - 0.07 * joint) + 0.08 * (streak - 0.5);',
+          '} else if (vWN.y > 0.3) {',
+          // pitched roofs: overlapping rows of tiles
+          '  float rowt = fract(vWPos.y / 0.42), colt = fract((abs(vWN.x) > abs(vWN.z) ? vWPos.z : vWPos.x) / 0.9 + floor(vWPos.y / 0.42) * 0.5);',
+          '  diffuseColor.rgb *= 1.0 + fade * (0.16 * (rowt - 0.5) - 0.12 * step(colt, 0.05));',
+          '}'
+        ].join('\n'))
+        // the same courses dent the surface normal, so low sun picks out real relief
+        .replace('#include <normal_fragment_maps>', [
+          '#include <normal_fragment_maps>',
+          'if (abs(vWN.y) < 0.3 && vDist < 90.0) {',
+          '  vec2 uvn = vec2(abs(vWN.x) > 0.5 ? vWPos.z : vWPos.x, vWPos.y);',
+          '  float rn = floor(uvn.y / 0.62), oxn = mod(rn, 2.0) * 0.8, cyn = fract(uvn.y / 0.62);',
+          '  float bump = smoothstep(0.0, 0.06, cyn) - smoothstep(0.94, 1.0, cyn);',
+          '  normal = normalize(normal + (viewMatrix * vec4(0.0, 1.0, 0.0, 0.0)).xyz * (cyn < 0.5 ? -0.2 : 0.2) * (1.0 - bump) * (1.0 - vDist / 90.0));',
           '}'
         ].join('\n'));
     };

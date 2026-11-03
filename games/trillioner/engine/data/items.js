@@ -119,7 +119,7 @@
         fill: [['Rare Comic in a Shoebox', 1, { gate: [{ hours: [6, 8], why: 'Garage sale: dawn only.' }] }], ["Grandpa's Mystery Key", 0.5, { gate: [{ hours: [6, 8], why: 'Garage sale: dawn only.' }] }], ['Gold Bars, Slightly Muddy', 1, { site: 'buried_safe', secret: 'buried_safe' }], ['A Map to Another Map', 0.5, { site: 'buried_safe', secret: 'buried_safe' }]] },
       { key: 'lobby', target: 50 * B, site: 'park_lots',
         fixed: [
-          b('stadium_biz', 'Stadium', 15 * B, 'stadium', 'flag', { gate: [LOBBY], project: 1 }),
+          b('stadium_biz', 'Stadium', 15 * B, 'stadium', 'flag', { gate: [LOBBY], project: 1, sellAt: 'park_lots' }),
           ['park_a', 'Public Park: Duck Pond', 4 * B, { required: 1, gate: [LOBBY], building: 1, icon: 'land' }], ['park_b', 'Public Park: Kite Hill', 4 * B, { required: 1, gate: [LOBBY], building: 1, icon: 'land' }], ['park_c', 'Public Park: Good Bench Green', 4 * B, { required: 1, gate: [LOBBY], building: 1, icon: 'land' }]
         ],
         fill: [['Public Park: Enormous Sandpit', 6, { gate: [LOBBY] }], ['Bike Lane to the Moon (Phase One)', 5, { gate: [LOBBY] }], ['Free Ice Cream Tuesdays', 7, { gate: [LOBBY] }], ['Suburban Monorail', 5, { gate: [LOBBY] }]] }
@@ -146,7 +146,7 @@
         fill: [['Crane Operator Lunchbox (Full of Bonds)', 1, { secret: 'crane_deal' }], ['A Very Rusty Bolt, Priceless', 1, { secret: 'crane_deal' }]] },
       { key: 'lobby', target: 70 * B, site: 'lobby_lots_ind',
         fixed: [
-          b('power_station_biz', 'Power Station', 20 * B, 'power_station', 'bolt', { gate: [LOBBY], project: 1 }),
+          b('power_station_biz', 'Power Station', 20 * B, 'power_station', 'bolt', { gate: [LOBBY], project: 1, sellAt: 'lobby_lots_ind' }),
           ['harbour_bridge', 'Harbour Bridge', 12 * B, { building: 1, required: 1, gate: [LOBBY], icon: 'bridge', project: 1 }],
           ['metro_line', 'New Metro Line', 15 * B, { building: 1, required: 1, gate: [LOBBY], icon: 'train', project: 1 }]
         ],
@@ -275,8 +275,8 @@
   function mk(id, name, price, o, did, bk) {
     var biz = Biz[id] || {};
     return {
-      id: id, name: name, price: Math.round(price), district: did, bucket: bk.key, site: o.site || bk.site,
-      stock: o.stock || 1, kind: o.kind || (o.building ? 'biz' : 'good'), icon: o.icon || null, building: !!o.building, outside: !!o.outside,
+      id: id, name: name, price: Math.round(price), district: did, bucket: bk.key, site: o.sellAt || o.site || bk.site, bldg: o.outside ? o.site : null,
+      stock: o.stock || 1, kind: o.kind || (o.building ? 'biz' : 'good'), icon: o.icon || null, building: !!o.building, outside: false,
       required: !!o.required, flex: !!o.flex, gate: o.gate || null, secret: o.secret || null, grants: o.grants || null, wearable: o.wearable || null,
       income: biz.income || 0, reward: biz.reward || o.reward || null, power: biz.power || o.power || null, nature: biz.nature || null,
       project: !!o.project, hint: o.hint || null, pos: o.pos || null

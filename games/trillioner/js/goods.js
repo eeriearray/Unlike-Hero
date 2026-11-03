@@ -75,7 +75,7 @@
     init: function (scene) {
       var mat = new THREE.MeshLambertMaterial({ vertexColors: true, emissive: 0x161616 });
       Object.keys(B).forEach(function (k) {
-        var g = new TR.Geo(); B[k](g);
+        var g = new TR.Geo(); g.soft = 0.32; g.softS = 1; B[k](g);
         var m = new THREE.InstancedMesh(g.geometry(), mat, MAX);
         m.frustumCulled = false; m.count = 0; m.castShadow = true; m.visible = false;
         scene.add(m);

@@ -132,3 +132,9 @@ body.touch .cards { bottom:160px; }
 .dare i { position:absolute; left:0; top:0; bottom:0; background:rgba(61,220,110,.5); transition:width .15s; }
 .dare.won { background:var(--ok); color:var(--ink); }
 @media (max-width:720px) { .dares { top:158px; width:160px; font-size:10px; } }
+
+.musicbtn { position:absolute; right:12px; bottom:14px; font:inherit; font-size:12px; font-weight:800; color:#fff; background:var(--panel); border:2px solid rgba(255,255,255,.5); border-radius:12px; padding:5px 10px; cursor:pointer; pointer-events:auto; backdrop-filter:blur(3px); }
+.musicbtn.off { color:#ff9a9a; border-color:#ff9a9a; }
+body.touch .musicbtn { right:auto; left:12px; top:6px; bottom:auto; }
+
+.prompt .p3 { font-size:15px; font-weight:800; color:#7dffb0; margin-top:3px; }

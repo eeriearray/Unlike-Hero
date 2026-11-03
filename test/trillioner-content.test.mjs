@@ -87,27 +87,39 @@ test('every district meets the world minimums', () => {
   }
 });
 
-test('every pad has a position, and rooms are separated', () => {
+test('everything is sold indoors: every pad is in a room, behind a door', () => {
   const run = buildRun(1);
   for (const i of run.list) {
     const p = run.padPos[i.id];
     assert.ok(p && Number.isFinite(p.x) && Number.isFinite(p.z), i.id);
+    assert.ok(p.x >= 3000, `${i.id} is on the street`);
+    const s = run.sites[i.site];
+    assert.equal(s.kind, 'room', i.id);
+    assert.ok(s.front, i.id);
   }
 });
 
-test('outdoor pads never sit on a door or inside a named building', () => {
-  const run = buildRun(1);
-  const sites = Object.values(run.sites);
-  for (const i of run.list) {
-    const p = run.padPos[i.id];
-    if (p.x >= 3000) continue;
-    for (const s of sites) {
-      if (!s.b || s.b.project || Math.abs((s.y || 0) - p.y) > 2) continue;
-      if (s.kind === 'room') assert.ok(Math.hypot(p.x - s.front.x, p.z - s.front.z) > 6.5, `${i.id} on door of ${s.id}`);
-      const inside = Math.abs(p.x - s.b.x) < s.b.w / 2 && Math.abs(p.z - s.b.z) < s.b.d / 2;
-      assert.ok(!inside, `${i.id} inside ${s.id}`);
-    }
+test('buildings never overlap each other', () => {
+  const list = [];
+  for (const d of Object.values(D.DISTRICTS)) for (const b of d.buildings) list.push(b);
+  const clash = [];
+  for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
+    const a = list[i], b = list[j];
+    const under = (x) => (x.y != null ? x.y : (D.DISTRICTS.under.buildings.includes(x) ? -60 : 0));
+    if (Math.abs(under(a) - under(b)) > 5) continue;
+    if (Math.abs(a.x - b.x) < (a.w + b.w) / 2 && Math.abs(a.z - b.z) < (a.d + b.d) / 2) clash.push(`${a.id}/${b.id}`);
   }
+  assert.deepEqual(clash, []);
+});
+
+test('no door opens into a building', () => {
+  const run = buildRun(1), rooms = Object.values(run.sites).filter((s) => s.kind === 'room');
+  const bad = [];
+  for (const s of rooms) for (const o of rooms) {
+    if (s === o || Math.abs(s.y - o.y) > 5) continue;
+    if (Math.abs(s.front.x - o.b.x) < o.b.w / 2 + 0.7 && Math.abs(s.front.z - o.b.z) < o.b.d / 2 + 0.7) bad.push(`${s.id} into ${o.id}`);
+  }
+  assert.deepEqual(bad, []);
 });
 
 test('at least 18 usable things exist and every one is sold', () => {
@@ -121,14 +133,8 @@ test('no road is blocked by a named building, a stall, a stair or a landmark', (
   const blocks = [];
   for (const d of Object.values(D.DISTRICTS)) {
     if (d.level === 'under') continue;
-    for (const b of d.buildings) blocks.push([b.id, b.x - b.w / 2, b.z - b.d / 2, b.x + b.w / 2, b.z + b.d / 2]);
-    for (const s of d.stalls || []) {
-      if (s.y != null || s.plain) continue;
-      const len = (s.cols || 6) * (s.spacing || 6);
-      blocks.push(s.dir === 'z' ? [s.id, s.x - 5.5, s.z - len / 2, s.x - 4.5, s.z + len / 2] : [s.id, s.x - len / 2, s.z - 5.5, s.x + len / 2, s.z - 4.5]);
-    }
+    for (const b of d.buildings) if (b.y == null || b.y < 1) blocks.push([b.id, b.x - b.w / 2, b.z - b.d / 2, b.x + b.w / 2, b.z + b.d / 2]);
     for (const st of d.stairs || []) blocks.push(['stair ' + d.id, st.x - 5, st.z - 5, st.x + 5, st.z + 5]);
-    if (d.change) blocks.push(['fountain ' + d.id, d.change.x - 4, d.change.z - 12, d.change.x + 4, d.change.z - 4]);
     for (const l of d.landmarks || []) if (l.kind !== 'bigsign' && l.kind !== 'crane') { const r = l.kind === 'ferris' ? 5 : l.r || 7; blocks.push([l.kind, l.x - r, l.z - r, l.x + r, l.z + r]); }
   }
   const hits = [];

@@ -37,14 +37,22 @@
       var bar = el('div', 'bar', rank); hud.rankBar = el('i', '', bar);
       var inc = el('div', 'hud-income', r);
       hud.incomeV = el('div', '', inc);
-      hud.incomeD = el('small', '', inc);
       hud.mapBox = el('div', 'hud-map', r);
       var bot = el('div', 'hud-bottom', r);
       hud.frenzy = el('div', 'frenzy', bot, '<b>x1</b> FRENZY<div class="bar"><i></i></div>');
       hud.closings = el('div', 'closings', bot);
       hud.carryEl = el('div', 'carry', bot); hud.carryEl.style.display = 'none';
-      hud.promptEl = el('div', 'prompt', r, '<div class="p1"></div><div class="p2"></div><div class="bar"><i></i></div>');
+      hud.promptEl = el('div', 'prompt', r, '<div class="p1"></div><div class="p2"></div><div class="bar"><i></i></div><div class="p3"></div>');
       hud.toasts = el('div', 'toasts', r);
+      hud.musicEl = el('button', 'musicbtn', r);
+      hud.musicEl.title = 'Music on or off (K)';
+      hud.musicEl.onclick = function () { TR.audio.setMusicMuted(!TR.audio.musicMuted); hud.musicEl.blur(); };
+      hud.musicBtn();
+    },
+    musicBtn: function () {
+      if (!hud.musicEl) return;
+      hud.musicEl.textContent = TR.audio.musicMuted ? 'Music off' : 'Music on';
+      hud.musicEl.classList.toggle('off', TR.audio.musicMuted);
     },
     show: function (v) { hud.root.style.display = v ? '' : 'none'; if (v) { hud.shown = null; } },
     update: function (view, dt) {
@@ -61,10 +69,8 @@
       var next = TR.app.nextTrophy(me);
       if (next) { hud.nextT.textContent = 'Next: ' + next.name + ' (' + TR.fmt(next.spent) + ')'; hud.rankBar.style.width = Math.min(100, me.spent / next.spent * 100) + '%'; }
       else { hud.nextT.textContent = 'Every spending trophy earned'; hud.rankBar.style.width = '100%'; }
-      var cls = me.income > 0 ? (me.income >= hud.lastInc ? 'up' : 'flat') : me.income < 0 ? 'down' : 'flat';
-      hud.lastInc = me.income;
-      hud.incomeV.innerHTML = '<span class="' + cls + '">' + (me.income >= 0 ? '+' : '') + TR.fmt(me.income) + '/s</span>';
-      hud.incomeD.innerHTML = 'Interest ' + TR.fmt(me.interest) + '/s<br>Businesses ' + (me.biz >= 0 ? '+' : '') + TR.fmt(me.biz) + '/s';
+      var cls = me.income > 0 ? 'up' : me.income < 0 ? 'down' : 'flat', inc = me.income === 0 ? 'No income' : (me.income > 0 ? '+' : '') + TR.fmt(me.income) + '/s';
+      if (hud.incText !== inc) { hud.incText = inc; hud.incomeV.innerHTML = '<span class="' + cls + '">' + inc + '</span>'; }
       // frenzy
       var fOn = me.frenzyLeft > 0;
       hud.frenzy.classList.toggle('on', fOn);
@@ -139,13 +145,15 @@
       setTimeout(function () { c.classList.add('out'); setTimeout(function () { c.remove(); }, 600); }, 8000);
     },
     carry: function (text) { hud.carryEl.style.display = text ? '' : 'none'; hud.carryEl.textContent = text || ''; },
-    prompt: function (title, sub, hold, bad) {
+    prompt: function (title, sub, hold, bad, deal) {
       var p = hud.promptEl;
       if (!title) { if (hud.pOn) { p.classList.remove('on'); hud.pOn = false; } return; }
       if (!hud.pOn) { p.classList.add('on'); hud.pOn = true; }
       p.children[0].textContent = title;
       p.children[1].textContent = sub || '';
       p.children[1].style.color = bad ? '#ff8a8a' : '#ffc53d';
+      p.children[3].textContent = deal || '';
+      p.children[3].style.display = deal ? '' : 'none';
       var b = p.children[2]; b.style.display = hold ? '' : 'none';
       if (hold) b.firstChild.style.width = Math.min(100, hold * 100) + '%';
     },

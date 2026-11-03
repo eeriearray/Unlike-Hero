@@ -52,6 +52,9 @@ Each one is a call made while building. "Changed" means it departs from a litera
 26. **Dares and golden receipts (not in the brief).** Three dares are active at a time, and 42 receipts sit on roofs and in far corners. Both pay Clout only, so the win rules and the solver are untouched. Solo only.
 27. **Doors.** Walking into a building door goes through it, with a quick dip to black. Vehicles under speed 14 get out first. This replaces the brief's "hold it on a door". Ways up and down from the Under City work the same way. Secret doors still need Hold E, because they are something you choose to investigate.
 28. **Image pipeline.** HDR render target, hand-written ambient occlusion, bloom, focus falloff and grade (`js/post.js`), because the vendored three.js has no composer. High uses all of it, Medium skips occlusion and focus, Low renders directly.
+29. **No interest (changed, at the user's request).** The brief's 0.5% interest is gone in every mode: the balance only grows from businesses you buy. Each For Sale board states its income, and what comes with it, before you pay. Any note in the copied brief below about interest is superseded.
+30. **Everything sold indoors (changed, at the user's request).** No pads, stalls or vending on the street. All purchases are inside rooms behind doors. Shops holding only secret goods stay locked until their secret is found, and project buildings such as the Stadium are sold from an office and appear on their own lot.
+31. **Less blocky (changed, at the user's request).** Characters, cars, buildings and goods use rounded smooth-shaded shapes rather than the brief's blocky style.
 21. **Solver scope.** Bots move with a travel model (distance x 1.25 / vehicle speed, 1.5 s per room, 0.4 s per purchase). They do not steer through the 3D city. Browser flood fills and drives cover that side.
 
 ---

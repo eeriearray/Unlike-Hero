@@ -43,6 +43,7 @@
       TR.input.initTouch(ui);
       app.renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, powerPreference: 'high-performance' });
       TR.post.init(app.renderer);
+      app.renderer.shadowMap.autoUpdate = false;
       app.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
       app.renderer.shadowMap.enabled = true;
       app.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -63,13 +64,14 @@
       TR.hud.init(ui);
       TR.map.init(TR.hud.mapBox);
       var au = TR.save.get('audio', null);
-      if (au) { TR.audio.volume = au.volume; TR.audio.sfxVolume = au.sfxVolume; TR.audio.musicVolume = au.musicVolume; TR.audio.muted = au.muted; }
+      if (au) { TR.audio.volume = au.volume; TR.audio.sfxVolume = au.sfxVolume; TR.audio.musicVolume = au.musicVolume; TR.audio.muted = au.muted; TR.audio.musicMuted = !!au.musicMuted; TR.hud.musicBtn(); }
       TR.quality.init();
       TR.player.applyLooks();
       TR.menus.init(ui);
       TR.player.teleport(-60, 0, 8, 0);
       TR.world.resetRun();
       TR.world.setTime(9, 'clear', TR.player.pos);
+      app.prewarm();
       app.ready = true;
       if (DEBUG) app.debugPanel(ui);
       var seat0 = TR.net.getSeat(), invite = (qs.get('room') || '').toUpperCase();
@@ -83,6 +85,18 @@
       window.__trBootMs = performance.now();
     },
 
+    /** Draws everything once at load: geometry goes to the GPU and shaders compile now, not mid-drive. */
+    prewarm: function () {
+      var off = [], sc = app.scene;
+      TR.world.under.visible = true;
+      Object.keys(TR.goods.meshes).forEach(function (k) { var m = TR.goods.meshes[k]; m.visible = true; m.count = 1; });
+      sc.traverse(function (o) { if (o.isMesh && o.frustumCulled) { o.frustumCulled = false; off.push(o); } });
+      TR.post.tick = 1;
+      TR.post.render(sc, app.camera);
+      off.forEach(function (o) { o.frustumCulled = true; });
+      TR.world.under.visible = false;
+      Object.keys(TR.goods.meshes).forEach(function (k) { var m = TR.goods.meshes[k]; m.visible = false; m.count = 0; });
+    },
     resize: function () {
       var w = innerWidth, h = innerHeight;
       app.renderer.setSize(w, h, false);
@@ -195,7 +209,8 @@
           TR.audio.buy(2, 3);
         } else if (ev.type === 'demolish') {
           TR.dares.bump('demolish', 1);
-          var d = run.items[ev.item], s = run.sites[d.site];
+          var d = run.items[ev.item], s = d.bldg ? run.sites[d.bldg] : {};
+          if (TR.interiors.current && s.id === TR.interiors.current.id) TR.interiors.exit(TR.player);  // out, before it comes down
           TR.fx.explosion(s.b ? { x: s.b.x, y: (s.y || 0) + 4, z: s.b.z } : pos, 2);
           TR.audio.boom(1);
           TR.cam.shake = 1;
@@ -235,7 +250,7 @@
       });
     },
     onOwned: function (it) {
-      var s = app.session.run.sites[it.site];
+      var s = it.bldg ? app.session.run.sites[it.bldg] : null;
       if (it.project || it.id.indexOf('park_') === 0) TR.world.addVisual(it.id.indexOf('park_') === 0 ? 'park' : it.id);
       if (it.id === 'rocket') app.rocketBought = true;
       if (!it.building || !s || !s.b) return;
@@ -256,7 +271,7 @@
     },
     /** The reward appears right beside the building, with a clear prompt. */
     deliverReward: function (ev) {
-      var it = app.session.run.items[ev.item], s = app.session.run.sites[it.site], f = s.front || { x: TR.player.pos.x + 6, z: TR.player.pos.z };
+      var it = app.session.run.items[ev.item], s = app.session.run.sites[it.bldg && !app.session.run.sites[it.bldg].b.project ? it.bldg : it.site], f = s.front || { x: TR.player.pos.x + 6, z: TR.player.pos.z };
       var room = !!TR.interiors.current, base = room ? TR.interiors.returnTo : { x: f.x, y: s.y || 0, z: f.z };
       (ev.vehicles || []).forEach(function (k, i) {
         var spec = TR.vehicles.SPECS[k];
@@ -277,11 +292,12 @@
     },
 
     itemForBuilding: function (bid) {
-      var run = app.session.run, list = run.sites[bid] ? run.sites[bid].outside : [];
-      return list && list[0] || null;
+      var list = app.session.run.list;
+      for (var i = 0; i < list.length; i++) if (list[i].bldg === bid) return list[i].id;
+      return null;
     },
     /** Ladder truck rooftops. */
-    ladderSpots: function () { var b = TRD.districts.DISTRICTS.oldtown.buildings.filter(function (x) { return x.roofStall; })[0]; return [{ id: b.id, x: b.x, y: b.h + 0.8, z: b.z - 4 }]; },
+    ladderSpots: function () { var b = TRD.districts.DISTRICTS.oldtown.buildings.filter(function (x) { return x.roofStall; })[0]; return [{ id: b.id, x: b.x, y: b.h + 0.8, z: b.z + 4 }]; },
     onLadderUsed: function (spot) { app.tryDiscover('collectors_roof'); },
     /** Drive the Mole Machine into the marked wall and click. */
     tryMoleDig: function (v) {
@@ -342,7 +358,7 @@
       if (TR.input.hit('KeyR')) {
         var b = TRD.districts.DISTRICTS.downtown.buildings.filter(function (q) { return q.id === 'trillion_tower'; })[0];
         ints.exit(TR.player);
-        TR.player.teleport(b.x, b.h + 1, b.z + 4, 0);
+        TR.player.teleport(b.x, b.h + 16, b.z + 3, 0);
         TR.hud.toast('The helipad. Long way down.', 'gold');
         return true;
       }
@@ -351,6 +367,7 @@
     updateActions: function (dt) {
       var input = TR.input, vs = TR.vehicles, ints = TR.interiors;
       if (app.elevator(dt)) return;
+      if (input.hit('KeyK')) { TR.audio.setMusicMuted(!TR.audio.musicMuted); TR.hud.toast(TR.audio.musicMuted ? 'Music off' : 'Music on'); }
       if (input.hit('KeyN')) TR.notebook.toggle();
       if (input.hit('KeyM')) TR.notebook.toggleMap();
       if (input.hit('KeyQ')) TR.hud.toggleWheel(app.session.view.me);
@@ -365,13 +382,17 @@
       // doors: walk into one and you are through it
       var door = app.nearDoor();
       app.doorCool = Math.max(0, (app.doorCool || 0) - dt);
-      if (door && door.touch && app.doorCool <= 0 && !ints.isLocked) {
+      if (door && door.locked) {
+        if (!TR.hud.pOn && !vs.current) TR.hud.prompt(door.site.b.plain || door.site.b.hiddenSign ? 'A locked door' : door.site.name, door.site.b.lockWhy || 'Locked.');
+        door = null;
+      }
+      if (door && door.touch && app.doorCool <= 0) {
         var slowEnough = !vs.current || Math.abs(vs.current.speed) < 14;
         if (app.walkingInto(door) && slowEnough) {
           if (vs.current) vs.leave();
           app.doorCool = 0.6;
           TR.notebook.fadeFlash();
-          if (door.exit) ints.exit(TR.player); else ints.enter(door.site, TR.player);
+          if (door.exit) ints.exit(TR.player); else { ints.enter(door.site, TR.player); TR.hud.bigText(door.site.name); }
           TR.hud.prompt(null);
           return;
         }
@@ -396,8 +417,11 @@
       for (var id in sites) {
         var s = sites[id];
         if (s.kind !== 'room' || Math.abs(p.y - s.y) > 3) continue;
-        var f = s.front, wx = f.x - f.nx * 5.5, wz = f.z - f.nz * 5.5, along = (p.x - wx) * f.nx + (p.z - wz) * f.nz, side = (p.x - wx) * f.nz - (p.z - wz) * f.nx;
-        if (along > -0.5 && along < 7 && Math.abs(side) < 3.4) return { site: s, nx: f.nx, nz: f.nz, touch: along < reachPad + 0.6 };
+        var f = s.front, wx = f.x - f.nx * f.off, wz = f.z - f.nz * f.off, along = (p.x - wx) * f.nx + (p.z - wz) * f.nz, side = (p.x - wx) * f.nz - (p.z - wz) * f.nx;
+        if (along > -0.5 && along < 7 && Math.abs(side) < 3.4) {
+          var locked = s.b.lock && !app.session.view.me.flags[s.b.lock];
+          return { site: s, nx: f.nx, nz: f.nz, touch: along < reachPad + 0.6, locked: locked };
+        }
       }
       return null;
     },
@@ -501,7 +525,7 @@
         TR.hud.update(app.session.view, dt);
         app.cityGrowth(app.session.view.me);
         TR.tutorial.update(dt, app.session.view.me, pos);
-        TR.audio.setScene(app.session.view.hour, app.district, app.session.view.mode !== 'free' && app.session.view.dayMs - app.session.view.t < app.session.view.dayMs / 24);
+        TR.audio.setScene(app.session.view.hour, TR.interiors.current ? 'shop' : app.district, app.session.view.mode !== 'free' && app.session.view.dayMs - app.session.view.t < app.session.view.dayMs / 24);
         if (app.rocketBought && app.session.view.hour >= 0 && app.session.view.hour < 1) { app.rocketBought = false; TR.world.launchRocket(); TR.hud.banner('YOUR ROCKET HAS LAUNCHED!'); TR.audio.boom(1); TR.cam.shake = 0.6; }
         app.tickWorld(dt, pos);
       }

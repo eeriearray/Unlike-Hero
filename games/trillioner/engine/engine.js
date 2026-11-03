@@ -77,7 +77,7 @@
   G.addPlayer = function (info) {
     var p = {
       id: info.id, name: info.name || 'Player', bot: !!info.bot,
-      balance: this.cfg.start, spent: 0, rem: 0,
+      balance: this.cfg.start, spent: 0,
       owned: {}, goods: {}, vehicles: {}, gear: {}, powers: {}, flags: {}, wear: {},
       closings: [], frenzy: 1, frenzyLeft: 0,
       cannonOn: false, cannonUsed: 0,
@@ -99,7 +99,7 @@
       return { id: 'a' + i, name: d.name, min: d.price * R.B, at: (60 + i * 130 + r.int(40)) * 1000, ms: 40000, state: 'wait', bids: {}, best: null, bestBid: 0, winner: null };
     });
     var spots = [];
-    Object.keys(this.run.sites).forEach(function (k) { var s = self.run.sites[k]; if (s.kind === 'change' && s.y === 0) spots.push({ x: s.s.x + 16, y: 0, z: s.s.z - 4 }); });
+    Object.keys(this.run.sites).forEach(function (k) { var s = self.run.sites[k]; if (/_change$/.test(k) && s.y === 0) spots.push({ x: s.front.x + 6, y: 0, z: s.front.z }); });
     [[-30, -30], [30, -30], [-200, 0], [-60, 200], [200, 150], [200, -160], [0, -200], [240, 30]].forEach(function (p) { spots.push({ x: p[0], y: 0, z: p[1] }); });
     var kinds = ['boost', 'ban', 'refund', 'gift'];
     this.cardSpots = r.shuffle(spots).slice(0, 12).map(function (s, i) { return { id: 'c' + i, x: s.x, y: s.y, z: s.z, kind: kinds[i % kinds.length], taken: false }; });
@@ -250,8 +250,7 @@
     return sum;
   };
   G.boomActive = function () { return this.active.some(function (a) { return a.id === 'boom'; }); };
-  G.interestPerS = function (p) { return p.balance >= R.INTEREST_FLOOR ? Math.floor(p.balance / R.INTEREST_DIV) * 10 : 0; };
-  G.totalIncome = function (p) { return this.bizIncome(p) * (this.boomActive() ? 3 : 1) + this.interestPerS(p); };
+  G.totalIncome = function (p) { return this.bizIncome(p) * (this.boomActive() ? 3 : 1); };
 
   // ───────────── time ─────────────
   G.tick = function (dt) {
@@ -283,13 +282,6 @@
   };
 
   G.stepPlayer = function (p, boom) {
-    // interest: exact integer division with the remainder carried forward
-    if (p.balance >= R.INTEREST_FLOOR) {
-      p.rem += p.balance % R.INTEREST_DIV;
-      var gain = Math.floor(p.balance / R.INTEREST_DIV);
-      if (p.rem >= R.INTEREST_DIV) { gain += 1; p.rem -= R.INTEREST_DIV; }
-      p.balance += gain;
-    }
     // business income: income tables are multiples of 10 cents per second, so per-step values are whole cents
     var biz = this.bizIncome(p) * boom / 10;
     if (biz) p.balance = Math.max(0, p.balance + biz);
@@ -715,12 +707,12 @@
 
   /** What leaves the engine for one player. Online, this is all the player ever receives. */
   G.viewFor = function (pid) {
-    var p = this.players[pid], self = this, biz = this.bizIncome(p) * (this.boomActive() ? 3 : 1), int = this.interestPerS(p), total = biz + int;
+    var p = this.players[pid], self = this, biz = this.bizIncome(p) * (this.boomActive() ? 3 : 1), total = biz;
     var view = {
       mode: this.mode, t: this.t, hour: this.hourNow(), dayMs: this.dayLengthMs(), frozen: this.frozen, over: this.over,
       result: this.result || null, winner: this.winner, weather: this.weather(), active: this.active.map(function (a) { return { id: a.id, leftMs: a.leftMs, site: a.site, deal: a.deal }; }),
       me: {
-        id: p.id, name: p.name, balance: p.balance, spent: p.spent, biz: biz, interest: int, income: total,
+        id: p.id, name: p.name, balance: p.balance, spent: p.spent, biz: biz, income: total,
         frenzy: p.frenzy, frenzyLeft: p.frenzyLeft, frenzyWindow: this.frenzyWindow(), closings: p.closings, owned: p.owned, goods: p.goods,
         vehicles: p.vehicles, gear: p.gear, powers: p.powers, flags: p.flags, wear: p.wear, trophies: p.trophies, rank: this.rank(p),
         cannonOn: p.cannonOn, cannonUsed: p.cannonUsed, won: p.won, perfect: p.perfect, perfectLeft: p.perfectLeft, travelCd: p.travelCd,

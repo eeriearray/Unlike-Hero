@@ -3,7 +3,7 @@
   var TR = window.TR = window.TR || {};
   var RAIL = [[-130, -130], [300, -130], [300, 130], [-130, 130]], RAIL_Y = 11;
 
-  function G() { return new TR.Geo(); }
+  function G() { var g = new TR.Geo(); g.soft = 0.42; g.softS = 2; return g; }
   function carMesh(body, cab) {
     var g = G(), glass = cab || 0x1c2d40;
     g.box(0, 0.42, 0, 3, 0.62, 5.8, body);                                 // lower body
@@ -200,7 +200,7 @@
       if (TR.input.hit('KeyH') && TR.audio && s.horn) TR.audio.horn(s.horn);
       if (TR.audio) TR.audio.engineLevel(Math.abs(v.speed) / s.speed, v.slip);
       TR.player.pos.copy(v.pos);
-      if (s.rider) { TR.player.group.position.set(v.pos.x, v.pos.y + (s.hover || 0) + (s.mode === 'jet' ? 0 : 0.6), v.pos.z); TR.player.group.rotation.y = v.heading; TR.player.parts.legL.rotation.x = TR.player.parts.legR.rotation.x = 0; }
+      if (s.rider) { TR.player.group.position.set(v.pos.x, v.pos.y + (s.hover || 0) + (s.mode === 'jet' ? 0 : 0.6), v.pos.z); TR.player.group.rotation.y = v.heading; TR.player.parts.legL.rotation.x = TR.player.parts.legR.rotation.x = 0; TR.player.parts.shinL.rotation.x = TR.player.parts.shinR.rotation.x = 0; }
       vs.sync(v);
     },
     driveGround: function (v, s, dt) {

@@ -11,9 +11,8 @@
   var FOOT = 18, CAR = 45, HELI = 60, ROAD = 1.25;
 
   function surfacePoint(run, id) {
-    var it = run.items[id], s = run.sites[it.site], p = run.padPos[id];
-    if (s.kind === 'room' && !it.outside) return { x: s.front.x, z: s.front.z, y: s.y, room: true };
-    return p;
+    var it = run.items[id], s = run.sites[it.site];
+    return { x: s.front.x, z: s.front.z, y: s.y, room: true };
   }
   function speedOf(p) { return p.vehicles.helicopter ? HELI : p.vehicles.sports_car ? CAR : p.vehicles.scooter ? 32 : FOOT; }
   function travel(game, p, id) {

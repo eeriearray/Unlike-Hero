@@ -90,7 +90,7 @@ test('a room needs two seats, and bots can fill them', async () => {
   await a.req('addBot');
   assert.equal((await a.req('start')).ok, true);
   await a.until(() => a.view && a.view.board.length === 2 && a.view.board.some((p) => p.bot));
-  assert.equal(a.view.me.balance >= 300 * B, true);
+  assert.equal(a.view.me.balance, 300 * B);
   a.close();
   await s.close();
 });
@@ -98,7 +98,7 @@ test('a room needs two seats, and bots can fill them', async () => {
 test('Battle Spend: $300B each, 1 in-game hour is 20 seconds, same seed for everyone', async () => {
   const s = await startServer();
   const { a, b, room } = await match(s);
-  assert.ok(a.view.me.balance >= 300 * B && a.view.me.balance < 301 * B);
+  assert.equal(a.view.me.balance, 300 * B);
   assert.equal(room.game.cfg.secPerHour, 20);
   assert.equal(room.game.dayLengthMs(), 8 * 60 * 1000);
   a.close(); b.close();

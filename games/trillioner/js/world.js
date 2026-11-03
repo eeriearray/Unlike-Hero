@@ -218,7 +218,7 @@
         walk.strip(a[0], a[1], b[0], b[1], r.w + 6, Y, 0xd8d4c9);
         walk.strip(a[0], a[1], b[0], b[1], r.w + 1, Y, 0x9a988f);
         road.strip(a[0], a[1], b[0], b[1], r.w, Y, 0x3d414c);
-        var STEP = 3, wasCross = false;
+        var STEP = 3, wasCross = false, kerbStart = null, K = world.geo((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, 'flat');
         for (var s = 0; s < len; s += STEP) {
           var x = a[0] + ux * (s + STEP / 2), z = a[1] + uz * (s + STEP / 2), cross = world.crossing(x, z, ri);
           var x0 = a[0] + ux * s, z0 = a[1] + uz * s, x1 = x0 + ux * STEP, z1 = z0 + uz * STEP, off = r.w / 2 - 0.55;
@@ -231,8 +231,26 @@
             var back = cross ? -2.6 : 2.6, zx = x0 + ux * back, zz = z0 + uz * back;
             for (var k = -r.w / 2 + 1; k < r.w / 2 - 0.5; k += 1.7) paint.strip(zx + px * k - ux * 1.6, zz + pz * k - uz * 1.6, zx + px * k + ux * 1.6, zz + pz * k + uz * 1.6, 0.8, Y, 0xf6f6ee);
           }
+          // raised kerbs, in unbroken runs between junctions
+          if (!cross && kerbStart == null) kerbStart = s;
+          if ((cross || s + STEP >= len) && kerbStart != null) { world.kerb(a[0] + ux * kerbStart, a[1] + uz * kerbStart, a[0] + ux * (s + (cross ? 0 : STEP)), a[1] + uz * (s + (cross ? 0 : STEP)), px, pz, r.w / 2 + 0.4); kerbStart = null; }
           wasCross = cross;
         }
+      }
+    },
+    kerb: function (x0, z0, x1, z1, px, pz, off) {
+      var l = Math.hypot(x1 - x0, z1 - z0); if (l < 1) return;
+      var n = Math.ceil(l / CHUNK);
+      for (var i = 0; i < n; i++) {
+        var a0 = i / n, a1 = (i + 1) / n, sx = x0 + (x1 - x0) * a0, sz = z0 + (z1 - z0) * a0, ex = x0 + (x1 - x0) * a1, ez = z0 + (z1 - z0) * a1;
+        [1, -1].forEach(function (sd) {
+          var g = world.geo((sx + ex) / 2 + px * off * sd, (sz + ez) / 2 + pz * off * sd, 'flat'), h = 0.2, w = 0.3;
+          var ax = sx + px * sd * (off - w), az = sz + pz * sd * (off - w), bx = ex + px * sd * (off - w), bz = ez + pz * sd * (off - w), cx = ex + px * sd * (off + w), cz = ez + pz * sd * (off + w), dx = sx + px * sd * (off + w), dz = sz + pz * sd * (off + w);
+          g.strip((ax + dx) / 2, (az + dz) / 2, (bx + cx) / 2, (bz + cz) / 2, w * 2, h, 0xd2cec2);
+          var nx = -px * sd, nz = -pz * sd;     // the face toward the road
+          g.quad(bx, 0, bz, ax, 0, az, ax, h, az, bx, h, bz, nx, 0, nz, 0x8d8b83, 0.62, 1);
+          g.quad(ax, 0, az, bx, 0, bz, bx, h, bz, ax, h, az, nx, 0, nz, 0x8d8b83, 0.62, 1);
+        });
       }
     },
     /** Is this point of a road inside another road? */
@@ -308,6 +326,7 @@
         var s = r.range(1, 4);
         g.box(b.x + r.range(-b.w / 2, b.w / 2) * 0.9, y + 0.2, b.z + r.range(-b.d / 2, b.d / 2) * 0.9, s, r.range(0.5, 2.4), s * r.range(0.7, 1.5), r.pick(cols), r.range(0, 3));
       }
+      if (b.enter) { var f = TrillionerLayout.frontOf(b), wx = f.x - f.nx * f.off, wz = f.z - f.nz * f.off; g.box(wx, y, wz, 5, 1.4, 5, 0x2b2b3f); }   // the cellar door survives
       world.runMesh(g, world.solid, true);
     },
     /** The owner's gold trim around the roof. */
@@ -362,11 +381,11 @@
       var wall = b.wall != null ? b.wall : d.walls[0], roof = b.roof != null ? b.roof : d.roofs[0], x = b.x, z = b.z, w = b.w, dd = b.d, h = b.h;
       var rng = new Rng('b:' + Math.round(x) + ',' + Math.round(z)), trim = shade(wall, 1.16), dark = shade(wall, 0.72);
       var FLOOR = h > 60 ? 6 : 3.7;
-      g.box(x, y, z, w, h, dd, wall);
-      g.box(x, y, z, w + 0.7, 1.1, dd + 0.7, dark);                                   // plinth
-      // corner quoins soften the box into something toy-like
-      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (c) { g.box(x + c[0] * (w / 2), y + 1.1, z + c[1] * (dd / 2), 0.9, h - 1.1, 0.9, trim); });
-      for (var f = FLOOR * 2; f < h - 2; f += FLOOR * 2) g.box(x, y + f - 0.5, z, w + 0.45, 0.28, dd + 0.45, trim);  // ledges every other floor
+      var rc = shape === 'container' ? 0.2 : Math.min(2.6, Math.min(w, dd) * 0.13);
+      g.rbox(x, y, z, w, h, dd, wall, rc, 0.2, 2);
+      g.rbox(x, y, z, w + 0.8, 1.15, dd + 0.8, dark, rc + 0.3, 0.2, 1);                         // plinth
+      for (var f = FLOOR * 2; f < h - 2; f += FLOOR * 2) g.rbox(x, y + f - 0.55, z, w + 0.5, 0.36, dd + 0.5, trim, rc + 0.2, 0.12, 1);  // string courses
+      g.rbox(x, y + h - 0.7, z, w + 0.9, 0.7, dd + 0.9, trim, rc + 0.3, 0.22, 1);                  // cornice
       if (shape !== 'container') world.windows(x, y, z, w, h, dd, b, under, shape, FLOOR, rng);
       var top = y + h;
       if (shape === 'house') {
@@ -398,13 +417,65 @@
         world.roofJunk(g, x, top, z, w, dd, rng);
       }
       if (shape === 'tower' || shape === 'factory') world.roofJunk(g, x - w * 0.12, top, z + dd * 0.12, w * 0.5, dd * 0.5, rng);
+      if (b.id) world.ornament(b, d, g, y, under);
       var box = world.collide.addBox(x, y, z, w, h + 0.8, dd, b.id ? { building: b.id } : null);
       if (b.id) world.buildingBoxes[b.id] = box;
       if (!under && !y) world.aoRing(x - w / 2, z - dd / 2, x + w / 2, z + dd / 2, 3.2);
     },
+    /** Big windows full of stock either side of the door, with a striped canopy over them. */
+    shopfront: function (b, side, y, under, len, hw, hd) {
+      var g = world.geo(b.x, b.z, 'window', under), s = world.geo(b.x, b.z, 'solid', under), n = world.geo(b.x, b.z, 'neon', under), rng = new Rng('front:' + b.id), bay = (len - 6) / 2;
+      if (bay < 1.5) return;
+      [-1, 1].forEach(function (e) {
+        var u = e * (3 + bay / 2);
+        g.panel(side, b.x, b.z, hw, hd, 0.05, u, y + 0.9, bay + 0.3, 3.3, 0x23263a);
+        g.panel(side, b.x, b.z, hw, hd, 0.09, u, y + 1.05, bay, 3, 0xa8cfe2);
+      });
+      var ax = side === 's' || side === 'n', dir = side === 's' || side === 'e' ? 1 : -1, stripes = Math.max(4, Math.floor(len / 2.4)), a = b.wall || 0xffc53d, c1 = b.neon ? 0xe0413f : 0x3f7fa8;
+      for (var i = 0; i < stripes; i++) {
+        var v = -len / 2 + (i + 0.5) * (len / stripes), col = i % 2 ? c1 : 0xfffaf0;
+        var cx = ax ? b.x + (side === 's' ? v : -v) : b.x + dir * (hw + 1.1), cz = ax ? b.z + dir * (hd + 1.1) : b.z + (side === 'e' ? -v : v);
+        s.box(cx, y + 4.5, cz, ax ? len / stripes : 2.2, 0.22, ax ? 2.2 : len / stripes, col);
+      }
+    },
+    /** Porches, domes, spires: the things that make a civic building more than a box. */
+    ornament: function (b, d, g, y, under) {
+      var id = b.id, x = b.x, z = b.z, top = y + b.h, stone = 0xf4efe2;
+      if (id === 'city_hall' || id === 'observatory' || id === 'museum' || id === 'embassy') {
+        var r = Math.min(b.w, b.d) * 0.3, dome = id === 'observatory' ? 0xd8dee8 : id === 'embassy' ? 0x8fbf9a : 0x6ea88a;
+        g.cyl(x, top, z, r + 0.7, 1.6, stone, 18).blob(x, top + 1.6, z, r, r * 0.85, r, dome).cyl(x, top + 1.6 + r * 0.82, z, 0.26, 2.2, 0xffc53d, 8, 0.05);
+      }
+      if (id === 'city_hall' || id === 'bank' || id === 'exchange' || id === 'museum' || id === 'embassy' || id === 'grand_hotel' || id === 'global_trade' || id === 'theatre') {
+        // columns and a pediment across the front
+        var f = TrillionerLayout.frontOf(b), H = Math.min(b.h * 0.5, 7.6), wx = f.x - f.nx * f.off, wz = f.z - f.nz * f.off, along = !!f.nz, span = Math.min((along ? b.w : b.d) - 2, 22), cols = 6;
+        for (var i = 0; i < cols; i++) {
+          var u = -span / 2 + i * span / (cols - 1);
+          if (Math.abs(u) < 3.4) continue;
+          var cx = wx + f.nx * 3 + (along ? u : 0), cz = wz + f.nz * 3 + (along ? 0 : u);
+          g.cyl(cx, y + 0.3, cz, 0.56, H, stone, 12, 0.44).rbox(cx, y, cz, 1.5, 0.34, 1.5, stone, 0.2, 0.08, 1).rbox(cx, y + H + 0.2, cz, 1.4, 0.3, 1.4, stone, 0.2, 0.08, 1);
+          world.collide.addBox(cx, y, cz, 1, H, 1);
+        }
+        var bx = wx + f.nx * 2.2, bz = wz + f.nz * 2.2;
+        g.rbox(bx, y + H + 0.5, bz, along ? span + 2 : 5.6, 0.9, along ? 5.6 : span + 2, stone, 0.3, 0.14, 1);
+        g.gable(bx, y + H + 1.4, bz, along ? span + 2.4 : 6, 2.1, along ? 6 : span + 2.4, stone, !along);
+        world.collide.addBox(bx, y + H + 0.5, bz, along ? span + 2 : 5.6, 3, along ? 5.6 : span + 2);
+      }
+      if (id === 'trillion_tower') {
+        g.rbox(x, top, z, b.w * 0.74, 8, b.d * 0.74, b.wall, 3, 0.4, 2);
+        g.rbox(x, top + 8, z, b.w * 0.46, 7, b.d * 0.46, 0xffd96a, 2.4, 0.4, 2);
+        world.collide.addBox(x, top, z, b.w * 0.74, 8, b.d * 0.74); world.collide.addBox(x, top + 8, z, b.w * 0.46, 7, b.d * 0.46);
+        [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (c) { g.cyl(x + c[0] * b.w * 0.2, top + 15, z + c[1] * b.d * 0.2, 0.5, 9, 0xfff0b0, 8, 0.06); });
+      }
+      if (b.twin) g.cyl(x, top, z, b.w * 0.34, 7, b.wall, 12, 0.1);
+      if (id === 'trillion_tower' || id === 'global_trade' || id === 'grand_hotel') {
+        for (var fr = 1; fr * 26 < b.h; fr++) g.rbox(x, y + fr * 26, z, b.w + 2, 1.1, b.d + 2, 0xfff4cc, 3, 0.3, 1);
+      }
+    },
     parapet: function (g, x, y, z, w, d, color) {
-      g.box(x, y, z, w + 0.6, 0.25, d + 0.6, shade(color, 0.85));
-      g.box(x, y, z - d / 2, w + 0.6, 0.9, 0.5, color).box(x, y, z + d / 2, w + 0.6, 0.9, 0.5, color).box(x - w / 2, y, z, 0.5, 0.9, d + 0.6, color).box(x + w / 2, y, z, 0.5, 0.9, d + 0.6, color);
+      var r = Math.min(2.6, Math.min(w, d) * 0.13);
+      g.rbox(x, y, z, w - 0.4, 0.34, d - 0.4, shade(color, 0.72), r, 0.1, 1);
+      g.rbox(x, y, z, w + 0.4, 0.92, d + 0.4, shade(color, 1.08), r + 0.1, 0.18, 1);
+      g.rbox(x, y + 0.5, z, w - 1, 0.52, d - 1, shade(color, 0.72), r, 0.04, 1);
     },
     roofJunk: function (g, x, y, z, w, d, rng) {
       var n = 1 + rng.int(3);
@@ -430,17 +501,27 @@
       var g = world.geo(x, z, 'window', under), hw = w / 2, hd = d / 2, boarded = b.boarded;
       var frame = boarded ? 0x4a3b2c : (shape === 'tower' ? 0x2f4a66 : shape === 'villa' ? 0xffffff : shape === 'brick' ? 0xf2e6cc : shape === 'house' ? 0xffffff : 0x53606d);
       var DIM = 0x4f83ad, LIT = 0xa8cfe2, BOARD = 0x2d241b;
-      var ww = h > 60 ? 3.4 : 1.9, wh = h > 60 ? 3.4 : 2, gap = h > 60 ? 5.4 : 4.4, start = shape === 'tower' ? 4.6 : 1.8;
+      var ww = h > 60 ? 3.4 : 1.9, wh = h > 60 ? 3.4 : 2, gap = h > 60 ? 5.4 : 4.4, start = shape === 'tower' ? 4.6 : 1.8, rc = Math.min(2.6, Math.min(w, d) * 0.13);
+      var ledge = h > 60 || boarded ? 0 : (shape === 'brick' ? 0xe6d4b4 : shape === 'villa' ? 0xffffff : shape === 'house' ? 0xfafafa : 0xc8ccd2);
+      if (b.shop) start = Math.max(start, 5.2);
       [['s', w], ['n', w], ['e', d], ['w', d]].forEach(function (f) {
-        var side = f[0], len = f[1], n = Math.max(1, Math.floor((len - 1.6) / gap));
+        var side = f[0], len = f[1] - rc * 2, n = Math.max(1, Math.floor((len - 1.2) / gap));
         for (var fl = start; fl + wh < h - 0.7; fl += FLOOR) {
           for (var i = 0; i < n; i++) {
             var u = -len / 2 + (i + 0.5) * (len / n);
             g.panel(side, x, z, hw, hd, 0.05, u, y + fl - 0.14, ww + 0.28, wh + 0.28, frame);
             g.panel(side, x, z, hw, hd, 0.09, u, y + fl, ww, wh, boarded ? BOARD : rng.next() < 0.38 ? LIT : DIM);
+            if (ledge) {
+              // a sill to catch the light and a lintel above, so the window sits in the wall rather than on it
+              var cu = side === 's' ? x + u : side === 'n' ? x - u : side === 'e' ? x + hw + 0.14 : x - hw - 0.14, cv = side === 's' ? z + hd + 0.14 : side === 'n' ? z - hd - 0.14 : side === 'e' ? z - u : z + u, ax = side === 's' || side === 'n';
+              g.box(cu, y + fl - 0.34, cv, ax ? ww + 0.7 : 0.34, 0.2, ax ? 0.34 : ww + 0.7, ledge);
+              g.box(cu, y + fl + wh + 0.12, cv, ax ? ww + 0.5 : 0.26, 0.22, ax ? 0.26 : ww + 0.5, ledge);
+              if (ax) { g.panel(side, x, z, hw, hd, 0.095, u, y + fl + wh - 0.28, ww, 0.28, 0x22303e); } else { g.panel(side, x, z, hw, hd, 0.095, u, y + fl + wh - 0.28, ww, 0.28, 0x22303e); }
+            }
           }
         }
-        if (shape === 'tower') g.panel(side, x, z, hw, hd, 0.05, 0, y + 1.3, len - 2.4, 2.9, 0x355a78); // glass shopfronts
+        if (shape === 'tower' && !b.shop) g.panel(side, x, z, hw, hd, 0.05, 0, y + 1.3, len - 2.4, 2.9, 0x355a78); // glass shopfronts
+        if (b.shop && !b.plain && side === b.door) world.shopfront(b, side, y, under, len, hw, hd);
       });
     },
 
@@ -452,7 +533,7 @@
       (d.buildings || []).forEach(function (b) {
         if (!b.project) {
           world.tracked(b.id, b.x, b.z, false, function () { world.addBuilding(b, d); world.door(b, d); });
-          if (!b.hiddenSign) world.signs.add(b.name, b, d);
+          if (!b.hiddenSign && !b.plain) world.signs.add(b.name, b, d);
           if (b.walled) world.compound(b);
           if (b.helipad) world.helipad(b);
         }
@@ -460,29 +541,27 @@
         var f = TrillionerLayout.frontOf(b);
         taken.push([Math.min(f.x, f.x + (f.nz ? 22 : f.nx * 6)) - 4, Math.min(f.z, f.z + (f.nx ? 22 : f.nz * 6)) - 4, Math.max(f.x, f.x + (f.nz ? 22 : f.nx * 6)) + 4, Math.max(f.z, f.z + (f.nx ? 22 : f.nz * 6)) + 4]);
       });
-      (d.stalls || []).forEach(function (s) {
-        var c = s.cols || 6, sp = s.spacing || 6, extent = c * sp / 2 + 4;
-        taken.push(s.dir === 'z' ? [s.x - 6, s.z - extent, s.x + 22, s.z + extent] : [s.x - extent, s.z - 6, s.x + extent, s.z + 22]);
-        if (s.y == null && !s.plain) world.stallAwning(s, d);
-      });
-      if (d.change) { taken.push([d.change.x - 16, d.change.z - 14, d.change.x + 16, d.change.z + 6]); world.fountain(d); }
       (d.stairs || []).forEach(function (st) { world.stair(st, d, 0, false); taken.push([st.x - 8, st.z - 8, st.x + 8, st.z + 8]); });
       (d.landmarks || []).forEach(function (l) { world.landmark(l, d); var r = (l.r || (l.w || 20) / 2) + 8; taken.push([l.x - r, l.z - r, l.x + r, l.z + r]); });
       world.fill(d, taken);
       world.scatter(d, taken);
     },
 
-    door: function (b, d) {
-      var f = TrillionerLayout.frontOf(b), y = b.y || 0, g = world.geo(b.x, b.z, 'solid'), n = world.geo(b.x, b.z, 'neon');
-      var dw = 5, dh = 4.4, dx = f.nx ? (f.x - f.nx * 5.5) : f.x, dz = f.nz ? (f.z - f.nz * 5.5) : f.z, alongX = !!f.nz;
+    door: function (b, d, under) {
+      var f = TrillionerLayout.frontOf(b), y = b.y != null ? b.y : (under ? UY : 0), g = world.geo(b.x, b.z, 'solid', under), n = world.geo(b.x, b.z, 'neon', under);
+      var dw = b.w < 10 ? 3 : 5, dh = b.h < 5 ? 2.8 : 4.4, dx = f.nx ? (f.x - f.nx * f.off) : f.x, dz = f.nz ? (f.z - f.nz * f.off) : f.z, alongX = !!f.nz;
+      var plainDoor = b.plain || b.hiddenSign;
       var col = b.boarded ? 0x4a3b2c : (b.neon ? (d.neon || 0xffc53d) : shade(b.wall || d.walls[0], 0.62));
       g.box(dx + f.nx * 0.2, y, dz + f.nz * 0.2, alongX ? dw + 1.2 : 0.3, dh + 0.5, alongX ? 0.3 : dw + 1.2, shade(col, 0.8));
       g.box(dx + f.nx * 0.34, y, dz + f.nz * 0.34, alongX ? dw : 0.3, dh, alongX ? 0.3 : dw, b.enter ? 0x202436 : 0x7a7f88);
-      if (b.enter) {
+      if (b.enter && plainDoor) {
+        g.box(dx + f.nx * 0.5, y, dz + f.nz * 0.5, alongX ? dw - 0.4 : 0.16, dh - 0.2, alongX ? 0.16 : dw - 0.4, 0x5a4636);
+      } else if (b.enter) {
         // double glass doors, lit from inside, with a mat that says this one opens
         var cx = alongX ? 1.26 : 0, cz = alongX ? 0 : 1.26;
-        n.box(dx + f.nx * 0.5 - cx, y + 0.3, dz + f.nz * 0.5 - cz, alongX ? 2.1 : 0.1, dh - 0.8, alongX ? 0.1 : 2.1, 0xffe2a0);
-        n.box(dx + f.nx * 0.5 + cx, y + 0.3, dz + f.nz * 0.5 + cz, alongX ? 2.1 : 0.1, dh - 0.8, alongX ? 0.1 : 2.1, 0xffe2a0);
+        var pw = dw / 2 - 0.4; cx = alongX ? dw * 0.25 : 0; cz = alongX ? 0 : dw * 0.25;
+        n.box(dx + f.nx * 0.5 - cx, y + 0.3, dz + f.nz * 0.5 - cz, alongX ? pw : 0.1, dh - 0.8, alongX ? 0.1 : pw, 0xffe2a0);
+        n.box(dx + f.nx * 0.5 + cx, y + 0.3, dz + f.nz * 0.5 + cz, alongX ? pw : 0.1, dh - 0.8, alongX ? 0.1 : pw, 0xffe2a0);
         g.box(dx + f.nx * 0.6, y, dz + f.nz * 0.6, alongX ? 0.24 : 0.14, dh, alongX ? 0.14 : 0.24, 0x23263a);
         g.box(dx + f.nx * 0.62 - cx * 0.2, y + 1.7, dz + f.nz * 0.62 - cz * 0.2, alongX ? 0.12 : 0.1, 0.9, alongX ? 0.1 : 0.12, 0xffd24a);
         g.box(dx + f.nx * 0.62 + cx * 0.2, y + 1.7, dz + f.nz * 0.62 + cz * 0.2, alongX ? 0.12 : 0.1, 0.9, alongX ? 0.1 : 0.12, 0xffd24a);
@@ -523,31 +602,9 @@
       c.add(x0 - 1, 0, z0 - 1, x1 + 1, h, z0 + 1); c.add(x0 - 1, 0, z1 - 1, x1 + 1, h, z1 + 1); c.add(x0 - 1, 0, z0, x0 + 1, h, z1); c.add(x1 - 1, 0, z0, x1 + 1, h, z1);
     },
     helipad: function (b) {
-      var g = world.geo(b.x, b.z, 'neon');
-      g.cyl(b.x, b.h + 0.85, b.z, 10, 0.1, 0x2d2d3a, 16);
-      g.box(b.x - 3, b.h + 0.95, b.z, 1.2, 0.1, 8, 0xffffff).box(b.x + 3, b.h + 0.95, b.z, 1.2, 0.1, 8, 0xffffff).box(b.x, b.h + 0.95, b.z, 6, 0.1, 1.2, 0xffffff);
-    },
-    // A market stall row: counter behind the pads and a striped awning on posts.
-    stallAwning: function (s, d) {
-      var c = s.cols || 6, sp = s.spacing || 6, len = c * sp, g = world.geo(s.x, s.z, 'solid'), alongZ = s.dir === 'z';
-      var ax = alongZ ? s.x - 5 : s.x, az = alongZ ? s.z : s.z - 5, a = d.neon || 0xffc53d, stripes = Math.max(4, Math.floor(len / 3));
-      g.box(ax, 0, az, alongZ ? 1.6 : len, 1.5, alongZ ? len : 1.6, 0xb98a5a);
-      g.box(ax, 1.5, az, alongZ ? 1.9 : len + 0.3, 0.16, alongZ ? len + 0.3 : 1.9, 0xe9d8b8);
-      for (var i = 0; i < stripes; i++) {
-        var u = -len / 2 + (i + 0.5) * (len / stripes), col = i % 2 ? a : 0xfffaf0;
-        g.box(alongZ ? ax + 0.7 : ax + u, 4.3, alongZ ? az + u : az + 0.7, alongZ ? 4 : len / stripes, 0.3, alongZ ? len / stripes : 4, col);
-      }
-      [-1, 1].forEach(function (e) {
-        var px = alongZ ? ax + 2.3 : ax + e * (len / 2), pz = alongZ ? az + e * (len / 2) : az + 2.3, qx = alongZ ? ax - 1 : ax + e * (len / 2), qz = alongZ ? az + e * (len / 2) : az - 1;
-        g.box(px, 0, pz, 0.25, 4.4, 0.25, 0x6b4d2c).box(qx, 0, qz, 0.25, 4.4, 0.25, 0x6b4d2c);
-      });
-      // a few goods on the counter
-      var rng = new Rng('stall:' + s.id);
-      for (i = 0; i < c * 2; i++) { var v = -len / 2 + (i + 0.5) * (len / (c * 2)), gs = rng.range(0.35, 0.7); g.box(alongZ ? ax : ax + v, 1.66, alongZ ? az + v : az, gs, gs, gs, rng.pick(d.walls.concat([a, 0xffffff]))); }
-      world.collide.addBox(ax, 0, az, alongZ ? 1.6 : len, 1.5, alongZ ? len : 1.6);
-      // the awning stops the camera, above head height so nobody walks into it
-      world.collide.addBox(alongZ ? ax + 0.7 : ax, 4.3, alongZ ? az : az + 0.7, alongZ ? 4 : len, 3.2, alongZ ? len : 4);
-      world.signs.addFlat(s.name, ax + (alongZ ? 2.6 : 0), 5.5, az + (alongZ ? 0 : 2.6), Math.min(len, 22), Math.min(len, 22) * 0.17, a, alongZ ? Math.PI / 2 : 0);
+      var g = world.geo(b.x, b.z, 'neon'), y = b.h + 15.02;   // on the top tier of the crown
+      g.cyl(b.x, y, b.z, 6.8, 0.1, 0x2d2d3a, 20);
+      g.box(b.x - 2, y + 0.1, b.z, 0.9, 0.06, 5.4, 0xffffff).box(b.x + 2, y + 0.1, b.z, 0.9, 0.06, 5.4, 0xffffff).box(b.x, y + 0.1, b.z, 3.2, 0.06, 0.9, 0xffffff);
     },
     /** A spiral fire escape with a bridge to the roof: the rooftop route every district gets. */
     stair: function (st, d, base, under) {
@@ -564,16 +621,6 @@
       g.box(cx, top2 - 0.4, cz, w, 0.4, dd, 0xb0b4b8);
       c.addBox(cx, top2 - 0.8, cz, w, 0.8, dd);
     },
-    fountain: function (d) {
-      var c = d.change, under = d.level === 'under', y = under ? UY : 0, g = world.geo(c.x, c.z, 'solid', under), n = world.geo(c.x, c.z, 'neon', under);
-      g.cyl(c.x, y, c.z - 8, 4.4, 0.9, 0xd8dde3, 12);
-      n.cyl(c.x, y + 0.9, c.z - 8, 3.8, 0.1, 0x46b4f0, 12);
-      g.cyl(c.x, y + 0.9, c.z - 8, 0.7, 2.6, 0xe9edf2, 8);
-      world.collide.add(c.x - 3.6, y, c.z - 11.6, c.x + 3.6, y + 0.9, c.z - 4.4, { fountain: d.id });
-      world.fountains.push({ x: c.x, y: y, z: c.z - 8, district: d.id });
-      world.signs.addFlat && (under ? world.usigns : world.signs).addFlat('Vending and Wishes', c.x, y + 4.6, c.z - 1.6, 12, 2, 0x2f7fd6, 0);
-    },
-
     landmark: function (l, d, under) {
       var base = under ? UY : 0, g = world.geo(l.x, l.z, 'solid', under), n = world.geo(l.x, l.z, 'neon', under), c = world.collide;
       if (l.kind === 'chimney') {
@@ -823,12 +870,10 @@
       c.add(b[0] - 4, y, b[1], b[0], y + h, b[3]); c.add(b[2], y, b[1], b[2] + 4, y + h, b[3]); c.add(b[0], y, b[1] - 4, b[2], y + h, b[1]); c.add(b[0], y, b[3], b[2], y + h, b[3] + 4);
       var taken = [];
       (d.buildings || []).forEach(function (bb) {
-        world.tracked(bb.id, bb.x, bb.z, true, function () { world.addBuilding(bb, d, UY, true); world.underDoor(bb, d); });
-        world.usigns.add(bb.name, Object.assign({}, bb, { h: bb.h + UY }), d);
+        world.tracked(bb.id, bb.x, bb.z, true, function () { world.addBuilding(bb, d, UY, true); world.door(bb, d, true); });
+        if (!bb.plain) world.usigns.add(bb.name, bb, d, UY);
         taken.push([bb.x - bb.w / 2 - 8, bb.z - bb.d / 2 - 8, bb.x + bb.w / 2 + 8, bb.z + bb.d / 2 + 8]);
       });
-      (d.stalls || []).forEach(function (s) { var e = (s.cols || 6) * (s.spacing || 6) / 2 + 4; taken.push([s.x - e, s.z - 6, s.x + e, s.z + 22]); });
-      if (d.change) { taken.push([d.change.x - 16, d.change.z - 14, d.change.x + 16, d.change.z + 6]); world.fountain(d); }
       (d.stairs || []).forEach(function (st) { world.stair(st, d, UY, true); taken.push([st.x - 8, st.z - 8, st.x + 8, st.z + 8]); });
       (d.landmarks || []).forEach(function (l) { world.landmark(l, d, true); taken.push([l.x - 70, l.z - 5, l.x + 70, l.z + 5]); });
       // festival lights strung across the cavern market
@@ -864,13 +909,6 @@
       world.moleWall = { x: 0, y: y, z: -126 };
       c.addBox(0, y, -128, 30, 20, 3);
     },
-    underDoor: function (b, d) {
-      var f = TrillionerLayout.frontOf(b), y = UY, g = world.geo(b.x, b.z, 'solid', true), n = world.geo(b.x, b.z, 'neon', true);
-      var dx = f.nx ? (f.x - f.nx * 5.5) : f.x, dz = f.nz ? (f.z - f.nz * 5.5) : f.z;
-      g.box(dx + f.nx * 0.2, y, dz + f.nz * 0.2, f.nz ? 5 : 0.3, 4.4, f.nz ? 0.3 : 5, 0x1a1028);
-      n.box(dx + f.nx * 0.3, y + 4.4, dz + f.nz * 0.3, f.nz ? 6 : 0.3, 0.5, f.nz ? 0.3 : 6, d.neon);
-    },
-
     // Things that move or change every frame: one extra mesh each.
     animated: function () {
       // The clock tower's face always shows the in-game time.
@@ -1066,11 +1104,12 @@
     }, this);
     this.index.push(n, n + 1, n + 2, n, n + 2, n + 3);
   };
-  SignAtlas.prototype.add = function (name, b, d) {
-    var color = b.boarded ? 0x5b4a3a : (d.neon || 0xffc53d), f = TrillionerLayout.frontOf(b), y = b.y || 0;
+  SignAtlas.prototype.add = function (name, b, d, base) {
+    var color = b.boarded ? 0x5b4a3a : (d.neon || 0xffc53d), f = TrillionerLayout.frontOf(b), y = b.y != null ? b.y : (base || 0);
     var w = Math.min(b.w * 0.9, 34), h = w * 0.19;
     if (b.h < 12) { w = Math.min(w, 20); h = w * 0.19; }
     var sy = y + Math.min(b.h - h * 0.6, 20);
+    if (b.shop) sy = y + Math.min(b.h - h * 0.5 - 0.3, 6.2);
     if (f.nz) this.addFlat(name, b.x, sy, b.z + f.nz * (b.d / 2 + 0.3), w, h, color, f.nz > 0 ? 0 : Math.PI);
     else { w = Math.min(b.d * 0.9, 34); h = w * 0.19; this.addFlat(name, b.x + f.nx * (b.w / 2 + 0.3), sy, b.z, w, h, color, f.nx > 0 ? Math.PI / 2 : -Math.PI / 2); }
   };

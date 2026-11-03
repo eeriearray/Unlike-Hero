@@ -43,10 +43,10 @@
     how: function () {
       var s = screen('<div class="panel left"><h2 class="outlined">How to play</h2>' +
         '<p><b>The goal:</b> get your balance under $1M with income at $0 or less, before the next 6AM. A day is 24 real minutes.</p>' +
-        '<p><b>Your money fights back.</b> Interest pays you 0.5% an hour while you hold $1B or more, and businesses earn. Boarded-up ones lose money, which helps. You can demolish what you own for 40% of its price.</p>' +
+        '<p><b>Businesses earn.</b> Your money only grows from businesses you buy, and each one shows its income before you pay. Boarded-up ones lose money, which helps. You can demolish what you own for 40% of its price.</p>' +
         '<p><b>Shops in plain sight are nowhere near enough.</b> Look on roofs, follow rumours, open odd doors, read the paper, try things at night.</p>' +
         '<p><b>Frenzy:</b> buy $100M or more within 5 seconds of your last big buy and prices climb, up to x5.</p>' +
-        '<table class="keys"><tr><td>WASD, Shift, Space</td><td>Move, sprint, double jump</td></tr><tr><td>Mouse</td><td>Camera (click the game to capture it)</td></tr><tr><td>Walk over a small pad</td><td>Buy it</td></tr><tr><td>Walk into a door</td><td>Go inside, or back out</td></tr><tr><td>Hold E</td><td>Buy a big deal</td></tr><tr><td>Hold X</td><td>Demolish what you own, at its pad</td></tr><tr><td>Q, then a number</td><td>Call a vehicle or pick an item</td></tr><tr><td>F</td><td>Get in or out</td></tr><tr><td>Left mouse, H</td><td>Use your item or ability, horn</td></tr><tr><td>M, N, Esc</td><td>Map, notebook, pause</td></tr></table>' +
+        '<table class="keys"><tr><td>WASD, Shift, Space</td><td>Move, sprint, double jump</td></tr><tr><td>Mouse</td><td>Camera (click the game to capture it)</td></tr><tr><td>Run into something on display</td><td>Buy it</td></tr><tr><td>Walk into a door</td><td>Go inside, or back out</td></tr><tr><td>Hold E</td><td>Buy a big deal</td></tr><tr><td>Hold X</td><td>Demolish what you own, at its pad</td></tr><tr><td>Q, then a number</td><td>Call a vehicle or pick an item</td></tr><tr><td>F</td><td>Get in or out</td></tr><tr><td>Left mouse, H</td><td>Use your item or ability, horn</td></tr><tr><td>M, N, Esc</td><td>Map, notebook, pause</td></tr><tr><td>K</td><td>Music on or off</td></tr></table>' +
         menus.back() + '</div>');
       on(s, 'm-back', menus.title);
     },
@@ -94,12 +94,13 @@
         '<label>Volume <input type="range" id="s-v" min="0" max="1" step="0.05" value="' + a.volume + '"></label>' +
         '<label>Effects <input type="range" id="s-fx" min="0" max="1" step="0.05" value="' + a.sfxVolume + '"></label>' +
         '<label>Music <input type="range" id="s-mu" min="0" max="1" step="0.05" value="' + a.musicVolume + '"></label>' +
-        '<div class="row small"><button class="btn alt" id="s-mute">' + (a.muted ? 'Unmute' : 'Mute') + '</button></div>' +
+        '<div class="row small"><button class="btn alt" id="s-music">' + (a.musicMuted ? 'Music: Off' : 'Music: On') + '</button><button class="btn alt" id="s-mute">' + (a.muted ? 'Unmute everything' : 'Mute everything') + '</button></div>' +
         '<h3>Quality</h3><div class="row small">' + ['low', 'medium', 'high', 'auto'].map(function (q) { return '<button class="btn ' + (Q.choice === q ? '' : 'alt') + '" data-q="' + q + '">' + q[0].toUpperCase() + q.slice(1) + '</button>'; }).join('') + '</div>' +
         menus.back() + '</div>');
-      function sv(id, key) { s.querySelector('#' + id).oninput = function (e) { a.setVolume(key, +e.target.value); TR.save.set('audio', { volume: a.volume, sfxVolume: a.sfxVolume, musicVolume: a.musicVolume, muted: a.muted }); }; }
+      function sv(id, key) { s.querySelector('#' + id).oninput = function (e) { a.setVolume(key, +e.target.value); a.saveLevels(); }; }
       sv('s-v', 'volume'); sv('s-fx', 'sfxVolume'); sv('s-mu', 'musicVolume');
-      on(s, 's-mute', function () { a.setMuted(!a.muted); TR.save.set('audio', { volume: a.volume, sfxVolume: a.sfxVolume, musicVolume: a.musicVolume, muted: a.muted }); menus.settings(back); });
+      on(s, 's-mute', function () { a.setMuted(!a.muted); a.saveLevels(); menus.settings(back); });
+      on(s, 's-music', function () { a.setMusicMuted(!a.musicMuted); menus.settings(back); });
       s.querySelectorAll('[data-q]').forEach(function (b) { b.onclick = function () { Q.set(b.getAttribute('data-q')); menus.settings(back); }; });
       on(s, 'm-back', back);
     },
@@ -111,7 +112,7 @@
       var resume = function () { menus.close(); TR.app.setPaused(false); };
       on(s, 'p-go', resume);
       on(s, 'p-set', function () { menus.settings(menus.pause); });
-      on(s, 'p-how', function () { var ss = screen('<div class="panel left"><h2 class="outlined">Controls</h2><table class="keys"><tr><td>WASD, Shift, Space</td><td>Move, sprint, double jump</td></tr><tr><td>Walk into a door</td><td>Go inside</td></tr><tr><td>Hold E</td><td>Big deals</td></tr><tr><td>Hold X</td><td>Demolish at the pad</td></tr><tr><td>Q, F</td><td>Vehicle wheel, get in or out</td></tr><tr><td>Left mouse, H</td><td>Use item, horn</td></tr><tr><td>M, N</td><td>Map, notebook</td></tr></table>' + menus.back() + '</div>'); on(ss, 'm-back', menus.pause); });
+      on(s, 'p-how', function () { var ss = screen('<div class="panel left"><h2 class="outlined">Controls</h2><table class="keys"><tr><td>WASD, Shift, Space</td><td>Move, sprint, double jump</td></tr><tr><td>Walk into a door</td><td>Go inside</td></tr><tr><td>Hold E</td><td>Big deals</td></tr><tr><td>Hold X</td><td>Demolish at the pad</td></tr><tr><td>Q, F</td><td>Vehicle wheel, get in or out</td></tr><tr><td>Left mouse, H</td><td>Use item, horn</td></tr><tr><td>M, N</td><td>Map, notebook</td></tr><tr><td>K</td><td>Music on or off</td></tr></table>' + menus.back() + '</div>'); on(ss, 'm-back', menus.pause); });
       on(s, 'p-end', function () { menus.close(); TR.app.paused = false; TR.app.quitRun(); });
       var tm = s.querySelector('#p-time');
       if (tm) tm.oninput = function (e) { TR.app.session.setClock(+e.target.value); TR.world.setTime(+e.target.value, 'clear', TR.player.pos); };
@@ -161,11 +162,11 @@
   // ───── first-run tutorial: one line at a time, shown once, skippable ─────
   var STEPS = [
     { text: 'WASD to move. Shift to sprint. Space to jump, twice. Click the game to steer with the mouse.', done: function (c) { return c.moved > 12; } },
-    { text: 'You have $1 trillion and until 6AM to get rid of it. See the shop stalls across the street? Run into anything on display to buy it.', done: function (c, me) { return me.stats.purchases >= 1; } },
-    { text: 'For Sale boards are big deals. Stand by one and hold E. Doors just open: walk in.', done: function (c, me) { return Object.keys(me.owned).length >= 1; } },
-    { text: 'Money keeps coming in. See your income on the left? You win below $1M with income at $0 or less. Boarded-up businesses lose money.', hold: 8 },
+    { text: 'You have $1 trillion and until 6AM to get rid of it. See the shops across the street? Walk into a door and run into anything on display to buy it.', done: function (c, me) { return me.stats.purchases >= 1; } },
+    { text: 'Every building sells itself: find the For Sale board inside and hold E.', done: function (c, me) { return Object.keys(me.owned).length >= 1; } },
+    { text: 'You win below $1M with income at $0 or less. Businesses you buy can earn: each For Sale board shows how much before you pay. Boarded-up ones lose money.', hold: 8 },
     { text: 'Press M for the map. Shops in plain sight will not be enough: look on roofs, follow rumours, try doors. N opens your notebook.', hold: 8 },
-    { text: 'Buy a business that comes with a vehicle (try Motor Mile, south of here), then press Q to call it. Good luck spending.', hold: 8 }
+    { text: 'Buy a business that comes with a vehicle (try the Dealership on Motor Mile, south of here), then press Q to call it. Good luck spending.', hold: 8 }
   ];
   TR.tutorial = {
     el: null, i: 0, c: { moved: 0 }, t: 0, last: null,

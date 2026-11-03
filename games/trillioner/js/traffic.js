@@ -6,6 +6,7 @@
 
   function carGeo() {
     var g = new TR.Geo(), GLASS = 0x233a50;
+    g.soft = 0.42; g.softS = 2;
     g.box(0, 0.42, 0, 2.5, 0.72, 5, 0xffffff);                       // body, tinted per car
     g.box(0, 0.42, -2.55, 2.3, 0.5, 0.12, 0xdddddd).box(0, 0.42, 2.55, 2.3, 0.5, 0.12, 0xdddddd);
     g.box(0, 1.14, 0.25, 2.2, 0.72, 2.5, GLASS);                     // cabin

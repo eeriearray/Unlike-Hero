@@ -63,8 +63,7 @@
 
     // surprise-auction deals sit outside the budgets; they exist only while their event runs
     var evRng = rng.fork('events'), events = schedule(evRng), deal = evRng.pick(EventsData.SURPRISE_DEALS);
-    var fountain = D.DISTRICTS.downtown.change;
-    list.push({ id: 'surprise_deal', name: deal.name, price: deal.price * R.B, district: 'downtown', bucket: 'surprise', site: 'plaza_shops', stock: 1, kind: 'good', icon: 'gem', building: false, outside: false, required: false, flex: false, gate: null, secret: null, surprise: true, income: 0, reward: null, power: null, pos: { x: fountain.x + 14, y: 0, z: fountain.z - 10 } });
+    list.push({ id: 'surprise_deal', name: deal.name, price: deal.price * R.B, district: 'downtown', bucket: 'surprise', site: 'plaza_shops', stock: 1, kind: 'good', icon: 'gem', building: false, outside: false, required: false, flex: false, gate: null, secret: null, surprise: true, income: 0, reward: null, power: null });
 
     var items = {};
     list.forEach(function (it) { items[it.id] = it; });

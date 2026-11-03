@@ -13,6 +13,7 @@
   };
   /** Box with base at y. Sides are baked darker toward the ground, which gives the toy look without textures. */
   Geo.prototype.box = function (x, y, z, w, h, d, color, ry) {
+    if (this.soft && !ry && Math.min(w, h, d) > 0.09) { var m = Math.min(w, h, d) * this.soft; return this.rbox(x, y, z, w, h, d, color, m, m, this.softS || 2); }
     C.setHex(color);
     var r = C.r, g = C.g, b = C.b, hw = w / 2, hd = d / 2, y1 = y + h, cos = 1, sin = 0;
     if (ry) { cos = Math.cos(ry); sin = Math.sin(ry); }
@@ -37,19 +38,50 @@
     this.tri(tx[0], y1, tz[0], tx[2], y1, tz[2], tx[3], y1, tz[3], 0, 1, 0, r, g, b, 1.06, 1.06, 1.06);
     return this;
   };
-  /** Cylinder or cone. */
+  /** Cylinder or cone, smooth-shaded. */
   Geo.prototype.cyl = function (x, y, z, rb, h, color, n, rt) {
     C.setHex(color);
-    n = n || 8; if (rt == null) rt = rb;
-    var r = C.r, g = C.g, b = C.b, y1 = y + h;
+    n = Math.max(n || 12, 8); if (rt == null) rt = rb;
+    var r = C.r, g = C.g, b = C.b, y1 = y + h, slope = (rb - rt) / (h || 1), nl = Math.sqrt(1 + slope * slope), ny = slope / nl, hl = 1 / nl, P = this.p, N = this.n, K = this.c;
+    function v(px, py, pz, nx, nyy, nz, s) { P.push(px, py, pz); N.push(nx, nyy, nz); K.push(r * s, g * s, b * s); }
     for (var i = 0; i < n; i++) {
       var a0 = i / n * Math.PI * 2, a1 = (i + 1) / n * Math.PI * 2, c0 = Math.cos(a0), s0 = Math.sin(a0), c1 = Math.cos(a1), s1 = Math.sin(a1);
-      var nx = Math.cos((a0 + a1) / 2), nz = Math.sin((a0 + a1) / 2);
-      this.tri(x + c1 * rb, y, z + s1 * rb, x + c0 * rb, y, z + s0 * rb, x + c0 * rt, y1, z + s0 * rt, nx, 0, nz, r, g, b, 0.74, 0.74, 1);
+      v(x + c1 * rb, y, z + s1 * rb, c1 * hl, ny, s1 * hl, 0.72); v(x + c0 * rb, y, z + s0 * rb, c0 * hl, ny, s0 * hl, 0.72); v(x + c0 * rt, y1, z + s0 * rt, c0 * hl, ny, s0 * hl, 1);
+      this.count += 3;
       if (rt > 0) {
-        this.tri(x + c1 * rb, y, z + s1 * rb, x + c0 * rt, y1, z + s0 * rt, x + c1 * rt, y1, z + s1 * rt, nx, 0, nz, r, g, b, 0.74, 1, 1);
-        this.tri(x, y1, z, x + c1 * rt, y1, z + s1 * rt, x + c0 * rt, y1, z + s0 * rt, 0, 1, 0, r, g, b, 1.06, 1.06, 1.06);
+        v(x + c1 * rb, y, z + s1 * rb, c1 * hl, ny, s1 * hl, 0.72); v(x + c0 * rt, y1, z + s0 * rt, c0 * hl, ny, s0 * hl, 1); v(x + c1 * rt, y1, z + s1 * rt, c1 * hl, ny, s1 * hl, 1);
+        v(x, y1, z, 0, 1, 0, 1.05); v(x + c1 * rt, y1, z + s1 * rt, 0, 1, 0, 1.05); v(x + c0 * rt, y1, z + s0 * rt, 0, 1, 0, 1.05);
+        this.count += 6;
       }
+    }
+    return this;
+  };
+  /**
+   * A box with rounded edges and smooth shading: the thing that stops the city looking like cubes.
+   * r rounds the upright corners, ry the top and bottom edges, S is the steps per corner.
+   */
+  Geo.prototype.rbox = function (x, y, z, w, h, d, color, r, ry, S) {
+    C.setHex(color);
+    S = S || 1; r = Math.min(r == null ? 0.3 : r, w / 2 - 0.001, d / 2 - 0.001); ry = Math.min(ry == null ? r : ry, h / 2 - 0.001);
+    var cr = C.r, cg = C.g, cb = C.b, hw = w / 2 - r, hd = d / 2 - r, cy = y + h / 2, hh = h / 2 - ry, HP = Math.PI / 2, rows = [], i, j, q;
+    function lat(i0) { var out = []; for (var k = 0; k <= S; k++) out.push({ t: HP - k / S * HP, up: 1 }); for (k = 0; k <= S; k++) out.push({ t: -k / S * HP, up: -1 }); return out; }
+    var lats = lat(), signs = [[1, 1], [-1, 1], [-1, -1], [1, -1]], lons = [];
+    for (q = 0; q < 4; q++) for (j = 0; j <= S; j++) lons.push({ p: q * HP + j / S * HP, sx: signs[q][0], sz: signs[q][1] });
+    var grid = lats.map(function (L) {
+      return lons.map(function (O) {
+        var nx = Math.cos(L.t) * Math.cos(O.p), ny = Math.sin(L.t), nz = Math.cos(L.t) * Math.sin(O.p);
+        var px = x + O.sx * hw + nx * r, py = cy + L.up * hh + ny * ry, pz = z + O.sz * hd + nz * r;
+        var nl = Math.hypot(nx * ry, ny * r, nz * ry) || 1, f = (py - y) / h, sh = ny > 0.7 ? 1.05 : 0.68 + 0.35 * f;
+        return [px, py, pz, nx * ry / nl, ny * r / nl, nz * ry / nl, sh];
+      });
+    });
+    var P = this.p, N = this.n, K = this.c;
+    function put(a) { P.push(a[0], a[1], a[2]); N.push(a[3], a[4], a[5]); K.push(cr * a[6], cg * a[6], cb * a[6]); }
+    var M = lons.length;
+    for (i = 0; i < grid.length - 1; i++) for (j = 0; j < M; j++) {
+      var a = grid[i][j], b = grid[i][(j + 1) % M], c = grid[i + 1][j], e = grid[i + 1][(j + 1) % M];
+      put(a); put(b); put(e); put(a); put(e); put(c);
+      this.count += 6;
     }
     return this;
   };

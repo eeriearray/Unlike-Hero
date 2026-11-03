@@ -15,35 +15,21 @@ test('the run starts at exactly $1T in integer cents', () => {
   assert.ok(Number.isSafeInteger(g.players.p1.balance));
 });
 
-test('interest is exact: balance / 120000 per step with the remainder carried', () => {
+test('money does not grow by itself: the balance holds still with no businesses', () => {
   const g = fresh();
   const p = g.players.p1;
-  p.balance = 123456789012345;
-  let bal = p.balance, rem = 0;
-  for (let i = 0; i < 600; i++) {
-    rem += bal % 120000;
-    let gain = Math.floor(bal / 120000);
-    if (rem >= 120000) { gain += 1; rem -= 120000; }
-    bal += gain;
-  }
-  steps(g, 600);
-  assert.equal(p.balance, bal);
-  assert.ok(Number.isSafeInteger(p.balance));
+  steps(g, 3000);
+  assert.equal(p.balance, 1e14);
+  assert.equal(g.totalIncome(p), 0);
 });
 
-test('$1T earns about $83M per real second at the start', () => {
-  const g = fresh();
-  assert.equal(g.interestPerS(g.players.p1), Math.floor(1e14 / 120000) * 10);
-  const dollars = g.interestPerS(g.players.p1) / 100;
-  assert.ok(Math.abs(dollars - 83.33e6) < 0.01e6, String(dollars));
-});
-
-test('no interest below $1B', () => {
+test('business income is exact, and only starts when the deal closes', () => {
   const g = fresh();
   const p = g.players.p1;
-  p.balance = 1 * B - 1;
+  g.buy('p1', 'car_dealership');                 // $4B, +$4M/s, closes at once
+  const after = p.balance;
   steps(g, 100);
-  assert.equal(p.balance, 1 * B - 1);
+  assert.equal(p.balance, after + 10 * 4 * M);
 });
 
 test('frame rate does not change results: tick partitions agree', () => {

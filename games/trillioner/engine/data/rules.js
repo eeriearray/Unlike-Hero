@@ -8,8 +8,6 @@
   return {
     C: C, K: K, M: M, B: B, T: T,
     STEP_MS: 100,                     // the engine advances in fixed steps, so frame rate never changes a result
-    INTEREST_FLOOR: 1 * B,            // no interest below $1B
-    INTEREST_DIV: 120000,             // 0.5% per 60 real seconds = balance / 120000 per 100 ms step
     WIN_BELOW: 1 * M,
     FRENZY_MIN: 100 * M,              // purchases under $100M neither build Frenzy nor pay it
     FRENZY_WINDOW_MS: 5000,

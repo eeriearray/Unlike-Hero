@@ -24,11 +24,9 @@
       pads.list = run.list.map(function (it) { var p = run.padPos[it.id]; return { item: it, x: p.x, y: p.y, z: p.z }; });
       // "Buy the whole store" pads: one purchase for everything left and unlocked there
       Object.keys(run.sites).forEach(function (k) {
-        var s = run.sites[k], def = s.b || s.s;
+        var s = run.sites[k], def = s.b;
         if (!def || !def.wholeStore || !s.items.length) return;
-        var x, y, z;
-        if (s.room) { x = s.room.ox; y = 0; z = s.room.oz + s.room.d / 2 - 11; }
-        else { x = def.x; y = s.y; z = def.z + 7.5; }
+        var x = s.room.ox, y = 0, z = s.room.oz + s.room.d / 2 - 11;
         pads.list.push({ x: x, y: y, z: z, store: k, item: { id: 'store:' + k, name: 'Buy the Whole Store', price: 1e12, kind: 'store', gate: null, secret: null, site: k } });
       });
       pads.scanT = 0;
@@ -86,7 +84,7 @@
         if (e.d2 > 12100) break;            // past 110 units the shop is just a shop
         if (!p.kind) p.kind = G.kindFor(it);
         var size = Math.min(1.5, 0.82 + Math.max(0, Math.log10(Math.max(1, it.price / 1e9))) * 0.2) * (p.store ? 1.4 : 1);
-        var outdoorDeal = it.outside && it.building;
+        var outdoorDeal = it.building;
         if (outdoorDeal) {
           if (live) G.put('forsale', p.x, p.y, p.z, 0, 1.05);
           else if (e.st === 'locked') G.put('lock', p.x, p.y + 0.6, p.z, t * 0.8, 1.5);
@@ -161,7 +159,7 @@
         pads.hold += dt;
         if (pads.hold >= HOLD_S) { pads.hold = 0; pads.holding = null; TR.app.tryBuy(it.id); return; }
       } else { pads.hold = 0; pads.holding = null; }
-      TR.hud.prompt(it.name, 'Hold E: ' + TR.fmt(q.total) + (q.mult > 1 ? ' (Frenzy x' + q.mult + ')' : ''), pads.hold / HOLD_S, !q.ok);
+      TR.hud.prompt(it.name, 'Hold E: ' + TR.fmt(q.total) + (q.mult > 1 ? ' (Frenzy x' + q.mult + ')' : ''), pads.hold / HOLD_S, !q.ok, dealText(it));
     },
     demolishHold: function (dt, sess, it) {
       if (TR.input.down('KeyX')) {
@@ -172,6 +170,16 @@
     }
   };
 
+  /** What a purchase will do to your income and what comes with it, for the label and prompt. */
+  function dealText(it) {
+    var v = TR.vehicles, out = [];
+    if (it.income > 0) out.push('Earns +' + TR.fmt(it.income) + '/s');
+    else if (it.income < 0) out.push('Loses ' + TR.fmt(-it.income) + '/s');
+    else if (it.building) out.push('No income');
+    if (it.reward) (it.reward.vehicles || []).concat(it.reward.gear || []).forEach(function (k) { var n = v.SPECS[k] || v.GEAR[k]; if (n) out.push('Comes with ' + n.name); });
+    return out.join(' · ');
+  }
+  TR.pads.dealText = dealText;
   function stateColor(st, item) {
     if (st === 'open') return item.kind === 'change' ? 0x45c6ff : item.kind === 'store' ? 0xff5ad1 : item.price >= BIG_AT ? 0xffb820 : 0x2fe877;
     if (st === 'locked') return 0xa55bff;
@@ -191,9 +199,9 @@
       show: function (e, sess) {
         var it = e.pad.item, q = e.st === 'open' ? (e.pad.store ? { total: TR.pads.storeSum(e.pad.store, sess), mult: 1 } : sess.quote(it.id)) : null;
         var price = e.st === 'open' ? TR.fmt(q.total) + (q.mult > 1 ? ' x' + q.mult : '') : e.st === 'locked' ? 'LOCKED' : e.st === 'sold' ? 'SOLD' : e.st === 'owned' ? 'OWNED' : 'RUBBLE';
-        var k = it.id + price;
+        var deal = e.st === 'open' && it.kind !== 'store' ? dealText(it) : '', k = it.id + price;
         s.visible = true;
-        s.position.set(e.pad.x, e.pad.y + (e.pad.item.outside && e.pad.item.building ? 7 : 3.4), e.pad.z);
+        s.position.set(e.pad.x, e.pad.y + (e.pad.item.building ? 7 : 3.4), e.pad.z);
         if (k === key) return;
         key = k;
         var g = c.getContext('2d');
@@ -205,9 +213,14 @@
         g.font = '900 46px Arial Black, Arial, sans-serif';
         g.fillText(price, 192, 58);
         g.fillStyle = '#fff';
-        var fs = 26; g.font = '700 ' + fs + 'px Arial, sans-serif';
+        var fs = deal ? 20 : 26; g.font = '700 ' + fs + 'px Arial, sans-serif';
         while (g.measureText(it.name).width > 356 && fs > 13) { fs--; g.font = '700 ' + fs + 'px Arial, sans-serif'; }
-        g.fillText(it.name, 192, 98);
+        g.fillText(it.name, 192, deal ? 80 : 98);
+        if (deal) {
+          g.fillStyle = it.income > 0 ? '#5dff8f' : it.income < 0 ? '#ff8a8a' : '#c8d0e0';
+          var ds = 22, line = deal.split(' · ')[0]; g.font = '800 ' + ds + 'px Arial, sans-serif';
+          g.fillText(line, 192, 108);
+        }
         tex.needsUpdate = true;
       }
     };
