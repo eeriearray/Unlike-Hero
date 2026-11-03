@@ -112,4 +112,4 @@ canvas.chart { width:100%; height:120px; background:rgba(255,255,255,.06); borde
 .tbtns button { height:52px; border:2px solid rgba(255,255,255,.6); border-radius:14px; background:rgba(20,22,40,.6); color:#fff; font:inherit; font-size:13px; font-weight:800; touch-action:none; }
 body.touch .hud-bottom { bottom:calc(14px + env(safe-area-inset-bottom)); width:min(300px,50vw); }
 body.touch .cards { bottom:160px; }
-@media (max-width:720px) { .hud-rank { font-size:11px; } .hud-rank b { font-size:14px; } .hud-income { top:84px; font-size:12px; } .tutorial { font-size:12px; top:78px; } .board, .feed { display:none; } }
+@media (max-width:720px) { .hud-top { left:12px; transform:none; text-align:left; } .hud-bal { font-size:21px; } .hud-clock { font-size:14px; } .hud-rank { top:66px; width:150px; font-size:11px; } .hud-rank b { font-size:14px; } .hud-income { top:128px; font-size:12px; } .hud-map { width:92px; } .tutorial { font-size:12px; top:166px; } .board, .feed { display:none; } }
