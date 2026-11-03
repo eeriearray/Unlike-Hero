@@ -99,6 +99,40 @@
       var err = TR.vehicles.summon(o.id);
       if (err) { hud.toast(err, 'bad'); TR.audio.denied(); }
     },
+    /** Big centre-screen moment. */
+    bigText: function (a, b) {
+      var e = el('div', 'bigtext', hud.root, '<b>' + a + '</b>' + (b ? '<span>' + b + '</span>' : ''));
+      setTimeout(function () { e.remove(); }, 1500);
+    },
+    /** The rubber stamp for a big deal. */
+    stamp: function (text) {
+      var e = el('div', 'stamp', hud.root, text);
+      setTimeout(function () { e.remove(); }, 1400);
+    },
+    flash: function (k) {
+      var e = el('div', 'flash', hud.root); e.style.opacity = k;
+      requestAnimationFrame(function () { requestAnimationFrame(function () { e.style.opacity = 0; }); });
+      setTimeout(function () { e.remove(); }, 500);
+    },
+    /** Spree counter: grows with the Frenzy multiplier. */
+    spree: function (mult) {
+      if (mult < 2) return;
+      if (hud.spreeEl) hud.spreeEl.remove();
+      var e = hud.spreeEl = el('div', 'spree', hud.root, 'x' + mult + (mult >= 5 ? ' MAX SPREE!' : ' SPREE!'));
+      e.style.fontSize = (28 + mult * 12) + 'px';
+      setTimeout(function () { e.remove(); }, 900);
+    },
+    /** A fine ticking up as you wreck the city. */
+    damage: function (paid, count) {
+      if (!paid) return;
+      hud.dmgT = paid + (hud.dmgShow && performance.now() - hud.dmgAt < 2000 ? hud.dmgT : 0);
+      hud.dmgAt = performance.now();
+      if (!hud.dmgShow) hud.dmgShow = el('div', 'dmg', hud.root);
+      hud.dmgShow.textContent = 'PROPERTY DAMAGE ' + TR.fmt(hud.dmgT);
+      hud.dmgShow.classList.remove('pop'); void hud.dmgShow.offsetWidth; hud.dmgShow.classList.add('pop');
+      clearTimeout(hud.dmgTo);
+      hud.dmgTo = setTimeout(function () { if (hud.dmgShow) { hud.dmgShow.remove(); hud.dmgShow = null; hud.dmgT = 0; } }, 1800);
+    },
     /** A clue, up long enough to read. */
     clue: function (title, text) {
       var c = el('div', 'cluebox', hud.root, '<b>' + title + '</b><br>' + text);

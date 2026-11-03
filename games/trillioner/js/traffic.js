@@ -33,7 +33,7 @@
       scene.add(tr.mesh);
       for (var i = 0; i < total; i++) {
         var p = tr.paths[i % tr.paths.length];
-        tr.cars.push({ path: p, s: (i * 137.5) % p.len, dir: i % 2 ? 1 : -1, v: 12 + (i % 7) * 2, c: COLORS[i % COLORS.length], x: 0, z: 0, h: 0, cur: 0 });
+        tr.cars.push({ path: p, s: (i * 137.5) % p.len, dir: i % 2 ? 1 : -1, v: 12 + (i % 7) * 2, c: COLORS[i % COLORS.length], x: 0, y: 0, z: 0, h: 0, cur: 0, down: 0, spin: 0, fly: null });
       }
       tr.count = count || total;
     },
@@ -43,6 +43,27 @@
       var n = Math.min(tr.count, tr.cars.length);
       for (var i = 0; i < n; i++) {
         var c = tr.cars[i], path = c.path, seg = null;
+        if (c.down > 0) { // sent flying: it tumbles, then a replacement drives in later
+          c.down -= dt;
+          if (c.fly) {
+            c.fly.vy -= 26 * dt; c.x += c.fly.vx * dt; c.y += c.fly.vy * dt; c.z += c.fly.vz * dt; c.spin += c.fly.r * dt;
+            if (c.y < 0) { c.y = 0; c.fly.vy *= -0.4; c.fly.vx *= 0.6; c.fly.vz *= 0.6; c.fly.r *= 0.5; }
+          }
+          var sc = c.down > 9.5 ? 1 : 0.0001;
+          dummy.position.set(c.x, c.y, c.z); dummy.rotation.set(c.spin, c.h, c.spin * 0.6); dummy.scale.set(sc, sc, sc); dummy.updateMatrix();
+          tr.mesh.setMatrixAt(i, dummy.matrix);
+          tr.mesh.setColorAt(i, col.setHex(c.c));
+          continue;
+        }
+        var drv = TR.vehicles.current;
+        if (drv && drv.spec.mode === 'ground' && Math.abs(drv.speed) > 16 && Math.hypot(c.x - drv.pos.x, c.z - drv.pos.z) < drv.spec.radius + 2 && drv.pos.y < 4) {
+          var dl = Math.hypot(c.x - drv.pos.x, c.z - drv.pos.z) || 1, push = Math.abs(drv.speed) * 0.7;
+          c.down = 12; c.y = 0; c.spin = 0;
+          c.fly = { vx: (c.x - drv.pos.x) / dl * push + drv.vel.x * 0.6, vy: 11 + push * 0.5, vz: (c.z - drv.pos.z) / dl * push + drv.vel.z * 0.6, r: 7 };
+          drv.speed *= 0.82;
+          TR.app.wreckCar(c);
+          continue;
+        }
         var dx = c.x - pos.x, dz = c.z - pos.z, d2 = dx * dx + dz * dz;
         var fx = -Math.sin(c.h), fz = -Math.cos(c.h), ahead = -(dx * fx + dz * fz), want = c.v;
         if (ahead > 0 && ahead < 16 && Math.abs(dx * fz - dz * fx) < 3.5) want = 0;

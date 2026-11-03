@@ -43,25 +43,43 @@
         fx.spawn(p.x + (Math.random() - 0.5) * 8 * scale, p.y + Math.random() * 6 * scale, p.z + (Math.random() - 0.5) * 8 * scale, Math.cos(a) * s, 6 + Math.random() * 24 * scale, Math.sin(a) * s, c, 1.2 + Math.random() * 1.2, 3.5 * Math.min(scale, 2));
       }
     },
+    /** Banknotes thrown off the buyer. */
+    bills: function (p, n, power) {
+      for (var i = 0; i < n; i++) {
+        var a = Math.random() * 6.283, sp = 2 + Math.random() * power;
+        fx.spawn(p.x, p.y + 1.6, p.z, Math.cos(a) * sp, 4 + Math.random() * power, Math.sin(a) * sp, i % 3 ? 0x5fc565 : 0x3fa84e, 1.6 + Math.random(), 1.05, 7);
+      }
+    },
+    /** Bits of whatever just got wrecked. */
+    debris: function (p, n, color, power) {
+      for (var i = 0; i < n; i++) {
+        var a = Math.random() * 6.283, sp = 3 + Math.random() * power;
+        fx.spawn(p.x, p.y + 0.8, p.z, Math.cos(a) * sp, 4 + Math.random() * power, Math.sin(a) * sp, i % 2 ? color : 0xb9a57e, 1 + Math.random() * 0.7, 1.7, 26);
+      }
+    },
+    dust: function (p) {
+      for (var i = 0; i < 5; i++) fx.spawn(p.x + (Math.random() - 0.5), p.y + 0.15, p.z + (Math.random() - 0.5), (Math.random() - 0.5) * 3, 0.8, (Math.random() - 0.5) * 3, 0xe4dccb, 0.4, 1.1, 0);
+    },
     skid: function (p) {
       fx.spawn(p.x + (Math.random() - 0.5) * 2, p.y + 0.2, p.z + (Math.random() - 0.5) * 2, 0, 1.6, 0, 0x9a9a9a, 0.4, 1.1, 0);
     },
     /** The buying response, by price tier from the brief. */
     purchase: function (ev, pos, itemName) {
       var base = ev.base, p = pos, a = TR.audio;
-      if (base < 100 * R.M) { fx.coins(p, 8, 5); a && a.buy(0, ev.mult); return; }
-      if (base < 1 * R.B) { fx.coins(p, 26, 8); TR.cam.kick = 0.45; TR.cam.shake = Math.max(TR.cam.shake, 0.25); a && a.buy(1, ev.mult); return; }
-      if (base < 10 * R.B) { fx.coins(p, 70, 11); TR.cam.kick = 0.75; TR.cam.shake = Math.max(TR.cam.shake, 0.4); a && a.buy(2, ev.mult); a && a.cheer(0.7); TR.crowds.cheer(2); return; }
+      TR.hud.spree(ev.mult);
+      if (base < 100 * R.M) { fx.coins(p, 12, 6); fx.bills(p, 6, 3); a && a.buy(0, ev.mult); TR.cam.kick = 0.2; return; }
+      if (base < 1 * R.B) { fx.coins(p, 34, 9); fx.bills(p, 22, 6); TR.cam.kick = 0.6; TR.cam.shake = Math.max(TR.cam.shake, 0.3); a && a.buy(1, ev.mult); return; }
+      if (base < 10 * R.B) { fx.coins(p, 80, 12); fx.bills(p, 60, 9); TR.cam.kick = 0.9; TR.cam.shake = Math.max(TR.cam.shake, 0.45); a && a.buy(2, ev.mult); a && a.cheer(0.7); TR.crowds.cheer(2); TR.hud.flash(0.35); return; }
       if (base < 100 * R.B) {
-        fx.coins(p, 90, 14); fx.confetti({ x: p.x - 5, y: p.y, z: p.z }, 110, 15); fx.confetti({ x: p.x + 5, y: p.y, z: p.z }, 110, 15);
-        fx.slow = 0.75; TR.cam.kick = 1; TR.cam.shake = Math.max(TR.cam.shake, 0.55);
-        a && a.buy(3, ev.mult); a && a.cheer(1); TR.crowds.cheer(3);
+        fx.coins(p, 100, 15); fx.bills(p, 110, 13); fx.confetti({ x: p.x - 5, y: p.y, z: p.z }, 110, 15); fx.confetti({ x: p.x + 5, y: p.y, z: p.z }, 110, 15);
+        fx.slow = 0.75; TR.cam.kick = 1.1; TR.cam.shake = Math.max(TR.cam.shake, 0.6);
+        a && a.buy(3, ev.mult); a && a.cheer(1); TR.crowds.cheer(3); TR.hud.flash(0.55);
         TR.hud.banner('BREAKING: ' + itemName + ' sold!');
         TR.world.headline('BREAKING: ' + itemName);
         return;
       }
-      fx.coins(p, 140, 18); fx.confetti(p, 300, 22); fx.slow = 1.1; TR.cam.kick = 1.3; TR.cam.shake = 0.8;
-      a && a.buy(4, ev.mult); a && a.cheer(1.2); TR.crowds.cheer(5);
+      fx.coins(p, 140, 18); fx.bills(p, 200, 18); fx.confetti(p, 300, 22); fx.slow = 1.1; TR.cam.kick = 1.3; TR.cam.shake = 0.8;
+      a && a.buy(4, ev.mult); a && a.cheer(1.2); TR.crowds.cheer(5); TR.hud.flash(0.8);
       for (var i = 0; i < 8; i++) setTimeout(function () { fx.firework(p.x + (Math.random() - 0.5) * 120, 50 + Math.random() * 40, p.z + (Math.random() - 0.5) * 120); a && a.boom(0.4); }, i * 260);
       TR.hud.banner('CITY-WIDE NEWS: ' + itemName + ' bought!');
       TR.world.headline(itemName + ' SOLD');

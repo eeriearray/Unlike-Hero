@@ -1,24 +1,22 @@
 /* Purchase pads: rings on the floor, floating labels near the player, walk-over and hold-E buying. */
 (function () {
   var TR = window.TR = window.TR || {};
-  var MAX = 260, HOLD_S = 0.55, REACH_SMALL = 1.9, REACH_BIG = 3.4, LABELS = 14, BIG_AT = window.TRD.rules.B;
+  var MAX = 260, HOLD_S = 0.45, REACH_SMALL = 2.2, REACH_BIG = 3.8, LABELS = 9, BIG_AT = window.TRD.rules.B;
   var dummy = new THREE.Object3D(), col = new THREE.Color();
 
   var pads = TR.pads = {
     list: [], rings: null, tops: null, labels: [], hold: 0, holding: null, stepOff: {}, cool: 0, scanT: 0, active: [],
     init: function (scene) {
-      pads.rings = new THREE.InstancedMesh(new THREE.CylinderGeometry(1.5, 1.62, 0.14, 24), new THREE.MeshBasicMaterial({ color: 0xffffff }), MAX);
-      var coin = new THREE.CylinderGeometry(0.62, 0.62, 0.16, 18); coin.rotateX(Math.PI / 2);
-      pads.tops = new THREE.InstancedMesh(coin, new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x555555 }), MAX);
-      var glow = document.createElement('canvas'); glow.width = 4; glow.height = 64;
-      var gx = glow.getContext('2d'), gr = gx.createLinearGradient(0, 0, 0, 64);
-      gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(1, 'rgba(255,255,255,.55)');
-      gx.fillStyle = gr; gx.fillRect(0, 0, 4, 64);
-      var beam = new THREE.CylinderGeometry(1.42, 1.5, 3.2, 20, 1, true); beam.translate(0, 1.6, 0);
-      pads.beams = new THREE.InstancedMesh(beam, new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(glow), transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, fog: false }), MAX);
-      pads.rings.frustumCulled = pads.tops.frustumCulled = pads.beams.frustumCulled = false;
-      pads.rings.setColorAt(0, col.setHex(0xffffff)); pads.tops.setColorAt(0, col.setHex(0xffffff)); pads.beams.setColorAt(0, col.setHex(0xffffff));
-      scene.add(pads.rings, pads.tops, pads.beams);
+      // a soft glow on the floor, so goods read from afar without a column of light
+      var cv = document.createElement('canvas'); cv.width = cv.height = 64;
+      var gx = cv.getContext('2d'), gr = gx.createRadialGradient(32, 32, 4, 32, 32, 32);
+      gr.addColorStop(0, 'rgba(255,255,255,.75)'); gr.addColorStop(0.7, 'rgba(255,255,255,.28)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+      gx.fillStyle = gr; gx.fillRect(0, 0, 64, 64);
+      var disc = new THREE.PlaneGeometry(1, 1); disc.rotateX(-Math.PI / 2);
+      pads.rings = new THREE.InstancedMesh(disc, new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }), MAX);
+      pads.rings.frustumCulled = false;
+      pads.rings.setColorAt(0, col.setHex(0xffffff));
+      scene.add(pads.rings);
       for (var i = 0; i < LABELS; i++) pads.labels.push(makeLabel(scene));
     },
     /** Called once per run with the run's items. */
@@ -77,52 +75,62 @@
       // floating labels on the nearest pads
       for (var k = 0; k < LABELS; k++) {
         var lab = pads.labels[k], e = pads.active[k];
-        if (e && e.d2 < 3600) lab.show(e, sess);
+        if (e && e.d2 < 900 && e.st !== 'sold' && e.st !== 'rubble') lab.show(e, sess);
         else lab.sprite.visible = false;
       }
     },
     draw: function (t) {
-      var n = pads.active.length;
-      for (var i = 0; i < n; i++) {
-        var e = pads.active[i], p = e.pad, big = p.item.price >= BIG_AT, s = big ? 1.5 : 0.95;
-        if (p.item.kind === 'change') s = 0.62;
-        dummy.position.set(p.x, p.y + 0.09, p.z); dummy.rotation.set(0, 0, 0); dummy.scale.set(s, 1, s); dummy.updateMatrix();
-        pads.rings.setMatrixAt(i, dummy.matrix);
-        var hue = stateColor(e.st, p.item), live = e.st === 'open', pulse = live ? 0.75 + Math.sin(t * 3 + i) * 0.25 : 0;
-        pads.rings.setColorAt(i, col.setHex(hue));
-        dummy.scale.set(s, live ? (big ? 1.2 : 0.8) * (0.75 + pulse * 0.3) : 0.001, s); dummy.updateMatrix();
-        pads.beams.setMatrixAt(i, dummy.matrix);
-        pads.beams.setColorAt(i, col.setHex(hue));
-        dummy.position.y = p.y + (live ? 1.5 + Math.sin(t * 2.2 + i) * 0.14 : 0.42);
-        dummy.rotation.y = live ? t * 2 + i : 0;
-        var ts = live ? (big ? 1.25 : 0.82) : 0.34; if (p.item.kind === 'change') ts *= 0.62;
-        dummy.scale.set(ts, ts, ts); dummy.updateMatrix();
-        pads.tops.setMatrixAt(i, dummy.matrix);
-        pads.tops.setColorAt(i, col.setHex(hue));
+      var n = 0, G = TR.goods, shown = 0;
+      for (var i = 0; i < pads.active.length; i++) {
+        var e = pads.active[i], p = e.pad, it = p.item, big = it.price >= BIG_AT, live = e.st === 'open';
+        if (e.d2 > 12100) break;            // past 110 units the shop is just a shop
+        if (!p.kind) p.kind = G.kindFor(it);
+        var size = Math.min(1.5, 0.82 + Math.max(0, Math.log10(Math.max(1, it.price / 1e9))) * 0.2) * (p.store ? 1.4 : 1);
+        var outdoorDeal = it.outside && it.building;
+        if (outdoorDeal) {
+          if (live) G.put('forsale', p.x, p.y, p.z, 0, 1.05);
+          else if (e.st === 'locked') G.put('lock', p.x, p.y + 0.6, p.z, t * 0.8, 1.5);
+          else if (e.st === 'owned') G.put('soldsign', p.x, p.y, p.z, 0, 1);
+        } else if (it.kind === 'change') {
+          if (live) G.put('gumball', p.x, p.y, p.z, 0, 0.9);
+        } else if (live) {
+          G.put('plinth', p.x, p.y, p.z, 0, 1);
+          G.put(p.kind, p.x, p.y + 0.98 + Math.sin(t * 2 + i) * 0.07, p.z, t * 0.9 + i, size);
+        } else if (e.st === 'locked') {
+          G.put('plinthDark', p.x, p.y, p.z, 0, 1);
+          G.put('lock', p.x, p.y + 1, p.z, t * 0.5 + i, 0.9);
+        } else {
+          G.put('plinthDark', p.x, p.y, p.z, 0, 0.8);
+        }
+        if (live && n < MAX) {
+          dummy.position.set(p.x, p.y + 0.06, p.z); dummy.rotation.set(0, 0, 0);
+          var gs = (outdoorDeal ? 8 : 4.6) * (0.92 + Math.sin(t * 3 + i) * 0.08); dummy.scale.set(gs, 1, gs); dummy.updateMatrix();
+          pads.rings.setMatrixAt(n, dummy.matrix);
+          pads.rings.setColorAt(n, col.setHex(stateColor(e.st, it)));
+          n++;
+        }
       }
-      pads.rings.count = pads.tops.count = pads.beams.count = n;
-      pads.rings.instanceMatrix.needsUpdate = pads.tops.instanceMatrix.needsUpdate = pads.beams.instanceMatrix.needsUpdate = true;
-      if (pads.beams.instanceColor) pads.beams.instanceColor.needsUpdate = true;
+      pads.rings.count = n;
+      pads.rings.instanceMatrix.needsUpdate = true;
       if (pads.rings.instanceColor) pads.rings.instanceColor.needsUpdate = true;
-      if (pads.tops.instanceColor) pads.tops.instanceColor.needsUpdate = true;
     },
     interact: function (dt, sess, pos) {
       pads.cool = Math.max(0, pads.cool - dt);
       var near = null, input = TR.input;
       for (var i = 0; i < pads.active.length && i < 24; i++) {
-        var e = pads.active[i], big = e.pad.item.price >= BIG_AT, reach = big ? REACH_BIG : REACH_SMALL;
+        var e = pads.active[i], big = e.pad.item.price >= BIG_AT, reach = (big ? REACH_BIG : REACH_SMALL) + (TR.vehicles.current ? 2.2 : 0);
         if (e.d2 < reach * reach && Math.abs(e.pad.y - pos.y) < 4) { near = e; break; }
       }
       // pads you are no longer standing on can trigger again
       for (var id in pads.stepOff) if (!near || near.pad.item.id !== id) delete pads.stepOff[id];
-      if (!near) { pads.hold = 0; pads.holding = null; TR.hud.prompt(null); return; }
+      if (!near) { pads.hold = 0; pads.holding = null; return; }
       var it = near.pad.item, big2 = it.price >= BIG_AT;
       var bal = sess.view.me.balance;
       if (near.st === 'locked') { var g = sess.gateFails(it.gate); TR.hud.prompt(it.name, (g && g.why) || 'Locked'); return; }
-      if (near.st === 'sold') { TR.hud.prompt(it.name, 'Sold out'); return; }
+      if (near.st === 'sold') return;
       if (near.st === 'rubble') { TR.hud.prompt(it.name, 'Rubble lot'); return; }
       if (near.st === 'owned') {
-        if (!it.building) { TR.hud.prompt(it.name, 'Yours'); return; }
+        if (!it.building) return;
         if (sess.view.me.owned[it.id].closing) { TR.hud.prompt(it.name, 'Deal closing...'); return; }
         var fee = Math.round(sess.view.me.owned[it.id].paid * 0.4);
         TR.hud.prompt(it.name, 'Hold X: demolish for ' + TR.fmt(fee), pads.demolishHold(dt, sess, it));
@@ -140,7 +148,6 @@
       }
       var q = sess.quote(it.id);
       if (!big2) {
-        TR.hud.prompt(it.name, TR.fmt(q.total) + (q.mult > 1 ? ' (Frenzy x' + q.mult + ')' : ''));
         if (!pads.stepOff[it.id] && pads.cool <= 0) {
           pads.cool = 0.14;
           var left = sess.stock(it.id);
@@ -176,7 +183,7 @@
     var c = document.createElement('canvas'); c.width = 384; c.height = 128;
     var tex = new THREE.CanvasTexture(c); tex.encoding = THREE.sRGBEncoding;
     var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: true, transparent: true, fog: false }));
-    s.visible = false; s.scale.set(4.5, 1.5, 1);
+    s.visible = false; s.scale.set(3.6, 1.2, 1);
     scene.add(s);
     var key = '';
     return {
@@ -186,7 +193,7 @@
         var price = e.st === 'open' ? TR.fmt(q.total) + (q.mult > 1 ? ' x' + q.mult : '') : e.st === 'locked' ? 'LOCKED' : e.st === 'sold' ? 'SOLD' : e.st === 'owned' ? 'OWNED' : 'RUBBLE';
         var k = it.id + price;
         s.visible = true;
-        s.position.set(e.pad.x, e.pad.y + 4, e.pad.z);
+        s.position.set(e.pad.x, e.pad.y + (e.pad.item.outside && e.pad.item.building ? 7 : 3.4), e.pad.z);
         if (k === key) return;
         key = k;
         var g = c.getContext('2d');

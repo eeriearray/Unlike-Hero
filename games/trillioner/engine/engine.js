@@ -213,6 +213,7 @@
       case 'cannon': return this.setCannon(pid, !!cmd.on);
       case 'fastTravel': return this.fastTravel(pid, String(cmd.district));
       case 'toss': return this.toss(pid);
+      case 'damage': return this.damage(pid, String(cmd.kind));
       case 'bid': return this.bid(pid, String(cmd.id), cmd.amount);
       case 'pickup': return this.pickupCard(pid, String(cmd.id));
       case 'play': return this.playCard(pid, String(cmd.kind), { target: String(cmd.target), site: cmd.site ? String(cmd.site) : null });
@@ -579,6 +580,21 @@
     p.spent += c;
     this.checkWin(p);
     return { ok: true, paid: c };
+  };
+
+  // ───────────── wrecking things ─────────────
+  /** Smashing the city costs a fixed fine, up to a cap, so a rampage is fun without being the whole answer. */
+  G.damage = function (pid, kind) {
+    var p = this.players[pid], fine = R.DAMAGE[kind];
+    if (!fine) return { code: 'unknown', error: 'Nothing to pay for.' };
+    if (this.over || this.frozen || p.won) return { ok: true, paid: 0 };
+    var cap = this.cfg.pvp ? R.DAMAGE_CAP_PVP : R.DAMAGE_CAP, used = p.damagePaid || 0, pay = Math.min(fine, cap - used, p.balance);
+    p.stats.smashed = (p.stats.smashed || 0) + 1;
+    if (kind === 'car') p.stats.carsWrecked = (p.stats.carsWrecked || 0) + 1;
+    if (pay > 0) { p.balance -= pay; p.spent += pay; p.damagePaid = used + pay; }
+    this.checkTrophies(p);
+    this.checkWin(p);
+    return { ok: true, paid: Math.max(0, pay) };
   };
 
   // ───────────── demolition ─────────────

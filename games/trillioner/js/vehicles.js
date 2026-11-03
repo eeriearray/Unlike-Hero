@@ -218,6 +218,7 @@
       v.vel.z += (fz * v.speed - v.vel.z) * k;
       v.slip = Math.abs(v.vel.x * -fz + v.vel.z * fx);
       // hoverboard grind: a rail under you carries you along it
+      vs.grindNow = false;
       if (s.grind && vs.grind(v, dt)) { /* moved by the rail */ }
       else { v.pos.x += v.vel.x * dt; v.pos.z += v.vel.z * dt; }
       v.vy -= 30 * dt; v.pos.y += v.vy * dt;
@@ -228,6 +229,7 @@
       if (s.jump && grounded && input.hit('Space')) { v.vy = s.jump; if (TR.audio) TR.audio.jump(1); }
       if (hit) vs.onHit(v, s, hit);
       if (s.pickups) vs.pizzaCheck(v);
+      if (Math.abs(v.speed) > 22) { vs.scareT = (vs.scareT || 0) - dt; if (vs.scareT <= 0) { vs.scareT = 0.5; TR.crowds.scare(v.pos, 0.8); } }
       if (v.slip > 9 && TR.fx) TR.fx.skid(v.pos);
       if (input.mouseClicked) vs.ability(v, s);
       // drowned: back to dry land
@@ -239,7 +241,7 @@
     },
     onHit: function (v, s, hit) {
       var tag = hit.tag, fast = Math.abs(v.speed) > 14;
-      if (s.smash && tag && tag.prop && Math.abs(v.speed) > 5) { TR.world.smash(tag.prop); TR.fx.explosion({ x: v.pos.x, y: v.pos.y, z: v.pos.z }, 0.3); if (TR.audio) TR.audio.thud(); return; }
+      if (tag && tag.prop && Math.abs(v.speed) > (s.smash ? 4 : 10)) { TR.app.smashProp(tag.prop, v); return; }
       if (s.wreck && tag && tag.building && Math.abs(v.speed) > 8) {
         var id = TR.app.itemForBuilding(tag.building);
         if (id && TR.app.session.view.me.owned[id] && !TR.app.session.view.me.owned[id].demolished) { TR.app.tryDemolish(id, true); return; }
@@ -282,6 +284,7 @@
         if (v.vy > 0) continue;
         var dir = (v.vel.x * ux + v.vel.z * uz) >= 0 ? 1 : -1;
         var sp = Math.max(34, Math.abs(v.speed));
+        vs.grindNow = true;
         v.pos.x = px + ux * dir * sp * dt; v.pos.z = pz + uz * dir * sp * dt; v.pos.y = r.y + 0.1; v.vy = 0; v.speed = sp;
         v.heading = Math.atan2(-ux * dir, -uz * dir);
         vs.grindT += dt;

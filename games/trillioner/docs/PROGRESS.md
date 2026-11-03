@@ -18,6 +18,7 @@ Tests: `node --test --test-force-exit test/trillioner-*.test.mjs`. Simulators: `
 | M6 Meta and polish | Done | Preview: menus, tutorial, Clout shop, settings, quality levels, Daily City, Free Roam, Trophy Room |
 | M7 Battle Spend | Done | Socket tests pass. Two browser tabs completed matches, including a mid-match reload that reclaimed the seat |
 | Art pass | Done | Requested after M8: sRGB lighting, sky dome, clouds, tiled ground, road markings and zebra crossings, new building shapes, characters, cars, pads, rooms, HUD. Viewed in every district, at dawn, day, sunset and night, and in a room |
+| Fun pass | Done, needs a human verdict | Requested after playtest. Goods on display, haul line, building moments, rampage and fines, dares, receipts, filled lots, birds, balloons, blimp, smoke. Exercised by scripted input in the preview; 60 FPS with a full haul while wrecking cars, 113 draw calls, 122k triangles |
 | M8 Finish | Done, with limits below | FPS measured on one machine; gamepad checked with a stubbed pad; touch checked with synthetic touch events |
 
 ## Measured
@@ -31,6 +32,7 @@ Tests: `node --test --test-force-exit test/trillioner-*.test.mjs`. Simulators: `
 
 ## Known limits
 
+- Whether it is actually fun has not been judged by a person since the fun pass. Scripts prove the systems fire, not that they feel good.
 - FPS has **not** been measured on integrated graphics, which is what the brief's target names. Quality levels and the automatic drop exist; they were switched by hand, and the automatic drop never fired because FPS never fell.
 - Nobody has played a full day by hand. The feel checks were scripted input through the real controls, and the win came from a bot. "A first-time player cannot easily finish it" rests on the bots, not on people.
 - Real gamepads and real touch screens are untested.

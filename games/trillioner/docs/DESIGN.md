@@ -47,6 +47,9 @@ Each one is a call made while building. "Changed" means it departs from a litera
 20. **Forced Gift** gives the rival 10 seconds to refuse. Gifts count as spending for the giver.
 22. **Art direction.** Colours are authored in sRGB and lit in linear space, with no tone mapping, so the toy colours stay saturated. All art is still generated from code.
 23. **Camera and awnings.** Door awnings have a collision box above head height so the camera cannot end up inside one.
+24. **Fun pass (added after playtest feedback, not in the brief).** Goods are real objects on display, not lit pads, and big deals are For Sale boards. Bought goods follow the player in a bouncing line. Big purchases get a camera swing, a gold sweep and a stamp.
+25. **Property damage (not in the brief).** Any ground vehicle smashes street props and sends traffic flying. Fines ($25M a prop, $200M a car) count as spending, capped at $50B a run and $5B in Battle Spend, so it helps without replacing the hunt for deals.
+26. **Dares and golden receipts (not in the brief).** Three dares are active at a time, and 42 receipts sit on roofs and in far corners. Both pay Clout only, so the win rules and the solver are untouched. Solo only.
 21. **Solver scope.** Bots move with a travel model (distance x 1.25 / vehicle speed, 1.5 s per room, 0.4 s per purchase). They do not steer through the 3D city. Browser flood fills and drives cover that side.
 
 ---

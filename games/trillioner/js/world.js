@@ -567,6 +567,7 @@
         for (var i = 1; i < 4; i++) g.cyl(l.x, l.h * i / 4, l.z, l.r * (1 - i * 0.1) + 0.4, 2.4, i % 2 ? 0xffffff : 0xd9352c, 12);
         g.cyl(l.x, l.h, l.z, l.r * 0.66, 2, 0x2a2a2a, 12);
         c.add(l.x - l.r, 0, l.z - l.r, l.x + l.r, l.h, l.z + l.r);
+        world.smokers = world.smokers || []; world.smokers.push({ x: l.x, y: l.h + 2, z: l.z, s: 9, c: 0xb9bdc4 });
       } else if (l.kind === 'bigsign') {
         g.box(l.x - l.w / 2 + 3, 0, l.z, 1.4, l.h, 1.4, 0x444444).box(l.x + l.w / 2 - 3, 0, l.z, 1.4, l.h, 1.4, 0x444444);
         c.addBox(l.x - l.w / 2 + 3, 0, l.z, 1.4, l.h, 1.4); c.addBox(l.x + l.w / 2 - 3, 0, l.z, 1.4, l.h, 1.4);
@@ -626,9 +627,16 @@
         var w = rng.range(step * 0.5, step * 0.74), dd = rng.range(step * 0.5, step * 0.74), h = rng.range(f.hMin, f.hMax);
         var px = x + rng.range(-2, 2), pz = z + rng.range(-2, 2);
         var skip = rng.next() < (f.gap || 0.2), wall = rng.pick(d.walls), roof = rng.pick(d.roofs);
-        if (skip) continue;
         if (px - w / 2 < b[0] + 4 || px + w / 2 > b[2] - 4 || pz - dd / 2 < b[1] + 4 || pz + dd / 2 > b[3] - 4) continue;
-        if (world.roadDist(px, pz) < Math.max(w, dd) / 2 * 1.42 + 4) continue;
+        var rd0 = world.roadDist(px, pz);
+        if (skip || rd0 < Math.max(w, dd) / 2 * 1.42 + 4) { // no building fits: the gap still gets something
+          var free = true, lw = Math.min(w, Math.max(6, (rd0 - 3) * 1.3)), ld = Math.min(dd, Math.max(6, (rd0 - 3) * 1.3));
+          if (rd0 < 7) continue;
+          if (d.hill && Math.max(Math.abs(px - d.hill.x), Math.abs(pz - d.hill.z)) < d.hill.top / 2 + d.hill.steps * d.hill.run + 4) continue;
+          for (var ti = 0; ti < taken.length; ti++) { var tt = taken[ti]; if (px + lw / 2 > tt[0] && px - lw / 2 < tt[2] && pz + ld / 2 > tt[1] && pz - ld / 2 < tt[3]) { free = false; break; } }
+          if (free) { world.lot(d, px, pz, lw, ld, rng); taken.push([px - lw / 2, pz - ld / 2, px + lw / 2, pz + ld / 2]); }
+          continue;
+        }
         if (d.hill && Math.max(Math.abs(px - d.hill.x), Math.abs(pz - d.hill.z)) < d.hill.top / 2 + d.hill.steps * d.hill.run + dd) continue;
         var clash = false;
         for (var i = 0; i < taken.length; i++) { var t = taken[i]; if (px + w / 2 > t[0] && px - w / 2 < t[2] && pz + dd / 2 > t[1] && pz - dd / 2 < t[3]) { clash = true; break; } }
@@ -636,6 +644,69 @@
         world.addBuilding({ id: null, x: px, z: pz, w: w, d: dd, h: h, wall: wall, roof: roof }, d);
         world.fillers = world.fillers || []; world.fillers.push([px, pz, w, dd, d.id]);
       }
+    },
+
+    /** Every gap between buildings is a place: a park, a car park, a yard, a square. */
+    lot: function (d, x, z, w, h, rng) {
+      var g = world.geo(x, z, 'solid'), W = world.walk, x0 = x - w / 2, x1 = x + w / 2, z0 = z - h / 2, z1 = z + h / 2, i, c = world.collide;
+      var kinds = { downtown: ['square', 'park', 'parking'], luxury: ['garden', 'pool', 'square'], suburbs: ['park', 'garden', 'pond', 'playground'], industrial: ['parking', 'yard', 'tanks'], harbour: ['yard', 'fishing'], airport: ['planes', 'park'], oldtown: ['square', 'park', 'market'] };
+      var kind = rng.pick(kinds[d.id] || ['park']);
+      function tree(px, pz) { world.prop(d, 'tree', px, 0, pz, rng, false); }
+      if (kind === 'park' || kind === 'garden' || kind === 'pond' || kind === 'playground' || kind === 'pool') {
+        W.tile(x0, z0, x1, z1, 0.015, kind === 'garden' ? 0x6ec85a : 0x7fd05c);
+        W.tile(x0, z - 0.8, x1, z + 0.8, 0.016, 0xe6dcc2);
+        for (i = 0; i < Math.max(2, Math.floor(w * h / 70)); i++) { var a = rng.range(x0 + 1.5, x1 - 1.5), b = rng.range(z0 + 1.5, z1 - 1.5); if (Math.abs(b - z) > 2) { if (kind === 'garden' && i % 2) world.prop(d, 'flowers', a, 0, b, rng, false); else tree(a, b); } }
+        if (kind === 'pond' || kind === 'pool') { var r = Math.min(w, h) * 0.26; world.geo(x, z, 'neon').cyl(x, 0.02, z, r, 0.05, kind === 'pool' ? 0x4dd6ff : 0x3da8c8, 16); g.cyl(x, 0, z, r + 0.5, 0.05, 0xd8d4c9, 16); }
+        if (kind === 'playground' && w > 9) { g.box(x - 2, 0, z + 2.4, 0.2, 3, 0.2, 0xff5a7a).box(x + 2, 0, z + 2.4, 0.2, 3, 0.2, 0xff5a7a).box(x, 3, z + 2.4, 4.3, 0.2, 0.2, 0xff5a7a).box(x - 0.8, 1, z + 2.4, 0.7, 0.1, 0.3, 0xffd24a).box(x + 0.8, 1, z + 2.4, 0.7, 0.1, 0.3, 0x4dabf7); }
+      } else if (kind === 'square' || kind === 'market') {
+        var sc = d.id === 'oldtown' ? 0xdab18a : d.id === 'luxury' ? 0xfff0f4 : 0xf3e6c2;
+        W.tile(x0, z0, x1, z1, 0.015, sc);
+        W.tile(x - 1.5, z0, x + 1.5, z1, 0.016, shade(sc, 0.86)); W.tile(x0, z - 1.5, x1, z + 1.5, 0.016, shade(sc, 0.86));
+        if (kind === 'market') {
+          for (i = 0; i < 3; i++) { var mx = x0 + (i + 0.5) * (w / 3), col = [0xe25c4f, 0xf2c14e, 0x4a90c2][i]; g.box(mx, 0, z, 2.4, 1, 1.4, 0xb98a5a); g.gable(mx, 2.8, z, 3.2, 0.9, 2.4, col, false); g.box(mx - 1.4, 0, z - 1, 0.14, 2.8, 0.14, 0x6b4d2c).box(mx + 1.4, 0, z + 1, 0.14, 2.8, 0.14, 0x6b4d2c); c.addBox(mx, 0, z, 2.4, 1, 1.4); }
+        } else {
+          g.cyl(x, 0, z, 2.2, 0.7, 0xe2dccb, 10).cyl(x, 0.7, z, 0.5, 2.2, 0xd2cab6, 8).cyl(x, 2.9, z, 1.1, 0.3, 0xe2dccb, 8);
+          world.geo(x, z, 'neon').cyl(x, 0.7, z, 1.9, 0.05, 0x46b4f0, 10);
+          c.addBox(x, 0, z, 3.2, 1.6, 3.2);
+          world.fountains.push({ x: x, y: 0, z: z, district: d.id, small: 1 });
+          world.prop(d, 'bench', x0 + 2, 0, z0 + 2, rng, false); world.prop(d, 'planter', x1 - 2, 0, z1 - 2, rng, false);
+        }
+      } else if (kind === 'parking') {
+        W.tile(x0, z0, x1, z1, 0.015, 0x5a5e68);
+        var cols = Math.max(1, Math.floor(w / 3.4));
+        for (i = 0; i <= cols; i++) W.strip(x0 + i * w / cols, z0 + 0.5, x0 + i * w / cols, z0 + 5.5, 0.16, 0.016, 0xf2f2ea);
+        for (i = 0; i < cols; i++) if (rng.next() < 0.7) {
+          var px = x0 + (i + 0.5) * w / cols, pz = z0 + 3, cc = rng.pick([0xff4d4d, 0x3f83ff, 0xffd02e, 0x2ecf7a, 0xf4f4f4, 0xff8a1f, 0x37474f]);
+          world.smashable(px, 0, pz, false, function () { g.box(px, 0.3, pz, 2, 0.7, 4.2, cc).box(px, 1, pz + 0.2, 1.75, 0.6, 2.2, 0x233a50).box(px, 1.6, pz + 0.2, 1.8, 0.1, 2.2, cc); }, 2, 1.6);
+        }
+      } else if (kind === 'yard' || kind === 'fishing') {
+        W.tile(x0, z0, x1, z1, 0.015, kind === 'yard' ? 0x8d8f91 : 0xcbb688);
+        for (i = 0; i < Math.max(3, Math.floor(w * h / 45)); i++) { var yk = kind === 'yard' ? rng.pick(['crate', 'barrel', 'pallet']) : rng.pick(['net', 'crate', 'barrel']); world.prop(d, yk, rng.range(x0 + 1.5, x1 - 1.5), 0, rng.range(z0 + 1.5, z1 - 1.5), rng, false); }
+      } else if (kind === 'tanks') {
+        W.tile(x0, z0, x1, z1, 0.015, 0x8d8f91);
+        var tr = Math.min(w, h) * 0.2, tc = rng.pick([0xe9e4d8, 0xd9352c, 0x7a8aa0]);
+        [[-1, 0], [1, 0]].forEach(function (s) { var tx = x + s[0] * w * 0.24; g.cyl(tx, 0, z, tr, h * 0.5 + 4, tc, 12).cyl(tx, h * 0.5 + 4, z, tr, 0.9, shade(tc, 0.85), 12, tr * 0.5); c.addBox(tx, 0, z, tr * 1.6, h * 0.5 + 4, tr * 1.6); world.aoRing(tx - tr, z - tr, tx + tr, z + tr, 2); });
+        world.smokers = world.smokers || []; world.smokers.push({ x: x + w * 0.24, y: h * 0.5 + 6, z: z });
+      } else if (kind === 'planes') {
+        W.tile(x0, z0, x1, z1, 0.015, 0x77c95a);
+        if (w > 12 && h > 12) { g.box(x, 1.2, z, 2.6, 2.6, 11, 0xffffff).box(x, 2, z - 0.6, 15, 0.3, 3, 0x3d8bd4).box(x, 3.4, z + 4.8, 0.3, 3.2, 2, 0xd9352c).box(x, 3.4, z + 4.8, 5, 0.25, 1.4, 0x3d8bd4).box(x, 0, z - 3, 0.4, 1.2, 0.4, 0x222222).box(x - 2.4, 0, z + 1, 0.4, 1.2, 0.4, 0x222222).box(x + 2.4, 0, z + 1, 0.4, 1.2, 0.4, 0x222222); c.addBox(x, 0, z, 3, 3.8, 11); }
+      }
+    },
+
+    /** Gold rolls up a building you just bought, and banners drop down its face. */
+    goldSweep: function (b, y) {
+      var m = new THREE.Mesh(new THREE.BoxGeometry(b.w + 0.8, 1, b.d + 0.8), new THREE.MeshBasicMaterial({ color: 0xffc53d, transparent: true, opacity: 0.75, depthWrite: false }));
+      m.position.set(b.x, y, b.z);
+      world.runLayer.add(m);
+      world.sweeps = world.sweeps || [];
+      world.sweeps.push({ m: m, t: 0, h: b.h, y: y });
+      var g = new TR.Geo(), n = Math.max(2, Math.floor(b.w / 9)), f = TrillionerLayout.frontOf(b), hh = Math.min(b.h * 0.72, 22);
+      for (var i = 0; i < n; i++) {
+        var u = -b.w / 2 + (i + 0.5) * (b.w / n);
+        g.panel('s', b.x, b.z, b.w / 2, b.d / 2, 0.22, u, y + b.h - hh, 3, hh, 0xffc53d).panel('n', b.x, b.z, b.w / 2, b.d / 2, 0.22, u, y + b.h - hh, 3, hh, 0xffc53d);
+        g.panel('s', b.x, b.z, b.w / 2, b.d / 2, 0.24, u, y + b.h - hh, 1, hh, 0xd9352c).panel('n', b.x, b.z, b.w / 2, b.d / 2, 0.24, u, y + b.h - hh, 1, hh, 0xd9352c);
+      }
+      world.runMesh(g, world.neonMat);
     },
 
     // Street props, one look per district, plus smaller decoration along the pavements.
@@ -930,6 +1001,14 @@
       }
       if (world.sky && TR.app.camera) world.sky.position.copy(TR.app.camera.position);
       if (world.clouds) world.clouds.position.x = (t * 1.6) % 300 - 150;
+      (world.sweeps || []).forEach(function (w) {
+        w.t += dt;
+        var k = Math.min(1, w.t / 0.9);
+        w.m.scale.y = Math.max(0.01, w.h * k); w.m.position.y = w.y + w.h * k / 2;
+        w.m.material.opacity = w.t < 0.9 ? 0.75 : Math.max(0, 0.75 - (w.t - 0.9) * 1.2);
+        if (w.t > 1.6) { w.m.visible = false; }
+      });
+      if (world.sweeps) world.sweeps = world.sweeps.filter(function (w) { return w.t <= 1.6; });
       if (world.rocketFlying) {
         world.rocketFlying += dt;
         var tf = world.rocketFlying;

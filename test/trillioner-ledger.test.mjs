@@ -293,3 +293,19 @@ test('engine code never uses Math.random', () => {
     assert.ok(!readFileSync(new URL(dir + f, root), 'utf8').includes('Math.random'), f);
   }
 });
+
+test('property damage is spending, with a cap, and cannot go below zero', () => {
+  const g = fresh();
+  const p = g.players.p1;
+  assert.equal(g.damage('p1', 'prop').paid, 25 * M);
+  assert.equal(g.damage('p1', 'car').paid, 200 * M);
+  assert.equal(p.spent, 225 * M);
+  assert.equal(p.balance, 1e14 - 225 * M);
+  assert.ok(g.damage('p1', 'nope').error);
+  p.damagePaid = R.DAMAGE_CAP - 1 * M;
+  assert.equal(g.damage('p1', 'car').paid, 1 * M);
+  assert.equal(g.damage('p1', 'car').paid, 0);
+  p.damagePaid = 0; p.balance = 10 * M;
+  assert.equal(g.damage('p1', 'prop').paid, 10 * M);
+  assert.equal(p.balance, 0);
+});

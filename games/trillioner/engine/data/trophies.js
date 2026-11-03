@@ -48,6 +48,8 @@
     { id: 'conspiracy', name: 'Conspiracy Board', desc: 'Find 25 secrets', test: function (p) { return secrets(p) >= 25; } },
     { id: 'useless', name: 'Fountain of Regret', desc: 'Buy the Diamond Fountain', test: ownsAll(['diamond_fountain']) },
     { id: 'rocket_man', name: 'Rocket Owner', desc: 'Buy the Rocket', test: ownsAll(['rocket']) },
+    { id: 'menace', name: 'Menace to Society', desc: 'Smash 50 things', test: function (p) { return (p.stats.smashed || 0) >= 50; } },
+    { id: 'road_rage', name: 'Insurance Nightmare', desc: 'Send 10 cars flying', test: function (p) { return (p.stats.carsWrecked || 0) >= 10; } },
     { id: 'fleet', name: 'Garage Sale, in Reverse', desc: 'Own 8 usable vehicles', test: function (p) { return count(p.vehicles) >= 8; } }
   ];
   return { TROPHIES: T };

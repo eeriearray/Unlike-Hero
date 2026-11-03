@@ -287,6 +287,19 @@ test('bots spend real money and appear on the leaderboard', async () => {
   await s.close();
 });
 
+test('property damage goes through the server, as spending, with the lower Battle cap', async () => {
+  const s = await startServer();
+  const { a, b, ra, room } = await match(s);
+  const p = room.game.players[ra.playerId];
+  const before = p.spent;
+  assert.equal((await a.cmd({ t: 'damage', kind: 'car' })).paid, 200 * M);
+  assert.equal(p.spent - before, 200 * M);
+  p.damagePaid = R.DAMAGE_CAP_PVP;
+  assert.equal((await a.cmd({ t: 'damage', kind: 'car' })).paid, 0);
+  a.close(); b.close();
+  await s.close();
+});
+
 test('Daily City board: submit and read back, sorted', async () => {
   const s = await startServer();
   const a = client(s.url);

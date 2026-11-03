@@ -62,6 +62,7 @@
           pl.jumps++;
           pl.grounded = false;
           pl.squash = -0.3;
+          TR.fx.dust(pl.pos);
           if (TR.audio) TR.audio.jump(pl.jumps);
         }
       }
@@ -71,7 +72,7 @@
       TR.world.collide.resolve(pl.pos, RADIUS, HEIGHT, 0.75, base);
       var ground = pl.pos.ground;
       if (pl.pos.y <= ground) {
-        if (!pl.grounded && pl.vel.y < -14) { pl.squash = 0.3; }
+        if (!pl.grounded && pl.vel.y < -9) { pl.squash = 0.32; TR.fx.dust(pl.pos); TR.fx.dust(pl.pos); }
         pl.pos.y = ground; pl.vel.y = 0; pl.grounded = true; pl.jumps = 0;
       } else if (pl.pos.y - ground > 0.05) pl.grounded = false;
       if (wl > 0.1) {
@@ -79,6 +80,8 @@
         pl.heading += d * Math.min(1, dt * 14);
       }
       var sp = Math.hypot(pl.vel.x, pl.vel.z);
+      pl.dustT = (pl.dustT || 0) - dt;
+      if (sp > 14 && pl.grounded && pl.dustT <= 0) { pl.dustT = 0.09; TR.fx.dust(pl.pos); }
       pl.walkT += sp * dt * 0.9;
       pl.animate(dt, sp);
       pl.updateGrowth(dt);

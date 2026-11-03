@@ -53,6 +53,7 @@
       },
       demolish: function (id, truck) { link.req('cmd', { cmd: { t: 'demolish', item: id, truck: !!truck } }, s.answer); return { pending: true }; },
       discover: function (id) { link.req('cmd', { cmd: { t: 'discover', id: id } }, s.answer); return { pending: true }; },
+      damage: function (kind) { link.req('cmd', { cmd: { t: 'damage', kind: kind } }); return { paid: R.DAMAGE[kind] }; },
       buyStore: function (site) { link.req('cmd', { cmd: { t: 'buyStore', site: site } }, s.answer); return { pending: true }; },
       cannon: function (on) { link.req('cmd', { cmd: { t: 'cannon', on: !!on } }); s.view.me.cannonOn = !!on; return { ok: true }; },
       fastTravel: function (d) { var v = s.view.me; if (v.travelCd > 0) return { error: 'The next flight is not ready.' }; if (!v.powers.fastTravel) return { error: 'You need the Airline.' }; link.req('cmd', { cmd: { t: 'fastTravel', district: d } }); return { ok: true, to: run.districtSpawn[d] }; },

@@ -22,6 +22,7 @@
       cannon: function (on) { var r = g.setCannon('me', on); s.view = g.viewFor('me'); return r; },
       fastTravel: function (d) { return g.fastTravel('me', d); },
       discover: function (id) { var r = g.discover('me', id); s.view = g.viewFor('me'); return r; },
+      damage: function (kind) { var r = g.damage('me', kind); s.view = g.viewFor('me'); return r; },
       buyStore: function (site) { var r = g.buyStore('me', site); s.view = g.viewFor('me'); return r; },
       setClock: function (h) { g.setClockHour(h); },
       finish: function () { var p = g.players.me; if (p.won) g.finish(p, g.isPerfect(p) ? 'perfect' : 'win'); else if (!g.over) { g.over = true; g.result = 'quit'; } },
@@ -54,6 +55,8 @@
       TR.vehicles.init(app.scene);
       TR.pads.init(app.scene);
       TR.fx.init(app.scene);
+      TR.goods.init(app.scene);
+      TR.life.init(app.scene);
       TR.crowds.init(app.scene, 90);
       TR.traffic.init(app.scene, 44);
       TR.hud.init(ui);
@@ -100,6 +103,9 @@
       TR.world.resetRun();
       TR.notebook.close();
       TR.notebook.setRun(run0);
+      TR.haul.reset();
+      TR.dares.start(app.session, seed);
+      TR.cam.cine = null;
       TR.map.reset();
       Object.keys(run0.sites).forEach(function (k) { var st = run0.sites[k]; st.flag = st.rubble = st.built = false; });
       TR.vehicles.hideAll();
@@ -165,7 +171,15 @@
           if (app.session.applyStock) app.session.applyStock(ev.item, ev.stock);
           var it = run.items[ev.item], name = ev.store ? 'All of ' + run.sites[ev.store].name : it.name;
           TR.fx.purchase(ev, pos, name);
+          TR.dares.bump('buys');
+          if (ev.store) TR.dares.bump('stores');
+          if (it && !it.building) {
+            var from = run.padPos[it.id], kind = TR.goods.kindFor(it);
+            TR.haul.add(kind, from, Math.min(1.2, 0.75 + Math.log10(Math.max(1, it.price / 1e9)) * 0.2));
+            if (ev.store) for (var hi = 0; hi < 5; hi++) TR.haul.add(kind, from, 0.9);
+          }
           TR.hud.flyPrice('-' + TR.fmt(ev.paid));
+          if (ev.base >= R.B) TR.hud.stamp(ev.closing > 0 ? 'DEAL!' : 'SOLD!');
           if (ev.closing > 0) TR.hud.toast(name + ': deal closing in ' + Math.round(ev.closing / 1000) + 's', 'gold');
           else if (it) app.onOwned(it);
         } else if (ev.type === 'closed') {
@@ -179,6 +193,7 @@
           TR.hud.toast('TROPHY: ' + (t ? t.name : ev.id), 'gold');
           TR.audio.buy(2, 3);
         } else if (ev.type === 'demolish') {
+          TR.dares.bump('demolish', 1);
           var d = run.items[ev.item], s = run.sites[d.site];
           TR.fx.explosion(s.b ? { x: s.b.x, y: (s.y || 0) + 4, z: s.b.z } : pos, 2);
           TR.audio.boom(1);
@@ -190,6 +205,7 @@
           }
         } else if (ev.type === 'secret') {
           var fp = run.secrets[ev.id];
+          TR.dares.bump('secrets', 1);
           TR.hud.toast('FOUND: ' + ev.name, 'gold');
           if (ev.clue) { TR.hud.clue(ev.name, ev.clue); TR.notebook.addClue(ev.name, ev.clue, pos); }
           if (ev.note && TR.save.note(ev.id, ev.note)) TR.hud.toast('Notebook: ' + ev.note);
@@ -227,6 +243,14 @@
         s.flag = true;
         TR.world.runLayer.add(TR.fx.raiseFlag(s.b.x, (s.y || 0) + s.b.h + 0.8, s.b.z));
         TR.world.addTrim(s.b, s.y || 0);
+        if (!s.b.project || s.built) {
+          TR.world.goldSweep(s.b, s.y || 0);
+          var by = (s.y || 0), roof = { x: s.b.x, y: by + s.b.h + 2, z: s.b.z };
+          TR.fx.confetti(roof, 160, 16); TR.fx.bills(roof, 90, 14);
+          for (var fw = 0; fw < 4; fw++) (function (fi) { setTimeout(function () { TR.fx.firework(s.b.x + (fi - 1.5) * 14, by + s.b.h + 22 + fi * 4, s.b.z); TR.audio.boom(0.3); }, 250 + fi * 240); })(fw);
+          TR.audio.cheer(0.9); TR.crowds.cheer(3);
+          if (!TR.interiors.current && Math.hypot(s.b.x - TR.player.pos.x, s.b.z - TR.player.pos.z) < 150 && Math.abs(by - TR.player.pos.y) < 40) TR.cam.showOff(s.b.x, by, s.b.z, Math.max(s.b.w, s.b.d), Math.min(s.b.h, 60));
+        }
       }
     },
     /** The reward appears right beside the building, with a clear prompt. */
@@ -275,6 +299,27 @@
         TR.notebook.travel({ x: e.x, y: TRD.districts.UNDER_Y, z: e.z });
       }
       return r;
+    },
+    /** Wrecking the street costs a fine; the fine counts as spending. */
+    smashProp: function (id, v) {
+      var box = TR.world.buildingBoxes[id], p = box ? { x: (box.x0 + box.x1) / 2, y: box.y0, z: (box.z0 + box.z1) / 2 } : v.pos;
+      TR.world.smash(id);
+      TR.fx.debris(p, 16, 0xc0915a, Math.abs(v.speed) * 0.45);
+      TR.audio.thud();
+      TR.cam.shake = Math.max(TR.cam.shake, 0.32);
+      var r = app.session.damage('prop');
+      TR.dares.bump('smash', 1);
+      if (r && r.paid) TR.hud.damage(r.paid);
+    },
+    wreckCar: function (c) {
+      TR.fx.debris({ x: c.x, y: 0.5, z: c.z }, 34, c.c, 14);
+      TR.fx.explosion({ x: c.x, y: 0.5, z: c.z }, 0.35);
+      TR.audio.boom(0.55);
+      TR.cam.shake = 0.75; TR.fx.slow = Math.max(TR.fx.slow, 0.3);
+      var r = app.session.damage('car');
+      TR.dares.bump('wreck', 1); TR.dares.bump('smash', 1);
+      if (r && r.paid) TR.hud.damage(r.paid);
+      TR.hud.bigText('WRECKED!');
     },
     /** Changes that follow the spent total: statues and the hero's growth. */
     cityGrowth: function (me) {
@@ -356,8 +401,11 @@
       TR.menus.closePerfect();
       TR.audio.engine(null);
       TR.audio.stopMusic();
+      TR.dares.stop();
       if (TR.tutorial.el) { TR.tutorial.el.remove(); TR.tutorial.el = null; }
-      var res = app.session.results(), earned = TR.save.recordRun(res, app.mode);
+      var res = app.session.results();
+      res.clout += TR.dares.clout || 0;
+      var earned = TR.save.recordRun(res, app.mode);
       if (window.Hub) Hub.report('session-end', { result: res.won ? 'win' : 'lose', spent: res.spent, durationMs: res.ms, mode: app.mode, perfect: res.perfect });
       if (document.pointerLockElement) document.exitPointerLock();
       if (res.perfect) TR.hud.banner('PERFECT ZERO!');
@@ -408,6 +456,7 @@
         if (app.mapT <= 0) { app.mapT = 2; TR.map.update(pos, TR.player.heading, under, { dots: TR.notebook.mapDots(view.me) }); }
       }
       if (view.weather === 'rain' && !room && !under) for (var ri = 0; ri < 5; ri++) TR.fx.spawn(pos.x + (Math.random() - 0.5) * 70, pos.y + 30, pos.z + (Math.random() - 0.5) * 70, 0, -38, 0, 0xa8c8e8, 0.8, 0.6, 0);
+      TR.life.update(dt, pos, app.t, room || under);
       TR.crowds.update(dt, pos, app.t, room);
       TR.traffic.update(dt, pos, room || under);
     },
@@ -426,7 +475,12 @@
         app.handleEvents(evs);
         if (!app.running) { TR.input.endFrame(); return; }
         var pos = TR.player.pos;
+        TR.goods.begin();
         TR.pads.update(dt, app.session, pos, app.t);
+        var moving = Math.hypot(TR.player.vel.x, TR.player.vel.z) > 1 || (TR.vehicles.current && Math.abs(TR.vehicles.current.speed) > 1);
+        TR.haul.update(dt, pos, app.t, moving);
+        TR.dares.update(dt, pos, app.t, app.session);
+        TR.goods.end();
         if (!TR.hud.pOn) TR.notebook.update(dt, app.session, pos);
         app.updateActions(dt);
         TR.hud.update(app.session.view, dt);
@@ -449,7 +503,7 @@
       }
       var v = TR.vehicles.current;
       var cfl = TR.interiors.current ? 0 : TR.player.pos.y < -20 ? app.floorAt(TR.player.pos) : TR.world.isWater(TR.player.pos.x, TR.player.pos.z) ? -1 : 0;
-      TR.cam.update(app.camera, TR.player.pos, dt, v ? { dist: v.spec.cam, lift: 2.4, fov: 58 + Math.min(16, Math.abs(v.speed) * 0.34), floor: cfl } : { floor: cfl });
+      TR.cam.update(app.camera, TR.player.pos, dt, v ? { dist: v.spec.cam, lift: 2.4, fov: 58 + Math.min(16, Math.abs(v.speed) * 0.34), floor: cfl } : { floor: cfl, fov: Math.hypot(TR.player.vel.x, TR.player.vel.z) > 14 ? 64 : 58 });
     },
 
     loop: function (now) {
