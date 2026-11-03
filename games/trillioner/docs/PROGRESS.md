@@ -25,6 +25,7 @@ Tests: `node --test --test-force-exit test/trillioner-*.test.mjs`. Simulators: `
 | Own It pass | Done, needs a human verdict | Requested by the user after "looks AI made, not fun". Run-through buying, combo up to x10, inventory (I), Style Counter in every shop, 54 wearables and pets, mystery boxes, throwing cash (hold G), pink GPS route (J toggles). Viewed in the browser; online rooms carry purchases and outfits between tabs. Full online match not played to the 8:00 end this pass |
 | Refund Office and gold city | Done, needs a human verdict | Requested with "keep going". Agents chase you from $25B spent (up to 5), hand back up to $3B a catch and $30B a day; shops are safe, sprinting outruns them early, fast cars flatten them. Pace line, gold coat on owned and cleared buildings, fewer HUD boxes. Agents never stood inside a wall across a 40 second chase; a bot still wins all 25 tested seeds carrying the full $30B back |
 | Street-level pass | Done, needs a human verdict | User set the vision: "GTA like game where the goal is to spend as much money as possible", and asked for less AI look and correct arrows. Arrows fixed and checked on 26 routes (1,956 of 1,960 point along the route, the rest sit on corners; no route doubles back). Tilt-shift removed, film grade, muted real-material palette, sharper buildings, shop-sized signs, taller skyline, traffic lights, parked cars, street furniture, rooftop clutter, satirical billboards, adult proportions, lower camera, rotating rectangular minimap, heat stars, no pill HUD |
+| Phone and jobs | Done, needs a human verdict | User chose missions next. 14 scripted jobs from 5 contacts, timed, with rewards (combo, Refund Office stands down, a vehicle, 4 gift items). Y takes a call, U hangs up. Guide follows the active job. Solo modes only. Played start to finish in the browser by a scripted player |
 
 ## Measured
 
@@ -40,6 +41,7 @@ Tests: `node --test --test-force-exit test/trillioner-*.test.mjs`. Simulators: `
 ## Known limits
 
 - Whether it is actually fun has not been judged by a person since the fun pass. Scripts prove the systems fire, not that they feel good.
+- Jobs have not been played by a person. Deadlines and how often the phone rings are guesses, and the story order may feel wrong in play.
 - Refund Office chases were checked with scripted frames, not played by hand. How often a catch feels fair is a guess until someone plays it. Day length is still 24 minutes: a human has not yet proved 24 is even winnable, so it was not shortened.
 - FPS has **not** been measured on integrated graphics, which is what the brief's target names. Quality levels and the automatic drop exist; they were switched by hand, and the automatic drop never fired because FPS never fell.
 - Nobody has played a full day by hand. The feel checks were scripted input through the real controls, and the win came from a bot. "A first-time player cannot easily finish it" rests on the bots, not on people.

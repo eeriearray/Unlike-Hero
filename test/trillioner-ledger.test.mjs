@@ -373,3 +373,74 @@ test('property damage is spending, with a cap, and cannot go below zero', () => 
     for (let s = 1; s <= 25; s++) { const r = Bot.playDay(s, Bot.knowsSecrets, { refunded: Rules.REFUND_CAP }); assert.equal(r.won, true, 'seed ' + s); }
   });
 }
+
+// ── Jobs on the phone ──
+{
+  const req = createRequire(import.meta.url), Rules = req('../games/trillioner/engine/data/rules.js'), M = req('../games/trillioner/engine/data/missions.js');
+  const Eng = req('../games/trillioner/engine/engine.js'), Extras = req('../games/trillioner/engine/data/extras.js');
+  const fresh = (mode) => { const g = new Eng.Game({ seed: 11, mode: mode || 'day', players: [{ id: 'me', name: 'Me' }] }); g.requireNear = false; return g; };
+  const ringNow = (g) => { for (let i = 0; i < 600 && !g.players.me.ringing; i++) g.tick(0.1); return g.players.me.ringing; };
+  test('the phone rings, a job starts only if you take it, and hanging up costs nothing', () => {
+    const g = fresh(), p = g.players.me;
+    const r = ringNow(g);
+    assert.equal(r.from, 'vinnie');
+    assert.ok(r.text.length > 20 && !r.text.includes('{'));
+    const before = p.balance;
+    g.command('me', { t: 'answer', yes: false });
+    assert.equal(p.job, null);
+    assert.equal(p.ringing, null);
+    assert.equal(p.balance, before);
+  });
+  test('an unanswered call stops ringing', () => {
+    const g = fresh(), p = g.players.me;
+    ringNow(g);
+    g.tick(M.RING_MS / 1000 + 0.2);
+    assert.equal(p.ringing, null);
+  });
+  test('clearing the named shop finishes the job, and the reward is paid', () => {
+    const g = fresh(), p = g.players.me;
+    ringNow(g); g.command('me', { t: 'answer', yes: true });
+    const site = p.job.site, ids = Object.keys(g.items).filter((id) => g.items[id].site === site && !g.items[id].gate && !g.items[id].secret && !g.items[id].surprise);
+    assert.ok(ids.length >= 3);
+    for (const id of ids) while (g.stock[id] > 0) assert.equal(g.command('me', { t: 'buy', item: id }).ok, true);
+    g.tick(0.2);
+    assert.equal(p.job, null);
+    assert.equal(p.jobsDone, 1);
+    assert.equal(p.frenzy >= 5, true);
+  });
+  test('a job runs out of time, and a gift is free, never sold, never in a box', () => {
+    const g = fresh(), p = g.players.me;
+    ringNow(g); g.command('me', { t: 'answer', yes: true });
+    g.tick(400);
+    assert.equal(p.jobsLost, 1);
+    assert.equal(g.command('me', { t: 'extra', id: 'gift_vest' }).code, 'unknown');
+    const b0 = p.balance, g2 = fresh();
+    g2.giveReward(g2.players.me, { gift: 'gift_vest' });
+    assert.equal(g2.players.me.style.top, 'gift_vest');
+    assert.equal(g2.players.me.balance, Rules.MODES.day.start);
+    assert.ok(b0 > 0);
+    for (let i = 0; i < 20; i++) { const r = g2.command('me', { t: 'box' }); assert.ok(!Extras.BY_ID[r.id].gift); }
+  });
+  test('getting caught blows a survive job, and outlasting it pays', () => {
+    const g = fresh(), p = g.players.me;
+    p.spent = 40 * Rules.B; p.balance -= p.spent;
+    p.job = g.makeJob(p, M.JOBS.find((j) => j.id === 'dale_1'));
+    g.tick(5);
+    g.command('me', { t: 'caught' });
+    assert.equal(p.job, null); assert.equal(p.jobsLost, 1);
+    p.job = g.makeJob(p, M.JOBS.find((j) => j.id === 'dale_1'));
+    g.tick(61);
+    assert.equal(p.jobsDone, 1);
+    assert.equal(p.style.top, 'gift_vest');
+  });
+  test('every job in the script can be made, with nothing left unfilled', () => {
+    const g = fresh(), p = g.players.me;
+    p.spent = 200 * Rules.B; p.balance -= p.spent; p.vehicles.sports_car = true;
+    for (const def of M.JOBS) { const j = g.makeJob(p, def); assert.ok(j, def.id); assert.ok(!(j.text + j.goal).includes('{'), def.id); assert.ok(M.CONTACTS[j.from], def.id); }
+  });
+  test('rooms online have no phone', () => {
+    const g = new Eng.Game({ seed: 3, mode: 'battle', players: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }] });
+    for (let i = 0; i < 400; i++) g.tick(0.25);
+    assert.equal(g.players.a.ringing, null);
+  });
+}

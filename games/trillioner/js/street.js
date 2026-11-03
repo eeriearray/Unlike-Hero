@@ -39,12 +39,27 @@
   }
   function free(x, z, r) {
     var W = TR.world;
-    if (W.isWater(x, z) || W.collide.near(x, z, r, []).some(function (b) { return b.y0 < 3 && x > b.x0 - r && x < b.x1 + r && z > b.z0 - r && z < b.z1 + r; })) return false;
+    if (W.isWater(x, z) || W.collide.near(x, z, r, []).some(function (b) { return b.y0 > -5 && b.y0 < 3 && x > b.x0 - r && x < b.x1 + r && z > b.z0 - r && z < b.z1 + r; })) return false;
     return !D.ROADS.some(function (R) {
       for (var i = 1; i < R.pts.length; i++) {
         var a = R.pts[i - 1], b = R.pts[i], dx = b[0] - a[0], dz = b[1] - a[1], t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / (dx * dx + dz * dz)));
         if (Math.hypot(x - a[0] - dx * t, z - a[1] - dz * t) < R.w / 2 + 0.6) return true;
       }
+    });
+  }
+
+  function distToSeg(x, z, s) {
+    var dx = s.b[0] - s.a[0], dz = s.b[1] - s.a[1], t = Math.max(0, Math.min(1, ((x - s.a[0]) * dx + (z - s.a[1]) * dz) / (dx * dx + dz * dz)));
+    return Math.hypot(x - s.a[0] - dx * t, z - s.a[1] - dz * t);
+  }
+  /** Doors have to stay reachable. */
+  function nearDoor(x, z) {
+    return Object.keys(D.DISTRICTS).some(function (k) {
+      return (D.DISTRICTS[k].buildings || []).some(function (b) {
+        if (!b.enter || (b.y != null && b.y < -5)) return false;
+        var f = window.TrillionerLayout.frontOf(b);
+        return Math.hypot(f.x - x, f.z - z) < 8;
+      });
     });
   }
 
@@ -109,11 +124,11 @@
           var side = rng.next() < 0.5 ? 1 : -1, cx = s.a[0] + ux * d, cz = s.a[1] + uz * d;
           if (rng.next() < 0.55) {
             var kx = cx + nx * side * (s.w / 2 - 1.2), kz = cz + nz * side * (s.w / 2 - 1.2);
-            if (!W.isWater(kx, kz) && !W.collide.near(kx, kz, 2.4, []).some(function (b) { return b.y0 < 2 && kx > b.x0 - 2.4 && kx < b.x1 + 2.4 && kz > b.z0 - 2.4 && kz < b.z1 + 2.4; }) && Object.keys(corners).every(function (q) { return corners[q].n < 2 || Math.hypot(corners[q].x - kx, corners[q].z - kz) > 13; }))
+            if (!W.isWater(kx, kz) && !nearDoor(kx, kz) && !W.collide.near(kx, kz, 2.4, []).some(function (b) { return b.y0 > -5 && b.y0 < 2 && kx > b.x0 - 2.4 && kx < b.x1 + 2.4 && kz > b.z0 - 2.4 && kz < b.z1 + 2.4; }) && !segs.some(function (o) { return o !== s && distToSeg(kx, kz, o) < o.w / 2 + 6; }))
               st.parked(W.geo(kx, kz, 'solid'), kx, kz, ux * side, uz * side, rng.pick(CARS));
           }
           var fx = cx + nx * side * (s.w / 2 + 2.2), fz = cz + nz * side * (s.w / 2 + 2.2);
-          if (rng.next() < 0.5 && free(fx, fz, 1)) st.furniture(W.geo(fx, fz, 'solid'), fx, fz, rng);
+          if (rng.next() < 0.5 && free(fx, fz, 1) && !nearDoor(fx, fz)) st.furniture(W.geo(fx, fz, 'solid'), fx, fz, rng);
         }
         for (var b = 40; b < L - 30; b += 130) {
           var sd = (Math.floor(b) % 2) ? 1 : -1, bx = s.a[0] + ux * b + nx * sd * (s.w / 2 + 6), bz = s.a[1] + uz * b + nz * sd * (s.w / 2 + 6);

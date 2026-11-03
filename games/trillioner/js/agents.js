@@ -56,6 +56,11 @@
       return { x: f.x + (nx * Math.cos(a) - nz * Math.sin(a)) * 16, z: f.z + (nz * Math.cos(a) + nx * Math.sin(a)) * 16, hunt: false };
     },
     update: function (dt, sess, pos, t) {
+      if (sess.view.me.heatOff > 0) {   // someone made a call: they all stand down
+        ag.list.forEach(function (a) { if (a.group.visible) { a.group.visible = false; ag.place(a, pos); } });
+        TR.hud.stars(0);
+        return;
+      }
       if (!ag.active(sess)) { ag.list.forEach(function (a) { a.group.visible = false; }); return; }
       var me = sess.view.me, spentB = me.spent / B, want = 0;
       TIERS.forEach(function (x) { if (spentB >= x[0]) want = x[1]; });

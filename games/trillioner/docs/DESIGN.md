@@ -935,3 +935,10 @@ A GTA-like open-world city where the goal is to spend as much money as possible.
 - Real materials instead of candy colours, so the gold you buy is the brightest thing in the city.
 - No tilt-shift. No big name boards: a shop gets a shop's sign, and the guide finds it for you.
 - The money is the only large number on screen. Refund heat is stars out of five.
+
+## Jobs decisions (user chose missions next)
+
+- Jobs are data in `engine/data/missions.js`, in story order, and run in the engine. Targets are filled in from the seed. Calls are not forced: an ignored call costs nothing.
+- A job that cannot happen yet (not enough spent, no vehicle) is passed over, not waited for, so one job never silences the phone.
+- Rewards never pay money, because money is the enemy here. They give combo, time free of the Refund Office, a vehicle or a gift item that is never sold.
+- Solo modes only for now. Online rooms have their own pressure from rivals.

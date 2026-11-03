@@ -192,6 +192,8 @@
     RAILS: [[[14, -15], [40, -15]], [[-30, 36], [10, 36]], [[-110, 256], [-50, 256]], [[132, 14], [160, 14]], [[-280, 104], [-250, 104]], [[128, 214], [168, 214]], [[60, -140], [96, -140]]],
     buildRails: function () {
       world.RAILS.forEach(function (r) {
+        // a solid rail across a road would stop every car on it
+        for (var t = 0; t <= 1; t += 0.05) if (world.roadDist(r[0][0] + (r[1][0] - r[0][0]) * t, r[0][1] + (r[1][1] - r[0][1]) * t) < 0.5) return;
         var a = r[0], b = r[1], y = 1.6, mx = (a[0] + b[0]) / 2, mz = (a[1] + b[1]) / 2, l = Math.hypot(b[0] - a[0], b[1] - a[1]), g = world.geo(mx, mz, 'solid');
         g.rbox(mx, y - 0.14, mz, Math.abs(b[0] - a[0]) + 0.3, 0.26, Math.abs(b[1] - a[1]) + 0.3, 0xdfe4ea, 0.1, 0.1, 1);
         var n = Math.max(2, Math.round(l / 6));

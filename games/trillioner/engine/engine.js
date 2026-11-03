@@ -10,11 +10,11 @@
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
-    module.exports = factory(require('./rng.js'), require('./data/rules.js'), require('./shuffle.js'), require('./data/trophies.js'), require('./data/events.js'), require('./data/secrets.js'), require('./data/extras.js'));
+    module.exports = factory(require('./rng.js'), require('./data/rules.js'), require('./shuffle.js'), require('./data/trophies.js'), require('./data/events.js'), require('./data/secrets.js'), require('./data/extras.js'), require('./data/missions.js'), require('./data/districts.js'));
   } else {
-    root.TrillionerEngine = factory(root.TrillionerRng, root.TRD.rules, root.TrillionerShuffle, root.TRD.trophies, root.TRD.events, root.TRD.secrets, root.TRD.extras);
+    root.TrillionerEngine = factory(root.TrillionerRng, root.TRD.rules, root.TrillionerShuffle, root.TRD.trophies, root.TRD.events, root.TRD.secrets, root.TRD.extras, root.TRD.missions, root.TRD.districts);
   }
-})(typeof self !== 'undefined' ? self : this, function (RngMod, R, Shuffle, Trophies, EventsData, SecretsData, Extras) {
+})(typeof self !== 'undefined' ? self : this, function (RngMod, R, Shuffle, Trophies, EventsData, SecretsData, Extras, Missions, DistrictData) {
   'use strict';
 
   var fmtShort = function (c) {
@@ -80,7 +80,7 @@
       balance: this.cfg.start, spent: 0,
       owned: {}, goods: {}, vehicles: {}, gear: {}, powers: {}, flags: {}, wear: {},
       closings: [], frenzy: 1, frenzyLeft: 0,
-      refunded: 0, refundAt: -1e9, extras: {}, style: { pet: [] }, styleV: 0, boxes: 0, rainUsed: 0, rainAt: -1e9,
+      job: null, ringing: null, jobsUsed: {}, nextCall: Missions.FIRST_MS, jobsDone: 0, jobsLost: 0, heatOffUntil: 0, refunded: 0, refundAt: -1e9, extras: {}, style: { pet: [] }, styleV: 0, boxes: 0, rainUsed: 0, rainAt: -1e9,
       cannonOn: false, cannonUsed: 0,
       history: [this.cfg.start], best: null, trophies: {}, stats: { purchases: 0, demolished: 0, firstMoonHour: null, maxFrenzy: 1, truckDemos: 0 },
       income: 0, lastIncome: 0, rising: false, boost: {}, ban: {}, cards: [], cardsUsed: 0, giftUsed: false,
@@ -224,6 +224,7 @@
       case 'box': return this.openBox(pid);
       case 'rain': return this.rain(pid);
       case 'caught': return this.refund(pid);
+      case 'answer': return this.answerCall(pid, !!cmd.yes);
       default: return { error: 'Unknown command.' };
     }
   };
@@ -288,6 +289,7 @@
   };
 
   G.stepPlayer = function (p, boom) {
+    this.stepJobs(p);
     // business income: income tables are multiples of 10 cents per second, so per-step values are whole cents
     var biz = this.bizIncome(p) * boom / 10;
     if (biz) p.balance = Math.max(0, p.balance + biz);
@@ -463,6 +465,7 @@
   G.charge = function (p, item, q) {
     p.balance -= q.total;
     p.spent += q.total;
+    this.noteSpend(p, q.total, item.district);
     this.stock[item.id] -= 1;
     p.stats.purchases += 1;
     if (!p.best || q.base > p.best.base) p.best = { item: item.id, name: item.name, base: q.base };
@@ -489,6 +492,7 @@
   G.spendSelf = function (p, amount) {
     p.balance -= amount;
     p.spent += amount;
+    this.noteSpend(p, amount, p.district);
     this.checkTrophies(p);
     this.checkWin(p);
   };
@@ -506,6 +510,7 @@
     if (this.frozen || this.over || p.won) return { code: 'closed', error: 'The day is over.' };
     if (this.requireNear && !p.inv) return { code: 'far', error: 'Go inside a shop.' };
     if (p.balance < x.price) return { code: 'broke', error: 'Too expensive' };
+    if (x.gift) return { code: 'unknown', error: 'Not for sale.' };
     this.takeExtra(p, x);
     if (x.rarity === 'l') this.feedPush(p.name + ' bought ' + x.name + ' for ' + fmtShort(x.price));
     this.emit(p, { type: 'extra', id: id });
@@ -532,7 +537,7 @@
     if (this.requireNear && !p.inv) return { code: 'far', error: 'Go inside a shop.' };
     if (p.boxes >= Extras.BOX_LIMIT) return { code: 'limit', error: 'No boxes left today.' };
     if (p.balance < Extras.BOX_PRICE) return { code: 'broke', error: 'Too expensive' };
-    var left = Extras.CATALOG.filter(function (x) { return !p.extras[x.id]; });
+    var left = Extras.CATALOG.filter(function (x) { return !p.extras[x.id] && !x.gift; });
     if (!left.length) return { code: 'limit', error: 'You own everything already.' };
     var rng = new RngMod.Rng('box:' + this.seed + ':' + pid + ':' + p.boxes), roll = rng.range(0, 100), rarity = 'c', sum = 0;
     for (var i = 0; i < Extras.BOX_ODDS.length; i++) { sum += Extras.BOX_ODDS[i][1]; if (roll < sum) { rarity = Extras.BOX_ODDS[i][0]; break; } }
@@ -556,6 +561,7 @@
     if (amount <= 0) return { code: 'broke', error: 'Nothing left to throw' };
     p.rainUsed++;
     p.rainAt = this.t;
+    if (p.job && p.job.type === 'rain' && p.district === p.job.district) p.job.count++;
     this.spendSelf(p, amount);
     return { ok: true, paid: amount, left: Extras.RAIN_LIMIT - p.rainUsed };
   };
@@ -568,9 +574,151 @@
     if (back <= 0) return { code: 'limit' };
     p.refundAt = this.t;
     p.refunded += back;
+    if (p.job && p.job.type === 'survive') this.endJob(p, false);
     p.balance += back;
     p.spent -= back;
     return { ok: true, back: back };
+  };
+  // ── Jobs: the phone rings, you take it or you don't ──
+  G.noteSpend = function (p, amount, district) {
+    var j = p.job;
+    if (j && j.type === 'spend' && (!j.district || j.district === district)) j.count += amount;
+  };
+  /** Shops worth sending someone to: open to everyone, nothing in them pays you back, close enough to reach. */
+  G.jobShop = function (p, minItems) {
+    var self = this, run = this.run, tally = {};
+    Object.keys(this.items).forEach(function (id) {
+      var it = self.items[id], s = run.sites[it.site];
+      if (!s || s.kind !== 'room' || s.b.lock || (s.y || 0) < -20) return;
+      var t = tally[it.site] = tally[it.site] || { n: 0, bad: false };
+      if (it.gate || it.secret || it.surprise || it.building || it.income) { if (self.stock[id] > 0 && !it.secret && !it.surprise) t.bad = true; return; }
+      if (self.stock[id] > 0) t.n++;
+    });
+    var best = null, bd = Infinity, here = p.inv;
+    Object.keys(tally).forEach(function (id) {
+      var t = tally[id], s = run.sites[id];
+      if (t.bad || t.n < minItems || t.n > 9 || id === here) return;
+      var d = Math.hypot(s.front.x - (here ? run.sites[here].front.x : p.x), s.front.z - (here ? run.sites[here].front.z : p.z));
+      if (d < bd) { bd = d; best = s; }
+    });
+    return best;
+  };
+  /** Turns a line in the script into this run's job. Null if it cannot happen right now. */
+  G.makeJob = function (p, def) {
+    if (def.type === 'wreck' && !Object.keys(p.vehicles).length) return null;
+    var run = this.run, self = this, here = p.inv && run.sites[p.inv] ? run.sites[p.inv].front : p, j = { id: def.id, from: def.from, type: def.type, secs: def.secs, leftMs: def.secs * 1000, count: 0, goal: def.goal, text: def.text };
+    if (def.minSpent && p.spent < def.minSpent) return null;
+    var site = null, item = null, dname = null;
+    if (def.type === 'clear') { site = this.jobShop(p, 3); if (!site) return null; j.site = site.id; }
+    if (def.type === 'big') {
+      item = def.item !== 'biggest' && this.stock[def.item] > 0 && !p.owned[def.item] ? this.items[def.item] : null;
+      if (item && item.price > p.balance) item = null;
+      if (!item) {
+        Object.keys(this.items).forEach(function (id) {
+          var it = self.items[id];
+          if (it.building && !it.gate && !it.secret && self.stock[id] > 0 && it.income <= 0 && it.price <= p.balance && (!item || it.price > item.price)) item = it;
+        });
+      }
+      if (!item) return null;
+      j.item = item.id; j.site = item.site;
+    }
+    if (def.type === 'goto') {
+      var far = null;
+      Object.keys(run.sites).forEach(function (id) { var s = run.sites[id]; if (s.kind === 'room' && s.district === def.dash && !s.b.lock && (s.y || 0) > -20 && (!far || id < far.id)) far = s; });
+      if (!far) return null;
+      site = far; j.site = far.id;
+      j.leftMs = Math.max(j.leftMs, Math.round(Math.hypot(far.front.x - here.x, far.front.z - here.z) * 1.5 / 14 * 1000));   // by road, at a good run
+    }
+    if (def.district) {
+      j.district = def.district === 'pick' ? (p.district && p.district !== 'under' ? p.district : 'downtown') : def.district;
+      dname = DistrictData.DISTRICTS[j.district].name;
+    }
+    if (def.amount) j.amount = def.amount;
+    if (def.need) j.need = def.need;
+    if (def.worth) j.worth = def.worth;
+    function fill(t) {
+      return t.replace('{site}', j.site ? run.sites[j.site].name : '').replace('{district}', dname || '').replace('{item}', item ? item.name : '').replace('{need}', def.need || '');
+    }
+    j.text = fill(def.text); j.goal = fill(def.goal);
+    j.won = def.won; j.lost = def.lost; j.reward = def.reward;
+    if (def.type === 'clear') {   // time to get there, plus time to shop
+      var s0 = run.sites[j.site];
+      j.leftMs = Math.max(j.leftMs, Math.round(Math.hypot(s0.front.x - here.x, s0.front.z - here.z) * 1.5 / 14 * 1000) + 45000);
+    }
+    return j;
+  };
+  G.answerCall = function (pid, yes) {
+    var p = this.players[pid], j = p.ringing;
+    if (!j) return { code: 'none' };
+    p.ringing = null;
+    if (!yes) { p.nextCall = this.t + Missions.GAP_MS; return { ok: true }; }
+    p.job = j;
+    j.total = j.leftMs;
+    this.emit(p, { type: 'jobStart', goal: j.goal });
+    return { ok: true };
+  };
+  G.endJob = function (p, won) {
+    var j = p.job;
+    p.job = null;
+    p.nextCall = this.t + Missions.GAP_MS;
+    if (won) { p.jobsDone++; this.giveReward(p, j.reward); } else p.jobsLost++;
+    this.emit(p, { type: 'jobEnd', won: won, from: j.from, line: won ? j.won : j.lost, reward: won ? j.reward : null });
+  };
+  G.giveReward = function (p, r) {
+    if (!r) return;
+    if (r.combo) { p.frenzy = Math.max(p.frenzy, Math.min(R.FRENZY_MAX, r.combo)); p.frenzyLeft = this.frenzyWindow() * 3; }
+    if (r.heatOff) p.heatOffUntil = Math.max(p.heatOffUntil, this.t) + r.heatOff * 1000;
+    if (r.gift && Extras.BY_ID[r.gift]) this.takeExtra(p, Extras.BY_ID[r.gift]);
+    if (r.vehicle) { p.vehicles[r.vehicle] = true; this.emit(p, { type: 'reward', item: null, vehicles: [r.vehicle], gear: [] }); }
+  };
+  G.wornValue = function (p) {
+    var sum = 0;
+    Extras.SLOTS.forEach(function (slot) { [].concat(p.style[slot] || []).forEach(function (id) { sum += Extras.BY_ID[id].price; }); });
+    return sum;
+  };
+  G.jobDoneYet = function (p, j) {
+    var self = this;
+    switch (j.type) {
+      case 'clear': return !Object.keys(this.items).some(function (id) { var it = self.items[id]; return it.site === j.site && !it.gate && !it.secret && !it.surprise && self.stock[id] > 0; });
+      case 'style': return this.wornValue(p) >= j.worth;
+      case 'big': return !!p.owned[j.item];
+      case 'combo': return p.frenzy >= j.need;
+      case 'spend': return j.count >= j.amount;
+      case 'rain': case 'wreck': return j.count >= j.need;
+      case 'goto': var f = this.run.sites[j.site].front; return !p.inv && Math.hypot(f.x - p.x, f.z - p.z) < 9;
+    }
+    return false;
+  };
+  G.stepJobs = function (p) {
+    if (!this.cfg.jobs || p.won) return;
+    if (p.job) {
+      if (this.jobDoneYet(p, p.job)) { this.endJob(p, true); return; }
+      p.job.leftMs -= R.STEP_MS;
+      if (p.job.leftMs <= 0) this.endJob(p, p.job.type === 'survive');
+      return;
+    }
+    if (p.ringing) {
+      p.ringing.ringLeft -= R.STEP_MS;
+      if (p.ringing.ringLeft <= 0) { p.ringing = null; p.nextCall = this.t + Missions.GAP_MS; }
+      return;
+    }
+    if (this.t < p.nextCall) return;
+    // the next job that can happen now. One waiting on spend does not hold up the rest.
+    for (var i = 0; i < Missions.JOBS.length; i++) {
+      var def = Missions.JOBS[i];
+      if (p.jobsUsed[def.id]) continue;
+      var j = this.makeJob(p, def);
+      if (!j) {
+        if (!def.minSpent && def.type !== 'wreck') p.jobsUsed[def.id] = true;
+        continue;
+      }
+      p.jobsUsed[def.id] = true;
+      j.ringLeft = Missions.RING_MS;
+      p.ringing = j;
+      this.emit(p, { type: 'ring', from: j.from });
+      return;
+    }
+    p.nextCall = this.t + 10000;
   };
   G.bumpFrenzy = function (p, base) {
     if (base < R.FRENZY_MIN) return;
@@ -675,7 +823,7 @@
     if (this.over || this.frozen || p.won) return { ok: true, paid: 0 };
     var cap = this.cfg.pvp ? R.DAMAGE_CAP_PVP : R.DAMAGE_CAP, used = p.damagePaid || 0, pay = Math.min(fine, cap - used, p.balance);
     p.stats.smashed = (p.stats.smashed || 0) + 1;
-    if (kind === 'car') p.stats.carsWrecked = (p.stats.carsWrecked || 0) + 1;
+    if (kind === 'car') { p.stats.carsWrecked = (p.stats.carsWrecked || 0) + 1; if (p.job && p.job.type === 'wreck') p.job.count++; }
     if (pay > 0) { p.balance -= pay; p.spent += pay; p.damagePaid = used + pay; }
     this.checkTrophies(p);
     this.checkWin(p);
@@ -810,7 +958,7 @@
         vehicles: p.vehicles, gear: p.gear, powers: p.powers, flags: p.flags, wear: p.wear, trophies: p.trophies, rank: this.rank(p),
         cannonOn: p.cannonOn, cannonUsed: p.cannonUsed, won: p.won, perfect: p.perfect, perfectLeft: p.perfectLeft, travelCd: p.travelCd,
         visited: p.visited, best: p.best, stats: p.stats, cards: p.cards, ban: p.ban, boost: p.boost,
-        refunded: p.refunded, extras: p.extras, style: p.style, styleV: p.styleV, boxes: p.boxes, rainUsed: p.rainUsed
+        district: p.district, heatOff: Math.max(0, p.heatOffUntil - this.t), job: p.job, ringing: p.ringing, jobsDone: p.jobsDone, refunded: p.refunded, extras: p.extras, style: p.style, styleV: p.styleV, boxes: p.boxes, rainUsed: p.rainUsed
       },
       feed: this.feed.slice(-6)
     };

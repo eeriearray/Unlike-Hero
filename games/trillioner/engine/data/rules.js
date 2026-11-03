@@ -34,8 +34,8 @@
     TAX_REFUND_CAP: 30 * B,
     CHANGE_FEES: [25, 100, 500, 2000, 10000, 100000, 1000000, 10000000],
     MODES: {
-      day:    { label: 'The Day',     start: 1 * T,   secPerHour: 60, startHour: 6, hours: 24, clock: true,  trophies: true, agents: true },
-      daily:  { label: 'Daily City',  start: 1 * T,   secPerHour: 60, startHour: 6, hours: 24, clock: true,  trophies: true, agents: true },
+      day:    { label: 'The Day',     start: 1 * T,   secPerHour: 60, startHour: 6, hours: 24, clock: true,  trophies: true, agents: true, jobs: true },
+      daily:  { label: 'Daily City',  start: 1 * T,   secPerHour: 60, startHour: 6, hours: 24, clock: true,  trophies: true, agents: true, jobs: true },
       free:   { label: 'Free Roam',   start: 1 * T,   secPerHour: 60, startHour: 6, hours: 24, clock: false, trophies: false },
       battle: { label: 'Battle Spend', start: 300 * B, secPerHour: 20, startHour: 6, hours: 24, clock: true,  trophies: false, pvp: true }
     },

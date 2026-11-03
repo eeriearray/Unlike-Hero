@@ -77,7 +77,7 @@
         b.onclick = function () { own.cat = c[0]; own.draw(); };
       });
       var grid = el('div', 'own-grid', body);
-      X.CATALOG.filter(function (x) { return own.cat === 'all' || x.slot === own.cat; }).forEach(function (x) { own.card(grid, x, me); });
+      X.CATALOG.filter(function (x) { return !x.gift && (own.cat === 'all' || x.slot === own.cat); }).forEach(function (x) { own.card(grid, x, me); });
     },
     worn: function (x, me) { return x.slot === 'pet' ? me.style.pet.indexOf(x.id) >= 0 : me.style[x.slot] === x.id; },
     card: function (grid, x, me) {

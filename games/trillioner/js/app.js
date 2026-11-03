@@ -66,6 +66,7 @@
       TR.map.init(TR.hud.mapBox);
       TR.gps.init(app.scene);
       TR.agents.init(app.scene);
+      TR.phone.init();
       var au = TR.save.get('audio', null);
       if (au) { TR.audio.volume = au.volume; TR.audio.sfxVolume = au.sfxVolume; TR.audio.musicVolume = au.musicVolume; TR.audio.muted = au.muted; TR.audio.musicMuted = !!au.musicMuted; TR.hud.musicBtn(); }
       TR.quality.init();
@@ -123,7 +124,7 @@
       TR.notebook.setRun(run0);
       TR.haul.reset();
       TR.world.setBeam(null); app.eventSite = null;
-      TR.own.close(); TR.gps.reset(); TR.agents.reset();
+      TR.own.close(); TR.gps.reset(); TR.agents.reset(); TR.phone.reset();
       app.styleV = -1;
       TR.dares.start(app.session, seed);
       TR.cam.cine = null;
@@ -182,6 +183,7 @@
     handleEvents: function (evs) {
       var run = app.session.run, pos = TR.player.pos;
       evs.forEach(function (ev) {
+        TR.phone.onEvent(ev);
         if (ev.type === 'purchase' && ev.pid && ev.pid !== app.session.view.me.id) {
           if (app.session.applyStock) app.session.applyStock(ev.item, ev.stock);
         } else if (ev.type === 'stock') {
@@ -295,7 +297,8 @@
     },
     /** The reward appears right beside the building, with a clear prompt. */
     deliverReward: function (ev) {
-      var it = app.session.run.items[ev.item], s = app.session.run.sites[it.bldg && !app.session.run.sites[it.bldg].b.project ? it.bldg : it.site], f = s.front || { x: TR.player.pos.x + 6, z: TR.player.pos.z };
+      // a job's reward has no building of its own: it turns up right where you are
+      var it = app.session.run.items[ev.item], s = it ? app.session.run.sites[it.bldg && !app.session.run.sites[it.bldg].b.project ? it.bldg : it.site] : { y: TR.player.pos.y }, f = s.front || { x: TR.player.pos.x + 6, z: TR.player.pos.z };
       var room = !!TR.interiors.current, base = room ? TR.interiors.returnTo : { x: f.x, y: s.y || 0, z: f.z };
       (ev.vehicles || []).forEach(function (k, i) {
         var spec = TR.vehicles.SPECS[k];
@@ -524,7 +527,7 @@
         if (TR.battle) TR.battle.tick(view, pos);
         if (!room) TR.map.reveal(pos.x, pos.z);
         app.mapT = (app.mapT || 0) - 1;
-        TR.map.follow(pos, TR.vehicles.current ? TR.vehicles.current.heading : TR.player.heading, TR.input.yaw);
+        TR.map.follow(TR.interiors.current ? TR.interiors.returnTo : pos, TR.vehicles.current ? TR.vehicles.current.heading : TR.player.heading, TR.input.yaw);   // indoors, the map stays on the street outside
         if (app.mapT <= 0) { app.mapT = 0.4; TR.map.update(pos, TR.player.heading, under, { dots: TR.notebook.mapDots(view.me).concat(TR.agents.dots(), (app.claimed || []).map(function (s) { return { x: s.front.x, z: s.front.z, c: '#ffc53d', r: 3 }; })) }); }
       }
       if (view.weather === 'rain' && !room && !under) for (var ri = 0; ri < 5; ri++) TR.fx.spawn(pos.x + (Math.random() - 0.5) * 70, pos.y + 30, pos.z + (Math.random() - 0.5) * 70, 0, -38, 0, 0xa8c8e8, 0.8, 0.6, 0);
@@ -557,6 +560,7 @@
         if (!TR.hud.pOn) TR.notebook.update(dt, app.session, pos);
         TR.gps.update(dt, app.session, pos, app.t);
         TR.agents.update(dt, app.session, pos, app.t);
+        TR.phone.update(dt, app.session);
         var me0 = app.session.view.me;
         if (me0.styleV !== app.styleV) { app.styleV = me0.styleV; TR.player.applyStyle(me0.style); TR.wardrobe.setPets(me0.style.pet, app.scene); }
         TR.wardrobe.updatePets(dt, pos, TR.player.heading, !!TR.vehicles.current);

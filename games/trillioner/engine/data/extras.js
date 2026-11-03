@@ -83,6 +83,13 @@
       ['pet_dragon', 'Small Dragon', 8 * B, 'l', { model: 'dragon' }]
     ])
   );
+  // Earned from jobs. Never sold, never in a box.
+  CATALOG = CATALOG.concat([
+    { id: 'gift_pearls', name: 'Great Aunt\'s Stolen Pearls', price: 0, rarity: 'l', slot: 'neck', gift: 1, look: { model: 'pearls', color: 0xffe9c9, shine: 1 } },
+    { id: 'gift_chip_hat', name: 'Chip\'s Hat, Do Not Wash', price: 0, rarity: 'e', slot: 'hat', gift: 1, look: { model: 'cap', color: 0xff4fa3 } },
+    { id: 'gift_vest', name: 'Refund Office Vest', price: 0, rarity: 'e', slot: 'top', gift: 1, look: { color: 0xff6a13, trim: 0xfff36b } },
+    { id: 'gift_tiara', name: 'A Tiara That Has Seen Things', price: 0, rarity: 'l', slot: 'hat', gift: 1, look: { model: 'crown', color: 0xdfe6ee, shine: 1 } }
+  ]);
   var BY_ID = {};
   CATALOG.forEach(function (x) { BY_ID[x.id] = x; });
 

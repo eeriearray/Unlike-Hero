@@ -107,9 +107,49 @@
     },
     toggle: function () { gps.on = !gps.on; TR.hud.toast(gps.on ? 'Guide on' : 'Guide off'); if (!gps.on) gps.reset(); },
 
+    /** A job on the phone comes first: its shop, its item, or the part of town it needs you in. */
+    forJob: function (sess, me, pos, room) {
+      var j = me.job, run = sess.run;
+      if (!j) return null;
+      function door(s, sub) { return { site: s, x: doorX(s), y: s.y || 0, z: doorZ(s), name: s.name, sub: sub || j.goal, hot: true }; }
+      if (j.site) {
+        var s = run.sites[j.site];
+        if (room && room.id !== j.site) { var d = TR.interiors.doorPos(); return { room: true, exit: true, x: d.x, y: 0, z: d.z, name: 'Way out', sub: j.goal, hot: true }; }
+        if (!room) return door(s);
+        if (j.type === 'goto') return null;
+        var best = null, bp = -1;
+        TR.pads.list.forEach(function (p) {
+          if (p.item.site !== j.site || p.store || TR.pads.state(p, sess) !== 'open') return;
+          if (j.item && p.item.id !== j.item) return;
+          if (p.item.price > bp) { bp = p.item.price; best = p; }
+        });
+        return best ? { room: true, x: best.x, y: best.y, z: best.z, name: best.item.name, sub: j.goal, item: best.item, hot: true } : null;
+      }
+      if (j.type === 'style' && room && TR.interiors.counter) {
+        var c = TR.interiors.counter;
+        return { room: true, x: c.x, y: 0, z: c.z, name: 'Style Counter', sub: 'Press E', hot: true };
+      }
+      if (j.type === 'style' && !room) {   // any open door has a Style Counter behind it
+        var near = null, nd = Infinity;
+        Object.keys(run.sites).forEach(function (id) {
+          var q = run.sites[id];
+          if (q.kind !== 'room' || (q.b.lock && !me.flags[q.b.lock]) || Math.abs((q.y || 0) - pos.y) > 3) return;
+          var dd = Math.hypot(doorX(q) - pos.x, doorZ(q) - pos.z);
+          if (dd < nd) { nd = dd; near = q; }
+        });
+        if (near) return door(near, 'Style Counter inside');
+      }
+      if (j.district && me.district !== j.district && !room) {
+        var sp = D.DISTRICTS[j.district].spawn;
+        return { x: sp.x, y: 0, z: sp.z, name: D.DISTRICTS[j.district].name, sub: j.goal, hot: true };
+      }
+      return null;
+    },
     /** Picks the shop worth the most per step: lots of unspent money, not too far, and not a business that pays you back. */
     pick: function (sess, pos) {
       var me = sess.view.me, run = sess.run, sum = {}, tally = {}, room = TR.interiors.current;
+      var job = gps.forJob(sess, me, pos, room);
+      if (job) return job;
       if (room) {
         var best = null, bp = -1;
         TR.pads.list.forEach(function (p) {
@@ -180,8 +220,17 @@
       L.querySelector('b').textContent = tg.name;
       L.querySelector('span').textContent = tg.sub + dist;
     },
+    /** Forget the points you have already passed, every frame, so the first arrow never points back at them. */
+    trim: function (pos) {
+      var r = gps.route;
+      while (r.length > 2) {
+        var a = r[1], b = r[2], dx = b.x - a.x, dz = b.z - a.z;
+        if (Math.hypot(a.x - pos.x, a.z - pos.z) < 4 || (pos.x - a.x) * dx + (pos.z - a.z) * dz > 0) r.splice(1, 1); else break;
+      }
+    },
     /** Arrows flow along the route from your feet. */
     draw: function (pos, t) {
+      gps.trim(pos);
       var r = gps.route, n = 0, tg = gps.target, m = gps.mesh;
       if (!r.length || !tg) { m.count = 0; gps.pin.visible = false; return; }
       var inVehicle = !!TR.vehicles.current, step = inVehicle ? STEP * 1.8 : STEP * (tg.room ? 0.65 : 1), sc = inVehicle ? 2 : tg.room ? 0.5 : 0.8, y = pos.y < -20 || tg.room ? pos.y + 0.09 : 0.09;
