@@ -116,3 +116,28 @@ test('at least 18 usable things exist and every one is sold', () => {
   assert.ok(usable.size >= 18, `only ${usable.size}: ${[...usable]}`);
   for (const need of ['hoverboard', 'sports_car', 'scooter', 'monster_truck', 'ladder_truck', 'elephant', 'speedboat', 'submarine', 'helicopter', 'launcher', 'wrecking_truck', 'money_cannon', 'mole_machine', 'jetpack', 'private_train']) assert.ok(usable.has(need), need);
 });
+
+test('no road is blocked by a named building, a stall, a stair or a landmark', () => {
+  const blocks = [];
+  for (const d of Object.values(D.DISTRICTS)) {
+    if (d.level === 'under') continue;
+    for (const b of d.buildings) blocks.push([b.id, b.x - b.w / 2, b.z - b.d / 2, b.x + b.w / 2, b.z + b.d / 2]);
+    for (const s of d.stalls || []) {
+      if (s.y != null || s.plain) continue;
+      const len = (s.cols || 6) * (s.spacing || 6);
+      blocks.push(s.dir === 'z' ? [s.id, s.x - 5.5, s.z - len / 2, s.x - 4.5, s.z + len / 2] : [s.id, s.x - len / 2, s.z - 5.5, s.x + len / 2, s.z - 4.5]);
+    }
+    for (const st of d.stairs || []) blocks.push(['stair ' + d.id, st.x - 5, st.z - 5, st.x + 5, st.z + 5]);
+    if (d.change) blocks.push(['fountain ' + d.id, d.change.x - 4, d.change.z - 12, d.change.x + 4, d.change.z - 4]);
+    for (const l of d.landmarks || []) if (l.kind !== 'bigsign' && l.kind !== 'crane') { const r = l.kind === 'ferris' ? 5 : l.r || 7; blocks.push([l.kind, l.x - r, l.z - r, l.x + r, l.z + r]); }
+  }
+  const hits = [];
+  for (const R of D.ROADS) for (let i = 0; i < R.pts.length - 1; i++) {
+    const [ax, az] = R.pts[i], [bx, bz] = R.pts[i + 1], l = Math.hypot(bx - ax, bz - az);
+    for (let s = 0; s <= l; s += 2) {
+      const x = ax + (bx - ax) * s / l, z = az + (bz - az) * s / l;
+      for (const b of blocks) if (x > b[1] - 2 && x < b[3] + 2 && z > b[2] - 2 && z < b[4] + 2) hits.push(b[0]);
+    }
+  }
+  assert.deepEqual([...new Set(hits)], []);
+});

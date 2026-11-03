@@ -67,7 +67,7 @@
       TR.world.setTime(9, 'clear', TR.player.pos);
       app.ready = true;
       if (DEBUG) app.debugPanel(ui);
-      if (qs.get('room') || (window.TR.net.getSeat() && TR.net.tryResume())) { if (qs.get('room') && !TR.net.getSeat()) TR.net.lobby(); }
+      if (qs.get('autostart') !== '1' && (qs.get('room') || (TR.net.getSeat() && TR.net.tryResume()))) { if (qs.get('room') && !TR.net.getSeat()) TR.net.lobby(); }
       else if (qs.get('autostart') === '1') app.startRun({ mode: 'day', seed: Number(qs.get('seed')) || undefined });
       else TR.menus.title();
       app.last = performance.now();
@@ -358,7 +358,7 @@
       if (document.pointerLockElement) document.exitPointerLock();
       if (res.perfect) TR.hud.banner('PERFECT ZERO!');
       TR.hud.show(false);
-      if (app.session.online) { TR.battle.stop(); TR.net.session = null; TR.net.room = null; }
+      if (app.session.online) { TR.battle.stop(); TR.net.clearSeat(); TR.net.session = null; TR.net.room = null; }
       TR.menus.results(res, earned);
     },
     /** Back to the title without a results screen, for a room that closed. */

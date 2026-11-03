@@ -64,16 +64,16 @@
         { id: 'school', name: 'Suburb School', x: -310, z: 60, w: 36, d: 22, h: 11, wall: 0xf4b183, roof: 0x7a4a2b, door: 'n', enter: 1 },
         { id: 'zoo', name: 'City Zoo', x: -200, z: -66, w: 40, d: 30, h: 8, wall: 0xa7d489, roof: 0x4c8c4a, door: 's', enter: 1, boarded: 0 },
         { id: 'pizza_hq', name: 'Pizza HQ', x: -300, z: -60, w: 30, d: 20, h: 13, wall: 0xff7a59, roof: 0xfff0a8, door: 's', enter: 1, neon: 1 },
-        { id: 'wonderland', name: 'Wonderland Park', x: -210, z: -210, w: 34, d: 22, h: 9, wall: 0xc9a0dc, roof: 0x5b3a7a, door: 's', enter: 1, boarded: 1 },
+        { id: 'wonderland', name: 'Wonderland Park', x: -190, z: -226, w: 34, d: 22, h: 9, wall: 0xc9a0dc, roof: 0x5b3a7a, door: 's', enter: 1, boarded: 1 },
         { id: 'observatory', name: 'Hilltop Observatory', x: -312, z: -316, y: 18, w: 22, d: 22, h: 9, wall: 0xf0f2f6, roof: 0x4a6fa5, door: 's', enter: 1 },
         { id: 'skate_shop', name: 'Skate Shop', x: -150, z: 86, w: 18, d: 12, h: 7, wall: 0xffe066, roof: 0x444444, door: 'n', neon: 1 },
         { id: 'stadium', name: 'The Stadium', x: -170, z: -310, w: 60, d: 48, h: 16, wall: 0xdfe6ee, roof: 0x3b7dd8, door: 's', project: 1 }
       ],
       stalls: [
-        { id: 'estate_agents', name: 'Mansions For Sale', x: -240, z: 22, cols: 8, dir: 'x' },
+        { id: 'estate_agents', name: 'Mansions For Sale', x: -295, z: 18, cols: 8, dir: 'x' },
         { id: 'block_sales', name: 'Whole Neighbourhoods', x: -300, z: -130, cols: 7, dir: 'x' },
         { id: 'park_lots', name: 'Parks Department Lots', x: -180, z: -130, cols: 6, dir: 'x', spacing: 7 },
-        { id: 'garage_sale', name: 'Suspicious Garage Sale', x: -150, z: 40, cols: 2, dir: 'x', spacing: 5 },
+        { id: 'garage_sale', name: 'Suspicious Garage Sale', x: -150, z: 54, cols: 2, dir: 'x', spacing: 5 },
         { id: 'buried_safe', name: 'Buried Safe', x: -316, z: 94, cols: 2, dir: 'x', spacing: 5, plain: 1 }
       ],
       change: { x: -150, z: -26 },
@@ -98,7 +98,7 @@
       stalls: [
         { id: 'parts_row', name: 'Motor Mile Parts Row', x: -92, z: 226, cols: 6, dir: 'x' },
         { id: 'tyre_yard', name: "Big Rick's Tyre Yard", x: 30, z: 256, cols: 6, dir: 'x' },
-        { id: 'freight_row', name: 'Freight Sidings Lots', x: -250, z: 256, cols: 6, dir: 'x' },
+        { id: 'freight_row', name: 'Freight Sidings Lots', x: -300, z: 256, cols: 6, dir: 'x' },
         { id: 'lobby_lots_ind', name: 'Permit Office Plots', x: -40, z: 346, cols: 7, dir: 'x' },
         { id: 'crane_deal', name: 'Rusted Crane Deal', x: -270, z: 216, y: 28.6, cols: 2, dir: 'x', spacing: 4 }
       ],
@@ -106,7 +106,7 @@
       stairs: [{ x: -285, z: 194, to: 8, dir: 'n', len: 10 }],
       landmarks: [
         { kind: 'chimney', x: -130, z: 300, h: 92, r: 8 },
-        { kind: 'bigsign', text: 'MOTOR MILE', x: -100, z: 232, h: 22, w: 44 },
+        { kind: 'bigsign', text: 'MOTOR MILE', x: -80, z: 229, h: 22, w: 36 },
         { kind: 'crane', x: -270, z: 216, h: 28, label: 'rusted' }
       ]
     },
@@ -214,14 +214,14 @@
     { w: 14, pts: [[-120, -350], [-120, 346]] }, { w: 14, pts: [[120, -350], [120, 282]] },
     { w: 14, pts: [[-350, 120], [300, 120]] }, { w: 14, pts: [[-350, -120], [350, -120]] },
     { w: 16, pts: [[-120, 0], [120, 0]] }, { w: 16, pts: [[0, -120], [0, 120]] },
-    { w: 12, pts: [[120, 0], [350, 0]] }, { w: 12, pts: [[240, -120], [240, 0]] }, { w: 12, pts: [[240, 0], [240, 120]] },
+    { w: 12, pts: [[120, 0], [350, 0]] }, { w: 12, pts: [[272, -120], [272, 0]] }, { w: 12, pts: [[272, 0], [272, 120]] },
     { w: 16, pts: [[-350, 240], [120, 240]], name: 'Motor Mile' },
     { w: 12, pts: [[-240, 120], [-240, 346]] }, { w: 12, pts: [[0, 120], [0, 346]] },
     { w: 12, pts: [[120, 200], [306, 200]] }, { w: 12, pts: [[214, 120], [214, 282]] },
     { w: 11, pts: [[-120, -240], [120, -240]] }, { w: 11, pts: [[0, -350], [0, -120]] }, { w: 11, pts: [[-120, -350], [120, -350]] },
     { w: 12, pts: [[120, -240], [350, -210]] }, { w: 12, pts: [[240, -350], [240, -120]] },
     { w: 11, pts: curve(-120, 30, -350, 30, 18, 12) }, { w: 11, pts: curve(-120, -190, -350, -190, 22, 12) },
-    { w: 11, pts: curve(-240, 120, -240, -350, 16, 16) }
+    { w: 11, pts: curve(-240, 120, -240, -214, 14, 12) }
   ];
 
   return { DISTRICTS: DISTRICTS, ROADS: ROADS, UNDER_Y: UNDER_Y, DEEP_Y: DEEP_Y, B: B, SURFACE: 360 };

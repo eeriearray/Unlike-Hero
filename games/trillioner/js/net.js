@@ -168,4 +168,5 @@
     }
   };
   TR.net.getSeat = getSeat;
+  TR.net.clearSeat = function () { setSeat(null); };
 })();

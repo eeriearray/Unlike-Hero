@@ -67,8 +67,10 @@
         var a = RAIL[i], b = RAIL[(i + 1) % RAIL.length], l = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.ceil(l / 24), ux = (b[0] - a[0]) / l, uz = (b[1] - a[1]) / l;
         for (var k = 0; k < n; k++) {
           var x = a[0] + ux * (k + 0.5) * l / n, z = a[1] + uz * (k + 0.5) * l / n, g = TR.world.geo(x, z, 'solid');
-          g.box(x, 0, z, 1, RAIL_Y, 1, 0x888c92);
-          TR.world.collide.addBox(x, 0, z, 1, RAIL_Y, 1);
+          if (TR.world.roadDist(x, z) > 1.5) { // pylons never stand in a lane; the deck spans the road
+            g.box(x, 0, z, 1, RAIL_Y, 1, 0x888c92);
+            TR.world.collide.addBox(x, 0, z, 1, RAIL_Y, 1);
+          }
           g.box(x, RAIL_Y, z, Math.abs(ux) * l / n + Math.abs(uz) * 5, 0.5, Math.abs(uz) * l / n + Math.abs(ux) * 5, 0x6d7278);
         }
       }
