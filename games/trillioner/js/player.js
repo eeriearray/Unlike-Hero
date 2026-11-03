@@ -84,9 +84,30 @@
       g.rotation.y = pl.heading;
       g.scale.set(1 + pl.squash * 0.6, 1 - pl.squash, 1 + pl.squash * 0.6);
     },
+    /** Clout looks: hat, outfit, trail colour. */
+    applyLooks: function () {
+      var e = TR.save.get('equipped', {}), p = pl.parts, M = TR.menus;
+      if (pl.hat) { pl.group.remove(pl.hat); pl.hat = null; }
+      var hat = new THREE.Group(), id = e.Hats;
+      function hp(w, h, d, c, y) { var m = part(w, h, d, c, 0, y, 0, hat); m.castShadow = false; return m; }
+      if (id === 'hat_top') { hp(1.3, 0.1, 1.3, 0x18181c, 2.92); hp(0.8, 0.8, 0.8, 0x18181c, 3.3); }
+      else if (id === 'hat_cowboy') { hp(1.8, 0.1, 1.2, 0x8d5a2b, 2.92); hp(0.9, 0.5, 0.8, 0x8d5a2b, 3.15); }
+      else if (id === 'hat_party') { hp(0.8, 0.3, 0.8, 0xff5ad1, 3); hp(0.5, 0.3, 0.5, 0x7dffea, 3.3); hp(0.2, 0.3, 0.2, 0xffc53d, 3.6); }
+      else if (id === 'hat_chef') { hp(1, 0.3, 1, 0xffffff, 3); hp(1.2, 0.4, 1.2, 0xffffff, 3.35); }
+      else if (id === 'hat_halo') { hp(1.3, 0.1, 0.2, 0xffd24a, 3.6); hp(0.2, 0.1, 1.3, 0xffd24a, 3.6); }
+      if (id) { pl.group.add(hat); pl.hat = hat; }
+      pl.look = { outfit: null, trail: null, skin: null };
+      var o = e.Outfits && M.item('Outfits', e.Outfits); if (o) pl.look.outfit = o[3];
+      var tr = e.Trails && M.item('Trails', e.Trails); if (tr) pl.look.trail = tr[3];
+      var sk = e.Skins && M.item('Skins', e.Skins); if (sk) pl.look.skin = sk[3];
+      pl.stage = -1;
+      pl.setGrowth(pl.spentNow || 0);
+      Object.keys(TR.vehicles.placed).forEach(function (k) { TR.vehicles.applySkin(TR.vehicles.placed[k]); });
+    },
     /** Crown, gold outfit, carpet trail, bodyguards. Looks only; the collision stays the same size. */
     setGrowth: function (spent) {
       var R = window.TRD.rules, p = pl.parts;
+      pl.spentNow = spent;
       var stage = 0; R.GROWTH.forEach(function (g, i) { if (spent >= g.at) stage = i + 1; });
       if (stage === pl.stage) return;
       pl.stage = stage;
@@ -100,7 +121,9 @@
         pl.trail = [];
       }
       p.crown.visible = stage >= 1;
-      p.body.material.color.setHex(stage >= 2 ? 0xffc53d : 0x2f80ed);
+      var fit = pl.look && pl.look.outfit;
+      p.body.material.color.setHex(fit || (stage >= 2 ? 0xffc53d : 0x2f80ed));
+      if (pl.look && pl.look.trail) pl.carpetMesh.material.color.setHex(pl.look.trail);
       p.legL.material.color.setHex(stage >= 2 ? 0xd59a14 : 0x2e3a59); p.legR.material.color.setHex(stage >= 2 ? 0xd59a14 : 0x2e3a59);
       pl.showCarpet = stage >= 3;
       p.g1.visible = p.g2.visible = stage >= 4;

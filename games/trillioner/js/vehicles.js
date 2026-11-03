@@ -100,6 +100,7 @@
         }
         v = vs.placed[kind] = { kind: kind, spec: spec, group: group, pos: new THREE.Vector3(), vel: new THREE.Vector3(), speed: 0, heading: 0, slip: 0, vy: 0, fuel: spec.fuel || 0, railS: 0 };
         vs.scene.add(group);
+        vs.applySkin(v);
       }
       v.pos.set(x, y, z); v.heading = heading || 0; v.speed = 0; v.vel.set(0, 0, 0); v.vy = 0;
       if (spec.fuel) v.fuel = spec.fuel;
@@ -107,6 +108,11 @@
       v.group.visible = true;
       vs.sync(v);
       return v;
+    },
+    /** Clout skin: tints the whole vehicle. */
+    applySkin: function (v) {
+      var look = TR.player.look, mesh = v.group.children[0];
+      if (mesh && mesh.material && mesh.material.color) mesh.material.color.setHex(look && look.skin ? look.skin : 0xffffff);
     },
     hideAll: function () { Object.keys(vs.placed).forEach(function (k) { vs.placed[k].group.visible = false; }); },
     /** Q wheel: bring a vehicle to the player. Returns an error string, or null. */

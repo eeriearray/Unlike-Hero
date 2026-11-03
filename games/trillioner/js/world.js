@@ -70,7 +70,7 @@
 
     // Grind rails for the hoverboard, along the widest streets.
     buildRails: function () {
-      [[[-60, 12], [-20, 12]], [[20, -12], [100, -12]], [[-110, 230], [-40, 230]], [[140, 12], [230, 12]], [[-200, 40], [-130, 40]], [[130, 212], [200, 212]], [[-60, -130], [60, -130]]].forEach(function (r) {
+      [[[-100, -11], [-40, -11]], [[20, -12], [100, -12]], [[-110, 230], [-40, 230]], [[140, 12], [230, 12]], [[-200, 40], [-130, 40]], [[130, 212], [200, 212]], [[-60, -130], [60, -130]]].forEach(function (r) {
         var a = r[0], b = r[1], y = 1.6, mx = (a[0] + b[0]) / 2, mz = (a[1] + b[1]) / 2, l = Math.hypot(b[0] - a[0], b[1] - a[1]), g = world.geo(mx, mz, 'neon');
         g.box(mx, y - 0.1, mz, Math.abs(b[0] - a[0]) + 0.3, 0.2, Math.abs(b[1] - a[1]) + 0.3, 0xff7de9);
         for (var i = 0; i <= 4; i++) { var px = a[0] + (b[0] - a[0]) * i / 4, pz = a[1] + (b[1] - a[1]) * i / 4; world.geo(px, pz, 'solid').box(px, 0, pz, 0.25, y, 0.25, 0x666a70); }
@@ -579,6 +579,18 @@
       world.clockTex.needsUpdate = true;
     },
 
+    /** Far chunks drop their window detail and everything past the fog is culled by the camera's far plane. */
+    lod: function (pos, camera) {
+      var q = (TR.settings && TR.settings.windows) || 340, keys = Object.keys(world.meshes);
+      for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        if (k.charAt(0) !== 's' || k.indexOf(':window') < 0) continue;
+        var m = world.meshes[k], c = m.geometry.boundingSphere.center;
+        m.visible = Math.hypot(c.x - pos.x, c.z - pos.z) < q;
+      }
+      camera.far = Math.max(300, world.scene.fog.far * 1.1);
+      camera.updateProjectionMatrix();
+    },
     /** Which space is drawn: the surface, the Under City, or a room (neither). */
     setSpace: function (space) {
       if (world.space === space) return;

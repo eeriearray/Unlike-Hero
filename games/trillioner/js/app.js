@@ -55,6 +55,10 @@
       TR.traffic.init(app.scene, 44);
       TR.hud.init(ui);
       TR.map.init(TR.hud.mapBox);
+      var au = TR.save.get('audio', null);
+      if (au) { TR.audio.volume = au.volume; TR.audio.sfxVolume = au.sfxVolume; TR.audio.musicVolume = au.musicVolume; TR.audio.muted = au.muted; }
+      TR.quality.init();
+      TR.player.applyLooks();
       TR.menus.init(ui);
       TR.player.teleport(-60, 0, 8, 0);
       TR.world.resetRun();
@@ -95,6 +99,8 @@
       if (TR.interiors.current) TR.interiors.exit(TR.player);
       TR.player.teleport(sp.x, sp.y, sp.z, 0);
       TR.hud.show(true);
+      TR.tutorial.start();
+      TR.audio.startMusic();
       app.mode = opts.mode;
       app.ended = false;
       app.paused = false;
@@ -256,8 +262,26 @@
       var owned = Object.keys(me.vehicles).length;
       if (owned !== app.ownedCount) { app.ownedCount = owned; TR.traffic.setOwned(owned ? [0xffc53d, 0xff2d2d, 0xffd24a].slice(0, Math.min(3, owned)) : []); }
     },
+    /** The Trillion Tower elevator: penthouse Trophy Room or the roof helipad. */
+    elevator: function (dt) {
+      var ints = TR.interiors, p = TR.player.pos;
+      if (!ints.current || ints.current.id !== 'trillion_tower') return false;
+      var r = ints.current.room, x = r.ox - r.w / 2 + 3, z = r.oz + r.d / 2 - 5;
+      if (Math.hypot(p.x - x, p.z - z) > 4) return false;
+      if (!TR.hud.pOn) TR.hud.prompt('Elevator', 'E: Penthouse Trophy Room. R: Rooftop helipad.');
+      if (TR.input.hit('KeyE')) { TR.interiors.enterTrophyRoom(TR.player); return true; }
+      if (TR.input.hit('KeyR')) {
+        var b = TRD.districts.DISTRICTS.downtown.buildings.filter(function (q) { return q.id === 'trillion_tower'; })[0];
+        ints.exit(TR.player);
+        TR.player.teleport(b.x, b.h + 1, b.z + 4, 0);
+        TR.hud.toast('The helipad. Long way down.', 'gold');
+        return true;
+      }
+      return false;
+    },
     updateActions: function (dt) {
       var input = TR.input, vs = TR.vehicles, ints = TR.interiors;
+      if (app.elevator(dt)) return;
       if (input.hit('KeyN')) TR.notebook.toggle();
       if (input.hit('KeyM')) TR.notebook.toggleMap();
       if (input.hit('KeyQ')) TR.hud.toggleWheel(app.session.view.me);
@@ -308,6 +332,8 @@
       app.running = false;
       TR.menus.closePerfect();
       TR.audio.engine(null);
+      TR.audio.stopMusic();
+      if (TR.tutorial.el) { TR.tutorial.el.remove(); TR.tutorial.el = null; }
       var res = app.session.results(), earned = TR.save.recordRun(res, app.mode);
       if (window.Hub) Hub.report('session-end', { result: res.won ? 'win' : 'lose', spent: res.spent, durationMs: res.ms, mode: app.mode, perfect: res.perfect });
       if (document.pointerLockElement) document.exitPointerLock();
@@ -337,6 +363,7 @@
       } else if (TR.player.grounded && !TR.vehicles.current && !room && !TR.world.isWater(pos.x, pos.z)) {
         app.lastSafe = { x: pos.x, y: pos.y, z: pos.z };
       }
+      if (app.mode === 'free') app.freeRoamTick();
       app.posT -= dt;
       if (app.posT <= 0) {
         app.posT = 0.1;
@@ -351,6 +378,8 @@
       TR.crowds.update(dt, pos, app.t, room);
       TR.traffic.update(dt, pos, room || under);
     },
+
+    freeRoamTick: function () {},
 
     /** One simulation frame. Debug and tests call this directly when the page is hidden. */
     frame: function (dt) {
@@ -369,12 +398,22 @@
         app.updateActions(dt);
         TR.hud.update(app.session.view, dt);
         app.cityGrowth(app.session.view.me);
+        TR.tutorial.update(dt, app.session.view.me, pos);
+        TR.audio.setScene(app.session.view.hour, app.district, app.session.view.mode !== 'free' && app.session.view.dayMs - app.session.view.t < app.session.view.dayMs / 24);
         if (app.rocketBought && app.session.view.hour >= 0 && app.session.view.hour < 1) { app.rocketBought = false; TR.world.launchRocket(); TR.hud.banner('YOUR ROCKET HAS LAUNCHED!'); TR.audio.boom(1); TR.cam.shake = 0.6; }
         app.tickWorld(dt, pos);
       }
       TR.input.endFrame();
       TR.world.update(dt, app.t);
       TR.fx.update(sim);
+      if (!app.running) { // the menu flies slowly over the city
+        var a = app.t * 0.06, cam = app.camera;
+        TR.world.setSpace('surface');
+        TR.world.setTime(10, 'clear', { x: 0, y: 0, z: 0 });
+        cam.position.set(Math.cos(a) * 250, 120, Math.sin(a) * 250);
+        cam.lookAt(0, 22, 0);
+        return;
+      }
       var v = TR.vehicles.current;
       var cfl = TR.interiors.current ? 0 : TR.player.pos.y < -20 ? app.floorAt(TR.player.pos) : TR.world.isWater(TR.player.pos.x, TR.player.pos.z) ? -1 : 0;
       TR.cam.update(app.camera, TR.player.pos, dt, v ? { dist: v.spec.cam, lift: 2.4, fov: 62 + Math.min(16, Math.abs(v.speed) * 0.34), floor: cfl } : { floor: cfl });
@@ -385,7 +424,7 @@
       var dt = Math.max(0, Math.min(0.05, (now - app.last) / 1000));
       app.last = now;
       app.fpsAcc += dt; app.fpsN++;
-      if (app.fpsAcc >= 0.5) { app.fps = app.fpsN / app.fpsAcc; app.fpsAcc = 0; app.fpsN = 0; if (app.dbgFps) app.dbgFps.textContent = app.fps.toFixed(0) + ' FPS, ' + app.renderer.info.render.calls + ' calls'; }
+      if (app.fpsAcc >= 0.5) { app.fps = app.fpsN / app.fpsAcc; TR.quality.watch(app.fps, app.fpsAcc); TR.world.lod(TR.player.pos, app.camera); app.fpsAcc = 0; app.fpsN = 0; if (app.dbgFps) app.dbgFps.textContent = app.fps.toFixed(0) + ' FPS, ' + app.renderer.info.render.calls + ' calls'; }
       app.frame(dt);
       app.renderer.render(app.scene, app.camera);
     },

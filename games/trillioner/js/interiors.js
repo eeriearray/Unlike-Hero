@@ -36,7 +36,11 @@
       if (TR.audio) TR.audio.door();
     },
     leaveRoom: function () {
-      if (ints.group) { TR.world.scene.remove(ints.group); ints.group.children.forEach(function (m) { m.geometry.dispose(); m.material.dispose(); }); ints.group = null; }
+      if (ints.group) {
+        TR.world.scene.remove(ints.group);
+        ints.group.children.forEach(function (m) { if (m.geometry) m.geometry.dispose(); if (m.material && m.material !== TR.world.neonMat) { if (m.material.map) m.material.map.dispose(); m.material.dispose(); } });
+        ints.group = null;
+      }
       ints.boxes.forEach(function (b) { b.off = true; });
       ints.boxes = [];
       ints.current = null;
@@ -47,6 +51,33 @@
       TR.world.setSpace(back && back.y < -20 ? 'under' : 'surface');
       if (back) player.teleport(back.x, back.y, back.z, 0);
       if (TR.audio) TR.audio.door();
+    },
+    /** The penthouse: every earned trophy on its own pedestal. Reached from the Trillion Tower elevator. */
+    enterTrophyRoom: function (player) {
+      var got = TR.save.get('trophies', {}), live = TR.app.session.view.me.trophies || {}, ids = {}, list = window.TRD.trophies.TROPHIES;
+      Object.keys(got).forEach(function (k) { ids[k] = 1; }); Object.keys(live).forEach(function (k) { ids[k] = 1; });
+      var earned = list.filter(function (t) { return ids[t.id]; }), cols = 6, rows = Math.max(2, Math.ceil(earned.length / cols)), S = 9, w = cols * S + 10, d = rows * S + 18, ox = 3400, oz = 3400;
+      ints.leaveRoom();
+      var fake = { id: 'trophy_room', name: 'Trophy Room', district: 'downtown', room: { ox: ox, oz: oz, w: w, d: d, h: 14, y: 0 }, front: { x: 60, z: -38.5 }, y: 0 };
+      ints.enter(fake, player);
+      var g = new TR.Geo(), n = new TR.Geo();
+      earned.forEach(function (t, i) {
+        var col = i % cols, row = Math.floor(i / cols), x = ox + (col - (cols - 1) / 2) * S, z = oz - d / 2 + 7 + row * S;
+        g.box(x, 0, z, 3, 1.4, 3, 0xf5efe0);
+        n.box(x, 1.4, z, 1.4, 0.3, 1.4, 0xffc53d).box(x, 1.7, z, 0.5, 0.9, 0.5, 0xffc53d).box(x, 2.6, z, 1.6, 1, 1.6, 0xffd96a);
+        TR.world.collide; ints.boxes.push(TR.world.collide.addBox(x, 0, z, 3, 1.4, 3, { room: 1 }));
+        var c = document.createElement('canvas'); c.width = 320; c.height = 64;
+        var cx = c.getContext('2d'); cx.fillStyle = 'rgba(20,20,40,.85)'; cx.fillRect(0, 0, 320, 64); cx.fillStyle = '#ffc53d'; cx.textAlign = 'center';
+        var fs = 26; cx.font = '800 ' + fs + 'px Arial'; while (cx.measureText(t.name).width > 306 && fs > 12) { fs--; cx.font = '800 ' + fs + 'px Arial'; }
+        cx.fillText(t.name, 160, 42);
+        var sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), fog: false }));
+        sp.scale.set(6, 1.2, 1); sp.position.set(x, 5, z);
+        ints.group.add(sp);
+      });
+      if (g.count) ints.group.add(g.mesh(new THREE.MeshLambertMaterial({ vertexColors: true, emissive: 0x444444 })));
+      if (n.count) ints.group.add(n.mesh(TR.world.neonMat));
+      ints.current.isTrophy = true;
+      TR.hud.toast(earned.length ? 'Your Trophy Room' : 'Your Trophy Room. It is empty. For now.', 'gold');
     },
     /** The door pad inside the current room. */
     doorPos: function () { var s = ints.current; return s ? { x: s.room.ox, z: s.room.oz + s.room.d / 2 - 1.5 } : null; }
