@@ -128,6 +128,7 @@
     closePerfect: function () { if (menus.pw) menus.pw.remove(); menus.pw = null; },
     results: function (res, earned) {
       var title = res.perfect ? 'PERFECT ZERO!' : res.won ? 'FLAT BROKE!' : res.result === 'quit' ? 'Run over' : 'The day is over', names = {};
+      if (TR.app.mode === 'battle' && res.winnerName) title = res.winner === TR.app.session.view.me.id ? 'YOU WIN!' : res.winnerName + ' wins!';
       Tr.TROPHIES.forEach(function (t) { names[t.id] = t.name; });
       var chips = res.trophies.map(function (t) { return '<span class="chip">' + (earned.newTrophies.indexOf(t) >= 0 ? 'NEW: ' : '') + (names[t] || t) + '</span>'; }).join('') || '<span>No trophies this time.</span>';
       var free = TR.app.mode === 'free', daily = TR.app.mode === 'daily';
@@ -137,9 +138,10 @@
         '<div class="stat"><b>' + (res.best ? TR.fmt(res.best.base) : '-') + '</b>Best purchase: ' + (res.best ? escapeHtml(res.best.name) : 'nothing') + '</div>' + (res.won ? '<div class="stat"><b>' + menus.mins(res.ms) + '</b>Win time</div>' : '') + '</div>' +
         '<canvas class="chart" id="r-chart" width="700" height="120"></canvas><div class="chips">' + chips + '</div>' +
         (daily ? '<div id="r-lb" class="lb">Loading today\'s board...</div>' : '') +
+        (res.board ? '<div class="lb">' + res.board.map(function (b, i) { return '<div>' + (i + 1) + '. ' + escapeHtml(b.name) + ': ' + TR.fmtFull(b.balance) + ' left, ' + TR.fmt(b.spent) + ' spent</div>'; }).join('') + '</div>' : '') +
         '<div class="row"><button class="btn" id="r-again">New run</button><button class="btn alt" id="r-menu">Menu</button></div></div>');
       menus.chart(s.querySelector('#r-chart'), res.history);
-      on(s, 'r-again', function () { menus.close(); TR.app.startRun({ mode: TR.app.mode === 'battle' ? 'day' : TR.app.mode, seed: daily ? menus.dailySeed() : undefined }); });
+      on(s, 'r-again', function () { if (TR.app.mode === 'battle') { menus.battle(); return; } menus.close(); TR.app.startRun({ mode: TR.app.mode, seed: daily ? menus.dailySeed() : undefined }); });
       on(s, 'r-menu', menus.title);
       if (daily) TR.leaderboard.submitAndShow(res, s.querySelector('#r-lb'));
       if (free) on(s, 'r-again', function () { menus.close(); TR.app.startRun({ mode: 'free' }); });

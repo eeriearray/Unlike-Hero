@@ -60,7 +60,7 @@
         if (me.flags['s:' + sp.id]) return;
         var look = sp.s.look, xz = Math.hypot(sp.x - pos.x, sp.z - pos.z), dy = Math.abs(sp.y - pos.y);
         if (look === 'overheard') {
-          if (xz < 8 && dy < 6) TR.app.tryDiscover(sp.id);
+          if (xz < 8 && dy < 6 && !sp.asked) { sp.asked = true; TR.app.tryDiscover(sp.id); }
           return;
         }
         if (look === 'ladder' || look === 'auto') return;

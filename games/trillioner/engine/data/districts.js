@@ -48,8 +48,8 @@
         { id: 'fashion_house', name: 'Fashion House', x: 240, z: 94, w: 22, d: 16, h: 16, wall: 0xe89ab3, roof: 0x222222, door: 'n' }
       ],
       stalls: [
-        { id: 'jewel_row', name: 'Jewellery Row', x: 180, z: 24, cols: 6, dir: 'x' },
-        { id: 'tailor_row', name: 'The Tailor and Friends', x: 300, z: 24, cols: 6, dir: 'x' }
+        { id: 'jewel_row', name: 'Jewellery Row', x: 180, z: 24, cols: 6, dir: 'x', wholeStore: 1 },
+        { id: 'tailor_row', name: 'The Tailor and Friends', x: 300, z: 24, cols: 6, dir: 'x', wholeStore: 1 }
       ],
       change: { x: 240, z: 22 },
       stairs: [{ x: 188, z: -66, to: 18, dir: 'w', len: 6 }],
@@ -190,7 +190,7 @@
       ],
       stalls: [
         { id: 'grey_corner', name: "Mr. Grey's Corner", x: -40, z: -46, cols: 4, dir: 'x', spacing: 5 },
-        { id: 'bulk_stalls', name: 'Bazaar Bulk Stalls', x: 40, z: 78, cols: 6, dir: 'x' },
+        { id: 'bulk_stalls', name: 'Bazaar Bulk Stalls', x: 40, z: 78, cols: 6, dir: 'x', wholeStore: 1 },
         { id: 'deep_level', name: 'The Deepest Level', x: 0, z: -180, y: DEEP_Y, cols: 5, dir: 'x' }
       ],
       change: { x: -30, z: 60 },

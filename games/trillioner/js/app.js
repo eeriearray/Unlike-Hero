@@ -22,6 +22,7 @@
       cannon: function (on) { var r = g.setCannon('me', on); s.view = g.viewFor('me'); return r; },
       fastTravel: function (d) { return g.fastTravel('me', d); },
       discover: function (id) { var r = g.discover('me', id); s.view = g.viewFor('me'); return r; },
+      buyStore: function (site) { var r = g.buyStore('me', site); s.view = g.viewFor('me'); return r; },
       setClock: function (h) { g.setClockHour(h); },
       finish: function () { var p = g.players.me; if (p.won) g.finish(p, g.isPerfect(p) ? 'perfect' : 'win'); else if (!g.over) { g.over = true; g.result = 'quit'; } },
       toss: function () { return g.toss('me'); },
@@ -36,8 +37,9 @@
     boot: function () {
       var canvas = document.getElementById('view');
       var ui = document.getElementById('ui');
-      if (window.Hub) Hub.init({ id: 'trillioner', version: '0.1.0', title: 'Trillioner' });
+      if (window.Hub) Hub.init({ id: 'trillioner', version: '1.0.0', title: 'Trillioner' });
       TR.input.init(canvas);
+      TR.input.initTouch(ui);
       app.renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, powerPreference: 'high-performance' });
       app.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
       app.renderer.shadowMap.enabled = true;
@@ -65,7 +67,8 @@
       TR.world.setTime(9, 'clear', TR.player.pos);
       app.ready = true;
       if (DEBUG) app.debugPanel(ui);
-      if (qs.get('autostart') === '1') app.startRun({ mode: 'day', seed: Number(qs.get('seed')) || undefined });
+      if (qs.get('room') || (window.TR.net.getSeat() && TR.net.tryResume())) { if (qs.get('room') && !TR.net.getSeat()) TR.net.lobby(); }
+      else if (qs.get('autostart') === '1') app.startRun({ mode: 'day', seed: Number(qs.get('seed')) || undefined });
       else TR.menus.title();
       app.last = performance.now();
       requestAnimationFrame(app.loop);
@@ -81,7 +84,7 @@
 
     startRun: function (opts) {
       var seed = opts.seed != null ? opts.seed : (Date.now() >>> 0);
-      app.session = LocalSession({ seed: seed, mode: opts.mode });
+      app.session = opts.session || LocalSession({ seed: seed, mode: opts.mode });
       TR.pads.setRun(app.session.run);
       var run0 = app.session.run, sp = run0.spawn;
       TR.player.teleport(sp.x, sp.y, sp.z, 0);
@@ -125,6 +128,7 @@
 
     tryBuy: function (id) {
       var r = app.session.buy(id);
+      if (r.pending) return r;
       if (r.ok) app.onBought(id);
       if (r.error) {
         if (r.code === 'broke') { TR.hud.toast('Too expensive', 'bad'); TR.audio.denied(); }
@@ -133,6 +137,11 @@
       return r;
     },
     onBought: function (id) {},
+    tryStore: function (site) {
+      var r = app.session.buyStore(site);
+      if (r.error && r.code !== 'sold') { TR.hud.toast(r.code === 'broke' ? 'Too expensive' : r.error, 'bad'); TR.audio.denied(); }
+      return r;
+    },
     tryDemolish: function (id, truck) {
       var r = app.session.demolish(id, truck);
       if (r.error) { TR.hud.toast(r.error, 'bad'); TR.audio.denied(); }
@@ -142,7 +151,14 @@
     handleEvents: function (evs) {
       var run = app.session.run, pos = TR.player.pos;
       evs.forEach(function (ev) {
-        if (ev.type === 'purchase') {
+        if (ev.type === 'purchase' && ev.pid && ev.pid !== app.session.view.me.id) {
+          if (app.session.applyStock) app.session.applyStock(ev.item, ev.stock);
+        } else if (ev.type === 'stock') {
+          if (app.session.applyStock) app.session.applyStock(ev.item, ev.stock);
+        } else if (ev.type === 'demolish' && ev.pid !== app.session.view.me.id) {
+          /* a rival's rubble is theirs */
+        } else if (ev.type === 'purchase') {
+          if (app.session.applyStock) app.session.applyStock(ev.item, ev.stock);
           var it = run.items[ev.item], name = ev.store ? 'All of ' + run.sites[ev.store].name : it.name;
           TR.fx.purchase(ev, pos, name);
           TR.hud.flyPrice('-' + TR.fmt(ev.paid));
@@ -169,6 +185,7 @@
             TR.world.addRubble(s.b, s.y || 0);
           }
         } else if (ev.type === 'secret') {
+          var fp = run.secrets[ev.id];
           TR.hud.toast('FOUND: ' + ev.name, 'gold');
           if (ev.clue) { TR.hud.clue(ev.name, ev.clue); TR.notebook.addClue(ev.name, ev.clue, pos); }
           if (ev.note && TR.save.note(ev.id, ev.note)) TR.hud.toast('Notebook: ' + ev.note);
@@ -186,6 +203,8 @@
           if (ev.amount > 0) TR.hud.toast('Tax refund: +' + TR.fmt(ev.amount) + '. Rude.', 'bad');
         } else if (ev.type === 'cannonEmpty') {
           TR.hud.toast('The money cannon is spent.', 'gold');
+        } else if (TR.battle && TR.battle.onEvent(ev)) {
+          /* handled */
         } else if (ev.type === 'won') {
           app.winSequence();
           TR.menus.perfectWindow();
@@ -247,7 +266,7 @@
     tryDiscover: function (id) {
       var r = app.session.discover(id), s = app.session.run.secrets[id];
       if (r.error) { TR.hud.toast(r.error, 'bad'); TR.audio.denied(); return r; }
-      if (r.ok && !r.already && s.enter === 'under') {
+      if ((r.ok && !r.already || r.pending) && s.enter === 'under') {
         var e = TRD.districts.DISTRICTS.under.entrances.filter(function (x) { return id === 'laundromat_back' ? x.id === 'laundromat' : id === 'factory_door' ? x.id === 'factory' : x.id === 'harbour'; })[0];
         TR.notebook.travel({ x: e.x, y: TRD.districts.UNDER_Y, z: e.z });
       }
@@ -339,10 +358,19 @@
       if (document.pointerLockElement) document.exitPointerLock();
       if (res.perfect) TR.hud.banner('PERFECT ZERO!');
       TR.hud.show(false);
+      if (app.session.online) { TR.battle.stop(); TR.net.session = null; TR.net.room = null; }
       TR.menus.results(res, earned);
     },
+    /** Back to the title without a results screen, for a room that closed. */
+    quitToMenu: function () {
+      app.running = false; app.ended = true;
+      TR.audio.engine(null); TR.audio.stopMusic();
+      TR.battle.stop(); TR.hud.show(false);
+      TR.net.session = null; TR.net.room = null;
+      TR.menus.title();
+    },
     /** Quit a run from the pause menu: it still pays out. */
-    quitRun: function () { app.session.finish(); app.endRun({ result: 'quit' }); },
+    quitRun: function () { app.session.finish(); app.endRun({ result: 'quit' }); if (app.session.online) app.session.leave(); },
     setPaused: function (v) {
       if (app.session && app.session.online) v = false;
       app.paused = v;
@@ -370,6 +398,7 @@
         var dist = room ? TR.interiors.current.district : TR.world.districtAt(pos.x, pos.z, pos.y);
         if (dist && dist !== app.district) { app.district = dist; TR.hud.toast(TRD.districts.DISTRICTS[dist].name, 'gold'); }
         app.session.setPos(pos.x, pos.y, pos.z, TR.player.heading, room ? TR.interiors.current.id : null, dist);
+        if (TR.battle) TR.battle.tick(view, pos);
         if (!room) TR.map.reveal(pos.x, pos.z);
         app.mapT = (app.mapT || 0) - 1;
         if (app.mapT <= 0) { app.mapT = 2; TR.map.update(pos, TR.player.heading, under, { dots: TR.notebook.mapDots(view.me) }); }
@@ -423,6 +452,7 @@
       requestAnimationFrame(app.loop);
       var dt = Math.max(0, Math.min(0.05, (now - app.last) / 1000));
       app.last = now;
+      TR.input.pollGamepad();
       app.fpsAcc += dt; app.fpsN++;
       if (app.fpsAcc >= 0.5) { app.fps = app.fpsN / app.fpsAcc; TR.quality.watch(app.fps, app.fpsAcc); TR.world.lod(TR.player.pos, app.camera); app.fpsAcc = 0; app.fpsN = 0; if (app.dbgFps) app.dbgFps.textContent = app.fps.toFixed(0) + ' FPS, ' + app.renderer.info.render.calls + ' calls'; }
       app.frame(dt);
@@ -443,6 +473,8 @@
       app.dbgFps = d.querySelector('#dbg-fps');
       var btns = d.querySelector('#dbg-btns');
       function b(label, fn) { var e = document.createElement('button'); e.textContent = label; e.onclick = function () { fn(); e.blur(); }; btns.appendChild(e); }
+      var live = function (fn) { return function () { if (app.session && app.session.online) { TR.hud.toast('Debug is off in online rooms.', 'bad'); return; } fn(); }; };
+      var b0 = b; b = function (label, fn) { b0(label, live(fn)); };
       b('+$100B', function () { app.me().balance += 100 * R.B; });
       b('-$100B', function () { var p = app.me(); p.balance = Math.max(0, p.balance - 100 * R.B); });
       b('Hour+1', function () { var g = app.session.game; g.setClockHour((g.hourNow() + 1) % 24); });

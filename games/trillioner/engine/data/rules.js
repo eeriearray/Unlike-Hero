@@ -27,6 +27,7 @@
     PERFECT_WINDOW_MS: 60000,
     FAST_TRAVEL_CD_MS: 15000,
     PAD_REACH: 9,                     // server rejects a purchase farther than this from the pad
+    REFUSE_FEE: 1 * B,
     TAX_REFUND_RATE: 0.01,
     TAX_REFUND_CAP: 30 * B,
     CHANGE_FEES: [25, 100, 500, 2000, 10000, 100000, 1000000, 10000000],

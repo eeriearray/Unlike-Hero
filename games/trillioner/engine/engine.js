@@ -5,7 +5,7 @@
  *   - Node (server/index.mjs, tools/, tests) runs it directly.
  *   - Browsers load it as a classic <script> (window.TrillionerEngine) for solo play.
  *
- * Pure and deterministic: same seed plus same commands gives the same result. No three.js, DOM, or Math.random.
+ * Pure and deterministic: same seed plus same commands gives the same result. No three.js, no DOM, no unseeded randomness.
  * Time advances only through tick(dt). Money is integer cents, always.
  */
 (function (root, factory) {
@@ -69,6 +69,7 @@
     this.eventQueue = (this.run.events || []).slice();
     this.fired = {};
     this.lastHourSample = -1;
+    if (this.cfg.pvp) this.setupBattle();
     (opts.players || [{ id: 'p1', name: 'You' }]).forEach(this.addPlayer, this);
   }
   var G = Game.prototype;
@@ -88,6 +89,136 @@
     this.players[p.id] = p;
     this.order.push(p.id);
     return p;
+  };
+
+  // ───────────── Battle Spend ─────────────
+  G.setupBattle = function () {
+    var r = new RngMod.Rng((typeof this.seed === 'number' ? this.seed : RngMod.hash(this.seed)) ^ 0x51ed), self = this;
+    this.auctions = EventsData.SURPRISE_DEALS.slice(0, 8).map(function (d, i) { return d; });
+    this.auctions = r.shuffle(this.auctions).slice(0, 3).map(function (d, i) {
+      return { id: 'a' + i, name: d.name, min: d.price * R.B, at: (60 + i * 130 + r.int(40)) * 1000, ms: 40000, state: 'wait', bids: {}, best: null, bestBid: 0, winner: null };
+    });
+    var spots = [];
+    Object.keys(this.run.sites).forEach(function (k) { var s = self.run.sites[k]; if (s.kind === 'change' && s.y === 0) spots.push({ x: s.s.x + 16, y: 0, z: s.s.z - 4 }); });
+    [[-30, -30], [30, -30], [-200, 0], [-60, 200], [200, 150], [200, -160], [0, -200], [240, 30]].forEach(function (p) { spots.push({ x: p[0], y: 0, z: p[1] }); });
+    var kinds = ['boost', 'ban', 'refund', 'gift'];
+    this.cardSpots = r.shuffle(spots).slice(0, 12).map(function (s, i) { return { id: 'c' + i, x: s.x, y: s.y, z: s.z, kind: kinds[i % kinds.length], taken: false }; });
+    this.gifts = [];
+  };
+  G.stepBattle = function () {
+    var self = this;
+    (this.auctions || []).forEach(function (a) {
+      if (a.state === 'wait' && self.t >= a.at) { a.state = 'open'; a.left = a.ms; self.say('AUCTION OPEN: ' + a.name + ' (from ' + fmtShort(a.min) + ')', 'event'); self.broadcast({ type: 'auction', id: a.id, name: a.name, min: a.min }); }
+      else if (a.state === 'open') { a.left -= R.STEP_MS; if (a.left <= 0) self.closeAuction(a); }
+    });
+    this.gifts = (this.gifts || []).filter(function (g) {
+      g.left -= R.STEP_MS;
+      if (g.left > 0) return true;
+      var to = self.players[g.to], from = self.players[g.from];
+      if (from.balance >= g.amount) { from.balance -= g.amount; from.spent += g.amount; to.balance += g.amount; self.feedPush(from.name + ' gifted ' + fmtShort(g.amount) + ' to ' + to.name); self.emit(to, { type: 'gifted', amount: g.amount, from: from.name }); }
+      return false;
+    });
+  };
+  // Highest bid pays. If the top bidder can no longer cover it, the next one gets it.
+  G.closeAuction = function (a) {
+    var self = this, order = Object.keys(a.bids).sort(function (x, y) { return a.bids[y] - a.bids[x]; });
+    a.state = 'done';
+    for (var i = 0; i < order.length; i++) {
+      var p = this.players[order[i]], bid = a.bids[order[i]];
+      if (p.balance >= bid) {
+        p.balance -= bid; p.spent += bid; p.stats.purchases += 1; a.winner = p.id; a.winnerName = p.name; a.price = bid;
+        p.goods[a.id] = 1;
+        if (!p.best || bid > p.best.base) p.best = { item: a.id, name: a.name, base: bid };
+        this.say(p.name + ' won ' + a.name + ' for ' + fmtShort(bid), 'event');
+        this.broadcast({ type: 'auctionEnd', id: a.id, winner: p.id, price: bid, name: a.name });
+        this.checkWin(p);
+        return;
+      }
+    }
+    this.say('No sale: ' + a.name, 'event');
+    this.broadcast({ type: 'auctionEnd', id: a.id, winner: null, name: a.name });
+  };
+  G.bid = function (pid, id, amount) {
+    var p = this.players[pid], a = (this.auctions || []).filter(function (x) { return x.id === id; })[0];
+    amount = Math.floor(Number(amount));
+    if (!a || a.state !== 'open') return { code: 'closed', error: 'That auction is not open.' };
+    if (!Number.isSafeInteger(amount) || amount < a.min) return { code: 'low', error: 'The minimum bid is ' + fmtShort(a.min) + '.' };
+    if (amount <= a.bestBid) return { code: 'low', error: 'Someone has bid more.' };
+    if (amount > p.balance) return { code: 'broke', error: 'Too expensive' };
+    a.bids[pid] = amount; a.bestBid = amount; a.best = p.name;
+    this.broadcast({ type: 'bid', id: id, by: p.name, amount: amount });
+    return { ok: true };
+  };
+  G.pickupCard = function (pid, id) {
+    var p = this.players[pid], c = (this.cardSpots || []).filter(function (x) { return x.id === id; })[0];
+    if (!c || c.taken) return { code: 'gone', error: 'Already taken.' };
+    if (p.cardsUsed + p.cards.length >= 3) return { code: 'full', error: 'You can only use three cards in a match.' };
+    if (this.requireNear && Math.hypot(p.x - c.x, p.z - c.z) > 12) return { code: 'far', error: 'You are too far away.' };
+    c.taken = true;
+    p.cards.push(c.kind);
+    this.broadcast({ type: 'cardTaken', id: id, by: p.id });
+    return { ok: true, kind: c.kind };
+  };
+  /** Attack cards. opts: { target, site } */
+  G.playCard = function (pid, kind, opts) {
+    opts = opts || {};
+    var p = this.players[pid], t = this.players[opts.target], i = p.cards.indexOf(kind), self = this;
+    if (i < 0) return { code: 'nocard', error: 'You do not have that card.' };
+    if (!t || t.id === p.id) return { code: 'target', error: 'Pick a rival.' };
+    if (kind === 'boost') {
+      var losers = Object.keys(t.owned).filter(function (k) { return self.items[k].income < 0 && !t.owned[k].closing && !t.owned[k].demolished; });
+      if (!losers.length) return { code: 'none', error: 'They have no losing company to boost.' };
+      t.boost[losers[0]] = 60000;
+      this.feedPush(p.name + ' played BOOST on ' + t.name);
+      this.emit(t, { type: 'attacked', text: p.name + " made your " + this.items[losers[0]].name + ' profitable for 60 seconds!' });
+    } else if (kind === 'ban') {
+      var site = opts.site && this.run.sites[opts.site] ? opts.site : t.inv || null;
+      if (!site) { site = Object.keys(this.run.sites).filter(function (k) { return self.run.sites[k].district === t.district && self.run.sites[k].items.length; })[0]; }
+      if (!site) return { code: 'none', error: 'No shop to close.' };
+      t.ban[site] = 45000;
+      this.feedPush(p.name + ' played BAN on ' + t.name);
+      this.emit(t, { type: 'attacked', text: p.name + ' got you banned from ' + this.run.sites[site].name + ' for 45 seconds!' });
+    } else if (kind === 'refund') {
+      t.balance += 3 * R.B;
+      this.feedPush(p.name + ' played REFUND on ' + t.name);
+      this.emit(t, { type: 'attacked', text: p.name + ' got you a $3B refund. How dare they.' });
+    } else if (kind === 'gift') {
+      if (p.giftUsed) return { code: 'used', error: 'Forced Gift is once per match.' };
+      p.giftUsed = true;
+      this.gifts.push({ id: 'g' + this.t, from: p.id, to: t.id, amount: 5 * R.B, left: 10000 });
+      this.emit(t, { type: 'giftOffer', from: p.name, amount: 5 * R.B });
+    } else return { code: 'nocard', error: 'Unknown card.' };
+    p.cards.splice(i, 1);
+    p.cardsUsed += 1;
+    return { ok: true };
+  };
+  G.refuseGift = function (pid) {
+    var p = this.players[pid], g = (this.gifts || []).filter(function (x) { return x.to === pid; })[0];
+    if (!g) return { code: 'none', error: 'No gift to refuse.' };
+    if (p.balance < R.REFUSE_FEE) return { code: 'broke', error: 'Too expensive' };
+    p.balance -= R.REFUSE_FEE; p.spent += R.REFUSE_FEE;
+    this.gifts = this.gifts.filter(function (x) { return x !== g; });
+    this.feedPush(p.name + ' paid $1B to refuse a gift');
+    return { ok: true };
+  };
+
+  /** Every client action goes through here, so server, bots and solo share one door. */
+  G.command = function (pid, cmd) {
+    if (!cmd || !this.players[pid]) return { error: 'Bad command.' };
+    switch (cmd.t) {
+      case 'buy': return this.buy(pid, String(cmd.item));
+      case 'buyStore': return this.buyStore(pid, String(cmd.site));
+      case 'demolish': return this.demolish(pid, String(cmd.item), !!cmd.truck);
+      case 'discover': return this.discover(pid, String(cmd.id));
+      case 'cannon': return this.setCannon(pid, !!cmd.on);
+      case 'fastTravel': return this.fastTravel(pid, String(cmd.district));
+      case 'toss': return this.toss(pid);
+      case 'bid': return this.bid(pid, String(cmd.id), cmd.amount);
+      case 'pickup': return this.pickupCard(pid, String(cmd.id));
+      case 'play': return this.playCard(pid, String(cmd.kind), { target: String(cmd.target), site: cmd.site ? String(cmd.site) : null });
+      case 'refuse': return this.refuseGift(pid);
+      default: return { error: 'Unknown command.' };
+    }
   };
 
   // ───────────── clock ─────────────
@@ -133,6 +264,7 @@
     if (this.frozen) { this.stepPerfect(); return; }
     this.t += R.STEP_MS;
     this.runEvents();
+    if (this.cfg.pvp) this.stepBattle();
     this.active = this.active.filter(function (a) { a.leftMs -= R.STEP_MS; if (a.leftMs <= 0) self.endEvent(a); return a.leftMs > 0; });
     var boom = this.boomActive() ? 3 : 1;
     for (var i = 0; i < this.order.length; i++) {
@@ -228,6 +360,7 @@
     this.over = true;
     this.result = 'timeup';
     this.winner = this.cfg.pvp ? best.id : null;
+    if (this.cfg.pvp) this.say(best.name + ' wins with the lowest balance!', 'win');
     this.broadcast({ type: 'over', result: 'timeup', winner: this.winner });
   };
 
@@ -288,7 +421,7 @@
   };
   /** Secret pads stay out of sight until their flag is set. */
   G.padVisible = function (p, item) {
-    if (item.secret && !p.flags[item.secret]) return false;
+    if (item.secret && !p.flags[item.secret] && this.stock[item.id] > 0) return false;
     return true;
   };
 
@@ -408,14 +541,18 @@
 
   /** "Buy the whole store": everything left and unlocked at one site, as one purchase. */
   G.buyStore = function (pid, site) {
-    var p = this.players[pid], self = this, list = [], sum = 0;
+    var p = this.players[pid], self = this, list = [], sum = 0, near = this.requireNear, st = this.run.sites[site] || { items: [] }, close = !near;
     if (this.over) return { code: 'over', error: 'The day is over.' };
-    (this.run.sites[site] || { items: [] }).items.forEach(function (id) {
+    st.items.forEach(function (id) { if (self.nearPad(p, id)) close = true; else { var q = self.run.padPos[id]; if (q && Math.hypot(p.x - q.x, p.z - q.z) < 60 && Math.abs(p.y - q.y) < 30) close = true; } });
+    if (!close) return { code: 'far', error: 'You are too far away.' };
+    this.requireNear = false;
+    st.items.forEach(function (id) {
       var it = self.items[id];
       if (it.kind !== 'good' || self.stock[id] <= 0 || self.canBuy(p, id)) return;
       list.push(id);
       sum += self.basePrice(it) * self.stock[id];
     });
+    this.requireNear = near;
     if (!list.length) return { code: 'sold', error: 'Nothing left to buy here.' };
     var q = quote(sum, p.frenzy, p.balance);
     if (!q.ok) return { code: 'broke', error: 'Too expensive' };
@@ -555,7 +692,8 @@
     if (p.history[p.history.length - 1] !== p.balance) p.history.push(p.balance);
     return {
       result: this.result || 'quit', spent: p.spent, left: p.balance, trophies: Object.keys(p.trophies), clout: this.clout(p), secrets: flags.length,
-      history: p.history.slice(), best: p.best, won: p.won, perfect: p.perfect, ms: this.t, winner: this.winner
+      history: p.history.slice(), best: p.best, won: p.won, perfect: p.perfect, ms: this.t, winner: this.winner, winnerName: this.winner && this.players[this.winner] ? this.players[this.winner].name : null,
+      board: this.cfg.pvp ? this.order.map(function (id) { var o = this.players[id]; return { name: o.name, balance: o.balance, spent: o.spent }; }, this).sort(function (a, b) { return a.balance - b.balance; }) : null
     };
   };
 
@@ -574,11 +712,16 @@
       },
       feed: this.feed.slice(-6)
     };
+    if (this.over) view.results = this.results(pid);
     if (this.cfg.pvp) {
       view.board = this.order.map(function (id) {
         var o = self.players[id];
         return { id: o.id, name: o.name, bot: o.bot, balance: o.balance, spent: o.spent, x: o.x, y: o.y, z: o.z, h: o.h, inv: o.inv, connected: o.connected !== false };
       });
+      view.auctions = this.auctions.filter(function (a) { return a.state === 'open'; }).map(function (a) { return { id: a.id, name: a.name, min: a.min, left: a.left, best: a.best, bestBid: a.bestBid }; });
+      view.cardSpots = this.cardSpots.filter(function (c) { return !c.taken; }).map(function (c) { return { id: c.id, x: c.x, y: c.y, z: c.z, kind: c.kind }; });
+      view.giftFrom = this.gifts.filter(function (g) { return g.to === pid; }).map(function (g) { return { left: g.left, amount: g.amount }; })[0] || null;
+      view.me.giftUsed = p.giftUsed; view.me.cardsUsed = p.cardsUsed;
     }
     return view;
   };

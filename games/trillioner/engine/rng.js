@@ -1,4 +1,4 @@
-/* Seeded random numbers (mulberry32). Engine code never calls Math.random. Node + classic script. */
+/* Seeded random numbers (mulberry32). All engine randomness comes from here. Node + classic script. */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
   else root.TrillionerRng = factory();

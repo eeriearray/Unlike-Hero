@@ -272,3 +272,24 @@ test('a whole simulated day runs to 24:00 through the bot and stays in integer c
   assert.ok(Number.isSafeInteger(r.player.balance) && Number.isSafeInteger(r.player.spent));
   assert.ok(r.player.history.length >= 90);
 });
+
+test('buy the whole store: one purchase for everything left there, counted once', () => {
+  const g = fresh();
+  const p = g.players.p1;
+  const site = g.run.sites.jewel_row, goods = site.items.filter((i) => g.items[i].kind === 'good');
+  const sum = goods.reduce((a, i) => a + g.items[i].price * g.stock[i], 0);
+  const r = g.buyStore('p1', 'jewel_row');
+  assert.equal(r.ok, true);
+  assert.equal(p.spent, sum);
+  for (const i of goods) assert.equal(g.stock[i], 0);
+  assert.equal(g.buyStore('p1', 'jewel_row').code, 'sold');
+});
+
+test('engine code never uses Math.random', () => {
+  const { readFileSync, readdirSync } = require('node:fs');
+  const root = new URL('../games/trillioner/engine/', import.meta.url);
+  for (const dir of ['', 'data/']) for (const f of readdirSync(new URL(dir, root))) {
+    if (!f.endsWith('.js')) continue;
+    assert.ok(!readFileSync(new URL(dir + f, root), 'utf8').includes('Math.random'), f);
+  }
+});

@@ -23,8 +23,10 @@
   function moveTo(game, p, id) { var pt = surfacePoint(game.run, id); p.x = pt.x; p.z = pt.z; p.y = pt.y || 0; }
 
   /** Greedy: from candidates, take the best value per second of travel, biggest first. */
-  function nextTarget(game, p, canTake) {
-    var best = null, bestScore = -1;
+  function taste(a, b) { var h = 7; for (var i = 0; i < a.length; i++) h = (h * 31 + a.charCodeAt(i)) % 1009; for (i = 0; i < b.length; i++) h = (h * 31 + b.charCodeAt(i)) % 1009; return h / 1009; }
+  function nextTarget(game, p, canTake, mixed) {
+    var best = null, bestScore = -1, near = game.requireNear;
+    game.requireNear = false;   // planning: the bot has not walked there yet
     for (var i = 0; i < game.run.list.length; i++) {
       var it = game.run.list[i];
       if (game.stock[it.id] <= 0) continue;
@@ -33,8 +35,10 @@
       var q = game.quoteFor(p, it.id);
       if (!q.ok) continue;
       var score = it.price / (travel(game, p, it.id) + 2);
+      if (mixed) { var tv = travel(game, p, it.id) + 2; score = Math.sqrt(it.price) * (0.3 + taste(it.id, p.id)) / (tv * tv); }
       if (score > bestScore) { bestScore = score; best = it; }
     }
+    game.requireNear = near;
     return best;
   }
 
@@ -115,5 +119,47 @@
     // keys without a building still earn: outrun them with losses, or wait for the next window to open
     return { wait: 3 };
   }
-  return { knowsSecrets: knowsSecrets, playDay: playDay, visibleOnly: visibleOnly, allEarners: allEarners, nextTarget: nextTarget, travel: travel, moveTo: moveTo, speedOf: speedOf, surfacePoint: surfacePoint };
+  /**
+   * Plays a Battle Spend seat in real time. Called every server tick. The bot walks from pad to pad at driving speed,
+   * so it is visible on the map, and buys only things that do not earn, with a handful of secrets it stumbles on.
+   */
+  function battleStep(game, p, dt) {
+    var st = p.botState || (p.botState = { wait: 1 + (game.order.indexOf(p.id) * 0.6), target: null, sx: p.x, sz: p.z, t: 0, total: 0 });
+    if (game.over || p.won) return;
+    (game.auctions || []).forEach(function (a) {
+      if (a.state === 'open' && p.balance > a.bestBid * 1.1 + 1 * R.B && !a.bids[p.id] && p.balance > a.min) game.bid(p.id, a.id, Math.max(a.min, Math.floor(a.bestBid * 1.05) + 1));
+    });
+    if (st.target) {
+      st.t += dt;
+      var f = Math.min(1, st.t / st.total), pt = surfacePoint(game.run, st.target);
+      p.x = st.sx + (pt.x - st.sx) * f; p.z = st.sz + (pt.z - st.sz) * f; p.y = pt.y || 0;
+      p.h = Math.atan2(-(pt.x - st.sx), -(pt.z - st.sz));
+      if (f < 1) return;
+      var pos = game.run.padPos[st.target];
+      var bx = p.x, bz = p.z;
+      p.x = pos.x; p.z = pos.z; p.y = pos.y;
+      game.buy(p.id, st.target);
+      p.x = bx; p.z = bz; p.y = pt.y || 0;
+      st.target = null;
+      st.wait = 3.5;   // about one purchase every 5 seconds: beatable by someone who shops well
+      return;
+    }
+    st.wait -= dt;
+    if (st.wait > 0) return;
+    var claimed = {};   // two bots never race for the same pad
+    game.order.forEach(function (oid) { var ob = game.players[oid].botState; if (oid !== p.id && ob && ob.target) claimed[ob.target] = true; });
+    var it = nextTarget(game, p, function (x) { return x.income <= 0 && !x.gate && !x.secret && !claimed[x.id]; }, true);
+    if (!it) {
+      for (var id in p.owned) {
+        var o = p.owned[id], item = game.items[id];
+        if (item.income > 0 && item.building && !o.closing && !o.demolished && p.balance >= game.demolishFee(p, id)) { game.demolish(p.id, id); break; }
+      }
+      st.wait = 4;
+      return;
+    }
+    st.target = it.id; st.sx = p.x; st.sz = p.z; st.t = 0;
+    var pt2 = surfacePoint(game.run, it.id);
+    st.total = Math.max(1.2, Math.hypot(pt2.x - p.x, pt2.z - p.z) * ROAD / CAR + (pt2.room ? 1.5 : 0));
+  }
+  return { battleStep: battleStep, knowsSecrets: knowsSecrets, playDay: playDay, visibleOnly: visibleOnly, allEarners: allEarners, nextTarget: nextTarget, travel: travel, moveTo: moveTo, speedOf: speedOf, surfacePoint: surfacePoint };
 });

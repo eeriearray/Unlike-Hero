@@ -17,10 +17,30 @@
     /** Called once per run with the run's items. */
     setRun: function (run) {
       pads.list = run.list.map(function (it) { var p = run.padPos[it.id]; return { item: it, x: p.x, y: p.y, z: p.z }; });
+      // "Buy the whole store" pads: one purchase for everything left and unlocked there
+      Object.keys(run.sites).forEach(function (k) {
+        var s = run.sites[k], def = s.b || s.s;
+        if (!def || !def.wholeStore || !s.items.length) return;
+        var x, y, z;
+        if (s.room) { x = s.room.ox; y = 0; z = s.room.oz + s.room.d / 2 - 11; }
+        else { x = def.x; y = s.y; z = def.z + 7.5; }
+        pads.list.push({ x: x, y: y, z: z, store: k, item: { id: 'store:' + k, name: 'Buy the Whole Store', price: 1e12, kind: 'store', gate: null, secret: null, site: k } });
+      });
       pads.scanT = 0;
+    },
+    /** Total for a whole-store pad, from what is left and unlocked. */
+    storeSum: function (site, sess) {
+      var sum = 0, s = sess.run.sites[site];
+      s.items.forEach(function (id) {
+        var it = sess.run.items[id], n = sess.stock(id);
+        if (it.kind !== 'good' || n <= 0 || (it.secret && !sess.view.me.flags[it.secret]) || sess.gateFails(it.gate)) return;
+        sum += it.price * n;
+      });
+      return sum;
     },
     state: function (pad, sess) { // 'open' | 'sold' | 'locked' | 'hidden' | 'owned'
       var it = pad.item, me = sess.view.me;
+      if (pad.store) return pads.storeSum(pad.store, sess) > 0 ? 'open' : 'sold';
       if (it.secret && !me.flags[it.secret]) return 'hidden';
       if (it.surprise && sess.stock(it.id) <= 0) return 'hidden';
       var o = me.owned[it.id];
@@ -97,6 +117,16 @@
         TR.hud.prompt(it.name, 'Hold X: demolish for ' + TR.fmt(fee), pads.demolishHold(dt, sess, it));
         return;
       }
+      if (near.pad.store) {
+        var sum = pads.storeSum(near.pad.store, sess), qs = TrillionerEngine.quote(sum, sess.view.me.frenzy, bal);
+        if (input.down('KeyE')) {
+          if (pads.holding !== it.id) { pads.holding = it.id; pads.hold = 0; }
+          pads.hold += dt;
+          if (pads.hold >= HOLD_S) { pads.hold = 0; pads.holding = null; TR.app.tryStore(near.pad.store); return; }
+        } else { pads.hold = 0; pads.holding = null; }
+        TR.hud.prompt(it.name, 'Hold E: ' + TR.fmt(qs.total), pads.hold / HOLD_S, !qs.ok);
+        return;
+      }
       var q = sess.quote(it.id);
       if (!big2) {
         TR.hud.prompt(it.name, TR.fmt(q.total) + (q.mult > 1 ? ' (Frenzy x' + q.mult + ')' : ''));
@@ -141,7 +171,7 @@
     return {
       sprite: s,
       show: function (e, sess) {
-        var it = e.pad.item, q = e.st === 'open' ? sess.quote(it.id) : null;
+        var it = e.pad.item, q = e.st === 'open' ? (e.pad.store ? { total: TR.pads.storeSum(e.pad.store, sess), mult: 1 } : sess.quote(it.id)) : null;
         var price = e.st === 'open' ? TR.fmt(q.total) + (q.mult > 1 ? ' x' + q.mult : '') : e.st === 'locked' ? 'LOCKED' : e.st === 'sold' ? 'SOLD' : e.st === 'owned' ? 'OWNED' : 'RUBBLE';
         var k = it.id + price;
         s.visible = true;

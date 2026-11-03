@@ -478,7 +478,7 @@ window.GAME_REGISTRY = [
     "id": "trillioner",
     "title": "Trillioner",
     "tagline": "One toy city, one day, one trillion dollars. Spend it all before 6AM, if your money lets you.",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "sdk": "1.x",
     "entry": "index.html",
     "server": "server/index.mjs",
