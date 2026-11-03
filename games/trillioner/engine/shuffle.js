@@ -11,7 +11,7 @@
     var items = {};
     list.forEach(function (it) { items[it.id] = it; });
     var lay = Layout.layout(list);
-    var d0 = D.DISTRICTS.downtown || D.DISTRICTS.industrial;
+    var d0 = D.DISTRICTS.downtown;
     var districtSpawn = {};
     Object.keys(D.DISTRICTS).forEach(function (k) { var s = D.DISTRICTS[k].spawn; districtSpawn[k] = { x: s.x, y: D.DISTRICTS[k].level === 'under' ? D.UNDER_Y : 0, z: s.z }; });
     return {

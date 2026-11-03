@@ -46,11 +46,12 @@
       hud.promptEl = el('div', 'prompt', r, '<div class="p1"></div><div class="p2"></div><div class="bar"><i></i></div>');
       hud.toasts = el('div', 'toasts', r);
     },
-    show: function (v) { hud.root.style.display = v ? '' : 'none'; if (v) { hud.shown = 0; } },
+    show: function (v) { hud.root.style.display = v ? '' : 'none'; if (v) { hud.shown = null; } },
     update: function (view, dt) {
       var me = view.me;
       if (me.won) TR.menus.updatePerfect(me);
       // the balance rolls toward the real number
+      if (hud.shown == null) hud.shown = me.balance;
       var diff = me.balance - hud.shown;
       hud.shown = Math.abs(diff) < 100 ? me.balance : hud.shown + diff * Math.min(1, dt * 7);
       hud.bal.textContent = TR.fmtFull(Math.round(hud.shown));

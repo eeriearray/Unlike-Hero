@@ -20,7 +20,7 @@
     function site(id, data) { sites[id] = Object.assign({ id: id, items: [], outside: [] }, data); }
     Object.keys(D.DISTRICTS).forEach(function (did) {
       var d = D.DISTRICTS[did], base = d.level === 'under' ? D.UNDER_Y : 0;
-      (d.buildings || []).forEach(function (b) { site(b.id, { name: b.name, district: did, kind: b.enter ? 'room' : 'lot', b: b, y: base, front: frontOf(b) }); });
+      (d.buildings || []).forEach(function (b) { site(b.id, { name: b.name, district: did, kind: b.enter ? 'room' : 'lot', b: b, y: b.y != null ? b.y : base, front: frontOf(b) }); });
       (d.stalls || []).forEach(function (s) { site(s.id, { name: s.name, district: did, kind: 'stall', s: s, y: s.y != null ? s.y : base }); });
       if (d.change) site(did + '_change', { name: d.name + ' Fountain', district: did, kind: 'change', s: { x: d.change.x, z: d.change.z, cols: 8, dir: 'x', spacing: 2.6 }, y: base });
     });

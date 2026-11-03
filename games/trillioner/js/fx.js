@@ -5,7 +5,7 @@
   var CONFETTI = [0xff4d6d, 0xffc53d, 0x3ddc6e, 0x3da8ff, 0xc77dff, 0xffffff];
 
   var fx = TR.fx = {
-    mesh: null, slow: 0, flags: [], skidT: 0,
+    mesh: null, slow: 0, flags: [], skidT: 0, floor: 0.1,
     init: function (scene) {
       fx.mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(0.42, 0.42, 0.1), new THREE.MeshBasicMaterial({ color: 0xffffff }), MAX);
       fx.mesh.frustumCulled = false;
@@ -51,18 +51,20 @@
       var base = ev.base, p = pos, a = TR.audio;
       if (base < 100 * R.M) { fx.coins(p, 8, 5); a && a.buy(0, ev.mult); return; }
       if (base < 1 * R.B) { fx.coins(p, 26, 8); TR.cam.kick = 0.45; TR.cam.shake = Math.max(TR.cam.shake, 0.25); a && a.buy(1, ev.mult); return; }
-      if (base < 10 * R.B) { fx.coins(p, 70, 11); TR.cam.kick = 0.75; TR.cam.shake = Math.max(TR.cam.shake, 0.4); a && a.buy(2, ev.mult); a && a.cheer(0.7); return; }
+      if (base < 10 * R.B) { fx.coins(p, 70, 11); TR.cam.kick = 0.75; TR.cam.shake = Math.max(TR.cam.shake, 0.4); a && a.buy(2, ev.mult); a && a.cheer(0.7); TR.crowds.cheer(2); return; }
       if (base < 100 * R.B) {
         fx.coins(p, 90, 14); fx.confetti({ x: p.x - 5, y: p.y, z: p.z }, 110, 15); fx.confetti({ x: p.x + 5, y: p.y, z: p.z }, 110, 15);
         fx.slow = 0.75; TR.cam.kick = 1; TR.cam.shake = Math.max(TR.cam.shake, 0.55);
-        a && a.buy(3, ev.mult); a && a.cheer(1);
+        a && a.buy(3, ev.mult); a && a.cheer(1); TR.crowds.cheer(3);
         TR.hud.banner('BREAKING: ' + itemName + ' sold!');
+        TR.world.headline('BREAKING: ' + itemName);
         return;
       }
       fx.coins(p, 140, 18); fx.confetti(p, 300, 22); fx.slow = 1.1; TR.cam.kick = 1.3; TR.cam.shake = 0.8;
-      a && a.buy(4, ev.mult); a && a.cheer(1.2);
+      a && a.buy(4, ev.mult); a && a.cheer(1.2); TR.crowds.cheer(5);
       for (var i = 0; i < 8; i++) setTimeout(function () { fx.firework(p.x + (Math.random() - 0.5) * 120, 50 + Math.random() * 40, p.z + (Math.random() - 0.5) * 120); a && a.boom(0.4); }, i * 260);
       TR.hud.banner('CITY-WIDE NEWS: ' + itemName + ' bought!');
+      TR.world.headline(itemName + ' SOLD');
     },
     /** A flag rises on a building when its deal goes through. */
     raiseFlag: function (x, y, z) {
@@ -82,7 +84,8 @@
         q.life -= dt;
         if (q.life <= 0) { parts.splice(i, 1); continue; }
         q.vy -= q.g * dt; q.x += q.vx * dt; q.y += q.vy * dt; q.z += q.vz * dt; q.r += q.rv * dt;
-        if (q.y < 0.1 && q.vy < 0) { q.y = 0.1; q.vy *= -0.4; q.vx *= 0.6; q.vz *= 0.6; }
+        var fl = q.fl != null ? q.fl : fx.floor;
+        if (q.y < fl && q.vy < 0) { q.y = fl; q.vy *= -0.4; q.vx *= 0.6; q.vz *= 0.6; }
         var s = q.s * Math.min(1, q.life / q.max * 2.5);
         dummy.position.set(q.x, q.y, q.z); dummy.rotation.set(q.r, q.r * 0.7, 0); dummy.scale.set(s, s, s); dummy.updateMatrix();
         fx.mesh.setMatrixAt(n, dummy.matrix);

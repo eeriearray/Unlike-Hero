@@ -8,7 +8,7 @@
     /** Move into a site's room. No loading screen: the room is generated in a few milliseconds. */
     enter: function (site, player) {
       ints.leaveRoom();
-      var r = site.room, g = new TR.Geo(), c = (TR.world.distPalette && TR.world.distPalette(site.district)) || ROOM_COLORS.default;
+      var r = site.room, g = new TR.Geo(), c = window.TRD.districts.DISTRICTS[site.district].palette || ROOM_COLORS.default;
       var hw = r.w / 2, hd = r.d / 2, x = r.ox, z = r.oz, h = r.h, col = TR.world.collide;
       g.box(x, -1, z, r.w, 1, r.d, c[1]);
       // chequered floor
@@ -30,8 +30,7 @@
       ];
       ints.current = site;
       ints.returnTo = { x: site.front.x, y: site.y, z: site.front.z };
-      TR.world.surface.visible = false;
-      TR.world.sea.visible = false;
+      TR.world.setSpace('room');
       player.teleport(x, 0, z + hd - 7, 0);
       TR.input.yaw = 0;
       if (TR.audio) TR.audio.door();
@@ -45,8 +44,7 @@
     exit: function (player) {
       var back = ints.returnTo;
       ints.leaveRoom();
-      TR.world.surface.visible = true;
-      TR.world.sea.visible = true;
+      TR.world.setSpace(back && back.y < -20 ? 'under' : 'surface');
       if (back) player.teleport(back.x, back.y, back.z, 0);
       if (TR.audio) TR.audio.door();
     },

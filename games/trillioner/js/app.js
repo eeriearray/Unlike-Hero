@@ -45,9 +45,13 @@
       TR.vehicles.init(app.scene);
       TR.pads.init(app.scene);
       TR.fx.init(app.scene);
+      TR.crowds.init(app.scene, 90);
+      TR.traffic.init(app.scene, 44);
       TR.hud.init(ui);
+      TR.map.init(TR.hud.mapBox);
       TR.menus.init(ui);
-      TR.player.teleport(0, 0, 240, 0);
+      TR.player.teleport(-60, 0, 8, 0);
+      TR.world.resetRun();
       TR.world.setTime(9, 'clear', TR.player.pos);
       app.ready = true;
       if (DEBUG) app.debugPanel(ui);
@@ -69,10 +73,12 @@
       var seed = opts.seed != null ? opts.seed : (Date.now() >>> 0);
       app.session = LocalSession({ seed: seed, mode: opts.mode });
       TR.pads.setRun(app.session.run);
-      var sp = app.session.run.spawn;
+      var run0 = app.session.run, sp = run0.spawn;
       TR.player.teleport(sp.x, sp.y, sp.z, 0);
       TR.player.setVisible(true);
       TR.world.resetRun();
+      TR.map.reset();
+      Object.keys(run0.sites).forEach(function (k) { var st = run0.sites[k]; st.flag = st.rubble = st.built = false; });
       Object.keys(TR.vehicles.placed).forEach(function (k) { TR.vehicles.placed[k].group.visible = false; });
       if (TR.vehicles.current) TR.vehicles.leave();
       if (TR.interiors.current) TR.interiors.exit(TR.player);
@@ -86,7 +92,13 @@
       if (window.Hub) Hub.report('session-start', { mode: opts.mode, seed: seed });
     },
 
-    floorAt: function (p) { return 0; },
+    /** The floor under a point: surface, Under City, deepest level, or far below the water. */
+    floorAt: function (p) {
+      if (p.x > 3000) return 0;
+      if (p.y < -75) return TRD.districts.DEEP_Y;
+      if (p.y < -20) return TRD.districts.UNDER_Y;
+      return TR.world.isWater(p.x, p.z) ? -40 : 0;
+    },
     itemName: function (id) { var it = app.session.run.items[id]; return it ? it.name : id; },
     nextTrophy: function (me) {
       var list = Tr.TROPHIES;
@@ -148,7 +160,7 @@
     onOwned: function (it) {
       var s = app.session.run.sites[it.site];
       if (!it.building || !s || !s.b) return;
-      if (s.b.project && !s.built) { s.built = true; TR.world.addProject(s.b, null, s.y || 0); }
+      if (s.b.project && !s.built) { s.built = true; TR.world.addProject(s.b, s.y || 0); }
       if (!s.flag) {
         s.flag = true;
         TR.world.runLayer.add(TR.fx.raiseFlag(s.b.x, (s.y || 0) + s.b.h + 0.8, s.b.z));
@@ -228,6 +240,34 @@
       if (v && document.pointerLockElement) document.exitPointerLock();
     },
 
+    tickWorld: function (dt, pos) {
+      var view = app.session.view, room = !!TR.interiors.current, under = pos.y < -20;
+      TR.world.setSpace(room ? 'room' : under ? 'under' : 'surface');
+      TR.world.setTime(view.hour, view.weather, pos, view.mode !== 'free' && view.dayMs - view.t < view.dayMs / 24);
+      TR.fx.floor = room ? 0.1 : under ? pos.y + 0.1 : Math.max(0.1, pos.y - 30);
+      // falling in the water: back to the last dry spot
+      if (!TR.vehicles.current && !room && !under && pos.y < -1.4 && TR.world.isWater(pos.x, pos.z)) {
+        var safe = app.lastSafe || app.session.run.spawn;
+        TR.fx.confetti({ x: pos.x, y: -1, z: pos.z }, 18, 6);
+        TR.player.teleport(safe.x, safe.y, safe.z);
+        TR.hud.toast('Splash! You need a boat for that.', 'bad');
+      } else if (TR.player.grounded && !TR.vehicles.current && !room && !TR.world.isWater(pos.x, pos.z)) {
+        app.lastSafe = { x: pos.x, y: pos.y, z: pos.z };
+      }
+      app.posT -= dt;
+      if (app.posT <= 0) {
+        app.posT = 0.1;
+        var dist = room ? TR.interiors.current.district : TR.world.districtAt(pos.x, pos.z, pos.y);
+        if (dist && dist !== app.district) { app.district = dist; TR.hud.toast(TRD.districts.DISTRICTS[dist].name, 'gold'); }
+        app.session.setPos(pos.x, pos.y, pos.z, TR.player.heading, room ? TR.interiors.current.id : null, dist);
+        if (!room) TR.map.reveal(pos.x, pos.z);
+        app.mapT = (app.mapT || 0) - 1;
+        if (app.mapT <= 0) { app.mapT = 2; TR.map.update(pos, TR.player.heading, under); }
+      }
+      TR.crowds.update(dt, pos, app.t, room);
+      TR.traffic.update(dt, pos, room || under);
+    },
+
     /** One simulation frame. Debug and tests call this directly when the page is hidden. */
     frame: function (dt) {
       var ts = TR.fx.timeScale(), sim = dt * ts;
@@ -243,18 +283,19 @@
         TR.pads.update(dt, app.session, pos, app.t);
         app.updateActions(dt);
         TR.hud.update(app.session.view, dt);
-        TR.world.setTime(app.session.view.hour, app.session.view.weather, pos);
+        app.tickWorld(dt, pos);
       }
       TR.input.endFrame();
       TR.world.update(dt, app.t);
       TR.fx.update(sim);
       var v = TR.vehicles.current;
-      TR.cam.update(app.camera, TR.player.pos, dt, v ? { dist: v.spec.cam, lift: 2.4, fov: 62 + Math.min(16, Math.abs(v.speed) * 0.34), floor: 0 } : { floor: 0 });
+      var cfl = TR.interiors.current ? 0 : TR.player.pos.y < -20 ? app.floorAt(TR.player.pos) : TR.world.isWater(TR.player.pos.x, TR.player.pos.z) ? -1 : 0;
+      TR.cam.update(app.camera, TR.player.pos, dt, v ? { dist: v.spec.cam, lift: 2.4, fov: 62 + Math.min(16, Math.abs(v.speed) * 0.34), floor: cfl } : { floor: cfl });
     },
 
     loop: function (now) {
       requestAnimationFrame(app.loop);
-      var dt = Math.min(0.05, (now - app.last) / 1000);
+      var dt = Math.max(0, Math.min(0.05, (now - app.last) / 1000));
       app.last = now;
       app.fpsAcc += dt; app.fpsN++;
       if (app.fpsAcc >= 0.5) { app.fps = app.fpsN / app.fpsAcc; app.fpsAcc = 0; app.fpsN = 0; if (app.dbgFps) app.dbgFps.textContent = app.fps.toFixed(0) + ' FPS, ' + app.renderer.info.render.calls + ' calls'; }
