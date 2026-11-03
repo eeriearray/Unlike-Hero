@@ -307,7 +307,7 @@ html,body { font-family:"Helvetica Neue",Arial,sans-serif; background:#101114; }
 .gpsline b { color:#ff5cbc; font-weight:700; }
 .gpsline span { color:#f2efe6; font-weight:500; }
 .gpsline.hot b { color:#ff9a2e; }
-.prompt { background:rgba(8,9,11,.84); border-radius:0; border:0; bottom:58px; padding:8px 14px; font-size:16px; text-align:left; min-width:0; box-shadow:none; }
+.prompt { background:rgba(8,9,11,.84); border-radius:0; border:0; bottom:72px; padding:8px 14px; font-size:16px; text-align:left; min-width:0; box-shadow:none; }
 .toasts { top:auto; bottom:calc(clamp(110px,14vw,170px) + 30px); left:14px; transform:none; align-items:flex-start; width:min(380px,70vw); }
 .toast { background:rgba(8,9,11,.84); padding:6px 11px; font-size:15px; font-weight:500; color:#f2efe6; text-align:left; text-shadow:none; -webkit-text-stroke:0; }
 .toast.gold { color:#ffd23f; } .toast.bad { color:#ff8f7f; }
@@ -352,3 +352,10 @@ job-obj small, .job-obj small { display:block; font-size:13px; font-weight:600; 
 .own-card .use { text-decoration:none; display:block; font-size:11px; line-height:1.2; font-weight:700; color:#178a42; margin-top:3px; }
 .own-card .use.none { color:#9a8f7c; font-weight:600; }
 .own-sum { font-size:14px; font-weight:600; margin:0 0 8px; }
+.quickuse { position:absolute; left:50%; bottom:44px; transform:translateX(-50%); display:flex; align-items:center; gap:7px; max-width:60vw; white-space:nowrap; overflow:hidden; font-size:14px; color:#f2efe6; -webkit-text-stroke:3px #08090b; paint-order:stroke fill; pointer-events:none; }
+.quickuse kbd { font:700 12px inherit; font-family:inherit; background:#f2efe6; color:#111317; padding:0 5px; border-radius:2px; -webkit-text-stroke:0; }
+.quickuse b { font-weight:600; overflow:hidden; text-overflow:ellipsis; }
+.quickuse em { font-style:normal; font-weight:700; color:#9fe39a; }
+.own-open .quickuse { display:none; }
+.own-card .act { font-style:normal; display:block; margin-top:4px; background:#231a12; color:#f6efe0; font-size:12px; font-weight:700; text-align:center; padding:2px 0; border-radius:2px; }
+.own-card.dim .act { background:#b6ac99; }

@@ -124,7 +124,7 @@
       TR.notebook.setRun(run0);
       TR.haul.reset();
       TR.world.setBeam(null); app.eventSite = null;
-      TR.own.close(); TR.gps.reset(); TR.agents.reset(); TR.phone.reset();
+      TR.own.resetRun(); TR.gps.reset(); TR.agents.reset(); TR.phone.reset();
       app.styleV = -1;
       TR.dares.start(app.session, seed);
       TR.cam.cine = null;
@@ -205,8 +205,8 @@
           if (ev.base >= R.B) TR.hud.stamp(ev.closing > 0 ? 'DEAL!' : 'SOLD!');
           if (ev.closing > 0) TR.hud.toast(name + ': deal closing in ' + Math.round(ev.closing / 1000) + 's', 'gold');
           else if (it) app.onOwned(it);
-          if (it) app.checkClaim(it);
-          if (it && TR.pads.useText(it) && it.kind !== 'change') TR.hud.toast(it.name + ': ' + TR.pads.useText(it), 'gold');
+          if (it) { app.checkClaim(it); TR.own.bought(it.id); }
+          if (it && !window.TRD.uses.GROUP[it.id] && TR.pads.useText(it)) TR.hud.toast(it.name + ': ' + TR.pads.useText(it), 'gold');
         } else if (ev.type === 'closed') {
           var c = run.items[ev.item];
           TR.hud.toast(c.name + ': deal closed!', 'gold');
@@ -400,6 +400,7 @@
       if (input.hit('KeyI')) { TR.own.open('stuff'); return; }
       if (input.hit('KeyJ')) TR.gps.toggle();
       TR.own.rain(dt, app.session, TR.player.pos);
+      TR.own.updateQuick(dt, app.session);
       var ctr = ints.counter;
       if (ctr && Math.hypot(TR.player.pos.x - ctr.x, TR.player.pos.z - ctr.z) < 3.4) {
         TR.hud.prompt('Style Counter', 'Press E: clothes, jewellery, pets, mystery boxes');
@@ -555,6 +556,7 @@
         var moving = Math.hypot(TR.player.vel.x, TR.player.vel.z) > 1 || (TR.vehicles.current && Math.abs(TR.vehicles.current.speed) > 1);
         TR.haul.update(dt, pos, app.t, moving);
         TR.life.racers(app.t, pos);
+        TR.own.drawPlaced(pos);
         TR.dares.update(dt, pos, app.t, app.session);
         TR.goods.end();
         if (!TR.hud.pOn) TR.notebook.update(dt, app.session, pos);

@@ -65,7 +65,7 @@
         document.body.classList.add('touch');
         var box = document.createElement('div'); box.className = 'touchui';
         box.innerHTML = '<div class="stick" id="t-stick"><i></i></div><div class="tbtns">' +
-          [['Space', 'Jump'], ['KeyE', 'Buy'], ['KeyF', 'Ride'], ['KeyQ', 'Call'], ['Mouse', 'Use'], ['KeyX', 'Wreck'], ['KeyY', 'Take call'], ['KeyG', 'Cash'], ['KeyI', 'Bag'], ['KeyM', 'Map'], ['KeyN', 'Note'], ['Escape', 'Menu']].map(function (b) { return '<button data-k="' + b[0] + '">' + b[1] + '</button>'; }).join('') + '</div>';
+          [['Space', 'Jump'], ['KeyE', 'Buy'], ['KeyF', 'Ride'], ['KeyQ', 'Call'], ['Mouse', 'Use'], ['KeyX', 'Wreck'], ['KeyT', 'Use'], ['KeyY', 'Take call'], ['KeyG', 'Cash'], ['KeyI', 'Bag'], ['KeyM', 'Map'], ['KeyN', 'Note'], ['Escape', 'Menu']].map(function (b) { return '<button data-k="' + b[0] + '">' + b[1] + '</button>'; }).join('') + '</div>';
         ui.appendChild(box);
         box.querySelectorAll('[data-k]').forEach(function (b) {
           var k = b.getAttribute('data-k');

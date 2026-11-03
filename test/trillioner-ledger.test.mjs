@@ -444,3 +444,55 @@ test('property damage is spending, with a cap, and cannot go below zero', () => 
     assert.equal(g.players.a.ringing, null);
   });
 }
+
+// ── Using what you bought ──
+{
+  const req = createRequire(import.meta.url), Eng = req('../games/trillioner/engine/engine.js'), U = req('../games/trillioner/engine/data/uses.js');
+  const Items = req('../games/trillioner/engine/data/items.js'), Extras = req('../games/trillioner/engine/data/extras.js'), Rules = req('../games/trillioner/engine/data/rules.js');
+  const fresh = () => { const g = new Eng.Game({ seed: 5, mode: 'day', players: [{ id: 'me', name: 'Me' }] }); g.requireNear = false; return g; };
+  const named = (g, re) => Object.values(g.items).find((i) => re.test(i.name));
+  test('every plain item in the catalog now has a use', () => {
+    const plain = Items.build().filter((i) => { const r = i.reward || {}; return !((r.vehicles || []).length || (r.gear || []).length || i.power || i.grants || i.wearable || i.hint || i.income || i.building); });
+    assert.ok(plain.length > 300);
+    for (const i of plain) assert.ok(U.groupOf(i), i.name);
+  });
+  test('names land in the group they mean', () => {
+    const want = { 'Gold-Plated Hot Dog Cart': 'eat', 'Takeover: Sock Monopoly': 'throw', 'Every Perfume Ever': 'place', 'Bell They Ring at the End': 'party', 'A Very Tall Hat': 'wear', 'Zoo Animal: The Lion': 'pet', 'Private Island': 'hide', 'Car with Eleven Cupholders': 'drive', 'A Map to Another Map': 'read', 'Executive Stapler': 'place' };
+    const all = Items.build();
+    for (const n of Object.keys(want)) { const it = all.find((i) => i.name === n); assert.ok(it, n); assert.equal(U.groupOf(it), want[n], n); }
+  });
+  test('a use needs one in hand, and each one bought is one use', () => {
+    const g = fresh(), p = g.players.me, it = named(g, /^Pretzel$/);
+    assert.equal(g.command('me', { t: 'use', item: it.id }).code, 'none');
+    assert.equal(g.command('me', { t: 'buy', item: it.id }).ok, true);
+    const b0 = p.balance, r = g.command('me', { t: 'use', item: it.id });
+    assert.equal(r.group, 'eat');
+    assert.equal(p.balance, b0);
+    g.tick(1);
+    assert.equal(g.command('me', { t: 'use', item: it.id }).code, 'none');
+  });
+  test('wearables and pets join you at once and are never used up', () => {
+    const g = fresh(), p = g.players.me, hat = named(g, /A Very Tall Hat/), lion = named(g, /The Lion/);
+    g.command('me', { t: 'buy', item: hat.id }); g.command('me', { t: 'buy', item: lion.id });
+    assert.equal(p.style.hat, 'w_' + hat.id);
+    assert.deepEqual(p.style.pet, ['w_' + lion.id]);
+    assert.equal(g.command('me', { t: 'use', item: hat.id }).code, 'nouse');
+    assert.equal(g.command('me', { t: 'wear', slot: 'hat', id: null }).ok, true);
+    assert.equal(g.command('me', { t: 'extra', id: 'w_' + hat.id }).code, 'owned');
+    const bx = fresh();
+    for (let i = 0; i < 20; i++) assert.ok(!bx.command('me', { t: 'box' }).id.startsWith('w_'));
+    assert.ok(Extras.CATALOG.filter((x) => !x.gift).length <= 60);
+  });
+  test('lying low stands the Refund Office down, and a party lifts the combo', () => {
+    const g = fresh(), p = g.players.me, isl = Object.values(g.items).find((i) => U.GROUP[i.id] === 'hide' && !i.gate && !i.secret && !i.surprise && i.price <= 50 * Rules.B), d = Object.values(g.items).find((i) => U.GROUP[i.id] === 'party' && !i.gate && !i.secret);
+    g.command('me', { t: 'buy', item: isl.id }); g.command('me', { t: 'use', item: isl.id });
+    assert.ok(g.viewFor('me').me.heatOff > 25000);
+    g.tick(1);
+    p.frenzy = 1;
+    g.command('me', { t: 'buy', item: d.id });
+    p.frenzy = 1; p.frenzyLeft = 0;
+    assert.equal(g.command('me', { t: 'use', item: d.id }).group, 'party');
+    assert.ok(p.frenzy >= 3);
+    assert.ok(Rules.MODES.day.agents);
+  });
+}

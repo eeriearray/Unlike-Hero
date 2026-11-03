@@ -74,7 +74,7 @@
     };
     return s;
   }
-  function blankMe(id) { return { id: id, name: '', balance: 300 * R.B, spent: 0, biz: 0, income: 0, frenzy: 1, frenzyLeft: 0, extras: {}, style: { pet: [] }, styleV: 0, boxes: 0, rainUsed: 0, frenzyWindow: 5000, closings: [], owned: {}, goods: {}, vehicles: {}, gear: {}, powers: {}, flags: {}, wear: {}, trophies: {}, rank: 'Intern', visited: {}, stats: {}, cards: [], ban: {}, boost: {} }; }
+  function blankMe(id) { return { id: id, name: '', balance: 300 * R.B, spent: 0, biz: 0, income: 0, frenzy: 1, frenzyLeft: 0, used: {}, extras: {}, style: { pet: [] }, styleV: 0, boxes: 0, rainUsed: 0, frenzyWindow: 5000, closings: [], owned: {}, goods: {}, vehicles: {}, gear: {}, powers: {}, flags: {}, wear: {}, trophies: {}, rank: 'Intern', visited: {}, stats: {}, cards: [], ban: {}, boost: {} }; }
 
   var net = TR.net = {
     link: null, session: null, room: null,

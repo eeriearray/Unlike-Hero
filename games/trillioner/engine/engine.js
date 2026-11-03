@@ -10,11 +10,11 @@
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
-    module.exports = factory(require('./rng.js'), require('./data/rules.js'), require('./shuffle.js'), require('./data/trophies.js'), require('./data/events.js'), require('./data/secrets.js'), require('./data/extras.js'), require('./data/missions.js'), require('./data/districts.js'));
+    module.exports = factory(require('./rng.js'), require('./data/rules.js'), require('./shuffle.js'), require('./data/trophies.js'), require('./data/events.js'), require('./data/secrets.js'), require('./data/extras.js'), require('./data/missions.js'), require('./data/districts.js'), require('./data/uses.js'));
   } else {
-    root.TrillionerEngine = factory(root.TrillionerRng, root.TRD.rules, root.TrillionerShuffle, root.TRD.trophies, root.TRD.events, root.TRD.secrets, root.TRD.extras, root.TRD.missions, root.TRD.districts);
+    root.TrillionerEngine = factory(root.TrillionerRng, root.TRD.rules, root.TrillionerShuffle, root.TRD.trophies, root.TRD.events, root.TRD.secrets, root.TRD.extras, root.TRD.missions, root.TRD.districts, root.TRD.uses);
   }
-})(typeof self !== 'undefined' ? self : this, function (RngMod, R, Shuffle, Trophies, EventsData, SecretsData, Extras, Missions, DistrictData) {
+})(typeof self !== 'undefined' ? self : this, function (RngMod, R, Shuffle, Trophies, EventsData, SecretsData, Extras, Missions, DistrictData, Uses) {
   'use strict';
 
   var fmtShort = function (c) {
@@ -80,7 +80,7 @@
       balance: this.cfg.start, spent: 0,
       owned: {}, goods: {}, vehicles: {}, gear: {}, powers: {}, flags: {}, wear: {},
       closings: [], frenzy: 1, frenzyLeft: 0,
-      job: null, ringing: null, jobsUsed: {}, nextCall: Missions.FIRST_MS, jobsDone: 0, jobsLost: 0, heatOffUntil: 0, refunded: 0, refundAt: -1e9, extras: {}, style: { pet: [] }, styleV: 0, boxes: 0, rainUsed: 0, rainAt: -1e9,
+      used: {}, useAt: -1e9, job: null, ringing: null, jobsUsed: {}, nextCall: Missions.FIRST_MS, jobsDone: 0, jobsLost: 0, heatOffUntil: 0, refunded: 0, refundAt: -1e9, extras: {}, style: { pet: [] }, styleV: 0, boxes: 0, rainUsed: 0, rainAt: -1e9,
       cannonOn: false, cannonUsed: 0,
       history: [this.cfg.start], best: null, trophies: {}, stats: { purchases: 0, demolished: 0, firstMoonHour: null, maxFrenzy: 1, truckDemos: 0 },
       income: 0, lastIncome: 0, rising: false, boost: {}, ban: {}, cards: [], cardsUsed: 0, giftUsed: false,
@@ -224,6 +224,7 @@
       case 'box': return this.openBox(pid);
       case 'rain': return this.rain(pid);
       case 'caught': return this.refund(pid);
+      case 'use': return this.useItem(pid, String(cmd.item));
       case 'answer': return this.answerCall(pid, !!cmd.yes);
       default: return { error: 'Unknown command.' };
     }
@@ -475,6 +476,7 @@
       p.owned[item.id] = { paid: q.base, closing: ms > 0, demolished: false, at: this.t };
     } else {
       p.goods[item.id] = (p.goods[item.id] || 0) + 1;
+      this.keepWearable(p, item);
     }
     if (ms > 0) p.closings.push({ item: item.id, leftMs: ms, total: ms });
     else this.applyReward(p, item);
@@ -673,7 +675,7 @@
   };
   G.wornValue = function (p) {
     var sum = 0;
-    Extras.SLOTS.forEach(function (slot) { [].concat(p.style[slot] || []).forEach(function (id) { sum += Extras.BY_ID[id].price; }); });
+    Extras.SLOTS.forEach(function (slot) { [].concat(p.style[slot] || []).forEach(function (id) { sum += (Extras.BY_ID[id].worth || Extras.BY_ID[id].price); }); });
     return sum;
   };
   G.jobDoneYet = function (p, j) {
@@ -719,6 +721,28 @@
       return;
     }
     p.nextCall = this.t + 10000;
+  };
+  /** Clothes and animals you buy are yours to wear and walk. They go on at once if there is room. */
+  G.keepWearable = function (p, item) {
+    var x = Extras.BY_ID['w_' + item.id];
+    if (!x || p.extras[x.id]) return;
+    p.extras[x.id] = true;
+    if (x.slot === 'pet') { if (p.style.pet.length < 3) p.style.pet = p.style.pet.concat(x.id); }
+    else if (!p.style[x.slot]) p.style[x.slot] = x.id;
+    p.styleV++;
+  };
+  /** Using something you bought: one use per item. What it does to the world is the client's job; what it changes in the game is here. */
+  G.useItem = function (pid, id) {
+    var p = this.players[pid], item = this.items[id], group = item && Uses.GROUP[id];
+    if (!group || group === 'wear' || group === 'pet') return { code: 'nouse', error: 'That does not get used up.' };
+    if (this.frozen || this.over || p.won) return { code: 'closed', error: 'The day is over.' };
+    if ((p.goods[id] || 0) - (p.used[id] || 0) <= 0) return { code: 'none', error: 'You do not have one of those left.' };
+    if (this.t - p.useAt < Uses.GAP_MS) return { code: 'wait' };
+    p.useAt = this.t;
+    p.used[id] = (p.used[id] || 0) + 1;
+    if (group === 'hide' && this.cfg.agents) p.heatOffUntil = Math.max(p.heatOffUntil, this.t) + Uses.HIDE_SECS * 1000;
+    if (group === 'party') { p.frenzy = Math.min(R.FRENZY_MAX, Math.max(p.frenzy + 2, 3)); p.frenzyLeft = this.frenzyWindow() * 2; }
+    return { ok: true, group: group, left: p.goods[id] - p.used[id] };
   };
   G.bumpFrenzy = function (p, base) {
     if (base < R.FRENZY_MIN) return;
@@ -958,7 +982,7 @@
         vehicles: p.vehicles, gear: p.gear, powers: p.powers, flags: p.flags, wear: p.wear, trophies: p.trophies, rank: this.rank(p),
         cannonOn: p.cannonOn, cannonUsed: p.cannonUsed, won: p.won, perfect: p.perfect, perfectLeft: p.perfectLeft, travelCd: p.travelCd,
         visited: p.visited, best: p.best, stats: p.stats, cards: p.cards, ban: p.ban, boost: p.boost,
-        district: p.district, heatOff: Math.max(0, p.heatOffUntil - this.t), job: p.job, ringing: p.ringing, jobsDone: p.jobsDone, refunded: p.refunded, extras: p.extras, style: p.style, styleV: p.styleV, boxes: p.boxes, rainUsed: p.rainUsed
+        used: p.used, district: p.district, heatOff: Math.max(0, p.heatOffUntil - this.t), job: p.job, ringing: p.ringing, jobsDone: p.jobsDone, refunded: p.refunded, extras: p.extras, style: p.style, styleV: p.styleV, boxes: p.boxes, rainUsed: p.rainUsed
       },
       feed: this.feed.slice(-6)
     };

@@ -78,7 +78,8 @@
       var fx = -Math.sin(yaw), fz = -Math.cos(yaw), rx = Math.cos(yaw), rz = -Math.sin(yaw);
       var wx = rx * a.x + fx * a.z, wz = rz * a.x + fz * a.z, wl = Math.hypot(wx, wz);
       var sprint = input.down('ShiftLeft') || input.down('ShiftRight') || input.sprintHeld;
-      var speed = (sprint ? SPRINT : WALK);
+      var speed = (sprint ? SPRINT : WALK) * (pl.boostT > 0 ? 1.5 : 1);
+      pl.boostT = Math.max(0, (pl.boostT || 0) - dt);
       var tx = wl ? wx / wl * speed * Math.min(1, wl) : 0, tz = wl ? wz / wl * speed * Math.min(1, wl) : 0;
       var accel = pl.grounded ? ACCEL : ACCEL * 0.55;
       pl.vel.x += Math.max(-accel * dt, Math.min(accel * dt, tx - pl.vel.x));

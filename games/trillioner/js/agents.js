@@ -162,12 +162,12 @@
       if (a.stun <= 0) { ag.place(a, pos); }
     },
     /** Thrown cash pulls in every agent who can see it. */
-    distract: function (pos) {
+    distract: function (pos, range, secs) {
       var n = 0;
       ag.list.forEach(function (a, i) {
-        if (a.stun > 0 || Math.hypot(a.x - pos.x, a.z - pos.z) > 45) return;
+        if (a.stun > 0 || Math.hypot(a.x - pos.x, a.z - pos.z) > (range || 45)) return;
         if (a.cash <= 0 || !a.cash) n++;
-        a.cash = 5; a.route = null;
+        a.cash = secs || 5; a.route = null;
         // it lands between you and them, well clear of you, so grabbing it does not bring them to you
         var dx = a.x - pos.x, dz = a.z - pos.z, l = Math.hypot(dx, dz) || 1, far = Math.min(l, 11);
         a.cashX = pos.x + dx / l * far + Math.sin(i * 2.4) * 1.6; a.cashZ = pos.z + dz / l * far + Math.cos(i * 2.4) * 1.6;

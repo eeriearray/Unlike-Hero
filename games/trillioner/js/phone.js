@@ -88,7 +88,7 @@
     },
     worn: function (me) {
       var sum = 0;
-      X.SLOTS.forEach(function (s) { [].concat(me.style[s] || []).forEach(function (id) { sum += X.BY_ID[id].price; }); });
+      X.SLOTS.forEach(function (s) { [].concat(me.style[s] || []).forEach(function (id) { sum += X.BY_ID[id].worth || X.BY_ID[id].price; }); });
       return sum;
     }
   };

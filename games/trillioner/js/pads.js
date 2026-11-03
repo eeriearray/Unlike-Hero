@@ -185,7 +185,9 @@
     if (it.hint) out.push('Gives you a clue');
     if (it.income > 0) out.push('Earns +' + TR.fmt(it.income) + '/s');
     else if (it.income < 0) out.push('Loses ' + TR.fmt(-it.income) + '/s');
-    return out.length ? out.join(' · ') : null;
+    if (out.length) return out.join(' · ');
+    var g = window.TRD.uses.GROUP[it.id];
+    return g ? window.TRD.uses.VERBS[g] : null;
   }
   function dealText(it) {
     var u = useText(it);
