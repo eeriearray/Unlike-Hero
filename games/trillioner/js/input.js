@@ -2,7 +2,7 @@
 (function () {
   var TR = window.TR = window.TR || {};
   var input = TR.input = {
-    lookAge: 99, keys: {}, pressed: {}, yaw: Math.PI, pitch: 0.17, mouseDown: false, mouseClicked: false, locked: false, enabled: true, moveX: 0, moveZ: 0,
+    lookAge: 99, keys: {}, pressed: {}, yaw: Math.PI, pitch: 0.24, mouseDown: false, mouseClicked: false, locked: false, enabled: true, moveX: 0, moveZ: 0,
     down: function (code) { return !input.frozen && !!input.keys[code]; },
     hit: function (code) { return !input.frozen && !!input.pressed[code]; },
     endFrame: function () { input.pressed = {}; input.mouseClicked = false; },
@@ -25,6 +25,7 @@
         input.drag = true;
       });
       addEventListener('mouseup', function () { input.mouseDown = false; input.drag = false; });
+      addEventListener('wheel', function (e) { if (!input.frozen && TR.app && TR.app.running && !TR.app.paused) TR.cam.wheel(e.deltaY); }, { passive: true });
       addEventListener('mousemove', function (e) {
         var locked = document.pointerLockElement === canvas;
         input.locked = locked;

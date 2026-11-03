@@ -21,7 +21,7 @@
       own.el.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
       TR.input.frozen = true;
       if (document.pointerLockElement) document.exitPointerLock();
-      own.camDist = TR.cam.dist; TR.cam.dist = 6.5;
+      own.camDist = TR.cam.dist; own.camZoom = TR.cam.zoom; TR.cam.dist = 6.5; TR.cam.zoom = 1;
       own.pitch = TR.input.pitch; TR.input.pitch = 0.1;
       TR.hud.root.classList.add('own-open');
       if (innerWidth > 620) TR.app.camera.setViewOffset(innerWidth, innerHeight, own.el.offsetWidth / 2, 0, innerWidth, innerHeight);
@@ -32,7 +32,7 @@
       own.el.remove(); own.el = null;
       TR.hud.root.classList.remove('own-open');
       TR.input.frozen = false;
-      TR.cam.dist = own.camDist; TR.input.pitch = own.pitch;
+      TR.cam.dist = own.camDist; TR.cam.zoom = own.camZoom; TR.input.pitch = own.pitch;
       TR.app.camera.clearViewOffset();
       if (own.reveal) { own.reveal.remove(); own.reveal = null; }
     },

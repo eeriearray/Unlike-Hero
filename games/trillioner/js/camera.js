@@ -2,7 +2,25 @@
 (function () {
   var TR = window.TR = window.TR || {};
   var cam = TR.cam = {
-    follow: new THREE.Vector3(), dist: 9.5, fx: new THREE.Vector3(), shake: 0, kick: 0, cur: new THREE.Vector3(0, 8, 10), look: new THREE.Vector3(),
+    follow: new THREE.Vector3(), dist: 8.5, fx: new THREE.Vector3(), shake: 0, kick: 0, cur: new THREE.Vector3(0, 8, 10), look: new THREE.Vector3(),
+    VIEWS: [{ name: 'Close', dist: 6.2, pitch: 0.16 }, { name: 'Standard', dist: 8.5, pitch: 0.24 }, { name: 'Far', dist: 12.5, pitch: 0.34 }],
+    viewAt: 1, zoom: 1,
+    view: function () { return cam.VIEWS[cam.viewAt]; },
+    /** The view and zoom you like are kept between runs. */
+    loadView: function () {
+      cam.viewAt = TR.save.get('camView', 1); cam.zoom = TR.save.get('camZoom', 1);
+      cam.dist = cam.view().dist; TR.input.pitch = cam.view().pitch;
+    },
+    nextView: function () {
+      cam.viewAt = (cam.viewAt + 1) % cam.VIEWS.length; cam.zoom = 1;
+      cam.dist = cam.view().dist; TR.input.pitch = cam.view().pitch; TR.input.lookAge = 99;
+      TR.save.set('camView', cam.viewAt); TR.save.set('camZoom', 1);
+      TR.hud.toast('Camera: ' + cam.view().name);
+    },
+    wheel: function (dy) {
+      cam.zoom = Math.max(0.6, Math.min(1.8, cam.zoom * (dy > 0 ? 1.06 : 0.94)));
+      TR.save.set('camZoom', cam.zoom);
+    },
     roll: 0, aheadX: 0, aheadZ: 0, bob: 0, pull: 0, on: true,
     /** How fast you are going, and which way, whatever you are in. */
     motion: function () {
@@ -22,18 +40,19 @@
       cam.aheadX += (hx * go * reach - cam.aheadX) * e; cam.aheadZ += (hz * go * reach - cam.aheadZ) * e;
       cam.bob = m.vehicle ? 0 : Math.sin((TR.player.walkT || 0) * 2) * 0.05 * go;
       if (!cam.on || input.frozen) return;
-      var hand = Math.max(0, Math.min(1, (input.lookAge - 0.9) / 0.9));   // eases back in after you let go of the mouse
-      if (hand <= 0 || m.speed < 1.5 || m.signed < -0.5) return;
+      var hand = Math.max(0, Math.min(1, (input.lookAge - 0.4) / 0.4));   // eases back in just after you let go of the mouse
+      if (hand <= 0 || m.speed < 0.8 || m.signed < -0.5) return;
       var diff = ((m.heading - input.yaw + Math.PI * 3) % (Math.PI * 2)) - Math.PI, a = input.axes();
       // running straight at the camera: leave it, or walking back towards something would spin the world
       if (!m.vehicle && Math.abs(diff) > 2.5) return;
-      var rate = m.vehicle ? 2 + go * 2.2 : 0.7 + go * 1.5;
-      if (!m.vehicle && Math.abs(a.z) < 0.2) rate *= 0.55;   // sidestepping: a wide gentle arc, not a spin
-      if (TR.interiors.current) rate *= 0.6;
-      input.yaw += diff * (1 - Math.exp(-rate * hand * dt));
+      var rate = m.vehicle ? 3.5 + go * 3 : 1.4 + go * 1.4;
+      if (!m.vehicle && Math.abs(a.z) < 0.2) rate = Math.min(rate, 1.2);   // A or D alone: a steady turn, not a spin
+      if (TR.interiors.current) rate *= 0.8;
+      var swing = diff * (1 - Math.exp(-rate * hand * dt)), most = (m.vehicle ? 5.2 : 3.8) * dt;   // never whip round
+      input.yaw += Math.max(-most, Math.min(most, swing));
       // and it settles back to a good height
-      var wantPitch = m.vehicle ? 0.13 : 0.17;
-      input.pitch += (wantPitch - input.pitch) * (1 - Math.exp(-1.1 * hand * dt));
+      var wantPitch = cam.view().pitch * (m.vehicle ? 0.8 : 1);
+      input.pitch += (wantPitch - input.pitch) * (1 - Math.exp(-2.2 * hand * dt));
     },
     /** A little further back the faster you go. */
     pullBack: function (dt) {
@@ -65,13 +84,13 @@
       }
       var yawBefore = TR.input.yaw;
       cam.auto(target, dt, opts);
-      var yaw = TR.input.yaw, pitch = TR.input.pitch, want = (opts.dist || cam.dist) + cam.pullBack(dt);
+      var yaw = TR.input.yaw, pitch = TR.input.pitch, want = (opts.dist ? opts.dist * cam.view().dist / 8.5 : cam.dist) * cam.zoom + cam.pullBack(dt);
       var dx = Math.sin(yaw) * Math.cos(pitch), dy = Math.sin(pitch), dz = Math.cos(yaw) * Math.cos(pitch);
       var fy = target.y + (opts.lift || 2.6);
       var d = want;
       if (TR.world && TR.world.collide) d = Math.max(1.6, TR.world.collide.rayClip(target.x, fy, target.z, dx, dy, dz, want) - 0.8);
       // the camera turns exactly with the mouse. Only following the body, and pulling back out from a wall, are eased.
-      var k = 1 - Math.pow(TR.vehicles.current ? 0.002 : 0.00002, dt), far = cam.follow.distanceTo(target) > 30;   // a car pulls ahead of the camera a little under power
+      var k = 1 - Math.pow(TR.vehicles.current ? 0.0004 : 0.00002, dt), far = cam.follow.distanceTo(target) > 30;   // a car pulls ahead of the camera a little under power
       if (far) cam.follow.copy(target); else cam.follow.lerp(target, k);
       cam.d = d < (cam.d || d) ? d : (cam.d || d) + (d - (cam.d || d)) * (1 - Math.pow(0.02, dt));
       var floor = (opts.floor != null ? opts.floor : target.y - 40) + 0.5, fly = cam.follow.y + (opts.lift || 2.6);
