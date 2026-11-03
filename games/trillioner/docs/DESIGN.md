@@ -920,3 +920,10 @@ any item that is unfinished or was changed from this brief.
 - Frenzy now reaches x10 and is shown as COMBO. The $2B extra cap per purchase stays.
 - Mystery boxes are seeded by run seed, player and box count, so the engine stays deterministic.
 - The guide favours nearby shops on foot and longer trips in a vehicle. Secrets stay off the route on purpose: finding them is still the way to win.
+
+## Refund Office decisions (user said keep going)
+
+- The chase runs in the client, where the collision world is, so agents cannot walk through buildings. The engine only prices a catch and caps it: at most $3B a catch, one every 4 seconds, $30B a day, solo modes only. Online rooms refuse the command.
+- A catch lowers `spent` as well as raising the balance, so balance plus spent still equals the start plus income.
+- Shops are safe. Agents wait about 16 units from the door, so leaving is the tense moment.
+- Agents past 90 units are not drawn and cast no shadows: five jointed figures were most of the draw calls.

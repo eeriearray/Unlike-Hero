@@ -13,6 +13,7 @@
     FRENZY_WINDOW_MS: 5000,
     FRENZY_SPREE_MS: 8000,
     FRENZY_MAX: 10,
+    REFUND_CAP: 30 * B, REFUND_MIN: 200 * M, REFUND_MAX: 3 * B, REFUND_GAP_MS: 4000,   // the Refund Office, per day
     FRENZY_EXTRA_CAP: 2 * B,
     BIG_DEAL: 10 * B,                 // closes over time; money leaves at the start
     CLOSE_MIN_MS: 10000,
@@ -33,8 +34,8 @@
     TAX_REFUND_CAP: 30 * B,
     CHANGE_FEES: [25, 100, 500, 2000, 10000, 100000, 1000000, 10000000],
     MODES: {
-      day:    { label: 'The Day',     start: 1 * T,   secPerHour: 60, startHour: 6, hours: 24, clock: true,  trophies: true },
-      daily:  { label: 'Daily City',  start: 1 * T,   secPerHour: 60, startHour: 6, hours: 24, clock: true,  trophies: true },
+      day:    { label: 'The Day',     start: 1 * T,   secPerHour: 60, startHour: 6, hours: 24, clock: true,  trophies: true, agents: true },
+      daily:  { label: 'Daily City',  start: 1 * T,   secPerHour: 60, startHour: 6, hours: 24, clock: true,  trophies: true, agents: true },
       free:   { label: 'Free Roam',   start: 1 * T,   secPerHour: 60, startHour: 6, hours: 24, clock: false, trophies: false },
       battle: { label: 'Battle Spend', start: 300 * B, secPerHour: 20, startHour: 6, hours: 24, clock: true,  trophies: false, pvp: true }
     },

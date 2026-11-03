@@ -348,3 +348,28 @@ test('property damage is spending, with a cap, and cannot go below zero', () => 
     assert.ok(all <= 110 * 100 * 1e9, 'visible-only left at least $540B, and must keep $400B unspent');
   });
 }
+
+// ── The Refund Office ──
+{
+  const req = createRequire(import.meta.url), Rules = req('../games/trillioner/engine/data/rules.js');
+  const Eng = req('../games/trillioner/engine/engine.js');
+  test('a catch puts money back, is rate limited and stops at the daily cap', () => {
+    const g = new Eng.Game({ seed: 3, mode: 'day', players: [{ id: 'me', name: 'Me' }] }), p = g.players.me;
+    p.spent = 500 * Rules.B; p.balance -= p.spent;
+    const b0 = p.balance, r = g.command('me', { t: 'caught' });
+    assert.equal(r.ok, true);
+    assert.equal(p.balance, b0 + r.back);
+    assert.equal(g.command('me', { t: 'caught' }).code, 'wait');
+    for (let i = 0; i < 80; i++) { g.tick(5); g.command('me', { t: 'caught' }); }
+    assert.equal(p.refunded, Rules.REFUND_CAP);
+    assert.equal(p.balance + p.spent, Rules.MODES.day.start);
+  });
+  test('rooms online have no Refund Office', () => {
+    const g = new Eng.Game({ seed: 3, mode: 'battle', players: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }] });
+    assert.equal(g.command('a', { t: 'caught' }).code, 'closed');
+  });
+  test('a run can still be won after the worst the Refund Office can do', () => {
+    const Bot = req('../games/trillioner/engine/bot.js');
+    for (let s = 1; s <= 25; s++) { const r = Bot.playDay(s, Bot.knowsSecrets, { refunded: Rules.REFUND_CAP }); assert.equal(r.won, true, 'seed ' + s); }
+  });
+}

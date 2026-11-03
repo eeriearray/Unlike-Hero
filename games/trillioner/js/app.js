@@ -65,6 +65,7 @@
       TR.hud.init(ui);
       TR.map.init(TR.hud.mapBox);
       TR.gps.init(app.scene);
+      TR.agents.init(app.scene);
       var au = TR.save.get('audio', null);
       if (au) { TR.audio.volume = au.volume; TR.audio.sfxVolume = au.sfxVolume; TR.audio.musicVolume = au.musicVolume; TR.audio.muted = au.muted; TR.audio.musicMuted = !!au.musicMuted; TR.hud.musicBtn(); }
       TR.quality.init();
@@ -114,7 +115,7 @@
       TR.player.teleport(sp.x, sp.y, sp.z, 0);
       TR.player.setVisible(true);
       TR.player.setGrowth(0);
-      app.statues = 0; app.ownedCount = 0; app.rocketBought = false; app.lastSafe = null; app.district = null;
+      app.claimed = []; app.statues = 0; app.ownedCount = 0; app.rocketBought = false; app.lastSafe = null; app.district = null;
       TR.traffic.setOwned([]);
       TR.vehicles.current = null; TR.vehicles.gear = null; TR.hud.carry(null); TR.hud.closeWheel();
       TR.world.resetRun();
@@ -122,7 +123,7 @@
       TR.notebook.setRun(run0);
       TR.haul.reset();
       TR.world.setBeam(null); app.eventSite = null;
-      TR.own.close(); TR.gps.reset();
+      TR.own.close(); TR.gps.reset(); TR.agents.reset();
       app.styleV = -1;
       TR.dares.start(app.session, seed);
       TR.cam.cine = null;
@@ -202,6 +203,7 @@
           if (ev.base >= R.B) TR.hud.stamp(ev.closing > 0 ? 'DEAL!' : 'SOLD!');
           if (ev.closing > 0) TR.hud.toast(name + ': deal closing in ' + Math.round(ev.closing / 1000) + 's', 'gold');
           else if (it) app.onOwned(it);
+          if (it) app.checkClaim(it);
         } else if (ev.type === 'closed') {
           var c = run.items[ev.item];
           TR.hud.toast(c.name + ': deal closed!', 'gold');
@@ -255,6 +257,21 @@
           app.endRun(ev);
         }
       });
+    },
+    /** Clear a whole shop out and the building is yours: it goes gold and gets your flag. */
+    checkClaim: function (it) {
+      var sess = app.session, s = sess.run.sites[it.site];
+      if (!s || !s.b || s.flag || s.kind !== 'room') return;
+      var left = TR.pads.list.some(function (p) { return p.item.site === it.site && !p.store && !p.item.secret && TR.pads.state(p, sess) === 'open'; });
+      if (left) return;
+      s.flag = true;
+      var by = s.y || 0;
+      TR.world.runLayer.add(TR.fx.raiseFlag(s.b.x, by + s.b.h + 0.8, s.b.z));
+      TR.world.goldSweep(s.b, by);
+      (app.claimed = app.claimed || []).push(s);
+      TR.hud.stamp('CLEARED!');
+      TR.hud.toast('You cleaned out ' + s.name + '. It is yours now.', 'gold');
+      TR.audio.cheer(0.5);
     },
     onOwned: function (it) {
       var s = it.bldg ? app.session.run.sites[it.bldg] : null;
@@ -507,7 +524,7 @@
         if (TR.battle) TR.battle.tick(view, pos);
         if (!room) TR.map.reveal(pos.x, pos.z);
         app.mapT = (app.mapT || 0) - 1;
-        if (app.mapT <= 0) { app.mapT = 2; TR.map.update(pos, TR.player.heading, under, { dots: TR.notebook.mapDots(view.me) }); }
+        if (app.mapT <= 0) { app.mapT = 2; TR.map.update(pos, TR.player.heading, under, { dots: TR.notebook.mapDots(view.me).concat(TR.agents.dots(), (app.claimed || []).map(function (s) { return { x: s.front.x, z: s.front.z, c: '#ffc53d', r: 3 }; })) }); }
       }
       if (view.weather === 'rain' && !room && !under) for (var ri = 0; ri < 5; ri++) TR.fx.spawn(pos.x + (Math.random() - 0.5) * 70, pos.y + 30, pos.z + (Math.random() - 0.5) * 70, 0, -38, 0, 0xa8c8e8, 0.8, 0.6, 0);
       TR.life.update(dt, pos, app.t, room || under);
@@ -538,6 +555,7 @@
         TR.goods.end();
         if (!TR.hud.pOn) TR.notebook.update(dt, app.session, pos);
         TR.gps.update(dt, app.session, pos, app.t);
+        TR.agents.update(dt, app.session, pos, app.t);
         var me0 = app.session.view.me;
         if (me0.styleV !== app.styleV) { app.styleV = me0.styleV; TR.player.applyStyle(me0.style); TR.wardrobe.setPets(me0.style.pet, app.scene); }
         TR.wardrobe.updatePets(dt, pos, TR.player.heading, !!TR.vehicles.current);

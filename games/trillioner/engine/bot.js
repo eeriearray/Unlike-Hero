@@ -45,6 +45,7 @@
   function playDay(seed, strategy, opts) {
     opts = opts || {};
     var game = new Engine.Game({ seed: seed, mode: opts.mode || 'day' }), p = game.players.p1, guard = 0;
+    if (opts.refunded) p.balance += opts.refunded;   // what the Refund Office would hand back in the worst case
     while (!game.over && guard++ < 200000) {
       if (game.frozen) { game.finish(p, game.isPerfect(p) ? 'perfect' : 'win'); break; }
       var act = strategy(game, p) || { wait: 5 };

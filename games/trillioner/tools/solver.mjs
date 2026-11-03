@@ -5,7 +5,7 @@
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const Bot = require('../engine/bot.js');
-export function solve(seed) { return Bot.playDay(seed, Bot.knowsSecrets); }
+export function solve(seed, opts) { return Bot.playDay(seed, Bot.knowsSecrets, opts); }
 if (process.argv[1] && process.argv[1].endsWith('solver.mjs')) {
   const n = Number(process.argv[2] || 100), verbose = process.argv.includes('--verbose');
   let wins = 0, worst = 0, sum = 0, spent = 0; const fails = [];

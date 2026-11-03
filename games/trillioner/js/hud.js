@@ -31,6 +31,7 @@
       var top = el('div', 'hud-top', r);
       hud.bal = el('div', 'hud-bal outlined', top);
       hud.clock = el('div', 'hud-clock', top);
+      hud.pace = el('div', 'hud-pace', top);
       var rank = el('div', 'hud-rank', r);
       hud.rankName = el('b', '', rank);
       hud.nextT = el('span', '', rank);
@@ -67,6 +68,14 @@
       hud.clock.textContent = view.mode === 'free' ? TR.fmtClock(view.hour) + ' · Free Roam' : TR.fmtClock(view.hour);
       hud.clock.classList.toggle('urgent', view.mode !== 'free' && view.dayMs - view.t < view.dayMs / 24);
       hud.rankName.textContent = me.rank;
+      // the one number that says whether you will make it
+      var cfg = R.MODES[view.mode], showPace = cfg && cfg.clock && !cfg.pvp && !me.won;
+      hud.pace.style.display = showPace ? '' : 'none';
+      if (showPace) {
+        var need = cfg.start * Math.min(1, view.t / view.dayMs), gap = me.spent - need, close = Math.abs(gap) < cfg.start * 0.005;
+        hud.pace.textContent = close ? 'On pace' : TR.fmt(Math.abs(gap)) + (gap < 0 ? ' behind pace' : ' ahead of pace');
+        hud.pace.className = 'hud-pace ' + (close ? '' : gap < 0 ? 'behind' : 'ahead');
+      }
       var next = TR.app.nextTrophy(me);
       if (next) { hud.nextT.textContent = 'Next: ' + next.name + ' (' + TR.fmt(next.spent) + ')'; hud.rankBar.style.width = Math.min(100, me.spent / next.spent * 100) + '%'; }
       else { hud.nextT.textContent = 'Every spending trophy earned'; hud.rankBar.style.width = '100%'; }
@@ -124,7 +133,8 @@
     },
     /** Big centre-screen moment. */
     bigText: function (a, b) {
-      var e = el('div', 'bigtext', hud.root, '<b>' + a + '</b>' + (b ? '<span>' + b + '</span>' : ''));
+      if (hud.bigEl) hud.bigEl.remove();
+      var e = hud.bigEl = el('div', 'bigtext', hud.root, '<b>' + a + '</b>' + (b ? '<span>' + b + '</span>' : ''));
       setTimeout(function () { e.remove(); }, 1500);
     },
     /** The rubber stamp for a big deal. */

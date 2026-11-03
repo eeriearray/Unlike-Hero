@@ -23,10 +23,12 @@ Tests: `node --test --test-force-exit test/trillioner-*.test.mjs`. Simulators: `
 | M8 Finish | Done, with limits below | FPS measured on one machine; gamepad checked with a stubbed pad; touch checked with synthetic touch events |
 
 | Own It pass | Done, needs a human verdict | Requested by the user after "looks AI made, not fun". Run-through buying, combo up to x10, inventory (I), Style Counter in every shop, 54 wearables and pets, mystery boxes, throwing cash (hold G), pink GPS route (J toggles). Viewed in the browser; online rooms carry purchases and outfits between tabs. Full online match not played to the 8:00 end this pass |
+| Refund Office and gold city | Done, needs a human verdict | Requested with "keep going". Agents chase you from $25B spent (up to 5), hand back up to $3B a catch and $30B a day; shops are safe, sprinting outruns them early, fast cars flatten them. Pace line, gold coat on owned and cleared buildings, fewer HUD boxes. Agents never stood inside a wall across a 40 second chase; a bot still wins all 25 tested seeds carrying the full $30B back |
 
 ## Measured
 
 - After the art pass, driving across the city at High, Apple M4, 946x492 at 2x: 60 FPS median, 60 minimum, worst frame 19 ms, about 100 draw calls and 117k triangles on that drive. Wide aerial views reached 161 draw calls and 136k triangles.
+- Heaviest case after the Own It and Refund Office passes (5 agents, 3 pets, driving, High, 1892x984, Apple M4, GPU forced to finish each frame): 13.3 ms median, 18.4 ms at the 95th percentile, 52.7 ms single worst frame, 231 draw calls, 543k triangles. Triangles are well above earlier passes, which is a risk on integrated graphics.
 - Boot to first playable: under 0.1 s from localhost (`window.__trBootMs`).
 - Solver, 100 seeds: 100 wins, average 16.1 minutes, worst 17.1, average spent $999B.
 - Visible-only bot, 100 seeds: no wins, at least $529B left, average spent $585B. All-earners bot: no wins, at least $293B left. All extras together cap at about $101B, so visible deals plus every extra still leave over $400B.
@@ -36,6 +38,7 @@ Tests: `node --test --test-force-exit test/trillioner-*.test.mjs`. Simulators: `
 ## Known limits
 
 - Whether it is actually fun has not been judged by a person since the fun pass. Scripts prove the systems fire, not that they feel good.
+- Refund Office chases were checked with scripted frames, not played by hand. How often a catch feels fair is a guess until someone plays it. Day length is still 24 minutes: a human has not yet proved 24 is even winnable, so it was not shortened.
 - FPS has **not** been measured on integrated graphics, which is what the brief's target names. Quality levels and the automatic drop exist; they were switched by hand, and the automatic drop never fired because FPS never fell.
 - Nobody has played a full day by hand. The feel checks were scripted input through the real controls, and the win came from a bot. "A first-time player cannot easily finish it" rests on the bots, not on people.
 - Real gamepads and real touch screens are untested.

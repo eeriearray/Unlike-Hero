@@ -837,6 +837,10 @@
       world.runLayer.add(m);
       world.sweeps = world.sweeps || [];
       world.sweeps.push({ m: m, t: 0, h: b.h, y: y });
+      // a coat of gold over the whole building: the windows still show through, the roof goes solid
+      var coat = new THREE.Mesh(new THREE.BoxGeometry(b.w + 0.5, b.h + 0.4, b.d + 0.5), world.goldCoat || (world.goldCoat = new THREE.MeshLambertMaterial({ color: 0xffc53d, emissive: 0x9a6a00, emissiveIntensity: 0.55, transparent: true, opacity: 0.5, depthWrite: false })));
+      coat.position.set(b.x, y + b.h / 2, b.z); coat.renderOrder = 1;
+      world.runLayer.add(coat);
       var g = new TR.Geo(), n = Math.max(2, Math.floor(b.w / 9)), f = TrillionerLayout.frontOf(b), hh = Math.min(b.h * 0.72, 22);
       for (var i = 0; i < n; i++) {
         var u = -b.w / 2 + (i + 0.5) * (b.w / n);

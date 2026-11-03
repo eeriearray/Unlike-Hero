@@ -84,6 +84,11 @@
       TR.hud.root.appendChild(gps.line);
     },
     reset: function () { gps.target = null; gps.route = []; gps.scan = 0; gps.routeFor = null; if (gps.mesh) gps.mesh.count = 0; if (gps.pin) gps.pin.visible = false; if (TR.map) TR.map.route = null; },
+    /** A road path between two points, for anyone who needs to get round a building. */
+    pathBetween: function (ax, az, bx, bz) {
+      var G = gps.G, a = onRoad(G, ax, az), b = onRoad(G, bx, bz), mid = shortest(G, closestNode(G, a.x, a.z), closestNode(G, b.x, b.z));
+      return mid ? [a].concat(mid, [b, { x: bx, z: bz }]) : [{ x: bx, z: bz }];
+    },
     toggle: function () { gps.on = !gps.on; TR.hud.toast(gps.on ? 'Guide on' : 'Guide off'); if (!gps.on) gps.reset(); },
 
     /** Picks the shop worth the most per step: lots of unspent money, not too far, and not a business that pays you back. */

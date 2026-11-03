@@ -80,7 +80,7 @@
       balance: this.cfg.start, spent: 0,
       owned: {}, goods: {}, vehicles: {}, gear: {}, powers: {}, flags: {}, wear: {},
       closings: [], frenzy: 1, frenzyLeft: 0,
-      extras: {}, style: { pet: [] }, styleV: 0, boxes: 0, rainUsed: 0, rainAt: -1e9,
+      refunded: 0, refundAt: -1e9, extras: {}, style: { pet: [] }, styleV: 0, boxes: 0, rainUsed: 0, rainAt: -1e9,
       cannonOn: false, cannonUsed: 0,
       history: [this.cfg.start], best: null, trophies: {}, stats: { purchases: 0, demolished: 0, firstMoonHour: null, maxFrenzy: 1, truckDemos: 0 },
       income: 0, lastIncome: 0, rising: false, boost: {}, ban: {}, cards: [], cardsUsed: 0, giftUsed: false,
@@ -223,6 +223,7 @@
       case 'wear': return this.wear(pid, String(cmd.slot), cmd.id == null ? null : String(cmd.id));
       case 'box': return this.openBox(pid);
       case 'rain': return this.rain(pid);
+      case 'caught': return this.refund(pid);
       default: return { error: 'Unknown command.' };
     }
   };
@@ -558,6 +559,19 @@
     this.spendSelf(p, amount);
     return { ok: true, paid: amount, left: Extras.RAIN_LIMIT - p.rainUsed };
   };
+  /** A Refund Office agent caught you. Money goes back on the balance. Capped per day, so a catch hurts but cannot ruin a run. */
+  G.refund = function (pid) {
+    var p = this.players[pid];
+    if (!this.cfg.agents || this.frozen || this.over || p.won) return { code: 'closed' };
+    if (this.t - p.refundAt < R.REFUND_GAP_MS) return { code: 'wait' };
+    var back = Math.min(R.REFUND_CAP - p.refunded, R.REFUND_MAX, Math.max(R.REFUND_MIN, Math.floor(p.spent * 0.004)));
+    if (back <= 0) return { code: 'limit' };
+    p.refundAt = this.t;
+    p.refunded += back;
+    p.balance += back;
+    p.spent -= back;
+    return { ok: true, back: back };
+  };
   G.bumpFrenzy = function (p, base) {
     if (base < R.FRENZY_MIN) return;
     if (p.frenzyLeft > 0) p.frenzy = Math.min(R.FRENZY_MAX, p.frenzy + 1);
@@ -796,7 +810,7 @@
         vehicles: p.vehicles, gear: p.gear, powers: p.powers, flags: p.flags, wear: p.wear, trophies: p.trophies, rank: this.rank(p),
         cannonOn: p.cannonOn, cannonUsed: p.cannonUsed, won: p.won, perfect: p.perfect, perfectLeft: p.perfectLeft, travelCd: p.travelCd,
         visited: p.visited, best: p.best, stats: p.stats, cards: p.cards, ban: p.ban, boost: p.boost,
-        extras: p.extras, style: p.style, styleV: p.styleV, boxes: p.boxes, rainUsed: p.rainUsed
+        refunded: p.refunded, extras: p.extras, style: p.style, styleV: p.styleV, boxes: p.boxes, rainUsed: p.rainUsed
       },
       feed: this.feed.slice(-6)
     };

@@ -263,3 +263,16 @@ html, body { font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 
 .own-head + .own-bal { order:-1; }
 .own-bal small { color:#d8cdb8; font-size:12px; font-weight:600; }
 .own-open .hud-rank, .own-open .hud-income, .own-open .hud-map, .own-open .prompt, .own-open .gpsline, .own-open .frenzy, .own-open .hud-top, .own-open .dares, .own-open .area, .own-open .toasts:empty { display:none !important; }
+
+/* Fewer boxes: the street should be the picture */
+.hud-pace { text-align:center; font-size:15px; font-weight:800; color:#fff; margin-top:24px; -webkit-text-stroke:4px #12142a; paint-order:stroke fill; }
+.hud-pace.behind { color:#ff8f8f; } .hud-pace.ahead { color:#7dffa8; }
+.hud-income:has(.flat) { display:none; }
+.dares { top:96px; width:auto; max-width:min(300px,40vw); background:none; padding:0; }
+.dares > b { display:none; }
+.dare { background:rgba(12,14,32,.72); margin:0; }
+.dare ~ .dare { display:none; }
+.hud-rank { width:min(190px,30vw); padding:6px 10px; }
+.hud-rank b { font-size:16px; }
+.hud-rank span { font-size:11px; }
+@media (max-width:720px) { .dares { top:158px; } }
