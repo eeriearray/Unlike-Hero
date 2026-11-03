@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-25T07:05:37.726Z",
+  "generated": "2026-11-03T12:47:40.738Z",
   "games": [
     {
       "id": "casino",
@@ -474,6 +474,50 @@
       ],
       "status": "playable",
       "path": "games/the-hollow/"
+    },
+    {
+      "id": "trillioner",
+      "title": "Trillioner",
+      "tagline": "One toy city, one day, one trillion dollars. Spend it all before 6AM, if your money lets you.",
+      "version": "0.1.0",
+      "sdk": "1.x",
+      "entry": "index.html",
+      "server": "server/index.mjs",
+      "thumbnail": "thumbnail.svg",
+      "accent": "#ffc53d",
+      "players": {
+        "min": 1,
+        "max": 8
+      },
+      "roles": [
+        {
+          "id": "player",
+          "name": "Player",
+          "entry": "index.html",
+          "description": "Solo runs work offline. Battle Spend: host a room and share the 4-letter code; bots fill seats."
+        }
+      ],
+      "multiplayer": {
+        "style": "solo, plus competitive online rooms",
+        "sameDevice": false,
+        "transports": [
+          "server"
+        ],
+        "notes": "Solo runs entirely in the browser. Battle Spend rooms run on the game's own WebSocket server (server/index.mjs, loaded by npm start), which decides every purchase. Design: games/trillioner/docs/DESIGN.md."
+      },
+      "tags": [
+        "3D",
+        "open world",
+        "exploration",
+        "economy",
+        "solo",
+        "pvp"
+      ],
+      "requires": [
+        "npm start for Battle Spend"
+      ],
+      "status": "playable",
+      "path": "games/trillioner/"
     }
   ]
 }

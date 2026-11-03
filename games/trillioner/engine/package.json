@@ -1,0 +1,4 @@
+{
+  "//": "Lets Node load the engine as CommonJS. Browsers load the same files as classic <script> tags.",
+  "type": "commonjs"
+}

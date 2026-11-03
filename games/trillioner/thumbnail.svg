@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400">
+<defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#58c7ff"/><stop offset="1" stop-color="#ffe9a8"/></linearGradient></defs>
+<rect width="640" height="400" fill="url(#s)"/><rect y="320" width="640" height="80" fill="#6fbf5a"/>
+<g><rect x="60" y="170" width="70" height="150" fill="#ff7a6b"/><rect x="60" y="160" width="70" height="14" fill="#c94e42"/>
+<rect x="150" y="110" width="84" height="210" fill="#ffc53d"/><rect x="150" y="98" width="84" height="16" fill="#d59a14"/>
+<rect x="400" y="130" width="90" height="190" fill="#7ad0ff"/><rect x="400" y="118" width="90" height="16" fill="#3f9fd6"/>
+<rect x="510" y="190" width="76" height="130" fill="#b88cff"/><rect x="510" y="180" width="76" height="14" fill="#8a5be0"/>
+<rect x="262" y="50" width="110" height="270" fill="#ffd96a"/><rect x="262" y="36" width="110" height="18" fill="#e0a917"/></g>
+<g fill="#fff8d6" opacity=".9"><rect x="278" y="70" width="22" height="26"/><rect x="334" y="70" width="22" height="26"/><rect x="278" y="120" width="22" height="26"/><rect x="334" y="120" width="22" height="26"/><rect x="278" y="170" width="22" height="26"/><rect x="334" y="170" width="22" height="26"/><rect x="278" y="220" width="22" height="26"/><rect x="334" y="220" width="22" height="26"/></g>
+<text x="320" y="375" font-family="Arial Black,Arial,sans-serif" font-size="56" font-weight="900" text-anchor="middle" fill="#fff" stroke="#1a1a2e" stroke-width="8" paint-order="stroke">TRILLIONER</text>
+<g><circle cx="110" cy="70" r="30" fill="#ffc53d" stroke="#b37f00" stroke-width="6"/><text x="110" y="84" font-family="Arial Black,Arial" font-size="40" font-weight="900" text-anchor="middle" fill="#b37f00">$</text>
+<circle cx="540" cy="80" r="24" fill="#ffc53d" stroke="#b37f00" stroke-width="5"/><text x="540" y="92" font-family="Arial Black,Arial" font-size="32" font-weight="900" text-anchor="middle" fill="#b37f00">$</text></g>
+</svg>
