@@ -90,7 +90,7 @@
       var cls = me.income > 0 ? 'up' : me.income < 0 ? 'down' : 'flat', inc = me.income === 0 ? 'No income' : (me.income > 0 ? '+' : '') + TR.fmt(me.income) + '/s';
       if (hud.incText !== inc) { hud.incText = inc; hud.incomeV.innerHTML = '<span class="' + cls + '">' + inc + '</span>'; }
       // frenzy
-      var fOn = me.frenzyLeft > 0;
+      var fOn = me.frenzyLeft > 0 && me.frenzy > 1;
       hud.frenzy.classList.toggle('on', fOn);
       if (fOn) { hud.frenzy.querySelector('b').textContent = 'x' + me.frenzy; hud.frenzy.querySelector('i').style.width = (me.frenzyLeft / me.frenzyWindow * 100) + '%'; }
       // closings
@@ -106,7 +106,7 @@
     openWheel: function (me) {
       var opts = [], SP = TR.vehicles.SPECS, GR = TR.vehicles.GEAR;
       Object.keys(me.vehicles).forEach(function (k) { if (SP[k]) opts.push({ kind: 'v', id: k, name: SP[k].name }); });
-      Object.keys(me.gear).forEach(function (k) { if (GR[k]) opts.push({ kind: 'g', id: k, name: GR[k].name }); });
+      Object.keys(me.gear).forEach(function (k) { if (GR[k] && k !== 'parachute') opts.push({ kind: 'g', id: k, name: GR[k].name }); });
       if (!opts.length) { hud.toast('Nothing to call yet. Buy a business that comes with one!', 'bad'); return; }
       var w = hud.wheel = el('div', 'wheel', hud.root);
       opts.forEach(function (o, i) {

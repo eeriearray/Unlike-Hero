@@ -57,5 +57,5 @@
       text: 'Last job, boss. The auditors are in the lobby. I am in the bathroom. Fifty billion, anywhere, four minutes. I will hold the door. It opens outward. This was a mistake.',
       won: 'They have gone. I think they were crying too. Whatever is left, it is yours to burn.', lost: 'Tell my wife the money is in the money.', reward: { combo: 10 } }
   ];
-  return { CONTACTS: CONTACTS, JOBS: JOBS, FIRST_MS: 15000, GAP_MS: 35000, RING_MS: 18000 };
+  return { CONTACTS: CONTACTS, JOBS: JOBS, FIRST_MS: 15000, GAP_MS: 35000, RING_MS: 25000 };
 });

@@ -316,7 +316,7 @@
         TR.fx.confetti(v.pos, 60, 10);
       });
       (ev.gear || []).forEach(function (g) {
-        TR.vehicles.setGear(g);
+        if (g !== 'parachute') TR.vehicles.setGear(g);   // the umbrella never needs picking: it works as soon as it is yours
         TR.hud.toast('You got the ' + TR.vehicles.GEAR[g].name + '! ' + TR.vehicles.GEAR[g].use, 'gold');
       });
     },

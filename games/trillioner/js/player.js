@@ -72,6 +72,20 @@
       p.base = { shirt: SHIRT, hair: HAIR, leg: TROUSER, shoe: SHOE };
       return { group: g, parts: p };
     },
+    /** The Golden Umbrella opens over your head while you float. */
+    showBrolly: function (on) {
+      if (on && !pl.brolly) {
+        var g = new TR.Geo();
+        g.lathe([[0.001, 1.75], [0.5, 1.68], [1.05, 1.45], [1.5, 1.1], [1.62, 0.92]], 0, 0, 0, function (j) { return j % 2 ? 0xffc53d : 0xd99a14; }, 16);
+        g.lathe([[1.62, 0.92], [1.2, 1.2], [0.001, 1.4]], 0, 0, 0, 0xa87810, 16);
+        g.cyl(0, -0.1, 0, 0.04, 1.9, 0x5a3a18, 6);
+        pl.brolly = g.mesh(new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }), false, false);
+        pl.brolly.matrixAutoUpdate = true; pl.brolly.position.set(0.5, 2.25, 0);
+        pl.group.add(pl.brolly);
+      }
+      if (pl.brolly) pl.brolly.visible = !!on;
+      if (on) { pl.parts.armR.rotation.x = 2.9; pl.parts.foreR.rotation.x = 0.3; }
+    },
     teleport: function (x, y, z, h) { pl.pos.set(x, y, z); pl.vel.set(0, 0, 0); if (h != null) pl.heading = h; TR.cam.snap(pl.pos); pl.floor = y; },
     update: function (dt, moving) {
       var input = TR.input, a = input.axes(), yaw = input.yaw;
@@ -85,7 +99,9 @@
       pl.vel.x += Math.max(-accel * dt, Math.min(accel * dt, tx - pl.vel.x));
       pl.vel.z += Math.max(-accel * dt, Math.min(accel * dt, tz - pl.vel.z));
       // golden umbrella: hold Space while falling
-      if (TR.vehicles.gear === 'parachute' && !pl.grounded && pl.vel.y < -2 && input.down('Space')) pl.vel.y = Math.max(pl.vel.y, -3.5);
+      var hasBrolly = TR.app.session && TR.app.session.view.me.gear.parachute, floating = hasBrolly && !pl.grounded && pl.vel.y < -1 && input.down('Space');
+      if (floating) pl.vel.y = Math.max(pl.vel.y, -3.5);
+      pl.showBrolly(floating);
       if (input.hit('Space') || input.jumpTap) {
         if (pl.grounded || pl.jumps < 2) {
           pl.vel.y = pl.jumps === 1 ? JUMP * 0.92 : JUMP;

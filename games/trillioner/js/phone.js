@@ -28,9 +28,22 @@
       k.innerHTML = '<div class="ph-top"><img alt="" src="' + ph.face(who) + '"><div><b></b><small></small></div></div><p></p>' + (foot || '');
       k.querySelector('b').textContent = c.name; k.querySelector('small').textContent = title || c.role; k.querySelector('p').textContent = text;
     },
+    /** A call says, in order: someone is calling, who, what they want, for how long, and for what. */
+    drawCall: function (r) {
+      var c = M.CONTACTS[r.from], k = ph.card, reward = ph.rewardText(r.reward);
+      k.classList.add('calling'); k.style.display = '';
+      TR.hud.root.classList.add('ringing');
+      k.innerHTML = '<div class="ph-alert">INCOMING CALL</div><div class="ph-top"><img alt="" src="' + ph.face(r.from) + '"><div><b></b><small></small></div></div>' +
+        '<div class="ph-job"><i>THE JOB</i><strong></strong><span></span></div><p></p>' +
+        '<div class="ph-keys"><span class="y"><kbd>Y</kbd> TAKE THE JOB</span><span class="n"><kbd>U</kbd> Hang up</span></div><i class="ph-ring"></i>';
+      k.querySelector('b').textContent = c.name; k.querySelector('small').textContent = c.role;
+      k.querySelector('strong').textContent = r.goal;
+      k.querySelector('.ph-job span').textContent = clock(r.leftMs) + ' on the clock' + (reward ? ' · Pays: ' + reward : '') + ' · No penalty if you say no';
+      k.querySelector('p').textContent = r.text;
+    },
     answer: function (yes) {
       TR.app.session.extra({ t: 'answer', yes: yes });
-      ph.showing = null; ph.card.style.display = 'none';
+      ph.showing = null; ph.card.style.display = 'none'; ph.card.classList.remove('calling'); TR.hud.root.classList.remove('ringing');
       if (yes) TR.audio.door();
     },
     /** What the caller says when it is over: stays up long enough to read. */
@@ -49,7 +62,7 @@
     },
     onEvent: function (ev) {
       if (ev.type === 'ring') { ph.ringT = 0; TR.audio.ring(); }
-      else if (ev.type === 'jobStart') { TR.audio.buy(1, 1); TR.gps.scan = 0; }
+      else if (ev.type === 'jobStart') { TR.audio.buy(1, 1); TR.gps.scan = 0; TR.hud.bigText('JOB ON', ev.goal + '. Follow the pink arrows.'); }
       else if (ev.type === 'jobEnd') {
         TR.gps.scan = 0;
         TR.hud.bigText(ev.won ? 'JOB DONE' : 'JOB BLOWN', ev.won ? ph.rewardText(ev.reward) : '');
@@ -61,11 +74,11 @@
       var me = sess.view.me, r = me.ringing, j = me.job;
       if (r) {
         ph.ringT += dt;
-        if (ph.ringT > 2.4) { ph.ringT = 0; TR.audio.ring(); }
+        if (ph.ringT > 3) { ph.ringT = 0; TR.audio.ring(); }
         if (ph.showing !== r.id) {
           ph.showing = r.id;
           clearTimeout(ph.lineT);
-          ph.draw(r.from, 'Calling...', r.text, '<div class="ph-keys"><span class="y"><kbd>Y</kbd> Take the job</span><span class="n"><kbd>U</kbd> Hang up</span></div><i class="ph-ring"></i>');
+          ph.drawCall(r);
           ph.card.querySelector('.y').onclick = function () { ph.answer(true); };
           ph.card.querySelector('.n').onclick = function () { ph.answer(false); };
         }
@@ -73,12 +86,12 @@
         if (bar) bar.style.width = (r.ringLeft / M.RING_MS * 100) + '%';
         if (TR.input.hit('KeyY')) ph.answer(true);
         else if (TR.input.hit('KeyU')) ph.answer(false);
-      } else if (ph.showing) { ph.showing = null; ph.card.style.display = 'none'; }
+      } else if (ph.showing) { ph.showing = null; ph.card.style.display = 'none'; ph.card.classList.remove('calling'); TR.hud.root.classList.remove('ringing'); }
       ph.obj.style.display = j ? '' : 'none';
       TR.hud.root.classList.toggle('on-job', !!j);
       if (j) {
         var sub = j.type === 'spend' ? TR.fmt(j.count) + ' of ' + TR.fmt(j.amount) : j.need && j.type !== 'combo' ? j.count + ' of ' + j.need : j.type === 'style' ? 'Wearing ' + TR.fmt(ph.worn(me)) + ' of ' + TR.fmt(j.worth) : '';
-        var html = '<b></b><em>' + clock(j.leftMs) + '</em>' + (sub ? '<small></small>' : '');
+        var html = '<u>YOUR JOB</u><b></b><em>' + clock(j.leftMs) + '</em>' + (sub ? '<small></small>' : '');
         if (ph.objKey !== j.id) { ph.objKey = j.id; ph.obj.innerHTML = html; ph.obj.querySelector('b').textContent = j.goal; }
         else { ph.obj.querySelector('em').textContent = clock(j.leftMs); }
         var sm = ph.obj.querySelector('small');

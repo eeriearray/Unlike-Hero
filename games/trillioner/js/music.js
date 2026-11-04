@@ -134,7 +134,7 @@
     start: function () {
       if (!audio.unlock() || M.seq) return;
       if (!M.ready) M.build();
-      M.step = 0; M.next = ctx.currentTime + 0.12; M.style = M.want;
+      M.step = 0; M.next = ctx.currentTime + 0.12; M.style = M.want; M.fresh = true;
       M.fade.gain.cancelScheduledValues(ctx.currentTime); M.fade.gain.setTargetAtTime(0.85, ctx.currentTime, 0.5);
       M.seq = setInterval(M.pump, 50);
     },
@@ -142,15 +142,23 @@
       if (M.seq) clearInterval(M.seq); M.seq = null;
       if (M.ready) { M.fade.gain.cancelScheduledValues(ctx.currentTime); M.fade.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.4); }
     },
-    pump: function () { while (ctx && M.next < ctx.currentTime + 0.16) M.play(); },
+    pump: function () {
+      if (!ctx) return;
+      if (ctx.state !== 'running') { ctx.resume(); return; }   // the browser paused the sound: ask for it back, and do not pile notes up meanwhile
+      if (M.next < ctx.currentTime - 0.1) M.next = ctx.currentTime + 0.02;   // after a stall, carry on from now rather than playing everything missed at once
+      while (M.next < ctx.currentTime + 0.16) {
+        var before = M.next;
+        try { M.play(); } catch (e) { if (M.next === before) { M.next += 0.05; M.step++; } }   // one bad note must never silence the rest of the day
+      }
+    },
     play: function () {
       var i = M.step, bar16 = i % 16, night = M.hour >= 20 || M.hour < 5;
-      if (bar16 === 0 && M.style !== M.want && i % 32 === 0) { M.style = M.want; M.step = 0; i = 0; }      // change on the phrase, not mid-bar
+      if (bar16 === 0 && M.style !== M.want && i % 32 === 0) { M.style = M.want; M.fresh = false; }      // change on the phrase, not mid-bar, and keep playing through it
       var st = STYLES[M.style], bpm = (st.bpm * (night ? 0.94 : 1)) * (M.frantic ? 1.22 : 1), sx = 60 / bpm / 4, t = M.next + (i % 2 ? st.swing * sx : 0), barNo = Math.floor(i / 16), soft = st.soft || 1;
       var inRoom = M.want === 'shop';
       tone.frequency.setTargetAtTime(inRoom ? 3200 : night ? 7000 : 15000, ctx.currentTime, 0.4);
       echo.delayTime.setTargetAtTime(sx * 3, ctx.currentTime, 0.05);
-      var section = Math.floor(barNo / 4) % 4, intro = barNo < 2 && !M.frantic;
+      var section = Math.floor(barNo / 4) % 4, intro = M.fresh && barNo < 2 && !M.frantic;
       var cd = st.prog[barNo % st.prog.length];
       // drums: night drops the kick pattern to half, the last hour adds hats
       var ks = st.kick[bar16], ss = st.snare[bar16], hs = st.hat[bar16];
@@ -170,7 +178,7 @@
       if (st.keys === 'pad' || st.keys === 'epad') { if (bar16 === 0) chordVoice(st.keys, chordNotes(st, night, cd, -1), t, sx * 16, 0.09 * soft); if (st.keys === 'epad' && st.stabs[bar16] === 'x' && bar16) chordVoice('epad', chordNotes(st, night, cd, -1).slice(0, 3), t, sx * 3, 0.07 * soft); }
       else if (st.stabs[bar16] === 'x') chordVoice(st.keys, chordNotes(st, night, cd, -1).slice(0, 3), t, sx * 2, 0.085 * soft);
       // the tune rests through the intro and every so often, which keeps it from nagging
-      if (!intro && section !== 2 || M.frantic) {
+      if (!intro) {
         var tune = M.tunes[M.style] || (M.tunes[M.style] = writeTune(M.style, st)), blk = tune[Math.floor(barNo / 4) % 4][barNo % 4];
         blk.forEach(function (nt) {
           if (nt.s === bar16) VOICE[st.lead](midi(deg(st, night, nt.d, -1)), t, sx * 2.4, 0.1 * soft);

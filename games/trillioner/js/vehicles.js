@@ -123,6 +123,7 @@
     },
     board: function (v) {
       if (TR.interiors.current) return;
+      TR.player.showBrolly(false);
       vs.current = v;
       TR.player.setVisible(!!v.spec.rider);
       if (TR.audio) TR.audio.engine(v.spec.sound);

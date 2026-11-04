@@ -179,7 +179,7 @@
   function useText(it) {
     var v = TR.vehicles, r = it.reward || {}, out = [];
     (r.vehicles || []).forEach(function (k) { if (v.SPECS[k]) out.push('Ride the ' + v.SPECS[k].name + ' (Q to call)'); });
-    (r.gear || []).forEach(function (k) { if (v.GEAR[k]) out.push('Use the ' + v.GEAR[k].name + ' (Q)'); });
+    (r.gear || []).forEach(function (k) { if (v.GEAR[k]) out.push(k === 'parachute' ? v.GEAR[k].use : 'Use the ' + v.GEAR[k].name + ' (Q)'); });
     if (it.power && POWERS[it.power]) out.push(POWERS[it.power]);
     if (it.wearable) out.push('You wear it');
     if (it.hint) out.push('Gives you a clue');

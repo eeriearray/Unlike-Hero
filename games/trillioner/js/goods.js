@@ -112,13 +112,14 @@
 
   // ───── the haul: everything you buy bounces along behind you ─────
   var LEN = 34, GAP = 1.75;
+  var HAUL_LIFE = 10;   // seconds a purchase trails you for. It is still yours: it is in the bag, or at your place.
   var haul = TR.haul = {
     items: [], trail: [], total: 0, last: null,
     reset: function () { haul.items = []; haul.trail = []; haul.total = 0; haul.last = null; },
     /** A bought thing leaps from where it stood into the line. */
     add: function (kind, from, scale) {
       haul.total++;
-      haul.items.unshift({ kind: kind, s: Math.min(0.95, scale * 0.8), hop: 0, fx: from ? from.x : null, fy: from ? from.y : 0, fz: from ? from.z : 0, x: 0, y: 0, z: 0, ph: haul.total * 1.7 });
+      haul.items.unshift({ life: HAUL_LIFE, kind: kind, s: Math.min(0.95, scale * 0.8), hop: 0, fx: from ? from.x : null, fy: from ? from.y : 0, fz: from ? from.z : 0, x: 0, y: 0, z: 0, ph: haul.total * 1.7 });
       if (haul.items.length > LEN) haul.items.pop();
     },
     update: function (dt, pos, t, moving) {
@@ -126,6 +127,7 @@
       if (!L || Math.hypot(pos.x - L.x, pos.z - L.z) > 40 || Math.abs(pos.y - L.y) > 12) { haul.trail = []; L = null; }  // a door or a flight: everyone catches up
       if (!L || Math.hypot(pos.x - L.x, pos.z - L.z) > 0.5) { haul.trail.unshift({ x: pos.x, y: pos.y, z: pos.z }); haul.last = { x: pos.x, y: pos.y, z: pos.z }; if (haul.trail.length > 240) haul.trail.pop(); }
       var step = GAP / 0.5;
+      for (var n = haul.items.length - 1; n >= 0; n--) { haul.items[n].life -= dt; if (haul.items[n].life <= 0) haul.items.splice(n, 1); }
       for (var i = 0; i < haul.items.length; i++) {
         var it = haul.items[i], p = haul.trail[Math.min(haul.trail.length - 1, Math.round((i + 1.2) * step))] || pos, side = Math.sin(i * 1.9) * 0.9;
         var bounce = Math.abs(Math.sin(t * 7 + it.ph)) * (moving ? 0.75 : 0.12), tx = p.x + side, ty = p.y + bounce + 0.1, tz = p.z + Math.cos(i * 2.3) * 0.9;
@@ -137,7 +139,7 @@
         } else {
           it.x += (tx - it.x) * Math.min(1, dt * 14); it.z += (tz - it.z) * Math.min(1, dt * 14); it.y += (ty - it.y) * Math.min(1, dt * 16);
           var h2 = Math.atan2(pos.x - it.x, pos.z - it.z);
-          goods.put(it.kind, it.x, it.y, it.z, h2 + Math.PI + Math.sin(t * 7 + it.ph) * 0.25, it.s);
+          goods.put(it.kind, it.x, it.y, it.z, h2 + Math.PI + Math.sin(t * 7 + it.ph) * 0.25, it.s * Math.min(1, it.life / 0.5));   // shrinks away when its time is up
         }
       }
     }

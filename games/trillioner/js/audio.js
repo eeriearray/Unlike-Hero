@@ -60,7 +60,7 @@
       if (tier >= 3) { tone(1047 * pitch, 0.8, 'sawtooth', 0.08, 0.24); noise(0.5, 0.2, 3000, 0.4, 0.1); }
       if (tier >= 4) { tone(110, 1.2, 'sawtooth', 0.2, 0, 55); }
     },
-    ring: function () { if (!ensure()) return; var t = 0; for (var i = 0; i < 6; i++) { tone(i % 2 ? 1320 : 1760, 0.09, 'square', 0.05, t); t += 0.1; } },
+    ring: function () { if (!ensure()) return; var t = 0; for (var i = 0; i < 8; i++) { tone(i % 2 ? 1320 : 1760, 0.1, 'square', 0.16, t); t += 0.11; } t += 0.25; for (i = 0; i < 8; i++) { tone(i % 2 ? 1320 : 1760, 0.1, 'square', 0.16, t); t += 0.11; } },
     denied: function () { if (!ensure()) return; tone(170, 0.16, 'square', 0.18); tone(120, 0.26, 'square', 0.18, 0.13); },
     jump: function (n) { if (!ensure()) return; tone(n > 1 ? 560 : 400, 0.14, 'triangle', 0.1, 0, n > 1 ? 1100 : 760); },
     door: function () { if (!ensure()) return; noise(0.16, 0.12, 700, 1); tone(220, 0.14, 'triangle', 0.1, 0.05); },
