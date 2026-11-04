@@ -395,7 +395,7 @@
       g.rbox(x, y + h - 0.7, z, w + 0.9, 0.7, dd + 0.9, trim, rc + 0.3, 0.22, 1);                  // cornice
       if (shape !== 'container') world.windows(x, y, z, w, h, dd, b, under, shape, FLOOR, rng);
       var top = y + h;
-      if (shape !== 'house' && !under && h > 7) TR.street.roofClutter(g, x, top, z, w, dd, rng);
+      if (shape !== 'house' && !under && h > 7 && !b.home) TR.street.roofClutter(g, x, top, z, w, dd, rng);
       if (shape === 'house') {
         var along = dd >= w;
         g.rbox(x, top - 0.3, z, w + 1.5, 0.55, dd + 1.5, shade(roof, 0.8), rc + 0.5, 0.12, 1);

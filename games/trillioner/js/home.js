@@ -40,8 +40,8 @@
     },
     helipad: function (g, x, z, y) {
       y = y || 0;
-      g.cyl(x, y, z, 8, 0.3, 0x3a3c40, 24);
-      g.box(x - 2, y + 0.3, z, 0.8, 0.03, 5, 0xf2efe6).box(x + 2, y + 0.3, z, 0.8, 0.03, 5, 0xf2efe6).box(x, y + 0.3, z, 3.6, 0.03, 0.8, 0xf2efe6);
+      g.cyl(x, y, z, 6.4, 0.3, 0x3a3c40, 24);
+      g.box(x - 1.7, y + 0.3, z, 0.7, 0.03, 4.4, 0xf2efe6).box(x + 1.7, y + 0.3, z, 0.7, 0.03, 4.4, 0xf2efe6).box(x, y + 0.3, z, 3, 0.03, 0.7, 0xf2efe6);
     },
     goldhouse: function (g, x, z) {
       g.box(x, 0, z, 6, 3, 5, 0xe0ad24); g.gable(x, 3, z, 7, 2, 6, 0xc8921a, false);
@@ -95,9 +95,9 @@
       var site = TR.app.session.run.sites[H.SITE], b = site.b, done = home.outside = home.outside || {};
       if (me.home.helipad && !done.helipad) {
         done.helipad = true;
-        var g = new TR.Geo(); PIECES.helipad(g, b.x, b.z, b.h + 0.1);
+        var g = new TR.Geo(); PIECES.helipad(g, b.x, b.z, b.h + 1.65);   // on top of the villa's raised middle
         TR.world.runMesh(g, TR.world.solid, true);
-        TR.world.projectBoxes.push(TR.world.collide.addBox(b.x, b.h, b.z, 11, 0.4, 11, { project: 'pad' }));
+        TR.world.projectBoxes.push(TR.world.collide.addBox(b.x, b.h + 1.6, b.z, 12, 0.35, 12, { project: 'pad' }));
       }
       if (me.home.goldhouse && !done.gold) {
         done.gold = true;
