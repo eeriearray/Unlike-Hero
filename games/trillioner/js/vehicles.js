@@ -66,7 +66,7 @@
       var spec = SPECS[kind]; if (!spec) return null;
       var v = vs.placed[kind];
       if (!v) {
-        var mesh = spec.build().mesh(new THREE.MeshLambertMaterial({ vertexColors: true }), true, false);
+        var mesh = spec.build().mesh(new THREE.MeshPhongMaterial({ vertexColors: true, shininess: 70, specular: 0x444444 }), true, false);
         mesh.matrixAutoUpdate = true;
         var group = new THREE.Group(); group.add(mesh);
         if (spec.rotor) {
@@ -156,7 +156,7 @@
       else if (s.mode === 'jet') vs.driveJet(v, s, dt);
       else if (s.mode === 'rail') vs.driveRail(v, s, dt);
       if (!vs.current) return;
-      if (TR.input.hit('KeyH') && TR.audio && s.horn) TR.audio.horn(s.horn);
+      if (TR.input.hit('KeyH') && TR.audio && (s.horn || TR.models.mods.horn)) TR.audio.horn(TR.models.mods.horn && s.mode === 'ground' ? TR.models.mods.horn : s.horn);
       if (TR.audio) TR.audio.engineLevel(Math.abs(v.speed) / s.speed, v.slip);
       TR.player.pos.copy(v.pos);
       if (s.rider) { TR.player.group.position.set(v.pos.x, v.pos.y + (s.hover || 0) + (s.mode === 'jet' ? 0 : 0.6), v.pos.z); TR.player.group.rotation.y = v.heading; TR.player.parts.legL.rotation.x = TR.player.parts.legR.rotation.x = 0; TR.player.parts.shinL.rotation.x = TR.player.parts.shinR.rotation.x = 0; }

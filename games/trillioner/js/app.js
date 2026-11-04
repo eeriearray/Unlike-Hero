@@ -126,7 +126,7 @@
       TR.notebook.setRun(run0);
       TR.haul.reset();
       TR.world.setBeam(null); app.eventSite = null;
-      TR.own.resetRun(); TR.gps.reset(); TR.agents.reset(); TR.phone.reset();
+      TR.own.resetRun(); TR.gps.reset(); TR.agents.reset(); TR.phone.reset(); TR.home.reset();
       app.styleV = -1;
       TR.dares.start(app.session, seed);
       TR.cam.cine = null;
@@ -405,6 +405,7 @@
       if (input.hit('KeyV')) TR.cam.nextView();
       TR.own.rain(dt, app.session, TR.player.pos);
       TR.own.updateQuick(dt, app.session);
+      if (TR.home.actions(input, TR.player.pos)) return;
       var ctr = ints.counter;
       if (ctr && Math.hypot(TR.player.pos.x - ctr.x, TR.player.pos.z - ctr.z) < 3.4) {
         TR.hud.prompt('Style Counter', 'Press E: clothes, jewellery, pets, mystery boxes');
@@ -534,7 +535,7 @@
         if (TR.battle) TR.battle.tick(view, pos);
         if (!room) TR.map.reveal(pos.x, pos.z);
         app.mapT = (app.mapT || 0) - 1;
-        if (app.mapT <= 0) { app.mapT = 0.4; TR.map.update(pos, TR.player.heading, under, { dots: TR.notebook.mapDots(view.me).concat(TR.agents.dots(), (app.claimed || []).map(function (s) { return { x: s.front.x, z: s.front.z, c: '#ffc53d', r: 3 }; })) }); }
+        if (app.mapT <= 0) { app.mapT = 0.4; TR.map.update(pos, TR.player.heading, under, { dots: TR.notebook.mapDots(view.me).concat([{ x: app.session.run.sites.your_place.front.x, z: app.session.run.sites.your_place.front.z, c: '#7dffa8', r: 7, label: 'HOME' }], TR.agents.dots(), (app.claimed || []).map(function (s) { return { x: s.front.x, z: s.front.z, c: '#ffc53d', r: 3 }; })) }); }
       }
       if (view.weather === 'rain' && !room && !under) for (var ri = 0; ri < 5; ri++) TR.fx.spawn(pos.x + (Math.random() - 0.5) * 70, pos.y + 30, pos.z + (Math.random() - 0.5) * 70, 0, -38, 0, 0xa8c8e8, 0.8, 0.6, 0);
       TR.life.update(dt, pos, app.t, room || under);
@@ -562,6 +563,7 @@
         TR.haul.update(dt, pos, app.t, moving);
         TR.life.racers(app.t, pos);
         TR.own.drawPlaced(pos);
+        TR.home.drawGoods(app.t);
         TR.dares.update(dt, pos, app.t, app.session);
         TR.goods.end();
         if (!TR.hud.pOn) TR.notebook.update(dt, app.session, pos);
@@ -569,6 +571,7 @@
         TR.agents.update(dt, app.session, pos, app.t);
         TR.street.update(dt, pos, !!TR.interiors.current || pos.y < -20);
         TR.phone.update(dt, app.session);
+        TR.home.sync(app.session.view.me, app.session.view.t);
         TR.map.follow(TR.interiors.current ? TR.interiors.returnTo : pos, TR.vehicles.current ? TR.vehicles.current.heading : TR.player.heading, TR.input.yaw);   // indoors, the map stays on the street outside
         var me0 = app.session.view.me;
         if (me0.styleV !== app.styleV) { app.styleV = me0.styleV; TR.player.applyStyle(me0.style); TR.wardrobe.setPets(me0.style.pet, app.scene); }

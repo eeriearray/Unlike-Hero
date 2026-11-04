@@ -10,11 +10,11 @@
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
-    module.exports = factory(require('./rng.js'), require('./data/rules.js'), require('./shuffle.js'), require('./data/trophies.js'), require('./data/events.js'), require('./data/secrets.js'), require('./data/extras.js'), require('./data/missions.js'), require('./data/districts.js'), require('./data/uses.js'));
+    module.exports = factory(require('./rng.js'), require('./data/rules.js'), require('./shuffle.js'), require('./data/trophies.js'), require('./data/events.js'), require('./data/secrets.js'), require('./data/extras.js'), require('./data/missions.js'), require('./data/districts.js'), require('./data/uses.js'), require('./data/home.js'));
   } else {
-    root.TrillionerEngine = factory(root.TrillionerRng, root.TRD.rules, root.TrillionerShuffle, root.TRD.trophies, root.TRD.events, root.TRD.secrets, root.TRD.extras, root.TRD.missions, root.TRD.districts, root.TRD.uses);
+    root.TrillionerEngine = factory(root.TrillionerRng, root.TRD.rules, root.TrillionerShuffle, root.TRD.trophies, root.TRD.events, root.TRD.secrets, root.TRD.extras, root.TRD.missions, root.TRD.districts, root.TRD.uses, root.TRD.home);
   }
-})(typeof self !== 'undefined' ? self : this, function (RngMod, R, Shuffle, Trophies, EventsData, SecretsData, Extras, Missions, DistrictData, Uses) {
+})(typeof self !== 'undefined' ? self : this, function (RngMod, R, Shuffle, Trophies, EventsData, SecretsData, Extras, Missions, DistrictData, Uses, HomeData) {
   'use strict';
 
   var fmtShort = function (c) {
@@ -80,7 +80,7 @@
       balance: this.cfg.start, spent: 0,
       owned: {}, goods: {}, vehicles: {}, gear: {}, powers: {}, flags: {}, wear: {},
       closings: [], frenzy: 1, frenzyLeft: 0,
-      used: {}, useAt: -1e9, job: null, ringing: null, jobsUsed: {}, nextCall: Missions.FIRST_MS, jobsDone: 0, jobsLost: 0, heatOffUntil: 0, refunded: 0, refundAt: -1e9, extras: {}, style: { pet: [] }, styleV: 0, boxes: 0, rainUsed: 0, rainAt: -1e9,
+      home: {}, parts: {}, fitted: {}, homeV: 0, used: {}, useAt: -1e9, job: null, ringing: null, jobsUsed: {}, nextCall: Missions.FIRST_MS, jobsDone: 0, jobsLost: 0, heatOffUntil: 0, refunded: 0, refundAt: -1e9, extras: {}, style: { pet: [] }, styleV: 0, boxes: 0, rainUsed: 0, rainAt: -1e9,
       cannonOn: false, cannonUsed: 0,
       history: [this.cfg.start], best: null, trophies: {}, stats: { purchases: 0, demolished: 0, firstMoonHour: null, maxFrenzy: 1, truckDemos: 0 },
       income: 0, lastIncome: 0, rising: false, boost: {}, ban: {}, cards: [], cardsUsed: 0, giftUsed: false,
@@ -225,6 +225,9 @@
       case 'rain': return this.rain(pid);
       case 'caught': return this.refund(pid);
       case 'use': return this.useItem(pid, String(cmd.item));
+      case 'upgrade': return this.buyUpgrade(pid, String(cmd.id));
+      case 'part': return this.buyPart(pid, String(cmd.id));
+      case 'fit': return this.fitPart(pid, String(cmd.slot), cmd.id == null ? null : String(cmd.id));
       case 'answer': return this.answerCall(pid, !!cmd.yes);
       default: return { error: 'Unknown command.' };
     }
@@ -744,6 +747,42 @@
     if (group === 'party') { p.frenzy = Math.min(R.FRENZY_MAX, Math.max(p.frenzy + 2, 3)); p.frenzyLeft = this.frenzyWindow() * 2; }
     return { ok: true, group: group, left: p.goods[id] - p.used[id] };
   };
+  // ── Your place ──
+  G.homeShut = function (p, price) {
+    if (this.frozen || this.over || p.won) return { code: 'closed', error: 'The day is over.' };
+    if (this.requireNear && p.inv !== HomeData.SITE) return { code: 'far', error: 'Do that at your place.' };
+    if (p.balance < price) return { code: 'broke', error: 'Too expensive' };
+    return null;
+  };
+  G.buyUpgrade = function (pid, id) {
+    var p = this.players[pid], u = HomeData.BY[id];
+    if (!u || u.slot) return { code: 'unknown', error: 'Not for sale.' };
+    if (p.home[id]) return { code: 'owned', error: 'You already have that.' };
+    var no = this.homeShut(p, u.price);
+    if (no) return no;
+    p.home[id] = true; p.homeV++;
+    if (u.vehicle) { p.vehicles[u.vehicle] = true; this.emit(p, { type: 'reward', item: null, vehicles: [u.vehicle], gear: [] }); }
+    this.spendSelf(p, u.price);
+    return { ok: true, paid: u.price };
+  };
+  G.buyPart = function (pid, id) {
+    var p = this.players[pid], x = HomeData.BY[id];
+    if (!x || !x.slot) return { code: 'unknown', error: 'Not for sale.' };
+    if (p.parts[id]) return { code: 'owned', error: 'You already have that.' };
+    var no = this.homeShut(p, x.price);
+    if (no) return no;
+    p.parts[id] = true; p.fitted[x.slot] = id; p.homeV++;
+    this.spendSelf(p, x.price);
+    return { ok: true, paid: x.price };
+  };
+  G.fitPart = function (pid, slot, id) {
+    var p = this.players[pid];
+    if (!HomeData.SLOTS[slot]) return { error: 'Bad slot.' };
+    if (id != null && (!p.parts[id] || HomeData.BY[id].slot !== slot)) return { error: 'You do not own that.' };
+    if (id == null) delete p.fitted[slot]; else p.fitted[slot] = id;
+    p.homeV++;
+    return { ok: true };
+  };
   G.bumpFrenzy = function (p, base) {
     if (base < R.FRENZY_MIN) return;
     if (p.frenzyLeft > 0) p.frenzy = Math.min(R.FRENZY_MAX, p.frenzy + 1);
@@ -982,7 +1021,7 @@
         vehicles: p.vehicles, gear: p.gear, powers: p.powers, flags: p.flags, wear: p.wear, trophies: p.trophies, rank: this.rank(p),
         cannonOn: p.cannonOn, cannonUsed: p.cannonUsed, won: p.won, perfect: p.perfect, perfectLeft: p.perfectLeft, travelCd: p.travelCd,
         visited: p.visited, best: p.best, stats: p.stats, cards: p.cards, ban: p.ban, boost: p.boost,
-        used: p.used, district: p.district, heatOff: Math.max(0, p.heatOffUntil - this.t), job: p.job, ringing: p.ringing, jobsDone: p.jobsDone, refunded: p.refunded, extras: p.extras, style: p.style, styleV: p.styleV, boxes: p.boxes, rainUsed: p.rainUsed
+        home: p.home, parts: p.parts, fitted: p.fitted, homeV: p.homeV, used: p.used, district: p.district, heatOff: Math.max(0, p.heatOffUntil - this.t), job: p.job, ringing: p.ringing, jobsDone: p.jobsDone, refunded: p.refunded, extras: p.extras, style: p.style, styleV: p.styleV, boxes: p.boxes, rainUsed: p.rainUsed
       },
       feed: this.feed.slice(-6)
     };

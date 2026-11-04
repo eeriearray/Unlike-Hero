@@ -384,7 +384,7 @@
     },
 
     addBuilding: function (b, d, base, under) {
-      var y = b.y != null ? b.y : (base || 0), g = world.geo(b.x, b.z, 'solid', under), shape = d.filler ? d.filler.shape : 'under';
+      var y = b.y != null ? b.y : (base || 0), g = world.geo(b.x, b.z, 'solid', under), shape = b.shape || (d.filler ? d.filler.shape : 'under');
       var wall = b.wall != null ? b.wall : d.walls[0], roof = b.roof != null ? b.roof : d.roofs[0], x = b.x, z = b.z, w = b.w, dd = b.d, h = b.h;
       var rng = new Rng('b:' + Math.round(x) + ',' + Math.round(z)), trim = shade(wall, 1.16), dark = shade(wall, 0.72);
       var FLOOR = h > 60 ? 6 : 3.7;

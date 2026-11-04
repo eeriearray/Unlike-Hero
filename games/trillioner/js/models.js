@@ -64,12 +64,15 @@
   function wheel(g, x, y, z, r, w) {
     g.wheel(x, y, z, r, w, TYRE);
     var o = x >= 0 ? 1 : -1;
-    g.wheel(x + o * 0.02, y, z, r * 0.58, w, CHROME);
+    g.wheel(x + o * 0.02, y, z, r * 0.58, w, M.mods.rim || CHROME);
     g.wheel(x + o * 0.04, y, z, r * 0.2, w, TRIM);
   }
   function arch(g, x, y, z, r, o) { g.wheel(x + o * 0.002, y, z, r, 0.04, 0x08090a); }
 
+  /** Underglow: a bright plate under the car, a little wider than it is. */
+  function glow(g, w, l, y) { if (M.mods.neon) g.box(0, y || 0.05, 0, w, 0.03, l, M.mods.neon); }
   var M = TR.models = {
+    mods: {},
     /** Two long thin blades crossed at the hub. */
     rotorGeo: function () {
       var g = new TR.Geo();
@@ -92,12 +95,13 @@
       return g;
     },
     sports_car: function (g) {
-      var red = 0xc81e24;
+      var red = M.mods.paint || 0xc81e24, tall = M.mods.wing ? 0.75 : 0;
+      glow(g, 3.9, 6.9);
       g.hull([[-3.05, 0.26, 0.5, 1.1, 1.06], [-2.8, 0.22, 0.66, 1.36, 1.3], [-0.9, 0.22, 0.92, 1.5, 1.38], [0.9, 0.22, 0.98, 1.56, 1.42], [2.5, 0.26, 0.92, 1.46, 1.34], [2.95, 0.34, 0.78, 1.28, 1.2]], red);
       g.hull([[-1.15, 0.9, 0.92, 1.18, 1.16], [-0.1, 0.9, 1.34, 1.14, 0.9], [0.75, 0.94, 1.34, 1.14, 0.86], [1.9, 0.92, 0.95, 1.12, 1.08]], GLASS);
       g.hull([[-0.12, 1.33, 1.37, 0.9, 0.86], [0.77, 1.33, 1.37, 0.88, 0.84]], red);
       g.hull([[-2.8, 0.66, 0.68, 0.24, 0.24], [-0.95, 0.92, 0.94, 0.24, 0.24]], 0xf2efe6); g.hull([[-0.12, 1.37, 1.385, 0.24, 0.24], [0.77, 1.37, 1.385, 0.24, 0.24]], 0xf2efe6); g.hull([[1.9, 0.96, 0.98, 0.24, 0.24], [2.92, 0.8, 0.82, 0.24, 0.24]], 0xf2efe6);
-      g.box(-1.08, 0.92, 2.65, 0.12, 0.42, 0.22, TRIM).box(1.08, 0.92, 2.65, 0.12, 0.42, 0.22, TRIM).box(0, 1.32, 2.68, 2.86, 0.07, 0.56, TRIM);
+      g.box(-1.08, 0.92, 2.65, 0.12, 0.42 + tall, 0.22, TRIM).box(1.08, 0.92, 2.65, 0.12, 0.42 + tall, 0.22, TRIM).box(0, 1.32 + tall, 2.68, 2.86, 0.07, tall ? 0.8 : 0.56, tall ? (M.mods.paint || TRIM) : TRIM);
       g.box(-0.92, 0.56, -2.86, 0.46, 0.09, 0.05, HEAD).box(0.92, 0.56, -2.86, 0.46, 0.09, 0.05, HEAD);
       g.box(0, 0.34, -3.03, 1.5, 0.12, 0.05, TRIM);
       g.box(-0.82, 0.68, 2.93, 0.62, 0.09, 0.04, TAIL).box(0.82, 0.68, 2.93, 0.62, 0.09, 0.04, TAIL);
@@ -116,7 +120,8 @@
       g.box(-1.56, 2.0 + dy, -2, 0.08, 0.5, 0.26, TRIM).box(1.56, 2.0 + dy, -2, 0.08, 0.5, 0.26, TRIM);
     },
     monster_truck: function (g) {
-      var paint = 0x2f7a3a, lift = 1.55;
+      var paint = M.mods.paint || 0x2f7a3a, lift = 1.55;
+      glow(g, 4.4, 7.6);
       g.box(0, 1.1, 0, 2.4, 0.7, 6.8, TRIM);
       M.cab(g, paint, lift);
       g.hull([[-0.25, 0.65, 1.7, 1.46, 1.46], [3.4, 0.65, 1.7, 1.46, 1.46]], paint, lift);
@@ -130,7 +135,8 @@
       return g;
     },
     ladder_truck: function (g) {
-      var red = 0xb01e22;
+      var red = M.mods.paint || 0xb01e22;
+      glow(g, 3.6, 9.2);
       g.box(0, 0.65, 0, 2.2, 0.32, 8, TRIM);
       M.cab(g, red);
       g.hull([[-0.25, 0.75, 2.5, 1.45, 1.45], [4.2, 0.75, 2.5, 1.45, 1.45]], red);
@@ -144,7 +150,8 @@
       return g;
     },
     wrecking_truck: function (g) {
-      var y = 0xd9a412;
+      var y = M.mods.paint || 0xd9a412;
+      glow(g, 3.6, 8.6);
       g.box(0, 0.65, 0, 2.2, 0.32, 7.6, TRIM);
       M.cab(g, y);
       g.box(0, 0.96, 2, 2.9, 0.16, 4, 0x45484d);
@@ -157,7 +164,8 @@
       return g;
     },
     golf_cart: function (g) {
-      var pink = 0xd65a86;
+      var pink = M.mods.paint || 0xd65a86;
+      glow(g, 2.8, 4.2);
       g.hull([[-1.75, 0.34, 0.8, 0.9, 0.85], [-1.45, 0.3, 1.0, 1.0, 0.96], [-0.5, 0.3, 0.72, 1.05, 1.05], [1.5, 0.3, 0.72, 1.05, 1.05], [1.75, 0.34, 0.9, 1, 0.98]], 0xf4f1e8);
       g.box(0, 0.72, 0.15, 1.7, 0.3, 0.7, pink).box(0, 1.02, 0.5, 1.7, 0.72, 0.18, pink);
       g.box(0, 0.72, 1.2, 1.7, 0.3, 0.6, pink);

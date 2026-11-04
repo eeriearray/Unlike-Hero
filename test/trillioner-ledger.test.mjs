@@ -496,3 +496,46 @@ test('property damage is spending, with a cap, and cannot go below zero', () => 
     assert.ok(Rules.MODES.day.agents);
   });
 }
+
+// ── Your place ──
+{
+  const req = createRequire(import.meta.url), Eng = req('../games/trillioner/engine/engine.js'), H = req('../games/trillioner/engine/data/home.js');
+  const X = req('../games/trillioner/engine/data/extras.js'), Rules = req('../games/trillioner/engine/data/rules.js');
+  const fresh = () => { const g = new Eng.Game({ seed: 5, mode: 'day', players: [{ id: 'me', name: 'Me' }] }); g.requireNear = true; g.players.me.inv = H.SITE; return g; };
+  test('upgrades and parts cost exact money, once, and only at home', () => {
+    const g = fresh(), p = g.players.me, b0 = p.balance;
+    assert.equal(g.command('me', { t: 'upgrade', id: 'pool' }).ok, true);
+    assert.equal(p.balance, b0 - H.BY.pool.price);
+    assert.equal(g.command('me', { t: 'upgrade', id: 'pool' }).code, 'owned');
+    assert.equal(g.command('me', { t: 'part', id: 'paint_gold' }).ok, true);
+    assert.equal(p.fitted.paint, 'paint_gold');
+    assert.equal(p.balance + p.spent, Rules.MODES.day.start);
+    p.inv = 'hotel';
+    assert.equal(g.command('me', { t: 'upgrade', id: 'statue' }).code, 'far');
+    assert.equal(g.command('me', { t: 'part', id: 'rim_gold' }).code, 'far');
+  });
+  test('you can only fit a part you own, and take it off again', () => {
+    const g = fresh(), p = g.players.me;
+    assert.ok(g.command('me', { t: 'fit', slot: 'rim', id: 'rim_gold' }).error);
+    g.command('me', { t: 'part', id: 'rim_gold' }); g.command('me', { t: 'part', id: 'rim_red' });
+    assert.equal(p.fitted.rim, 'rim_red');
+    assert.equal(g.command('me', { t: 'fit', slot: 'rim', id: 'rim_gold' }).ok, true);
+    assert.equal(p.fitted.rim, 'rim_gold');
+    g.command('me', { t: 'fit', slot: 'rim', id: null });
+    assert.equal(p.fitted.rim, undefined);
+  });
+  test('the helipad delivers a helicopter', () => {
+    const g = fresh(), p = g.players.me;
+    assert.ok(!p.vehicles.helicopter);
+    g.command('me', { t: 'upgrade', id: 'helipad' });
+    assert.ok(p.vehicles.helicopter);
+  });
+  test('home sells nothing from the catalog, and everything extra still leaves a visible-only player well short', () => {
+    const g = fresh();
+    assert.ok(g.run.sites[H.SITE].room.w >= 50);
+    assert.equal(Object.values(g.items).filter((i) => i.site === H.SITE).length, 0);
+    const home = H.UPGRADES.concat(H.PARTS).reduce((a, x) => a + x.price, 0);
+    const self = X.CATALOG.reduce((a, x) => a + x.price, 0) + X.BOX_LIMIT * X.BOX_PRICE + X.RAIN_LIMIT * X.RAIN_THROW;
+    assert.ok(home + self <= 129 * Rules.B, 'visible-only leaves at least $529B and must keep $400B unspent, got ' + (home + self) / Rules.B);
+  });
+}

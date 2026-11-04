@@ -47,15 +47,15 @@
       var me = TR.app.session.view.me;
       // never rebuild for a money change: with income it would replace the buttons under your mouse, mid-click
       if (me.balance !== own.bal && own.balEl) { own.bal = me.balance; own.balEl.textContent = TR.fmtFull(me.balance); }
-      if (me.styleV !== own.sv) own.draw();
+      if (me.styleV !== own.sv || me.homeV !== own.hv) own.draw();
     },
     draw: function () {
       var me = TR.app.session.view.me, s = own.el;
-      own.sv = me.styleV; own.bal = me.balance;
+      own.sv = me.styleV; own.hv = me.homeV; own.bal = me.balance;
       var scroll = s.querySelector('.own-body') ? s.querySelector('.own-body').scrollTop : 0;
       s.innerHTML = '';
       var head = el('div', 'own-head', s);
-      [['shop', 'Style Shop'], ['box', 'Mystery Box'], ['stuff', 'My Stuff']].forEach(function (t) {
+      [['shop', 'Style'], ['box', 'Boxes'], ['stuff', 'My Stuff'], ['home', 'Your Place']].forEach(function (t) {
         var b = el('button', 'own-tab' + (own.tab === t[0] ? ' on' : ''), head, t[1]);
         b.onclick = function () { own.tab = t[0]; own.draw(); };
       });
@@ -65,6 +65,7 @@
       var body = el('div', 'own-body', s);
       if (own.tab === 'shop') own.drawShop(body, me);
       else if (own.tab === 'box') own.drawBox(body, me);
+      else if (own.tab === 'home') own.drawHome(body, me);
       else own.drawStuff(body, me);
       body.scrollTop = scroll;
       TR.wardrobe.fill(s);
@@ -163,6 +164,55 @@
       if (!any) el('div', 'own-note', body, 'Nothing yet. That is a lot of money to still be holding.');
     },
 
+    drawHome: function (body, me) {
+      var H = window.TRD.home, here = TR.home.at();
+      if (!here) {
+        el('div', 'own-note', body, 'You buy these at your place: the green dot on your map. Your cars and the things on your plinths are waiting there.');
+        var go = el('button', 'btn own-open', body, own.taxiWait() ? 'Taxi home (back in ' + own.taxiWait() + 's)' : 'Take a taxi home');
+        go.onclick = function () { own.goHome(); };
+      }
+      function card(grid, x, thumb, mine, on, click, label) {
+        var c = el('button', 'own-card ' + (x.price >= 2e11 ? 'legendary' : x.price >= 5e10 ? 'epic' : 'rare') + (on ? ' worn' : '') + (!mine && (!here || me.balance < x.price) ? ' dim' : ''), grid,
+          '<img data-thumb="' + thumb + '" alt=""><b>' + esc(x.name) + '</b><span>' + label + '</span>' + (x.does ? '<u class="use">' + esc(x.does) + '</u>' : ''));
+        c.onclick = function () { c.blur(); click(); };
+      }
+      el('h4', 'own-h', body, 'The house');
+      var g1 = el('div', 'own-grid', body);
+      H.UPGRADES.forEach(function (u) {
+        var mine = me.home[u.id];
+        card(g1, u, 'u:' + u.id, mine, mine, function () {
+          if (mine) return;
+          if (!here) { TR.hud.toast('Go home to buy this.', 'bad'); TR.audio.denied(); return; }
+          own.send({ t: 'upgrade', id: u.id }, function (r) { if (r.ok) { TR.audio.buy(3, 3); TR.fx.coins(TR.player.pos, 30, 8); } });
+        }, mine ? 'Yours' : TR.fmt(u.price));
+      });
+      Object.keys(H.SLOTS).forEach(function (slot) {
+        el('h4', 'own-h', body, H.SLOTS[slot]);
+        var g2 = el('div', 'own-grid', body);
+        H.PARTS.filter(function (x) { return x.slot === slot; }).forEach(function (x) {
+          var mine = me.parts[x.id], on = me.fitted[slot] === x.id;
+          card(g2, x, 'c:' + x.id, mine, on, function () {
+            if (mine) { own.send({ t: 'fit', slot: slot, id: on ? null : x.id }); if (slot === 'horn' && !on) TR.audio.horn(x.look.notes); return; }
+            if (!here) { TR.hud.toast('Go home to buy this.', 'bad'); TR.audio.denied(); return; }
+            own.send({ t: 'part', id: x.id }, function (r) { if (r.ok) { TR.audio.buy(2, 2); if (slot === 'horn') TR.audio.horn(x.look.notes); } });
+          }, mine ? (on ? 'Fitted' : 'Fit it') : TR.fmt(x.price));
+        });
+      });
+    },
+    taxiAt: 0,
+    taxiWait: function () { return Math.max(0, Math.ceil((own.taxiAt - performance.now()) / 1000)); },
+    goHome: function () {
+      if (own.taxiWait()) { TR.hud.toast('The taxi is busy. ' + own.taxiWait() + ' more seconds.', 'bad'); TR.audio.denied(); return; }
+      own.close();
+      own.taxiAt = performance.now() + 45000;
+      if (TR.vehicles.current) TR.vehicles.leave();
+      if (TR.interiors.current) TR.interiors.exit(TR.player);
+      var f = TR.app.session.run.sites[window.TRD.home.SITE].front;
+      TR.notebook.fadeFlash();
+      TR.player.teleport(f.x, 0, f.z + 1, 0);
+      TR.input.yaw = 0; TR.input.lookAge = 99;
+      TR.audio.door();
+    },
     useLine: function (it) {
       var u = TR.pads.useText(it);
       return u ? '<u class="use">' + esc(u) + '</u>' : '<u class="use none">Just for show</u>';

@@ -63,6 +63,7 @@
         { id: 'mansion', name: 'Show Mansion', x: -200, z: 60, w: 36, d: 24, h: 14, wall: 0xfff5e0, roof: 0xe56b6f, door: 'n', enter: 1 },
         { id: 'school', name: 'Suburb School', x: -310, z: 60, w: 36, d: 22, h: 11, wall: 0xf4b183, roof: 0x7a4a2b, door: 'n', enter: 1 },
         { id: 'zoo', name: 'City Zoo', x: -200, z: -66, w: 40, d: 30, h: 8, wall: 0xa7d489, roof: 0x4c8c4a, door: 's', enter: 1, boarded: 0 },
+        { id: 'your_place', name: 'Your Place', x: -156, z: 4, w: 34, d: 24, h: 14, door: 's', home: 1, shape: 'villa', roomW: 60, roomD: 72, neon: 1 },
         { id: 'pizza_hq', name: 'Pizza HQ', x: -300, z: -60, w: 30, d: 20, h: 13, wall: 0xff7a59, roof: 0xfff0a8, door: 's', enter: 1, neon: 1 },
         { id: 'wonderland', name: 'Wonderland Park', x: -190, z: -226, w: 34, d: 22, h: 9, wall: 0xc9a0dc, roof: 0x5b3a7a, door: 's', enter: 1, boarded: 1 },
         { id: 'observatory', name: 'Hilltop Observatory', x: -312, z: -316, y: 18, w: 22, d: 22, h: 9, wall: 0xf0f2f6, roof: 0x4a6fa5, door: 's', enter: 1 },

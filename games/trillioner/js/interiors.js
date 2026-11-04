@@ -70,6 +70,7 @@
       ints.globe = null;
       if (site.b && site.b.lobby) ints.buildGlobe(site);
       ints.current = site;
+      if (site.b && site.b.home) TR.home.enter(site);
       ints.returnTo = { x: site.front.x, y: site.y, z: site.front.z };
       TR.world.setSpace('room');
       player.teleport(x, 0, z + hd - 7.5, 0);
@@ -117,6 +118,7 @@
       return d2 < w.r * w.r ? Math.sqrt(w.r * w.r - d2) : 0;
     },
     leaveRoom: function () {
+      if (TR.home.site) TR.home.leave();
       if (ints.group) {
         TR.world.scene.remove(ints.group);
         ints.group.children.forEach(function (m) { if (m.geometry) m.geometry.dispose(); if (m.material && m.material !== TR.world.neonMat) { if (m.material.map) m.material.map.dispose(); m.material.dispose(); } });

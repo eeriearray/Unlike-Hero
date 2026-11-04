@@ -230,6 +230,10 @@
           url = W.snap(fig.group, f[2] || 0, f[0], 0, f[1]);
           (fig.parts.worn || []).forEach(function (m) { m.geometry.dispose(); m.material.dispose(); });
         }
+      } else if (kind === 'u') {
+        url = TR.home.icon(id);
+      } else if (kind === 'c') {
+        url = TR.home.partIcon(id);
       } else if (kind === 'g') {
         var mesh = TR.goods.meshes[id];
         if (mesh) url = W.snapFit(new THREE.Mesh(mesh.geometry, new THREE.MeshLambertMaterial({ vertexColors: true })));
