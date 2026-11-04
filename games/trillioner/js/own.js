@@ -41,8 +41,13 @@
     update: function () {
       if (!own.el) return;
       TR.player.heading = TR.input.yaw + Math.PI;
+      // the game's keys are frozen while this is open, so it reads its own
+      var keys = TR.input.pressed;
+      if (keys.KeyI || keys.Escape) { delete keys.KeyI; delete keys.Escape; own.close(); return; }
       var me = TR.app.session.view.me;
-      if (me.styleV !== own.sv || me.balance !== own.bal) own.draw();
+      // never rebuild for a money change: with income it would replace the buttons under your mouse, mid-click
+      if (me.balance !== own.bal && own.balEl) { own.bal = me.balance; own.balEl.textContent = TR.fmtFull(me.balance); }
+      if (me.styleV !== own.sv) own.draw();
     },
     draw: function () {
       var me = TR.app.session.view.me, s = own.el;
@@ -54,14 +59,16 @@
         var b = el('button', 'own-tab' + (own.tab === t[0] ? ' on' : ''), head, t[1]);
         b.onclick = function () { own.tab = t[0]; own.draw(); };
       });
-      el('button', 'own-x', head, '×').onclick = own.close;
-      el('div', 'own-bal', s, TR.fmtFull(me.balance) + '<small>left to spend</small>');
+      el('button', 'own-x', head, '×').addEventListener('pointerdown', function (e) { e.preventDefault(); own.close(); });
+      var bar = el('div', 'own-bal', s, '<span></span><small>left to spend</small>');
+      own.balEl = bar.firstChild; own.balEl.textContent = TR.fmtFull(me.balance);
       var body = el('div', 'own-body', s);
       if (own.tab === 'shop') own.drawShop(body, me);
       else if (own.tab === 'box') own.drawBox(body, me);
       else own.drawStuff(body, me);
       body.scrollTop = scroll;
       TR.wardrobe.fill(s);
+      if (own.reveal) s.appendChild(own.reveal);   // a redraw must not wipe the box you just opened
     },
     send: function (cmd, done) {
       TR.app.session.extra(cmd, function (r) {
@@ -139,7 +146,7 @@
         var g3 = section('Businesses', biz.length);
         biz.forEach(function (id) {
           var it = run.items[id];
-          el('div', 'own-card ' + RCLASS[goodsRarity(it.price)], g3, '<img data-thumb="g:' + TR.goods.kindFor(it) + '" alt=""><b>' + esc(it.name) + '</b><span>' + (it.income ? (it.income > 0 ? '+' : '') + TR.fmt(it.income) + '/s' : 'No income') + '</span>' + own.useLine(it));
+          el('div', 'own-card ' + RCLASS[goodsRarity(it.price)], g3, '<img data-thumb="g:' + TR.goods.kindFor(it) + '" alt=""><b>' + esc(it.name) + '</b><span>' + TR.fmt(it.price) + '</span>' + own.useLine(it));
         });
       }
       var things = Object.keys(me.goods).filter(function (id) { return run.items[id]; }).sort(function (a, b) { return run.items[b].price - run.items[a].price; });

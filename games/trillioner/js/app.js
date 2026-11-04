@@ -477,6 +477,7 @@
     endRun: function (ev) {
       if (app.ended) return;
       app.ended = true;
+      TR.own.close();   // or its frozen keys would outlive the run
       app.running = false;
       TR.menus.closePerfect();
       TR.audio.engine(null);

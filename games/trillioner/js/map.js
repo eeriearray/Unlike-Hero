@@ -77,7 +77,9 @@
     update: function (pos, heading, under, opts) { map.paint(map.ctx, 512, under, opts); },
     /** Every frame: the map turns with the camera and slides under you. */
     follow: function (pos, heading, yaw) {
-      var bw = map.box.clientWidth, bh = map.box.clientHeight, sc = 2.1 * bw / 512 * 1.6, x = map.w2c(pos.x, 512), y = map.w2c(pos.z, 512);
+      var bw = map.box.clientWidth, bh = map.box.clientHeight;
+      if (!bw) return;   // hidden behind the bag
+      var sc = 2.1 * bw / 512 * 1.6, x = map.w2c(pos.x, 512), y = map.w2c(pos.z, 512);
       map.canvas.style.transform = 'translate(' + (bw / 2) + 'px,' + (bh / 2) + 'px) rotate(' + yaw + 'rad) scale(' + sc + ') translate(' + (-x) + 'px,' + (-y) + 'px)';
       map.you.style.transform = 'translate(-50%,-50%) rotate(' + (yaw - heading) + 'rad)';
     }
