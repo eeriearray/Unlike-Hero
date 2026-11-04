@@ -418,8 +418,8 @@
       TR.vehicles.drawPizzas(app.t);
       if (input.hit('KeyF')) {
         if (ints.current) { /* doors use E */ }
-        else if (vs.current) vs.leave();
-        else { var v = vs.nearest(TR.player.pos, 6); if (v) vs.board(v); }
+        else if (vs.current) { vs.leave(); app.doorCool = 0.5; }
+        else { var v = vs.nearest(TR.player.pos, 6); if (v) { vs.board(v); app.doorCool = 0.5; return; } }
       }
       // doors: walk into one and you are through it
       var door = app.nearDoor();
@@ -429,9 +429,8 @@
         door = null;
       }
       if (door && door.touch && app.doorCool <= 0) {
-        var slowEnough = !vs.current || Math.abs(vs.current.speed) < 14;
-        if (app.walkingInto(door) && slowEnough) {
-          if (vs.current) vs.leave();
+        // only people use doors: a car parked against one stays a car until you get out
+        if (!vs.current && app.walkingInto(door)) {
           app.doorCool = 0.6;
           TR.notebook.fadeFlash();
           if (door.exit) ints.exit(TR.player); else { ints.enter(door.site, TR.player); TR.hud.bigText(door.site.name); }
@@ -439,8 +438,11 @@
           return;
         }
       }
+      // right beside a vehicle, the vehicle is what F does, so that is what the prompt says, door or no door
+      var ride = !vs.current && !ints.current && TR.vehicles.nearest(TR.player.pos, 6);
+      if (ride && !TR.hud.pOn) TR.hud.prompt(ride.spec.name, 'Press F to get in');
       if (door && !TR.hud.pOn && !vs.current) TR.hud.prompt(door.exit ? 'Way out' : door.site.name, door.exit ? 'Walk through the door' : 'Walk in');
-      if (!door && !vs.current && TR.vehicles.nearest(TR.player.pos, 5) && !TR.hud.pOn) TR.hud.prompt(TR.vehicles.nearest(TR.player.pos, 5).spec.name, 'Press F to get in');
+      if (door && !door.exit && vs.current && !TR.hud.pOn && Math.abs(vs.current.speed) < 3) TR.hud.prompt(door.site.name, 'Press F to get out, then walk in');
     },
     /** True while the player is pressing or moving toward the door. */
     walkingInto: function (door) {

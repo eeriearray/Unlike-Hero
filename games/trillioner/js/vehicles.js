@@ -133,6 +133,7 @@
     leave: function () {
       var v = vs.current; if (!v) return;
       vs.current = null;
+      v.speed = 0; v.vel.set(0, 0, 0); v.vy = 0;   // a parked car is parked
       var side = v.heading + Math.PI / 2, ox = Math.cos(side) * (v.spec.radius + 1.6), oz = -Math.sin(side) * (v.spec.radius + 1.6), px = v.pos.x + ox, pz = v.pos.z + oz;
       if (v.spec.mode === 'water' || v.spec.mode === 'sub') { var safe = TR.app.lastSafe || TR.app.session.run.spawn; px = safe.x; pz = safe.z; TR.player.teleport(px, safe.y + 0.1, pz, v.heading); }
       else if (v.spec.mode === 'rail') { TR.player.teleport(v.pos.x + ox * 2, 0.2, v.pos.z + oz * 2, v.heading); }
