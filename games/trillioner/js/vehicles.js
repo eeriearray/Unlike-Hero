@@ -8,19 +8,19 @@
 
   var SPECS = {
     sports_car: { name: 'Sports Car', mode: 'ground', speed: 45, accel: 34, brake: 60, turn: 2.5, grip: 3.4, driftGrip: 1.15, radius: 1.9, height: 2, step: 0.8, cam: 15, sound: 'car', horn: [392, 494], drift: true, use: 'Hold Space to drift. H for the horn.' },
-    hoverboard: { name: 'Hoverboard', mode: 'ground', speed: 28, accel: 40, brake: 50, turn: 3.2, grip: 2.2, driftGrip: 1.2, radius: 0.9, height: 2.4, step: 0.9, cam: 11, sound: 'hover', rider: 1, jump: 13, grind: true, hover: 0.5, use: 'Space to jump. Land on a rail to grind.' },
-    scooter: { name: 'Pizza Scooter', mode: 'ground', speed: 32, accel: 34, brake: 50, turn: 3.2, grip: 4, radius: 0.72, height: 2.4, step: 0.8, cam: 10, sound: 'scooter', rider: 1, pickups: true, horn: [880, 660], use: 'Fits through alleys. Pizza slices give a boost.' },
+    hoverboard: { name: 'Hoverboard', mode: 'ground', speed: 28, accel: 40, brake: 50, turn: 3.2, grip: 2.2, driftGrip: 1.2, radius: 0.9, height: 2.4, step: 0.9, cam: 11, sound: 'hover', rider: 1, seat: 0, pose: 'crouch', jump: 13, grind: true, hover: 0.5, use: 'Space to jump. Land on a rail to grind.' },
+    scooter: { name: 'Pizza Scooter', mode: 'ground', speed: 32, accel: 34, brake: 50, turn: 3.2, grip: 4, radius: 0.72, height: 2.4, step: 0.8, cam: 10, sound: 'scooter', rider: 1, seat: 0.2, seatZ: 0.55, pose: 'sit', pickups: true, horn: [880, 660], use: 'Fits through alleys. Pizza slices give a boost.' },
     monster_truck: { name: 'Monster Truck', mode: 'ground', speed: 38, accel: 28, brake: 50, turn: 2.1, grip: 3, radius: 2.6, height: 4, step: 2.4, cam: 17, sound: 'truck', smash: true, horn: [130, 165], use: 'Climbs low obstacles and smashes street props.' },
     ladder_truck: { name: 'Ladder Truck', mode: 'ground', speed: 30, accel: 22, brake: 44, turn: 1.9, grip: 3.2, radius: 1.9, height: 2.6, step: 0.8, cam: 16, sound: 'truck', ladder: true, horn: [660, 660], use: 'Click near a marked rooftop to raise the ladder.' },
     elephant: { name: 'Elephant', mode: 'ground', speed: 20, accel: 12, brake: 22, turn: 1.8, grip: 5, radius: 2.1, height: 4.6, step: 0.9, cam: 15, sound: 'elephant', trumpet: true, use: 'Click to trumpet and scatter the crowd.' },
     wrecking_truck: { name: 'Wrecking Truck', mode: 'ground', speed: 30, accel: 22, brake: 44, turn: 2, grip: 3.2, radius: 2, height: 4, step: 0.8, cam: 17, sound: 'truck', wreck: true, horn: [196, 247], use: 'Drive into a building you own to demolish it, 20% off the fee.' },
     golf_cart: { name: 'Golf Cart', mode: 'ground', speed: 20, accel: 16, brake: 30, turn: 2.8, grip: 4, radius: 1.4, height: 2.6, step: 0.7, cam: 11, sound: 'electric', horn: [1200, 1200], use: 'Slow, smug, and silent. H to toot.' },
-    sofa_kart: { name: 'Sofa Kart', mode: 'ground', speed: 30, accel: 26, brake: 40, turn: 3.4, grip: 2, driftGrip: 0.9, radius: 1.7, height: 2.4, step: 0.8, cam: 12, sound: 'scooter', drift: true, rider: 1, use: 'A sofa. With wheels. Hold Space to slide.' },
-    pogo_stick: { name: 'Pogo Stick', mode: 'ground', speed: 15, accel: 40, brake: 60, turn: 3.6, grip: 6, radius: 0.7, height: 2.6, step: 0.7, cam: 11, sound: 'pogo', rider: 1, bounce: 13, use: 'You cannot stop bouncing. Reaches low rooftops.' },
+    sofa_kart: { name: 'Sofa Kart', mode: 'ground', speed: 30, accel: 26, brake: 40, turn: 3.4, grip: 2, driftGrip: 0.9, radius: 1.7, height: 2.4, step: 0.8, cam: 12, sound: 'scooter', drift: true, rider: 1, seat: 0.18, seatZ: 0.1, pose: 'sit', use: 'A sofa. With wheels. Hold Space to slide.' },
+    pogo_stick: { name: 'Pogo Stick', mode: 'ground', speed: 15, accel: 40, brake: 60, turn: 3.6, grip: 6, radius: 0.7, height: 2.6, step: 0.7, cam: 11, sound: 'pogo', rider: 1, seat: 0.65, pose: 'pogo', bounce: 13, use: 'You cannot stop bouncing. Reaches low rooftops.' },
     speedboat: { name: 'Speedboat', mode: 'water', speed: 40, accel: 22, brake: 26, turn: 1.9, grip: 1.6, radius: 2.2, height: 2, cam: 16, sound: 'boat', horn: [110, 138], use: 'Crosses the water.' },
     submarine: { name: 'Submarine', mode: 'sub', speed: 22, accel: 12, brake: 18, turn: 1.6, grip: 2, radius: 2.1, height: 3, cam: 14, sound: 'sub', use: 'Space to rise, Shift to dive. Reaches underwater places.' },
     helicopter: { name: 'Helicopter', mode: 'air', speed: 60, accel: 34, climb: 22, turn: 2.2, radius: 3, height: 3.6, cam: 22, sound: 'heli', rotor: 1, use: 'Space up, Shift down. Lands on roofs and pads.' },
-    jetpack: { name: 'Personal Jetpack', mode: 'jet', speed: 40, accel: 30, climb: 18, radius: 0.8, height: 2.6, cam: 12, sound: 'jet', rider: 1, fuel: 14, use: 'Hold Space to fly. Fuel refills on the ground.' },
+    jetpack: { name: 'Personal Jetpack', mode: 'jet', speed: 40, accel: 30, climb: 18, radius: 0.8, height: 2.6, cam: 12, sound: 'jet', rider: 1, pose: 'jet', fuel: 14, use: 'Hold Space to fly. Fuel refills on the ground.' },
     hot_air_balloon: { name: 'Hot Air Balloon', mode: 'air', speed: 14, accel: 6, climb: 6, turn: 0.8, radius: 2, height: 12, cam: 26, sound: 'burner', use: 'Space to burn, Shift to sink. Very dignified.' },
     private_train: { name: 'Private Train', mode: 'rail', speed: 42, accel: 12, brake: 24, radius: 2, height: 4, cam: 22, sound: 'train', horn: [233, 294], use: 'Your own line around the middle of the city.' },
     mole_machine: { name: 'Mole Machine', mode: 'mole', speed: 16, accel: 10, brake: 20, turn: 1.6, grip: 5, radius: 2.3, height: 3.4, step: 0.9, cam: 14, sound: 'mole', underOnly: true, use: 'Under City only. Drive into a marked wall to dig through.' }
@@ -160,8 +160,19 @@
       if (TR.input.hit('KeyH') && TR.audio && (s.horn || TR.models.mods.horn)) TR.audio.horn(TR.models.mods.horn && s.mode === 'ground' ? TR.models.mods.horn : s.horn);
       if (TR.audio) TR.audio.engineLevel(Math.abs(v.speed) / s.speed, v.slip);
       TR.player.pos.copy(v.pos);
-      if (s.rider) { TR.player.group.position.set(v.pos.x, v.pos.y + (s.hover || 0) + (s.mode === 'jet' ? 0 : 0.6), v.pos.z); TR.player.group.rotation.y = v.heading; TR.player.parts.legL.rotation.x = TR.player.parts.legR.rotation.x = 0; TR.player.parts.shinL.rotation.x = TR.player.parts.shinR.rotation.x = 0; }
+      if (s.rider) vs.seatRider(v, s);
       vs.sync(v);
+    },
+    /** How you sit, or stand, on whatever you are riding. Hips rest at seat + 1, forward swing is +x on the thigh. */
+    seatRider: function (v, s) {
+      var P = TR.player, p = P.parts, h = v.heading, back = s.seatZ || 0;
+      P.group.position.set(v.pos.x + Math.sin(h) * back, v.pos.y + (s.seat != null ? s.seat : (s.hover || 0) + (s.mode === 'jet' ? 0 : 0.6)), v.pos.z + Math.cos(h) * back);
+      P.group.rotation.y = h;
+      var pose = s.pose || 'stand', sit = pose === 'sit', legs = sit ? 1.4 : pose === 'crouch' ? 0.45 : 0, knee = sit ? -1.35 : pose === 'crouch' ? -0.8 : 0;
+      p.legL.rotation.x = p.legR.rotation.x = legs; p.shinL.rotation.x = p.shinR.rotation.x = knee;
+      var armL = pose === 'crouch' ? 0 : pose === 'jet' ? -0.2 : 0.95, fore = pose === 'crouch' ? 0.2 : pose === 'jet' ? 0.15 : 0.55, out = pose === 'crouch' ? 0.75 : 0.08;
+      p.armL.rotation.x = p.armR.rotation.x = armL; p.armL.rotation.z = -out; p.armR.rotation.z = out; p.foreL.rotation.x = p.foreR.rotation.x = fore;
+      p.hips.position.y = 1; p.chest.rotation.x = pose === 'crouch' ? 0.18 : sit ? 0.05 : 0; p.hips.rotation.y = 0; p.chest.rotation.y = 0;
     },
     driveGround: function (v, s, dt) {
       var input = TR.input, a = input.axes(), speedCap = s.speed * (vs.boostT > 0 ? 1.5 : 1);

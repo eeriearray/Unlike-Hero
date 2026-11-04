@@ -26,15 +26,15 @@
     draw: function (under) {
       var c = document.createElement('canvas'); c.width = c.height = 512;
       var g = c.getContext('2d');
-      g.fillStyle = under ? '#120a22' : '#1c2a33'; g.fillRect(0, 0, 512, 512);
+      g.fillStyle = under ? '#0f1114' : '#1c2a33'; g.fillRect(0, 0, 512, 512);
       Object.keys(D.DISTRICTS).forEach(function (k) {
         var d = D.DISTRICTS[k], b = d.land || d.bounds;
         if ((d.level === 'under') !== under) return;
-        g.fillStyle = under ? '#2a1d42' : d.id === 'suburbs' ? '#46583c' : '#55585a';
+        g.fillStyle = under ? '#2a2c30' : d.id === 'suburbs' ? '#46583c' : '#55585a';
         g.fillRect(map.w2c(b[0], 512), map.w2c(b[1], 512), (b[2] - b[0]) / (EXTENT * 2) * 512, (b[3] - b[1]) / (EXTENT * 2) * 512);
         (d.buildings || []).forEach(function (bd) {
           if (bd.project) return;
-          g.fillStyle = under ? '#3a2a5a' : '#3c3f42';
+          g.fillStyle = under ? '#44474c' : '#3c3f42';
           g.fillRect(map.w2c(bd.x - bd.w / 2, 512), map.w2c(bd.z - bd.d / 2, 512), bd.w / (EXTENT * 2) * 512, bd.d / (EXTENT * 2) * 512);
         });
       });
@@ -54,7 +54,7 @@
       opts = opts || {};
       g.drawImage(under ? map.ubase : map.base, 0, 0, size, size);
       var cell = size / GRID;
-      g.fillStyle = under ? '#080512' : '#16263a';
+      g.fillStyle = under ? '#0a0b0d' : '#16263a';
       for (var a = 0; a < GRID; a++) for (var b = 0; b < GRID; b++) if (!map.seen[a + b * GRID]) g.fillRect(a * cell - 0.5, b * cell - 0.5, cell + 1, cell + 1);
       (opts.dots || []).forEach(function (d) {
         g.fillStyle = d.c;

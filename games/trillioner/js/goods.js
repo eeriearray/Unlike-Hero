@@ -4,7 +4,7 @@
   var dummy = new THREE.Object3D(), MAX = 90;
 
   var B = {
-    plinth: function (g) { g.box(0, 0, 0, 1.5, 0.12, 1.5, 0xd8b45a).box(0, 0.12, 0, 1.2, 0.72, 1.2, 0xfafafa).box(0, 0.84, 0, 1.42, 0.12, 1.42, 0xd8b45a); },
+    plinth: function (g) { g.box(0, 0, 0, 1.5, 0.12, 1.5, 0x17181c).box(0, 0.12, 0, 1.2, 0.72, 1.2, 0x2a2b30).box(0, 0.84, 0, 1.42, 0.12, 1.42, 0xb8922a); },
     plinthDark: function (g) { g.box(0, 0, 0, 1.5, 0.12, 1.5, 0x3a3d48).box(0, 0.12, 0, 1.2, 0.72, 1.2, 0x565a66).box(0, 0.84, 0, 1.42, 0.12, 1.42, 0x3a3d48); },
     lock: function (g) { g.box(0, 0, 0, 0.8, 0.64, 0.3, 0xb36bff).box(-0.27, 0.64, 0, 0.13, 0.36, 0.16, 0xd8d8e4).box(0.27, 0.64, 0, 0.13, 0.36, 0.16, 0xd8d8e4).box(0, 0.9, 0, 0.67, 0.13, 0.16, 0xd8d8e4).box(0, 0.22, -0.16, 0.14, 0.22, 0.03, 0x241038); },
     forsale: function (g) { // an estate agent's board, big enough to read across the street

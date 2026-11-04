@@ -11,7 +11,7 @@
     downtown: {
       id: 'downtown', name: 'Downtown', bounds: [-120, -120, 120, 120], budget: 360 * B, visible: 57 * B,
       ground: 0x9e9c96, walls: [0x8a5a44, 0xa7a39b, 0x6d7f8e, 0xbcaa8b, 0x56595e, 0x7a4a3a], roofs: [0x4a4c50, 0x5e6064, 0x3a3c40], neon: 0xc8302a, prop: 'lamp', crowd: 34,
-      filler: { shape: 'tower', hMin: 28, hMax: 96, step: 24, gap: 0.14 }, spawn: { x: -60, z: 8 }, palette: [0xfff3d6, 0xc99b3b, 0xffe9a8],
+      filler: { shape: 'tower', hMin: 28, hMax: 96, step: 24, gap: 0.14 }, spawn: { x: -60, z: 8 }, palette: [0x4a382c, 0x7a1f26, 0x211d1a], floors: [0xb7ab98, 0x8f8474],
       buildings: [
         { id: 'hotel', name: 'The Starting Hotel', x: -60, z: 40, w: 32, d: 22, h: 30, wall: 0xfff0c4, roof: 0xd59a14, door: 'n', enter: 1, neon: 1 },
         { id: 'trillion_tower', name: 'Trillion Tower', x: 60, z: -62, w: 36, d: 36, h: 132, wall: 0xffc53d, roof: 0xfff0b0, door: 's', enter: 1, neon: 1, helipad: 1 },
@@ -38,7 +38,7 @@
     luxury: {
       id: 'luxury', name: 'Luxury Row', bounds: [120, -120, 360, 120], budget: 260 * B, visible: 59 * B,
       ground: 0xb4afa2, walls: [0xd8cfbd, 0xc9bda8, 0xe2dccf, 0xb07a5c, 0x9aa3a8], roofs: [0x6a4a3c, 0x4f545a, 0x7d5642], neon: 0x7a1f3d, prop: 'palm', crowd: 28,
-      filler: { shape: 'villa', hMin: 10, hMax: 22, step: 28, gap: 0.2 }, spawn: { x: 180, z: 0 }, palette: [0xfff0f4, 0xd6547c, 0xffe0ea],
+      filler: { shape: 'villa', hMin: 10, hMax: 22, step: 28, gap: 0.2 }, spawn: { x: 180, z: 0 }, palette: [0xd8d2c6, 0x1c1c22, 0xece8de], floors: [0xe9e6dd, 0x8d8f92],
       buildings: [
         { id: 'global_trade', name: 'Global Trade Tower', x: 240, z: -64, w: 40, d: 34, h: 96, wall: 0xf7e7ee, roof: 0xd6547c, door: 's', enter: 1, neon: 1, lobby: 40 },
         { id: 'dept_store', name: 'Grandiose Department Store', x: 180, z: 64, w: 40, d: 28, h: 20, wall: 0xffd6e0, roof: 0xc73e6b, door: 'n', enter: 1, neon: 1, wholeStore: 1 },
@@ -58,12 +58,12 @@
     suburbs: {
       id: 'suburbs', name: 'Suburbs', bounds: [-360, -360, -120, 120], budget: 200 * B, visible: 147 * B,
       ground: 0x66824a, walls: [0xcfc6b2, 0xa9b4b8, 0xb98f6e, 0x8fa08a, 0xd8d2c4], roofs: [0x5a4d44, 0x4a4f55, 0x7a4a3a], neon: 0x2c6e49, prop: 'tree', crowd: 22,
-      filler: { shape: 'house', hMin: 5, hMax: 8, step: 24, gap: 0.2 }, spawn: { x: -180, z: 0 }, palette: [0xfffbe0, 0x8bbf6a, 0xfff2c4],
+      filler: { shape: 'house', hMin: 5, hMax: 8, step: 24, gap: 0.2 }, spawn: { x: -180, z: 0 }, palette: [0xc9c2ae, 0x3f5a3c, 0xe4e0d2], floors: [0xb8ad90, 0xa09576],
       buildings: [
         { id: 'mansion', name: 'Show Mansion', x: -200, z: 60, w: 36, d: 24, h: 14, wall: 0xfff5e0, roof: 0xe56b6f, door: 'n', enter: 1 },
         { id: 'school', name: 'Suburb School', x: -310, z: 60, w: 36, d: 22, h: 11, wall: 0xf4b183, roof: 0x7a4a2b, door: 'n', enter: 1 },
         { id: 'zoo', name: 'City Zoo', x: -200, z: -66, w: 40, d: 30, h: 8, wall: 0xa7d489, roof: 0x4c8c4a, door: 's', enter: 1, boarded: 0 },
-        { id: 'your_place', name: 'Your Place', x: -156, z: 4, w: 34, d: 24, h: 14, door: 's', home: 1, shape: 'villa', roomW: 60, roomD: 72, neon: 1 },
+        { id: 'your_place', name: 'Your Place', x: -156, z: 4, w: 34, d: 24, h: 14, door: 's', home: 1, shape: 'villa', roomPalette: [0xd8d2c6, 0x7a1f26, 0xece8de], roomFloors: [0xcfc8b8, 0xb8b0a0], roomW: 60, roomD: 72, neon: 1 },
         { id: 'pizza_hq', name: 'Pizza HQ', x: -300, z: -60, w: 30, d: 20, h: 13, wall: 0xff7a59, roof: 0xfff0a8, door: 's', enter: 1, neon: 1 },
         { id: 'wonderland', name: 'Wonderland Park', x: -190, z: -226, w: 34, d: 22, h: 9, wall: 0xc9a0dc, roof: 0x5b3a7a, door: 's', enter: 1, boarded: 1 },
         { id: 'observatory', name: 'Hilltop Observatory', x: -312, z: -316, y: 18, w: 22, d: 22, h: 9, wall: 0xf0f2f6, roof: 0x4a6fa5, door: 's', enter: 1 },
@@ -86,7 +86,7 @@
       id: 'industrial', name: 'Industrial Zone', bounds: [-360, 120, 120, 360], budget: 160 * B, visible: 88 * B,
       ground: 0x74736c, walls: [0x6b6e70, 0x8a8d8a, 0x8c5a3a, 0x56595c, 0x77664f], roofs: [0x4a4d50, 0x5c4a3a, 0x3f4144], neon: 0xc25a18, prop: 'crate', crowd: 14,
       track: { x: -304, z: 336, rx: 44, rz: 17 },
-      filler: { shape: 'factory', hMin: 7, hMax: 20, step: 30, gap: 0.2 }, spawn: { x: -30, z: 240 }, palette: [0xc9ccd0, 0x6b7076, 0xe8e0d0],
+      filler: { shape: 'factory', hMin: 7, hMax: 20, step: 30, gap: 0.2 }, spawn: { x: -30, z: 240 }, palette: [0x55585b, 0xa8691e, 0x2c2e31], floors: [0x66686b, 0x5a5c5f],
       buildings: [
         { id: 'dealership', name: 'Motor Mile Dealership', x: -30, z: 214, w: 30, d: 20, h: 11, wall: 0xfafafa, roof: 0xff3b30, door: 's', enter: 1, neon: 1, wholeStore: 1 },
         { id: 'car_factory', name: 'Car Factory', x: 62, z: 300, w: 44, d: 36, h: 18, wall: 0x9aa0a6, roof: 0xf0a030, door: 'n', enter: 1, neon: 1 },
@@ -115,7 +115,7 @@
     harbour: {
       id: 'harbour', name: 'Harbour', bounds: [120, 120, 360, 360], land: [120, 120, 306, 282], budget: 120 * B, visible: 12 * B,
       ground: 0x8f8a7c, walls: [0x3f6078, 0x8c3f36, 0xa58a4e, 0x4d7468, 0x6f7276], roofs: [0x2f4150, 0x5c332d, 0x4a4c50], neon: 0x1f6f8b, prop: 'bollard', crowd: 18,
-      filler: { shape: 'container', hMin: 5, hMax: 11, step: 22, gap: 0.3 }, spawn: { x: 180, z: 136 }, palette: [0xe2f2fa, 0x3f7fa8, 0xbfe6f5],
+      filler: { shape: 'container', hMin: 5, hMax: 11, step: 22, gap: 0.3 }, spawn: { x: 180, z: 136 }, palette: [0x4a3a2c, 0x1d3a56, 0x2a221a], floors: [0x8a6a48, 0x7a5c3e],
       buildings: [
         { id: 'boatyard', name: 'Boatyard', x: 170, z: 252, w: 34, d: 24, h: 12, wall: 0xc9855a, roof: 0x7a4a2b, door: 'n', enter: 1 },
         { id: 'aquarium', name: 'City Aquarium', x: 262, z: 172, w: 34, d: 24, h: 13, wall: 0x56c7e8, roof: 0x1d7ea3, door: 'w', enter: 1, neon: 1 },
@@ -136,7 +136,7 @@
     airport: {
       id: 'airport', name: 'Airport + Spaceport', bounds: [120, -360, 360, -120], budget: 120 * B, visible: 60 * B,
       ground: 0x98999a, walls: [0xc9ccce, 0x8fa0ae, 0x6b7f8f, 0xb0b4b6], roofs: [0x54606a, 0x6e7276], neon: 0x1d5f8f, prop: 'beacon', crowd: 14,
-      filler: { shape: 'hangar', hMin: 8, hMax: 12, step: 40, gap: 0.55 }, spawn: { x: 150, z: -136 }, palette: [0xf6fbff, 0x9fc3e0, 0xe2f0fb],
+      filler: { shape: 'hangar', hMin: 8, hMax: 12, step: 40, gap: 0.55 }, spawn: { x: 150, z: -136 }, palette: [0xdcdfe2, 0x1d5f8f, 0xeef0f2], floors: [0xc8ccd0, 0xb4b8bc],
       buildings: [
         { id: 'terminal', name: 'Airport Terminal', x: 180, z: -178, w: 46, d: 26, h: 14, wall: 0xfafcff, roof: 0x3d8bd4, door: 's', enter: 1, neon: 1 },
         { id: 'control_tower', name: 'Control Tower', x: 268, z: -160, w: 14, d: 14, h: 44, wall: 0xc7dcef, roof: 0x223a52, door: 's', enter: 1 },
@@ -155,7 +155,7 @@
     oldtown: {
       id: 'oldtown', name: 'Old Town', bounds: [-120, -360, 120, -120], budget: 60 * B, visible: 17 * B,
       ground: 0x96846a, walls: [0x8c4a36, 0x9c6a4c, 0x7a3e2e, 0xa98a6a, 0x6e5a48], roofs: [0x4a2f22, 0x5a3a2a, 0x3f2a20], neon: 0x8c5a1e, prop: 'lantern', crowd: 20,
-      filler: { shape: 'brick', hMin: 8, hMax: 19, step: 22, gap: 0.15 }, spawn: { x: 0, z: -136 }, palette: [0xf2dfc6, 0x7d4a2c, 0xd9b48f],
+      filler: { shape: 'brick', hMin: 8, hMax: 19, step: 22, gap: 0.15 }, spawn: { x: 0, z: -136 }, palette: [0x4a2c20, 0x6a2430, 0x2a1a14], floors: [0x7a5a3e, 0x6a4c34],
       buildings: [
         { id: 'newspaper', name: 'The Daily Receipt', x: -62, z: -170, w: 32, d: 22, h: 16, wall: 0xd9c9a8, roof: 0x6b3a26, door: 's', enter: 1, neon: 1 },
         { id: 'museum', name: 'Museum of Old Things', x: -68, z: -290, w: 36, d: 26, h: 16, wall: 0xe6dcc8, roof: 0x7d4a2c, door: 's', enter: 1 },
@@ -176,8 +176,8 @@
     },
     under: {
       id: 'under', name: 'Under City', level: 'under', bounds: [-360, -360, 360, 360], budget: 120 * B, visible: 0,
-      ground: 0x2c1a4a, walls: [0x4a2d7a, 0x5d3a94, 0x3a2360], roofs: [0x7a4fc0, 0x8f5fd6], neon: 0xc77dff, prop: 'mushroom', crowd: 18,
-      spawn: { x: 0, z: 40 }, palette: [0x3a2360, 0x2c1a4a, 0x7a4fc0],
+      ground: 0x2c2e33, walls: [0x3a3d42, 0x4a4036, 0x2f3236, 0x4d3a2c], roofs: [0x24262a, 0x3a2c20], neon: 0xd9a030, prop: 'worklamp', crowd: 18,
+      spawn: { x: 0, z: 40 }, palette: [0x2c2e33, 0x8a6a1e, 0x16171a], floors: [0x3a3c40, 0x303236],
       entrances: [
         { id: 'laundromat', x: -20, z: -300, surface: { x: -20, z: -322 } },
         { id: 'harbour', x: 150, z: 220, surface: { x: 134, z: 230 } },

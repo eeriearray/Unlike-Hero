@@ -13,7 +13,7 @@
     harbour: { size: 7, colors: [0xdcc9a0, 0xd3bf94, 0xe3d2ac, 0xcbb688] },
     airport: { size: 14, colors: [0xb4c0c8, 0xaab7c0, 0xbcc7ce, 0xa3b0b9] },
     oldtown: { size: 5, colors: [0xcf9a6e, 0xc48c60, 0xd8a67c, 0xba8256], check: 0 },
-    under: { size: 10, colors: [0x4c3388, 0x553a95, 0x46307e, 0x5c40a0] }
+    under: { size: 10, colors: [0x4a4c50, 0x505256, 0x44464a, 0x4e5054] }
   };
   var SKY = [ // hour, top, horizon, sun colour, sun, ambient, window glow
     [0, 0x05070f, 0x161a2a, 0x8fa0c8, 0.26, 0.4, 1],
@@ -907,6 +907,12 @@
       } else if (kind === 'beacon') {
         g.box(x, y, z, 0.2, 2.2, 0.2, 0xf4f4f4).box(x, y + 1, z, 0.22, 0.4, 0.22, 0xe0442f); n.box(x, y + 2.2, z, 0.5, 0.5, 0.5, 0xff4a30);
         c.addBox(x, y, z, 0.4, 2.6, 0.4);
+      } else if (kind === 'worklamp') {   // a site lamp on a stand, with a pool of light under it
+        var wh = rng.range(3, 5);
+        g.cyl(x, y, z, 0.1, wh, 0x3a3c40, 6); g.box(x - 0.5, y + wh, z, 1, 0.26, 0.5, 0x24262a);
+        n.box(x - 0.42, y + wh - 0.04, z, 0.84, 0.05, 0.42, 0xffc870);
+        n.tile(x - 3, z - 3, x + 3, z + 3, y + 0.03, 0x5a4a2a);
+        c.addBox(x, y, z, 0.5, wh, 0.5);
       } else if (kind === 'mushroom') {
         var h = rng.range(2, 6), mc = rng.pick([0xc77dff, 0x7dffea, 0xff7de9]);
         g.cyl(x, y, z, 0.5, h, 0xe6dcf5, 7, 0.32); n.cyl(x, y + h, z, h * 0.72, h * 0.32, mc, 9, 0.12);
@@ -954,7 +960,7 @@
         g = world.geo(cx, cz, 'flat', true);
         var ur = new Rng('u:' + x + ',' + z), art = GROUND.under;
         for (var ti = 0; ti < CHUNK; ti += art.size) for (var tj = 0; tj < CHUNK; tj += art.size) g.tile(x + ti, z + tj, x + ti + art.size, z + tj + art.size, y, ur.pick(art.colors));
-        g.box(cx, y + 34, cz, CHUNK, 2, CHUNK, 0x1c1030);
+        g.box(cx, y + 34, cz, CHUNK, 2, CHUNK, 0x141518);
       }
       var c = world.collide, h = 40;
       c.add(b[0] - 4, y, b[1], b[0], y + h, b[3]); c.add(b[2], y, b[1], b[2] + 4, y + h, b[3]); c.add(b[0], y, b[1] - 4, b[2], y + h, b[1]); c.add(b[0], y, b[3], b[2], y + h, b[3] + 4);
@@ -1094,12 +1100,12 @@
     setTime: function (hour, weather, target, frantic) {
       if (Math.floor(hour * 60) !== world.lastMinute) { world.lastMinute = Math.floor(hour * 60); world.drawClock(hour); }
       if (world.space !== 'surface') {
-        var under = world.space === 'under', uc = new THREE.Color(under ? 0x241542 : 0x14162a);
+        var under = world.space === 'under', uc = new THREE.Color(under ? 0x1a1c20 : 0x14162a);
         world.scene.background = uc; world.scene.fog.color.copy(uc);
-        world.scene.fog.near = under ? 80 : 2000; world.scene.fog.far = under ? 340 : 4000;
-        world.hemi.color.setHex(under ? 0xd8b8ff : 0xfff4e4); world.hemi.groundColor.setHex(under ? 0x4a2f7a : 0xb9a58c);
-        world.hemi.intensity = under ? 1.05 : 1;
-        world.sun.intensity = under ? 0.25 : 0.32;
+        world.scene.fog.near = under ? 90 : 2000; world.scene.fog.far = under ? 420 : 4000;
+        world.hemi.color.setHex(under ? 0xd8c8a8 : 0xfff4e4); world.hemi.groundColor.setHex(under ? 0x2a2620 : 0xb9a58c);
+        world.hemi.intensity = under ? 1.5 : 0.82;
+        world.sun.intensity = under ? 0.5 : 0.32;
         world.sun.color.setHex(0xfff0dc);
         world.windowMat.emissiveIntensity = 1.5;
         world.neonMat.color.setScalar(under ? 1.9 : 1.3);

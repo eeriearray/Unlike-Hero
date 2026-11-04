@@ -111,6 +111,51 @@
         else { g.box(px, top, pz, 0.7, 1.6, 0.7, 0x6a6d70); g.box(px, top + 1.6, pz, 0.95, 0.12, 0.95, 0x3a3c40); }
       }
     },
+    /** Copies a model into the city's merged geometry, turned and placed. */
+    stamp: function (src, x, y, z, ry) {
+      var out = TR.world.geo(x, z, 'solid'), c = Math.cos(ry || 0), n = Math.sin(ry || 0);
+      for (var i = 0; i < src.p.length; i += 3) {
+        var px = src.p[i], py = src.p[i + 1], pz = src.p[i + 2], ax = src.n[i], ay = src.n[i + 1], az = src.n[i + 2];
+        out.p.push(x + px * c + pz * n, y + py, z - px * n + pz * c);
+        out.n.push(ax * c + az * n, ay, -ax * n + az * c);
+        out.c.push(src.c[i], src.c[i + 1], src.c[i + 2]);
+      }
+      out.count += src.count;
+    },
+    /** Finds open ground: nothing on it, no road through it. */
+    clearAt: function (x, z, hw, hd) {
+      var W = TR.world;
+      for (var a = -1; a <= 1; a += 0.5) for (var b = -1; b <= 1; b += 0.5) { var qx = x + a * hw, qz = z + b * hd; if (W.isWater(qx, qz) || W.roadDist(qx, qz) < 1.5) return false; }
+      return !W.collide.near(x, z, Math.max(hw, hd) + 2, []).some(function (q) { return q.y0 > -5 && q.y0 < 12 && x + hw > q.x0 && x - hw < q.x1 && z + hd > q.z0 && z - hd < q.z1; });
+    },
+    /** What makes an airport an airport and a harbour a harbour, from the street. */
+    landmarks: function () {
+      var W = TR.world, D2 = D.DISTRICTS, b = D2.airport.bounds, placed = [], stripes = [0xa81d24, 0x1d5f8f, 0xc8a02a];
+      for (var x = b[0] + 24; x < b[2] - 24 && placed.length < 3; x += 10) for (var z = b[1] + 24; z < b[3] - 24 && placed.length < 3; z += 10) {
+        if (!st.clearAt(x, z, 19, 23) || placed.some(function (q) { return Math.hypot(q[0] - x, q[1] - z) < 60; })) continue;
+        placed.push([x, z]);
+        var fl = W.geo(x, z, 'flat');
+        fl.tile(x - 19, z - 23, x + 19, z + 23, 0.03, 0x6f7174);
+        fl.tile(x - 0.25, z - 23, x + 0.25, z + 23, 0.05, 0xd8b43a);
+        st.stamp(TR.models.airliner(new TR.Geo(), stripes[placed.length - 1]), x, 0, z, 0);
+        W.collide.addBox(x, 0, z, 5.6, 7, 38);
+        W.collide.addBox(x, 2.6, z + 0.4, 34, 1.6, 7);
+      }
+      st.planes = placed.length;
+      // ships at anchor, in open water off the docks
+      var ships = 0, colors = [0x1d3a56, 0x4a2a24];
+      for (var sx = 130; sx < 350 && ships < 2; sx += 12) for (var sz = 296; sz < 356 && ships < 2; sz += 8) {
+        var wet = true;
+        for (var a = -1; a <= 1; a += 0.5) for (var e = -1; e <= 1; e += 1) if (!W.isWater(sx + a * 30, sz + e * 9)) wet = false;
+        if (!wet || W.collide.near(sx, sz, 36, []).some(function (q) { return q.y0 > -5 && q.y0 < 12 && sx + 30 > q.x0 && sx - 30 < q.x1 && sz + 12 > q.z0 && sz - 12 < q.z1; })) continue;
+        st.stamp(TR.models.cargoShip(new TR.Geo(), colors[ships]), sx, -1, sz, Math.PI / 2);
+        W.collide.addBox(sx, -2, sz, 52, 12, 13);
+        ships++;
+        sx += 60;
+        break;
+      }
+      st.ships = ships;
+    },
     build: function () {
       var W = TR.world, rng = new window.TrillionerRng.Rng('street'), segs = roads(), corners = {};
       st.cars = [];
@@ -161,6 +206,7 @@
           g.box(bx, y0 - 0.3, bz, Math.abs(ux) * (hw * 2 + 0.4) + 0.2, hh * 2 + 0.5, Math.abs(uz) * (hw * 2 + 0.4) + 0.2, 0x26282c);
         }
       });
+      st.landmarks();
       if (ads.idx.length) {
         var geo = new THREE.BufferGeometry();
         geo.setAttribute('position', new THREE.Float32BufferAttribute(ads.p, 3));

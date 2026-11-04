@@ -363,3 +363,7 @@ job-obj small, .job-obj small { display:block; font-size:13px; font-weight:600; 
 .carry { background:none; font-size:13px; font-weight:500; color:#d8d4c8; -webkit-text-stroke:3px #08090b; paint-order:stroke fill; border-radius:0; }
 .prompt { bottom:98px; }
 .banner { bottom:150px; }
+.btn, .btn.alt { box-shadow:none; }
+.btn.alt { border:1px solid rgba(255,255,255,.28); }
+.panel { background:rgba(12,13,16,.95); }
+.stat, .chart, .seat, .chip, .field, .wheel-btn, .panel .row .btn { border-radius:2px; }

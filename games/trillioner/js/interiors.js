@@ -12,23 +12,23 @@
     /** Move into a site's room. No loading screen: the room is generated in a few milliseconds. */
     enter: function (site, player) {
       ints.leaveRoom();
-      var r = site.room, g = new TR.Geo(), c = window.TRD.districts.DISTRICTS[site.district].palette || ROOM_COLORS.default;
+      var r = site.room, g = new TR.Geo(), dist = window.TRD.districts.DISTRICTS[site.district], c = site.b.roomPalette || dist.palette || ROOM_COLORS.default, fl = site.b.roomFloors || dist.floors || [0xb7ab98, 0x8f8474];
       var hw = r.w / 2, hd = r.d / 2, x = r.ox, z = r.oz, h = r.h, col = TR.world.collide;
       var wall = c[0], accent = c[1], ceil = c[2], T = 5, tileA = 0xf4efe4, tileB = accent;
       g.box(x, -1, z, r.w, 0.98, r.d, accent);
       for (var i = 0; i < Math.ceil(r.w / T); i++) for (var j = 0; j < Math.ceil(r.d / T); j++) {
         var tx0 = x - hw + i * T, tz0 = z - hd + j * T;
-        g.tile(tx0, tz0, Math.min(tx0 + T, x + hw), Math.min(tz0 + T, z + hd), 0, (i + j) % 2 ? tileA : mix(tileA, tileB, 0.28));
+        g.tile(tx0, tz0, Math.min(tx0 + T, x + hw), Math.min(tz0 + T, z + hd), 0, (i + j) % 2 ? fl[0] : fl[1]);
       }
       // a long rug up the middle
       g.tile(x - 3.2, z - hd + 2, x + 3.2, z + hd - 2, 0.03, accent);
-      g.tile(x - 2.7, z - hd + 2.5, x + 2.7, z + hd - 2.5, 0.05, mix(accent, 0xffffff, 0.2));
+      g.tile(x - 2.7, z - hd + 2.5, x + 2.7, z + hd - 2.5, 0.05, mix(accent, 0x000000, 0.18));
       g.box(x, h, z, r.w, 0.6, r.d, ceil);
       g.box(x, 0, z - hd, r.w, h, 0.6, wall).box(x, 0, z + hd, r.w, h, 0.6, wall).box(x - hw, 0, z, 0.6, h, r.d, wall).box(x + hw, 0, z, 0.6, h, r.d, wall);
       // wainscot and cornice
       var dado = mix(wall, accent, 0.6);
       [[x, z - hd + 0.4, r.w, 0.3], [x, z + hd - 0.4, r.w, 0.3], [x - hw + 0.4, z, 0.3, r.d], [x + hw - 0.4, z, 0.3, r.d]].forEach(function (w) {
-        g.box(w[0], 0, w[1], w[2], 2.2, w[3], dado); g.box(w[0], 2.2, w[1], w[2], 0.16, w[3], 0xffffff); g.box(w[0], h - 0.5, w[1], w[2], 0.5, w[3], ceil);
+        g.box(w[0], 0, w[1], w[2], 2.2, w[3], dado); g.box(w[0], 2.2, w[1], w[2], 0.16, w[3], mix(wall, 0xffffff, 0.3)); g.box(w[0], h - 0.5, w[1], w[2], 0.5, w[3], ceil);
       });
       // pillars and tall bright windows
       var pillars = Math.max(1, Math.floor(r.d / 13));
@@ -36,7 +36,7 @@
         var pz = z - hd + (i + 0.5) * (r.d / pillars);
         [-1, 1].forEach(function (sd) {
           g.box(x + sd * (hw - 1.1), 0, pz, 1.3, h, 1.3, mix(wall, 0xffffff, 0.4));
-          g.box(x + sd * (hw - 0.34), 3.2, pz + r.d / pillars / 2, 0.1, h - 5, 3.4, 0xcfeaff);
+          g.box(x + sd * (hw - 0.34), 3.2, pz + r.d / pillars / 2, 0.1, h - 5, 3.4, 0x9fb6c4);
         });
       }
       // a plinth under each pad's goods is drawn at the sides of the room: shelves of stock
@@ -44,7 +44,7 @@
       for (i = 0; i < shelfN; i++) {
         var sx = x - hw + (i + 0.5) * (r.w / shelfN);
         g.box(sx, 0, z - hd + 1.1, r.w / shelfN - 0.5, 3, 1.3, mix(accent, 0x000000, 0.2));
-        for (var q = 0; q < 3; q++) { var gs = sr.range(0.5, 0.95); g.box(sx - 1 + q, 3, z - hd + 1.1, gs, gs, gs, sr.pick([0xff6b6b, 0x4dabf7, 0xffd43b, 0x51cf66, 0xcc5de8, 0xffffff])); }
+        for (var q = 0; q < 3; q++) { var gs = sr.range(0.5, 0.95); g.box(sx - 1 + q, 3, z - hd + 1.1, gs, gs, gs, sr.pick([0x8e1f24, 0x1e3a66, 0xb8b4aa, 0x2b2d33, 0xc8a02a, 0x3f5a3c])); }
       }
       // the Style Counter: a mirror and a stack of mystery boxes, just inside the door
       var cx = x - hw + 2.4, cz = z + hd - 8;
@@ -52,7 +52,7 @@
       g.box(cx + 0.5, 0, cz + 2.7, 1.5, 1.1, 1.5, 0xffc53d).box(cx + 0.5, 1.1, cz + 2.7, 1.1, 0.8, 1.1, 0xff5ad1).box(cx + 0.5, 1.1, cz + 2.7, 1.14, 0.8, 0.22, 0xffffff);
       // exit door
       g.box(x, 0, z + hd - 0.5, 6.4, 5, 0.3, mix(accent, 0x000000, 0.25));
-      g.box(x, 0, z + hd - 0.7, 5, 4.4, 0.3, 0x23263a);
+      g.box(x, 0, z + hd - 0.7, 5, 4.4, 0.3, 0xcfd8dc);
       var lights = new TR.Geo();
       for (i = -2; i <= 2; i++) for (j = 0; j < Math.max(1, Math.floor(r.d / 12)); j++) lights.box(x + i * r.w / 5, h - 0.22, z - hd + (j + 0.5) * (r.d / Math.max(1, Math.floor(r.d / 12))), 2.2, 0.2, 2.2, 0xfff8dc);
       var material = new THREE.MeshLambertMaterial({ vertexColors: true });

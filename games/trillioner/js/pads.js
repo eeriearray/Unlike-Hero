@@ -227,7 +227,7 @@
         var it = e.pad.item, q = e.st === 'open' ? (e.pad.store ? { total: TR.pads.storeSum(e.pad.store, sess), mult: 1 } : sess.quote(it.id)) : null;
         var price = e.st === 'open' ? TR.fmt(q.total) + (q.mult > 1 ? ' x' + q.mult : '') : e.st === 'locked' ? 'LOCKED' : e.st === 'owned' ? 'YOURS' : 'SOLD';
         var close = e.d2 < 324 && e.rank < 3, deal = close && e.st === 'open' && it.kind !== 'store' ? (TR.pads.dealText(it).split(' · ')[0] || 'Just for show') : '';
-        var cp = TR.app.camera.position, sw = Math.max(4.2, Math.min(9, Math.hypot(cp.x - e.pad.x, cp.y - e.pad.y, cp.z - e.pad.z) * 0.34));   // the same size on screen, near or far
+        var cp = TR.app.camera.position, sw = Math.max(3.4, Math.min(8, Math.hypot(cp.x - e.pad.x, cp.y - e.pad.y, cp.z - e.pad.z) * 0.34));   // the same size on screen, near or far
         s.visible = true;
         s.scale.set(sw, sw * H / W, 1);
         s.position.set(e.pad.x, e.pad.y + (it.building ? 6.2 : 3.4) + sw * H / W * 0.2, e.pad.z);
@@ -239,11 +239,11 @@
         g.font = '700 42px ' + FONT;
         var lines = close ? wrapLines(g, it.name, W - 56).slice(0, 2) : [];
         var bh = 104 + lines.length * 50 + (deal ? 54 : 0) + 8, top = H - bh - 2;
-        g.fillStyle = 'rgba(10,12,30,.96)'; roundRect(g, 4, top, W - 8, bh, 30); g.fill();
-        g.strokeStyle = e.st === 'open' ? '#ffd24a' : e.st === 'locked' ? '#c78bff' : '#8a8f9c'; g.lineWidth = 6; roundRect(g, 7, top + 3, W - 14, bh - 6, 28); g.stroke();
+        g.fillStyle = 'rgba(10,11,14,.92)'; roundRect(g, 4, top, W - 8, bh, 4); g.fill();
+        g.fillStyle = e.st === 'open' ? '#9fe39a' : e.st === 'locked' ? '#c8a02a' : '#8a8f9c'; g.fillRect(4, top, W - 8, 7);
         g.textAlign = 'center'; g.textBaseline = 'alphabetic';
-        g.fillStyle = e.st === 'open' ? '#ffd24a' : e.st === 'locked' ? '#dcbcff' : '#d4d8e2';
-        g.font = '800 80px ' + FONT;
+        g.fillStyle = e.st === 'open' ? '#9fe39a' : e.st === 'locked' ? '#e0c060' : '#d4d8e2';
+        g.font = '400 84px Impact, "Arial Narrow", Arial, sans-serif';
         g.fillText(price, W / 2, top + 84);
         g.fillStyle = '#ffffff'; g.font = '700 42px ' + FONT;
         lines.forEach(function (l, i) { g.fillText(l, W / 2, top + 134 + i * 50); });

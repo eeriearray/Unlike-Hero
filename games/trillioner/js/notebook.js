@@ -27,8 +27,8 @@
       D.DISTRICTS.under.entrances.forEach(function (e) {
         nb.doors.push({ x: e.surface.x, y: 0, z: e.surface.z, to: { x: e.x, y: D.UNDER_Y, z: e.z + 3 }, label: 'Way down', down: true, id: e.id });
         nb.doors.push({ x: e.x, y: D.UNDER_Y, z: e.z - 3, to: { x: e.surface.x, y: 0, z: e.surface.z + 5 }, label: 'Way up', id: e.id });
-        g.box(e.x, D.UNDER_Y, e.z - 6, 7, 6, 0.6, 0x3a2360);
-        n.box(e.x, D.UNDER_Y + 6, e.z - 5.6, 7.6, 0.6, 0.3, 0xc77dff);
+        g.box(e.x, D.UNDER_Y, e.z - 6, 7, 6, 0.6, 0x34363b);
+        n.box(e.x, D.UNDER_Y + 6, e.z - 5.6, 7.6, 0.6, 0.3, 0xd9a030);
       });
       nb.doors.push({ x: 0, y: D.DEEP_Y, z: -160, to: { x: 0, y: D.UNDER_Y, z: -116 }, label: 'Climb back up', deep: true });
       n.box(0, D.DEEP_Y, -158, 6, 5, 0.4, 0x7dffea);

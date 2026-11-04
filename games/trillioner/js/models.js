@@ -79,6 +79,31 @@
       g.box(0, -0.04, 0, 12, 0.08, 0.42, 0xffffff); g.box(0, -0.04, 0, 0.42, 0.08, 12, 0xffffff); g.cyl(0, -0.2, 0, 0.3, 0.3, 0xffffff, 10);
       return g.geometry();
     },
+    airliner: function (g, stripe) {
+      var w = 0xe6e3da, d = 0x8d9096;
+      g.lathe([[0.001, -19], [1.1, -18.2], [2.1, -16.5], [2.6, -13.5], [2.7, -8], [2.7, 9], [2.3, 13], [1.3, 17], [0.3, 19.5], [0.001, 19.7]], 0, 4.3, 0, function (j, i) { var side = Math.sin(j / 20 * 6.2832); return i === 3 || i === 4 ? (side > -0.1 && side < 0.28 ? stripe : w) : w; }, 20, 'z');
+      g.hull([[-3.5, 3.3, 3.75, 2.6, 2.6], [3, 3.3, 3.75, 2.6, 2.6]], d);                // wing root
+      [-1, 1].forEach(function (o) {
+        g.hull([[-3, 3.25, 3.65, 0.04, 0.04], [3.2, 3.25, 3.65, 0.04, 0.04]], w, 0, o * 2.6);
+        for (var i = 0; i < 6; i++) g.box(o * (5.2 + i * 2.6), 3.42 + i * 0.1, 0.4 + i * 0.75, 2.6, 0.18, 5.4 - i * 0.75, i % 2 ? w : 0xdcd9d0);
+        g.lathe([[0.001, -2], [0.85, -1.8], [0.9, 1], [0.6, 2.2], [0.001, 2.2]], o * 7, 2.45, 0, d, 12, 'z');
+        g.box(o * 2.4, 0, 2, 0.5, 2, 0.5, 0x2a2c30); g.wheel(o * 2.4, 0.55, 2, 0.55, 0.5, TYRE);
+        g.box(o * 3.2, 7.2, 17, 7, 0.14, 2.6, w);
+      });
+      g.box(0, 0, -13, 0.4, 2, 0.4, 0x2a2c30); g.wheel(0, 0.45, -13, 0.45, 0.4, TYRE);
+      g.hull([[13.5, 6.5, 12.5, 0.14, 0.1], [18.5, 7, 12.5, 0.1, 0.06]], stripe);
+      g.hull([[-16, 5.3, 6.35, 2.08, 1.55], [-14.6, 5.8, 6.9, 2.1, 1.55]], GLASS);
+      return g;
+    },
+    cargoShip: function (g, hullColor) {
+      g.hull([[-26, 3, 7, 0.4, 0.8], [-19, -1, 7, 4.4, 6.2], [18, -1, 6.4, 5.4, 6.4], [24, 0, 6.4, 4.6, 5.4]], hullColor);
+      g.hull([[-25.8, 6.9, 7.1, 0.9, 0.9], [-19, 6.3, 6.5, 6.3, 6.3], [23.8, 6.3, 6.5, 5.5, 5.5]], 0x8a2a24);
+      var cols = [0x8e1f24, 0x1e3a66, 0xc8a02a, 0x3f5a3c, 0xb8b4aa, 0x7a4a2a, 0x2f6a78], k = 0;
+      for (var row = 0; row < 7; row++) for (var c = 0; c < 4; c++) for (var h = 0; h < 2 + (row * 3 + c) % 2; h++) { g.box(-3.6 + c * 2.4, 6.5 + h * 2.3, -15 + row * 4.3, 2.3, 2.25, 4.1, cols[(k++ * 3 + row) % cols.length]); }
+      g.box(0, 6.5, 19, 9, 9, 7, 0xe6e3da); g.box(0, 15.5, 18, 11, 1.7, 5.4, 0xe6e3da); g.box(0, 15.9, 15.3, 10, 1, 0.1, GLASS);
+      g.cyl(0, 15, 21.5, 1.2, 5, 0xa81d24, 10);
+      return g;
+    },
     /** A saloon. The everyday car, in whatever colour. Also the one in traffic, so it stays cheap. */
     sedan: function (g, body, dy) {
       dy = dy || 0;
